@@ -1,0 +1,23 @@
+{
+  "_commit": "0d33fca0d1c29c79aef9c7053e36d9e7cdd2bd20",
+  "_copy_without_render": [
+    "*.rst_t"
+  ],
+  "_jinja2_env_vars": {
+    "lstrip_blocks": true,
+    "trim_blocks": true
+  },
+  "_template": "https://github.com/statisticsnorway/ssb-pypitemplate.git",
+  "author": "Magnus Theodor Engh",
+  "code_quality_level": "Medium",
+  "copyright_owner": "Statistics Norway",
+  "copyright_year": "2025",
+  "development_status": "Development Status :: 4 - Beta",
+  "email": "dor@ssb.no",
+  "friendly_name": "SSB Dash Framework",
+  "github_organization": "statisticsnorway",
+  "license": "GPL-3.0",
+  "package_name": "ssb_dash_framework",
+  "project_name": "ssb-dash-framework",
+  "version": "0.0.0"
+}
