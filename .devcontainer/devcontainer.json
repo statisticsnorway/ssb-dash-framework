@@ -1,0 +1,22 @@
+{
+    "name": "R-Python Environment",
+	"image": "ghcr.io/statisticsnorway/docker-rpython-dev:latest",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+			 "rdebugger.r-debugger",
+			 "reditorsupport.r",
+			 "ms-azuretools.vscode-docker",
+			 "ms-vscode-remote.remote-containers",
+			 "ms-python.python",
+			 "ms-toolsai.jupyter"
+			],
+			"settings": {
+				"r.alwaysUseActiveTerminal": true,
+				"r.bracketedPaste": true,
+				"r.sessionWatcher": true,
+				"r.plot.useHttpgd": true
+			}
+		}
+	}
+ }
