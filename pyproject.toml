@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ssb-dash-framework"
-version = "0.0.0"
+version = "0.0.1"
 description = "SSB Dash Framework"
 authors = ["Magnus Theodor Engh <dor@ssb.no>"]
 license = "GPL-3.0"
