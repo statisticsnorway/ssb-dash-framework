@@ -1,6 +1,6 @@
 from dash import html
-from ssb_sirius_dash.utils.alert_handler import AlertHandler
-from ssb_sirius_dash.utils.alert_handler import create_alert
+from ssb_dash_framework.utils.alert_handler import AlertHandler
+from ssb_dash_framework.utils.alert_handler import create_alert
 
 
 def test_create_alert():

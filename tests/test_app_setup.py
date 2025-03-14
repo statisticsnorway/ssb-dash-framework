@@ -1,7 +1,7 @@
 import os
 
 from dash import Dash
-from ssb_sirius_dash.setup.app_setup import app_setup
+from ssb_dash_framework.setup.app_setup import app_setup
 
 
 def test_app_setup():

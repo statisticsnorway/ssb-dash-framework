@@ -32,8 +32,8 @@ app = app_setup(port, service_prefix, domain, "superhero")
 ### 1. Hent inn de nødvendige byggeklossene og opprett app-objektet
 
 ```
-from ssb_sirius_dash.setup.main_layout import main_layout
-from ssb_sirius_dash.setup.app_setup import app_setup
+from ssb_dash_framework.setup.main_layout import main_layout
+from ssb_dash_framework.setup.app_setup import app_setup
 
 app = app_setup(port, service_prefix, domain, "superhero")
 ```
@@ -43,7 +43,7 @@ app = app_setup(port, service_prefix, domain, "superhero")
 Obs! Noen moduler krever mer tilpasninger enn andre. Dette kan du se i dokumentasjonen for de enkelte modulene som er henvist til tidligere.
 
 ```
-from ssb_sirius_dash.tabs.pi_memorizer import PimemorizerTab
+from ssb_dash_framework.tabs.pi_memorizer import PimemorizerTab
 
 min_pi_memorizer = PimemorizerTab()
 ```

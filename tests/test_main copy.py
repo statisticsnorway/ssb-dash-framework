@@ -2,7 +2,7 @@
 
 import pytest
 from click.testing import CliRunner
-from ssb_sirius_dash import __main__
+from ssb_dash_framework import __main__
 
 
 @pytest.fixture()

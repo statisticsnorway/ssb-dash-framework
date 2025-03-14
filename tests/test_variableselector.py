@@ -1,8 +1,8 @@
 from collections.abc import Generator
 
 import pytest
-from ssb_sirius_dash.setup.variableselector import VariableSelector
-from ssb_sirius_dash.setup.variableselector import VariableSelectorOption
+from ssb_dash_framework.setup.variableselector import VariableSelector
+from ssb_dash_framework.setup.variableselector import VariableSelectorOption
 
 
 @pytest.fixture(autouse=True)

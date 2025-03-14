@@ -101,7 +101,7 @@ In order to account for different implementations of the framework requiring dif
 
 ### Connecting your module to the variable selector
 
-Note: You can use the ssb_sirius_dash/utils/debugger_modal.py to get familiar with how this works in practice.
+Note: You can use the ssb_dash_framework/utils/debugger_modal.py to get familiar with how this works in practice.
 
 Use the module's VariableSelector to get the dynamic_states list.
 
