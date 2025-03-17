@@ -1,5 +1,6 @@
 import dash_bootstrap_components as dbc
 from dash import html
+
 from ssb_dash_framework.utils.functions import sidebar_button
 
 

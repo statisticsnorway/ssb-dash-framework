@@ -1,6 +1,7 @@
 from collections.abc import Generator
 
 import pytest
+
 from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.setup.variableselector import VariableSelectorOption
 

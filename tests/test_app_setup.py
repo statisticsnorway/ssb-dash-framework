@@ -1,6 +1,7 @@
 import os
 
 from dash import Dash
+
 from ssb_dash_framework.setup.app_setup import app_setup
 
 

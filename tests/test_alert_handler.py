@@ -1,4 +1,5 @@
 from dash import html
+
 from ssb_dash_framework.utils.alert_handler import AlertHandler
 from ssb_dash_framework.utils.alert_handler import create_alert
 
