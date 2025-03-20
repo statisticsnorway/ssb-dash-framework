@@ -42,7 +42,7 @@ class DebugInspector:
                     size="xl",
                     fullscreen="xxl-down",
                 ),
-                sidebar_button("🥼", "Debugger", "sidebar-debugger-button"),
+                sidebar_button("🦗", "Debugger", "sidebar-debugger-button"),
             ]
         )
 
