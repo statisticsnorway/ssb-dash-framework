@@ -123,7 +123,7 @@ class AlertHandler:
                     size="xl",
                     fullscreen="xxl-down",
                 ),
-                sidebar_button("❗", "Feilmeldinger", "sidebar-alerts-button"),
+                sidebar_button("📜", "App logg", "sidebar-alerts-button"),
             ]
         )
 
