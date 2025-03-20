@@ -71,8 +71,7 @@ class AlertHandler:
                     style={
                         "position": "fixed",
                         "bottom": "10px",
-                        "left": "15%",
-                        "transform": "translateX(-85%)",
+                        "left": "10px",
                         "zIndex": 2000,
                     },
                 ),
@@ -123,7 +122,7 @@ class AlertHandler:
                     size="xl",
                     fullscreen="xxl-down",
                 ),
-                sidebar_button("❗", "Feilmeldinger", "sidebar-alerts-button"),
+                sidebar_button("📜", "App logg", "sidebar-alerts-button"),
             ]
         )
 
