@@ -47,9 +47,9 @@ class VariableSelector:
         self.selected_variables = [*selected_inputs, *selected_states]
         self.default_values = default_values
 
-        self.is_valid()
+        self._is_valid()
         if default_values:
-            self.default_values_is_valid()
+            self._default_values_is_valid()
 
     def _is_valid(self) -> None:
         """Ensures the VariableSelector is set up as intended."""
@@ -259,11 +259,11 @@ class VariableSelectorOption:
         self.id = f"var-{variable_title}"
         self.type = variable_type
 
-        self.is_valid()
+        self._is_valid()
 
         VariableSelector._variableselectoroptions.append(self)
 
-    def _is_valid(self):
+    def _is_valid(self) -> None:
         """Validates the option before adding it to the list."""
         self._already_exists()
         valid_types = ["text", "number"]
@@ -272,7 +272,7 @@ class VariableSelectorOption:
                 f"Invalid value for variable_type. Expected one of {valid_types}, received {self.type}"
             )
 
-    def _already_exists(self):
+    def _already_exists(self) -> None:
         """Checks if option already exists.
 
         Note: The check on self.id should not be necessary but is added as a precaution.
