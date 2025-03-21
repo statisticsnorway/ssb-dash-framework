@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+from typing import ClassVar
 
 import dash_bootstrap_components as dbc
 from dash import Input
@@ -20,7 +21,7 @@ class VariableSelector:
         - Each module should have its own instance of the VariableSelector in its __init__ function.
     """
 
-    _variableselectoroptions: list["VariableSelectorOption"] = []
+    _variableselectoroptions: ClassVar[list["VariableSelectorOption"]] = []
 
     def __init__(
         self,
@@ -50,7 +51,8 @@ class VariableSelector:
         if default_values:
             self.default_values_is_valid()
 
-    def is_valid(self) -> None:
+    def _is_valid(self) -> None:
+        """Ensures the VariableSelector is set up as intended."""
         valid_states_inputs = [
             option.title for option in VariableSelector._variableselectoroptions
         ]
@@ -71,7 +73,7 @@ class VariableSelector:
                     f"Invalid value for selected_states. Received {_state}. Expected one of {valid_states_inputs}"
                 )
 
-    def default_values_is_valid(self) -> None:
+    def _default_values_is_valid(self) -> None:
         """Validates the default values dictionary."""
         if not isinstance(self.default_values, dict):
             raise TypeError(
@@ -91,7 +93,7 @@ class VariableSelector:
                         f"Invalid type for {key} in default_value. Received type {type(self.default_values[key])} Expected string."
                     )
             if self.get_option(key).type == "number":
-                if not isinstance(self.default_values[key], (int, float)):
+                if not isinstance(self.default_values[key], int | float):
                     raise TypeError(
                         f"Invalid type for {key} in default_value. Received type {type(self.default_values[key])} Expected int or float."
                     )
@@ -131,6 +133,9 @@ class VariableSelector:
 
         Returns:
             Output: The corresponding Dash Output object.
+
+        Raises:
+            ValueError: If the name (title) does not exist in any of the options available to the VariableSelector
         """
         if variable not in [option.title for option in self._variableselectoroptions]:
             raise ValueError(
@@ -138,14 +143,6 @@ class VariableSelector:
             )
         option = self.get_option(variable)
         return Output(option.id, "value", allow_duplicate=True)
-
-    def get_callback_args(self, inputs=False, states=False):
-        args = []
-        if inputs:
-            False
-        if states:
-            False
-        return args
 
     def _create_variable_card(
         self,
@@ -212,7 +209,8 @@ class VariableSelector:
                     f"Oppdatering av variabelvelger: {component_name} til {value}",
                     "info",
                     ephemeral=True,
-                ), *error_log
+                ),
+                *error_log,
             ]
             return error_log
 
@@ -265,12 +263,25 @@ class VariableSelectorOption:
 
         VariableSelector._variableselectoroptions.append(self)
 
-    def is_valid(self):
+    def _is_valid(self):
         """Validates the option before adding it to the list."""
+        self._already_exists()
         valid_types = ["text", "number"]
         if self.type not in valid_types:
             raise ValueError(
                 f"Invalid value for variable_type. Expected one of {valid_types}, received {self.type}"
+            )
+
+    def _already_exists(self):
+        """Checks if option already exists.
+
+        Note: The check on self.id should not be necessary but is added as a precaution.
+        """
+        if self.title in [x.title for x in VariableSelector._variableselectoroptions]:
+            raise ValueError(f"This option title already exists: {self.title}")
+        if self.id in [x.id for x in VariableSelector._variableselectoroptions]:
+            raise ValueError(
+                f"This option id already exists and cannot be added: {self.id}"
             )
 
     def __str__(self) -> str:
