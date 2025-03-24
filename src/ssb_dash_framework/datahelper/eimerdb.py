@@ -31,7 +31,7 @@ class DatabaseBuilderAltinnEimerdb:
         db_builder = DatabaseHelperAltinnEimerdb(
             database_name = "my-survey-storage",
             storage_location = "path/to/storage",
-            period = "year"
+            periods = "year"
         )
     2. Now that we have our builder ready, check that the schemas are correct.
         print(db_builder.schemas)
@@ -43,27 +43,34 @@ class DatabaseBuilderAltinnEimerdb:
         template_funcs = db_builder.get_dashboard_functions()
     """
 
-    def __init__(self, database_name: str, storage_location: str, period: str) -> None:
+    def __init__(self, database_name: str, storage_location: str, periods: str) -> None:
         """Initializes the databasebuilder for altinn3 surveys.
 
         Args:
             database_name:
             storage_location:
-            period: str
+            periods: str
         """
-        self.period = period
-        self.storage_location = storage_location
         self.database_name = database_name
-
+        self.storage_location = storage_location
+        self.ident_id = ident_id
+        self.ident_name = ident_name
+        self.delivery_id = delivery_identifier
+        self.periods = periods if isinstance(periods, list) else [periods]
         self._is_valid()
 
         self.schemas = self._make_schemas()
 
     def _is_valid(self):
+        if not isinstance(self.periods, list):
+            raise TypeError("")
         pass
 
     def _make_schemas(self):
-        period_col = {"name": self.period, "type": "int64", "label": self.period}
+        periods_cols = [
+            {"name": period, "type": "int64", "label": period}
+            for period in self.periods
+        ]
         ident_col = {
             "name": "enhetsident",
             "type": "string",
@@ -78,21 +85,21 @@ class DatabaseBuilderAltinnEimerdb:
         skjema_col = {"name": "skjema", "type": "string", "label": "Skjema"}
 
         schema_enheter = [
-            period_col,
+            *periods_cols,
             skjema_col,
             name_col,
             ident_col,
         ]
 
         schema_enhetsinfo = [
-            period_col,
+            *periods_cols,
             ident_col,
             {"name": "opplysning", "type": "string", "label": "Opplysning"},
             {"name": "opplysningsverdi", "type": "string", "label": "Opplysningsverdi"},
         ]
 
         schema_skjemamottak = [
-            period_col,
+            *periods_cols,
             ident_col,
             skjema_col,
             delivery_id_col,
@@ -103,7 +110,7 @@ class DatabaseBuilderAltinnEimerdb:
         ]
 
         schema_kontaktinfo = [
-            period_col,
+            *periods_cols,
             ident_col,
             skjema_col,
             delivery_id_col,
@@ -119,7 +126,7 @@ class DatabaseBuilderAltinnEimerdb:
         ]
 
         schema_skjemadata = [
-            period_col,
+            *periods_cols,
             skjema_col,
             delivery_id_col,
             {"name": "variabelnavn", "type": "string", "label": "Variabelens navn"},
@@ -127,7 +134,7 @@ class DatabaseBuilderAltinnEimerdb:
         ]
 
         schema_kontroller = [
-            period_col,
+            *periods_cols,
             skjema_col,
             {"name": "kontrollutslagid", "type": "string", "label": "Kontrollutslagid"},
             {"name": "kontrolltype", "type": "string", "label": "Kontrolltype"},
@@ -140,7 +147,7 @@ class DatabaseBuilderAltinnEimerdb:
         ]
 
         schema_kontrollutslag = [
-            period_col,
+            *periods_cols,
             skjema_col,
             ident_col,
             delivery_id_col,
@@ -161,7 +168,7 @@ class DatabaseBuilderAltinnEimerdb:
         }
 
     def __str__(self):
-        return f"DataStorageBuilderAltinnEimer.\nDatabase name: {self.database_name}\nPeriod variable: {self.period}\nStorage location: {self.storage_location}\n\nSchemas: {list(self.schemas.keys())}\nDetailed schemas:\n{json.dumps(self.schemas, indent=2, default=str)}"
+        return f"DataStorageBuilderAltinnEimer.\nDatabase name: {self.database_name}\nStorage location: {self.storage_location}\nPeriods variables: {self.periods}\n\nSchemas: {list(self.schemas.keys())}\nDetailed schemas:\n{json.dumps(self.schemas, indent=2, default=str)}"
 
     def build_storage(self):
         db.create_eimerdb(bucket_name=self.storage_location, db_name=self.database_name)
@@ -170,11 +177,7 @@ class DatabaseBuilderAltinnEimerdb:
             conn.create_table(
                 table_name=table,
                 schema=self.schemas[table],
-                partition_columns=(
-                    [self.period, "skjema"]
-                    if table not in ["enhetsinfo"]
-                    else [self.period]
-                ),
+                partition_columns=(self.periods),
                 editable=True,
             )
         eimerdb_logger.info(
@@ -213,3 +216,16 @@ class DatabaseBuilderAltinnEimerdb:
             "EditingTableLong_get_data_func": EditingTableLong_get_data_func,
             "EditingTableLong_update_table": EditingTableLong_update_table,
         }
+
+
+DatabaseBuilderAltinnEimerdb(
+    periods="aar", storage_location="", database_name="Test"
+).schemas
+
+DatabaseBuilderAltinnEimerdb(
+    periods=["aar"], storage_location="", database_name="Test"
+).schemas
+
+DatabaseBuilderAltinnEimerdb(
+    periods=["aar", "maaned"], storage_location="", database_name="Test"
+).schemas
