@@ -44,7 +44,7 @@ def test_add_one_code() -> None:
     2) VariableSelector sees exactly one code.
     """
     code = VariableSelectorOption(  # Note, "code =" can be removed without losing functionality, is only here to make sure it is added correctly.
-        "foretak", "text"
+        "foretak"
     )
     assert len(VariableSelector._variableselectoroptions) == 1
     assert code in VariableSelector._variableselectoroptions
