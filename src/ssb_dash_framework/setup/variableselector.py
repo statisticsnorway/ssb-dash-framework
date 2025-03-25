@@ -179,8 +179,6 @@ class VariableSelector:
                                     value=value,
                                     id=component_id,
                                     type=input_type,
-                                    persistence=True,
-                                    persistence_type="local",
                                 ),
                             ],
                         ),
