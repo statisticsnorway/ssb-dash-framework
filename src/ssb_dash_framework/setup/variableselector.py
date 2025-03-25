@@ -176,7 +176,11 @@ class VariableSelector:
                             },
                             children=[
                                 dbc.Input(
-                                    value=value, id=component_id, type=input_type
+                                    value=value,
+                                    id=component_id,
+                                    type=input_type,
+                                    persistence=True,
+                                    persistence_type="local",
                                 ),
                             ],
                         ),
@@ -242,22 +246,24 @@ class VariableSelector:
 class VariableSelectorOption:
     """Represents an individual variable selection option."""
 
-    def __init__(self, variable_title: str, variable_type: str) -> None:
+    def __init__(
+        self,
+        variable_title: str,
+    ) -> None:
         """Initializes a VariableSelectorOption.
 
         After checking its own validity, adds itself as an option for the VariableSelector by appending itself into the VariableSelector._variableselectoroptions class variable.
 
         Args:
             variable_title (str): The name of the variable.
-            variable_type (str): The type of the variable ("text" or "number").
 
         Examples:
-            >>> VariableSelectorOption("my numeric option", "number")
-            >>> VariableSelectorOption("my text option", "text")
+            >>> VariableSelectorOption("my numeric option")
+            >>> VariableSelectorOption("my text option")
         """
         self.title = variable_title
         self.id = f"var-{variable_title}"
-        self.type = variable_type
+        self.type = "text"
 
         self._is_valid()
 
@@ -266,7 +272,7 @@ class VariableSelectorOption:
     def _is_valid(self) -> None:
         """Validates the option before adding it to the list."""
         self._already_exists()
-        valid_types = ["text", "number"]
+        valid_types = ["text"]
         if self.type not in valid_types:
             raise ValueError(
                 f"Invalid value for variable_type. Expected one of {valid_types}, received {self.type}"
@@ -291,16 +297,16 @@ class VariableSelectorOption:
 
 """Here we define some default values that are available from the get-go"""
 # Periods
-VariableSelectorOption("aar", "number")
-VariableSelectorOption("termin", "number")
-VariableSelectorOption("måned", "number")
+VariableSelectorOption("aar")
+VariableSelectorOption("termin")
+VariableSelectorOption("måned")
 # Groupings
-VariableSelectorOption("nace", "text")
-VariableSelectorOption("fylke", "text")
-VariableSelectorOption("nspekfelt", "text")
-VariableSelectorOption("prodcomkode", "text")
+VariableSelectorOption("nace")
+VariableSelectorOption("fylke")
+VariableSelectorOption("nspekfelt")
+VariableSelectorOption("prodcomkode")
 # Identifiers
-VariableSelectorOption("oppgavegiver", "text")
-VariableSelectorOption("foretak", "text")
-VariableSelectorOption("bedrift", "text")
-VariableSelectorOption("skjemaenhet", "text")
+VariableSelectorOption("oppgavegiver")
+VariableSelectorOption("foretak")
+VariableSelectorOption("bedrift")
+VariableSelectorOption("skjemaenhet")
