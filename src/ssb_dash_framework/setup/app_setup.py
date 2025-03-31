@@ -60,11 +60,10 @@ def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> D
     @callback(
         Output("variable-selector-offcanvas", "is_open"),
         Input("sidebar-varvelger-button", "n_clicks"),
-        State("variable-selector-offcanvas", "is_open")
+        State("variable-selector-offcanvas", "is_open"),
     )
-    def toggle_variabelvelger(n_clicks: Optional[int], is_open: bool) -> bool:
-        """
-        Toggle the visibility of the variable selector offcanvas.
+    def toggle_variabelvelger(n_clicks: int | None, is_open: bool) -> bool:
+        """Toggle the visibility of the variable selector offcanvas.
     
         This callback is triggered by clicking the "sidebar-varvelger-button".
         If the button has been clicked at least once, it toggles the state of
