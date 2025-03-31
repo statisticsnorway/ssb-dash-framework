@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, Optional
 
 import dash_bootstrap_components as dbc
 from dash import Dash
