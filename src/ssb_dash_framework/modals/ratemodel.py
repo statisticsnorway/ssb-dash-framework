@@ -32,7 +32,6 @@ class RateModelModule:
         self.cache_location = cache_location
         self.get_sample_func = get_sample_func
         self.get_population_func = get_population_func
-
         self.callbacks()
 
 
@@ -41,11 +40,14 @@ class RateModelModule:
         logger.info("Getting model")
         cache_path = Path(f"{self.cache_location}/ratemodel_{x_var}_{y_var}_{strata_var}.pickle")
         if cache_path.is_file() and not force_rerun:
-            logger.info("Getting model from cache")
+            logger.info("Retrieving model from cache")
             model_dict = get_cached_model(cache_path)
         else:
+            logger.info("No cache found, getting data and calculating model")
+            sampledata = self.get_sample_func()
+            popdata = self.get_population_func()
             logger.info("Calculating model")
-            mod = ratemodel(self.get_population_func(), self.get_sample_func(), id_nr=self.id_var)
+            mod = ratemodel(popdata, sampledata, id_nr=self.id_var)
             mod.fit(x_var=x_var, y_var=y_var, strata_var=strata_var)
             model_dict = save_cache_model(cache_path, mod)
         end = time.time()
@@ -71,6 +73,7 @@ class RateModelModule:
 
 
     def clear_cache(self):
+        logger.info("Clearing cached ratemodels")
         files_to_remove = glob.glob(os.path.join(self.cache_location, 'ratemodel_*.pickle'))
         for file_path in files_to_remove:
             try:
@@ -108,17 +111,17 @@ class RateModelModule:
             )
         )
 
-        layout_weigths = html.Div(
+        layout_weights = html.Div(
             dbc.Modal(
                 [
                     dbc.ModalHeader(dbc.ModalTitle()),
                     dbc.ModalBody(
                         [
-                            dag.AgGrid(id="ratemodel_detailtable_weigths")
+                            dag.AgGrid(id="ratemodel_detailtable_weights")
                         ]
                     )
                 ],
-                id = "ratemodel_detailmodal_weigths"
+                id = "ratemodel_detailmodal_weights"
             )
         )
         
@@ -126,7 +129,7 @@ class RateModelModule:
             [
                 layout_extreme,
                 layout_imputation,
-                layout_weigths,
+                layout_weights,
                 dbc.Modal(
                     [
                         dbc.ModalHeader(dbc.ModalTitle("Ratemodell")),
@@ -134,60 +137,63 @@ class RateModelModule:
                             [
                                 dbc.Row(
                                     [
-                                        dbc.Col(dcc.Dropdown(id="ratemodel_xvar", options = {"label":"fulldyrket", "value": "fulldyrket"})),
-                                        dbc.Col(dcc.Dropdown(id="ratemodel_yvar", options = {"label":"arealtilskudd", "value": "arealtilskudd"})),
-                                        dbc.Col(dcc.Dropdown(id = "ratemodel_strata", options = {"label":"fylke", "value": "fylke"})),
+                                        dbc.Col(dcc.Dropdown(id="ratemodel_xvar", value="fulldyrket",options = [{"label":"fulldyrket", "value": "fulldyrket"}])),
+                                        dbc.Col(dcc.Dropdown(id="ratemodel_yvar", value = "arealtilskudd", options = [{"label":"arealtilskudd", "value": "arealtilskudd"}])),
+                                        dbc.Col(dcc.Dropdown(id = "ratemodel_strata", value="fylke", options = [{"label":"fylke", "value": "fylke"}])),
                                         dbc.Col(dbc.Button("Hent modell", id = "ratemodel_button_run"))
                                     ]
                                 ),
-                                dbc.Row( # Info about the model returned
-                                    [
-                                        dbc.Col(id="ratemodel_timestamp"),
-                                        dbc.Col(dbc.Button("Beregn ny modell", id = "ratemodel_button_rerun")),
-                                        dbc.Col(dbc.Button("Slett alle cached modeller", id = "ratemodel_button_clear_cache"))
-                                    ]
-                                ),
-                                dbc.Row(),
-                                dbc.Row(
-                                    [
-                                        dbc.Col(
-                                            [
-                                                dbc.Row(html.P("Estimater")),
-                                                dbc.Row(dag.AgGrid(id="ratemodel_estimates"))
-                                            ]
-                                        ),
-                                        dbc.Col(
-                                            [
-                                                dbc.Row(html.P("Usikkerhetsmål")),
-                                                dbc.Row(
-                                                    dcc.Dropdown(
-                                                        id="ratemodel_uncertainty",
-                                                        options = [
-                                                            {"label": "CV", "value": "CV"},
-                                                            {"label": "", "value": ""},
-                                                            {"label": "", "value": ""},
-                                                            {"label": "", "value": ""},
-                                                            {"label": "", "value": ""}
-                                                        ]
-                                                    )
-                                                ),
-                                                dbc.Row(html.P("Varianstype")),
-                                                dbc.Row(
-                                                    dcc.Dropdown(
-                                                        id="ratemodel_variance",
-                                                        options = [
-                                                            {"label": "Standard", "value": "standard"},
-                                                            {"label": "Robust", "value": "robust"}
-                                                        ]
-                                                    )
-                                                ),
-                                                dbc.Row(dbc.Button("Ekstremverdier", id="ratemodel_detailbutton_extreme")),
-                                                dbc.Row(dbc.Button("Imputerte verdier", id="ratemodel_detailbutton_imputation")),
-                                                dbc.Row(dbc.Button("Vekter", id="ratemodel_detailbutton_weigths"))
-                                            ]
-                                        )
-                                    ]
-                                )
+                                dcc.Loading([
+                                    dbc.Row( # Info about the model returned
+                                        [
+                                            dbc.Col(id="ratemodel_timestamp"),
+                                            dbc.Col(dbc.Button("Beregn ny modell", id = "ratemodel_button_rerun")),
+                                            dbc.Col(dbc.Button("Slett alle cached modeller", id = "ratemodel_button_clear_cache"))
+                                        ]
+                                    ),
+                                    dbc.Row(),
+                                    dbc.Row(
+                                        [
+                                            dbc.Col(
+                                                [
+                                                    dbc.Row(html.P("Estimater")),
+                                                    dbc.Row(dag.AgGrid(id="ratemodel_estimates"))
+                                                ]
+                                            ),
+                                            dbc.Col(
+                                                [
+                                                    dbc.Row(html.P("Usikkerhetsmål")),
+                                                    dbc.Row(
+                                                        dcc.Dropdown(
+                                                            id="ratemodel_uncertainty",
+                                                            options = [
+                                                                {"label": "CV", "value": "CV"},
+                                                                {"label": "", "value": ""},
+                                                                {"label": "", "value": ""},
+                                                                {"label": "", "value": ""},
+                                                                {"label": "", "value": ""}
+                                                            ]
+                                                        )
+                                                    ),
+                                                    dbc.Row(html.P("Varianstype")),
+                                                    dbc.Row(
+                                                        dcc.Dropdown(
+                                                            id="ratemodel_variance",
+                                                            options = [
+                                                                {"label": "Standard", "value": "standard"},
+                                                                {"label": "Robust", "value": "robust"}
+                                                            ]
+                                                        )
+                                                    ),
+                                                    dbc.Row(dbc.Button("Ekstremverdier", id="ratemodel_detailbutton_extreme")),
+                                                    dbc.Row(dbc.Button("Imputerte verdier", id="ratemodel_detailbutton_imputation")),
+                                                    dbc.Row(dbc.Button("Vekter", id="ratemodel_detailbutton_weights"))
+                                                ]
+                                            )
+                                        ]
+                                    )
+                                ])
+                                
                             ]
                         )
                     ],
@@ -304,8 +310,8 @@ class RateModelModule:
             Output("ratemodel_detailtable_extreme", "columnDefs"),
             Output("ratemodel_detailtable_imputation", "rowData"),
             Output("ratemodel_detailtable_imputation", "columnDefs"),
-            Output("ratemodel_detailtable_weigths", "rowData"),
-            Output("ratemodel_detailtable_weigths", "columnDefs"),
+            Output("ratemodel_detailtable_weights", "rowData"),
+            Output("ratemodel_detailtable_weights", "columnDefs"),
             Input("ratemodel_button_run", "n_clicks"),
             Input("ratemodel_button_rerun", "n_clicks"),
             Input("ratemodel_uncertainty", "value"),
@@ -317,14 +323,14 @@ class RateModelModule:
             prevent_initial_call=True,
         )
         def ratemodel_run_model(click, more_important_click, uncertainty, variance, x_var, y_var, strata_var, error_log):
-            
+            logger.info(f"Model requested for {x_var} - {y_var} - {strata_var}")
             model_dict = self.get_model(x_var = x_var, y_var = y_var, strata_var = strata_var)
             model_timestamp = model_dict["compute_time"]
             model = model_dict["model"]
             estimates = model.get_estimates(uncertainty_type = uncertainty, variance_type = variance)
             extremes = model.get_extremes()
             imputation = model.get_imputed()
-            weigths = model.get_weigths()
+            weigths = model.get_weights()
 
             error_log = [create_alert(
                         f"Modell kjørt for {x_var} - {y_var} - {strata_var}",
