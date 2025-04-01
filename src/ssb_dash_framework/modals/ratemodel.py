@@ -1,3 +1,6 @@
+import logging
+
+import eimerdb as db
 import os
 import glob
 from pathlib import Path
@@ -9,68 +12,19 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import eimerdb as db
 from statstruk import ratemodel
-from functools import cache
-
+import dash_bootstrap_components as dbc
 import dash_ag_grid as dag
+from dash import callback
+from dash import dcc
+from dash import html
+from dash.dependencies import Input
+from dash.dependencies import Output
+from dash.dependencies import State
 
+from ..utils.alert_handler import create_alert
+from ..utils.functions import sidebar_button
 
 logger = logging.getLogger(__name__)
-
-bucket = "ssb-dapla-felles-data-produkt-prod"
-db_name = "produksjonstilskudd"
-conn = db.EimerDBInstance(bucket, db_name)
-
-variables = ["arealtilskudd", "fulldyrket"]
-
-# +
-enhetsinfo = conn.query("SELECT * FROM enhetsinfo WHERE soeknads_aar = '2024'")
-
-enhetsinfo = enhetsinfo.loc[enhetsinfo["variable"] == "saksbehandlende_kommune"].assign(fylke=lambda x: x["value"].str.zfill(4).str[:2])
-
-
-# -
-
-df = conn.query("SELECT * FROM enheter WHERE soeknads_aar = '2024'")
-pop, sample = train_test_split(df, test_size=0.10)
-
-# +
-sample_orgnr = list(sample["orgnr"].unique())
-pop_orgnr = list(pop["orgnr"].unique())
-
-del df, pop, sample
-
-
-# -
-
-def get_sample(orgnr_list = sample_orgnr):
-    enhetsinfo = conn.query("SELECT * FROM enhetsinfo WHERE soeknads_aar = '2024'")
-    enhetsinfo = enhetsinfo.loc[enhetsinfo["variable"] == "saksbehandlende_kommune"].assign(fylke=lambda x: x["value"].str.zfill(4).str[:2])
-    
-    sample = conn.query(f"SELECT * FROM skjemadata WHERE orgnr IN {orgnr_list} AND soeknads_aar = '2024'")
-    sample = sample.pivot_table(index="orgnr", columns = "variable", values = "value", aggfunc = "max").reset_index()
-    sample = pd.merge(sample, enhetsinfo[["orgnr", "fylke"]], on="orgnr")
-    for column in variables:
-        sample[column] = sample[column].astype(float)
-    return sample
-
-
-def get_population(orgnr_list = pop_orgnr):
-    enhetsinfo = conn.query("SELECT * FROM enhetsinfo WHERE soeknads_aar = '2024'")
-    enhetsinfo = enhetsinfo.loc[enhetsinfo["variable"] == "saksbehandlende_kommune"].assign(fylke=lambda x: x["value"].str.zfill(4).str[:2])
-
-    pop = conn.query(f"SELECT * FROM skjemadata WHERE orgnr IN {orgnr_list} AND soeknads_aar = '2024'")
-    pop = pop.pivot_table(index="orgnr", columns = "variable", values = "value", aggfunc = "max").reset_index()
-    pop = pd.merge(pop, enhetsinfo[["orgnr", "fylke"]], on="orgnr")
-    for column in variables:
-        pop[column] = pop[column].astype(float)
-    return pop
-
-
-def get_cached_model(path):
-    with open(path, 'rb') as handle:
-        return pickle.load(handle)
-    return None
-
 
 class RateModelModule:
     def __init__(self, id_var, cache_location, get_sample_func, get_population_func):
@@ -170,6 +124,9 @@ class RateModelModule:
         
         layout = html.Div(
             [
+                layout_extreme,
+                layout_imputation,
+                layout_weigths,
                 dbc.Modal(
                     [
                         dbc.ModalHeader(dbc.ModalTitle("Ratemodell")),
@@ -177,9 +134,9 @@ class RateModelModule:
                             [
                                 dbc.Row(
                                     [
-                                        dbc.Col("X var"),
-                                        dbc.Col("Y var"),
-                                        dbc.Col("Strata"),
+                                        dbc.Col(dcc.Dropdown(id="ratemodel_xvar", options = {"label":"fulldyrket", "value": "fulldyrket"})),
+                                        dbc.Col(dcc.Dropdown(id="ratemodel_yvar", options = {"label":"arealtilskudd", "value": "arealtilskudd"})),
+                                        dbc.Col(dcc.Dropdown(id = "ratemodel_strata", options = {"label":"fylke", "value": "fylke"})),
                                         dbc.Col(dbc.Button("Hent modell", id = "ratemodel_button_run"))
                                     ]
                                 ),
@@ -214,7 +171,7 @@ class RateModelModule:
                                                         ]
                                                     )
                                                 ),
-                                                dbc.Row(html.P("Varianstype"))
+                                                dbc.Row(html.P("Varianstype")),
                                                 dbc.Row(
                                                     dcc.Dropdown(
                                                         id="ratemodel_variance",
@@ -223,7 +180,7 @@ class RateModelModule:
                                                             {"label": "Robust", "value": "robust"}
                                                         ]
                                                     )
-                                                )
+                                                ),
                                                 dbc.Row(dbc.Button("Ekstremverdier", id="ratemodel_detailbutton_extreme")),
                                                 dbc.Row(dbc.Button("Imputerte verdier", id="ratemodel_detailbutton_imputation")),
                                                 dbc.Row(dbc.Button("Vekter", id="ratemodel_detailbutton_weigths"))
@@ -241,12 +198,14 @@ class RateModelModule:
                 sidebar_button("🔎", "Ratemodell", "sidebar-ratemodel-button"),
             ]
         )
+        return layout
 
     def callbacks(self):
         @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Input("ratemodel_button_clear_cache", "n_clicks"),
             State("alert_store", "data"),
+            prevent_initial_call=True,
         )
         def ratemodel_clear_cache(n_clicks, error_log):
             self.clear_cache()
@@ -347,14 +306,15 @@ class RateModelModule:
             Output("ratemodel_detailtable_imputation", "columnDefs"),
             Output("ratemodel_detailtable_weigths", "rowData"),
             Output("ratemodel_detailtable_weigths", "columnDefs"),
-            Input("ratemodel_button_run", "click"),
-            Input("ratemodel_button_rerun", "click"),
+            Input("ratemodel_button_run", "n_clicks"),
+            Input("ratemodel_button_rerun", "n_clicks"),
             Input("ratemodel_uncertainty", "value"),
             Input("ratemodel_variance", "value"),
-            State("ratemodel_xvar"),
-            State("ratemodel_yvar"),
-            State("ratemodel_strata")
+            State("ratemodel_xvar", "value"),
+            State("ratemodel_yvar", "value"),
+            State("ratemodel_strata", "value"),
             State("alert_store", "data"),
+            prevent_initial_call=True,
         )
         def ratemodel_run_model(click, more_important_click, uncertainty, variance, x_var, y_var, strata_var, error_log):
             
@@ -373,5 +333,3 @@ class RateModelModule:
                 ), *error_log]
             
             return error_log, f"Modell ble beregnet {model_timestamp}", estimates.to_dict("records"), [{"field": col} for col in estimates.columns], extremes.to_dict("records"), [{"field": col} for col in extremes.columns], imputation.to_dict("records"), [{"field": col} for col in imputation.columns], weigths.to_dict("records"), [{"field": col} for col in weigths.columns]
-
-cached = ratemodell_with_caching(x_var="fulldyrket", y_var="arealtilskudd", strata_var="fylke", id_var="orgnr", get_sample_func = get_sample, get_population_func = get_population, cache_location="cache")
