@@ -41,7 +41,7 @@ class RateModelModule:
         cache_path = Path(f"{self.cache_location}/ratemodel_{x_var}_{y_var}_{strata_var}.pickle")
         if cache_path.is_file() and not force_rerun:
             logger.info("Retrieving model from cache")
-            model_dict = get_cached_model(cache_path)
+            model_dict = self.get_cached_model(cache_path)
         else:
             logger.info("No cache found, getting data and calculating model")
             sampledata = self.get_sample_func()
@@ -49,7 +49,7 @@ class RateModelModule:
             logger.info("Calculating model")
             mod = ratemodel(popdata, sampledata, id_nr=self.id_var)
             mod.fit(x_var=x_var, y_var=y_var, strata_var=strata_var)
-            model_dict = save_cache_model(cache_path, mod)
+            model_dict = self.save_cache_model(cache_path, mod)
         end = time.time()
         logger.info(f"Done getting model in {end-start}")
         return model_dict
@@ -60,6 +60,14 @@ class RateModelModule:
         return None
 
 
+    path_obj = Path(path)
+
+    # Create the parent directory if it does not exist
+    path_obj.parent.mkdir(parents=True, exist_ok=True)
+
+    with path_obj.open('wb') as handle:
+        pickle.dump(for_cache, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
     def save_cache_model(self, path, model):
         logger.info("Save model to cache")
         now = datetime.now()
@@ -68,7 +76,10 @@ class RateModelModule:
             "model": model,
             "compute_time": timestamp
         }
-        with open(path, 'wb') as handle:
+
+        path_obj = Path(path)    
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
+        with path_obj.open('wb') as handle:
             pickle.dump(for_cache, handle, protocol=pickle.HIGHEST_PROTOCOL)
         return for_cache
 
