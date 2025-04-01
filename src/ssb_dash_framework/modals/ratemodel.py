@@ -61,6 +61,7 @@ class RateModelModule:
 
 
     def save_cache_model(self, path, model):
+        logger.info("Save model to cache")
         now = datetime.now()
         timestamp = now.strftime("%Y-%m-%d-%H-%M")
         for_cache = {
