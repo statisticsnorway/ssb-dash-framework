@@ -437,8 +437,8 @@ class RateModelModule:
                 [{"field": col} for col in estimates.columns],
                 extremes.to_dict("records"),
                 [{"field": col} for col in extremes.columns],
-                imputation.to_dict("records"),
-                [{"field": col} for col in imputation.columns],
-                weigths.to_dict("records"),
-                [{"field": col} for col in weigths.columns],
+                None,  # imputation.to_dict("records"),
+                None,  # [{"field": col} for col in imputation.columns],
+                None,  # weigths.to_dict("records"),
+                None,  # [{"field": col} for col in weigths.columns],
             )
