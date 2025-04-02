@@ -23,7 +23,17 @@ logger = logging.getLogger(__name__)
 
 
 class RateModelModule:
+    """A class that manages rate model calculations and caching in a Dash application."""
+
     def __init__(self, id_var, cache_location, get_sample_func, get_population_func):
+        """Initializes the RateModelModule.
+
+        Args:
+            id_var (str): Identifier variable used in the model.
+            cache_location (str): Path to the cache directory.
+            get_sample_func (callable): Function to fetch sample data.
+            get_population_func (callable): Function to fetch population data.
+        """
         self.id_var = id_var
         self.cache_location = cache_location
         self.get_sample_func = get_sample_func
@@ -31,6 +41,17 @@ class RateModelModule:
         self.callbacks()
 
     def get_model(self, x_var, y_var, strata_var, force_rerun=False):
+        """Retrieves or calculates the rate model based on the given variables.
+
+        Args:
+            x_var (str): The explanatory variable.
+            y_var (str): The dependent variable.
+            strata_var (str): The stratification variable.
+            force_rerun (bool, optional): Whether to force recalculation instead of using cache. Defaults to False.
+
+        Returns:
+            dict: A dictionary containing the model and a timestamp showing when it was calculated.
+        """
         start = time.time()
         logger.info("Getting model")
         cache_path = Path(
@@ -52,11 +73,28 @@ class RateModelModule:
         return model_dict
 
     def get_cached_model(self, path):
+        """Loads a cached model from a pickle file.
+
+        Args:
+            path (str): Path to the cached model file.
+
+        Returns:
+            dict: A dictionary containing the cached model and its metadata.
+        """
         with open(path, "rb") as handle:
             return pickle.load(handle)
         return None
 
     def save_cache_model(self, path, model):
+        """Saves a computed model to a pickle file for caching.
+
+        Args:
+            path (str): Path where the model should be saved.
+            model (object): The computed model object.
+
+        Returns:
+            dict: A dictionary containing the model and its computation timestamp.
+        """
         logger.info("Save model to cache")
         now = datetime.now()
         timestamp = now.strftime("%Y-%m-%d-%H-%M")
@@ -69,6 +107,7 @@ class RateModelModule:
         return for_cache
 
     def clear_cache(self):
+        """Deletes all cached rate model files."""
         logger.info("Clearing cached ratemodels")
         files_to_remove = glob.glob(
             os.path.join(self.cache_location, "ratemodel_*.pickle")
@@ -81,10 +120,15 @@ class RateModelModule:
                 print(f"Error removing {file_path}: {e}")
 
     def layout(self):
+        """Defines and returns the Dash layout for the rate model module.
+
+        Returns:
+            html.Div: The layout component.
+        """
         layout_extreme = html.Div(
             dbc.Modal(
                 [
-                    dbc.ModalHeader(dbc.ModalTitle()),
+                    dbc.ModalHeader(dbc.ModalTitle("Ekstremverdier")),
                     dbc.ModalBody([dag.AgGrid(id="ratemodel_detailtable_extreme")]),
                 ],
                 id="ratemodel_detailmodal_extreme",
@@ -94,7 +138,7 @@ class RateModelModule:
         layout_imputation = html.Div(
             dbc.Modal(
                 [
-                    dbc.ModalHeader(dbc.ModalTitle()),
+                    dbc.ModalHeader(dbc.ModalTitle("Imputeringer")),
                     dbc.ModalBody([dag.AgGrid(id="ratemodel_detailtable_imputation")]),
                 ],
                 id="ratemodel_detailmodal_imputation",
@@ -104,7 +148,7 @@ class RateModelModule:
         layout_weights = html.Div(
             dbc.Modal(
                 [
-                    dbc.ModalHeader(dbc.ModalTitle()),
+                    dbc.ModalHeader(dbc.ModalTitle("Vekter")),
                     dbc.ModalBody([dag.AgGrid(id="ratemodel_detailtable_weights")]),
                 ],
                 id="ratemodel_detailmodal_weights",
@@ -193,7 +237,8 @@ class RateModelModule:
                                                                 id="ratemodel_estimates"
                                                             )
                                                         ),
-                                                    ]
+                                                    ],
+                                                    width=9,
                                                 ),
                                                 dbc.Col(
                                                     [
@@ -416,7 +461,7 @@ class RateModelModule:
             model = model_dict["model"]
             estimates = model.get_estimates(
                 uncertainty_type=uncertainty, variance_type=variance
-            )
+            ).reset_index()
             extremes = model.get_extremes()
             imputation = model.get_imputed()
             weigths = model.get_weights()
