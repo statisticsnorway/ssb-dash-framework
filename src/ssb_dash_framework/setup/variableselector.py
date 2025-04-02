@@ -221,7 +221,7 @@ class VariableSelector:
 
     def layout(
         self,
-    ) -> list[dbc.Col]:
+    ) -> list[dbc.Row]:
         """Generate a list of Dash Bootstrap cards based on selected variable keys."""
         if self.default_values is None:
             default_values = {}
