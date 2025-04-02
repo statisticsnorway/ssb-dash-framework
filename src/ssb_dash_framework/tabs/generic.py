@@ -248,19 +248,25 @@ class EditingTable:
                     self.database, variable, new_value, row_id, tabell, *args
                 )
 
-                error_log = [create_alert(
+                error_log = [
+                    create_alert(
                         f"{variable} updatert fra {old_value} til {new_value}",
                         "info",
                         ephemeral=True,
-                ), *error_log]
+                    ),
+                    *error_log,
+                ]
 
                 return error_log
 
             except Exception:
-                error_log = [create_alert(
+                error_log = [
+                    create_alert(
                         f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
                         "info",
                         ephemeral=True,
-                    ), *error_log]
+                    ),
+                    *error_log,
+                ]
 
                 return error_log

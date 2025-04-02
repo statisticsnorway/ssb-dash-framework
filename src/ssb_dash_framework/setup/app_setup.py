@@ -1,5 +1,4 @@
 import logging
-from typing import Any, Optional
 
 import dash_bootstrap_components as dbc
 from dash import Dash
@@ -7,7 +6,6 @@ from dash import Input
 from dash import Output
 from dash import State
 from dash import callback
-from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import load_figure_template
 
 logger = logging.getLogger(__name__)
@@ -64,20 +62,20 @@ def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> D
     )
     def toggle_variabelvelger(n_clicks: int | None, is_open: bool) -> bool:
         """Toggle the visibility of the variable selector offcanvas.
-    
+
         This callback is triggered by clicking the "sidebar-varvelger-button".
         If the button has been clicked at least once, it toggles the state of
         the offcanvas panel (open/closed).
-    
+
         Args:
             n_clicks (Optional[int]): The number of times the button has been clicked.
             is_open (bool): The current open/closed state of the offcanvas.
-    
+
         Returns:
             bool: The new open/closed state of the offcanvas.
         """
         if n_clicks > 0:
-            if is_open == False:
+            if not is_open:
                 return True
             else:
                 return False
