@@ -3,8 +3,10 @@ import logging
 import os
 import pickle
 import time
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -25,14 +27,20 @@ logger = logging.getLogger(__name__)
 class RateModelModule:
     """A class that manages rate model calculations and caching in a Dash application."""
 
-    def __init__(self, id_var, cache_location, get_sample_func, get_population_func):
+    def __init__(
+        self,
+        id_var: str,
+        cache_location: str,
+        get_sample_func: Callable,
+        get_population_func: Callable,
+    ) -> None:
         """Initializes the RateModelModule.
 
         Args:
             id_var (str): Identifier variable used in the model.
             cache_location (str): Path to the cache directory.
-            get_sample_func (callable): Function to fetch sample data.
-            get_population_func (callable): Function to fetch population data.
+            get_sample_func (Callable): Function to fetch sample data.
+            get_population_func (Callable): Function to fetch population data.
         """
         self.id_var = id_var
         self.cache_location = cache_location
@@ -40,20 +48,29 @@ class RateModelModule:
         self.get_population_func = get_population_func
         self.callbacks()
 
-    def get_model(self, x_var, y_var, strata_var, force_rerun=False):
+    def get_model(
+        self, x_var: str, y_var: str, strata_var: str, force_rerun: bool = False
+    ) -> dict[str, str | "ratemodel"]:
         """Retrieves or calculates the rate model based on the given variables.
 
         Args:
             x_var (str): The explanatory variable.
             y_var (str): The dependent variable.
             strata_var (str): The stratification variable.
-            force_rerun (bool, optional): Whether to force recalculation instead of using cache. Defaults to False.
+            force_rerun (bool): Whether to force recalculation instead of using cache. Defaults to False.
 
         Returns:
             dict: A dictionary containing the model and a timestamp showing when it was calculated.
+
+        Raises:
+            TypeError: If force_rerun not bool.
         """
         start = time.time()
         logger.info("Getting model")
+        if not isinstance(force_rerun, bool):
+            raise TypeError(
+                f"Argument force_rerun must be bool, either True or False. Received: {type(force_rerun)}"
+            )
         cache_path = Path(
             f"{self.cache_location}/ratemodel_{x_var}_{y_var}_{strata_var}.pickle"
         )
@@ -72,7 +89,7 @@ class RateModelModule:
         logger.info(f"Done getting model in {end-start}")
         return model_dict
 
-    def get_cached_model(self, path):
+    def get_cached_model(self, path: str) -> dict[str, str | "ratemodel"]:
         """Loads a cached model from a pickle file.
 
         Args:
@@ -85,7 +102,9 @@ class RateModelModule:
             return pickle.load(handle)
         return None
 
-    def save_cache_model(self, path, model):
+    def save_cache_model(
+        self, path: str, model: "ratemodel"
+    ) -> dict[str, str | "ratemodel"]:
         """Saves a computed model to a pickle file for caching.
 
         Args:
@@ -106,7 +125,7 @@ class RateModelModule:
             pickle.dump(for_cache, handle, protocol=pickle.HIGHEST_PROTOCOL)
         return for_cache
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Deletes all cached rate model files."""
         logger.info("Clearing cached ratemodels")
         files_to_remove = glob.glob(
@@ -119,7 +138,7 @@ class RateModelModule:
             except Exception as e:
                 print(f"Error removing {file_path}: {e}")
 
-    def layout(self):
+    def layout(self) -> html.Div:
         """Defines and returns the Dash layout for the rate model module.
 
         Returns:
@@ -326,14 +345,17 @@ class RateModelModule:
         )
         return layout
 
-    def callbacks(self):
+    def callbacks(self) -> None:
+        """Defines the callbacks for the Dash application related to the rate model module."""
+
         @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Input("ratemodel_button_clear_cache", "n_clicks"),
             State("alert_store", "data"),
             prevent_initial_call=True,
         )
-        def ratemodel_clear_cache(n_clicks, error_log):
+        def ratemodel_clear_cache(n_clicks: int, error_log: list[dict[str, Any]]):
+            """Clears cached rate models when the button is clicked."""
             self.clear_cache()
             return [
                 create_alert(
@@ -389,7 +411,7 @@ class RateModelModule:
             Input("ratemodel_detailbutton_imputation", "n_clicks"),
             State("ratemodel_detailmodal_imputation", "is_open"),
         )
-        def ratemodel_extreme_toggle(n: int, is_open: bool) -> bool:
+        def ratemodel_impute_toggle(n: int, is_open: bool) -> bool:
             """Toggles the state of the modal window.
 
             Args:
@@ -409,7 +431,7 @@ class RateModelModule:
             Input("ratemodel_detailbutton_weights", "n_clicks"),
             State("ratemodel_detailmodal_weights", "is_open"),
         )
-        def ratemodel_extreme_toggle(n: int, is_open: bool) -> bool:
+        def ratemodel_weight_toggle(n: int, is_open: bool) -> bool:
             """Toggles the state of the modal window.
 
             Args:
@@ -446,15 +468,16 @@ class RateModelModule:
             prevent_initial_call=True,
         )
         def ratemodel_run_model(
-            click,
-            more_important_click,
-            uncertainty,
-            variance,
-            x_var,
-            y_var,
-            strata_var,
-            error_log,
-        ):
+            click: int,
+            more_important_click: int,
+            uncertainty: str,
+            variance: str,
+            x_var: str,
+            y_var: str,
+            strata_var: str,
+            error_log: list[dict[str, Any]],
+        ) -> list[dict[str, Any]]:
+            """Runs or retrieves the ratemodel calculations for the specified x,y, strata arguments."""
             logger.info(f"Model requested for {x_var} - {y_var} - {strata_var}")
             model_dict = self.get_model(x_var=x_var, y_var=y_var, strata_var=strata_var)
             model_timestamp = model_dict["compute_time"]
@@ -463,8 +486,8 @@ class RateModelModule:
                 uncertainty_type=uncertainty, variance_type=variance
             ).reset_index()
             extremes = model.get_extremes()
-            imputation = model.get_imputed()
-            weigths = model.get_weights()
+            # imputation = model.get_imputed()
+            # weigths = model.get_weights()
 
             error_log = [
                 create_alert(
