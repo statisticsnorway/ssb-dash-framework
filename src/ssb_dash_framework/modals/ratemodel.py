@@ -50,7 +50,7 @@ class RateModelModule:
 
     def get_model(
         self, x_var: str, y_var: str, strata_var: str, force_rerun: bool = False
-    ) -> dict[str, str | "ratemodel"]:
+    ) -> dict[str, str | ratemodel]:
         """Retrieves or calculates the rate model based on the given variables.
 
         Args:
@@ -89,7 +89,7 @@ class RateModelModule:
         logger.info(f"Done getting model in {end-start}")
         return model_dict
 
-    def get_cached_model(self, path: str) -> dict[str, str | "ratemodel"]:
+    def get_cached_model(self, path: str) -> dict[str, str | ratemodel]:
         """Loads a cached model from a pickle file.
 
         Args:
@@ -103,8 +103,8 @@ class RateModelModule:
         return None
 
     def save_cache_model(
-        self, path: str, model: "ratemodel"
-    ) -> dict[str, str | "ratemodel"]:
+        self, path: str, model: ratemodel
+    ) -> dict[str, str | ratemodel]:
         """Saves a computed model to a pickle file for caching.
 
         Args:
