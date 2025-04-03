@@ -2,6 +2,7 @@
 
 from . import control
 from . import modals
+from . import windows
 from . import setup
 from . import tabs
 
