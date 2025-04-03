@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import ast
 import logging
 from typing import Any
@@ -14,7 +15,7 @@ from dash.exceptions import PreventUpdate
 logger = logging.getLogger(__name__)
 
 
-class FreeSearch:
+class FreeSearch(ABC):
     """Tab for free-text SQL queries and displaying results in an AgGrid table.
 
     This class provides a layout for a tab that allows users to:
@@ -47,10 +48,11 @@ class FreeSearch:
         if not hasattr(database, "query"):
             raise TypeError("The provided object does not have a 'query' method.")
         self.database = database
-        self.callbacks()
+        self.module_layout = self._create_layout()
+        self.module_callbacks()
         self.label = "🔍 Frisøk"
 
-    def layout(self) -> html.Div:
+    def _create_layout(self) -> html.Div:
         """Generate the layout for the FrisokTab.
 
         Returns:
@@ -58,7 +60,7 @@ class FreeSearch:
                       input for partitions, a button to run the query,
                       and a Dash AgGrid table for displaying results.
         """
-        layout = html.Div(
+        return html.Div(
             [
                 html.Div(
                     dbc.Textarea(
@@ -87,10 +89,19 @@ class FreeSearch:
                 ),
             ]
         )
-        logger.debug("Generated layout")
-        return layout
 
-    def callbacks(self) -> None:
+    @abstractmethod
+    def layout(self) -> html.Div:
+        """Generate the layout for the FrisokTab.
+
+        Returns:
+            html.Div: A Div element containing the text area for SQL queries,
+                      input for partitions, a button to run the query,
+                      and a Dash AgGrid table for displaying results.
+        """
+        pass
+
+    def module_callbacks(self) -> None:
         """Register the Dash callbacks for the FrisokTab.
 
         Notes:
