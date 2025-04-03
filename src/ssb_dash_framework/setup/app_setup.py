@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import Dash
@@ -7,7 +6,6 @@ from dash import Input
 from dash import Output
 from dash import State
 from dash import callback
-from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import load_figure_template
 
 logger = logging.getLogger(__name__)
@@ -57,30 +55,29 @@ def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> D
         external_stylesheets=[theme_map[stylesheet], dbc_css],
     )
 
-    @callback(  # type: ignore[misc]
-        Output("main-varvelger", "style"),
+    @callback(
+        Output("variable-selector-offcanvas", "is_open"),
         Input("sidebar-varvelger-button", "n_clicks"),
-        State("main-varvelger", "style"),
+        State("variable-selector-offcanvas", "is_open"),
     )
-    def toggle_varselector(n_clicks: int, style: dict[str, Any]) -> dict[str, Any]:
-        """Toggle the visibility of the `main-varselector` component.
+    def toggle_variabelvelger(n_clicks: int | None, is_open: bool) -> bool:
+        """Toggle the visibility of the variable selector offcanvas.
+
+        This callback is triggered by clicking the "sidebar-varvelger-button".
+        If the button has been clicked at least once, it toggles the state of
+        the offcanvas panel (open/closed).
 
         Args:
-            n_clicks (int): The number of times the `sidebar-varvelger-button` is clicked.
-            style (dict): Current style dictionary for the `main-varvelger` component.
+            n_clicks (Optional[int]): The number of times the button has been clicked.
+            is_open (bool): The current open/closed state of the offcanvas.
 
         Returns:
-            dict: Updated style dictionary for `main-varvelger`.
-
-        Raises:
-            PreventUpdate: If click is None.
+            bool: The new open/closed state of the offcanvas.
         """
-        if not n_clicks:
-            raise PreventUpdate
-        if style == {"display": "none"}:
-            style = {}
-        else:
-            style = {"display": "none"}
-        return style
+        if n_clicks > 0:
+            if not is_open:
+                return True
+            else:
+                return False
 
     return app

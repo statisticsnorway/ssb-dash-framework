@@ -14,6 +14,7 @@
 *.xls
 *.xlsx
 *.zip
+*.pickle
 
 # Notebooks shall be stored in .py or .R-format.
 # See https://adr.ssb.no/0020-lagringsformat-for-jupyter-notebooks/

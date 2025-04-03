@@ -83,9 +83,19 @@ def main_layout(
                     html.Div(
                         children=[
                             html.Div(
-                                dbc.Row(children=variable_selector.layout()),
-                                style={"display": "none"},
-                                id="main-varvelger",
+                                [
+                                    dbc.Offcanvas(
+                                        html.Div(
+                                            children=variable_selector.layout(),
+                                        ),
+                                        id="variable-selector-offcanvas",
+                                        title="Variabler",
+                                        is_open=False,
+                                        placement="end",
+                                        backdrop=False,
+                                        style={"width": "22%", "height": "100%"},
+                                    ),
+                                ]
                             ),
                             html.Div(
                                 dbc.Tabs(
