@@ -45,7 +45,10 @@ In order to simplify reuse and maintenance, we wish to keep the code style simil
 
 ### Implementing as modal
 
+
+
 ### Implementing as tab
+
 
 
 ## Variableselector
@@ -85,6 +88,10 @@ And that should be everything you need to have your module connected to the Vari
 Throughout development we have made some conscious choices regarding the structure of the code, data and how to solve certain issues.
 
 Here we shall explain ourselves as well as memory permits. Hopefully that keeps us from repeating mistakes and makes the overall structure of the code easier to understand.
+
+### Modules do not directly communicate
+
+All communication between modules should go through the VariableSelector. This is to ensure that modules are truly modular, and to avoid making too complex systems.
 
 ### We assume a long data format
 
