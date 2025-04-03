@@ -39,56 +39,16 @@ Pre-requisites for building a new module:
 
 In order to simplify reuse and maintenance, we wish to keep the code style similar across different modules. We appreciate if you take a look at how other modules are structured and try to follow that general style/logic as far as practically possible.
 
-## Should your module be a tab or a modal?
-
-Generally, in this framework, tabs are for micro-level information while modals are more macro oriented. This is not a rule, but it is often more intuitive this way.
-
 ## The class structure
 
-Each module is written as a class containing its layout and callbacks:
 
-    class Module:
-        def __init__(self, inputs, states):
-            self.variableselector = VariableSelector( # Each module should contain its own VariableSelector
-                selected_inputs = [inputs],
-                selected_states = [states]
-            )
-            self.callbacks() # Register the callbacks when the class is initialized.
 
-        def layout(self):
-            layout = html.Div(
-                [
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(
-                                [
-                                    dbc.ModalTitle("VIEWNAME")
-                                ]
-                            ),
-                            dbc.ModalBody(
-                                [
-                                    "Din layout her"
-                                ]
-                            )
-                        ],
-                    id="viewname-modal",
-                    size="xl",
-                    fullscreen="xxl-down",
-                    ),
-                    sidebar_button("icon", "label", "sidebar-viewname-button")
-                ]
-            )
+### Implementing as modal
 
-        def callbacks(self):
-            @callback(
-                Output("viewname-modal", "is_open"),
-                Input("sidebar-viewname-button", "n_clicks"),
-                State("viewname-modal", "is_open")
-            )
-            def viewname_modal_toggle(n, is_open):
-                if n:
-                    return not is_open
-                return is_open
+
+
+### Implementing as tab
+
 
 
 ## Variableselector
@@ -129,6 +89,10 @@ Throughout development we have made some conscious choices regarding the structu
 
 Here we shall explain ourselves as well as memory permits. Hopefully that keeps us from repeating mistakes and makes the overall structure of the code easier to understand.
 
+### Modules do not directly communicate
+
+All communication between modules should go through the VariableSelector. This is to ensure that modules are truly modular, and to avoid making too complex systems.
+
 ### We assume a long data format
 
 The reason for this is simple. Different users will have different amounts of observations, variables and aggregation levels.
@@ -139,9 +103,7 @@ With a long format containing columns identifying the observation, the variable 
 
 ### Include the layout as a method in the class
 
-Our reason for having the layout returned from a method instead of an attribute of the class is that having it as a method makes it possible to pass parameters. While it is possible to modify an attribute in the __init__ we consider it more readable if layout-specific parameters can be passed to the layout directly, making it clear what it is affecting.
-
-While not all modules will need parameters to its layout, it will be confusing for users if some layouts are attributes and some are returned from methods.
+Oppdateres med ny arve logikk
 
 ### Use @callback
 
