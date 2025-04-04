@@ -145,7 +145,7 @@ There are some costs involved in using AiO components:
 
 ## Tips and tricks
 
-#### Fix mypy complaining about callbacks
+### Fix mypy complaining about callbacks
 
 Add "# type: ignore[misc]" to decorator to avoid mypy reporting it as an error.
 
@@ -154,14 +154,14 @@ Add "# type: ignore[misc]" to decorator to avoid mypy reporting it as an error.
         Output()
     )
 
-#### Common annotations for callbacks to make mypy happy
+### Common annotations for callbacks to make mypy happy
 
 - rowData: list[dict[str, Any]]
 - columnDefs: list[dict[str, str]]
 - clickData: dict[str, list[dict[str, Any]]]
 - error_log: list[dict[str, Any]]
 
-#### Raise PreventUpdate early when possible
+### Raise PreventUpdate early when possible
 
 It is usually more readable to have PreventUpdate show up early and raised if some condition is not fulfilled, rather than have it as the "else" part of the logic. For short callbacks it doesn't make a huge difference, but for complex or long callbacks it helps a lot to have PreventUpdate at the beginning.
 
