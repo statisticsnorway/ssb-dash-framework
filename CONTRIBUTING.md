@@ -30,7 +30,7 @@ and/or steps to reproduce the issue.
 
 Request features on the [Issue Tracker].
 
-# Our design and making a new module
+## Our design and making a new module
 
 Pre-requisites for building a new module:
 - basic understanding of how to create a class in python.
@@ -39,19 +39,19 @@ Pre-requisites for building a new module:
 
 In order to simplify reuse and maintenance, we wish to keep the code style similar across different modules. We appreciate if you take a look at how other modules are structured and try to follow that general style/logic as far as practically possible.
 
-## The class structure
+### The class structure
 
 
 
-### Implementing as modal
+#### Implementing as modal
 
 
 
-### Implementing as tab
+#### Implementing as tab
 
 
 
-## Variableselector
+### Variableselector
 
 See the docstrings for VariableSelector and VariableSelectorOption to get familiar with how they work.
 
@@ -59,7 +59,7 @@ The idea behind the Variableselector is that you have one module in the applicat
 
 In order to account for different implementations of the framework requiring different variables, it has been built with flexibility in mind.
 
-### Connecting your module to the variable selector
+#### Connecting your module to the variable selector
 
 Note: You can use the ssb_dash_framework/utils/debugger_modal.py to get familiar with how this works in practice.
 
