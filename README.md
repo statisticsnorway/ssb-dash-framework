@@ -1,26 +1,26 @@
 # SSB Dash Framework
 
-[![PyPI](https://img.shields.io/pypi/v/ssb-sirius-dash.svg)][pypi status]
-[![Status](https://img.shields.io/pypi/status/ssb-sirius-dash.svg)][pypi status]
-[![Python Version](https://img.shields.io/pypi/pyversions/ssb-sirius-dash)][pypi status]
-[![License](https://img.shields.io/pypi/l/ssb-sirius-dash)][license]
+[![PyPI](https://img.shields.io/pypi/v/ssb-dash-framework.svg)][pypi status]
+[![Status](https://img.shields.io/pypi/status/ssb-dash-framework.svg)][pypi status]
+[![Python Version](https://img.shields.io/pypi/pyversions/ssb-dash-framework)][pypi status]
+[![License](https://img.shields.io/pypi/l/ssb-dash-framework)][license]
 
-[![Documentation](https://github.com/statisticsnorway/ssb-sirius-dash/actions/workflows/docs.yml/badge.svg)][documentation]
-[![Tests](https://github.com/statisticsnorway/ssb-sirius-dash/actions/workflows/tests.yml/badge.svg)][tests]
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=statisticsnorway_ssb-sirius-dash&metric=coverage)][sonarcov]
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=statisticsnorway_ssb-sirius-dash&metric=alert_status)][sonarquality]
+[![Documentation](https://github.com/statisticsnorway/ssb-dash-framework/actions/workflows/docs.yml/badge.svg)][documentation]
+[![Tests](https://github.com/statisticsnorway/ssb-dash-framework/actions/workflows/tests.yml/badge.svg)][tests]
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=statisticsnorway_ssb-dash-framework&metric=coverage)][sonarcov]
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=statisticsnorway_ssb-dash-framework&metric=alert_status)][sonarquality]
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)][poetry]
 
-[pypi status]: https://pypi.org/project/ssb-sirius-dash/
-[documentation]: https://statisticsnorway.github.io/ssb-sirius-dash
-[tests]: https://github.com/statisticsnorway/ssb-sirius-dash/actions?workflow=Tests
+[pypi status]: https://pypi.org/project/ssb-dash-framework/
+[documentation]: https://statisticsnorway.github.io/ssb-dash-framework
+[tests]: https://github.com/statisticsnorway/ssb-dash-framework/actions?workflow=Tests
 
-[sonarcov]: https://sonarcloud.io/summary/overall?id=statisticsnorway_ssb-sirius-dash
-[sonarquality]: https://sonarcloud.io/summary/overall?id=statisticsnorway_ssb-sirius-dash
+[sonarcov]: https://sonarcloud.io/summary/overall?id=statisticsnorway_ssb-dash-framework
+[sonarquality]: https://sonarcloud.io/summary/overall?id=statisticsnorway_ssb-dash-framework
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/psf/black
 [poetry]: https://python-poetry.org/
@@ -110,12 +110,12 @@ This project was generated from [Statistics Norway]'s [SSB PyPI Template].
 [statistics norway]: https://www.ssb.no/en
 [pypi]: https://pypi.org/
 [ssb pypi template]: https://github.com/statisticsnorway/ssb-pypitemplate
-[file an issue]: https://github.com/statisticsnorway/ssb-sirius-dash/issues
+[file an issue]: https://github.com/statisticsnorway/ssb-dash-framework/issues
 [pip]: https://pip.pypa.io/
 
 <!-- github-only -->
 
-[license]: https://github.com/statisticsnorway/ssb-sirius-dash/blob/main/LICENSE
-[komme i gang]: https://github.com/statisticsnorway/ssb-sirius-dash/blob/main/KOMME_I_GANG.md
-[contributor guide]: https://github.com/statisticsnorway/ssb-sirius-dash/blob/main/CONTRIBUTING.md
-[reference guide]: https://statisticsnorway.github.io/ssb-sirius-dash/reference.html
+[license]: https://github.com/statisticsnorway/ssb-dash-framework/blob/main/LICENSE
+[komme i gang]: https://github.com/statisticsnorway/ssb-dash-framework/blob/main/KOMME_I_GANG.md
+[contributor guide]: https://github.com/statisticsnorway/ssb-dash-framework/blob/main/CONTRIBUTING.md
+[reference guide]: https://statisticsnorway.github.io/ssb-dash-framework/reference.html
