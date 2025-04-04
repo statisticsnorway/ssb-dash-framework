@@ -3,6 +3,7 @@
 end-before: <!-- github-only -->
 ---
 ```
+
 [komme i gang]: komme_i_gang
 [license]: license
 [contributor guide]: contributing
@@ -13,10 +14,11 @@ end-before: <!-- github-only -->
 hidden:
 maxdepth: 1
 ---
-komme i gang
+
+komme_i_gang
 reference
 contributing
 Code of Conduct <codeofconduct>
 License <license>
-Changelog <https://github.com/statisticsnorway/ssb-dash-framework/releases>
+Changelog <https://github.com/statisticsnorway/ssb-sirius-dash/releases>
 ```
