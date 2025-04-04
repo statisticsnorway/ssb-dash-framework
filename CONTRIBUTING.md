@@ -221,7 +221,7 @@ You can now run an interactive Python session, or your app:
 
 ```console
 poetry run python
-poetry run ssb-sirius-dash
+poetry run ssb-dash-framework
 ```
 
 ## How to test the project
@@ -270,15 +270,15 @@ It is recommended to open an issue before starting work on anything.
 This will allow a chance to talk it over with the owners and validate your approach.
 
 [mit license]: https://opensource.org/licenses/MIT
-[source code]: https://github.com/statisticsnorway/ssb-sirius-dash
-[documentation]: https://statisticsnorway.github.io/ssb-sirius-dash
-[issue tracker]: https://github.com/statisticsnorway/ssb-sirius-dash/issues
+[source code]: https://github.com/statisticsnorway/ssb-dash-framework
+[documentation]: https://statisticsnorway.github.io/ssb-dash-framework
+[issue tracker]: https://github.com/statisticsnorway/ssb-dash-framework/issues
 [pipx]: https://pipx.pypa.io/
 [poetry]: https://python-poetry.org/
 [nox]: https://nox.thea.codes/
 [nox-poetry]: https://nox-poetry.readthedocs.io/
 [pytest]: https://pytest.readthedocs.io/
-[pull request]: https://github.com/statisticsnorway/ssb-sirius-dash/pulls
+[pull request]: https://github.com/statisticsnorway/ssb-dash-framework/pulls
 
 <!-- github-only -->
 

@@ -20,5 +20,5 @@ reference
 contributing
 Code of Conduct <codeofconduct>
 License <license>
-Changelog <https://github.com/statisticsnorway/ssb-sirius-dash/releases>
+Changelog <https://github.com/statisticsnorway/ssb-dash-framework/releases>
 ```
