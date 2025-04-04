@@ -7,7 +7,7 @@ I første avsnitt får du en veiledning til hvordan du setter opp rammeverket.
 
 Mer forklaring om hva som egentlig foregår, logikken bak det og hvordan det henger sammen forklares senere om du er interessert.
 - Mer grundige tekniske forklaringer er å finne i [README] og [contributor guide].
-- Dokumentasjon om rammeverkets moduler kan du finne her: https://statisticsnorway.github.io/ssb-sirius-dash/
+- Dokumentasjon om rammeverkets moduler kan du finne her: https://statisticsnorway.github.io/ssb-dash-framework/
 
 ## Ordliste
 
@@ -109,5 +109,5 @@ VIKTIG. Variabelvelgeren skal gi inputs til andre skjermbilder og fungere som et
 
 
 <!-- github-only -->
-[contributor guide]: https://github.com/statisticsnorway/ssb-sirius-dash/blob/main/CONTRIBUTING.md
-[README]: https://github.com/statisticsnorway/ssb-sirius-dash/blob/main/README.md
+[contributor guide]: https://github.com/statisticsnorway/ssb-dash-framework/blob/main/CONTRIBUTING.md
+[README]: https://github.com/statisticsnorway/ssb-dash-framework/blob/main/README.md
