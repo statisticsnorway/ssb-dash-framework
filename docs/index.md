@@ -3,7 +3,7 @@
 end-before: <!-- github-only -->
 ---
 ```
-
+[komme i gang]: komme_i_gang
 [license]: license
 [contributor guide]: contributing
 [command-line reference]: reference
