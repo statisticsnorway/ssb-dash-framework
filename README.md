@@ -1,4 +1,4 @@
-# SSB Sirius Dash
+# SSB Dash Framework
 
 [![PyPI](https://img.shields.io/pypi/v/ssb-sirius-dash.svg)][pypi status]
 [![Status](https://img.shields.io/pypi/status/ssb-sirius-dash.svg)][pypi status]
