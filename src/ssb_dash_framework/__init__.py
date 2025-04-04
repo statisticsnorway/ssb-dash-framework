@@ -2,6 +2,7 @@
 
 from . import control
 from . import modals
+from . import modules
 from . import windows
 from . import setup
 from . import tabs
@@ -11,4 +12,4 @@ from .setup import main_layout
 from .utils.alert_handler import create_alert
 
 # Defines top level if used in wildcard import
-__all__ = ["control", "create_alert", "main_layout", "modals", "setup", "tabs"]
+__all__ = ["control", "create_alert", "main_layout", "modules", "windows", "modals", "setup", "tabs"]
