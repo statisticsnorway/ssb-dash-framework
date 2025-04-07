@@ -1,12 +1,11 @@
 import logging
 
 from dash import html
-import dash_bootstrap_components as dbc
-import dash_ag_grid as dag
 
 from ..modules.freesearch import FreeSearch
 
 logger = logging.getLogger(__name__)
+
 
 class FreeSearchTab(FreeSearch):
     def __init__(self, database):
@@ -20,6 +19,6 @@ class FreeSearchTab(FreeSearch):
                       input for partitions, a button to run the query,
                       and a Dash AgGrid table for displaying results.
         """
-        layout = self.layout
+        layout = self.module_layout
         logger.debug("Generated layout")
         return layout
