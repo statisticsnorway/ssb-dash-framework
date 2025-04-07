@@ -82,89 +82,223 @@ class DatabaseBuilderAltinnEimerdb:
             "type": "string",
             "label": "Altinn referanse.",
         }
-        skjema_col = {"name": "skjema", "type": "string", "label": "Skjema"}
+        schema_col = {"name": "skjema", "type": "string", "label": "Skjema"}
 
-        schema_enheter = [
-            *periods_cols,
-            skjema_col,
-            name_col,
-            ident_col,
-        ]
-
-        schema_enhetsinfo = [
+        schema_skjemainfo = [
+            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
             ident_col,
-            {"name": "opplysning", "type": "string", "label": "Opplysning"},
-            {"name": "opplysningsverdi", "type": "string", "label": "Opplysningsverdi"},
+            {"name": "skjemaversjon", "type": "string", "label": "Skjemaets versjon."},
+            {
+                "name": "dato_mottatt",
+                "type": "pa.timestamp(s)",
+                "label": "Datoen og tidspunktet for når skjemaet ble mottatt.",
+            },
+            {
+                "name": "editert",
+                "type": "bool_",
+                "label": "Editeringskode. True = Editert. False = Ueditert.",
+            },
+            {"name": "kommentar", "type": "string", "label": "Editeringskommentar."},
+            {
+                "name": "aktiv",
+                "type": "bool_",
+                "label": "1 hvis skjemaet er aktivt. 0 hvis skjemaet er satt til inaktivt.",
+            },
         ]
 
         schema_skjemamottak = [
+            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
             ident_col,
-            skjema_col,
-            delivery_id_col,
-            {"name": "leveringstid", "type": "string", "label": "Altinn leveringstid."},
-            {"name": "editert", "type": "bool_", "label": "Editeringsstatus"},
-            {"name": "kommentar", "type": "string", "label": "Intern kommentar"},
-            {"name": "aktiv", "type": "string", "label": "Aktiv"},
+            {
+                "name": "skjema",
+                "type": "string",
+                "label": "Skjemaet.",
+                "app_editable": false,
+            },
+            {
+                "name": "skjemaversjon",
+                "type": "string",
+                "label": "Skjemaets versjon.",
+                "app_editable": false,
+            },
+            {
+                "name": "dato_mottatt",
+                "type": "pa.timestamp(s)",
+                "label": "Datoen og tidspunktet for når skjemaet ble mottatt.",
+                "app_editable": false,
+            },
+            {
+                "name": "editert",
+                "type": "bool_",
+                "label": "Editeringskode. True = Editert. False = Ueditert.",
+                "app_editable": true,
+            },
+            {
+                "name": "kommentar",
+                "type": "string",
+                "label": "Editeringskommentar.",
+                "app_editable": true,
+            },
+            {
+                "name": "aktiv",
+                "type": "bool_",
+                "label": "1 hvis skjemaet er aktivt. 0 hvis skjemaet er satt til inaktivt.",
+                "app_editable": true,
+            },
         ]
 
         schema_kontaktinfo = [
+            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
             ident_col,
-            skjema_col,
-            delivery_id_col,
-            {"name": "kontaktperson", "type": "string", "label": "Kontaktperson"},
-            {"name": "epost", "type": "string", "label": "Epost adresse"},
-            {"name": "telefon", "type": "string", "label": "Telefonnummer"},
-            {"name": "kommentar", "type": "string", "label": "Kommentar"},
+            {"name": "skjema", "type": "string", "label": "skjemanummeret"},
+            {"name": "skjemaversjon", "type": "string", "label": "Skjemaets versjon."},
+            {"name": "kontaktperson", "type": "string", "label": "Kontaktperson."},
+            {"name": "epost", "type": "string", "label": "epost."},
+            {"name": "telefon", "type": "string", "label": "telefon."},
+            {
+                "name": "bekreftet_kontaktinfo",
+                "type": "string",
+                "label": "Om kontaktinformasjonen er bekreftet.",
+            },
+            {
+                "name": "kommentar_kontaktinfo",
+                "type": "string",
+                "label": "Kommentar til kontaktinfo.",
+            },
             {
                 "name": "kommentar_krevende",
                 "type": "string",
-                "label": "Kommentar_krevende",
+                "label": "En kommentar rundt hva respondenten opplevde som krevende.",
             },
         ]
 
-        schema_skjemadata = [
+        schema_enheter = [
+            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
-            skjema_col,
-            delivery_id_col,
-            {"name": "variabelnavn", "type": "string", "label": "Variabelens navn"},
-            {"name": "variabelverdi", "type": "string", "label": "Variabelens verdi."},
+            ident_col,
+            {
+                "name": "skjemaer",
+                "type": "string",
+                "label": "En liste over skjemaene enheten har mottatt.",
+            },
+        ]
+
+        schema_enhetsinfo = [
+            {"name": "row_id", "type": "string", "label": "Unique row ID"},
+            *periods_cols,
+            ident_col,
+            {"name": "variabel", "type": "string", "label": ""},
+            {"name": "verdi", "type": "string", "label": ""},
         ]
 
         schema_kontroller = [
+            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
-            skjema_col,
-            {"name": "kontrollutslagid", "type": "string", "label": "Kontrollutslagid"},
-            {"name": "kontrolltype", "type": "string", "label": "Kontrolltype"},
+            {"name": "skjema", "type": "string", "label": "skjemanummeret"},
+            {"name": "kontrollid", "type": "string", "label": "kontrollens unike ID."},
+            {
+                "name": "type",
+                "type": "string",
+                "label": "Kontrolltypen. Sum eller tall.",
+            },
+            {
+                "name": "skildring",
+                "type": "string",
+                "label": "En skildring av kontrollen.",
+            },
             {
                 "name": "kontrollvar",
                 "type": "string",
-                "label": "Kontrollvariabel for sortering",
+                "label": "Navnet på variabelen som ligger i hvert kontrollutslag.",
             },
-            {"name": "sort", "type": "string", "label": "Sorting (ASC / DESC)"},
+            {
+                "name": "varsort",
+                "type": "string",
+                "label": "Sorteringslogikken til kontrollvariabelen. ASC eller DESC.",
+            },
         ]
 
         schema_kontrollutslag = [
+            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
-            skjema_col,
+            {"name": "skjema", "type": "string", "label": "skjemanummeret"},
             ident_col,
-            delivery_id_col,
-            {"name": "kontrollutslagid", "type": "string", "label": "Kontrollutslagid"},
-            {"name": "editert", "type": "string", "label": "Editeringsstatus"},
-            {"name": "utslag", "type": "string", "label": "Utslag"},
-            {"name": "verdi", "type": "string", "label": "Utslagsverdi"},
+            {"name": "skjemaversjon", "type": "string", "label": "Skjemaets versjon."},
+            {"name": "kontrollid", "type": "string", "label": "kontrollens unike ID."},
+            {
+                "name": "utslag",
+                "type": "bool_",
+                "label": "Om kontrollen slår ut på enheten eller ikke.",
+            },
+            {
+                "name": "verdi",
+                "type": "int32",
+                "label": "Verdien til den utvalgte sorteringsvariabelen til utslagene.",
+            },
+        ]
+
+        schema_datatyper = [
+            {"name": "row_id", "type": "string", "label": "Unique row ID"},
+            *periods_cols,
+            {"name": "tabell", "type": "string", "label": "Tabellnavnet"},
+            {
+                "name": "radnr",
+                "type": "int16",
+                "label": "Radnummer. Viser rekkefølgen på variabelene.",
+            },
+            {"name": "variabel", "type": "string", "label": "Variabelen."},
+            {"name": "datatype", "type": "string", "label": "Datatypen til variabelen"},
+            {
+                "name": "skildring",
+                "type": "string",
+                "label": "En skildring av variabelen",
+            },
+        ]
+
+        schema_skjemadata_hoved = [
+            {"name": "row_id", "type": "string", "label": "Unique row ID"},
+            *periods_cols,
+            {
+                "name": "skjema",
+                "type": "string",
+                "label": "skjemaet tilh\u00f8rende skjemadataene.",
+                "app_editable": false,
+            },
+            ident_col,
+            {
+                "name": "skjemaversjon",
+                "type": "string",
+                "label": "Skjemaets versjon.",
+                "app_editable": false,
+            },
+            {
+                "name": "variabel",
+                "type": "string",
+                "label": "variabel",
+                "app_editable": false,
+            },
+            {
+                "name": "verdi",
+                "type": "string",
+                "label": "verdien til variabelen.",
+                "appvar": "var-nspekfelt",
+                "app_editable": true,
+            },
         ]
 
         return {
-            "enheter": schema_enheter,
-            "enhetsinfo": schema_enhetsinfo,
+            "skjemainfo": schema_skjemainfo,
             "skjemamottak": schema_skjemamottak,
             "kontaktinfo": schema_kontaktinfo,
-            "skjemadata": schema_skjemadata,
+            "enheter": schema_enheter,
+            "enhetsinfo": schema_enhetsinfo,
             "kontroller": schema_kontroller,
             "kontrollutslag": schema_kontrollutslag,
+            "datatyper": schema_datatyper,
+            "skjemadata_hoved": schema_skjemadata_hoved,
         }
 
     def __str__(self):
