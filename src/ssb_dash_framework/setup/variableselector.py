@@ -230,7 +230,6 @@ class VariableSelector:
         layout = []
         for variable in self.selected_variables:
             option = self.get_option(variable)
-            print(option)
             card = self._create_variable_card(
                 text=option.title,
                 component_id=option.id,
@@ -291,20 +290,3 @@ class VariableSelectorOption:
     def __str__(self) -> str:
         """Returns a string representation of the variable option."""
         return f"Title: {self.title}\nId: {self.id}\nType: {self.type}\n"
-
-
-"""Here we define some default values that are available from the get-go"""
-# Periods
-VariableSelectorOption("aar")
-VariableSelectorOption("termin")
-VariableSelectorOption("måned")
-# Groupings
-VariableSelectorOption("nace")
-VariableSelectorOption("fylke")
-VariableSelectorOption("nspekfelt")
-VariableSelectorOption("prodcomkode")
-# Identifiers
-VariableSelectorOption("oppgavegiver")
-VariableSelectorOption("foretak")
-VariableSelectorOption("bedrift")
-VariableSelectorOption("skjemaenhet")
