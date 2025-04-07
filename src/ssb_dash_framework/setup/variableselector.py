@@ -230,7 +230,6 @@ class VariableSelector:
         layout = []
         for variable in self.selected_variables:
             option = self.get_option(variable)
-            print(option)
             card = self._create_variable_card(
                 text=option.title,
                 component_id=option.id,
