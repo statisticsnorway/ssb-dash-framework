@@ -3,7 +3,9 @@
 Denne veiledning har som mål å hjelpe deg frem til et fungerende oppsett som du senere kan utvide.
 
 I første avsnitt får du en veiledning til hvordan du setter opp rammeverket.
-- Denne antar at du har dataene på en struktur og teknologi som passer rammeverket. Du kan finne informasjon om datastruktur og lagringsteknologi ett eller annet sted (husk å fikse noe her)
+- Denne antar at du har dataene på en struktur og teknologi som passer rammeverket. Du kan finne informasjon om datastruktur og lagringsteknologi **ett eller annet sted (husk å fikse noe her)**
+
+Du får også noen hint om hvor du kan finne informasjon om hvilke moduler som finnes.
 
 Mer forklaring om hva som egentlig foregår, logikken bak det og hvordan det henger sammen forklares senere om du er interessert.
 - Mer grundige tekniske forklaringer er å finne i [README] og [contributor guide].
@@ -20,37 +22,48 @@ Her finner du en kort forklaring av hva som menes med visse ord i veiledningen.
 
 ## Sett opp rammeverket på 1, 2, 3
 
-### 1. Hent inn de nødvendige byggeklossene og opprett app-objektet
+### 1. Sett opp rammeverkets byggeklosser
 
-```
-from ssb_dash_framework.setup.main_layout import main_layout
-from ssb_dash_framework.setup.app_setup import app_setup
+Rammeverket krever også at du setter opp variabelvelgeren før du går videre. Du må sette opp ett alternativ per variabel du vil ha tilgjengelig.
 
-app = app_setup(port, service_prefix, domain, "superhero")
-```
+```python
+from ssb_dash_framework.setup.variableselector import VariableSelectorOption
 
-Bruker du jupyter erstatter du linjen med "app = ..." med dette
-
-```
-port = 8070
-service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
-domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
-app = app_setup(port, service_prefix, domain, "superhero")
+VariableSelectorOption("foretak") # bytt ut foretak med din variabel.
 ```
 
 ### 2. Importer og start modulene du vil ha
 
-Obs! Noen moduler krever mer tilpasninger enn andre. Dette kan du se i dokumentasjonen for de enkelte modulene som er henvist til tidligere.
+Obs! Noen moduler krever mer tilpasninger enn andre. Hva som kreves kan du se i dokumentasjonen for de enkelte modulene.
 
-```
+Importen av moduler skal legges langs toppen av scriptet med de andre importene mens oppsett av modulene skal skje under oppsettet av variabelvelgeren.
+
+```python
 from ssb_dash_framework.tabs.pi_memorizer import PimemorizerTab
+
+# Din kode fra tidligere steg #
 
 min_pi_memorizer = PimemorizerTab()
 ```
 
 ### 3. Sett sammen delene og start opp applikasjonen
 
-```
+Nå er det på tide å "montere" applikasjonen din. Dette gjør du ved å lage 3 [lister](https://realpython.com/python-list/):
+- window_list
+
+    Denne skal inneholde alle vindu-modulene dine
+
+- tab_list
+
+    Denne skal inneholde alle tab-modulene dine.
+
+- variable_list
+
+    Her skal du liste opp hvilke variabler som skal eksistere i variabelvelgeren. Det er viktig at alle variabler du skal bruke er definert som beskrevet i steg 1,5
+
+Deretter skal du kjøre main_layout funksjonen for å definere appen din, og starte appen.
+
+```python
 modal_list = [
 ]
 
@@ -59,8 +72,7 @@ tab_list = [
 ]
 
 variable_list = [
-    "min_id_variabel", # f.eks. organisasjonsnummer
-    "min grupperingsvariabel", # f.eks. næringskode
+    "foretak", # f.eks. organisasjonsnummer
 ]
 
 app.layout = main_layout(modal_list, tab_list, variable_list)
@@ -72,9 +84,26 @@ if __name__ == "__main__":
     )
 ```
 
-## Mer forklaring
+> 💡 **Forklaring**
+>
+> if __name__ == __main__: betyr at det som er dekket av if-statementen ikke vil kjøres med mindre du kjører denne filen direkte. Det er for å hindre at du kommer borti å importere filen i et annet script og starter appen ved et uhell.
 
-I denne bolken er vi innom litt mer detaljer som ikke er nødvendig for å bruke rammeverket, men som er til hjelp for å forstå hva som foregår og hvorfor det er lagt opp som det er. Det er ikke nødvendig å lese eller forstå dette for å bruke rammeverket.
+
+## Hvilke moduler finnes?
+
+Den enkle måten å bruke moduler er å bruke de som er "pakket inn" som enten et vindu eller en tab. Du kan finne disse her:
+- Tabs [dokumentasjon](https://statisticsnorway.github.io/ssb-dash-framework/ssb_dash_framework.tabs.html) ([direkte i koden](https://github.com/statisticsnorway/ssb-dash-framework/tree/main/src/ssb_dash_framework/tabs))
+- Vindu [dokumentasjon](https://statisticsnorway.github.io/ssb-dash-framework/ssb_dash_framework.windows.html) ([direkte i koden](https://github.com/statisticsnorway/ssb-dash-framework/tree/main/src/ssb_dash_framework/windows))
+
+Alle moduler som finnes i dashbordet kan du se i [modul-dokumentasjonen](https://statisticsnorway.github.io/ssb-dash-framework/ssb_dash_framework.modules.html) ([direkte i koden](https://github.com/statisticsnorway/ssb-dash-framework/tree/main/src/ssb_dash_framework/modules)). Vær oppmerksom på at å bruke disse direkte er for mer avanserte brukere.
+
+## Mer detaljerte forklaringer
+
+**Det er ikke nødvendig å lese eller forstå dette for å bruke rammeverket.**
+
+I denne bolken er vi innom litt mer detaljer som er til hjelp for å forstå hva som foregår og rammeverket er lagt opp som det er.
+
+For enda mer teknisk dokumentasjon, som for eksempel hvordan lage din egen modul, se på [contributor guide].
 
 ### Tanken som former rammeverket
 
@@ -97,15 +126,17 @@ Når du starter opp en modul "instansierer" du en "class". Enkelt forklart betyr
 
 Dette gjør at modulen kan sette opp koblinger, interaksjoner og mer som den trenger for å fungeremed minimalt av input fra deg som bruker.
 
+I tillegg er det slik at hver modul har en "base class" som brukes av ModuleTab og ModuleWindow for å gjøre modulen tilgjengelig som en tab eller et vindu. Dette oppsettet gjør at hvis du vil gjenbruke en modul uten å bruke noe annet fra rammeverket, så er det mulig å få til.
+
 ### Hvordan snakker egentlig modulene med hverandre? Variabelvelgeren!
 
 Rammeverket baserer seg på at man plukker ut moduler man ønsker å bruke og at variabelvelgeren knytter disse sammen.
 
-variabelvelgeren er limet som holder applikasjonen sammen og gjør at de ulike komponentene kan dele informasjon. Den skal brukes av andre moduler for å koordinere visninger mellom moduler og gjøre at du kan endre f.eks. næringskoden i variabelvelgeren, og alle skjermbilder vil vise informasjon om enheter med den næringskoden.
+Variabelvelgeren er limet som holder applikasjonen sammen og gjør at de ulike komponentene kan dele informasjon. Den skal brukes av andre moduler for å koordinere visninger mellom moduler og gjøre at du kan endre f.eks. næringskoden i variabelvelgeren, og alle skjermbilder vil vise informasjon om enheter med den næringskoden.
 
-Variabelvelgeren fungerer som et felles punkt for informasjon som skal deles mellom ulike modaler og tabs i appen. Hvis du for eksempel sjekker et skjermbilde hvor det vises en enhet som du vil se på i et annet skjermbilde, så kan du i noen moduler klikke på enheten for å få enheten sin id overført til variabelvelgeren. Variabelvelgeren vil da formidle at det er den enheten vi vil se på til de andre modulene i appen slik at alle viser den samme enheten. På samme måte, hvis du vet at det er én spesifikk enhet du skal se på kan du skrive den direkte inn i variabelvelgeren.
+Variabelvelgeren fungerer som et felles punkt for informasjon som skal deles mellom ulike moduler i appen. Hvis du for eksempel sjekker et skjermbilde hvor det vises en enhet som du vil se på i et annet skjermbilde, så kan du i noen moduler klikke på enheten for å få enheten sin id overført til variabelvelgeren. Variabelvelgeren vil da formidle at det er den enheten vi vil se på til de andre modulene i appen slik at alle viser den samme enheten. På samme måte, hvis du vet at det er én spesifikk enhet du skal se på kan du skrive den direkte inn i variabelvelgeren.
 
-VIKTIG. Variabelvelgeren skal gi inputs til andre skjermbilder og fungere som et søkefelt, den skal __ikke__ brukes for å vise informasjon om enheten man er inne på.
+**VIKTIG!** Variabelvelgeren skal gi inputs til andre skjermbilder og fungere som et søkefelt, den skal __ikke__ brukes for å vise informasjon om enheten man er inne på.
 
 
 <!-- github-only -->

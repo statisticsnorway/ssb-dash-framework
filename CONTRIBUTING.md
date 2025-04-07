@@ -39,17 +39,136 @@ Pre-requisites for building a new module:
 
 In order to simplify reuse and maintenance, we wish to keep the code style similar across different modules. We appreciate if you take a look at how other modules are structured and try to follow that general style/logic as far as practically possible.
 
+The code is structured around having a module with functionality and layout created, and then using inheritance to implement the module in the framework.
+
 ### The class structure
 
+When creating a new module, start by creating the base class.
+
+```python
+from abc import ABC, abstractmethod
+
+class MyModule(ABC):
+    def __init__(self):
+        # Some of your stuff
+        self.module_layout = self._create_layout()
+        self.module_callbacks()
 
 
-#### Implementing as modal
+    def _create_layout(self) -> html.Div:
+        return html.Div(
+            # create your layout here
+        )
+
+    def module_callbacks(self) -> None:
+        """Generates the callbacks for MyModule
+        """
+        # create your callbacks here
+        # @callback()
+        # def callback_func():
 
 
+    @abstractmethod
+    def layout(self) -> html.Div:
+        """Generate the layout for the MyModule module.
+
+        Returns:
+            html.Div: A Div element containing...
+        """
+        pass
+
+```
 
 #### Implementing as tab
 
+The tab variant of your module is pretty simple to implement. First create the file
 
+    src/ssb_sirius_dash/tabs/mymodule_tab.py
+
+And then adapt the code below to your module.
+
+```python
+class MyModuleTab(MyModule):
+    def __init__(self): # Remember to pass the arguments your base class requires
+        super().__init__() # Into this
+
+    def layout(self) -> html.Div:
+        """Generate the layout for the FrisokTab.
+
+        Returns:
+            html.Div: A Div element containing the text area for SQL queries,
+                      input for partitions, a button to run the query,
+                      and a Dash AgGrid table for displaying results.
+        """
+        layout = self.module_layout
+        logger.debug("Generated layout")
+        return layout
+```
+
+#### Implementing as window
+
+Making your module available as a window is a bit more involved, but not difficult.
+
+In order to add your module as a window, start by creating the file
+
+    src/ssb_sirius_dash/window/mymodule_window.py
+
+And then adapt the code below to your module. Note that you need to change the ids in the layout and the callbacks.
+
+```python
+class MyModuleWindow(MyModule):
+    def __init__(self):
+        super().__init__()
+        self.callbacks()
+
+    def layout(self) -> html.Div:
+        """Generate the layout for the MyModule window.
+
+        Returns:
+            html.Div: A Div element containing the text area for SQL queries,
+                      input for partitions, a button to run the query,
+                      and a Dash AgGrid table for displaying results.
+        """
+        layout = html.Div(
+            [
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle("MyModuleName")),
+                        dbc.ModalBody(
+                            self.module_layout
+                        )
+                    ],
+                    id = "mymodule-modal",
+                    size="xl",
+                    fullscreen = "xxl-down",
+                ),
+                sidebar_button("MyIcon", "MyModuleName", "sidebar-mymodule-button")
+            ]
+        )
+        logger.debug("Generated layout")
+        return layout
+
+    def callbacks(self):
+        @callback(  # type: ignore[misc]
+            Output("mymodule-modal", "is_open"),
+            Input("sidebar-mymodule-button", "n_clicks"),
+            State("mymodule-modal", "is_open"),
+        )
+        def ratemodel_toggle(n: int, is_open: bool) -> bool:
+            """Toggles the state of the modal window.
+
+            Args:
+                n (int): Number of clicks on the toggle button.
+                is_open (bool): Current state of the modal (open/closed).
+
+            Returns:
+                bool: New state of the modal (open/closed).
+            """
+            logger.info("Toggle modal")
+            if n:
+                return not is_open
+            return is_open
+```
 
 ### Variableselector
 
