@@ -22,37 +22,48 @@ Her finner du en kort forklaring av hva som menes med visse ord i veiledningen.
 
 ## Sett opp rammeverket på 1, 2, 3
 
-### 1. Hent inn de nødvendige byggeklossene og opprett app-objektet (Utdatert)
+### 1. Sett opp rammeverkets byggeklosser
 
-```
-from ssb_dash_framework.setup.main_layout import main_layout
-from ssb_dash_framework.setup.app_setup import app_setup
+Rammeverket krever også at du setter opp variabelvelgeren før du går videre. Du må sette opp ett alternativ per variabel du vil ha tilgjengelig.
 
-app = app_setup(port, service_prefix, domain, "superhero")
-```
+```python
+from ssb_dash_framework.setup.variableselector import VariableSelectorOption
 
-Bruker du jupyter erstatter du linjen med "app = ..." med dette
-
-```
-port = 8070
-service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
-domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
-app = app_setup(port, service_prefix, domain, "superhero")
+VariableSelectorOption("foretak") # bytt ut foretak med din variabel.
 ```
 
 ### 2. Importer og start modulene du vil ha
 
-Obs! Noen moduler krever mer tilpasninger enn andre. Dette kan du se i dokumentasjonen for de enkelte modulene som er henvist til tidligere.
+Obs! Noen moduler krever mer tilpasninger enn andre. Hva som kreves kan du se i dokumentasjonen for de enkelte modulene.
 
-```
+Importen av moduler skal legges langs toppen av scriptet med de andre importene mens oppsett av modulene skal skje under oppsettet av variabelvelgeren.
+
+```python
 from ssb_dash_framework.tabs.pi_memorizer import PimemorizerTab
+
+# Din kode fra tidligere steg #
 
 min_pi_memorizer = PimemorizerTab()
 ```
 
 ### 3. Sett sammen delene og start opp applikasjonen
 
-```
+Nå er det på tide å "montere" applikasjonen din. Dette gjør du ved å lage 3 [lister](https://realpython.com/python-list/):
+- window_list
+
+    Denne skal inneholde alle vindu-modulene dine
+
+- tab_list
+
+    Denne skal inneholde alle tab-modulene dine.
+
+- variable_list
+
+    Her skal du liste opp hvilke variabler som skal eksistere i variabelvelgeren. Det er viktig at alle variabler du skal bruke er definert som beskrevet i steg 1,5
+
+Deretter skal du kjøre main_layout funksjonen for å definere appen din, og starte appen.
+
+```python
 modal_list = [
 ]
 
@@ -61,8 +72,7 @@ tab_list = [
 ]
 
 variable_list = [
-    "min_id_variabel", # f.eks. organisasjonsnummer
-    "min grupperingsvariabel", # f.eks. næringskode
+    "foretak", # f.eks. organisasjonsnummer
 ]
 
 app.layout = main_layout(modal_list, tab_list, variable_list)
@@ -73,6 +83,11 @@ if __name__ == "__main__":
         jupyter_mode="tab"
     )
 ```
+
+> 💡 **Forklaring**
+>
+> if __name__ == __main__: betyr at det som er dekket av if-statementen ikke vil kjøres med mindre du kjører denne filen direkte. Det er for å hindre at du kommer borti å importere filen i et annet script og starter appen ved et uhell.
+
 
 ## Hvilke moduler finnes?
 
