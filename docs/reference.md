@@ -13,14 +13,21 @@ delete the .rst file afterwards.
 
 ```{eval-rst}
 ssb\_dash\_framework package
-=============================================================================
+============================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   ssb_dash_framework.control
+   ssb_dash_framework.modals
+   ssb_dash_framework.modules
+   ssb_dash_framework.setup
+   ssb_dash_framework.tabs
+   ssb_dash_framework.utils
+   ssb_dash_framework.windows
 
 
-ssb\_dash\_framework.functions module
------------------------------------------------------------------------------
-
-.. automodule:: ssb_dash_framework.functions
-   :members:
-   :undoc-members:
-   :show-inheritance:
 ```

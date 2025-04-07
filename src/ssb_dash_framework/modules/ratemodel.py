@@ -24,7 +24,7 @@ from ..utils.functions import sidebar_button
 logger = logging.getLogger(__name__)
 
 
-class RateModelModule:
+class RateModel:
     """A class that manages rate model calculations and caching in a Dash application."""
 
     def __init__(
@@ -46,7 +46,10 @@ class RateModelModule:
         self.cache_location = cache_location
         self.get_sample_func = get_sample_func
         self.get_population_func = get_population_func
-        self.callbacks()
+
+        self.module_layout = self._create_layout()
+
+        self.module_callbacks()
 
     def get_model(
         self, x_var: str, y_var: str, strata_var: str, force_rerun: bool = False
@@ -138,7 +141,7 @@ class RateModelModule:
             except Exception as e:
                 print(f"Error removing {file_path}: {e}")
 
-    def layout(self) -> html.Div:
+    def _create_layout(self) -> html.Div:
         """Defines and returns the Dash layout for the rate model module.
 
         Returns:
@@ -174,16 +177,7 @@ class RateModelModule:
             )
         )
 
-        layout = html.Div(
-            [
-                layout_extreme,
-                layout_imputation,
-                layout_weights,
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle("Ratemodell")),
-                        dbc.ModalBody(
-                            [
+        layout = html.Div([layout_extreme, layout_imputation, layout_weights,
                                 dbc.Row(
                                     [
                                         dbc.Col(
@@ -333,19 +327,10 @@ class RateModelModule:
                                         ),
                                     ]
                                 ),
-                            ]
-                        ),
-                    ],
-                    id="ratemodel-modal",
-                    size="xl",
-                    fullscreen="xxl-down",
-                ),
-                sidebar_button("🔎", "Ratemodell", "sidebar-ratemodel-button"),
-            ]
-        )
+                            ])
         return layout
 
-    def callbacks(self) -> None:
+    def module_callbacks(self) -> None:
         """Defines the callbacks for the Dash application related to the rate model module."""
 
         @callback(  # type: ignore[misc]
@@ -365,26 +350,6 @@ class RateModelModule:
                 ),
                 *error_log,
             ]
-
-        @callback(  # type: ignore[misc]
-            Output("ratemodel-modal", "is_open"),
-            Input("sidebar-ratemodel-button", "n_clicks"),
-            State("ratemodel-modal", "is_open"),
-        )
-        def ratemodel_toggle(n: int, is_open: bool) -> bool:
-            """Toggles the state of the modal window.
-
-            Args:
-                n (int): Number of clicks on the toggle button.
-                is_open (bool): Current state of the modal (open/closed).
-
-            Returns:
-                bool: New state of the modal (open/closed).
-            """
-            logger.info("Toggle modal")
-            if n:
-                return not is_open
-            return is_open
 
         @callback(  # type: ignore[misc]
             Output("ratemodel_detailmodal_extreme", "is_open"),

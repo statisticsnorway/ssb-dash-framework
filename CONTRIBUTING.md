@@ -30,7 +30,7 @@ and/or steps to reproduce the issue.
 
 Request features on the [Issue Tracker].
 
-# Our design and making a new module
+## Our design and making a new module
 
 Pre-requisites for building a new module:
 - basic understanding of how to create a class in python.
@@ -39,19 +39,19 @@ Pre-requisites for building a new module:
 
 In order to simplify reuse and maintenance, we wish to keep the code style similar across different modules. We appreciate if you take a look at how other modules are structured and try to follow that general style/logic as far as practically possible.
 
-## The class structure
+### The class structure
 
 
 
-### Implementing as modal
+#### Implementing as modal
 
 
 
-### Implementing as tab
+#### Implementing as tab
 
 
 
-## Variableselector
+### Variableselector
 
 See the docstrings for VariableSelector and VariableSelectorOption to get familiar with how they work.
 
@@ -59,7 +59,7 @@ The idea behind the Variableselector is that you have one module in the applicat
 
 In order to account for different implementations of the framework requiring different variables, it has been built with flexibility in mind.
 
-### Connecting your module to the variable selector
+#### Connecting your module to the variable selector
 
 Note: You can use the ssb_dash_framework/utils/debugger_modal.py to get familiar with how this works in practice.
 
@@ -145,7 +145,7 @@ There are some costs involved in using AiO components:
 
 ## Tips and tricks
 
-#### Fix mypy complaining about callbacks
+### Fix mypy complaining about callbacks
 
 Add "# type: ignore[misc]" to decorator to avoid mypy reporting it as an error.
 
@@ -154,14 +154,14 @@ Add "# type: ignore[misc]" to decorator to avoid mypy reporting it as an error.
         Output()
     )
 
-#### Common annotations for callbacks to make mypy happy
+### Common annotations for callbacks to make mypy happy
 
 - rowData: list[dict[str, Any]]
 - columnDefs: list[dict[str, str]]
 - clickData: dict[str, list[dict[str, Any]]]
 - error_log: list[dict[str, Any]]
 
-#### Raise PreventUpdate early when possible
+### Raise PreventUpdate early when possible
 
 It is usually more readable to have PreventUpdate show up early and raised if some condition is not fulfilled, rather than have it as the "else" part of the logic. For short callbacks it doesn't make a huge difference, but for complex or long callbacks it helps a lot to have PreventUpdate at the beginning.
 
@@ -221,7 +221,7 @@ You can now run an interactive Python session, or your app:
 
 ```console
 poetry run python
-poetry run ssb-sirius-dash
+poetry run ssb-dash-framework
 ```
 
 ## How to test the project
@@ -270,15 +270,15 @@ It is recommended to open an issue before starting work on anything.
 This will allow a chance to talk it over with the owners and validate your approach.
 
 [mit license]: https://opensource.org/licenses/MIT
-[source code]: https://github.com/statisticsnorway/ssb-sirius-dash
-[documentation]: https://statisticsnorway.github.io/ssb-sirius-dash
-[issue tracker]: https://github.com/statisticsnorway/ssb-sirius-dash/issues
+[source code]: https://github.com/statisticsnorway/ssb-dash-framework
+[documentation]: https://statisticsnorway.github.io/ssb-dash-framework
+[issue tracker]: https://github.com/statisticsnorway/ssb-dash-framework/issues
 [pipx]: https://pipx.pypa.io/
 [poetry]: https://python-poetry.org/
 [nox]: https://nox.thea.codes/
 [nox-poetry]: https://nox-poetry.readthedocs.io/
 [pytest]: https://pytest.readthedocs.io/
-[pull request]: https://github.com/statisticsnorway/ssb-sirius-dash/pulls
+[pull request]: https://github.com/statisticsnorway/ssb-dash-framework/pulls
 
 <!-- github-only -->
 
