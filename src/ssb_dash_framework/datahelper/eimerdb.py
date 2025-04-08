@@ -43,7 +43,15 @@ class DatabaseBuilderAltinnEimerdb:
         template_funcs = db_builder.get_dashboard_functions()
     """
 
-    def __init__(self, database_name: str, storage_location: str, periods: str) -> None:
+    def __init__(
+        self,
+        database_name: str,
+        storage_location: str,
+        ident_id: str,
+        ident_name: str,
+        delivery_identifier: str,
+        periods: str,
+    ) -> None:
         """Initializes the databasebuilder for altinn3 surveys.
 
         Args:
@@ -115,37 +123,37 @@ class DatabaseBuilderAltinnEimerdb:
                 "name": "skjema",
                 "type": "string",
                 "label": "Skjemaet.",
-                "app_editable": false,
+                "app_editable": False,
             },
             {
                 "name": "skjemaversjon",
                 "type": "string",
                 "label": "Skjemaets versjon.",
-                "app_editable": false,
+                "app_editable": False,
             },
             {
                 "name": "dato_mottatt",
                 "type": "pa.timestamp(s)",
                 "label": "Datoen og tidspunktet for når skjemaet ble mottatt.",
-                "app_editable": false,
+                "app_editable": False,
             },
             {
                 "name": "editert",
                 "type": "bool_",
                 "label": "Editeringskode. True = Editert. False = Ueditert.",
-                "app_editable": true,
+                "app_editable": True,
             },
             {
                 "name": "kommentar",
                 "type": "string",
                 "label": "Editeringskommentar.",
-                "app_editable": true,
+                "app_editable": True,
             },
             {
                 "name": "aktiv",
                 "type": "bool_",
                 "label": "1 hvis skjemaet er aktivt. 0 hvis skjemaet er satt til inaktivt.",
-                "app_editable": true,
+                "app_editable": True,
             },
         ]
 
@@ -265,27 +273,27 @@ class DatabaseBuilderAltinnEimerdb:
                 "name": "skjema",
                 "type": "string",
                 "label": "skjemaet tilh\u00f8rende skjemadataene.",
-                "app_editable": false,
+                "app_editable": False,
             },
             ident_col,
             {
                 "name": "skjemaversjon",
                 "type": "string",
                 "label": "Skjemaets versjon.",
-                "app_editable": false,
+                "app_editable": False,
             },
             {
                 "name": "variabel",
                 "type": "string",
                 "label": "variabel",
-                "app_editable": false,
+                "app_editable": False,
             },
             {
                 "name": "verdi",
                 "type": "string",
                 "label": "verdien til variabelen.",
                 "appvar": "var-nspekfelt",
-                "app_editable": true,
+                "app_editable": True,
             },
         ]
 
@@ -320,46 +328,7 @@ class DatabaseBuilderAltinnEimerdb:
 
     def get_dashboard_functions(self):
 
-        def EditingTableLong_get_data_func(
-            database, tabell, *args
-        ):  # Need to make partition_select dynamic?
-            orgnr, delreg, *other_args = args
-            orgnr = database.query(
-                f"""SELECT enhetsident FROM enheter WHERE orgnr = '{orgnr}'""",
-                partition_select={"delreg": [delreg]},
-            ).iloc[0, 0]
-            leveranser = database.query(
-                f"""SELECT * FROM skjemamottak WHERE enhetsident = '{orgnr}'""",
-                partition_select={"delreg": [delreg]},
-            )["referanse"].unique()
-            aktuelt_skjema = leveranser[0]
-            skjemadata = database.query(
-                f"""SELECT row_id, variabelnavn, variabelverdi FROM skjemadata WHERE referanse = '{aktuelt_skjema}'"""
-            )
-            return skjemadata
-
-        def EditingTableLong_update_table(database, tabell, variable, value, row_id):
-            database.query(
-                f"""UPDATE {tabell}
-                SET {variable} = {value}
-                WHERE row_id = '{row_id}'
-                """,
-            )
-
         return {
-            "EditingTableLong_get_data_func": EditingTableLong_get_data_func,
-            "EditingTableLong_update_table": EditingTableLong_update_table,
+            # "EditingTableLong_get_data_func": EditingTableLong_get_data_func,
+            # "EditingTableLong_update_table": EditingTableLong_update_table,
         }
-
-
-DatabaseBuilderAltinnEimerdb(
-    periods="aar", storage_location="", database_name="Test"
-).schemas
-
-DatabaseBuilderAltinnEimerdb(
-    periods=["aar"], storage_location="", database_name="Test"
-).schemas
-
-DatabaseBuilderAltinnEimerdb(
-    periods=["aar", "maaned"], storage_location="", database_name="Test"
-).schemas
