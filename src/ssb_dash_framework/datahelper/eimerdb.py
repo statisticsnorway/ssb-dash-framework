@@ -1,6 +1,6 @@
-"""This can be used to create a functioning eimerdb instance for your statistic.
+"""This can be used to create a functioning eimerdb instance for your Altinn3 statistic.
 
-It is intended to be a shortcut for quickly getting an editing application online and serve as an example for those making their own setup.
+It is intended to be a shortcut for quickly getting an editing application up and running, and serve as an example for those making their own setup.
 
 If you'd rather make your own setup, you are free to do so.
 """
@@ -93,7 +93,6 @@ class DatabaseBuilderAltinnEimerdb:
         schema_col = {"name": "skjema", "type": "string", "label": "Skjema"}
 
         schema_skjemainfo = [
-            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
             ident_col,
             {"name": "skjemaversjon", "type": "string", "label": "Skjemaets versjon."},
@@ -116,7 +115,6 @@ class DatabaseBuilderAltinnEimerdb:
         ]
 
         schema_skjemamottak = [
-            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
             ident_col,
             {
@@ -158,7 +156,6 @@ class DatabaseBuilderAltinnEimerdb:
         ]
 
         schema_kontaktinfo = [
-            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
             ident_col,
             {"name": "skjema", "type": "string", "label": "skjemanummeret"},
@@ -184,7 +181,6 @@ class DatabaseBuilderAltinnEimerdb:
         ]
 
         schema_enheter = [
-            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
             ident_col,
             {
@@ -195,7 +191,6 @@ class DatabaseBuilderAltinnEimerdb:
         ]
 
         schema_enhetsinfo = [
-            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
             ident_col,
             {"name": "variabel", "type": "string", "label": ""},
@@ -203,7 +198,6 @@ class DatabaseBuilderAltinnEimerdb:
         ]
 
         schema_kontroller = [
-            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
             {"name": "skjema", "type": "string", "label": "skjemanummeret"},
             {"name": "kontrollid", "type": "string", "label": "kontrollens unike ID."},
@@ -230,7 +224,6 @@ class DatabaseBuilderAltinnEimerdb:
         ]
 
         schema_kontrollutslag = [
-            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
             {"name": "skjema", "type": "string", "label": "skjemanummeret"},
             ident_col,
@@ -249,7 +242,6 @@ class DatabaseBuilderAltinnEimerdb:
         ]
 
         schema_datatyper = [
-            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
             {"name": "tabell", "type": "string", "label": "Tabellnavnet"},
             {
@@ -267,7 +259,6 @@ class DatabaseBuilderAltinnEimerdb:
         ]
 
         schema_skjemadata_hoved = [
-            {"name": "row_id", "type": "string", "label": "Unique row ID"},
             *periods_cols,
             {
                 "name": "skjema",
