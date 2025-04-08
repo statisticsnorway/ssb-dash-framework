@@ -80,11 +80,11 @@ class DatabaseBuilderAltinnEimerdb:
             for period in self.periods
         ]
         ident_col = {
-            "name": "enhetsident",
+            "name": self.ident_id,
             "type": "string",
-            "label": "Oppgavegiver sin id.",
+            "label": self.ident_name,
         }
-        name_col = {"name": "orgnr", "type": "string", "label": "Organisasjonsnummer"}
+        name_col = {"name": self.ident_name, "type": "string", "label": self.ident_name}
         delivery_id_col = {
             "name": "referanse",
             "type": "string",
