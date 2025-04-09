@@ -1,15 +1,30 @@
 """SSB Dash Framework."""
-
-from . import control
-from . import modals
-from . import modules
-from . import windows
-from . import setup
-from . import tabs
-
-# Re-import functions and classes from submodules explicitly for top-level access
+from .setup import app_setup
 from .setup import main_layout
-from .utils.alert_handler import create_alert
+from .setup import VariableSelectorOption
+from .modules import FreeSearch
+from .tabs import FreeSearchTab
+from .windows import FreeSearchWindow
+from .modules import RateModel
+from .windows import RateModelWindow
+
+for_setup = [
+    "VariableSelectorOption"
+]
+
+
+
+ratemodel = [
+    "RateModel",
+    "RateModelWindow"
+]
+
+freesearch = [
+    "FreeSearch",
+    "FreeSearchTab",
+    "FreeSearchWindow"
+]
+
 
 # Defines top level if used in wildcard import
-__all__ = ["control", "create_alert", "main_layout", "modules", "windows", "modals", "setup", "tabs"]
+__all__ = [*for_setup, *ratemodel, *freesearch]
