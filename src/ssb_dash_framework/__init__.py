@@ -7,6 +7,13 @@ from .tabs import FreeSearchTab
 from .windows import FreeSearchWindow
 from .modules import RateModel
 from .windows import RateModelWindow
+from .modals import HBMethod
+from .modals import VisualizationBuilder
+from .tabs import EditingTableLong
+from .modals import Control
+from .tabs import BofInformation
+from .tabs import Aarsregnskap
+from .modules import SkjemadataViewer
 
 for_setup = [
     "VariableSelectorOption"
@@ -23,6 +30,9 @@ freesearch = [
     "FreeSearchWindow"
 ]
 
+hb_method = [
+    "HBMethod"
+]
 
 # Defines top level if used in wildcard import
-__all__ = [*for_setup, *ratemodel, *freesearch]
+__all__ = [*for_setup, *ratemodel, *freesearch, *hb_method]
