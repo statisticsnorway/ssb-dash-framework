@@ -1,17 +1,17 @@
 import logging
 
-from dash import html
-from dash import callback
+import dash_bootstrap_components as dbc
 from dash import Input
 from dash import Output
 from dash import State
-import dash_bootstrap_components as dbc
-import dash_ag_grid as dag
+from dash import callback
+from dash import html
 
 from ..modules.ratemodel import RateModel
 from ..utils.functions import sidebar_button
 
 logger = logging.getLogger(__name__)
+
 
 class RateModelWindow(RateModel):
     def __init__(self, id_var, cache_location, get_sample_func, get_population_func):
@@ -31,15 +31,13 @@ class RateModelWindow(RateModel):
                 dbc.Modal(
                     [
                         dbc.ModalHeader(dbc.ModalTitle("Ratemodell")),
-                        dbc.ModalBody(
-                            self.module_layout
-                        )
+                        dbc.ModalBody(self.module_layout),
                     ],
-                    id = "ratemodel-modal",
+                    id="ratemodel-modal",
                     size="xl",
-                    fullscreen = "xxl-down",
+                    fullscreen="xxl-down",
                 ),
-                sidebar_button("🔍", "ratemodel", "sidebar-ratemodel-button")
+                sidebar_button("🔍", "ratemodel", "sidebar-ratemodel-button"),
             ]
         )
         logger.debug("Generated layout")

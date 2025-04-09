@@ -27,19 +27,21 @@ Her finner du en kort forklaring av hva som menes med visse ord i veiledningen.
 Rammeverket krever også at du setter opp variabelvelgeren før du går videre. Du må sette opp ett alternativ per variabel du vil ha tilgjengelig.
 
 ```python
-from ssb_dash_framework.setup.variableselector import VariableSelectorOption
+from ssb_dash_framework import VariableSelectorOption
 
 VariableSelectorOption("foretak") # bytt ut foretak med din variabel.
 ```
 
 ### 2. Importer og start modulene du vil ha
 
-Obs! Noen moduler krever mer tilpasninger enn andre. Hva som kreves kan du se i dokumentasjonen for de enkelte modulene.
+Vær oppmerksom på at noen moduler krever mer tilpasninger enn andre. Hva som kreves kan du se i dokumentasjonen for de enkelte modulene.
 
 Importen av moduler skal legges langs toppen av scriptet med de andre importene mens oppsett av modulene skal skje under oppsettet av variabelvelgeren.
 
+Vi anbefaler sterkt å importere moduler fra ssb_dash_framework på måten som er vist nedenfor. Dette er bruken vi støtter og du vil oppleve færre problemer om du holder deg til den. Om du heller ønsker å importere på andre måter kan du gjøre dette, men det medfører økt sjanse for breaking changes.
+
 ```python
-from ssb_dash_framework.tabs.pi_memorizer import PimemorizerTab
+from ssb_dash_framework import PimemorizerTab
 
 # Din kode fra tidligere steg #
 
