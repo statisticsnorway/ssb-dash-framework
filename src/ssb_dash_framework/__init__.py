@@ -12,8 +12,6 @@ for_setup = [
     "VariableSelectorOption"
 ]
 
-
-
 ratemodel = [
     "RateModel",
     "RateModelWindow"

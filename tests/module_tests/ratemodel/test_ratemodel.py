@@ -1,4 +1,4 @@
-def test_import_RateModel():
+def test_import():
     from ssb_dash_framework import RateModel
     from ssb_dash_framework import RateModelWindow
 
