@@ -17,34 +17,36 @@ logger = logging.getLogger(__name__)
 
 
 class FreeSearch(ABC):
-    """Tab for free-text SQL queries and displaying results in an AgGrid table.
+    """Base class for creating a free-text SQL query interface with results displayed in an AgGrid table.
 
-    This class provides a layout for a tab that allows users to:
+    This class provides a template for modules that allow users to:
     - Enter SQL queries in a text area.
     - Optionally specify partition filters as a dictionary string.
-    - Display the query results in an editable Dash AgGrid table.
+    - Display query results in an editable Dash AgGrid table.
 
     Attributes:
         database (object): Database connection or interface for executing SQL queries.
-        label (str): Label for the tab, displayed in the application.
+        label (str): Label for the module, displayed in the application.
+        module_layout (html.Div): The generated layout for the module.
 
     Methods:
-        layout(): Generates the layout for the tab.
-        callbacks(): Registers the Dash callbacks for interactivity.
+        layout(): Abstract method to define the module's layout.
+        module_callbacks(): Registers the Dash callbacks for interactivity.
     """
 
     def __init__(self, database: object) -> None:
-        """Initialize the FrisokTab with a database connection.
+        """Initialize the FreeSearch module with a database connection.
 
         Args:
             database (object): Database connection or interface used for executing SQL queries.
 
         Attributes:
             database (object): The provided database connection or interface.
-            label (str): Label for the tab, set to "🔍 Frisøk".
+            module_layout (html.Div): The generated layout for the module.
+            label (str): Label for the module, set to "🔍 Frisøk".
 
         Raises:
-            TypeError: If database does not have a query method an error is raised, as this module assumes database.query(sql_query) is possible.
+            TypeError: If the provided database object does not have a `query` method.
         """
         if not hasattr(database, "query"):
             raise TypeError("The provided object does not have a 'query' method.")
@@ -54,12 +56,14 @@ class FreeSearch(ABC):
         self.label = "🔍 Frisøk"
 
     def _create_layout(self) -> html.Div:
-        """Generate the layout for the FrisokTab.
+        """Generate the default layout for the FreeSearch module.
 
         Returns:
-            html.Div: A Div element containing the text area for SQL queries,
-                      input for partitions, a button to run the query,
-                      and a Dash AgGrid table for displaying results.
+            html.Div: A Div element containing:
+                - A text area for SQL queries.
+                - An input field for partition filters.
+                - A button to execute the query.
+                - A Dash AgGrid table for displaying query results.
         """
         return html.Div(
             [
@@ -93,12 +97,9 @@ class FreeSearch(ABC):
 
     @abstractmethod
     def layout(self) -> html.Div:
-        """Generate the layout for the FrisokTab.
+        """Register the Dash callbacks for the FreeSearch module.
 
-        Returns:
-            html.Div: A Div element containing the text area for SQL queries,
-                      input for partitions, a button to run the query,
-                      and a Dash AgGrid table for displaying results.
+        This method defines the callback for executing SQL queries and updating the AgGrid table with results.
         """
         pass
 
@@ -126,7 +127,7 @@ class FreeSearch(ABC):
                 n_clicks (int): Number of clicks on the "kjør" button.
                 query (str): SQL query entered by the user in the text area.
                 partition (str): Partition filters entered as a dictionary string
-                                   (e.g., "{'aar': [2023]}"). Can be None if no filters are provided.
+                                 (e.g., "{'aar': [2023]}"). Can be None if no filters are provided.
 
             Returns:
                 tuple: Contains:
@@ -134,7 +135,7 @@ class FreeSearch(ABC):
                     - columnDefs (list[dict]): Column definitions for the table.
 
             Raises:
-                PreventUpdate: If click is None.
+                PreventUpdate: If the button has not been clicked.
 
             Notes:
                 - Column definitions hide the "row_id" column by default, if present.
