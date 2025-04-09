@@ -19,7 +19,6 @@ from dash.dependencies import State
 from statstruk import ratemodel
 
 from ..utils.alert_handler import create_alert
-from ..utils.functions import sidebar_button
 
 logger = logging.getLogger(__name__)
 
@@ -177,157 +176,150 @@ class RateModel:
             )
         )
 
-        layout = html.Div([layout_extreme, layout_imputation, layout_weights,
-                                dbc.Row(
-                                    [
-                                        dbc.Col(
-                                            dcc.Dropdown(
-                                                id="ratemodel_xvar",
-                                                value="fulldyrket",
-                                                options=[
-                                                    {
-                                                        "label": "fulldyrket",
-                                                        "value": "fulldyrket",
-                                                    }
-                                                ],
-                                            )
-                                        ),
-                                        dbc.Col(
-                                            dcc.Dropdown(
-                                                id="ratemodel_yvar",
-                                                value="arealtilskudd",
-                                                options=[
-                                                    {
-                                                        "label": "arealtilskudd",
-                                                        "value": "arealtilskudd",
-                                                    }
-                                                ],
-                                            )
-                                        ),
-                                        dbc.Col(
-                                            dcc.Dropdown(
-                                                id="ratemodel_strata",
-                                                value="fylke",
-                                                options=[
-                                                    {"label": "fylke", "value": "fylke"}
-                                                ],
-                                            )
-                                        ),
-                                        dbc.Col(
-                                            dbc.Button(
-                                                "Hent modell", id="ratemodel_button_run"
-                                            )
-                                        ),
-                                    ]
+        layout = html.Div(
+            [
+                layout_extreme,
+                layout_imputation,
+                layout_weights,
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            dcc.Dropdown(
+                                id="ratemodel_xvar",
+                                value="fulldyrket",
+                                options=[
+                                    {
+                                        "label": "fulldyrket",
+                                        "value": "fulldyrket",
+                                    }
+                                ],
+                            )
+                        ),
+                        dbc.Col(
+                            dcc.Dropdown(
+                                id="ratemodel_yvar",
+                                value="arealtilskudd",
+                                options=[
+                                    {
+                                        "label": "arealtilskudd",
+                                        "value": "arealtilskudd",
+                                    }
+                                ],
+                            )
+                        ),
+                        dbc.Col(
+                            dcc.Dropdown(
+                                id="ratemodel_strata",
+                                value="fylke",
+                                options=[{"label": "fylke", "value": "fylke"}],
+                            )
+                        ),
+                        dbc.Col(dbc.Button("Hent modell", id="ratemodel_button_run")),
+                    ]
+                ),
+                dcc.Loading(
+                    [
+                        dbc.Row(  # Info about the model returned
+                            [
+                                dbc.Col(id="ratemodel_timestamp"),
+                                dbc.Col(
+                                    dbc.Button(
+                                        "Beregn ny modell",
+                                        id="ratemodel_button_rerun",
+                                    )
                                 ),
-                                dcc.Loading(
+                                dbc.Col(
+                                    dbc.Button(
+                                        "Slett alle cached modeller",
+                                        id="ratemodel_button_clear_cache",
+                                    )
+                                ),
+                            ]
+                        ),
+                        dbc.Row(),
+                        dbc.Row(
+                            [
+                                dbc.Col(
                                     [
-                                        dbc.Row(  # Info about the model returned
-                                            [
-                                                dbc.Col(id="ratemodel_timestamp"),
-                                                dbc.Col(
-                                                    dbc.Button(
-                                                        "Beregn ny modell",
-                                                        id="ratemodel_button_rerun",
-                                                    )
-                                                ),
-                                                dbc.Col(
-                                                    dbc.Button(
-                                                        "Slett alle cached modeller",
-                                                        id="ratemodel_button_clear_cache",
-                                                    )
-                                                ),
-                                            ]
-                                        ),
-                                        dbc.Row(),
+                                        dbc.Row(html.P("Estimater")),
+                                        dbc.Row(dag.AgGrid(id="ratemodel_estimates")),
+                                    ],
+                                    width=9,
+                                ),
+                                dbc.Col(
+                                    [
+                                        dbc.Row(html.P("Usikkerhetsmål")),
                                         dbc.Row(
-                                            [
-                                                dbc.Col(
-                                                    [
-                                                        dbc.Row(html.P("Estimater")),
-                                                        dbc.Row(
-                                                            dag.AgGrid(
-                                                                id="ratemodel_estimates"
-                                                            )
-                                                        ),
-                                                    ],
-                                                    width=9,
-                                                ),
-                                                dbc.Col(
-                                                    [
-                                                        dbc.Row(
-                                                            html.P("Usikkerhetsmål")
-                                                        ),
-                                                        dbc.Row(
-                                                            dcc.Dropdown(
-                                                                id="ratemodel_uncertainty",
-                                                                value="CV",
-                                                                options=[
-                                                                    {
-                                                                        "label": "CV",
-                                                                        "value": "CV",
-                                                                    },
-                                                                    {
-                                                                        "label": "",
-                                                                        "value": "",
-                                                                    },
-                                                                    {
-                                                                        "label": "",
-                                                                        "value": "",
-                                                                    },
-                                                                    {
-                                                                        "label": "",
-                                                                        "value": "",
-                                                                    },
-                                                                    {
-                                                                        "label": "",
-                                                                        "value": "",
-                                                                    },
-                                                                ],
-                                                            )
-                                                        ),
-                                                        dbc.Row(html.P("Varianstype")),
-                                                        dbc.Row(
-                                                            dcc.Dropdown(
-                                                                id="ratemodel_variance",
-                                                                value="standard",
-                                                                options=[
-                                                                    {
-                                                                        "label": "Standard",
-                                                                        "value": "standard",
-                                                                    },
-                                                                    {
-                                                                        "label": "Robust",
-                                                                        "value": "robust",
-                                                                    },
-                                                                ],
-                                                            )
-                                                        ),
-                                                        dbc.Row(
-                                                            dbc.Button(
-                                                                "Ekstremverdier",
-                                                                id="ratemodel_detailbutton_extreme",
-                                                            )
-                                                        ),
-                                                        dbc.Row(
-                                                            dbc.Button(
-                                                                "Imputerte verdier",
-                                                                id="ratemodel_detailbutton_imputation",
-                                                            )
-                                                        ),
-                                                        dbc.Row(
-                                                            dbc.Button(
-                                                                "Vekter",
-                                                                id="ratemodel_detailbutton_weights",
-                                                            )
-                                                        ),
-                                                    ]
-                                                ),
-                                            ]
+                                            dcc.Dropdown(
+                                                id="ratemodel_uncertainty",
+                                                value="CV",
+                                                options=[
+                                                    {
+                                                        "label": "CV",
+                                                        "value": "CV",
+                                                    },
+                                                    {
+                                                        "label": "",
+                                                        "value": "",
+                                                    },
+                                                    {
+                                                        "label": "",
+                                                        "value": "",
+                                                    },
+                                                    {
+                                                        "label": "",
+                                                        "value": "",
+                                                    },
+                                                    {
+                                                        "label": "",
+                                                        "value": "",
+                                                    },
+                                                ],
+                                            )
+                                        ),
+                                        dbc.Row(html.P("Varianstype")),
+                                        dbc.Row(
+                                            dcc.Dropdown(
+                                                id="ratemodel_variance",
+                                                value="standard",
+                                                options=[
+                                                    {
+                                                        "label": "Standard",
+                                                        "value": "standard",
+                                                    },
+                                                    {
+                                                        "label": "Robust",
+                                                        "value": "robust",
+                                                    },
+                                                ],
+                                            )
+                                        ),
+                                        dbc.Row(
+                                            dbc.Button(
+                                                "Ekstremverdier",
+                                                id="ratemodel_detailbutton_extreme",
+                                            )
+                                        ),
+                                        dbc.Row(
+                                            dbc.Button(
+                                                "Imputerte verdier",
+                                                id="ratemodel_detailbutton_imputation",
+                                            )
+                                        ),
+                                        dbc.Row(
+                                            dbc.Button(
+                                                "Vekter",
+                                                id="ratemodel_detailbutton_weights",
+                                            )
                                         ),
                                     ]
                                 ),
-                            ])
+                            ]
+                        ),
+                    ]
+                ),
+            ]
+        )
         return layout
 
     def module_callbacks(self) -> None:

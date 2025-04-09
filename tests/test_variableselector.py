@@ -43,9 +43,7 @@ def test_add_one_code() -> None:
     1) The code is actually in the registry.
     2) VariableSelector sees exactly one code.
     """
-    code = VariableSelectorOption(
-        "foretak"
-    )
+    code = VariableSelectorOption("foretak")
     assert len(VariableSelector._variableselectoroptions) == 1
     assert code in VariableSelector._variableselectoroptions
 

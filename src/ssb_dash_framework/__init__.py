@@ -1,38 +1,28 @@
 """SSB Dash Framework."""
-from .setup import app_setup
-from .setup import main_layout
-from .setup import VariableSelectorOption
-from .modules import FreeSearch
-from .tabs import FreeSearchTab
-from .windows import FreeSearchWindow
-from .modules import RateModel
-from .windows import RateModelWindow
+
+from .modals import Control
 from .modals import HBMethod
 from .modals import VisualizationBuilder
-from .tabs import EditingTableLong
-from .modals import Control
-from .tabs import BofInformation
-from .tabs import Aarsregnskap
+from .modules import FreeSearch
+from .modules import RateModel
 from .modules import SkjemadataViewer
+from .setup import VariableSelectorOption
+from .setup import app_setup
+from .setup import main_layout
+from .tabs import Aarsregnskap
+from .tabs import BofInformation
+from .tabs import EditingTableLong
+from .tabs import FreeSearchTab
+from .windows import FreeSearchWindow
+from .windows import RateModelWindow
 
-for_setup = [
-    "VariableSelectorOption"
-]
+for_setup = ["VariableSelectorOption"]
 
-ratemodel = [
-    "RateModel",
-    "RateModelWindow"
-]
+ratemodel = ["RateModel", "RateModelWindow"]
 
-freesearch = [
-    "FreeSearch",
-    "FreeSearchTab",
-    "FreeSearchWindow"
-]
+freesearch = ["FreeSearch", "FreeSearchTab", "FreeSearchWindow"]
 
-hb_method = [
-    "HBMethod"
-]
+hb_method = ["HBMethod"]
 
 # Defines top level if used in wildcard import
 __all__ = [*for_setup, *ratemodel, *freesearch, *hb_method]

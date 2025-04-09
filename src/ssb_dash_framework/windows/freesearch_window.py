@@ -1,17 +1,17 @@
 import logging
 
-from dash import html
-from dash import callback
+import dash_bootstrap_components as dbc
 from dash import Input
 from dash import Output
 from dash import State
-import dash_bootstrap_components as dbc
-import dash_ag_grid as dag
+from dash import callback
+from dash import html
 
 from ..modules.freesearch import FreeSearch
 from ..utils.functions import sidebar_button
 
 logger = logging.getLogger(__name__)
+
 
 class FreeSearchWindow(FreeSearch):
     def __init__(self, database):
@@ -31,15 +31,13 @@ class FreeSearchWindow(FreeSearch):
                 dbc.Modal(
                     [
                         dbc.ModalHeader(dbc.ModalTitle("Freesearch")),
-                        dbc.ModalBody(
-                            self.module_layout
-                        )
+                        dbc.ModalBody(self.module_layout),
                     ],
-                    id = "freesearch-modal",
+                    id="freesearch-modal",
                     size="xl",
-                    fullscreen = "xxl-down",
+                    fullscreen="xxl-down",
                 ),
-                sidebar_button("🔍", "freesearch", "sidebar-freesearch-button")
+                sidebar_button("🔍", "freesearch", "sidebar-freesearch-button"),
             ]
         )
         logger.debug("Generated layout")
