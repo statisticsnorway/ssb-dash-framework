@@ -43,7 +43,11 @@ The code is structured around having a module with functionality and layout crea
 
 ### The class structure
 
-When creating a new module, start by creating the base class.
+We structure the code with an abstract class that contains all of the necessary dash components and functionality to be a fully functional module, and then create classes that inherit from it and adds a specific implementation. This structure allows the module to be reused in different ways.
+
+#### Base class
+
+When creating a new module, start by creating the base class as shown in the example below.
 
 ```python
 from abc import ABC, abstractmethod
@@ -76,8 +80,11 @@ class MyModule(ABC):
             html.Div: A Div element containing...
         """
         pass
-
 ```
+During the init you at a minimum need to create the module layout and register the module callbacks.
+
+
+
 
 #### Implementing as tab
 
