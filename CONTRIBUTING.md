@@ -81,10 +81,13 @@ class MyModule(ABC):
         """
         pass
 ```
+
 During the init you at a minimum need to create the module layout and register the module callbacks.
 
+In order to keep it consistent between modules, it is a good idea to name the function that creates the layout for your module "_create_layout".
+This function defines your module layout.
 
-
+The base class also needs to have a function that defines and registers its callbacks.
 
 #### Implementing as tab
 
@@ -242,10 +245,6 @@ The reason for this is simple. Different users will have different amounts of ob
 Using a few different files/tables and the long format makes it simple to keep track of observations, characteristics about the observations and data about/from the observatins. With a long format we can simplify the data structure so that adapting modules to different data is simpler.
 
 With a long format containing columns identifying the observation, the variable and the variable value it is a lot simpler to make something that fits all data with minimal adjustments to the module itself.
-
-### Include the layout as a method in the class
-
-Oppdateres med ny arve logikk
 
 ### Use @callback
 

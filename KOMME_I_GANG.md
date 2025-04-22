@@ -8,7 +8,7 @@ I første avsnitt får du en veiledning til hvordan du setter opp rammeverket.
 Du får også noen hint om hvor du kan finne informasjon om hvilke moduler som finnes.
 
 Mer forklaring om hva som egentlig foregår, logikken bak det og hvordan det henger sammen forklares senere om du er interessert.
-- Mer grundige tekniske forklaringer er å finne i [README] og [contributor guide].
+- Detaljerte forklaringer er å finne i [README] og [contributor guide].
 - Dokumentasjon om rammeverkets moduler kan du finne her: https://statisticsnorway.github.io/ssb-dash-framework/
 
 ## Ordliste
@@ -21,6 +21,8 @@ Her finner du en kort forklaring av hva som menes med visse ord i veiledningen.
 - Tab : En fane i skjermbildet under variabelvelgeren som inneholder en modul
 
 ## Sett opp rammeverket på 1, 2, 3
+
+Nedenfor er det en kort veiledning for hvordan du setter opp rammeverket, så kan du fylle det med moduler etter du har fått bekreftet at selve rammeverket fungerer. For å se eksempler på ferdige apper kan du se på [demo-repoet vårt](https://github.com/statisticsnorway/demo-ssb-dash).
 
 ### 1. Sett opp rammeverkets byggeklosser
 
@@ -86,9 +88,9 @@ if __name__ == "__main__":
     )
 ```
 
-> 💡 **Forklaring**
+> 💡 **Hvorfor if ```__name__ == "__main__":```?**
 >
-> if __name__ == __main__: betyr at det som er dekket av if-statementen ikke vil kjøres med mindre du kjører denne filen direkte. Det er for å hindre at du kommer borti å importere filen i et annet script og starter appen ved et uhell.
+> if ```__name__ == __main__:``` betyr at det som er dekket av if-statementen ikke vil kjøres med mindre du kjører denne filen direkte. Det er for å hindre at du kommer borti å importere filen i et annet script og starter appen ved et uhell.
 
 
 ## Hvilke moduler finnes?
