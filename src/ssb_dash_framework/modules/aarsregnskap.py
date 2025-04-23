@@ -29,13 +29,21 @@ class Aarsregnskap(ABC):
             label (str): Label for the tab, displayed as "🧾 Årsregnskap".
         """
         self.label = "🧾 Årsregnskap"
-        self.is_valid()
+        self._is_valid()
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
-    def is_valid(self):
-        pass
-        # TODO: Check that var-aar and var-foretak exists, necessary for module to work.
+    def _is_valid(self):
+        if "var-aar" not in [x.id for x in VariableSelector._variableselectoroptions]:
+            raise ValueError(
+                "var-aar not found in the VariableSelector. Please add it using '''VariableSelectorOption('aar')'''"
+            )
+        if "var-foretak" not in [
+            x.id for x in VariableSelector._variableselectoroptions
+        ]:
+            raise ValueError(
+                "var-foretak not found in the VariableSelector. Please add it using '''VariableSelectorOption('foretak')'''"
+            )
 
     def _create_layout(self) -> html.Div:
         """Generate the layout for the Årsregnskap tab.
