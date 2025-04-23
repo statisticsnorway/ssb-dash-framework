@@ -43,7 +43,11 @@ The code is structured around having a module with functionality and layout crea
 
 ### The class structure
 
-When creating a new module, start by creating the base class.
+We structure the code with an abstract class that contains all of the necessary dash components and functionality to be a fully functional module, and then create classes that inherit from it and adds a specific implementation. This structure allows the module to be reused in different ways.
+
+#### Base class
+
+When creating a new module, start by creating the base class as shown in the example below.
 
 ```python
 from abc import ABC, abstractmethod
@@ -76,8 +80,14 @@ class MyModule(ABC):
             html.Div: A Div element containing...
         """
         pass
-
 ```
+
+During the init you at a minimum need to create the module layout and register the module callbacks.
+
+In order to keep it consistent between modules, it is a good idea to name the function that creates the layout for your module "_create_layout".
+This function defines your module layout.
+
+The base class also needs to have a function that defines and registers its callbacks.
 
 #### Implementing as tab
 
@@ -235,10 +245,6 @@ The reason for this is simple. Different users will have different amounts of ob
 Using a few different files/tables and the long format makes it simple to keep track of observations, characteristics about the observations and data about/from the observatins. With a long format we can simplify the data structure so that adapting modules to different data is simpler.
 
 With a long format containing columns identifying the observation, the variable and the variable value it is a lot simpler to make something that fits all data with minimal adjustments to the module itself.
-
-### Include the layout as a method in the class
-
-Oppdateres med ny arve logikk
 
 ### Use @callback
 
