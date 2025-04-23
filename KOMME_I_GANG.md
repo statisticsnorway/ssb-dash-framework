@@ -8,7 +8,7 @@ I første avsnitt får du en veiledning til hvordan du setter opp rammeverket.
 Du får også noen hint om hvor du kan finne informasjon om hvilke moduler som finnes.
 
 Mer forklaring om hva som egentlig foregår, logikken bak det og hvordan det henger sammen forklares senere om du er interessert.
-- Mer grundige tekniske forklaringer er å finne i [README] og [contributor guide].
+- Detaljerte forklaringer er å finne i [README] og [contributor guide].
 - Dokumentasjon om rammeverkets moduler kan du finne her: https://statisticsnorway.github.io/ssb-dash-framework/
 
 ## Ordliste
@@ -16,30 +16,43 @@ Mer forklaring om hva som egentlig foregår, logikken bak det og hvordan det hen
 Her finner du en kort forklaring av hva som menes med visse ord i veiledningen.
 
 - App : Applikasjonen du setter opp
+- Variabelvelger : Funksjonalitet som deler informasjon om valgte variabler mellom moduler
 - Modul : Komponent i dashbordet
 - Window : Et vindu som inneholder en modul og åpnes med en knapp i venstre marg
-- Tab : En fane i skjermbildet under variabelvelgeren som inneholder en modul
+- Tab : En fane langs toppen i skjermbildet som inneholder en modul
 
 ## Sett opp rammeverket på 1, 2, 3
 
+Nedenfor er det en kort veiledning for hvordan du setter opp rammeverket, så kan du fylle det med moduler etter du har fått bekreftet at selve rammeverket fungerer. For å se eksempler på ferdige apper kan du se på [demo-repoet vårt](https://github.com/statisticsnorway/demo-ssb-dash).
+
 ### 1. Sett opp rammeverkets byggeklosser
 
-Rammeverket krever også at du setter opp variabelvelgeren før du går videre. Du må sette opp ett alternativ per variabel du vil ha tilgjengelig.
+I tillegg til koden for app_setup, så må du også sette opp variabelvelgeren før du går videre.
+
+Du må legge inn alle variabler du vil ha tilgjengelig. Se nederste linje i koden nedenfor for å se hvordan du legger til en variabel. Du må legge til variablene en av gangen, og du må legge inn alle som skal benyttes for å filtrere eller identifisere observasjoner i appen din. Dette kan være variabler som år, måned, orgnr, nace o.l.
 
 ```python
-from ssb_dash_framework.setup.variableselector import VariableSelectorOption
+from ssb_dash_framework import app_setup
+from ssb_dash_framework import VariableSelectorOption
 
-VariableSelectorOption("foretak") # bytt ut foretak med din variabel.
+port = 8070
+service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
+domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
+app = app_setup(port, service_prefix, domain, "darkly")
+
+VariableSelectorOption("foretak")
 ```
 
 ### 2. Importer og start modulene du vil ha
 
-Obs! Noen moduler krever mer tilpasninger enn andre. Hva som kreves kan du se i dokumentasjonen for de enkelte modulene.
+Vær oppmerksom på at noen moduler krever mer tilpasninger enn andre. Hva som kreves kan du se i dokumentasjonen for de enkelte modulene.
 
 Importen av moduler skal legges langs toppen av scriptet med de andre importene mens oppsett av modulene skal skje under oppsettet av variabelvelgeren.
 
+Vi anbefaler sterkt å importere moduler fra ssb_dash_framework på måten som er vist nedenfor. Dette er bruken vi støtter og du vil oppleve færre problemer om du holder deg til den. Om du heller ønsker å importere på andre måter kan du gjøre dette, men det medfører økt sjanse for breaking changes.
+
 ```python
-from ssb_dash_framework.tabs.pi_memorizer import PimemorizerTab
+from ssb_dash_framework import PimemorizerTab
 
 # Din kode fra tidligere steg #
 
@@ -84,9 +97,9 @@ if __name__ == "__main__":
     )
 ```
 
-> 💡 **Forklaring**
+> 💡 **Hvorfor if ```__name__ == "__main__":```?**
 >
-> if __name__ == __main__: betyr at det som er dekket av if-statementen ikke vil kjøres med mindre du kjører denne filen direkte. Det er for å hindre at du kommer borti å importere filen i et annet script og starter appen ved et uhell.
+> if ```__name__ == __main__:``` betyr at det som er dekket av if-statementen ikke vil kjøres med mindre du kjører denne filen direkte. Det er for å hindre at du kommer borti å importere filen i et annet script og starter appen ved et uhell.
 
 
 ## Hvilke moduler finnes?
