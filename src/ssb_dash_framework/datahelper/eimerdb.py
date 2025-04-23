@@ -49,7 +49,6 @@ class DatabaseBuilderAltinnEimerdb:
         storage_location: str,
         ident_id: str,
         ident_name: str,
-        delivery_identifier: str,
         periods: str,
     ) -> None:
         """Initializes the databasebuilder for altinn3 surveys.
@@ -63,7 +62,6 @@ class DatabaseBuilderAltinnEimerdb:
         self.storage_location = storage_location
         self.ident_id = ident_id
         self.ident_name = ident_name
-        self.delivery_id = delivery_identifier
         self.periods = periods if isinstance(periods, list) else [periods]
         self._is_valid()
 
