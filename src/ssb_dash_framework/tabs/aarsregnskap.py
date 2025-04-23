@@ -132,7 +132,7 @@ class Aarsregnskap:
             try:
                 fs = FileClient.get_gcs_file_system()
                 with fs.open(
-                    f"gs://ssb-skatt-naering-data-produkt-prod/aarsregn/g{aar}/{orgnr}_{aar}.pdf",
+                    f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/aarsregn/g{aar}/{orgnr}_{aar}.pdf",
                     "rb",
                 ) as f:
                     pdf_bytes = f.read()
@@ -144,5 +144,4 @@ class Aarsregnskap:
             pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
             pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
             return pdf_data_uri
-
         logger.debug("Generated callbacks")
