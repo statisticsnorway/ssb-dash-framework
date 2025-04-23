@@ -28,7 +28,7 @@ Nedenfor er det en kort veiledning for hvordan du setter opp rammeverket, så ka
 
 I tillegg til koden for app_setup, så må du også sette opp variabelvelgeren før du går videre.
 
-Du må sette opp ett alternativ per variabel du vil ha tilgjengelig. Se nederste linje i koden nedenfor for hvordan du legger til et alternativ til variabelvelgere. Du må legge til alle alternativene som skal benyttes i appen din (periode-variabler, identitetsvariabler, stratumer, osv.).
+Du må legge inn alle variabler du vil ha tilgjengelig. Se nederste linje i koden nedenfor for å se hvordan du legger til en variabel. Du må legge til variablene en av gangen, og du må legge inn alle som skal benyttes for å filtrere eller identifisere observasjoner i appen din (perioder, ).
 
 ```python
 from ssb_dash_framework import app_setup
