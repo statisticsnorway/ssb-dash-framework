@@ -16,9 +16,10 @@ Mer forklaring om hva som egentlig foregår, logikken bak det og hvordan det hen
 Her finner du en kort forklaring av hva som menes med visse ord i veiledningen.
 
 - App : Applikasjonen du setter opp
+- Variabelvelger : Funksjonalitet som deler informasjon om valgte variabler mellom moduler
 - Modul : Komponent i dashbordet
 - Window : Et vindu som inneholder en modul og åpnes med en knapp i venstre marg
-- Tab : En fane i skjermbildet under variabelvelgeren som inneholder en modul
+- Tab : En fane langs toppen i skjermbildet som inneholder en modul
 
 ## Sett opp rammeverket på 1, 2, 3
 
