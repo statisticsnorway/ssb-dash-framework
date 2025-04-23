@@ -26,12 +26,20 @@ Nedenfor er det en kort veiledning for hvordan du setter opp rammeverket, så ka
 
 ### 1. Sett opp rammeverkets byggeklosser
 
-Rammeverket krever også at du setter opp variabelvelgeren før du går videre. Du må sette opp ett alternativ per variabel du vil ha tilgjengelig.
+I tillegg til koden for app_setup, så må du også sette opp variabelvelgeren før du går videre.
+
+Du må sette opp ett alternativ per variabel du vil ha tilgjengelig. Se nederste linje i koden nedenfor for hvordan du legger til et alternativ til variabelvelgere. Du må legge til alle alternativene som skal benyttes i appen din (periode-variabler, identitetsvariabler, stratumer, osv.).
 
 ```python
+from ssb_dash_framework import app_setup
 from ssb_dash_framework import VariableSelectorOption
 
-VariableSelectorOption("foretak") # bytt ut foretak med din variabel.
+port = 8070
+service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
+domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
+app = app_setup(port, service_prefix, domain, "darkly")
+
+VariableSelectorOption("foretak")
 ```
 
 ### 2. Importer og start modulene du vil ha
