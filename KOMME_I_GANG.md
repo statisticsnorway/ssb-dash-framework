@@ -16,9 +16,10 @@ Mer forklaring om hva som egentlig foregår, logikken bak det og hvordan det hen
 Her finner du en kort forklaring av hva som menes med visse ord i veiledningen.
 
 - App : Applikasjonen du setter opp
+- Variabelvelger : Funksjonalitet som deler informasjon om valgte variabler mellom moduler
 - Modul : Komponent i dashbordet
 - Window : Et vindu som inneholder en modul og åpnes med en knapp i venstre marg
-- Tab : En fane i skjermbildet under variabelvelgeren som inneholder en modul
+- Tab : En fane langs toppen i skjermbildet som inneholder en modul
 
 ## Sett opp rammeverket på 1, 2, 3
 
@@ -26,12 +27,20 @@ Nedenfor er det en kort veiledning for hvordan du setter opp rammeverket, så ka
 
 ### 1. Sett opp rammeverkets byggeklosser
 
-Rammeverket krever også at du setter opp variabelvelgeren før du går videre. Du må sette opp ett alternativ per variabel du vil ha tilgjengelig.
+I tillegg til koden for app_setup, så må du også sette opp variabelvelgeren før du går videre.
+
+Du må legge inn alle variabler du vil ha tilgjengelig. Se nederste linje i koden nedenfor for å se hvordan du legger til en variabel. Du må legge til variablene en av gangen, og du må legge inn alle som skal benyttes for å filtrere eller identifisere observasjoner i appen din. Dette kan være variabler som år, måned, orgnr, nace o.l.
 
 ```python
+from ssb_dash_framework import app_setup
 from ssb_dash_framework import VariableSelectorOption
 
-VariableSelectorOption("foretak") # bytt ut foretak med din variabel.
+port = 8070
+service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
+domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
+app = app_setup(port, service_prefix, domain, "darkly")
+
+VariableSelectorOption("foretak")
 ```
 
 ### 2. Importer og start modulene du vil ha
