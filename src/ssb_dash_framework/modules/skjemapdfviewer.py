@@ -13,7 +13,7 @@ from dash.exceptions import PreventUpdate
 logger = logging.getLogger(__name__)
 
 
-class skjemapdf(ABC):
+class SkjemapdfViewer(ABC):
     """Tab for displaying annual financial statements (Årsregnskap).
 
     Attributes:

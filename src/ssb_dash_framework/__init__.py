@@ -6,6 +6,7 @@ from .modals import VisualizationBuilder
 from .modules import FreeSearch
 #from .modules import RateModel
 from .modules import SkjemadataViewer
+from .modules import SkjemapdfViewer
 from .setup import VariableSelectorOption
 from .setup import app_setup
 from .setup import main_layout
@@ -13,6 +14,7 @@ from .tabs import Aarsregnskap
 from .tabs import BofInformation
 from .tabs import EditingTableLong
 from .tabs import FreeSearchTab
+from .tabs import SkjemapdfViewerTab
 from .windows import FreeSearchWindow
 #from .windows import RateModelWindow
 
