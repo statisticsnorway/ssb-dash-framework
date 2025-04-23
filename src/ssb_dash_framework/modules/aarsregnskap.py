@@ -1,5 +1,6 @@
 import base64
 import logging
+from abc import ABC
 
 import dash_bootstrap_components as dbc
 from dapla import FileClient
@@ -12,7 +13,7 @@ from dash.exceptions import PreventUpdate
 logger = logging.getLogger(__name__)
 
 
-class Aarsregnskap:
+class Aarsregnskap(ABC):
     """Tab for displaying annual financial statements (Årsregnskap).
 
     Attributes:
@@ -28,9 +29,15 @@ class Aarsregnskap:
             label (str): Label for the tab, displayed as "🧾 Årsregnskap".
         """
         self.label = "🧾 Årsregnskap"
-        self.callbacks()
+        self.is_valid()
+        self.module_layout = self._create_layout()
+        self.module_callbacks()
 
-    def layout(self) -> html.Div:
+    def is_valid(self):
+        pass
+        # TODO: Check that var-aar and var-foretak exists, necessary for module to work.
+
+    def _create_layout(self) -> html.Div:
         """Generate the layout for the Årsregnskap tab.
 
         Returns:
@@ -144,4 +151,5 @@ class Aarsregnskap:
             pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
             pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
             return pdf_data_uri
+
         logger.debug("Generated callbacks")
