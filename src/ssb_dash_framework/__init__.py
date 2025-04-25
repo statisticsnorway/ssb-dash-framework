@@ -21,7 +21,7 @@ from .windows import FreeSearchWindow
 
 aarsregnskap = ["Aarsregnskap", "AarsregnskapTab"]
 
-for_setup = ["VariableSelectorOption"]
+for_setup = ["app_setup", "main_layout", "VariableSelectorOption"]
 
 # ratemodel = ["RateModel", "RateModelWindow"]
 
