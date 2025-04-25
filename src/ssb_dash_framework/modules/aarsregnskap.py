@@ -1,5 +1,6 @@
 import base64
 import logging
+from abc import ABC
 
 import dash_bootstrap_components as dbc
 from dapla import FileClient
@@ -12,26 +13,40 @@ from dash.exceptions import PreventUpdate
 logger = logging.getLogger(__name__)
 
 
-class Aarsregnskap:
-    """Tab for displaying annual financial statements (Årsregnskap).
+class Aarsregnskap(ABC):
+    """Module for displaying annual financial statements (Årsregnskap).
 
     Attributes:
-        label (str): Label for the tab, displayed as "🧾 Årsregnskap".
+        label (str): Label for the module when initialized, displayed as "🧾 Årsregnskap".
     """
 
     def __init__(
         self,
     ) -> None:
-        """Initialize the AarsregnskapTab component.
+        """Initialize the Aarsregnskap component.
 
         Attributes:
-            label (str): Label for the tab, displayed as "🧾 Årsregnskap".
+            label (str): Label for the module, displayed as "🧾 Årsregnskap".
         """
         self.label = "🧾 Årsregnskap"
-        self.callbacks()
+        self._is_valid()
+        self.module_layout = self._create_layout()
+        self.module_callbacks()
 
-    def layout(self) -> html.Div:
-        """Generate the layout for the Årsregnskap tab.
+    def _is_valid(self):
+        if "var-aar" not in [x.id for x in VariableSelector._variableselectoroptions]:
+            raise ValueError(
+                "var-aar not found in the VariableSelector. Please add it using '''VariableSelectorOption('aar')'''"
+            )
+        if "var-foretak" not in [
+            x.id for x in VariableSelector._variableselectoroptions
+        ]:
+            raise ValueError(
+                "var-foretak not found in the VariableSelector. Please add it using '''VariableSelectorOption('foretak')'''"
+            )
+
+    def _create_layout(self) -> html.Div:
+        """Generate the layout for the Årsregnskap module.
 
         Returns:
             html.Div: A Div element containing input fields for year and organization number
@@ -77,7 +92,7 @@ class Aarsregnskap:
         return layout
 
     def callbacks(self) -> None:
-        """Register Dash callbacks for the Årsregnskap tab."""
+        """Register Dash callbacks for the Årsregnskap module."""
 
         @callback(  # type: ignore[misc]
             Output("tab-aarsregnskap-input1", "value"),
@@ -144,4 +159,5 @@ class Aarsregnskap:
             pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
             pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
             return pdf_data_uri
+
         logger.debug("Generated callbacks")

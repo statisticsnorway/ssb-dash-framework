@@ -3,24 +3,29 @@
 from .modals import Control
 from .modals import HBMethod
 from .modals import VisualizationBuilder
+
+# from .windows import RateModelWindow
+from .modules import Aarsregnskap
 from .modules import FreeSearch
-#from .modules import RateModel
+
+# from .modules import RateModel
 from .modules import SkjemadataViewer
 from .modules import SkjemapdfViewer
 from .setup import VariableSelectorOption
 from .setup import app_setup
 from .setup import main_layout
-from .tabs import Aarsregnskap
+from .tabs import AarsregnskapTab
 from .tabs import BofInformation
 from .tabs import EditingTableLong
 from .tabs import FreeSearchTab
 from .tabs import SkjemapdfViewerTab
 from .windows import FreeSearchWindow
-#from .windows import RateModelWindow
 
-for_setup = ["VariableSelectorOption"]
+aarsregnskap = ["Aarsregnskap", "AarsregnskapTab"]
 
-#ratemodel = ["RateModel", "RateModelWindow"]
+for_setup = ["app_setup", "main_layout", "VariableSelectorOption"]
+
+# ratemodel = ["RateModel", "RateModelWindow"]
 
 freesearch = ["FreeSearch", "FreeSearchTab", "FreeSearchWindow"]
 
@@ -28,8 +33,9 @@ hb_method = ["HBMethod"]
 
 # Defines top level if used in wildcard import
 __all__ = [
-    *for_setup, 
-    #*ratemodel,
+    *for_setup,
+    # *ratemodel,
     *freesearch,
-    *hb_method
+    *hb_method,
+    *aarsregnskap,
 ]
