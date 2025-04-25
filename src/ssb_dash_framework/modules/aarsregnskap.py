@@ -14,19 +14,19 @@ logger = logging.getLogger(__name__)
 
 
 class Aarsregnskap(ABC):
-    """Tab for displaying annual financial statements (Årsregnskap).
+    """Module for displaying annual financial statements (Årsregnskap).
 
     Attributes:
-        label (str): Label for the tab, displayed as "🧾 Årsregnskap".
+        label (str): Label for the module when initialized, displayed as "🧾 Årsregnskap".
     """
 
     def __init__(
         self,
     ) -> None:
-        """Initialize the AarsregnskapTab component.
+        """Initialize the Aarsregnskap component.
 
         Attributes:
-            label (str): Label for the tab, displayed as "🧾 Årsregnskap".
+            label (str): Label for the module, displayed as "🧾 Årsregnskap".
         """
         self.label = "🧾 Årsregnskap"
         self._is_valid()
@@ -46,7 +46,7 @@ class Aarsregnskap(ABC):
             )
 
     def _create_layout(self) -> html.Div:
-        """Generate the layout for the Årsregnskap tab.
+        """Generate the layout for the Årsregnskap module.
 
         Returns:
             html.Div: A Div element containing input fields for year and organization number
@@ -92,7 +92,7 @@ class Aarsregnskap(ABC):
         return layout
 
     def callbacks(self) -> None:
-        """Register Dash callbacks for the Årsregnskap tab."""
+        """Register Dash callbacks for the Årsregnskap module."""
 
         @callback(  # type: ignore[misc]
             Output("tab-aarsregnskap-input1", "value"),
