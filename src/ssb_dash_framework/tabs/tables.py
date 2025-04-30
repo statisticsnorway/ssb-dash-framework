@@ -43,8 +43,8 @@ class EditingTable:
         states: list[str],
         get_data_func: Callable[..., Any],
         update_table_func: Callable[..., Any],
-        ident = None
-        varselector_ident = None
+        ident = None,
+        varselector_ident = None,
     ) -> None:
         """Initialize the EditingTable component.
 
@@ -60,6 +60,7 @@ class EditingTable:
         EditingTable._id_number += 1
         self.label = label
         self.ident = ident
+        self.varselector_ident = varselector_ident
         for i in [*inputs, *states]:
             VariableSelectorOption(i)
         self.variableselector = VariableSelector(
@@ -241,9 +242,11 @@ class EditingTable:
 
                 return error_log
         if self.ident:
+            print("Tester")
             output_object = self.variableselector.get_output_object(
                 variable=self.varselector_ident
             )
+            print(output_object)
             @callback(  # type: ignore[misc]
                 output_object,
                 Input(f"{self._editingtable_n}-tabelleditering-table1", "clickData"),
@@ -264,6 +267,7 @@ class EditingTable:
                 if not clickdata or clickdata['colId'] != self.ident:
                     raise PreventUpdate
                 ident = clickdata['value']
+                print(f"Transfering {ident} to {self.varselector_ident}")
                 logger.info(f"Transfering {ident} to {self.varselector_ident}")
                 return ident
                 
