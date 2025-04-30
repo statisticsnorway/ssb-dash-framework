@@ -62,7 +62,10 @@ class EditingTable:
         self.ident = ident
         self.varselector_ident = varselector_ident
         for i in [*inputs, *states]:
-            VariableSelectorOption(i)
+            try:
+                VariableSelectorOption(i)
+            except:
+                print("Whelp")
         self.variableselector = VariableSelector(
             selected_inputs=inputs, selected_states=states
         )
@@ -249,7 +252,7 @@ class EditingTable:
             print(output_object)
             @callback(  # type: ignore[misc]
                 output_object,
-                Input(f"{self._editingtable_n}-tabelleditering-table1", "clickData"),
+                Input(f"{self._editingtable_n}-tabelleditering-table1", "cellClicked"),
                 prevent_initial_call=True,
             )
             def table_to_main_table(clickdata: dict[str, list[dict[str, Any]]]) -> str:
