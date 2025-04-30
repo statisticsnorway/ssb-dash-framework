@@ -44,6 +44,7 @@ class EditingTable:
         get_data_func: Callable[..., Any],
         update_table_func: Callable[..., Any],
         ident = None
+        varselector_ident = None
     ) -> None:
         """Initialize the EditingTable component.
 
@@ -58,6 +59,7 @@ class EditingTable:
         self._editingtable_n = EditingTable._id_number
         EditingTable._id_number += 1
         self.label = label
+        self.ident = ident
         for i in [*inputs, *states]:
             VariableSelectorOption(i)
         self.variableselector = VariableSelector(
@@ -238,6 +240,31 @@ class EditingTable:
                 )
 
                 return error_log
-            if ident:
+        if self.ident:
+            output_object = self.variableselector.get_output_object(
+                variable=self.varselector_ident
+            )
+            @callback(  # type: ignore[misc]
+                output_object,
+                Input(f"{self._editingtable_n}-tabelleditering-table1", "clickData"),
+                prevent_initial_call=True,
+            )
+            def table_to_main_table(clickdata: dict[str, list[dict[str, Any]]]) -> str:
+                """Passes the selected observation identifier to `variabelvelger`.
+    
+                Args:
+                    clickdata (dict): Data from the clicked point in the HB visualization.
+    
+                Returns:
+                    str: Identifier of the selected observation.
+    
+                Raises:
+                    PreventUpdate: if clickdata is None.
+                """
+                if not clickdata or clickdata['colId'] != self.ident:
+                    raise PreventUpdate
+                ident = clickdata['value']
+                logger.info(f"Transfering {ident} to {self.varselector_ident}")
+                return ident
                 
         logger.debug("Generated callbacks")
