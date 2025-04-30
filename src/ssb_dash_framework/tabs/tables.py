@@ -12,14 +12,14 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
-from ..setup.variableselector import VariableSelector
+from ..setup.variableselector import VariableSelector, VariableSelectorOption # TODO TEMP!!!!
 from ..utils.alert_handler import create_alert
 
 logger = logging.getLogger(__name__)
 
 
-class EditingTableLong:
-    """A component for editing database tables using a Dash AgGrid table.
+class EditingTable:
+    """A component for editing data using a Dash AgGrid table.
 
     This class provides a layout and functionality to:
     - Select a database table from a dropdown menu.
@@ -29,58 +29,48 @@ class EditingTableLong:
     Attributes:
         label (str): The label for the tab or component.
         database (object): Database connection or interface for querying and updating data.
-        tables (list[str]): List of available table names for selection.
         var_input (str): Variable input key for identifying records in the database.
         states (list[str]): Keys representing dynamic states to filter data.
         get_data (callable): Function to fetch data from the database.
         update_table (callable): Function to update database records based on edits in the table.
-        dropdown_options (list[dict]): List of options for the dropdown menu, derived from `tables`.
     """
-
+    _id_number = 0
+    
     def __init__(
         self,
         label: str,
-        database: object,
-        tables,
-        #  variable_name: str,
-        id_var: str,
+        inputs: list[str],
         states: list[str],
         get_data_func: Callable[..., Any],
         update_table_func: Callable[..., Any],
+        ident = None
     ) -> None:
         """Initialize the EditingTable component.
 
         Args:
             label (str): Label for the tab or component.
             database (object): Database connection or interface for querying and updating data.
-            tables (list[str]): List of available table names for selection.
             var_input (str): Variable input key used to identify records (e.g., "orgb", "orgf").
             states (list[str]): Keys representing dynamic states to filter data (e.g., "aar", "termin").
             get_data_func (callable): Function for retrieving data from the database.
             update_table_func (callable): Function for updating data in the database.
         """
+        self._editingtable_n = EditingTable._id_number
+        EditingTable._id_number += 1
         self.label = label
-        # self.var_col = variable_name
-        self.database = database
-
-        if not isinstance(id_var, str):
-            raise TypeError("Invalud value for id_var, should be type str.")
+        for i in [*inputs, *states]:
+            VariableSelectorOption(i)
         self.variableselector = VariableSelector(
-            selected_inputs=[id_var], selected_states=states
+            selected_inputs=inputs, selected_states=states
         )
 
         self.get_data = get_data_func
 
         self.get_data_args = [
-            x for x in self.variableselector.selected_variables if x not in [id_var]
+            x for x in self.variableselector.selected_variables
         ]
 
         self.update_table = update_table_func
-
-        dropdown_options = [
-            {"label": table, "value": table} for table in tables
-        ]  # make default value all tables starting with "skjemadata_"?
-        self.dropdown_options = dropdown_options
 
         self.callbacks()
 
@@ -98,19 +88,12 @@ class EditingTableLong:
             children=[
                 html.Div(
                     children=[
-                        dcc.Dropdown(
-                            id="tab-tabelleditering-dd1",
-                            options=self.dropdown_options,
-                            value=self.dropdown_options[0]["value"],
-                            placeholder="Velg tabell",
-                            className="dbc",
-                        ),
                         dag.AgGrid(
                             defaultColDef={"editable": True},
-                            id="tab-tabelleditering-table1",
+                            id=f"{self._editingtable_n}-tabelleditering-table1",
                             className="ag-theme-alpine-dark header-style-on-filter",
                         ),
-                        html.P(id="tab-tabelleditering-status1"),
+                        html.P(id=f"{self._editingtable_n}-tabelleditering-status1"),
                     ],
                 ),
             ],
@@ -132,9 +115,8 @@ class EditingTableLong:
         ]
 
         @callback(  # type: ignore[misc]
-            Output("tab-tabelleditering-table1", "rowData"),
-            Output("tab-tabelleditering-table1", "columnDefs"),
-            Input("tab-tabelleditering-dd1", "value"),
+            Output(f"{self._editingtable_n}-tabelleditering-table1", "rowData"),
+            Output(f"{self._editingtable_n}-tabelleditering-table1", "columnDefs"),
             *dynamic_states,
         )
         def load_to_table(
@@ -161,7 +143,7 @@ class EditingTableLong:
                 - Adds checkbox selection to the first column for bulk actions.
             """
             try:
-                df = self.get_data(self.database, tabell, *dynamic_states)
+                df = self.get_data(tabell, *dynamic_states)
                 columns = [
                     {
                         "headerName": col,
@@ -178,8 +160,7 @@ class EditingTableLong:
 
         @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
-            Input("tab-tabelleditering-table1", "cellValueChanged"),
-            State("tab-tabelleditering-dd1", "value"),
+            Input(f"{self._editingtable_n}-tabelleditering-table1", "cellValueChanged"),
             State("alert_store", "data"),
             *dynamic_states,
             prevent_initial_call=True,
@@ -234,7 +215,7 @@ class EditingTableLong:
             row_id = edited[0]["data"]["row_id"]
             logger.debug(f"Edited:\n{edited}")
             try:
-                self.update_table(self.database, tabell, variable, new_value, row_id)
+                self.update_table(tabell, variable, new_value, row_id)
 
                 error_log.append(
                     create_alert(
@@ -257,5 +238,6 @@ class EditingTableLong:
                 )
 
                 return error_log
-
+            if ident:
+                
         logger.debug("Generated callbacks")
