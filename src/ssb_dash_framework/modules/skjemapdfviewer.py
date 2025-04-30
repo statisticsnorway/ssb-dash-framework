@@ -6,9 +6,10 @@ import dash_bootstrap_components as dbc
 from dapla import FileClient
 from dash import callback
 from dash import html
-from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
+
+from ..setup.variableselector import VariableSelector
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +23,13 @@ class SkjemapdfViewer(ABC):
 
     def __init__(
         self,
+        form_identifier,
+        pdf_folder_path,
     ) -> None:
         """Initialize the skjemapdf component."""
         self.label = "🗎 Skjema"
-        self.form_identifier = form_identifier
+        self.variableselector = VariableSelector([form_identifier], [])
+        self.pdf_folder_path = pdf_folder_path
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
@@ -36,7 +40,8 @@ class SkjemapdfViewer(ABC):
             raise ValueError(
                 f"var-{form_identifier} not found in the VariableSelector. Please add it using '''VariableSelectorOption('{form_identifier}')'''"
             )
-        # TODO: Check that var-aar and var-foretak exists, necessary for module to work.
+        if self.pdf_folder_path.endswith("/"):
+            self.pdf_folder_path = self.pdf_folder_path[:-1]
 
     def _create_layout(self) -> html.Div:
         """Generate the layout for the Årsregnskap tab.
@@ -56,14 +61,14 @@ class SkjemapdfViewer(ABC):
                                     html.Div(
                                         [
                                             dbc.Label("Skjema-id"),
-                                            dbc.Input("tab-skjemapdf-input"),
+                                            dbc.Input("skjemapdf-input"),
                                         ]
                                     )
                                 ),
                             ]
                         ),
                         html.Iframe(
-                            id="tab-skjemapdf-iframe1",
+                            id="skjemapdf-iframe1",
                             style={"width": "100%", "height": "80vh"},
                         ),
                     ],
@@ -74,12 +79,16 @@ class SkjemapdfViewer(ABC):
         logger.debug("Generated layout")
         return layout
 
-    def callbacks(self) -> None:
+    def module_callbacks(self) -> None:
         """Register Dash callbacks for the skjema pdf tab."""
+        dynamic_states = [
+            self.variableselector.get_inputs(),
+            self.variableselector.get_states(),
+        ]
 
         @callback(  # type: ignore[misc]
-            Output("tab-skjemapdf-input", "value"),
-            Input(f"var-{self.form_identifier}", "value"),
+            Output("skjemapdf-input", "value"),
+            *dynamic_states,
         )
         def update_form(orgnr: str) -> str:
             """Update the organization number input field.
@@ -93,15 +102,14 @@ class SkjemapdfViewer(ABC):
             return orgnr
 
         @callback(  # type: ignore[misc]
-            Output("tab-skjemapdf-iframe1", "src"),
-            Input("tab-skjemapdf-input", "value"),
+            Output("skjemapdf-iframe1", "src"),
+            *dynamic_states,
         )
         def update_pdfskjema_source(form_identifier: str) -> str | None:
             """Fetch and encode the PDF source based on the year and organization number.
 
             Args:
-                aar (int): The year input value.
-                orgnr (str): The organization number input value.
+                form_identifier (str): The form identification input value.
 
             Returns:
                 str: A data URI for the PDF file, encoded in base64.
@@ -109,9 +117,10 @@ class SkjemapdfViewer(ABC):
             Raises:
                 PreventUpdate: If the year or organization number is not provided.
             """
-            if not aar or not orgnr:
+            if not form_identifier:
                 raise PreventUpdate
             try:
+                print(f"{self.pdf_folder_path}/{form_identifier}.pdf")
                 fs = FileClient.get_gcs_file_system()
                 with fs.open(
                     f"{self.pdf_folder_path}/{form_identifier}.pdf",
