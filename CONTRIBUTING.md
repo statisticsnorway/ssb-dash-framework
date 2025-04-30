@@ -208,10 +208,10 @@ Now in each callback, make sure to include the dynamic_states object
         Output("your component", "your attribute"),
         *dynamic_states,
     )
-    def your_callback_function(*dynamic_states):
+    def your_callback_function(*args):
         do some useful stuff
 
-And that should be everything you need to have your module connected to the VariableSelector component in the main_layout. You can use *args in functions to access values from the
+And that should be everything you need to have your module connected to the VariableSelector component in the main_layout. You can use *args in functions to access values from the variable selector. You can use the debugger_modal to see what the values look like when passed to a function.
 
 ### Tests for your module
 
