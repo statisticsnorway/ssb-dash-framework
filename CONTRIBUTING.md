@@ -1,7 +1,7 @@
 # Contributor Guide
 
 Thank you for your interest in improving this project.
-This project is open-source under the [MIT license] and
+This project is open-source under the [GNU license] and
 welcomes contributions in the form of bug reports, feature requests, and pull requests.
 
 Here is a list of important resources for contributors:
@@ -11,24 +11,25 @@ Here is a list of important resources for contributors:
 - [Issue Tracker]
 - [Code of Conduct]
 
-## How to report a bug
+## Table of contents
 
-Report bugs on the [Issue Tracker].
+1. [Our Design and Making a New Module](#our-design-and-making-a-new-module)
+   - [The Class Structure](#the-class-structure)
+   - [VariableSelector](#variableselector)
 
-When filing an issue, make sure to answer these questions:
+2. [Our Design Choices](#our-design-choices)
 
-- Which operating system and Python version are you using?
-- Which version of this project are you using?
-- What did you do?
-- What did you expect to see?
-- What did you see instead?
+3. [Tips and Tricks](#tips-and-tricks)
 
-The best way to get your bug fixed is to provide a test case,
-and/or steps to reproduce the issue.
+4. [How to Set Up Your Development Environment](#how-to-set-up-your-development-environment)
 
-## How to request a feature
+5. [How to Test the Project](#how-to-test-the-project)
 
-Request features on the [Issue Tracker].
+6. [How to Submit Changes](#how-to-submit-changes)
+
+7. [How to Report a Bug](#how-to-report-a-bug)
+
+8. [How to Request a Feature](#how-to-request-a-feature)
 
 ## Our design and making a new module
 
@@ -410,7 +411,26 @@ nox --session=pre-commit -- install
 It is recommended to open an issue before starting work on anything.
 This will allow a chance to talk it over with the owners and validate your approach.
 
-[mit license]: https://opensource.org/licenses/MIT
+## How to report a bug
+
+Report bugs on the [Issue Tracker].
+
+When filing an issue, make sure to answer these questions:
+
+- Which operating system and Python version are you using?
+- Which version of this project are you using?
+- What did you do?
+- What did you expect to see?
+- What did you see instead?
+
+The best way to get your bug fixed is to provide a test case,
+and/or steps to reproduce the issue.
+
+## How to request a feature
+
+Request features on the [Issue Tracker].
+
+[GNU license]: https://opensource.org/license/gpl-3-0
 [source code]: https://github.com/statisticsnorway/ssb-dash-framework
 [documentation]: https://statisticsnorway.github.io/ssb-dash-framework
 [issue tracker]: https://github.com/statisticsnorway/ssb-dash-framework/issues
