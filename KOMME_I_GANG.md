@@ -2,8 +2,7 @@
 
 Denne veiledning har som mål å hjelpe deg frem til et fungerende oppsett som du senere kan utvide.
 
-I første avsnitt får du en veiledning til hvordan du setter opp rammeverket.
-- Denne antar at du har dataene på en struktur og teknologi som passer rammeverket. Du kan finne informasjon om datastruktur og lagringsteknologi **ett eller annet sted (husk å fikse noe her)**
+Nedenfor får du en veiledning til hvordan du setter opp rammeverket. Hvordan du forbereder dataene til bruk i rammeverket beskrives ikke, men du kan se eksempler på hvordan dette kan gjøres i [demo-repoet](https://github.com/statisticsnorway/demo-ssb-dash).
 
 Du får også noen hint om hvor du kan finne informasjon om hvilke moduler som finnes.
 
