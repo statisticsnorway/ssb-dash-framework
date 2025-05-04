@@ -83,16 +83,15 @@ class BofInformation:
     """Tab for displaying and managing information from BoF.
 
     This component:
-    - Displays detailed information about selected foretak using cards.
-    - Provides a table for associated business data.
+    - Displays detailed information about selected foretak using cards and ag-grids.
     - Interacts with sqlite files to display information for the currently selected foretak.
+    - The sqlite files can be accessed from the oracle-hns shared bucket from the vof team.
 
     Attributes:
         label (str): Label for the tab, displayed as "🗃️ BoF Foretak".
 
     Methods:
         generate_card(title, component_id, var_type): Generates a Dash Bootstrap card for displaying information.
-        register_table(): Registers the BoF foretak data as a table in DuckDB.
         layout(): Generates the layout for the BoF Foretak tab.
         callbacks(): Registers Dash callbacks for handling user interactions.
     """
