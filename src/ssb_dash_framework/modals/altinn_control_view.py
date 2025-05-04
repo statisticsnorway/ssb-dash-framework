@@ -1,13 +1,13 @@
 from typing import Any
 from typing import Literal
 
-import dash_bootstrap_components as dbc
-from dash import dash_table, html, dcc, callback
 import dash_ag_grid as dag
-from dash.dependencies import Input, Output, State
-import os
-import pandas as pd
-from datetime import datetime
+import dash_bootstrap_components as dbc
+from dash import callback
+from dash import html
+from dash.dependencies import Input
+from dash.dependencies import Output
+from dash.dependencies import State
 
 from ..utils.alert_handler import create_alert
 from ..utils.functions import sidebar_button
@@ -58,7 +58,7 @@ class AltinnControlView:
                                             color="light",
                                         ),
                                         width="auto",
-                                        className="ms-auto"
+                                        className="ms-auto",
                                     ),
                                 ],
                                 className="w-100",
@@ -79,7 +79,7 @@ class AltinnControlView:
                                             dbc.Col(
                                                 dbc.Button(
                                                     "🔄 Refresh",
-                                                    id="kontrollermodal-refresh"
+                                                    id="kontrollermodal-refresh",
                                                 ),
                                                 width="auto",
                                             ),
@@ -97,13 +97,10 @@ class AltinnControlView:
                                                 ),
                                                 width="auto",
                                             ),
-                                            dbc.Col(
-                                                html.P(id="kontrollermodal-vars")
-                                            ),
+                                            dbc.Col(html.P(id="kontrollermodal-vars")),
                                         ],
                                         className="g-2",
                                     ),
-
                                     html.Div(
                                         dag.AgGrid(
                                             id="kontroller-table1",
@@ -119,7 +116,6 @@ class AltinnControlView:
                                         ),
                                         style={"flexShrink": 0},
                                     ),
-
                                     html.Div(
                                         dag.AgGrid(
                                             id="kontroller-table2",
@@ -135,7 +131,7 @@ class AltinnControlView:
                                         ),
                                         style={"flexShrink": 0},
                                     ),
-                                ]
+                                ],
                             )
                         ),
                     ],
@@ -148,9 +144,7 @@ class AltinnControlView:
         )
         return layout
 
-    def create_partition_select(
-        self, skjema: str | None = None, **kwargs: Any
-    ) -> dict:
+    def create_partition_select(self, skjema: str | None = None, **kwargs: Any) -> dict:
         """Creates the partition select argument based on the chosen time units."""
         partition_select = {
             unit: [kwargs[unit]] for unit in self.time_units if unit in kwargs
@@ -205,7 +199,7 @@ class AltinnControlView:
         def kontrollutslag_antall(skjema, n_clicks, *args):
             partition_args = dict(zip(self.time_units, args, strict=False))
             df1 = self.conn.query(
-                f"""SELECT 
+                """SELECT 
                     kontroller.skjema,
                     kontroller.kontrollid,
                     kontroller.type,
@@ -224,7 +218,7 @@ class AltinnControlView:
                 self.create_partition_select(skjema=skjema, **partition_args),
             )
             df2 = self.conn.query(
-                f"""SELECT k.kontrollid, COUNT(row_id) AS uediterte FROM kontrollutslag AS k
+                """SELECT k.kontrollid, COUNT(row_id) AS uediterte FROM kontrollutslag AS k
                 JOIN (
                     SELECT ident, skjemaversjon FROM skjemamottak
                     WHERE editert = False
@@ -273,15 +267,17 @@ class AltinnControlView:
                     ORDER BY editert, utslag.verdi {varsort}
                 """,
                 partition_select={
-                    "kontrollutslag":
-                        self.create_partition_select(skjema=skjema, **partition_args),
-                    "enhetsinfo":
-                        self.create_partition_select(skjema=None, **partition_args),
-                    "skjemamottak":
-                        self.create_partition_select(skjema=skjema, **partition_args),
+                    "kontrollutslag": self.create_partition_select(
+                        skjema=skjema, **partition_args
+                    ),
+                    "enhetsinfo": self.create_partition_select(
+                        skjema=None, **partition_args
+                    ),
+                    "skjemamottak": self.create_partition_select(
+                        skjema=skjema, **partition_args
+                    ),
                 },
-                ).rename(columns={"verdi": kontrollvar}
-            )
+                ).rename(columns={"verdi": kontrollvar})
             columns = [{"headerName": col, "field": col} for col in df.columns]
             columns[0]["checkboxSelection"] = True
             columns[0]["headerCheckboxSelection"] = True
@@ -335,7 +331,7 @@ class AltinnControlView:
                         *alert_store,
                     ]
                 except Exception as e:
-                     alert_store = [
+                    alert_store = [
                         create_alert(
                             f"Kontrollkjøringa feilet. {str(e)[:60]}",
                             "danger",
@@ -374,7 +370,7 @@ class AltinnControlView:
                         *alert_store,
                     ]
                 except Exception as e:
-                     alert_store = [
+                    alert_store = [
                         create_alert(
                             f"Kontrollkjøringa feilet. {str(e)[:60]}",
                             "danger",
