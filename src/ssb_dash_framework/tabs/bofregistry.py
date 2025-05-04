@@ -151,15 +151,19 @@ class BofInformation:
                     [
                         dbc.Col(
                             self.generate_card(
-                                "Orgnr", "tab-bof_foretak-orgnrcard", "text",
+                                "Orgnr",
+                                "tab-bof_foretak-orgnrcard",
+                                "text",
                             ),
-                            width=2
+                            width=2,
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Navn", "tab-bof_foretak-navncard", "text",
+                                "Navn",
+                                "tab-bof_foretak-navncard",
+                                "text",
                             ),
-                            width=10
+                            width=10,
                         ),
                     ],
                     className="mb-2",
@@ -168,27 +172,37 @@ class BofInformation:
                     [
                         dbc.Col(
                             self.generate_card(
-                                "foretaks_nr", "tab-bof_foretak-foretaksnrcard", "text",
+                                "foretaks_nr",
+                                "tab-bof_foretak-foretaksnrcard",
+                                "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Nace", "tab-bof_foretak-nacecard", "text",
+                                "Nace",
+                                "tab-bof_foretak-nacecard",
+                                "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Statuskode", "tab-bof_foretak-statuscard", "text",
+                                "Statuskode",
+                                "tab-bof_foretak-statuscard",
+                                "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Sektor 2014", "tab-bof_foretak-sektorcard", "text",
+                                "Sektor 2014",
+                                "tab-bof_foretak-sektorcard",
+                                "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "omsetning", "tab-bof_foretak-omsetning", "text",
+                                "omsetning",
+                                "tab-bof_foretak-omsetning",
+                                "text",
                             ),
                         ),
                     ],
@@ -205,22 +219,30 @@ class BofInformation:
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Ansatte", "tab-bof_foretak-ansattecard", "text",
+                                "Ansatte",
+                                "tab-bof_foretak-ansattecard", 
+                                "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Ansatte tot.", "tab-bof_foretak-totansattecard", "text",
+                                "Ansatte tot.",
+                                "tab-bof_foretak-totansattecard",
+                                "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Kommunenummer", "tab-bof_foretak-kommunecard", "text",
+                                "Kommunenummer",
+                                "tab-bof_foretak-kommunecard",
+                                "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Type", "tab-bof_foretak-typecard", "text",
+                                "Type",
+                                "tab-bof_foretak-typecard",
+                                "text",
                             ),
                         ),
                     ],
