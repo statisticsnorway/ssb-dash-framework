@@ -20,6 +20,7 @@ default_col_def = {
     "editable": False,
 }
 
+
 class AltinnControlView:
     """Provides a layout and functionality for a modal that offers a tabular view of the controls.
 
@@ -28,6 +29,7 @@ class AltinnControlView:
         control_dict (dict): A dictionary with one control class per skjema.
         conn (object): The eimerdb connection.
     """
+
     def __init__(self, time_units, control_dict, conn: object) -> None:
         self.time_units = time_units
         self.control_dict = control_dict
@@ -199,7 +201,7 @@ class AltinnControlView:
         def kontrollutslag_antall(skjema, n_clicks, *args):
             partition_args = dict(zip(self.time_units, args, strict=False))
             df1 = self.conn.query(
-                """SELECT 
+                """SELECT
                     kontroller.skjema,
                     kontroller.kontrollid,
                     kontroller.type,
@@ -277,7 +279,7 @@ class AltinnControlView:
                         skjema=skjema, **partition_args
                     ),
                 },
-                ).rename(columns={"verdi": kontrollvar})
+            ).rename(columns={"verdi": kontrollvar})
             columns = [{"headerName": col, "field": col} for col in df.columns]
             columns[0]["checkboxSelection"] = True
             columns[0]["headerCheckboxSelection"] = True
@@ -339,7 +341,7 @@ class AltinnControlView:
                         ),
                         *alert_store,
                     ]
-                return alert_store                   
+                return alert_store
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
