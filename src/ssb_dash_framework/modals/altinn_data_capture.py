@@ -51,8 +51,8 @@ class AltinnDataCapture:
                             dbc.Row(
                                 [
                                     dbc.Col(
-                                        dbc.ModalTitle("🎣 Datafangst"), width="auto")
-                                    ,
+                                        dbc.ModalTitle("🎣 Datafangst"), width="auto"
+                                    ),
                                     dbc.Col(
                                         dbc.Button(
                                             "🖵", id="datafangst-modal-fullscreen"
