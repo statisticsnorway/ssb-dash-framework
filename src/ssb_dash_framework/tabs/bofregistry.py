@@ -1,12 +1,9 @@
 import logging
+import sqlite
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-import duckdb
 import pandas as pd
-import pyarrow.parquet as pq
-import sqlite3
-from dapla import FileClient
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -152,30 +149,82 @@ class BofInformation:
     
                 dbc.Row(
                     [
-                        dbc.Col(self.generate_card("Orgnr", "tab-bof_foretak-orgnrcard", "text"), width=2),
-                        dbc.Col(self.generate_card("Navn", "tab-bof_foretak-navncard", "text"), width=10),
+                        dbc.Col(
+                            self.generate_card(
+                                "Orgnr", "tab-bof_foretak-orgnrcard", "text"
+                            ),
+                            width=2
+                        ),
+                        dbc.Col(
+                            self.generate_card(
+                                "Navn", "tab-bof_foretak-navncard", "text"
+                            ),
+                            width=10
+                        ),
                     ],
                     className="mb-2",
                 ),
     
                 dbc.Row(
                     [
-                        dbc.Col(self.generate_card("foretaks_nr", "tab-bof_foretak-foretaksnrcard", "text")),
-                        dbc.Col(self.generate_card("Nace", "tab-bof_foretak-nacecard", "text")),
-                        dbc.Col(self.generate_card("Statuskode", "tab-bof_foretak-statuscard", "text")),
-                        dbc.Col(self.generate_card("Sektor 2014", "tab-bof_foretak-sektorcard", "text")),
-                        dbc.Col(self.generate_card("omsetning", "tab-bof_foretak-omsetning", "text")),
+                        dbc.Col(
+                            self.generate_card(
+                                "foretaks_nr", "tab-bof_foretak-foretaksnrcard", "text"
+                            )
+                        ),
+                        dbc.Col(
+                            self.generate_card(
+                                "Nace", "tab-bof_foretak-nacecard", "text"
+                            )
+                        ),
+                        dbc.Col(
+                            self.generate_card(
+                                "Statuskode", "tab-bof_foretak-statuscard", "text"
+                            )
+                        ),
+                        dbc.Col(
+                            self.generate_card(
+                                "Sektor 2014", "tab-bof_foretak-sektorcard", "text"
+                            )
+                        ),
+                        dbc.Col(
+                            self.generate_card(
+                                "omsetning", "tab-bof_foretak-omsetning", "text"
+                            )
+                        ),
                     ],
                     className="mb-2",
                 ),
     
                 dbc.Row(
                     [
-                        dbc.Col(self.generate_card("Organisasjonsform", "tab-bof_foretak-orgformcard", "text")),
-                        dbc.Col(self.generate_card("Ansatte", "tab-bof_foretak-ansattecard", "text")),
-                        dbc.Col(self.generate_card("Ansatte tot.", "tab-bof_foretak-totansattecard", "text")),
-                        dbc.Col(self.generate_card("Kommunenummer", "tab-bof_foretak-kommunecard", "text")),
-                        dbc.Col(self.generate_card("Type", "tab-bof_foretak-typecard", "text")),
+                        dbc.Col(
+                            self.generate_card(
+                                "Organisasjonsform",
+                                "tab-bof_foretak-orgformcard",
+                                "text"
+                            )
+                        ),
+                        dbc.Col(
+                            self.generate_card(
+                                "Ansatte", "tab-bof_foretak-ansattecard", "text"
+                            )
+                        ),
+                        dbc.Col(
+                            self.generate_card(
+                                "Ansatte tot.", "tab-bof_foretak-totansattecard", "text"
+                            )
+                        ),
+                        dbc.Col(
+                            self.generate_card(
+                                "Kommunenummer", "tab-bof_foretak-kommunecard", "text"
+                            )
+                        ),
+                        dbc.Col(
+                            self.generate_card(
+                                "Type", "tab-bof_foretak-typecard", "text"
+                            )
+                        ),
                     ],
                     className="mb-2",
                 ),
@@ -185,8 +234,20 @@ class BofInformation:
                         dbc.Col(),
                         dbc.Col(),
                         dbc.Col(),
-                        dbc.Col(dbc.Button("Vis mer foretaksinformasjon", id="tab-vof-foretak-button1"), width="auto"),
-                        dbc.Col(dbc.Button("Vis mer bedriftsinformasjon", id="tab-vof-foretak-button2"), width="auto"),
+                        dbc.Col(
+                            dbc.Button(
+                                "Vis mer foretaksinformasjon",
+                                id="tab-vof-foretak-button1"
+                            ),
+                            width="auto"
+                        ),
+                        dbc.Col(
+                            dbc.Button(
+                                "Vis mer bedriftsinformasjon",
+                                id="tab-vof-foretak-button2"
+                            ),
+                            width="auto"
+                        ),
                     ],
                     className="mb-2",
                 ),
@@ -248,7 +309,7 @@ class BofInformation:
         @callback(
             Output("bofregistry-modal-ssb_bedrift", "is_open"),
             Input("tab-vof-foretak-button2", "n_clicks"),
-            State("bofregistry-modal-ssb_bedrift", "is_open")
+            State("bofregistry-modal-ssb_bedrift", "is_open"),
         )
         def toggle_modal(n_clicks, is_open):
             if n_clicks > 0:
@@ -261,12 +322,14 @@ class BofInformation:
             Output("bofregistry-ssb_foretak-table", "rowData"),
             Output("bofregistry-ssb_foretak-table", "columnDefs"),
             Input("tab-vof-foretak-button1", "n_clicks"),
-            State("tab-bof_foretak-orgnrcard", "value"), 
+            State("tab-bof_foretak-orgnrcard", "value"),
         )
         def ssb_foretak(n_clicks, orgnr):
             if n_clicks > 0:
                 conn = sqlite3.connect(SSB_FORETAK_PATH)
-                df = pd.read_sql_query(f"SELECT * FROM ssb_foretak WHERE orgnr = '{orgnr}'", conn)
+                df = pd.read_sql_query(
+                    f"SELECT * FROM ssb_foretak WHERE orgnr = '{orgnr}'", conn
+                )
                 df = df.melt()
                 columns = [
                     {
@@ -281,7 +344,7 @@ class BofInformation:
             Output("bofregistry-ssb_bedrift-table", "rowData"),
             Output("bofregistry-ssb_bedrift-table", "columnDefs"),
             Input("tab-vof-foretak-button2", "n_clicks"),
-            State("tab-bof_foretak-table1", "selectedRows"), 
+            State("tab-bof_foretak-table1", "selectedRows"),
         )
         def ssb_foretak(n_clicks, selected_row):
             orgnr = selected_row[0]["orgnr"]
@@ -314,10 +377,9 @@ class BofInformation:
             Input("var-foretak", "value"),
         )
         def bof_data(
-            orgf: str
+            orgf: str,
         ) -> tuple[
-            str, str, str, str, int, str, str, str, str, int, str, str
-        ]:
+            str, str, str, str, int, str, str, str, str, int, str, str]:
             """Fetch BoF Foretak data based on the selected organization number.
 
             Args:
@@ -335,7 +397,7 @@ class BofInformation:
                 conn = sqlite3.connect(SSB_FORETAK_PATH)
                 df = pd.read_sql_query(
                     f"SELECT * FROM ssb_foretak WHERE orgnr = '{orgf}'",
-                    conn
+                    conn,
                 )
 
                 df["ansatte_totalt"] = df["ansatte_totalt"].fillna(0)
@@ -378,7 +440,7 @@ class BofInformation:
                 df = pd.read_sql_query(
                     f"""SELECT bedrifts_nr, orgnr, navn, sn07_1, org_form, sysselsatte, ansatte_totalt, omsetning, statuskode, statuskode_gdato, statuskode_rdato
                     FROM ssb_bedrift WHERE foretaks_nr = '{foretaksnr}';""",
-                    conn
+                    conn,
                 )
                 columns = [
                     {
