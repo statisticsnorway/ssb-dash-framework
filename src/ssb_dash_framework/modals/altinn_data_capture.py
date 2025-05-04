@@ -50,16 +50,20 @@ class AltinnDataCapture:
                         dbc.ModalHeader(
                             dbc.Row(
                                 [
-                                    dbc.Col(dbc.ModalTitle("🎣 Datafangst"), width="auto"),
                                     dbc.Col(
-                                        dbc.Button("🖵", id="datafangst-modal-fullscreen"),
+                                        dbc.ModalTitle("🎣 Datafangst"), width="auto")
+                                    ,
+                                    dbc.Col(
+                                        dbc.Button(
+                                            "🖵", id="datafangst-modal-fullscreen"
+                                        ),
                                         width="auto",
-                                        className="ms-auto"
+                                        className="ms-auto",
                                     ),
                                 ],
                                 className="w-100",
                                 align="center",
-                                justify="between"
+                                justify="between",
                             )
                         ),
                         dbc.ModalBody(
