@@ -10,6 +10,7 @@ import pandas as pd
 from datetime import datetime
 from .modal_functions import sidebar_button
 from ..utils.alert_handler import create_alert
+from ..utils.functions import sidebar_button
 
 default_col_def = {
     "filter": True,
