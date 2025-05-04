@@ -66,7 +66,8 @@ class Aarsregnskap(ABC):
                                         [
                                             dbc.Label("År"),
                                             dbc.Input(
-                                                id="tab-aarsregnskap-input1", type="number"
+                                                id="tab-aarsregnskap-input1",
+                                                type="number",
                                             ),
                                         ]
                                     )
@@ -89,7 +90,7 @@ class Aarsregnskap(ABC):
                                     style={
                                         "width": "100%",
                                         "height": "100%",
-                                        "border": "none"
+                                        "border": "none",
                                     },
                                 ),
                                 style={"flex": "1", "minHeight": 0},
