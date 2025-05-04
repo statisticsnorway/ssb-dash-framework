@@ -48,7 +48,19 @@ class AltinnDataCapture:
                 dbc.Modal(
                     [
                         dbc.ModalHeader(
-                            dbc.ModalTitle("🎣 Datafangst"),
+                            dbc.Row(
+                                [
+                                    dbc.Col(dbc.ModalTitle("🎣 Datafangst"), width="auto"),
+                                    dbc.Col(
+                                        dbc.Button("🖵", id="datafangst-modal-fullscreen", color="light"),
+                                        width="auto",
+                                        className="ms-auto"
+                                    ),
+                                ],
+                                className="w-100",
+                                align="center",
+                                justify="between"
+                            )
                         ),
                         dbc.ModalBody(
                             [
@@ -156,7 +168,7 @@ class AltinnDataCapture:
 
         Notes:
             - `get_skjemas`: Gets all the schemas from the eimerdb enheter table and adds them to a dropdown.
-            - `update_valgt_skjema`: Updates the chosen schema from the variable selector.
+            - `update_altinnskjema`: Updates the chosen schema from the variable selector.
             - `datafangstmodal_toggle`: Toggles the modal, which contains the layout.
             - 'datafangst_graph': Queries the skjemamottak table in eimerdb and returns a graph.
         """
@@ -185,11 +197,24 @@ class AltinnDataCapture:
 
         @callback(
             Output("datafangst-dd1", "value", allow_duplicate=True),
-            Input("var-valgt_skjema", "value"),
+            Input("var-altinnskjema", "value"),
             prevent_initial_call=True,
         )
-        def update_valgt_skjema(valgt_skjema: str) -> str:
-            return valgt_skjema
+        def update_altinnskjema(altinnskjema: str) -> str:
+            return altinnskjema
+
+        @callback(
+            Output("datafangst-modal", "fullscreen"),
+            Input("datafangst-modal-fullscreen", "n_clicks"),
+            State("datafangst-modal", "fullscreen"),
+        )
+        def toggle_fullscreen_modal(n_clicks: int, fullscreen_state):
+            if n_clicks > 0:
+                if fullscreen_state == True:
+                    fullscreen = "xxl-down"
+                else:
+                    fullscreen = True
+                return fullscreen
 
         @callback(
             Output("datafangst-modal", "is_open"),
