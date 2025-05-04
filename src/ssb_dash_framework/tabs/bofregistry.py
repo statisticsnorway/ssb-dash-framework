@@ -1,5 +1,5 @@
 import logging
-import sqlite
+import sqlite3
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -220,7 +220,7 @@ class BofInformation:
                         dbc.Col(
                             self.generate_card(
                                 "Ansatte",
-                                "tab-bof_foretak-ansattecard", 
+                                "tab-bof_foretak-ansattecard",
                                 "text",
                             ),
                         ),
