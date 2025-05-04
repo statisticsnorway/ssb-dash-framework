@@ -98,9 +98,8 @@ def main_layout(
                                 ]
                             ),
                             html.Div(
-                                dbc.Tabs(
-                                    selected_tab_list,
-                                ),
+                                dbc.Tabs(selected_tab_list),
+                                style={"height": "5vh"},
                             ),
                         ],
                     ),
