@@ -10,6 +10,8 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 
+from ..setup.variableselector import VariableSelector
+
 logger = logging.getLogger(__name__)
 
 

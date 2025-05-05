@@ -57,7 +57,6 @@ class AltinnControlView:
                                         dbc.Button(
                                             "🖵",
                                             id="kontroller-modal-fullscreen",
-                                            color="light",
                                         ),
                                         width="auto",
                                         className="ms-auto",
