@@ -47,6 +47,7 @@ Du må legge inn alle variabler du vil ha tilgjengelig. Se nederste linje i kode
 Vi henter også inn main_layout, men denne brukes ikke før i steg 3.
 
 ```python
+import os
 from ssb_dash_framework import main_layout
 from ssb_dash_framework import app_setup
 from ssb_dash_framework import VariableSelectorOption
@@ -70,11 +71,11 @@ Importen av moduler skal legges langs toppen av scriptet med de andre importene 
 Vi anbefaler sterkt å importere moduler fra ssb_dash_framework på måten som er vist nedenfor. Dette er bruken vi støtter og du vil oppleve færre problemer om du holder deg til den. Om du heller ønsker å importere på andre måter kan du gjøre dette, men det medfører økt sjanse for breaking changes.
 
 ```python
-from ssb_dash_framework import PimemorizerTab
+from ssb_dash_framework import Pimemorizer
 
 # Din kode fra tidligere steg #
 
-min_pi_memorizer = PimemorizerTab()
+min_pi_memorizer = Pimemorizer()
 ```
 
 ### 3. Sett sammen delene og start opp applikasjonen
@@ -125,9 +126,10 @@ if __name__ == "__main__":
 ### Fullstendig kode
 
 ```python
+import os
 from ssb_dash_framework import app_setup
 from ssb_dash_framework import VariableSelectorOption
-from ssb_dash_framework import PimemorizerTab
+from ssb_dash_framework import Pimemorizer
 from ssb_dash_framework import main_layout
 
 port = 8070
@@ -137,7 +139,7 @@ app = app_setup(port, service_prefix, domain, "darkly")
 
 VariableSelectorOption("foretak")
 
-min_pi_memorizer = PimemorizerTab()
+min_pi_memorizer = Pimemorizer()
 
 modal_list = [
 ]
