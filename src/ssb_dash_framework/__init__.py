@@ -19,6 +19,7 @@ from .tabs import BofInformation
 from .tabs import EditingTableLong
 from .tabs import FreeSearchTab
 from .tabs import SkjemapdfViewerTab
+from .tabs import Pimemorizer
 from .windows import FreeSearchWindow
 
 aarsregnskap = ["Aarsregnskap", "AarsregnskapTab"]
@@ -26,6 +27,8 @@ aarsregnskap = ["Aarsregnskap", "AarsregnskapTab"]
 for_setup = ["app_setup", "main_layout", "VariableSelectorOption"]
 
 # ratemodel = ["RateModel", "RateModelWindow"]
+
+pimemorizer = ["Pimemorizer"]
 
 freesearch = ["FreeSearch", "FreeSearchTab", "FreeSearchWindow"]
 
@@ -35,6 +38,7 @@ hb_method = ["HBMethod"]
 __all__ = [
     *for_setup,
     # *ratemodel,
+    *pimemorizer,
     *freesearch,
     *hb_method,
     *aarsregnskap,

@@ -78,7 +78,7 @@ First make sure this is in your pyproject.toml:
 It can be added manually or using the command below.
 
 ```console
-poetry source add –priority=supplemental testpypi https://test.pypi.org/simple
+poetry source add --priority=supplemental testpypi https://test.pypi.org/simple
 ```
 
 If it is in your pyproject.toml, run this command with --allow-prereleases to ensure you get the latest version.
