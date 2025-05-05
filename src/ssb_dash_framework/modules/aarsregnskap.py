@@ -106,8 +106,8 @@ class Aarsregnskap(ABC):
         logger.debug("Generated layout")
         return layout
 
-    def callbacks(self) -> None:
-        """Register Dash callbacks for the Årsregnskap module."""
+    def module_callbacks(self) -> None:
+        """Registers Dash callbacks for the Årsregnskap module."""
 
         @callback(  # type: ignore[misc]
             Output("tab-aarsregnskap-input1", "value"),
