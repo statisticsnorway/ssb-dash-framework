@@ -2,8 +2,7 @@
 
 Denne veiledning har som mål å hjelpe deg frem til et fungerende oppsett som du senere kan utvide.
 
-I første avsnitt får du en veiledning til hvordan du setter opp rammeverket.
-- Denne antar at du har dataene på en struktur og teknologi som passer rammeverket. Du kan finne informasjon om datastruktur og lagringsteknologi **ett eller annet sted (husk å fikse noe her)**
+Nedenfor får du en veiledning til hvordan du setter opp rammeverket. Hvordan du forbereder dataene til bruk i rammeverket beskrives ikke, men du kan se eksempler på hvordan dette kan gjøres i [demo-repoet](https://github.com/statisticsnorway/demo-ssb-dash).
 
 Du får også noen hint om hvor du kan finne informasjon om hvilke moduler som finnes.
 
@@ -16,31 +15,50 @@ Mer forklaring om hva som egentlig foregår, logikken bak det og hvordan det hen
 Her finner du en kort forklaring av hva som menes med visse ord i veiledningen.
 
 - App : Applikasjonen du setter opp
-- Variabelvelger : Funksjonalitet som deler informasjon om valgte variabler mellom moduler
+- Variabelvelger / VariableSelector : Funksjonalitet som deler informasjon om valgte variabler mellom moduler, brukes som søkefelt
 - Modul : Komponent i dashbordet
 - Window : Et vindu som inneholder en modul og åpnes med en knapp i venstre marg
 - Tab : En fane langs toppen i skjermbildet som inneholder en modul
 
+## Hvilke moduler finnes?
+
+Den enkle måten å bruke moduler er å bruke de som er "pakket inn" som enten et vindu eller en tab. Du kan finne disse her:
+- Tabs [dokumentasjon](https://statisticsnorway.github.io/ssb-dash-framework/ssb_dash_framework.tabs.html) ([direkte i koden](https://github.com/statisticsnorway/ssb-dash-framework/tree/main/src/ssb_dash_framework/tabs))
+- Vindu [dokumentasjon](https://statisticsnorway.github.io/ssb-dash-framework/ssb_dash_framework.windows.html) ([direkte i koden](https://github.com/statisticsnorway/ssb-dash-framework/tree/main/src/ssb_dash_framework/windows))
+
+Alle moduler som finnes i dashbordet kan du se i [modul-dokumentasjonen](https://statisticsnorway.github.io/ssb-dash-framework/ssb_dash_framework.modules.html) ([direkte i koden](https://github.com/statisticsnorway/ssb-dash-framework/tree/main/src/ssb_dash_framework/modules)). Vær oppmerksom på at å bruke disse direkte, istedenfor en som er ferdig innpakket som vindu eller tab, er for mer avanserte brukere.
+
 ## Sett opp rammeverket på 1, 2, 3
 
-Nedenfor er det en kort veiledning for hvordan du setter opp rammeverket, så kan du fylle det med moduler etter du har fått bekreftet at selve rammeverket fungerer. For å se eksempler på ferdige apper kan du se på [demo-repoet vårt](https://github.com/statisticsnorway/demo-ssb-dash).
+Nedenfor er det en kort veiledning for hvordan du setter opp rammeverket, så kan du fylle det med moduler etter du har fått bekreftet at selve rammeverket fungerer. For hvert steg er det eksempelkode, og .
+
+For å se eksempler på ferdige apper kan du se på [demo-repoet vårt](https://github.com/statisticsnorway/demo-ssb-dash).
 
 ### 1. Sett opp rammeverkets byggeklosser
 
-I tillegg til koden for app_setup, så må du også sette opp variabelvelgeren før du går videre.
+Det første som trengs for å sette opp rammeverket er å importere og starte opp rammeverkets byggeklosser.
 
-Du må legge inn alle variabler du vil ha tilgjengelig. Se nederste linje i koden nedenfor for å se hvordan du legger til en variabel. Du må legge til variablene en av gangen, og du må legge inn alle som skal benyttes for å filtrere eller identifisere observasjoner i appen din. Dette kan være variabler som år, måned, orgnr, nace o.l.
+Når du kjører app_setup så tar den seg av å sette opp en del ting som er nødvendig for at rammeverket skal fungere.
+
+I tillegg til koden for app_setup, så må du også sette opp variabelvelgeren før du går videre. Dette gjør du ved å kjøre VariableSelectorOption() og legge inn variabelnavnet i parantesen. Variabelvelgeren er en del av rammeverket som gjør at du kan velge variabler og bruke dem i moduler.
+
+Du må legge inn alle variabler du vil ha tilgjengelig. Se nederste linje i koden nedenfor for å se hvordan du legger til en variabel. Du må legge til variablene en av gangen, og du må legge inn alle variabler som skal benyttes for å filtrere eller velge observasjoner i appen din. Dette kan være variabler som år, måned, orgnr, nace o.l.
+
+Vi henter også inn main_layout, men denne brukes ikke før i steg 3.
 
 ```python
+from ssb_dash_framework import main_layout
 from ssb_dash_framework import app_setup
 from ssb_dash_framework import VariableSelectorOption
 
 port = 8070
 service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
 domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
-app = app_setup(port, service_prefix, domain, "darkly")
+theme = "darkly
+app = app_setup(port, service_prefix, domain, theme)
 
 VariableSelectorOption("foretak")
+VariableSelectorOption("aar")
 ```
 
 ### 2. Importer og start modulene du vil ha
@@ -72,11 +90,55 @@ Nå er det på tide å "montere" applikasjonen din. Dette gjør du ved å lage 3
 
 - variable_list
 
-    Her skal du liste opp hvilke variabler som skal eksistere i variabelvelgeren. Det er viktig at alle variabler du skal bruke er definert som beskrevet i steg 1,5
+    Her skal du liste opp hvilke variabler som skal brukes i appen for å filtrere perioder, strata og velge observasjoner. Det er viktig at alle variabler du skal bruke er lagt til variabelvelgeren som beskrevet i steg 1.
 
 Deretter skal du kjøre main_layout funksjonen for å definere appen din, og starte appen.
 
 ```python
+# Din kode fra tidligere steg #
+
+modal_list = [
+]
+
+tab_list = [
+    min_pi_memorizer,
+]
+
+variable_list = [
+    "foretak",
+    "aar
+]
+
+app.layout = main_layout(modal_list, tab_list, variable_list)
+if __name__ == "__main__":
+    app.run(
+        port=port,
+        jupyter_server_url=domain,
+        jupyter_mode="tab"
+    )
+```
+
+> 💡 **Hvorfor if ```__name__ == "__main__":```?**
+>
+> if ```__name__ == __main__:``` betyr at det som er dekket av if-statementen ikke vil kjøres med mindre du kjører denne filen direkte. Det er for å hindre at du kommer borti å importere filen i et annet script og starter appen ved et uhell.
+
+### Fullstendig kode
+
+```python
+from ssb_dash_framework import app_setup
+from ssb_dash_framework import VariableSelectorOption
+from ssb_dash_framework import PimemorizerTab
+from ssb_dash_framework import main_layout
+
+port = 8070
+service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
+domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
+app = app_setup(port, service_prefix, domain, "darkly")
+
+VariableSelectorOption("foretak")
+
+min_pi_memorizer = PimemorizerTab()
+
 modal_list = [
 ]
 
@@ -96,19 +158,6 @@ if __name__ == "__main__":
         jupyter_mode="tab"
     )
 ```
-
-> 💡 **Hvorfor if ```__name__ == "__main__":```?**
->
-> if ```__name__ == __main__:``` betyr at det som er dekket av if-statementen ikke vil kjøres med mindre du kjører denne filen direkte. Det er for å hindre at du kommer borti å importere filen i et annet script og starter appen ved et uhell.
-
-
-## Hvilke moduler finnes?
-
-Den enkle måten å bruke moduler er å bruke de som er "pakket inn" som enten et vindu eller en tab. Du kan finne disse her:
-- Tabs [dokumentasjon](https://statisticsnorway.github.io/ssb-dash-framework/ssb_dash_framework.tabs.html) ([direkte i koden](https://github.com/statisticsnorway/ssb-dash-framework/tree/main/src/ssb_dash_framework/tabs))
-- Vindu [dokumentasjon](https://statisticsnorway.github.io/ssb-dash-framework/ssb_dash_framework.windows.html) ([direkte i koden](https://github.com/statisticsnorway/ssb-dash-framework/tree/main/src/ssb_dash_framework/windows))
-
-Alle moduler som finnes i dashbordet kan du se i [modul-dokumentasjonen](https://statisticsnorway.github.io/ssb-dash-framework/ssb_dash_framework.modules.html) ([direkte i koden](https://github.com/statisticsnorway/ssb-dash-framework/tree/main/src/ssb_dash_framework/modules)). Vær oppmerksom på at å bruke disse direkte er for mer avanserte brukere.
 
 ## Mer detaljerte forklaringer
 
