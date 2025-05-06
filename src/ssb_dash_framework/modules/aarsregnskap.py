@@ -10,6 +10,8 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 
+from ..setup.variableselector import VariableSelector
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,9 +55,11 @@ class Aarsregnskap(ABC):
                       and an iframe to display the PDF content.
         """
         layout = html.Div(
-            style={"height": "100%", "display": "flex", "flexDirection": "column"},
+            style={"height": "94vh", "display": "flex", "flexDirection": "column"},
             children=[
                 dbc.Container(
+                    fluid=True,
+                    style={"display": "flex", "flexDirection": "column", "flex": "1"},
                     children=[
                         dbc.Row(
                             [
@@ -64,7 +68,8 @@ class Aarsregnskap(ABC):
                                         [
                                             dbc.Label("År"),
                                             dbc.Input(
-                                                "tab-aarsregnskap-input1", type="number"
+                                                id="tab-aarsregnskap-input1",
+                                                type="number",
                                             ),
                                         ]
                                     )
@@ -73,26 +78,36 @@ class Aarsregnskap(ABC):
                                     html.Div(
                                         [
                                             dbc.Label("Orgnr"),
-                                            dbc.Input("tab-aarsregnskap-input2"),
+                                            dbc.Input(id="tab-aarsregnskap-input2"),
                                         ]
                                     )
                                 ),
-                            ]
+                            ],
+                            style={"flex": "0 0 auto"},
                         ),
-                        html.Iframe(
-                            id="tab-aarsregnskap-iframe1",
-                            style={"width": "100%", "height": "80vh"},
+                        dbc.Row(
+                            dbc.Col(
+                                html.Iframe(
+                                    id="tab-aarsregnskap-iframe1",
+                                    style={
+                                        "width": "100%",
+                                        "height": "100%",
+                                        "border": "none",
+                                    },
+                                ),
+                                style={"flex": "1", "minHeight": 0},
+                            ),
+                            style={"flex": "1", "overflow": "hidden"},
                         ),
                     ],
-                    fluid=True,
                 ),
             ],
         )
         logger.debug("Generated layout")
         return layout
 
-    def callbacks(self) -> None:
-        """Register Dash callbacks for the Årsregnskap module."""
+    def module_callbacks(self) -> None:
+        """Registers Dash callbacks for the Årsregnskap module."""
 
         @callback(  # type: ignore[misc]
             Output("tab-aarsregnskap-input1", "value"),

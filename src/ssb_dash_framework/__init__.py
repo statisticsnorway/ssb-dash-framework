@@ -19,6 +19,7 @@ from .tabs import BofInformation
 from .tabs import FreeSearchTab
 from .tabs import SkjemapdfViewerTab
 from .tabs import EditingTable # TODO: Clean up and make into module
+from .tabs import Pimemorizer
 from .windows import FreeSearchWindow
 
 aarsregnskap = ["Aarsregnskap", "AarsregnskapTab"]
@@ -30,6 +31,7 @@ for_setup = ["app_setup", "main_layout", "VariableSelectorOption"]
 table = [
     "EditingTable"
 ]
+pimemorizer = ["Pimemorizer"]
 
 freesearch = ["FreeSearch", "FreeSearchTab", "FreeSearchWindow"]
 
@@ -40,6 +42,7 @@ __all__ = [
     *for_setup,
     # *ratemodel,
     *table,
+    *pimemorizer,
     *freesearch,
     *hb_method,
     *aarsregnskap,
