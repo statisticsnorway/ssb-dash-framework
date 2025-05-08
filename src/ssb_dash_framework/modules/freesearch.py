@@ -19,14 +19,14 @@ logger = logging.getLogger(__name__)
 class FreeSearch(ABC):
     """Base class for creating a free-text SQL query interface with results displayed in an AgGrid table.
 
-    This class provides a template for modules that allow users to:
+    This class serves as a template for modules that allow users to:
     - Enter SQL queries in a text area.
     - Optionally specify partition filters as a dictionary string.
     - Display query results in an editable Dash AgGrid table.
 
     Attributes:
         database (object): Database connection or interface for executing SQL queries.
-        label (str): Label for the module, displayed in the application.
+        label (str): Label for the module, defaults to "🔍 Frisøk".
         module_layout (html.Div): The generated layout for the module.
 
     Methods:
@@ -34,36 +34,27 @@ class FreeSearch(ABC):
         module_callbacks(): Registers the Dash callbacks for interactivity.
     """
 
-    def __init__(self, database: object) -> None:
-        """Initialize the FreeSearch module with a database connection.
+    def __init__(self, database: object, label: str | None = "🔍 Frisøk") -> None:
+        """Initialize the FreeSearch module with a database connection and optional label.
 
         Args:
-            database (object): Database connection or interface used for executing SQL queries.
-
-        Attributes:
-            database (object): The provided database connection or interface.
-            module_layout (html.Div): The generated layout for the module.
-            label (str): Label for the module, set to "🔍 Frisøk".
-
-        Raises:
-            TypeError: If the provided database object does not have a `query` method.
+            database (object): A database connection or interface used for executing SQL queries.
+            label (str, optional): A label for the module. Defaults to "🔍 Frisøk".
         """
-        if not hasattr(database, "query"):
-            raise TypeError("The provided object does not have a 'query' method.")
         self.database = database
         self.module_layout = self._create_layout()
         self.module_callbacks()
-        self.label = "🔍 Frisøk"
+        self.label = label
 
     def _create_layout(self) -> html.Div:
         """Generate the default layout for the FreeSearch module.
 
         Returns:
-            html.Div: A Div element containing:
-                - A text area for SQL queries.
-                - An input field for partition filters.
+            html.Div: A Dash HTML Div component containing:
+                - A text area for entering SQL queries.
+                - An input field for specifying partition filters as a dictionary string.
                 - A button to execute the query.
-                - A Dash AgGrid table for displaying query results.
+                - A Dash AgGrid table for displaying the query results.
         """
         return html.Div(
             [
@@ -97,18 +88,24 @@ class FreeSearch(ABC):
 
     @abstractmethod
     def layout(self) -> html.Div:
-        """Register the Dash callbacks for the FreeSearch module.
+        """Define the layout for the FreeSearch module.
 
-        This method defines the callback for executing SQL queries and updating the AgGrid table with results.
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
+
+        Returns:
+            html.Div: A Dash HTML Div component representing the layout of the module.
         """
         pass
 
     def module_callbacks(self) -> None:
-        """Register the Dash callbacks for the FrisokTab.
+        """Register the Dash callbacks for the FreeSearch module.
+
+        This method registers a callback to execute the SQL query when the "kjør" button is clicked.
+        The query results are displayed in the AgGrid table, with appropriate column definitions.
 
         Notes:
-            - This method registers a callback for executing the SQL query when the "kjør" button is clicked.
-            - The results are displayed in the AgGrid table, with appropriate column definitions.
+            - The callback takes user inputs from the SQL query text area and partition filter input field.
+            - The results are displayed in an editable table, with the "row_id" column hidden by default if present.
         """
 
         @callback(  # type: ignore[misc]

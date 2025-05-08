@@ -1,6 +1,7 @@
 import base64
 import logging
 from abc import ABC
+from abc import abstractmethod
 
 import dash_bootstrap_components as dbc
 from dapla import FileClient
@@ -27,8 +28,8 @@ class Aarsregnskap(ABC):
     ) -> None:
         """Initialize the Aarsregnskap component.
 
-        Attributes:
-            label (str): Label for the module, displayed as "🧾 Årsregnskap".
+        Sets up the label, validates required variables, and initializes the
+        layout and callbacks for the module.
         """
         self.label = "🧾 Årsregnskap"
         self._is_valid()
@@ -36,6 +37,12 @@ class Aarsregnskap(ABC):
         self.module_callbacks()
 
     def _is_valid(self):
+        """Validates the presence of required variables in VariableSelector.
+
+        Raises:
+            ValueError: If required variables ('var-aar' or 'var-foretak') are
+                not found in the VariableSelector.
+        """
         if "var-aar" not in [x.id for x in VariableSelector._variableselectoroptions]:
             raise ValueError(
                 "var-aar not found in the VariableSelector. Please add it using '''VariableSelectorOption('aar')'''"
@@ -48,11 +55,11 @@ class Aarsregnskap(ABC):
             )
 
     def _create_layout(self) -> html.Div:
-        """Generate the layout for the Årsregnskap module.
+        """Generates the layout for the Årsregnskap module.
 
         Returns:
-            html.Div: A Div element containing input fields for year and organization number
-                      and an iframe to display the PDF content.
+            html.Div: A Div element containing input fields for year and
+            organization number, and an iframe to display the PDF content.
         """
         layout = html.Div(
             style={"height": "94vh", "display": "flex", "flexDirection": "column"},
@@ -105,6 +112,17 @@ class Aarsregnskap(ABC):
         )
         logger.debug("Generated layout")
         return layout
+
+    @abstractmethod
+    def layout(self) -> html.Div:
+        """Define the layout for the Aarsregnskap module.
+
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
+
+        Returns:
+            html.Div: A Dash HTML Div component representing the layout of the module.
+        """
+        pass
 
     def module_callbacks(self) -> None:
         """Registers Dash callbacks for the Årsregnskap module."""
