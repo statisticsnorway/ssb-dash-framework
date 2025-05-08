@@ -118,7 +118,7 @@ class FreeSearch(ABC):
         def table_free_search(
             n_clicks: int, query: str, partition: str
         ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
-            """Execute an SQL query and update the table with results.
+            """Execute an SQL query and update the table with the results.
 
             Args:
                 n_clicks (int): Number of clicks on the "kjør" button.
@@ -127,14 +127,15 @@ class FreeSearch(ABC):
                                  (e.g., "{'aar': [2023]}"). Can be None if no filters are provided.
 
             Returns:
-                tuple: Contains:
-                    - rowData (list[dict]): Records to display in the table.
-                    - columnDefs (list[dict]): Column definitions for the table.
+                tuple:
+                    - rowData (list[dict]): A list of records (rows) to display in the table.
+                    - columnDefs (list[dict]): A list of column definitions for the table.
 
             Raises:
                 PreventUpdate: If the button has not been clicked.
 
             Notes:
+                - The `partition` string is parsed into a dictionary before being used in the query.
                 - Column definitions hide the "row_id" column by default, if present.
             """
             if not n_clicks:
