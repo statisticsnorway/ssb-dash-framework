@@ -290,7 +290,7 @@ class VisualizationBuilder:
                     y_axis = y_axis[0]
                 df = pd.DataFrame(rowdata)
                 columns = [col["field"] for col in columndefs]
-                df.columns = columns
+                df.columns = pd.Index(columns)
                 df.fillna(0)
                 if graph_type == "scatter":
                     fig = px.scatter(
