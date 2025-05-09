@@ -36,7 +36,7 @@ class Aarsregnskap(ABC):
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
-    def _is_valid(self):
+    def _is_valid(self) -> None:
         """Validates the presence of required variables in VariableSelector.
 
         Raises:
