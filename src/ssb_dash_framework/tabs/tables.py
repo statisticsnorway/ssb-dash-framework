@@ -41,8 +41,7 @@ class EditingTableLong:
         self,
         label: str,
         database: object,
-        tables,
-        #  variable_name: str,
+        tables: list[str],
         id_var: str,
         states: list[str],
         get_data_func: Callable[..., Any],
@@ -51,13 +50,16 @@ class EditingTableLong:
         """Initialize the EditingTable component.
 
         Args:
-            label (str): Label for the tab or component.
-            database (object): Database connection or interface for querying and updating data.
-            tables (list[str]): List of available table names for selection.
-            var_input (str): Variable input key used to identify records (e.g., "orgb", "orgf").
-            states (list[str]): Keys representing dynamic states to filter data (e.g., "aar", "termin").
-            get_data_func (callable): Function for retrieving data from the database.
-            update_table_func (callable): Function for updating data in the database.
+            label (str): The label for the tab or component.
+            database (object): A database connection or interface used for querying and updating data.
+            tables (list[str]): A list of available table names for selection.
+            id_var (str): The identifier variable used to uniquely identify records in the database.
+            states (list[str]): A list of keys representing dynamic states to filter data (e.g., "aar", "termin").
+            get_data_func (Callable[..., Any]): A function for retrieving data from the database.
+            update_table_func (Callable[..., Any]): A function for updating data in the database.
+
+        Raises:
+            TypeError: If `id_var` is not of type `str`.
         """
         self.label = label
         # self.var_col = variable_name
@@ -144,7 +146,6 @@ class EditingTableLong:
 
             Args:
                 tabell (str): Name of the selected database table.
-                ident (str): Identifier for filtering records (e.g., "var-bedrift").
                 dynamic_states (list): Dynamic state parameters for filtering data.
 
             Returns:
