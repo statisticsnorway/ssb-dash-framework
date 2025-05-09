@@ -80,4 +80,31 @@ def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> D
             else:
                 return False
 
+    app.index_string = """
+    <!DOCTYPE html>
+    <html>
+        <head>
+            {%metas%}
+            <title>{%title%}</title>
+            {%favicon%}
+            {%css%}
+            <style>
+                html, body, #_dash-app-content, #_dash-app-layout {
+                    height: 100vh;
+                    margin: 0;
+                    overflow: hidden;
+                }
+            </style>
+        </head>
+        <body>
+            {%app_entry%}
+            <footer>
+                {%config%}
+                {%scripts%}
+                {%renderer%}
+            </footer>
+        </body>
+    </html>
+    """
+
     return app

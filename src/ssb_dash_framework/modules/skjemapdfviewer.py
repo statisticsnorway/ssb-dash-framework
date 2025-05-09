@@ -1,18 +1,20 @@
 import base64
 import logging
+from abc import ABC
 
 import dash_bootstrap_components as dbc
 from dapla import FileClient
 from dash import callback
 from dash import html
-from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
+
+from ..setup.variableselector import VariableSelector
 
 logger = logging.getLogger(__name__)
 
 
-class Aarsregnskap:
+class SkjemapdfViewer(ABC):
     """Tab for displaying annual financial statements (Årsregnskap).
 
     Attributes:
@@ -21,16 +23,27 @@ class Aarsregnskap:
 
     def __init__(
         self,
+        form_identifier,
+        pdf_folder_path,
     ) -> None:
-        """Initialize the AarsregnskapTab component.
+        """Initialize the skjemapdf component."""
+        self.label = "🗎 Skjema"
+        self.variableselector = VariableSelector([form_identifier], [])
+        self.pdf_folder_path = pdf_folder_path
+        self.module_layout = self._create_layout()
+        self.module_callbacks()
 
-        Attributes:
-            label (str): Label for the tab, displayed as "🧾 Årsregnskap".
-        """
-        self.label = "🧾 Årsregnskap"
-        self.callbacks()
+    def is_valid(self):
+        if f"var-{form_identifier}" not in [
+            x.id for x in VariableSelector._variableselectoroptions
+        ]:
+            raise ValueError(
+                f"var-{form_identifier} not found in the VariableSelector. Please add it using '''VariableSelectorOption('{form_identifier}')'''"
+            )
+        if self.pdf_folder_path.endswith("/"):
+            self.pdf_folder_path = self.pdf_folder_path[:-1]
 
-    def layout(self) -> html.Div:
+    def _create_layout(self) -> html.Div:
         """Generate the layout for the Årsregnskap tab.
 
         Returns:
@@ -47,25 +60,15 @@ class Aarsregnskap:
                                 dbc.Col(
                                     html.Div(
                                         [
-                                            dbc.Label("År"),
-                                            dbc.Input(
-                                                "tab-aarsregnskap-input1", type="number"
-                                            ),
-                                        ]
-                                    )
-                                ),
-                                dbc.Col(
-                                    html.Div(
-                                        [
-                                            dbc.Label("Orgnr"),
-                                            dbc.Input("tab-aarsregnskap-input2"),
+                                            dbc.Label("Skjema-id"),
+                                            dbc.Input("skjemapdf-input"),
                                         ]
                                     )
                                 ),
                             ]
                         ),
                         html.Iframe(
-                            id="tab-aarsregnskap-iframe1",
+                            id="skjemapdf-iframe1",
                             style={"width": "100%", "height": "80vh"},
                         ),
                     ],
@@ -76,29 +79,18 @@ class Aarsregnskap:
         logger.debug("Generated layout")
         return layout
 
-    def callbacks(self) -> None:
-        """Register Dash callbacks for the Årsregnskap tab."""
+    def module_callbacks(self) -> None:
+        """Register Dash callbacks for the skjema pdf tab."""
+        dynamic_states = [
+            self.variableselector.get_inputs(),
+            self.variableselector.get_states(),
+        ]
 
         @callback(  # type: ignore[misc]
-            Output("tab-aarsregnskap-input1", "value"),
-            Input("var-aar", "value"),
+            Output("skjemapdf-input", "value"),
+            *dynamic_states,
         )
-        def update_aar(aar: int) -> int:
-            """Update the year input field based on the selected year.
-
-            Args:
-                aar (int): The selected year.
-
-            Returns:
-                int: The updated year value.
-            """
-            return aar
-
-        @callback(  # type: ignore[misc]
-            Output("tab-aarsregnskap-input2", "value"),
-            Input("var-foretak", "value"),
-        )
-        def update_orgnr(orgnr: str) -> str:
+        def update_form(orgnr: str) -> str:
             """Update the organization number input field.
 
             Args:
@@ -110,16 +102,14 @@ class Aarsregnskap:
             return orgnr
 
         @callback(  # type: ignore[misc]
-            Output("tab-aarsregnskap-iframe1", "src"),
-            Input("tab-aarsregnskap-input1", "value"),
-            Input("tab-aarsregnskap-input2", "value"),
+            Output("skjemapdf-iframe1", "src"),
+            *dynamic_states,
         )
-        def update_pdf_source(aar: int, orgnr: str) -> str | None:
+        def update_pdfskjema_source(form_identifier: str) -> str | None:
             """Fetch and encode the PDF source based on the year and organization number.
 
             Args:
-                aar (int): The year input value.
-                orgnr (str): The organization number input value.
+                form_identifier (str): The form identification input value.
 
             Returns:
                 str: A data URI for the PDF file, encoded in base64.
@@ -127,12 +117,13 @@ class Aarsregnskap:
             Raises:
                 PreventUpdate: If the year or organization number is not provided.
             """
-            if not aar or not orgnr:
+            if not form_identifier:
                 raise PreventUpdate
             try:
+                print(f"{self.pdf_folder_path}/{form_identifier}.pdf")
                 fs = FileClient.get_gcs_file_system()
                 with fs.open(
-                    f"gs://ssb-skatt-naering-data-produkt-prod/aarsregn/g{aar}/{orgnr}_{aar}.pdf",
+                    f"{self.pdf_folder_path}/{form_identifier}.pdf",
                     "rb",
                 ) as f:
                     pdf_bytes = f.read()
