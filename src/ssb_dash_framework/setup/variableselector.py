@@ -38,6 +38,8 @@ class VariableSelector:
                 Default values for variables. Defaults to None.
 
         Examples:
+            >>> VariableSelectorOption("foretak")
+            >>> VariableSelectorOption("aar")
             >>> VariableSelector(selected_inputs = ["foretak"], selected_states = ["aar"])
             >>> VariableSelector(selected_inputs = ["foretak"], selected_states = ["aar"], default_values = {"aar": 2024})
         """
