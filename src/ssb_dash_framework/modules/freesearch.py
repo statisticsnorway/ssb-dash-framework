@@ -25,7 +25,7 @@ class FreeSearch(ABC):
     - Display query results in an editable Dash AgGrid table.
 
     Attributes:
-        database (object): Database connection or interface for executing SQL queries.
+        database (Any): Database connection or interface for executing SQL queries.
         label (str): Label for the module, defaults to "🔍 Frisøk".
         module_layout (html.Div): The generated layout for the module.
 
