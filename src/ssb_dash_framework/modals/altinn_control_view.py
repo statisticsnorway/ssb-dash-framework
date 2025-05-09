@@ -220,9 +220,6 @@ class AltinnControlView:
         ) -> tuple[
             list[dict[str, Any]], list[dict[str, str | bool]]
         ]:  # TODO can *args be more specific?
-            assert hasattr(
-                self.conn, "query"
-            ), "The database connection object must have a 'query' method."
             partition_args = dict(zip(self.time_units, args, strict=False))
             df1 = self.conn.query(
                 """SELECT
@@ -279,9 +276,6 @@ class AltinnControlView:
         ) -> tuple[
             list[dict[str, Any]], list[dict[str, str | bool]]
         ]:  # TODO can *args be more specific?
-            assert hasattr(
-                self.conn, "query"
-            ), "The database connection object must have a 'query' method."
             partition_args = dict(zip(self.time_units, args, strict=False))
             kontrollid = current_row[0]["kontrollid"]
             kontrollvar = current_row[0]["kontrollvar"]
