@@ -34,13 +34,11 @@ class FreeSearch(ABC):
         module_callbacks(): Registers the Dash callbacks for interactivity.
     """
 
-    def __init__(self, database: object, label: str | None = "🔍 Frisøk") -> None:
-        """Initialize the FreeSearch module with a database connection and optional label.
-
-        Args:
-            database (object): A database connection or interface used for executing SQL queries.
-            label (str, optional): A label for the module. Defaults to "🔍 Frisøk".
-        """
+    def __init__(self, database: Any, label: str | None = "🔍 Frisøk") -> None:
+        """Initialize the FreeSearch module with a database connection and optional label."""
+        assert hasattr(
+            database, "query"
+        ), "The database object must have a 'query' method."
         self.database = database
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -142,6 +140,7 @@ class FreeSearch(ABC):
                 raise PreventUpdate
             if partition is not None:
                 partition = ast.literal_eval(partition)
+
             df = self.database.query(query, partition_select=partition)
             columns = [
                 {
