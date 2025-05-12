@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 SQL_COLUMN_CONCAT = " || '_' || "
 
+
 class AltinnSkjemadataEditor(AltinnComponents):
     """A tab for editing skjemadata.
 
@@ -79,9 +80,9 @@ class AltinnSkjemadataEditor(AltinnComponents):
         return [component(f"altinnedit-{unit}", "value") for unit in self.time_units]
 
     def update_partition_select(self, partition_dict, key_to_update):
-        """Updates the dictionary by adding the previous value (N-1) 
+        """Updates the dictionary by adding the previous value (N-1)
         to the list for a single specified key.
-    
+
         :param partition_dict: Dictionary containing lists of values
         :param key_to_update: Key to update by appending (N-1)
         :return: Updated dictionary
@@ -98,8 +99,8 @@ class AltinnSkjemadataEditor(AltinnComponents):
             - The `update_input` callback handles the interaction between the numeric keypad
               and the current sequence, score, and high score.
         """
-
         for unit in self.time_units:
+
             def generate_callback(unit):
                 @callback(
                     Output(f"altinnedit-{unit}", "value"),
@@ -544,7 +545,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     column_name_expr_inner = SQL_COLUMN_CONCAT.join(
                         [f"t2.{unit}" for unit in self.time_units]
                     )
-    
+
                     group_by_clause = ", ".join(
                         [f"s.{unit}" for unit in self.time_units]
                     )
@@ -668,7 +669,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 else:
                     style = None
                     button_text = "Se kontrollutslag"
-            
+
                 return df.to_dict("records"), columns, style, button_text
             except Exception:
                 return None, None, None, "Se kontrollutslag"
@@ -790,6 +791,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             ]
 
         for output_id, variable in self.variable_connection.items():
+
             @callback(
                 Output(output_id, "value", allow_duplicate=True),
                 Input("skjemadata-enhetsinfomodal-table1", "rowData"),
