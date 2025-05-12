@@ -8,6 +8,7 @@ from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
 from ..utils.alert_handler import create_alert
 from ..utils.functions import sidebar_button
@@ -30,7 +31,19 @@ class AltinnControlView:
         conn (object): The eimerdb connection.
     """
 
-    def __init__(self, time_units, control_dict, conn: object) -> None:
+    def __init__(
+        self, time_units: list[str], control_dict: dict[str, Any], conn: object
+    ) -> None:  # TODO add proper annotation for control_dict value
+        """Initializes the AltinnControlView with time units, control dictionary, and database connection.
+
+        Args:
+            time_units (list): A list of the time units used.
+            control_dict (dict): A dictionary with one control class per skjema.
+            conn (object): The eimerdb connection.
+        """
+        assert hasattr(
+            conn, "query"
+        ), "The database connection object must have a 'query' method."
         self.time_units = time_units
         self.control_dict = control_dict
         self.conn = conn
@@ -145,7 +158,9 @@ class AltinnControlView:
         )
         return layout
 
-    def create_partition_select(self, skjema: str | None = None, **kwargs: Any) -> dict:
+    def create_partition_select(
+        self, skjema: str | None = None, **kwargs: Any
+    ) -> dict[str, list[Any]]:  # TODO fix return annotation
         """Creates the partition select argument based on the chosen time units."""
         partition_select = {
             unit: [kwargs[unit]] for unit in self.time_units if unit in kwargs
@@ -156,48 +171,55 @@ class AltinnControlView:
 
     def create_callback_components(
         self, input_type: Literal["Input", "State"] = "Input"
-    ) -> list:
+    ) -> list[str]:
         """Generates a list of dynamic Dash Input or State components."""
         component = Input if input_type == "Input" else State
-        return [component(f"test-{unit}", "value") for unit in self.time_units]
+        return [
+            component(f"test-{unit}", "value") for unit in self.time_units
+        ]  # TODO change from test- to something more meaningful
 
     def callbacks(self) -> None:
-        """Registers Dash callbacks for the AltinnControlView module.
+        """Registers Dash callbacks for the AltinnControlView module."""
 
-        Notes:
-        """
-
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("kontroller-modal", "fullscreen"),
             Input("kontroller-modal-fullscreen", "n_clicks"),
             State("kontroller-modal", "fullscreen"),
         )
-        def toggle_fullscreen_modal(n_clicks: int, fullscreen_state):
+        def toggle_fullscreen_modal(
+            n_clicks: int, fullscreen_state: str | bool
+        ) -> str | bool:
+            fullscreen: str | bool
             if n_clicks > 0:
-                if fullscreen_state == True:
+                if fullscreen_state is True:
                     fullscreen = "xxl-down"
                 else:
                     fullscreen = True
                 return fullscreen
+            raise PreventUpdate
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("kontroller-modal", "is_open"),
             Input("sidebar-kontroller-button", "n_clicks"),
             State("kontroller-modal", "is_open"),
         )
-        def kontrollermodal_toggle(n, is_open):
+        def kontrollermodal_toggle(n: int, is_open: bool) -> bool:
             if n:
                 return not is_open
             return is_open
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("kontroller-table1", "rowData"),
             Output("kontroller-table1", "columnDefs"),
             Input("var-altinnskjema", "value"),
             Input("kontrollermodal-refresh", "n_clicks"),
             *self.create_callback_components("Input"),
         )
-        def kontrollutslag_antall(skjema, n_clicks, *args):
+        def kontrollutslag_antall(
+            skjema: str, n_clicks: int, *args: Any
+        ) -> tuple[
+            list[dict[str, Any]], list[dict[str, str | bool]]
+        ]:  # TODO can *args be more specific?
             partition_args = dict(zip(self.time_units, args, strict=False))
             df1 = self.conn.query(
                 """SELECT
@@ -243,13 +265,17 @@ class AltinnControlView:
             columns[0]["headerCheckboxSelection"] = True
             return df.to_dict("records"), columns
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("kontroller-table2", "rowData"),
             Output("kontroller-table2", "columnDefs"),
             Input("kontroller-table1", "selectedRows"),
             *self.create_callback_components("State"),
         )
-        def kontrollutslag_mikro(current_row, *args):
+        def kontrollutslag_mikro(
+            current_row: list[dict[str, Any]], *args: Any
+        ) -> tuple[
+            list[dict[str, Any]], list[dict[str, str | bool]]
+        ]:  # TODO can *args be more specific?
             partition_args = dict(zip(self.time_units, args, strict=False))
             kontrollid = current_row[0]["kontrollid"]
             kontrollvar = current_row[0]["kontrollvar"]
@@ -284,26 +310,33 @@ class AltinnControlView:
             columns[0]["headerCheckboxSelection"] = True
             return df.to_dict("records"), columns
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("var-skjemaenhet", "value", allow_duplicate=True),
             Input("kontroller-table2", "selectedRows"),
             prevent_initial_call=True,
         )
-        def kontroll_detail_click(input1: dict) -> str:
-            return input1[0]["ident"]
+        def kontroll_detail_click(input1: list[dict[str, Any]]) -> str:
+            selected = str(
+                input1[0]["ident"]
+            )  # TODO: check if this is correct, can it be more than one?
+            return selected
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("kontrollermodal-vars", "children"),
             Input("var-altinnskjema", "value"),
             *self.create_callback_components("Input"),
         )
-        def altinnskjema(skjema, *args):
+        def altinnskjema(
+            skjema: str, *args: Any
+        ) -> str:  # TODO can *args be more specific?
             partition_args = dict(zip(self.time_units, args, strict=False))
             if partition_args is not None and skjema is not None:
-                valgte_vars = f"valgt partisjon: {partition_args}\nvalgt skjema: {skjema}"
+                valgte_vars = (
+                    f"valgt partisjon: {partition_args}\nvalgt skjema: {skjema}"
+                )
                 return valgte_vars
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Input("kontrollermodal-kontrollbutton", "n_clicks"),
             State("var-altinnskjema", "value"),
@@ -311,7 +344,9 @@ class AltinnControlView:
             *self.create_callback_components("State"),
             prevent_initial_call=True,
         )
-        def kontrollkjøring(n_clicks, skjema, alert_store, *args):
+        def kontrollkjøring(
+            n_clicks: int, skjema: str, alert_store: list[dict[str, Any]], *args: Any
+        ) -> list[dict[str, Any]]:  # TODO can *args be more specific?
             partition_args = dict(zip(self.time_units, args, strict=False))
             partitions = self.create_partition_select(skjema=None, **partition_args)
             partitions_skjema = self.create_partition_select(
@@ -341,8 +376,9 @@ class AltinnControlView:
                         *alert_store,
                     ]
                 return alert_store
+            raise PreventUpdate
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Input("kontrollermodal-insertbutton", "n_clicks"),
             State("var-altinnskjema", "value"),
@@ -350,7 +386,9 @@ class AltinnControlView:
             *self.create_callback_components("State"),
             prevent_initial_call=True,
         )
-        def kontrollkjøring_insert(n_clicks, skjema, alert_store, *args):
+        def kontrollkjøring_insert(
+            n_clicks: int, skjema: str, alert_store: list[dict[str, Any]], *args: Any
+        ) -> list[dict[str, Any]]:  # TODO can *args be more specific?
             partition_args = dict(zip(self.time_units, args, strict=False))
             partitions = self.create_partition_select(skjema=None, **partition_args)
             partitions_skjema = self.create_partition_select(
@@ -380,3 +418,4 @@ class AltinnControlView:
                         *alert_store,
                     ]
                 return alert_store
+            raise PreventUpdate

@@ -5,14 +5,14 @@ from typing import Any
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import callback
-from dash import dcc
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
-from ..setup.variableselector import VariableSelector, VariableSelectorOption # TODO TEMP!!!!
+from ..setup.variableselector import VariableSelector  # TODO TEMP!!!!
+from ..setup.variableselector import VariableSelectorOption  # TODO TEMP!!!!
 from ..utils.alert_handler import create_alert
 
 logger = logging.getLogger(__name__)
@@ -34,8 +34,9 @@ class EditingTable:
         get_data (callable): Function to fetch data from the database.
         update_table (callable): Function to update database records based on edits in the table.
     """
+
     _id_number = 0
-    
+
     def __init__(
         self,
         label: str,
@@ -43,18 +44,22 @@ class EditingTable:
         states: list[str],
         get_data_func: Callable[..., Any],
         update_table_func: Callable[..., Any],
-        ident = None,
-        varselector_ident = None,
+        ident=None,
+        varselector_ident=None,
     ) -> None:
         """Initialize the EditingTable component.
 
         Args:
-            label (str): Label for the tab or component.
-            database (object): Database connection or interface for querying and updating data.
-            var_input (str): Variable input key used to identify records (e.g., "orgb", "orgf").
-            states (list[str]): Keys representing dynamic states to filter data (e.g., "aar", "termin").
-            get_data_func (callable): Function for retrieving data from the database.
-            update_table_func (callable): Function for updating data in the database.
+            label (str): The label for the tab or component.
+            database (object): A database connection or interface used for querying and updating data.
+            tables (list[str]): A list of available table names for selection.
+            id_var (str): The identifier variable used to uniquely identify records in the database.
+            states (list[str]): A list of keys representing dynamic states to filter data (e.g., "aar", "termin").
+            get_data_func (Callable[..., Any]): A function for retrieving data from the database.
+            update_table_func (Callable[..., Any]): A function for updating data in the database.
+
+        Raises:
+            TypeError: If `id_var` is not of type `str`.
         """
         self._editingtable_n = EditingTable._id_number
         EditingTable._id_number += 1
@@ -72,9 +77,7 @@ class EditingTable:
 
         self.get_data = get_data_func
 
-        self.get_data_args = [
-            x for x in self.variableselector.selected_variables
-        ]
+        self.get_data_args = [x for x in self.variableselector.selected_variables]
 
         self.update_table = update_table_func
 
@@ -132,7 +135,6 @@ class EditingTable:
 
             Args:
                 tabell (str): Name of the selected database table.
-                ident (str): Identifier for filtering records (e.g., "var-bedrift").
                 dynamic_states (list): Dynamic state parameters for filtering data.
 
             Returns:
@@ -244,12 +246,14 @@ class EditingTable:
                 )
 
                 return error_log
+
         if self.ident:
             print("Tester")
             output_object = self.variableselector.get_output_object(
                 variable=self.varselector_ident
             )
             print(output_object)
+
             @callback(  # type: ignore[misc]
                 output_object,
                 Input(f"{self._editingtable_n}-tabelleditering-table1", "cellClicked"),
@@ -257,21 +261,21 @@ class EditingTable:
             )
             def table_to_main_table(clickdata: dict[str, list[dict[str, Any]]]) -> str:
                 """Passes the selected observation identifier to `variabelvelger`.
-    
+
                 Args:
                     clickdata (dict): Data from the clicked point in the HB visualization.
-    
+
                 Returns:
                     str: Identifier of the selected observation.
-    
+
                 Raises:
                     PreventUpdate: if clickdata is None.
                 """
-                if not clickdata or clickdata['colId'] != self.ident:
+                if not clickdata or clickdata["colId"] != self.ident:
                     raise PreventUpdate
-                ident = clickdata['value']
+                ident = clickdata["value"]
                 print(f"Transfering {ident} to {self.varselector_ident}")
                 logger.info(f"Transfering {ident} to {self.varselector_ident}")
                 return ident
-                
+
         logger.debug("Generated callbacks")
