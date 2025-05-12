@@ -2,7 +2,7 @@
 
 Denne veiledning har som mål å hjelpe deg frem til et fungerende oppsett som du senere kan utvide.
 
-Nedenfor får du en veiledning til hvordan du setter opp rammeverket. Hvordan du forbereder dataene til bruk i rammeverket beskrives ikke, men du kan se eksempler på hvordan dette kan gjøres i [demo-repoet](https://github.com/statisticsnorway/demo-ssb-dash).
+Nedenfor får du en veiledning til hvordan du setter opp rammeverket. Hvordan du forbereder dataene til bruk i rammeverket beskrives ikke her, se [Brukerdokumentasjon på Confluence](https://statistics-norway.atlassian.net/wiki/x/7QDzFgE).
 
 Du får også noen hint om hvor du kan finne informasjon om hvilke moduler som finnes.
 
