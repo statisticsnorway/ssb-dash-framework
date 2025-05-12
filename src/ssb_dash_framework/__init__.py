@@ -26,6 +26,7 @@ from .utils import create_alert
 from .utils import hb_method
 from .utils import sidebar_button
 from .utils import th_error
+from .windows import EditingTableWindow
 from .windows import FreeSearchWindow
 from .windows import SkjemapdfViewerWindow
 
@@ -39,6 +40,8 @@ __all__ = [
     "Control",
     "DebugInspector",
     "EditingTable",
+    "EditingTableTab",
+    "EditingTableWindow",
     "FreeSearch",
     "FreeSearchTab",
     "FreeSearchWindow",

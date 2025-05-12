@@ -1,4 +1,5 @@
 import logging
+from abc import ABC
 from collections.abc import Callable
 from typing import Any
 
@@ -18,7 +19,7 @@ from ..utils.alert_handler import create_alert
 logger = logging.getLogger(__name__)
 
 
-class EditingTable:
+class EditingTable(ABC):
     """A component for editing data using a Dash AgGrid table.
 
     This class provides a layout and functionality to:
@@ -62,6 +63,7 @@ class EditingTable:
             TypeError: If `id_var` is not of type `str`.
         """
         self._editingtable_n = EditingTable._id_number
+        self.module_name = self.__class__.__name__
         EditingTable._id_number += 1
         self.label = label
         self.ident = ident

@@ -2,8 +2,10 @@
 
 from .freesearch_window import FreeSearchWindow
 from .skjemapdfviewer_window import SkjemapdfViewerWindow
+from .tables_window import EditingTableWindow
 
 __all__ = [
+    "EditingTableWindow",
     "FreeSearchWindow",
     "SkjemapdfViewerWindow",
 ]
