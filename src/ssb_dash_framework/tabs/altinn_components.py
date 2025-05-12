@@ -12,7 +12,8 @@ class AltinnComponents:
     - Function for creating ag grids
     """
 
-    def __init__(self, time_units):
+    def __init__(self, time_units: int) -> None:
+        "Altinn editing module layout and some other methods"
         self.time_units = time_units
 
     def layout(self) -> html.Div:
@@ -221,7 +222,8 @@ class AltinnComponents:
         )
         return layout
 
-    def offcanvas_kontrollutslag(self):
+    def offcanvas_kontrollutslag(self) -> html.Div:
+        """Returns an offcanvas component containing a table for kontrollutslag."""
         return html.Div(
             [
                 dbc.Offcanvas(
@@ -243,7 +245,8 @@ class AltinnComponents:
             ]
         )
 
-    def kontaktcanvas(self):
+    def kontaktcanvas(self) -> html.Div:
+        """Retuns an offcanvas component containing a table with contact information."""
         return html.Div(
             [
                 dbc.Offcanvas(
@@ -321,7 +324,8 @@ class AltinnComponents:
             ]
         )
 
-    def historikkmodal(self):
+    def historikkmodal(self) -> dbc.Modal:
+        """Retuns a modal component containing a table with the editing history."""
         return dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle("Historikk")),
@@ -339,7 +343,8 @@ class AltinnComponents:
             size="xl",
         )
 
-    def enhetsinfomodal(self):
+    def enhetsinfomodal(self) -> dbc.Modal:
+        """Returns a modal component containing a table with enhetsinfo."""
         return dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle("Enhetsinfo")),
@@ -357,7 +362,8 @@ class AltinnComponents:
             size="xl",
         )
 
-    def kommentarmodal(self):
+    def kommentarmodal(self) -> dbc.Modal:
+        """Returns a modal component containing editing comments."""
         return dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle("Kommentarer")),
@@ -407,7 +413,8 @@ class AltinnComponents:
             size="xl",
         )
 
-    def skjemaversjonsmodal(self):
+    def skjemaversjonsmodal(self) -> dbc.Modal:
+        """Returns a modal component with a table containing all the skjema versions."""
         return dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle("Skjemaversjoner")),
@@ -431,8 +438,8 @@ class AltinnComponents:
             size="xl",
         )
 
-    def create_cards(self):
-        """Generates a list of dbc.Card components dynamically for each time unit."""
+    def create_cards(self) -> list[dbc.Card]:
+        """Return a list of dbc.Card components dynamically generated for each time unit."""
         return [
             dbc.Card(
                 dbc.CardBody(
@@ -455,7 +462,8 @@ class AltinnComponents:
             for unit in self.time_units
         ]
 
-    def hjelpetabellmodal(self):
+    def hjelpetabellmodal(self) -> dbc.Modal:
+        """Return a modal component containing tab content. Future versions may support adding new tabs."""
         hjelpetabellmodal = dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle("Hjelpetabeller")),
@@ -500,7 +508,8 @@ class AltinnComponents:
         )
         return hjelpetabellmodal
 
-    def create_ag_grid(self, component_id):
+    def create_ag_grid(self, component_id: str) -> dag.AgGrid:
+        """Returns a non-editable AgGrid component with a dark alpine theme."""
         return dag.AgGrid(
             defaultColDef={"editable": False},
             id=component_id,
