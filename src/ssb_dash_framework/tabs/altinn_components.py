@@ -13,7 +13,7 @@ class AltinnComponents:
     """
 
     def __init__(self, time_units: int) -> None:
-        "Altinn editing module layout and some other methods"
+        "Altinn editing module layout and some other methods."
         self.time_units = time_units
 
     def layout(self) -> html.Div:
