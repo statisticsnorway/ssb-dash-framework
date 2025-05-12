@@ -107,7 +107,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 )
                 def callback_function(value):
                     return value
-        
+
                 return callback_function
 
             generate_callback(unit)
@@ -204,7 +204,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
         def hovedside_update_valgt_rad(rows):
             if not rows:
                 return None
-        
+
             selected_row = rows[0]
             return [selected_row]
 
@@ -215,7 +215,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
         def selected_skjemaversjon(selected_row):
             if not selected_row:
                 return None
-        
+
             skjemaversjon = selected_row[0]["skjemaversjon"]
             return skjemaversjon
 
@@ -301,7 +301,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             old_value = edited[0]["oldValue"]
             new_value = edited[0]["value"]
             skjemaversjon = edited[0]["data"]["skjemaversjon"]
-        
+
             if variabel == "editert":
                 try:
                     self.conn.query(
@@ -659,7 +659,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 )
                 columns = [{"headerName": col, "field": col} for col in df.columns]
                 antall_utslag = len(df)
-            
+
                 if antall_utslag > 0:
                     style = {"color": "#dc3545", "background-color": "#343a40"}
                     button_text = f"Se kontrollutslag ({antall_utslag})"
@@ -729,10 +729,10 @@ class AltinnSkjemadataEditor(AltinnComponents):
                             for field in details["schema"]
                         }
                         tables_editable_dict[table] = field_editable_dict
-                
+
                 table_editable_dict = tables_editable_dict[tabell]
                 edited_column = edited[0]["colId"]
-                
+
                 if table_editable_dict[edited_column] == True:
                     old_value = edited[0]["oldValue"]
                     new_value = edited[0]["value"]
@@ -778,7 +778,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
         def update_sidebar(enhetsinfo_rows):
             if not enhetsinfo_rows:
                 return html.P("Ingen enhetsinfo tilgjengelig.")
-        
+
             return [
                 html.Div(
                     [html.Strong(row["variabel"] + ": "), html.Span(str(row["verdi"]))],
