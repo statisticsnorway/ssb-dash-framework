@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import html
@@ -14,17 +15,19 @@ def main_layout(
     modal_list: list[html.Div],
     tab_list: list[html.Div],
     variable_list: list[str],
-    default_values: dict[str, any] | None = None,
+    default_values: dict[str, Any] | None = None,
 ) -> dbc.Container:
-    """Generate the main layout for the Dash application.
+    """Generates the main layout for the Dash application.
 
     Args:
         modal_list (list[html.Div]):
-            List of modal components to be included in the sidebar.
+            A list of modal components to be included in the sidebar.
         tab_list (list[html.Div]):
-            List of tab objects, each containing a `layout` method and a `label` attribute.
-        variable_list (list[html.Div]):
-            List of variable selection components to be included in the main layout.
+            A list of tab objects, each containing a `layout` method and a `label` attribute.
+        variable_list (list[str]):
+            A list of variable selection components to be included in the main layout.
+        default_values (dict[str, Any] | None, optional):
+            Default values for the variable selector. Defaults to None.
 
     Returns:
         dbc.Container:

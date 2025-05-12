@@ -1,3 +1,6 @@
+from collections.abc import Callable
+from typing import Any
+
 import dash_bootstrap_components as dbc
 from dash import Input
 from dash import Output
@@ -11,18 +14,45 @@ from ..utils.functions import sidebar_button
 
 
 class DebugInspector:
+    """DebugInspector is a class that creates a modal for debugging purposes.
 
-    def default_func(*args):
+    It displays the inputs and states passed to the class, as well as the
+    arguments passed to the function. It also provides a toggle button to
+    open and close the modal.
+    """
+
+    def default_func(*args: Any) -> html.Plaintext:
+        """Default function to be called when the debugger is triggered.
+
+        It simply returns the arguments passed to it as a Plaintext object.
+        """
         return html.Plaintext(f"{args!s}")
 
-    def __init__(self, inputs, states, func=default_func):
+    def __init__(
+        self,
+        inputs: list[str],
+        states: list[str],
+        func: Callable[..., Any] = default_func,
+    ) -> None:
+        """Initialize the DebugInspector class.
+
+        Args:
+            inputs (list[str]): List of input IDs to be monitored.
+            states (list[str]): List of state IDs to be monitored.
+            func (Callable[..., Any], optional): Function to be called when the debugger is triggered. Defaults to default_func.
+        """
         self.func = func
         self.inputs = inputs
         self.states = states
         self.variableselector = VariableSelector(inputs, states)
         self.callbacks()
 
-    def layout(self):
+    def layout(self) -> html.Div:
+        """Create the layout for the DebugInspector modal.
+
+        Returns:
+            html.Div: The layout for the DebugInspector modal.
+        """
         return html.Div(
             [
                 dbc.Modal(
@@ -46,8 +76,12 @@ class DebugInspector:
             ]
         )
 
-    def callbacks(self):
+    def callbacks(self) -> None:
+        """Set up the callbacks for the DebugInspector modal.
 
+        It includes a toggle button to open and close the modal,
+        and a function to display the inputs and states passed to the class.
+        """
         dynamic_states = [
             self.variableselector.get_inputs(),
             self.variableselector.get_states(),
@@ -58,17 +92,19 @@ class DebugInspector:
             Input("sidebar-debugger-button", "n_clicks"),
             State("debugger_modal", "is_open"),
         )
-        def debugger_toggle(n, is_open):
+        def debugger_toggle(n: int, is_open: bool) -> bool:
             if n:
                 return not is_open
             return is_open
 
-        @callback(Output("debuggerhelper_output", "children"), *dynamic_states)
-        def debuggerhelper_dynamic_states(*args):
+        @callback(  # type: ignore[misc]
+            Output("debuggerhelper_output", "children"), *dynamic_states
+        )
+        def debuggerhelper_dynamic_states(*args: Any) -> html.Div:
             ctx = callback_context  # Get callback context
 
             if not ctx.triggered:
-                return "No input yet."
+                return html.Div("No input yet.")
 
             return html.Div(
                 [
@@ -88,6 +124,8 @@ class DebugInspector:
                 ]
             )
 
-        @callback(Output("debuggerhelper_func_output", "children"), *dynamic_states)
-        def debuggerhelper_func(*args):
+        @callback(  # type: ignore[misc]
+            Output("debuggerhelper_func_output", "children"), *dynamic_states
+        )
+        def debuggerhelper_func(*args: Any) -> Any:
             return self.func(args)
