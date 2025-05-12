@@ -2,10 +2,12 @@ import logging
 import re
 
 import pandas as pd
-import dash_ag_grid as dag
-import dash_bootstrap_components as dbc
-from dash import callback, callback_context, dcc, html, no_update
-from dash.dependencies import Input, Output, State
+from dash import callback
+from dash import html
+from dash import no_update
+from dash.dependencies import Input
+from dash.dependencies import Output
+from dash.dependencies import State
 
 from ..utils.alert_handler import create_alert
 from .altinn_components import AltinnComponents
@@ -53,8 +55,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
         self.callbacks()
 
     def get_skjemadata_table_names(self):
-        """Retrieves the names of all the skjemadata-tables in the eimerdb.
-        """
+        """Retrieves the names of all the skjemadata-tables in the eimerdb."""
         all_tables = list(self.conn.tables.keys())
         skjemadata_tables = [
             element for element in all_tables if element.startswith("skjemadata")
@@ -78,15 +79,14 @@ class AltinnSkjemadataEditor(AltinnComponents):
         return [component(f"altinnedit-{unit}", "value") for unit in self.time_units]
 
     def update_partition_select(self, partition_dict, key_to_update):
-        """
-        Updates the dictionary by adding the previous value (N-1) 
+        """Updates the dictionary by adding the previous value (N-1) 
         to the list for a single specified key.
     
         :param partition_dict: Dictionary containing lists of values
         :param key_to_update: Key to update by appending (N-1)
         :return: Updated dictionary
         """
-        if key_to_update in partition_dict and partition_dict[key_to_update]:
+        if partition_dict.get(key_to_update):
             min_value = min(partition_dict[key_to_update])
             partition_dict[key_to_update].append(int(min_value) - 1)
         return partition_dict
@@ -129,7 +129,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             if ident is None or any(arg is None for arg in args):
                 return None, None
             try:
-                partition_args = dict(zip(self.time_units, args))
+                partition_args = dict(zip(self.time_units, args, strict=False))
                 df = self.conn.query(
                     f"SELECT * FROM enhetsinfo WHERE ident = '{ident}'",
                     self.create_partition_select(skjema=None, **partition_args),
@@ -137,7 +137,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 df.drop(columns=["row_id"], inplace=True)
                 columns = [{"headerName": col, "field": col} for col in df.columns]
                 return df.to_dict("records"), columns
-            except Exception as e:
+            except Exception:
                 return None, None
 
         @callback(
@@ -151,7 +151,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 return [], None
 
             try:
-                partition_args = dict(zip(self.time_units, args))
+                partition_args = dict(zip(self.time_units, args, strict=False))
                 skjemaer = self.conn.query(
                     f"SELECT * FROM enheter WHERE ident = '{ident}'",
                     self.create_partition_select(skjema=None, **partition_args),
@@ -179,7 +179,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 return None, None
 
             try:
-                partition_args = dict(zip(self.time_units, args))
+                partition_args = dict(zip(self.time_units, args, strict=False))
                 df = self.conn.query(
                     f"""SELECT skjemaversjon, dato_mottatt, editert, aktiv
                     FROM skjemamottak WHERE ident = '{ident}' AND aktiv = True
@@ -187,13 +187,15 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     self.create_partition_select(skjema=skjema, **partition_args),
                 )
                 columns = [
-                    {"headerName": col, "field": col, "editable": True}
-                    if col in ["editert", "aktiv"]
-                    else {"headerName": col, "field": col}
+                    (
+                        {"headerName": col, "field": col, "editable": True}
+                        if col in ["editert", "aktiv"]
+                        else {"headerName": col, "field": col}
+                    )
                     for col in df.columns
                 ]
                 return df.to_dict("records"), columns
-            except Exception as e:
+            except Exception:
                 return None, None
 
         @callback(
@@ -246,7 +248,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 return None, None
 
             try:
-                partition_args = dict(zip(self.time_units, args))
+                partition_args = dict(zip(self.time_units, args, strict=False))
                 df = self.conn.query(
                     f"""
                     SELECT t.*, subquery.radnr
@@ -296,7 +298,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             if edited is None or skjema is None or any(arg is None for arg in args):
                 return None
 
-            partition_args = dict(zip(self.time_units, args))
+            partition_args = dict(zip(self.time_units, args, strict=False))
             variabel = edited[0]["colId"]
             old_value = edited[0]["oldValue"]
             new_value = edited[0]["value"]
@@ -461,7 +463,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         SET kommentar = '{kommentar}'
                         WHERE row_id = '{row_id}'
                         """,
-                        partition_select = {"skjema": [skjema]},
+                        partition_select={"skjema": [skjema]},
                     )
                     alert_store = [
                         create_alert(
@@ -485,7 +487,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
         @callback(
             Output("skjemadata-hjelpetabellmodal", "is_open"),
             Input("altinnedit-option3", "n_clicks"),
-            State("skjemadata-hjelpetabellmodal", "is_open")
+            State("skjemadata-hjelpetabellmodal", "is_open"),
         )
         def toggle_hjelpetabellmodal(n_clicks, is_open):
             if n_clicks is None:
@@ -498,7 +500,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
         @callback(
             Output("skjemadata-enhetsinfomodal", "is_open"),
             Input("altinnedit-enhetsinfo-button", "n_clicks"),
-            State("skjemadata-enhetsinfomodal", "is_open")
+            State("skjemadata-enhetsinfomodal", "is_open"),
         )
         def toggle_enhetsinfomodal(n_clicks, is_open):
             if n_clicks is None:
@@ -525,7 +527,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
         ):
             if tab == "modal-hjelpetabeller-tab1":
                 try:
-                    partition_args = dict(zip(self.time_units, args))
+                    partition_args = dict(zip(self.time_units, args, strict=False))
                     partition_select = self.create_partition_select(
                         skjema=skjema, **partition_args
                     )
@@ -642,7 +644,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             ):
                 return None, None, None, "Se kontrollutslag"
             try:
-                partition_args = dict(zip(self.time_units, args))
+                partition_args = dict(zip(self.time_units, args, strict=False))
                 skjemaversjon = selected_row[0]["skjemaversjon"]
                 df = self.conn.query(
                     f"""SELECT t1.kontrollid, subquery.skildring, t1.utslag
@@ -683,7 +685,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
         def historikktabell(is_open, tabell, selected_row, skjema, *args):
             if is_open == True:
                 try:
-                    partition_args = dict(zip(self.time_units, args))
+                    partition_args = dict(zip(self.time_units, args, strict=False))
                     skjemaversjon = selected_row[0]["skjemaversjon"]
                     df = self.conn.query_changes(
                         f"""SELECT * FROM {tabell}
@@ -718,14 +720,14 @@ class AltinnSkjemadataEditor(AltinnComponents):
         )
         def update_table(edited, tabell, skjema, alert_store, *args):
             if edited is not None:
-                partition_args = dict(zip(self.time_units, args))
+                partition_args = dict(zip(self.time_units, args, strict=False))
                 tables_editable_dict = {}
                 data_dict = self.conn.tables
 
                 for table, details in data_dict.items():
                     if table.startswith("skjemadata") and "schema" in details:
                         field_editable_dict = {
-                            field["name"]: field.get("app_editable", False) 
+                            field["name"]: field.get("app_editable", False)
                             for field in details["schema"]
                         }
                         tables_editable_dict[table] = field_editable_dict
@@ -823,7 +825,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             prevent_initial_call=True,
         )
         def kontaktinfocanvas(n_clicks, skjemaversjon, skjema, *args):
-            partition_args = dict(zip(self.time_units, args))
+            partition_args = dict(zip(self.time_units, args, strict=False))
             df_skjemainfo = self.conn.query(
                 f"""SELECT
                 kontaktperson, epost, telefon, kommentar_kontaktinfo, kommentar_krevende
