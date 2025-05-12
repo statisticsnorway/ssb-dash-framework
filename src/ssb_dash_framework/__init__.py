@@ -15,7 +15,7 @@ from .setup import app_setup
 from .setup import main_layout
 from .tabs import AarsregnskapTab
 from .tabs import BofInformation
-from .tabs import EditingTable  # TODO: Clean up and make into module
+from .tabs import EditingTableTab  # TODO: Clean up and make into module
 from .tabs import FreeSearchTab
 from .tabs import Pimemorizer
 from .tabs import SkjemapdfViewerTab

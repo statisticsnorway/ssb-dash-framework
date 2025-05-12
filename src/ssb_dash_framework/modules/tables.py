@@ -81,9 +81,11 @@ class EditingTable:
 
         self.update_table = update_table_func
 
-        self.callbacks()
+        self.module_layout = self._create_layout()
 
-    def layout(self) -> html.Div:
+        self.module_callbacks()
+
+    def _create_layout(self) -> html.Div:
         """Generate the layout for the EditingTable component.
 
         Returns:
@@ -110,7 +112,7 @@ class EditingTable:
         logger.debug("Generated layout")
         return layout
 
-    def callbacks(self) -> None:
+    def module_callbacks(self) -> None:
         """Register Dash callbacks for the EditingTable component.
 
         Notes:
