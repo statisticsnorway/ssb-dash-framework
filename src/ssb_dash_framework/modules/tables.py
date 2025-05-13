@@ -45,8 +45,8 @@ class EditingTable(ABC):
         states: list[str],
         get_data_func: Callable[..., Any],
         update_table_func: Callable[..., Any],
-        ident=None,
-        varselector_ident=None,
+        ident: str | None = None,
+        varselector_ident: str | None = None,
     ) -> None:
         """Initialize the EditingTable component.
 
@@ -72,7 +72,7 @@ class EditingTable(ABC):
             try:
                 VariableSelectorOption(i)
             except:
-                print("Whelp")
+                logger.debug(f"{i} already exists as option, will skip adding it.")
         self.variableselector = VariableSelector(
             selected_inputs=inputs, selected_states=states
         )
@@ -252,11 +252,12 @@ class EditingTable(ABC):
                 return error_log
 
         if self.ident:
-            print("Tester")
+            logger.debug(
+                "Adding callback for returning clicked ident to variable selector"
+            )
             output_object = self.variableselector.get_output_object(
                 variable=self.varselector_ident
             )
-            print(output_object)
 
             @callback(  # type: ignore[misc]
                 output_object,
