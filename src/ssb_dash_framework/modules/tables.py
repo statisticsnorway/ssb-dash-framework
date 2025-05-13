@@ -251,7 +251,7 @@ class EditingTable(ABC):
 
                 return error_log
 
-        if self.ident:
+        if self.ident and self.varselector_ident:
             logger.debug(
                 "Adding callback for returning clicked ident to variable selector"
             )
@@ -276,11 +276,16 @@ class EditingTable(ABC):
                 Raises:
                     PreventUpdate: if clickdata is None.
                 """
-                if not clickdata or clickdata["colId"] != self.ident:
+                print(clickdata)
+                if not clickdata:
+                    raise PreventUpdate
+                if clickdata["colId"] != self.ident:
                     raise PreventUpdate
                 ident = clickdata["value"]
-                print(f"Transfering {ident} to {self.varselector_ident}")
-                logger.info(f"Transfering {ident} to {self.varselector_ident}")
+                if not isinstance(ident, str):
+                    logger.debug(f"{ident} is not a string, is type {type(ident)}")
+                    raise PreventUpdate
+                logger.debug(f"Transfering {ident} to {self.varselector_ident}")
                 return ident
 
         logger.debug("Generated callbacks")
