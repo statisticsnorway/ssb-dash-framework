@@ -13,12 +13,16 @@ logger = logging.getLogger(__name__)
 
 
 class WindowImplementation:
-    """A class to implement a module inside a modal.
+    """A mixin class to implement a module inside a modal.
 
     Dependencies:
         - self.label (str): The label for the modal and sidebar button.
         - self.module_name (str): The name of the module, used for generating unique IDs.
-        - self.module_layout (html.Div): The layout to display inside the modal. # Still true???
+        - self.module_layout (html.Div): The layout to display inside the modal.
+
+    Note:
+        - This class should be used as a mixin in a module class.
+        - If necessary, you can override the `get_module_layout` method to further customize the layout inside the modal.
     """
 
     _window_number = (
