@@ -242,7 +242,7 @@ class EditingTable(ABC):
                 Input(f"{self._editingtable_n}-tabelleditering-table1", "cellClicked"),
                 prevent_initial_call=True,
             )
-            def table_to_main_table(clickdata: dict[str, list[dict[str, Any]]]) -> str:
+            def table_to_main_table(clickdata: dict[str, Any]) -> str:
                 """Passes the selected observation identifier to `variabelvelger`.
 
                 Args:
