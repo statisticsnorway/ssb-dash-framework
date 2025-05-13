@@ -1,10 +1,10 @@
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
 from collections.abc import Callable
 from typing import Any
 
 import dash_ag_grid as dag
-import dash_bootstrap_components as dbc
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -29,11 +29,12 @@ class EditingTable(ABC):
 
     Attributes:
         label (str): The label for the tab or component.
-        database (object): Database connection or interface for querying and updating data.
-        var_input (str): Variable input key for identifying records in the database.
-        states (list[str]): Keys representing dynamic states to filter data.
-        get_data (callable): Function to fetch data from the database.
-        update_table (callable): Function to update database records based on edits in the table.
+        ident (str | None): Identifier for the table, used for callbacks.
+        varselector_ident (str | None): Identifier for the variable selector.
+        variableselector (VariableSelector): A variable selector for managing inputs and states.
+        get_data (Callable[..., Any]): Function to fetch data from the database.
+        update_table (Callable[..., Any]): Function to update database records based on edits in the table.
+        module_layout (html.Div): The layout of the component.
     """
 
     _id_number = 0
@@ -52,15 +53,12 @@ class EditingTable(ABC):
 
         Args:
             label (str): The label for the tab or component.
-            database (object): A database connection or interface used for querying and updating data.
-            tables (list[str]): A list of available table names for selection.
-            id_var (str): The identifier variable used to uniquely identify records in the database.
-            states (list[str]): A list of keys representing dynamic states to filter data (e.g., "aar", "termin").
+            inputs (list[str]): A list of input variable names.
+            states (list[str]): A list of state variable names for filtering data.
             get_data_func (Callable[..., Any]): A function for retrieving data from the database.
             update_table_func (Callable[..., Any]): A function for updating data in the database.
-
-        Raises:
-            TypeError: If `id_var` is not of type `str`.
+            ident (str | None, optional): Identifier for the table. Defaults to None.
+            varselector_ident (str | None, optional): Identifier for the variable selector. Defaults to None.
         """
         self._editingtable_n = EditingTable._id_number
         self.module_name = self.__class__.__name__
@@ -68,23 +66,20 @@ class EditingTable(ABC):
         self.label = label
         self.ident = ident
         self.varselector_ident = varselector_ident
+
         for i in [*inputs, *states]:
             try:
                 VariableSelectorOption(i)
-            except:
-                logger.debug(f"{i} already exists as option, will skip adding it.")
+            except ValueError:
+                logger.debug(f"{i} already exists as an option, skipping.")
+
         self.variableselector = VariableSelector(
             selected_inputs=inputs, selected_states=states
         )
-
         self.get_data = get_data_func
-
         self.get_data_args = [x for x in self.variableselector.selected_variables]
-
         self.update_table = update_table_func
-
         self.module_layout = self._create_layout()
-
         self.module_callbacks()
 
     def _create_layout(self) -> html.Div:
@@ -116,6 +111,13 @@ class EditingTable(ABC):
 
     @abstractmethod
     def layout(self) -> html.Div:
+        """Define the layout for the EditingTable module.
+
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
+
+        Returns:
+            html.Div: A Dash HTML Div component representing the layout of the module.
+        """
         pass
 
     def module_callbacks(self) -> None:
@@ -143,7 +145,7 @@ class EditingTable(ABC):
 
             Args:
                 tabell (str): Name of the selected database table.
-                dynamic_states (list): Dynamic state parameters for filtering data.
+                dynamic_states (list[str]): Dynamic state parameters for filtering data.
 
             Returns:
                 tuple: Contains:
@@ -151,12 +153,7 @@ class EditingTable(ABC):
                     - columnDefs (list[dict]): Column definitions for the table.
 
             Raises:
-                Exception: If the loading fails, it raises an exception to help troubleshooting.
-
-            Notes:
-                - Columns are dynamically generated based on the table's schema.
-                - The "row_id" column is hidden by default but used for updates.
-                - Adds checkbox selection to the first column for bulk actions.
+                Exception: If there is an error loading data into the table.
             """
             try:
                 df = self.get_data(tabell, *dynamic_states)
@@ -164,7 +161,7 @@ class EditingTable(ABC):
                     {
                         "headerName": col,
                         "field": col,
-                        "hide": True if col == "row_id" else False,
+                        "hide": col == "row_id",
                     }
                     for col in df.columns
                 ]
@@ -172,6 +169,7 @@ class EditingTable(ABC):
                 columns[0]["headerCheckboxSelection"] = True
                 return df.to_dict("records"), columns
             except Exception as e:
+                logger.error("Error loading data into table", exc_info=True)
                 raise e
 
         @callback(  # type: ignore[misc]
@@ -186,29 +184,20 @@ class EditingTable(ABC):
             tabell: str,
             error_log: list[dict[str, Any]],
             *dynamic_states: list[str],
-        ) -> dbc.Alert:
+        ) -> list[dict[str, Any]]:
             """Update the database based on edits made in the AgGrid table.
 
             Args:
-                edited (list[dict]): Information about the edited cell, including:
-                    - colId: The column name of the edited cell.
-                    - oldValue: The previous value of the cell.
-                    - value: The new value of the cell.
-                    - data: The row data, including the "row_id".
+                edited (list[dict]): Information about the edited cell.
                 tabell (str): The name of the table being edited.
-                error_log (list of dbc.Alert): List of currently existing alerts in the alert handler module.
-                dynamic_states (list): Dynamic state parameters for filtering data.
+                error_log (list[dict]): List of existing alerts in the alert handler.
+                dynamic_states (list[str]): Dynamic state parameters for filtering data.
 
             Returns:
-                dbc.Alert: A status message indicating the success or failure of the update.
+                list[dict]: Updated error log with success or failure messages.
 
             Raises:
-                PreventUpdate: If no edit has taken place, the callback does not run.
-
-            Notes:
-                - Calls `update_table` to apply the change to the database.
-                - If successful, returns a confirmation message.
-                - If failed, returns an error message.
+                PreventUpdate: If no edits were made.
             """
             if not edited:
                 raise PreventUpdate
@@ -240,11 +229,10 @@ class EditingTable(ABC):
                         ephemeral=True,
                     )
                 )
-
                 return error_log
 
-            except Exception as e:
-                logger.error(msg=e, exc_info=True)
+            except Exception:
+                logger.error("Error updating table", exc_info=True)
                 error_log.append(
                     create_alert(
                         f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
@@ -252,7 +240,6 @@ class EditingTable(ABC):
                         ephemeral=True,
                     )
                 )
-
                 return error_log
 
         if self.ident and self.varselector_ident:
@@ -280,7 +267,6 @@ class EditingTable(ABC):
                 Raises:
                     PreventUpdate: if clickdata is None.
                 """
-                print(clickdata)
                 if not clickdata:
                     raise PreventUpdate
                 if clickdata["colId"] != self.ident:
