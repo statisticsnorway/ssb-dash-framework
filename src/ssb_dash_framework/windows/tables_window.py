@@ -35,5 +35,5 @@ class EditingTableWindow(EditingTable, WindowImplementation):
         )
 
     def layout(self):
-        layout = WindowImplementation.layout()
+        layout = WindowImplementation.layout(self)
         return layout
