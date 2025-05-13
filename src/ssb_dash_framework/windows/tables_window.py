@@ -2,6 +2,8 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
+from dash import html
+
 from ..modules.tables import EditingTable
 from ..utils import WindowImplementation
 
@@ -9,6 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 class EditingTableWindow(EditingTable, WindowImplementation):
+    """A class to implement an EditingTable module inside a modal.
+
+    It is used to create a modal window containing an EditingTable.
+    This class inherits from both EditingTable and WindowImplementation, where WindowImplementation is a mixin that handles the modal functionality.
+    """
 
     def __init__(
         self,
@@ -17,9 +24,20 @@ class EditingTableWindow(EditingTable, WindowImplementation):
         states: list[str],
         get_data_func: Callable[..., Any],
         update_table_func: Callable[..., Any],
-        ident=None,
-        varselector_ident=None,
-    ):
+        ident: str | None = None,
+        varselector_ident: str | None = None,
+    ) -> None:
+        """Initialize the EditingTableWindow.
+
+        Args:
+            label (str): The label for the modal.
+            inputs (list[str]): The list of input IDs.
+            states (list[str]): The list of state IDs.
+            get_data_func (Callable[..., Any]): Function to get data for the table.
+            update_table_func (Callable[..., Any]): Function to update the table.
+            ident (str | None, optional): Identifier for the table. Defaults to None.
+            varselector_ident (str | None, optional): Identifier for the variable selector. Defaults to None.
+        """
         EditingTable.__init__(
             self,
             label=label,
@@ -34,6 +52,7 @@ class EditingTableWindow(EditingTable, WindowImplementation):
             self,
         )
 
-    def layout(self):
+    def layout(self) -> html.Div:
+        """Generate the layout for the modal window using the WindowImplementation method."""
         layout = WindowImplementation.layout(self)
         return layout
