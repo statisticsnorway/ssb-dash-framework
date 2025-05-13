@@ -114,6 +114,10 @@ class EditingTable(ABC):
         logger.debug("Generated layout")
         return layout
 
+    @abstractmethod
+    def layout(self) -> html.Div:
+        pass
+
     def module_callbacks(self) -> None:
         """Register Dash callbacks for the EditingTable component.
 

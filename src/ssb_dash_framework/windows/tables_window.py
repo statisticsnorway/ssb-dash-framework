@@ -33,3 +33,7 @@ class EditingTableWindow(EditingTable, WindowImplementation):
         WindowImplementation.__init__(
             self,
         )
+
+    def layout(self):
+        layout = WindowImplementation.layout()
+        return layout

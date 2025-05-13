@@ -1,5 +1,4 @@
 import logging
-from abc import ABC
 
 import dash_bootstrap_components as dbc
 from dash import callback
@@ -13,7 +12,14 @@ from ..utils.functions import sidebar_button
 logger = logging.getLogger(__name__)
 
 
-class WindowImplementation(ABC):
+class WindowImplementation:
+    """A class to implement a module inside a modal.
+
+    Dependencies:
+        - self.label (str): The label for the modal and sidebar button.
+        - self.module_name (str): The name of the module, used for generating unique IDs.
+        - self.module_layout (html.Div): The layout to display inside the modal. # Still true???
+    """
 
     _window_number = (
         0  # Used to differentiate ids used in callbacks to open/close modal.
@@ -22,18 +28,22 @@ class WindowImplementation(ABC):
     def __init__(
         self,
     ):
-        print("Hello from the WindowImplementation")
+        """Initialize the window implementation.
+
+        This class is used to create a modal window for the module.
+        """
+        if not hasattr(self, "label"):
+            raise AttributeError(
+                "The class must have a 'label' attribute to use WindowImplementation."
+            )
+        if not hasattr(self, "module_name"):
+            raise AttributeError(
+                "The class must have a 'module_name' attribute to use WindowImplementation."
+            )
+
         self._window_n = WindowImplementation._window_number
-        print(WindowImplementation._window_number)
-        self.title = self.label
-        self.module_name = self.module_name
-        print(WindowImplementation._window_number)
-
         self.window_callbacks()
-        print(WindowImplementation._window_number)
-
         WindowImplementation._window_number += 1
-        print(WindowImplementation._window_number)
 
     def layout(self):
         layout = html.Div(
@@ -41,7 +51,7 @@ class WindowImplementation(ABC):
                 dbc.Modal(
                     [
                         dbc.ModalHeader(dbc.ModalTitle(self.label)),
-                        dbc.ModalBody(self.module_layout),
+                        dbc.ModalBody(self.get_module_layout()),
                     ],
                     id=f"{self._window_n}-{self.module_name}-modal",
                     size="xl",
@@ -56,6 +66,13 @@ class WindowImplementation(ABC):
         )
         logger.debug("Generated layout")
         return layout
+
+    def get_module_layout(self):
+        if not hasattr(self, "module_layout"):
+            raise AttributeError(
+                "The class using WindowImplementation must define 'module_layout'."
+            )
+        return self.module_layout
 
     def window_callbacks(self) -> None:
         """Define the callbacks for the module window.
