@@ -29,9 +29,14 @@ class WindowImplementation:
         0  # Used to differentiate ids used in callbacks to open/close modal.
     )
 
+    # Attributes that must be defined in the class using this mixin
+    label: str
+    module_name: str
+    module_layout: html.Div
+
     def __init__(
         self,
-    ):
+    ) -> None:
         """Initialize the window implementation.
 
         This class is used to create a modal window for the module.
@@ -49,7 +54,15 @@ class WindowImplementation:
         self.window_callbacks()
         WindowImplementation._window_number += 1
 
-    def layout(self):
+    def layout(self) -> html.Div:
+        """Generate the layout for the modal window.
+
+        This method creates a modal window with a header and a body containing the module layout.
+        It also creates a sidebar button to toggle the modal.
+
+        Returns:
+            html.Div: The layout containing the modal and the sidebar button.
+        """
         layout = html.Div(
             [
                 dbc.Modal(
@@ -71,7 +84,11 @@ class WindowImplementation:
         logger.debug("Generated layout")
         return layout
 
-    def get_module_layout(self):
+    def get_module_layout(self) -> html.Div:
+        """Get the layout of the module.
+
+        Works as is, but can be overridden if needed.
+        """
         if not hasattr(self, "module_layout"):
             raise AttributeError(
                 "The class using WindowImplementation must define 'module_layout'."
