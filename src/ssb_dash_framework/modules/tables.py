@@ -201,25 +201,12 @@ class EditingTable(ABC):
             """
             if not edited:
                 raise PreventUpdate
-            states_values = dynamic_states[: len(self.variableselector.states)]
-            state_params = {
-                key: value
-                for key, value in zip(
-                    self.variableselector.states, states_values, strict=False
-                )
-            }
-
-            args = []
-            for key in self.variableselector.states:
-                var = state_params.get(key)
-                if var is not None:
-                    args.append(var)
-            variable = edited[0]["colId"]
-            old_value = edited[0]["oldValue"]
-            new_value = edited[0]["value"]
-            row_id = edited[0]["data"]["row_id"]
             logger.debug(f"Edited:\n{edited}")
             try:
+                variable = edited[0]["colId"]
+                old_value = edited[0]["oldValue"]
+                new_value = edited[0]["value"]
+                row_id = edited[0]["data"]["row_id"]
                 self.update_table(tabell, variable, new_value, row_id)
 
                 error_log.append(
