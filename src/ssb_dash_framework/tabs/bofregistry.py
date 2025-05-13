@@ -1,5 +1,6 @@
 import logging
 import sqlite3
+from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -9,6 +10,7 @@ from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +18,12 @@ SSB_FORETAK_PATH = "/buckets/shared/vof/oracle-hns/ssb_foretak.db"
 SSB_BEDRIFT_PATH = "/buckets/shared/vof/oracle-hns/ssb_bedrift.db"
 
 
-def ssb_foretak_modal():
+def ssb_foretak_modal() -> dbc.Modal:
+    """Create a modal for displaying bof data.
+
+    Returns:
+        dbc.Modal: A modal component containing an AgGrid table for bof data.
+    """
     ssb_foretak_modal = dbc.Modal(
         [
             dbc.ModalHeader(dbc.ModalTitle("ssb_foretak")),
@@ -49,7 +56,12 @@ def ssb_foretak_modal():
     return ssb_foretak_modal
 
 
-def ssb_bedrift_modal():
+def ssb_bedrift_modal() -> dbc.Modal:
+    """Create a modal for displaying bof data.
+
+    Returns:
+        dbc.Modal: A modal component containing an AgGrid table for bof data.
+    """
     ssb_bedrift_modal = dbc.Modal(
         [
             dbc.ModalHeader(dbc.ModalTitle("ssb_bedrift")),
@@ -310,37 +322,42 @@ class BofInformation:
             - The `bof_data` callback fetches and updates data in the cards based on the selected foretak.
         """
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("bofregistry-modal-ssb_foretak", "is_open"),
             Input("tab-vof-foretak-button1", "n_clicks"),
             State("bofregistry-modal-ssb_foretak", "is_open"),
         )
-        def toggle_modal(n_clicks, is_open):
+        def toggle_bof_modal(n_clicks: int, is_open: bool) -> bool:
             if n_clicks > 0:
-                if is_open == False:
-                    return True
-                else:
+                if is_open:
                     return False
+                else:
+                    return True
+            else:
+                raise PreventUpdate
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("bofregistry-modal-ssb_bedrift", "is_open"),
             Input("tab-vof-foretak-button2", "n_clicks"),
             State("bofregistry-modal-ssb_bedrift", "is_open"),
         )
-        def toggle_modal(n_clicks, is_open):
+        def toggle_bedrift_modal(n_clicks: int, is_open: bool) -> bool:
             if n_clicks > 0:
-                if is_open == False:
-                    return True
-                else:
+                if is_open:
                     return False
+                else:
+                    return True
+            raise PreventUpdate
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("bofregistry-ssb_foretak-table", "rowData"),
             Output("bofregistry-ssb_foretak-table", "columnDefs"),
             Input("tab-vof-foretak-button1", "n_clicks"),
             State("tab-bof_foretak-orgnrcard", "value"),
         )
-        def ssb_foretak(n_clicks, orgnr):
+        def ssb_bof_foretak(
+            n_clicks: int, orgnr: str
+        ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             if n_clicks > 0:
                 conn = sqlite3.connect(SSB_FORETAK_PATH)
                 df = pd.read_sql_query(
@@ -355,14 +372,17 @@ class BofInformation:
                     for col in df.columns
                 ]
                 return df.to_dict("records"), columns
+            raise PreventUpdate
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("bofregistry-ssb_bedrift-table", "rowData"),
             Output("bofregistry-ssb_bedrift-table", "columnDefs"),
             Input("tab-vof-foretak-button2", "n_clicks"),
             State("tab-bof_foretak-table1", "selectedRows"),
         )
-        def ssb_foretak(n_clicks, selected_row):
+        def ssb_bof_bedrift(
+            n_clicks: int, selected_row: list[dict[str, Any]]
+        ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             orgnr = selected_row[0]["orgnr"]
             if n_clicks > 0:
                 conn = sqlite3.connect(SSB_BEDRIFT_PATH)
@@ -378,6 +398,7 @@ class BofInformation:
                     for col in df.columns
                 ]
                 return df.to_dict("records"), columns
+            raise PreventUpdate
 
         @callback(  # type: ignore[misc]
             Output("tab-bof_foretak-orgnrcard", "value"),
@@ -401,7 +422,6 @@ class BofInformation:
 
             Args:
                 orgf (str): The organization number of the selected foretak.
-                aar (int): The year for filtering data (if applicable).
 
             Returns:
                 tuple: A tuple containing information about the foretak.
@@ -446,12 +466,14 @@ class BofInformation:
                     typen,
                 )
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("tab-bof_foretak-table1", "rowData"),
             Output("tab-bof_foretak-table1", "columnDefs"),
             Input("tab-bof_foretak-foretaksnrcard", "value"),
         )
-        def populate_bedrifter(foretaksnr):
+        def populate_bedrifter(
+            foretaksnr: str,
+        ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             if foretaksnr is not None:
                 conn = sqlite3.connect(SSB_BEDRIFT_PATH)
                 df = pd.read_sql_query(
@@ -459,15 +481,18 @@ class BofInformation:
                     FROM ssb_bedrift WHERE foretaks_nr = '{foretaksnr}';""",
                     conn,
                 )
-                columns = [
-                    {
-                        "headerName": col,
-                        "field": col,
-                    }
-                    for col in df.columns
-                ]
-                columns[0]["checkboxSelection"] = True
-                columns[0]["headerCheckboxSelection"] = True
+                columns = (
+                    [  # col == "bedrifts_nr" results to true if col is bedrifts_nr
+                        {
+                            "headerName": col,
+                            "field": col,
+                            "checkboxSelection": col == "bedrifts_nr",
+                            "headerCheckboxSelection": col == "bedrifts_nr",
+                        }
+                        for col in df.columns
+                    ]
+                )
                 return df.to_dict("records"), columns
+            raise PreventUpdate
 
         logger.debug("Generated callbacks")

@@ -59,12 +59,12 @@ class HBMethod:
         self.variable = variable
         self.database = database
         self.hb_get_data = hb_get_data_func
-        self.is_valid()  # Needs to happen before VariableSelector
+        self._is_valid()  # Needs to happen before VariableSelector
 
         self.variableselector = VariableSelector([selected_ident], selected_state_keys)
         self.callbacks()
 
-    def is_valid(self):
+    def _is_valid(self) -> None:
         if not isinstance(self.selected_ident, str):
             raise ValueError(
                 f"selected_ident should be type str, received {type(self.selected_ident)}"
@@ -92,7 +92,7 @@ class HBMethod:
         Returns:
             pandas.DataFrame: Processed data with outlier results, sorted by "maxX".
         """
-        hb_result = hb_method(
+        hb_result: pd.DataFrame = hb_method(
             data=data_df,
             p_c=pc,
             p_u=pu,
@@ -300,11 +300,6 @@ class HBMethod:
 
     def callbacks(self) -> None:
         """Registers callbacks for the HB method Dash app components.
-
-        Args:
-            selected_state_keys (list of str): List of state keys for dynamic state configuration.
-            selected_ident (str): Identifier used for grouping or filtering data.
-            variable (str): Name of the value variable for HB method analysis.
 
         Notes:
             This method registers Dash callbacks for handling user interactions, including

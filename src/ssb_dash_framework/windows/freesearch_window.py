@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import Input
@@ -14,7 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class FreeSearchWindow(FreeSearch):
-    def __init__(self, database):
+    """FreeSearchWindow is a class that creates a modal based on the FreeSearch module."""
+
+    def __init__(self, database: Any) -> None:
         """Initialize the FreeSearchWindow class.
 
         Args:
@@ -48,7 +51,7 @@ class FreeSearchWindow(FreeSearch):
         logger.debug("Generated layout")
         return layout
 
-    def callbacks(self):
+    def callbacks(self) -> None:
         """Define the callbacks for the FreeSearch window.
 
         This includes a callback to toggle the visibility of the modal window.

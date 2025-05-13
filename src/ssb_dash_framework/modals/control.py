@@ -4,7 +4,6 @@ from typing import cast
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-import pandas as pd
 from dash import Input
 from dash import Output
 from dash import State
@@ -12,8 +11,6 @@ from dash import callback
 from dash import html
 from dash.exceptions import PreventUpdate
 
-from ..control.framework import QualityReport
-from ..control.framework import create_control_documentation
 from ..utils.functions import sidebar_button
 
 # +
@@ -33,10 +30,9 @@ class Control:
 
     Attributes:
         ident (str): Name of the identification variable, e.g., 'orgf'.
-        control_documentation_path (str): Path to the saved quality report in JSON format on Dapla.
     """
 
-    def __init__(self, ident: str, qualityreport_path: str) -> None:
+    def __init__(self, ident: str) -> None:
         """Initialize the control module.
 
         This method sets up the identification variable, loads the quality report from a JSON file,
@@ -44,18 +40,11 @@ class Control:
 
         Args:
             ident (str): The key for the identification variable, e.g., 'orgf'.
-            qualityreport_path (str): Path to the quality report saved as a JSON file on Dapla.
 
         Attributes Set:
             ident (str): The resolved name of the identification variable.
-            kontrolltabell (pd.DataFrame): A table documenting the performed controls.
-            utslagstabell (pd.DataFrame): A table detailing the control outputs.
         """
         self.ident = ident_options[0][ident]
-        if qualityreport_path:
-            data = QualityReport.from_json(qualityreport_path).to_dict()
-            self.kontrolltabell = create_control_documentation(data)
-            self.utslagstabell = pd.DataFrame(data["kontrollutslag"])
         self.callbacks()
 
     def layout(self) -> html.Div:
@@ -84,9 +73,6 @@ class Control:
                                             "Kontrollutslag",
                                         ]
                                     ],
-                                    rowData=self.kontrolltabell.to_dict(
-                                        orient="records"
-                                    ),
                                 ),
                                 dag.AgGrid(
                                     id="control-table-detailed",
@@ -101,9 +87,6 @@ class Control:
                                             "filter": True,
                                         }
                                     ],
-                                    rowData=self.utslagstabell.to_dict(
-                                        orient="records"
-                                    ),
                                 ),
                             ]
                         ),

@@ -67,7 +67,7 @@ def hb_method(
     :return: The result of the method
     """
     with conversion.localconverter(default_converter + pandas2ri.converter):
-        return _get_kostra_r().Hb(
+        hb_result = _get_kostra_r().Hb(
             data=data,
             id=id_field_name,
             x1=x_1_field_name,
@@ -76,6 +76,10 @@ def hb_method(
             pU=p_u,
             pA=p_a,
         )
+        assert isinstance(
+            hb_result, pd.DataFrame
+        ), "Hb method did not return a DataFrame"
+        return hb_result
 
 
 def th_error(
@@ -93,6 +97,9 @@ def th_error(
         th_error_result = _get_kostra_r().ThError(
             data=data, id=id_field_name, x1=x_1_field_name, x2=x_2_field_name
         )
+        assert isinstance(
+            th_error_result, pd.DataFrame
+        ), "ThError method did not return a DataFrame"
         return th_error_result[th_error_result.outlier == 0]
 
 
