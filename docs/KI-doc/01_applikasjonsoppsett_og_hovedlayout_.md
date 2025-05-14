@@ -1,4 +1,4 @@
-# Chapter 1: AppSetup og MainLayout
+# Kapittel 1: AppSetup og MainLayout
 
 
 Velkommen til det første kapittelet i vår veiledning for `ssb-dash-framework`! Dette rammeverket er designet for å gjøre det enklere å bygge interaktive webapplikasjoner med Dash, spesielt tilpasset behovene i SSB.
