@@ -1,4 +1,4 @@
-# Chapter 6: Varslingshåndterer
+# Kapittel 6: Varslingshåndterer
 
 
 I forrige kapittel, [Altinn SkjemadatarEditor](05_altinn_skjemadatareditor_.md), så vi på en spesialisert modul for å jobbe med komplekse skjemadata. Nå skal vi se på en annen viktig, men mer generell komponent som er en del av alle applikasjoner bygget med `ssb-dash-framework`: **Varslingshåndtereren**.
