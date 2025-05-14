@@ -11,7 +11,7 @@ flowchart TD
 "]
     A1["Modul
 "]
-    A2["Applikasjonsoppsett og Hovedlayout
+    A2["AppSetup og MainLayout
 "]
     A3["Faner og Vinduer (Modaler)
 "]
@@ -32,7 +32,7 @@ flowchart TD
 
 ## Chapters
 
-1. [Applikasjonsoppsett og Hovedlayout
+1. [AppSetup og MainLayout
 ](01_applikasjonsoppsett_og_hovedlayout_.md)
 2. [Faner og Vinduer (Modaler)
 ](02_faner_og_vinduer__modaler__.md)
