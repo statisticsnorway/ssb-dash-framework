@@ -28,7 +28,7 @@ flowchart TD
     A5 -- "Viser logg via" --> A3
 ```
 
-## Chapters
+## Kapitler
 
 1. [AppSetup og MainLayout
 ](01_applikasjonsoppsett_og_hovedlayout_.md)
