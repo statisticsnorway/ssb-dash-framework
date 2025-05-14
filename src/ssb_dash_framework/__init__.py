@@ -6,6 +6,7 @@ from .modals import Control
 from .modals import HBMethod
 from .modals import VisualizationBuilder
 from .modules import Aarsregnskap
+from .modules import EditingTable
 from .modules import FreeSearch
 from .modules import SkjemadataViewer
 from .modules import SkjemapdfViewer
