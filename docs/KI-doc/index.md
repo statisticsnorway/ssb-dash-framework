@@ -15,8 +15,7 @@ flowchart TD
 "]
     A3["Faner og Vinduer (Modaler)
 "]
-    A4["Altinn SkjemadatarEditor
-"]
+    
     A5["Varslingshåndterer
 "]
     A2 -- "Plasserer" --> A0
@@ -26,8 +25,6 @@ flowchart TD
     A0 -- "Varsler om endring til" --> A5
     A3 -- "Presenterer" --> A1
     A1 -- "Sender varsler til" --> A5
-    A4 -- "Bruker for interne visninger" --> A3
-    A4 -- "Er en " --> A1
     A5 -- "Viser logg via" --> A3
 ```
 
