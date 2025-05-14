@@ -1,4 +1,4 @@
-# Chapter 5: Altinn SkjemadatarEditor
+# Kapittel 5: Altinn SkjemadatarEditor
 
 
 I forrige kapittel, [Modul](04_modul_.md), lærte vi hvordan moduler fungerer som gjenbrukbare byggeklosser med egen logikk og layout. Nå skal vi se på et konkret og avansert eksempel på en slik modul: `AltinnSkjemadataEditor`. Dette er en spesialisert modul designet for å jobbe med skjemadata, sannsynligvis fra Altinn-systemet.
