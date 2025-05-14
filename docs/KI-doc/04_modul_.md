@@ -1,4 +1,4 @@
-# Chapter 4: Modul
+# Kapittel 4: Modul
 
 
 I forrige kapittel, [Variabelvelger](03_variabelvelger_.md), lærte vi hvordan vi kan bruke Variabelvelgeren til å håndtere felles innstillinger og data som påvirker ulike deler av applikasjonen. Nå skal vi se nærmere på selve "byggeklossene" som bruker disse variablene og utgjør funksjonaliteten i applikasjonen din: **Moduler**.
