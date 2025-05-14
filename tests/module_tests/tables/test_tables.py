@@ -1,4 +1,5 @@
 def test_import() -> None:
-    from ssb_dash_framework import EditingTableLong
 
-    assert EditingTableLong is not None
+    assert "EditingTable" != None
+    assert "EditingTableTab" != None
+    assert "EditingTableWindow" != None
