@@ -9,6 +9,7 @@ from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
 from ..utils.functions import sidebar_button
 
@@ -21,7 +22,9 @@ class AltinnDataCapture:
         database (object): The eimerdb connection.
     """
 
-    def __init__(self, time_units: list, database: object) -> None:
+    def __init__(
+        self, time_units: list[str], database: object
+    ) -> None:  # TODO check type hint for time_units
         """Initializes the AntinnDataCapture module.
 
         Args:
@@ -48,7 +51,23 @@ class AltinnDataCapture:
                 dbc.Modal(
                     [
                         dbc.ModalHeader(
-                            dbc.ModalTitle("🎣 Datafangst"),
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dbc.ModalTitle("🎣 Datafangst"), width="auto"
+                                    ),
+                                    dbc.Col(
+                                        dbc.Button(
+                                            "🖵", id="datafangst-modal-fullscreen"
+                                        ),
+                                        width="auto",
+                                        className="ms-auto",
+                                    ),
+                                ],
+                                className="w-100",
+                                align="center",
+                                justify="between",
+                            )
                         ),
                         dbc.ModalBody(
                             [
@@ -135,7 +154,9 @@ class AltinnDataCapture:
         )
         return layout
 
-    def create_partition_select(self, skjema: str | None = None, **kwargs: Any) -> dict:
+    def create_partition_select(
+        self, skjema: str | None = None, **kwargs: Any
+    ) -> dict[str, Any]:  # TODO check return type hint for dict
         """Creates the partition select argument based on the chosen time units."""
         partition_select = {
             unit: [kwargs[unit]] for unit in self.time_units if unit in kwargs
@@ -146,7 +167,7 @@ class AltinnDataCapture:
 
     def create_callback_components(
         self, input_type: Literal["Input", "State"] = "Input"
-    ) -> list:
+    ) -> list[Input | State]:
         """Generates a list of dynamic Dash Input or State components."""
         component = Input if input_type == "Input" else State
         return [component(f"test-{unit}", "value") for unit in self.time_units]
@@ -156,18 +177,20 @@ class AltinnDataCapture:
 
         Notes:
             - `get_skjemas`: Gets all the schemas from the eimerdb enheter table and adds them to a dropdown.
-            - `update_valgt_skjema`: Updates the chosen schema from the variable selector.
+            - `update_altinnskjema`: Updates the chosen schema from the variable selector.
             - `datafangstmodal_toggle`: Toggles the modal, which contains the layout.
             - 'datafangst_graph': Queries the skjemamottak table in eimerdb and returns a graph.
         """
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("datafangst-dd1", "options"),
             Output("datafangst-dd1", "value", allow_duplicate=True),
             *self.create_callback_components("Input"),
             prevent_initial_call=True,
         )
-        def get_skjemas(*args: Any):
+        def get_skjemas(
+            *args: Any,
+        ) -> tuple[list[dict[str, str]], str]:  # TODO doublecheck return type hint
             partition_args = dict(zip(self.time_units, args, strict=False))
             df = self.database.query(
                 "SELECT DISTINCT skjemaer FROM enheter",
@@ -183,15 +206,32 @@ class AltinnDataCapture:
             ]
             return skjema_options, default_value
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("datafangst-dd1", "value", allow_duplicate=True),
-            Input("var-valgt_skjema", "value"),
+            Input("var-altinnskjema", "value"),
             prevent_initial_call=True,
         )
-        def update_valgt_skjema(valgt_skjema: str) -> str:
-            return valgt_skjema
+        def update_altinnskjema(altinnskjema: str) -> str:
+            return altinnskjema
 
-        @callback(
+        @callback(  # type: ignore[misc]
+            Output("datafangst-modal", "fullscreen"),
+            Input("datafangst-modal-fullscreen", "n_clicks"),
+            State("datafangst-modal", "fullscreen"),
+        )
+        def toggle_fullscreen_modal(
+            n_clicks: int, fullscreen_state: bool | str
+        ) -> bool | str:
+            fullscreen: str | bool
+            if n_clicks > 0:
+                if fullscreen_state is True:
+                    fullscreen = "xxl-down"
+                else:
+                    fullscreen = True
+                return fullscreen
+            raise PreventUpdate
+
+        @callback(  # type: ignore[misc]
             Output("datafangst-modal", "is_open"),
             Input("sidebar-datafangst-button", "n_clicks"),
             State("datafangst-modal", "is_open"),
@@ -201,13 +241,13 @@ class AltinnDataCapture:
                 return not is_open
             return is_open
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("datafangst-graph1", "figure"),
             Input("datafangst-radioitem1", "value"),
             Input("datafangst-dd1", "value"),
             *self.create_callback_components("State"),
         )
-        def datafangst_graph(graph_option: str, skjema: str, *args: Any):
+        def datafangst_graph(graph_option: str, skjema: str, *args: Any) -> px.Figure:
             partition_args = dict(zip(self.time_units, args, strict=False))
             if graph_option == "antall":
                 df = self.database.query(

@@ -68,14 +68,20 @@ poetry add ssb-dash-framework --allow-prereleases
 This is the currently in-development version. Be aware that this is a very unstable version and is subject to rapid breaking changes.
 - Primarily intended for testing of in-development features.
 
-First add this to your pyproject.toml:
+First make sure this is in your pyproject.toml:
 
 > [[tool.poetry.source]]<br>
-> name = "testpypi"<br>
-> url = "https://test.pypi.org/simple"<br>
-> default = false<br>
+>name = "testpypi"<br>
+>url = "https://test.pypi.org/simple"<br>
+>priority = "supplemental"<br>
 
-Then run this command, optionally with --allow-prereleases to ensure you get the latest version.
+It can be added manually or using the command below.
+
+```console
+poetry source add --priority=supplemental testpypi https://test.pypi.org/simple
+```
+
+If it is in your pyproject.toml, run this command with --allow-prereleases to ensure you get the latest version.
 
 ```console
 poetry add --source testpypi ssb-dash-framework --allow-prereleases
