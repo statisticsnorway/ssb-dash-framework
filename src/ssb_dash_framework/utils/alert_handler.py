@@ -19,13 +19,17 @@ logger = logging.getLogger(__name__)
 
 
 def create_alert(
-    message: str, color: str = "info", ephemeral: bool = False
+    message: str, color: str | None = "info", ephemeral: bool | None = False
 ) -> dict[str, Any]:
-    """Create a standardized alert record.
+    """Creates a standardized alert record.
 
-    - color: typically 'info', 'warning', or 'danger'
-    - ephemeral=True => the alert also appears top-center for 4s
-                        (but remains in the store for the modal).
+    Args:
+        message (str): The alert message to display.
+        color (str, optional): The color of the alert, typically 'info', 'warning', or 'danger'. Defaults to 'info'.
+        ephemeral (bool, optional): If True, the alert appears at the top-center for 4 seconds but remains in the store for the modal. Defaults to False.
+
+    Returns:
+        dict[str, Any]: A dictionary containing the alert details, including timestamp, message, color, and ephemeral status.
     """
     return {
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -38,25 +42,32 @@ def create_alert(
 
 
 class AlertHandler:
-    """Manages alerts.
+    """Manages alerts for the application.
 
-    - A modal that displays all alerts (filterable, dismissable).
-    - An ephemeral "top-middle" area showing alerts for 4s, but not removed from store.
+    This class provides functionality for:
+    - Displaying a modal with all alerts, which can be filtered and dismissed.
+    - Showing ephemeral alerts at the top-middle of the screen for 4 seconds without removing them from the store.
     """
 
     def __init__(self) -> None:
-        """Initializes the AlertHandler module."""
+        """Initializes the AlertHandler instance.
+
+        This method sets up the necessary callbacks for managing alerts.
+        """
         self.callbacks()
 
     def layout(self) -> html.Div:
-        """Returns a Div containing.
+        """Creates the layout for the AlertHandler.
 
-        - dcc.Store for all alerts.
-        - dcc.Store for current filter.
-        - fixed container for ephemeral alerts.
-        - interval to drive ephemeral updates.
-        - a modal with filter buttons and a dismissable alert container.
-        - a button to open the modal.
+        The layout includes:
+        - `dcc.Store` components for storing all alerts and the current filter.
+        - A fixed container for displaying ephemeral alerts.
+        - An interval component to drive ephemeral updates.
+        - A modal with filter buttons and a dismissable alert container.
+        - A button to open the modal.
+
+        Returns:
+            html.Div: A Dash HTML Div component containing the layout for the AlertHandler.
         """
         return html.Div(
             [
@@ -127,10 +138,17 @@ class AlertHandler:
         )
 
     def callbacks(self) -> None:
-        """Register Dash callbacks for the Alert handler functionality.
+        """Registers Dash callbacks for the AlertHandler functionality.
+
+        This method defines callbacks for:
+        - Toggling the alert modal.
+        - Setting the alert filter based on user input.
+        - Displaying alerts in the modal, filtered by type.
+        - Removing dismissed alerts from the store.
+        - Displaying ephemeral alerts.
 
         Notes:
-            - Alerts must be added to each callback.
+            - Alerts must be added to each callback to ensure proper functionality.
         """
 
         @callback(  # type: ignore[misc]
@@ -140,7 +158,15 @@ class AlertHandler:
             prevent_initial_call=True,
         )
         def toggle_modal(n: int | None, is_open: bool) -> bool:
-            """Open/close the error log modal."""
+            """Toggles the visibility of the alert modal.
+
+            Args:
+                n (int | None): The number of clicks on the sidebar button.
+                is_open (bool): The current state of the modal (open or closed).
+
+            Returns:
+                bool: The new state of the modal (True for open, False for closed).
+            """
             if n:
                 return not is_open
             return is_open
@@ -156,7 +182,17 @@ class AlertHandler:
         def set_filter(
             _: int | None, __: int | None, ___: int | None, ____: int | None
         ) -> str:
-            """Update the filter store based on which filter button was clicked."""
+            """Updates the alert filter based on the clicked filter button.
+
+            Args:
+                _ (int | None): Number of clicks on the "Vis alle" button.
+                __ (int | None): Number of clicks on the "Vis kun info" button.
+                ___ (int | None): Number of clicks on the "Vis kun advarsel" button.
+                ____ (int | None): Number of clicks on the "Vis kun feil" button.
+
+            Returns:
+                str: The selected filter type ('all', 'info', 'warning', or 'danger').
+            """
             triggered_id = ctx.triggered_id if hasattr(ctx, "triggered_id") else None
             if triggered_id == "alert_filter_info":
                 return "info"
@@ -175,9 +211,16 @@ class AlertHandler:
         def show_modal_alerts(
             alerts: list[dict[str, Any]], current_filter: str
         ) -> list[dbc.Alert]:
-            """Display the alerts in the modal, filtered by color/type.
+            """Displays alerts in the modal, filtered by type.
 
-            Each alert is dismissable with a pattern-matching ID.
+            Each alert is dismissable using a pattern-matching ID.
+
+            Args:
+                alerts (list[dict[str, Any]]): A list of all alerts stored in the application.
+                current_filter (str): The current filter type ('all', 'info', 'warning', or 'danger').
+
+            Returns:
+                list[dbc.Alert]: A list of Dash Bootstrap Components alerts to display in the modal.
             """
             if not alerts:
                 return []
@@ -215,10 +258,16 @@ class AlertHandler:
         def remove_dismissed_alerts(
             is_open_list: list[dbc.Alert], current_alerts: list[dict[str, Any]]
         ) -> list[dict[str, Any]]:
-            """Removes dismissed alerts.
+            """Removes alerts that have been dismissed by the user.
 
-            If the user dismisses an alert in the modal (clicks 'x'),
-            remove that alert from the store.
+            If the user dismisses an alert in the modal (by clicking 'x'), this callback removes the alert from the store.
+
+            Args:
+                is_open_list (list[bool]): A list indicating the open/closed state of each alert in the modal.
+                current_alerts (list[dict[str, Any]]): The current list of alerts stored in the application.
+
+            Returns:
+                list[dict[str, Any]]: The updated list of alerts with dismissed alerts removed.
             """
             if not current_alerts or not is_open_list:
                 return current_alerts
@@ -244,9 +293,16 @@ class AlertHandler:
         def display_ephemeral_alerts(
             _: int, alerts: list[dict[str, Any]]
         ) -> list[dict[str, Any]]:
-            """Show ephemeral alerts at top-center for 4 seconds.
+            """Displays ephemeral alerts for 4 seconds.
 
-            We do NOT remove them from the store, so they remain visible in the modal.
+            Ephemeral alerts are not removed from the store, so they remain visible in the modal.
+
+            Args:
+                _ (int): The number of intervals elapsed since the application started.
+                alerts (list[dict[str, Any]]): The current list of alerts stored in the application.
+
+            Returns:
+                list[dbc.Alert]: A list of Dash Bootstrap Components alerts to display as ephemeral alerts.
             """
             if not alerts:
                 return []

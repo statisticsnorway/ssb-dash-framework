@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from dash import html
 
@@ -14,11 +15,11 @@ class FreeSearchTab(FreeSearch):
     specific to the tab interface.
     """
 
-    def __init__(self, database):
+    def __init__(self, database: Any) -> None:
         """Initialize the FreeSearchTab with a database connection.
 
         Args:
-            database (object): Database connection or interface used for executing SQL queries.
+            database (Any): Database connection or interface used for executing SQL queries.
         """
         super().__init__(database)
 

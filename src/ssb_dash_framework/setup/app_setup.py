@@ -6,6 +6,7 @@ from dash import Input
 from dash import Output
 from dash import State
 from dash import callback
+from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import load_figure_template
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> D
         external_stylesheets=[theme_map[stylesheet], dbc_css],
     )
 
-    @callback(
+    @callback(  # type: ignore[misc]
         Output("variable-selector-offcanvas", "is_open"),
         Input("sidebar-varvelger-button", "n_clicks"),
         State("variable-selector-offcanvas", "is_open"),
@@ -73,11 +74,43 @@ def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> D
 
         Returns:
             bool: The new open/closed state of the offcanvas.
+
+        Raises:
+            PreventUpdate: If the button has not been clicked, no update is made.
         """
-        if n_clicks > 0:
+        if n_clicks:
             if not is_open:
                 return True
             else:
                 return False
+        else:
+            raise PreventUpdate
+
+    app.index_string = """
+    <!DOCTYPE html>
+    <html>
+        <head>
+            {%metas%}
+            <title>{%title%}</title>
+            {%favicon%}
+            {%css%}
+            <style>
+                html, body, #_dash-app-content, #_dash-app-layout {
+                    height: 100vh;
+                    margin: 0;
+                    overflow: hidden;
+                }
+            </style>
+        </head>
+        <body>
+            {%app_entry%}
+            <footer>
+                {%config%}
+                {%scripts%}
+                {%renderer%}
+            </footer>
+        </body>
+    </html>
+    """
 
     return app

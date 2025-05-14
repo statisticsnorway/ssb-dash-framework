@@ -14,21 +14,28 @@ logger = logging.getLogger(__name__)
 
 
 class SkjemapdfViewerWindow(SkjemapdfViewer):
-    def __init__(self, pdf_folder_path, form_identifier="skjemaversjon"):
-        """Initialize the FreeSearchWindow class.
+    """Implementation of the SkjemapdfViewer as a window."""
+
+    def __init__(
+        self, pdf_folder_path: str, form_identifier: str = "skjemaversjon"
+    ) -> None:
+        """Initialize the SkjemapdfViewerWindow class.
+
+        This class is a subclass of SkjemapdfViewer and is used to create a window for viewing PDF files.
 
         Args:
-            database: The database connection or object used for querying.
+            pdf_folder_path (str): The path to the folder containing PDF files.
+            form_identifier (str): The identifier for the form. Defaults to "skjemaversjon".
         """
         super().__init__(form_identifier, pdf_folder_path)
         self.callbacks()
 
     def layout(self) -> html.Div:
-        """Generate the layout for the FreeSearch window.
+        """Generate the layout for the SkjemapdfViewer window.
 
         Returns:
             html.Div: A Div element containing:
-                - A modal with a title and body for the FreeSearch module layout.
+                - A modal with a title and body for the SkjemapdfViewer module layout.
                 - A sidebar button to toggle the modal.
         """
         layout = html.Div(
@@ -48,8 +55,8 @@ class SkjemapdfViewerWindow(SkjemapdfViewer):
         logger.debug("Generated layout")
         return layout
 
-    def callbacks(self):
-        """Define the callbacks for the FreeSearch window.
+    def callbacks(self) -> None:
+        """Define the callbacks for the SkjemapdfViewer window.
 
         This includes a callback to toggle the visibility of the modal window.
         """

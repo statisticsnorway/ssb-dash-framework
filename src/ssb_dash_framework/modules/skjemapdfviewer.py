@@ -1,6 +1,7 @@
 import base64
 import logging
 from abc import ABC
+from abc import abstractmethod
 
 import dash_bootstrap_components as dbc
 from dapla import FileClient
@@ -15,25 +16,40 @@ logger = logging.getLogger(__name__)
 
 
 class SkjemapdfViewer(ABC):
-    """Tab for displaying annual financial statements (Årsregnskap).
+    """Module for displaying PDF forms in a tab.
 
     Attributes:
-        label (str): Label for the tab, displayed as "🧾 Årsregnskap".
+        label (str): Label for the tab, displayed as "🗎 Skjema".
+        pdf_folder_path (str): Path to the folder containing the PDF files.
     """
 
     def __init__(
         self,
-        form_identifier,
-        pdf_folder_path,
+        form_identifier: str,
+        pdf_folder_path: str,
     ) -> None:
-        """Initialize the skjemapdf component."""
+        """Initialize the SkjemapdfViewer module.
+
+        Args:
+            form_identifier (str): The identifier for the form. This should match the VariableSelector value.
+            pdf_folder_path (str): The path to the folder containing the PDF files.
+        """
         self.label = "🗎 Skjema"
         self.variableselector = VariableSelector([form_identifier], [])
         self.pdf_folder_path = pdf_folder_path
         self.module_layout = self._create_layout()
         self.module_callbacks()
+        self.is_valid(form_identifier)
 
-    def is_valid(self):
+    def is_valid(self, form_identifier: str) -> None:
+        """Validate the form identifier and PDF folder path.
+
+        Args:
+            form_identifier (str): The identifier for the form.
+
+        Raises:
+            ValueError: If the form identifier is not found in the VariableSelector.
+        """
         if f"var-{form_identifier}" not in [
             x.id for x in VariableSelector._variableselectoroptions
         ]:
@@ -44,10 +60,10 @@ class SkjemapdfViewer(ABC):
             self.pdf_folder_path = self.pdf_folder_path[:-1]
 
     def _create_layout(self) -> html.Div:
-        """Generate the layout for the Årsregnskap tab.
+        """Generate the layout for the SkjemapdfViewer module.
 
         Returns:
-            html.Div: A Div element containing input fields for year and organization number
+            html.Div: A Div element containing input fields for the form identifier
                       and an iframe to display the PDF content.
         """
         layout = html.Div(
@@ -79,8 +95,24 @@ class SkjemapdfViewer(ABC):
         logger.debug("Generated layout")
         return layout
 
+    @abstractmethod
+    def layout(self) -> html.Div:
+        """Define the layout for the FreeSearch module.
+
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
+
+        Returns:
+            html.Div: A Dash HTML Div component representing the layout of the module.
+        """
+        pass
+
     def module_callbacks(self) -> None:
-        """Register Dash callbacks for the skjema pdf tab."""
+        """Register Dash callbacks for the SkjemapdfViewer module.
+
+        Notes:
+            - The first callback updates the form identifier input field.
+            - The second callback fetches and encodes the PDF file as a data URI for display in the iframe.
+        """
         dynamic_states = [
             self.variableselector.get_inputs(),
             self.variableselector.get_states(),
@@ -91,7 +123,7 @@ class SkjemapdfViewer(ABC):
             *dynamic_states,
         )
         def update_form(orgnr: str) -> str:
-            """Update the organization number input field.
+            """Update the form identifier input field.
 
             Args:
                 orgnr (str): The selected organization number.
@@ -106,16 +138,16 @@ class SkjemapdfViewer(ABC):
             *dynamic_states,
         )
         def update_pdfskjema_source(form_identifier: str) -> str | None:
-            """Fetch and encode the PDF source based on the year and organization number.
+            """Fetch and encode the PDF source based on the form identifier.
 
             Args:
-                form_identifier (str): The form identification input value.
+                form_identifier (str): The form identifier input value.
 
             Returns:
-                str: A data URI for the PDF file, encoded in base64.
+                str | None: A data URI for the PDF file, encoded in base64, or None if the file is not found.
 
             Raises:
-                PreventUpdate: If the year or organization number is not provided.
+                PreventUpdate: If the form identifier is not provided.
             """
             if not form_identifier:
                 raise PreventUpdate
