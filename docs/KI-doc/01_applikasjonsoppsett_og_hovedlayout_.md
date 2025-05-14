@@ -1,11 +1,11 @@
-# Chapter 1: Applikasjonsoppsett og Hovedlayout
+# Chapter 1: AppSetup og MainLayout
 
 
 Velkommen til det første kapittelet i vår veiledning for `ssb-dash-framework`! Dette rammeverket er designet for å gjøre det enklere å bygge interaktive webapplikasjoner med Dash, spesielt tilpasset behovene i SSB.
 
 ## Hva skal vi bygge? Fundamentet for din Dash-applikasjon
 
-Har du noen gang ønsket å raskt sette opp en ny webapplikasjon, komplett med et pent tema, et standardisert oppsett med menyer og faner, uten å måtte skrive masse kode fra bunnen av hver gang? Det er akkurat det `Applikasjonsoppsett og Hovedlayout` hjelper deg med!
+Har du noen gang ønsket å raskt sette opp en ny webapplikasjon, komplett med et pent tema, et standardisert oppsett med menyer og faner, uten å måtte skrive masse kode fra bunnen av hver gang? Det er akkurat det `AppSetup og MainLayout` hjelper deg med!
 
 Tenk deg at du skal bygge et hus. Før du kan begynne å innrede rommene (som er funksjonaliteten i appen din), må du ha en solid grunnmur og en struktur for huset – vegger, tak, og en plan for hvor rommene skal være. I `ssb-dash-framework` er `AppSetup` grunnmuren, og `MainLayout` er selve husstrukturen. Sammen gir de deg et ferdig utgangspunkt slik at du kan fokusere på å fylle applikasjonen med innhold og funksjonalitet.
 
