@@ -54,8 +54,16 @@ When creating a new module, start by creating the base class as shown in the exa
 from abc import ABC, abstractmethod
 
 class MyModule(ABC):
+
+    _id_number = 0 # This is used to give each module a unique id in callbacks, so that you can have multiple instances of the same module in the same app.
+
     def __init__(self):
-        # Some of your stuff
+
+        self._mymodule_n = MyModule._id_number
+        MyModule._id_number += 1
+        # Make sure the instance has a name as well, this is used to make callbacks easier to troubleshoot when you implement it as a window.
+        self.module_name = self.__class__.__name__
+        # Some of your stuff here
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
@@ -69,12 +77,12 @@ class MyModule(ABC):
         """Generates the callbacks for MyModule
         """
         # create your callbacks here
-        # @callback()
+        # @callback() # Include {self._mymodule_n} in the callback id string
         # def callback_func():
 
 
     @abstractmethod
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div: # You need to include this as an abstract method, so that the inheriting classes can implement it.
         """Generate the layout for the MyModule module.
 
         Returns:
@@ -83,12 +91,15 @@ class MyModule(ABC):
         pass
 ```
 
-During the init you at a minimum need to create the module layout and register the module callbacks.
+During the init you at a minimum need to:
+- set the module id number.
+- set the module name.
+- create the module layout.
+- register the module callbacks.
 
 In order to keep it consistent between modules, it is a good idea to name the function that creates the layout for your module "_create_layout".
-This function defines your module layout.
 
-The base class also needs to have a function that defines and registers its callbacks.
+The base class also needs to have a function that defines and registers its callbacks, and that function needs to run during the init of the class. This is to ensure that the callbacks are registered.
 
 #### Implementing as tab
 
@@ -118,68 +129,34 @@ class MyModuleTab(MyModule):
 
 #### Implementing as window
 
-Making your module available as a window is a bit more involved, but not difficult.
+Making your module available as a window involves a bit more work, as you need to include a mixin class that handles the window functionality. Using this mixin class allows you to create a modal window for your module without having to implement all the functionality from scratch.
 
 In order to add your module as a window, start by creating the file
 
     src/ssb_sirius_dash/window/mymodule_window.py
 
-And then adapt the code below to your module. Note that you need to change the ids in the layout and the callbacks.
+And then adapt the code below to your module.
 
 ```python
-class MyModuleWindow(MyModule):
-    def __init__(self):
-        super().__init__()
-        self.callbacks()
+from .modules import MyModule
+from ..utils import WindowImplementation
+
+class MyModuleWindow(MyModule, WindowImplementation):
+    def __init__(self, *args):
+        MyModule.__init__(self, *args) # Put in your arguments here
+        WindowImplementation.__init__(self)
 
     def layout(self) -> html.Div:
-        """Generate the layout for the MyModule window.
-
-        Returns:
-            html.Div: A Div element containing the text area for SQL queries,
-                      input for partitions, a button to run the query,
-                      and a Dash AgGrid table for displaying results.
-        """
-        layout = html.Div(
-            [
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle("MyModuleName")),
-                        dbc.ModalBody(
-                            self.module_layout
-                        )
-                    ],
-                    id = "mymodule-modal",
-                    size="xl",
-                    fullscreen = "xxl-down",
-                ),
-                sidebar_button("MyIcon", "MyModuleName", "sidebar-mymodule-button")
-            ]
-        )
-        logger.debug("Generated layout")
+        """Generate the layout for the modal window using the WindowImplementation method."""
+        layout = WindowImplementation.layout(self)
         return layout
-
-    def callbacks(self):
-        @callback(  # type: ignore[misc]
-            Output("mymodule-modal", "is_open"),
-            Input("sidebar-mymodule-button", "n_clicks"),
-            State("mymodule-modal", "is_open"),
-        )
-        def ratemodel_toggle(n: int, is_open: bool) -> bool:
-            """Toggles the state of the modal window.
-
-            Args:
-                n (int): Number of clicks on the toggle button.
-                is_open (bool): Current state of the modal (open/closed).
-
-            Returns:
-                bool: New state of the modal (open/closed).
-            """
-            logger.info("Toggle modal")
-            if n:
-                return not is_open
-            return is_open
 ```
+
+##### What does the WindowImplementation do?
+
+The `WindowImplementation` class is a mixin that provides the necessary functionality to create a modal window for your module. It handles the layout and callbacks for opening and closing the window, as well as managing the state of the window.
+The `WindowImplementation` class is designed to be used in conjunction with your module's base class. It provides a consistent way to create modal windows for different modules, ensuring that the window behaves similarly across the application.
+It also allows you to change how it implements your layout by overrriding the get_module_layout method in WindowImplementation.
 
 ### VariableSelector
 
