@@ -27,6 +27,7 @@ flowchart TD
     A3 -- "Presenterer" --> A1
     A1 -- "Sender varsler til" --> A5
     A4 -- "Bruker for interne visninger" --> A3
+    A4 -- "Er en " --> A1
     A5 -- "Viser logg via" --> A3
 ```
 
