@@ -1,4 +1,4 @@
-# Chapter 2: Faner og Vinduer (Modaler)
+# Kapittel 2: Faner og Vinduer (Modaler)
 
 
 I forrige kapittel, [Applikasjonsoppsett og Hovedlayout](01_applikasjonsoppsett_og_hovedlayout_.md), la vi grunnlaget for applikasjonen vår. Vi så hvordan `AppSetup` initialiserer selve appen og setter tema, mens `MainLayout` bygger den overordnede strukturen med et sidepanel og et hovedområde. Nå skal vi se på hvordan vi kan fylle dette hovedområdet med innhold og funksjonalitet ved hjelp av faner, og hvordan vi kan bruke vinduer (modaler) for mer fokuserte oppgaver.
