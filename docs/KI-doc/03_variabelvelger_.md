@@ -1,4 +1,4 @@
-# Chapter 3: Variabelvelger
+# Kapittel 3: Variabelvelger
 
 
 I forrige kapittel, [Faner og Vinduer (Modaler)](02_faner_og_vinduer__modaler__.md), lærte vi hvordan vi kan organisere applikasjonen vår i ulike seksjoner ved hjelp av faner og hvordan vi kan bruke modalvinduer for fokuserte oppgaver. Nå skal vi se på en sentral komponent som lar brukeren styre felles data eller innstillinger som påvirker flere deler av applikasjonen: **Variabelvelgeren**.
