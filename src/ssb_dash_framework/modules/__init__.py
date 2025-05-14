@@ -4,9 +4,11 @@ from .aarsregnskap import Aarsregnskap
 from .freesearch import FreeSearch
 from .skjemadataviewer import SkjemadataViewer
 from .skjemapdfviewer import SkjemapdfViewer
+from .tables import EditingTable
 
 __all__ = [
     "Aarsregnskap",
+    "EditingTable",
     "FreeSearch",
     "SkjemadataViewer",
     "SkjemapdfViewer",
