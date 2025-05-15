@@ -38,7 +38,13 @@ def main_layout(
         - Each tab in `tab_list` must implement a `layout()` method and have a `label` attribute.
     """
     if variable_list is None:
-        variable_list = VariableSelector.options
+        logger.debug(
+            "No variable list provided. Using all available VariableSelectorOptions."
+        )
+        variable_list = [
+            option.title for option in VariableSelector._variableselectoroptions
+        ]
+        logger.debug(f"Variable list derived from VariableSelector: {variable_list}")
     if not default_values:
         logger.warning(  # TODO should this be a suggestion provided through logging or is that potentially annoying?
             "No default values provided. Variable selection will be empty on load, which might be un-intuitive. It is recommended to provide default values for the variable selector for better usability."
