@@ -1,4 +1,4 @@
-# Veileder for: ssb-dash-framework
+# Veileder for ssb-dash-framework (Editeringsrammeverket)
 
 `ssb-dash-framework` er et rammeverk for å bygge *interaktive webapplikasjoner* med Dash. Det lar utviklere enkelt sette sammen ulike **funksjonelle byggeklosser** (moduler) for å vise og behandle data. Rammeverket tilbyr en sentralisert måte å håndtere *felles dataverdier* (som årstall eller enhets-IDer) på tværs av applikasjonens deler. Det inkluderer også systemer for å *presentere moduler* i faner eller egne vinduer, samt et system for å *vise varsler* og meldinger til brukeren. Et eksempel på en avansert modul er en editor for *Altinn skjemadata*.
 
