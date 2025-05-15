@@ -65,7 +65,7 @@ class EditingTable(ABC):
         EditingTable._id_number += 1
         self.label = label
         self.ident = ident
-        self.varselector_ident = varselector_ident
+        self.varselector_ident = varselector_ident if varselector_ident else ident
 
         for i in [*inputs, *states]:
             try:
