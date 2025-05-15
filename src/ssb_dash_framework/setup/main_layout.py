@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def main_layout(
-    modal_list: list[html.Div],
+    window_list: list[html.Div],
     tab_list: list[html.Div],
     variable_list: list[str] | None = None,
     default_values: dict[str, Any] | None = None,
@@ -20,7 +20,7 @@ def main_layout(
     """Generates the main layout for the Dash application.
 
     Args:
-        modal_list (list[html.Div]):
+        window_list (list[html.Div]):
             A list of modal components to be included in the sidebar.
         tab_list (list[html.Div]):
             A list of tab objects, each containing a `layout` method and a `label` attribute.
@@ -43,9 +43,9 @@ def main_layout(
         selected_states=variable_list, selected_inputs=[], default_values=default_values
     )  # Because inputs and states don't matter in main_layout, everything is put into the VariableSelector as states. Every module defines its own VariableSelector that sets up interactions. This is to simplify it for the user while maintaining flexibility.
 
+    window_modules = [module.layout() for module in window_list]
     alerthandler = AlertHandler()
-    alerthandler_layout = alerthandler.layout()
-    modal_list = [alerthandler_layout, *modal_list]
+    window_modules_list = [alerthandler.layout(), *window_modules]
 
     varvelger_toggle = [
         html.Div(
@@ -56,7 +56,7 @@ def main_layout(
             ]
         )
     ]
-    modal_list = varvelger_toggle + modal_list
+    window_modules_list = varvelger_toggle + window_modules_list
     selected_tab_list = [dbc.Tab(tab.layout(), label=tab.label) for tab in tab_list]
     layout = dbc.Container(
         [
@@ -83,7 +83,7 @@ def main_layout(
                             "flex-direction": "column",
                             "height": "100%",
                         },
-                        children=modal_list,
+                        children=window_modules_list,
                     ),
                     html.Div(
                         children=[
