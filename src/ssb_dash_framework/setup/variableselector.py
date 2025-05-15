@@ -27,7 +27,6 @@ def set_variables(variable_list: str | list[str]) -> None:
         >>> set_variables("orgnr")
         >>> set_variables("kvartal")
         >>> set_variables(["foretak", "aar"])
-        >>> set_variables(["my text option", "my numeric option"])
     """
     if isinstance(variable_list, str):
         variable_list = [variable_list]
