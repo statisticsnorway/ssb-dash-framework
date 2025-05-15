@@ -39,6 +39,10 @@ def main_layout(
     """
     if variable_list is None:
         variable_list = VariableSelector.options
+    if not default_values:
+        logger.warning(  # TODO should this be a suggestion provided through logging or is that potentially annoying?
+            "No default values provided. Variable selection will be empty on load, which might be un-intuitive. It is recommended to provide default values for the variable selector for better usability."
+        )
     variable_selector = VariableSelector(
         selected_states=variable_list, selected_inputs=[], default_values=default_values
     )  # Because inputs and states don't matter in main_layout, everything is put into the VariableSelector as states. Every module defines its own VariableSelector that sets up interactions. This is to simplify it for the user while maintaining flexibility.
