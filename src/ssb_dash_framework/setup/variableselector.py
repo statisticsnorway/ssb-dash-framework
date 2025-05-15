@@ -24,10 +24,9 @@ def set_variables(variable_list: str | list[str]) -> None:
         TypeError: If variable_list is not a string or a list of strings.
 
     Examples:
-        >>> set_variables("foretak")
-        >>> set_variables("aar")
+        >>> set_variables("orgnr")
+        >>> set_variables("kvartal")
         >>> set_variables(["foretak", "aar"])
-        >>> set_variables(["my text option", "my numeric option"])
     """
     if isinstance(variable_list, str):
         variable_list = [variable_list]
@@ -63,8 +62,6 @@ class VariableSelector:
                 Default values for variables. Defaults to None.
 
         Examples:
-            >>> VariableSelectorOption("foretak")
-            >>> VariableSelectorOption("aar")
             >>> VariableSelector(selected_inputs = ["foretak"], selected_states = ["aar"])
             >>> VariableSelector(selected_inputs = ["foretak"], selected_states = ["aar"], default_values = {"aar": "2024"})
         """
