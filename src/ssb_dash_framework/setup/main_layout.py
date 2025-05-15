@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 def main_layout(
     modal_list: list[html.Div],
     tab_list: list[html.Div],
-    variable_list: list[str],
+    variable_list: list[str] | None = None,
     default_values: dict[str, Any] | None = None,
 ) -> dbc.Container:
     """Generates the main layout for the Dash application.
@@ -24,8 +24,8 @@ def main_layout(
             A list of modal components to be included in the sidebar.
         tab_list (list[html.Div]):
             A list of tab objects, each containing a `layout` method and a `label` attribute.
-        variable_list (list[str]):
-            A list of variable selection components to be included in the main layout.
+        variable_list (list[str] | None):
+            A list of variable selection components to be included in the main layout. Defaults to all existing VariableSelectorOptions.
         default_values (dict[str, Any] | None, optional):
             Default values for the variable selector. Defaults to None.
 
@@ -37,6 +37,8 @@ def main_layout(
         - The function includes an alert handler modal and a toggle button for the variable selector.
         - Each tab in `tab_list` must implement a `layout()` method and have a `label` attribute.
     """
+    if variable_list is None:
+        variable_list = VariableSelector.options
     variable_selector = VariableSelector(
         selected_states=variable_list, selected_inputs=[], default_values=default_values
     )  # Because inputs and states don't matter in main_layout, everything is put into the VariableSelector as states. Every module defines its own VariableSelector that sets up interactions. This is to simplify it for the user while maintaining flexibility.
