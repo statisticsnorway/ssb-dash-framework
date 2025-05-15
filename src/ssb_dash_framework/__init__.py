@@ -14,6 +14,7 @@ from .setup import VariableSelector
 from .setup import VariableSelectorOption
 from .setup import app_setup
 from .setup import main_layout
+from .setup import set_variables
 from .tabs import AarsregnskapTab
 from .tabs import BofInformation
 from .tabs import EditingTableTab  # TODO: Clean up and make into module
@@ -60,6 +61,7 @@ __all__ = [
     "create_alert",
     "hb_method",
     "main_layout",
+    "set_variables",
     "sidebar_button",
     "th_error",
 ]

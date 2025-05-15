@@ -14,6 +14,31 @@ from ..utils.alert_handler import create_alert
 logger = logging.getLogger(__name__)
 
 
+def set_variables(variable_list: str | list[str]) -> None:
+    """Sets the list of variables for the VariableSelector.
+
+    Args:
+        variable_list (str | List[str]): List of variable names to be added to the VariableSelector.
+
+    Raises:
+        TypeError: If variable_list is not a string or a list of strings.
+
+    Examples:
+        >>> set_variables("foretak")
+        >>> set_variables("aar")
+        >>> set_variables(["foretak", "aar"])
+        >>> set_variables(["my text option", "my numeric option"])
+    """
+    if isinstance(variable_list, str):
+        variable_list = [variable_list]
+    if not all(isinstance(variable, str) for variable in variable_list):
+        raise TypeError(
+            f"Expected all elements in variable_list to be str, received {variable_list}"
+        )
+    for variable in variable_list:
+        VariableSelectorOption(variable)
+
+
 class VariableSelector:
     """Class containing options for shared states between modules in the framework.
 
