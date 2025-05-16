@@ -1,33 +1,25 @@
 {
     "name": "R-Python Postgres Environment",
-	"image": "ghcr.io/statisticsnorway/docker-rpython-dev:latest",
-	"customizations": {
-		"vscode": {
-			"extensions": [
-			 "rdebugger.r-debugger",
-			 "reditorsupport.r",
-			 "ms-azuretools.vscode-docker",
-			 "ms-vscode-remote.remote-containers",
-			 "ms-python.python",
-			 "ms-toolsai.jupyter",
-			 "ms-ossdata.vscode-pgsql"
-			],
-			"settings": {
-				"r.alwaysUseActiveTerminal": true,
-				"r.bracketedPaste": true,
-				"r.sessionWatcher": true,
-				"r.plot.useHttpgd": true,
-				"ms-ossdata.vscode-pgsql.connections": [
-					{
-						"host": "postgres",
-						"user": "dev",
-						"password": "devpwd",
-						"database": "devdb",
-						"port": 5432,
-						"name": "DevContainer Postgres"
-					}
-				]
-			}
-		}
-	}
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "devcontainer",
+    "workspaceFolder": "/workspace",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "rdebugger.r-debugger",
+                "reditorsupport.r",
+                "ms-azuretools.vscode-docker",
+                "ms-vscode-remote.remote-containers",
+                "ms-python.python",
+                "ms-toolsai.jupyter",
+                "ms-ossdata.vscode-pgsql"
+            ],
+            "settings": {
+                "r.alwaysUseActiveTerminal": true,
+                "r.bracketedPaste": true,
+                "r.sessionWatcher": true,
+                "r.plot.useHttpgd": true
+            }
+        }
+    }
 }

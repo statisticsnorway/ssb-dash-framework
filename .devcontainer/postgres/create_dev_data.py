@@ -4,7 +4,7 @@ import psycopg2
 
 conn = psycopg2.connect(
     host=os.environ.get(
-        "DB_HOST", "host.docker.internal"
+        "DB_HOST", "localhost:5432"
     ),  # Use localhost for devcontainer access
     user=os.environ.get("DB_USER", "dev"),
     password=os.environ.get("DB_PASSWORD", "devpwd"),
