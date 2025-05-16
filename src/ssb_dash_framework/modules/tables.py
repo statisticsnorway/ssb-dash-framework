@@ -97,12 +97,6 @@ class EditingTable(ABC):
             children=[
                 html.Div(
                     children=[
-                        html.Button(
-                            "?",
-                            id=f"{self._editingtable_n}-tabelleditering-button",
-                            className="btn btn-primary",
-                            style={"marginBottom": "10px"},
-                        ),
                         dag.AgGrid(
                             defaultColDef={"editable": True},
                             id=f"{self._editingtable_n}-tabelleditering-table1",
@@ -178,8 +172,6 @@ class EditingTable(ABC):
             except Exception as e:
                 logger.error("Error loading data into table", exc_info=True)
                 raise e
-
-        # @callback(  # type: ignore[misc]
 
         if self.update_table:
             logger.debug("Adding callback for updating table")
