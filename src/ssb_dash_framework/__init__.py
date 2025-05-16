@@ -23,6 +23,8 @@ from .tabs import Pimemorizer
 from .tabs import SkjemapdfViewerTab
 from .utils import AlertHandler
 from .utils import DebugInspector
+from .utils import TabImplementation
+from .utils import WindowImplementation
 from .utils import _get_kostra_r
 from .utils import create_alert
 from .utils import hb_method
@@ -53,9 +55,11 @@ __all__ = [
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",
+    "TabImplementation",
     "VariableSelector",
     "VariableSelectorOption",
     "VisualizationBuilder",
+    "WindowImplementation",
     "_get_kostra_r",
     "app_setup",
     "create_alert",

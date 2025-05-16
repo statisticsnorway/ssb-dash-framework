@@ -67,7 +67,14 @@ def main_layout(
         )
     ]
     window_modules_list = varvelger_toggle + window_modules_list
-    selected_tab_list = [dbc.Tab(tab.layout(), label=tab.label) for tab in tab_list]
+    selected_tab_list = selected_tab_list = [
+        (
+            tab.layout()
+            if isinstance(tab, dbc.Tab)
+            else dbc.Tab(tab.layout(), label=tab.label)
+        )
+        for tab in tab_list
+    ]
     layout = dbc.Container(
         [
             html.Div(
