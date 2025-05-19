@@ -1,5 +1,5 @@
 {
-    "name": "R-Python Environment",
+    "name": "R-Python Parquet Environment",
 	"image": "ghcr.io/statisticsnorway/docker-rpython-dev:latest",
 	"customizations": {
 		"vscode": {
