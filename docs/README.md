@@ -7,3 +7,9 @@ The documentation is divided into four folders. Most documentation will be in en
 - explanations: This folder contains explanations of the different packages. The explanations are intended to be used as a reference for more advanced users. They are intended to be focused on the overarching principles of the package and the thinking that lead up to its current shape.
 
 You can find the reference documentation in the docstrings, and as a part of the github pages.
+
+For information about how to contribute to the project, please see the [Contributor Guide].
+
+<!-- github-only -->
+
+[contributor guide]: https://github.com/statisticsnorway/ssb-dash-framework/blob/main/CONTRIBUTING.md
