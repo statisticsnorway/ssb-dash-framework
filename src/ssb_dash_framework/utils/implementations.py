@@ -12,6 +12,60 @@ from ..utils.functions import sidebar_button
 logger = logging.getLogger(__name__)
 
 
+class TabImplementation:
+    """A mixin class to implement a module inside a tab.
+
+    Dependencies:
+        - self.label (str): The label for the tab.
+        - self.module_name (str): The name of the module, used for generating unique IDs.
+        - self.module_layout (html.Div): The layout to display inside the tab.
+
+    Note:
+        - This class should be used as a mixin in a module class.
+        - If necessary, you can override the `get_module_layout` method to further customize the layout inside the tab.
+    """
+
+    # Attributes that must be defined in the class using this mixin
+    label: str
+    module_name: str
+    module_layout: html.Div
+
+    def __init__(self) -> None:
+        """Initialize the tab implementation.
+
+        This class is used to create a tab to put in the tab_list.
+        """
+        if not hasattr(self, "label"):
+            raise AttributeError(
+                "The class must have a 'label' attribute to use TabImplementation."
+            )
+        if not hasattr(self, "module_name"):
+            raise AttributeError(
+                "The class must have a 'module_name' attribute to use TabImplementation."
+            )
+
+    def layout(self) -> html.Div:
+        """Generate the layout for the module as a tab.
+
+        Returns:
+            html.Div: The layout containing the module layout.
+        """
+        layout = dbc.Tab(self.get_module_layout(), label=self.label)
+        logger.debug("Generated layout")
+        return layout
+
+    def get_module_layout(self) -> html.Div:
+        """Get the layout of the module.
+
+        Works as is, but can be overridden if needed.
+        """
+        if not hasattr(self, "module_layout"):
+            raise AttributeError(
+                "The class using WindowImplementation must define 'module_layout'."
+            )
+        return self.module_layout
+
+
 class WindowImplementation:
     """A mixin class to implement a module inside a modal.
 
