@@ -255,24 +255,6 @@ If you need the user to define a function for some use case in your module you c
 
 An example of a use-case for this is a function to get/transform data to adhere to a specific format, that might be different from the data connected to the application (transforming long data to wide data is an example of this).
 
-### All in one (AiO) components
-
-Our goal is to make a library of easily reusable, customizable and expandable modules/views. Our approach is a bit of a hybrid design where we get most of the benefits, without introducing all the costs from the AiO design.
-
-The benefits you gain from the AiO component design are in general
-- Encapsulation and modularity, as code related to a component is contained within its own class
-- Reusability, as all sub-components are connected in the class
-- Keeping the layout and callbacks separated and organized within the component
-- You can add more of the same component without affecting other components
-- They manage their own internal states
-- They don't affect each other, potentially leading to easier debugging.
-
-There are some costs involved in using AiO components:
-- Increased complexity
-- Steeper learning curve
-- Potentially harder to track inter-component interactions
-- Debugging could be harder, as Dash's callback graph can be harder to interpret in the AiO pattern
-
 ## Tips and tricks
 
 ### Fix mypy complaining about callbacks

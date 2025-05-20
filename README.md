@@ -25,9 +25,9 @@
 [black]: https://github.com/psf/black
 [poetry]: https://python-poetry.org/
 
-## Vennligst se [komme i gang] for brukerveiledning
+## Vennligst se i mappen docs/norsk for brukerveiledning
 
-The getting started guide is in norwegian and intended for Statistics Norway internal use.
+The getting started guide is in norwegian and intended for Statistics Norway internal use, while more advanced documentation is in english.
 
 More technical and in-depth information can be found in the [Contributor Guide].
 
@@ -122,6 +122,5 @@ This project was generated from [Statistics Norway]'s [SSB PyPI Template].
 <!-- github-only -->
 
 [license]: https://github.com/statisticsnorway/ssb-dash-framework/blob/main/LICENSE
-[komme i gang]: https://github.com/statisticsnorway/ssb-dash-framework/blob/main/KOMME_I_GANG.md
 [contributor guide]: https://github.com/statisticsnorway/ssb-dash-framework/blob/main/CONTRIBUTING.md
 [reference guide]: https://statisticsnorway.github.io/ssb-dash-framework/reference.html
