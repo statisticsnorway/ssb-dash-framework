@@ -5,11 +5,12 @@ from typing import Any
 from dash import html
 
 from ..modules.tables import EditingTable
+from ..utils import TabImplementation
 
 logger = logging.getLogger(__name__)
 
 
-class EditingTableTab(EditingTable):
+class EditingTableTab(EditingTable, TabImplementation):
     """A class to implement a module inside a tab."""
 
     def __init__(
@@ -35,7 +36,8 @@ class EditingTableTab(EditingTable):
             ident (str | None, optional): Identifier for the table. Defaults to None.
             varselector_ident (str | None, optional): Identifier for the variable selector. Defaults to None.
         """
-        super().__init__(
+        EditingTable.__init__(
+            self,
             label=label,
             inputs=inputs,
             states=states,
@@ -44,9 +46,12 @@ class EditingTableTab(EditingTable):
             ident=ident,
             varselector_ident=varselector_ident,
         )
+        TabImplementation.__init__(
+            self,
+        )
 
     def layout(self) -> html.Div:
         """Generate the layout for the module as a tab."""
-        layout = self.module_layout
+        layout = TabImplementation.layout(self)
         logger.debug("Generated layout")
         return layout

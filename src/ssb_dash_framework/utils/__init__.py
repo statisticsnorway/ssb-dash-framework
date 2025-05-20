@@ -7,11 +7,13 @@ from .functions import _get_kostra_r
 from .functions import hb_method
 from .functions import sidebar_button
 from .functions import th_error
+from .implementations import TabImplementation
 from .implementations import WindowImplementation
 
 __all__ = [
     "AlertHandler",
     "DebugInspector",
+    "TabImplementation",
     "WindowImplementation",
     "_get_kostra_r",
     "create_alert",
