@@ -46,8 +46,8 @@ class EditingTable(ABC):
         states: list[str],
         get_data_func: Callable[..., Any],
         update_table_func: Callable[..., Any] | None = None,
-        ident: str | None = None,
-        varselector_ident: str | None = None,
+        ident: str | list[str] | None = None,
+        varselector_ident: str | list[str] | None = None,
     ) -> None:
         """Initialize the EditingTable component.
 
@@ -57,8 +57,8 @@ class EditingTable(ABC):
             states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
             get_data_func (Callable[..., Any]): A function for retrieving data from the database.
             update_table_func (Callable[..., Any]): A function for updating data in the database.
-            ident (str | None, optional): Identifier for the table, used for callbacks. Defaults to None.
-            varselector_ident (str | None, optional): Identifier for the variable selector. Defaults to None.
+            ident (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
+            varselector_ident (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as ident. Defaults to None.
                 If `ident` is provided but `varselector_ident` is not, it will default to the value of `ident`.
         """
         self._editingtable_n = EditingTable._id_number
@@ -187,7 +187,6 @@ class EditingTable(ABC):
             )
             def update_table(
                 edited: list[dict[str, dict[str, Any] | Any]],
-                tabell: str,
                 error_log: list[dict[str, Any]],
                 *dynamic_states: list[str],
             ) -> list[dict[str, Any]]:
@@ -195,7 +194,6 @@ class EditingTable(ABC):
 
                 Args:
                     edited (list[dict]): Information about the edited cell.
-                    tabell (str): The name of the table being edited.
                     error_log (list[dict]): List of existing alerts in the alert handler.
                     dynamic_states (list[str]): Dynamic state parameters for filtering data.
 
@@ -239,12 +237,18 @@ class EditingTable(ABC):
             logger.debug(
                 "Adding callback for returning clicked ident to variable selector"
             )
-            output_object = self.variableselector.get_output_object(
-                variable=self.varselector_ident
-            )
+            if isinstance(self.ident, str):
+                output_object = [self.variableselector.get_output_object(
+                    variable=self.varselector_ident
+                )]
+            elif isinstance(self.ident, list):
+                [self.variableselector.get_output_object(
+                    variable=output
+                    ) for output in self.ident
+                ]
 
             @callback(  # type: ignore[misc]
-                output_object,
+                *output_object,
                 Input(f"{self._editingtable_n}-tabelleditering-table1", "cellClicked"),
                 prevent_initial_call=True,
             )
