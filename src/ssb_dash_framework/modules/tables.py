@@ -244,7 +244,7 @@ class EditingTable(ABC):
             elif isinstance(self.ident, list):
                 [self.variableselector.get_output_object(
                     variable=output
-                    ) for output in self.ident
+                    ) for output in self.varselector_ident
                 ]
 
             @callback(  # type: ignore[misc]
