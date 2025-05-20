@@ -14,6 +14,7 @@ from .setup import VariableSelector
 from .setup import VariableSelectorOption
 from .setup import app_setup
 from .setup import main_layout
+from .setup import set_variables
 from .tabs import AarsregnskapTab
 from .tabs import BofInformation
 from .tabs import EditingTableTab  # TODO: Clean up and make into module
@@ -22,6 +23,8 @@ from .tabs import Pimemorizer
 from .tabs import SkjemapdfViewerTab
 from .utils import AlertHandler
 from .utils import DebugInspector
+from .utils import TabImplementation
+from .utils import WindowImplementation
 from .utils import _get_kostra_r
 from .utils import create_alert
 from .utils import hb_method
@@ -52,14 +55,17 @@ __all__ = [
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",
+    "TabImplementation",
     "VariableSelector",
     "VariableSelectorOption",
     "VisualizationBuilder",
+    "WindowImplementation",
     "_get_kostra_r",
     "app_setup",
     "create_alert",
     "hb_method",
     "main_layout",
+    "set_variables",
     "sidebar_button",
     "th_error",
 ]

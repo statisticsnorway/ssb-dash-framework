@@ -1,0 +1,25 @@
+{
+    "name": "R-Python Postgres Environment",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "devcontainer",
+    "workspaceFolder": "/workspace",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "rdebugger.r-debugger",
+                "reditorsupport.r",
+                "ms-azuretools.vscode-docker",
+                "ms-vscode-remote.remote-containers",
+                "ms-python.python",
+                "ms-toolsai.jupyter",
+                "ms-ossdata.vscode-pgsql"
+            ],
+            "settings": {
+                "r.alwaysUseActiveTerminal": true,
+                "r.bracketedPaste": true,
+                "r.sessionWatcher": true,
+                "r.plot.useHttpgd": true
+            }
+        }
+    }
+}

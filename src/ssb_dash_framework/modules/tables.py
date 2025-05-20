@@ -45,27 +45,28 @@ class EditingTable(ABC):
         inputs: list[str],
         states: list[str],
         get_data_func: Callable[..., Any],
-        update_table_func: Callable[..., Any],
+        update_table_func: Callable[..., Any] | None = None,
         ident: str | None = None,
         varselector_ident: str | None = None,
     ) -> None:
         """Initialize the EditingTable component.
 
         Args:
-            label (str): The label for the tab or component.
-            inputs (list[str]): A list of input variable names.
-            states (list[str]): A list of state variable names for filtering data.
+            label (str): The label for the tab or component, used for display purposes.
+            inputs (list[str]): A list of input variable names that will trigger callbacks.
+            states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
             get_data_func (Callable[..., Any]): A function for retrieving data from the database.
             update_table_func (Callable[..., Any]): A function for updating data in the database.
-            ident (str | None, optional): Identifier for the table. Defaults to None.
+            ident (str | None, optional): Identifier for the table, used for callbacks. Defaults to None.
             varselector_ident (str | None, optional): Identifier for the variable selector. Defaults to None.
+                If `ident` is provided but `varselector_ident` is not, it will default to the value of `ident`.
         """
         self._editingtable_n = EditingTable._id_number
         self.module_name = self.__class__.__name__
         EditingTable._id_number += 1
         self.label = label
         self.ident = ident
-        self.varselector_ident = varselector_ident
+        self.varselector_ident = varselector_ident or ident
 
         for i in [*inputs, *states]:
             try:
@@ -172,62 +173,67 @@ class EditingTable(ABC):
                 logger.error("Error loading data into table", exc_info=True)
                 raise e
 
-        @callback(  # type: ignore[misc]
-            Output("alert_store", "data", allow_duplicate=True),
-            Input(f"{self._editingtable_n}-tabelleditering-table1", "cellValueChanged"),
-            State("alert_store", "data"),
-            *dynamic_states,
-            prevent_initial_call=True,
-        )
-        def update_table(
-            edited: list[dict[str, dict[str, Any] | Any]],
-            tabell: str,
-            error_log: list[dict[str, Any]],
-            *dynamic_states: list[str],
-        ) -> list[dict[str, Any]]:
-            """Update the database based on edits made in the AgGrid table.
+        if self.update_table:
+            logger.debug("Adding callback for updating table")
 
-            Args:
-                edited (list[dict]): Information about the edited cell.
-                tabell (str): The name of the table being edited.
-                error_log (list[dict]): List of existing alerts in the alert handler.
-                dynamic_states (list[str]): Dynamic state parameters for filtering data.
+            @callback(  # type: ignore[misc]
+                Output("alert_store", "data", allow_duplicate=True),
+                Input(
+                    f"{self._editingtable_n}-tabelleditering-table1", "cellValueChanged"
+                ),
+                State("alert_store", "data"),
+                *dynamic_states,
+                prevent_initial_call=True,
+            )
+            def update_table(
+                edited: list[dict[str, dict[str, Any] | Any]],
+                tabell: str,
+                error_log: list[dict[str, Any]],
+                *dynamic_states: list[str],
+            ) -> list[dict[str, Any]]:
+                """Update the database based on edits made in the AgGrid table.
 
-            Returns:
-                list[dict]: Updated error log with success or failure messages.
+                Args:
+                    edited (list[dict]): Information about the edited cell.
+                    tabell (str): The name of the table being edited.
+                    error_log (list[dict]): List of existing alerts in the alert handler.
+                    dynamic_states (list[str]): Dynamic state parameters for filtering data.
 
-            Raises:
-                PreventUpdate: If no edits were made.
-            """
-            if not edited:
-                raise PreventUpdate
-            logger.debug(f"Edited:\n{edited}")
-            try:
-                variable = edited[0]["colId"]
-                old_value = edited[0]["oldValue"]
-                new_value = edited[0]["value"]
-                row_id = edited[0]["data"]["row_id"]
-                self.update_table(tabell, variable, new_value, row_id)
+                Returns:
+                    list[dict]: Updated error log with success or failure messages.
 
-                error_log.append(
-                    create_alert(
-                        f"{variable} updatert fra {old_value} til {new_value}",
-                        "info",
-                        ephemeral=True,
+                Raises:
+                    PreventUpdate: If no edits were made.
+                """
+                if not edited:
+                    raise PreventUpdate
+                logger.debug(f"Edited:\n{edited}")
+                try:
+                    variable = edited[0]["colId"]
+                    old_value = edited[0]["oldValue"]
+                    new_value = edited[0]["value"]
+                    row_id = edited[0]["data"]["row_id"]
+                    self.update_table(tabell, variable, new_value, row_id)
+
+                    error_log.append(
+                        create_alert(
+                            f"{variable} updatert fra {old_value} til {new_value}",
+                            "info",
+                            ephemeral=True,
+                        )
                     )
-                )
-                return error_log
+                    return error_log
 
-            except Exception:
-                logger.error("Error updating table", exc_info=True)
-                error_log.append(
-                    create_alert(
-                        f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
-                        "warning",
-                        ephemeral=True,
+                except Exception:
+                    logger.error("Error updating table", exc_info=True)
+                    error_log.append(
+                        create_alert(
+                            f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
+                            "warning",
+                            ephemeral=True,
+                        )
                     )
-                )
-                return error_log
+                    return error_log
 
         if self.ident and self.varselector_ident:
             logger.debug(

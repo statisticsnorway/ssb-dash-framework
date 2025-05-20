@@ -6,10 +6,15 @@ from dash import Dash
 from ssb_dash_framework import VariableSelectorOption
 from ssb_dash_framework import app_setup
 from ssb_dash_framework import main_layout
+from ssb_dash_framework import set_variables
 
 
 def test_add_option() -> None:
     VariableSelectorOption("foretak")
+
+
+def test_set_variables() -> None:
+    set_variables(["orgnr", "aar", "kvartal"])
 
 
 def test_main_layout() -> None:
