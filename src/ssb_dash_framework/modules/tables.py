@@ -241,11 +241,22 @@ class EditingTable(ABC):
                 output_object = [self.variableselector.get_output_object(
                     variable=self.varselector_ident
                 )]
+                output_cols = [self.varselector_ident]
             elif isinstance(self.ident, list):
                 output_object = [
                     self.variableselector.get_output_object(variable=var_id)
                     for var_id in self.varselector_ident
                 ]
+                output_cols = self.ident
+            else:
+                logger.error(
+                    f"ident {self.ident} is not a string or list, is type {type(self.ident)}"
+                )
+                raise TypeError(
+                    f"ident {self.ident} is not a string or list, is type {type(self.ident)}"
+                )
+            logger.debug(f"Output object: {output_object}")
+            logger.debug(f"Output columns: {output_cols}")
 
             @callback(  # type: ignore[misc]
                 *output_object,
@@ -266,7 +277,7 @@ class EditingTable(ABC):
                 """
                 if not clickdata:
                     raise PreventUpdate
-                if clickdata["colId"] != self.ident:
+                if clickdata["colId"] not in output_cols:
                     raise PreventUpdate
                 ident = clickdata["value"]
                 if not isinstance(ident, str):
