@@ -258,37 +258,30 @@ class EditingTable(ABC):
                     f"ident {self.ident} is not a string or list, is type {type(self.ident)}"
                 )
             logger.debug(f"Output object: {output_objects}")
-            for i in range(len(output_objects)):
-                print(i)
-                print(output_objects[i])
-                print(output_columns[i])
 
+            def make_table_to_main_table_callback(output, column, varselector_ident):
                 @callback(  # type: ignore[misc]
-                    output_objects[i],
+                    output,
                     Input(f"{self._editingtable_n}-tabelleditering-table1", "cellClicked"),
                     prevent_initial_call=True,
                 )
                 def table_to_main_table(clickdata: dict[str, Any]) -> str:
-                    """Passes the selected observation identifier to `variabelvelger`.
-
-                    Args:
-                        clickdata (dict): Data from the clicked point in the HB visualization.
-
-                    Returns:
-                        str: Identifier of the selected observation.
-
-                    Raises:
-                        PreventUpdate: if clickdata is None.
-                    """
                     if not clickdata:
                         raise PreventUpdate
-                    if clickdata["colId"] != output_columns[i]:
+                    if clickdata["colId"] != column:
                         raise PreventUpdate
                     ident = clickdata["value"]
                     if not isinstance(ident, str):
                         logger.debug(f"{ident} is not a string, is type {type(ident)}")
                         raise PreventUpdate
-                    logger.debug(f"Transfering {ident} to {self.varselector_ident[i]}")
+                    logger.debug(f"Transfering {ident} to {varselector_ident}")
                     return ident
+
+            for i in range(len(output_objects)):
+                make_table_to_main_table_callback(
+                    output_objects[i],
+                    output_columns[i],
+                    self.varselector_ident[i] if isinstance(self.varselector_ident, list) else self.varselector_ident
+                )
 
         logger.debug("Generated callbacks")
