@@ -237,17 +237,19 @@ class EditingTable(ABC):
             logger.debug(
                 "Adding callback for returning clicked ident to variable selector"
             )
-            if isinstance(self.ident, str):
-                output_object = [self.variableselector.get_output_object(
-                    variable=self.varselector_ident
-                )]
-                output_cols = [self.varselector_ident]
-            elif isinstance(self.ident, list):
-                output_object = [
-                    self.variableselector.get_output_object(variable=var_id)
-                    for var_id in self.varselector_ident
+            if isinstance(self.ident, str) and isinstance(self.varselector_ident, str):
+                output_objects = [
+                    self.variableselector.get_output_object(variable=self.varselector_ident)
                 ]
-                output_cols = self.ident
+                output_columns = [self.ident]
+            elif isinstance(self.ident, list) and isinstance(
+                self.varselector_ident, list
+            ):
+                output_objects = [
+                    self.variableselector.get_output_object(variable=var)
+                    for var in self.varselector_ident
+                ]
+                output_columns = self.ident
             else:
                 logger.error(
                     f"ident {self.ident} is not a string or list, is type {type(self.ident)}"
@@ -256,34 +258,34 @@ class EditingTable(ABC):
                     f"ident {self.ident} is not a string or list, is type {type(self.ident)}"
                 )
             logger.debug(f"Output object: {output_object}")
-            logger.debug(f"Output columns: {output_cols}")
+            for i in range(len(output_objects)):
 
-            @callback(  # type: ignore[misc]
-                *output_object,
-                Input(f"{self._editingtable_n}-tabelleditering-table1", "cellClicked"),
-                prevent_initial_call=True,
-            )
-            def table_to_main_table(clickdata: dict[str, Any]) -> str:
-                """Passes the selected observation identifier to `variabelvelger`.
+                @callback(  # type: ignore[misc]
+                    output_objects[i],
+                    Input(f"{self._editingtable_n}-tabelleditering-table1", "cellClicked"),
+                    prevent_initial_call=True,
+                )
+                def table_to_main_table(clickdata: dict[str, Any]) -> str:
+                    """Passes the selected observation identifier to `variabelvelger`.
 
-                Args:
-                    clickdata (dict): Data from the clicked point in the HB visualization.
+                    Args:
+                        clickdata (dict): Data from the clicked point in the HB visualization.
 
-                Returns:
-                    str: Identifier of the selected observation.
+                    Returns:
+                        str: Identifier of the selected observation.
 
-                Raises:
-                    PreventUpdate: if clickdata is None.
-                """
-                if not clickdata:
-                    raise PreventUpdate
-                if clickdata["colId"] not in output_cols:
-                    raise PreventUpdate
-                ident = clickdata["value"]
-                if not isinstance(ident, str):
-                    logger.debug(f"{ident} is not a string, is type {type(ident)}")
-                    raise PreventUpdate
-                logger.debug(f"Transfering {ident} to {self.varselector_ident}")
-                return ident
+                    Raises:
+                        PreventUpdate: if clickdata is None.
+                    """
+                    if not clickdata:
+                        raise PreventUpdate
+                    if clickdata["colId"] != output_columns[i]:
+                        raise PreventUpdate
+                    ident = clickdata["value"]
+                    if not isinstance(ident, str):
+                        logger.debug(f"{ident} is not a string, is type {type(ident)}")
+                        raise PreventUpdate
+                    logger.debug(f"Transfering {ident} to {self.varselector_ident[i]}")
+                    return ident
 
         logger.debug("Generated callbacks")
