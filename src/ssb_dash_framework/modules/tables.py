@@ -259,6 +259,9 @@ class EditingTable(ABC):
                 )
             logger.debug(f"Output object: {output_objects}")
             for i in range(len(output_objects)):
+                print(i)
+                print(output_objects[i])
+                print(output_columns[i])
 
                 @callback(  # type: ignore[misc]
                     output_objects[i],
