@@ -257,7 +257,7 @@ class EditingTable(ABC):
                 raise TypeError(
                     f"ident {self.ident} is not a string or list, is type {type(self.ident)}"
                 )
-            logger.debug(f"Output object: {output_object}")
+            logger.debug(f"Output object: {output_objects}")
             for i in range(len(output_objects)):
 
                 @callback(  # type: ignore[misc]
