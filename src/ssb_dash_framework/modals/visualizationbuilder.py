@@ -189,7 +189,7 @@ class VisualizationBuilder:
             - `update_graph`: Generates graphs based on selected columns and graph type.
         """
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("sql-modal", "is_open"),
             Input("sidebar-sql-button", "n_clicks"),
             State("sql-modal", "is_open"),
@@ -208,7 +208,7 @@ class VisualizationBuilder:
                 return not is_open
             return is_open
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("sql-output-table", "rowData"),
             Output("sql-output-table", "columnDefs"),
             Output("sql-x", "options"),
@@ -246,7 +246,7 @@ class VisualizationBuilder:
             columns = [{"headerName": col, "field": col} for col in df.columns]
             return df.to_dict("records"), columns, options, options, options
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("sql-graph1", "figure"),
             Input("sql-x", "value"),
             Input("sql-y", "value"),

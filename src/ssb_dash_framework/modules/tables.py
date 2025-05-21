@@ -5,6 +5,7 @@ from collections.abc import Callable
 from typing import Any
 
 import dash_ag_grid as dag
+import dash_bootstrap_components as dbc
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -84,7 +85,7 @@ class EditingTable(ABC):
         self.module_callbacks()
         self._is_valid()
 
-    def _is_valid(self):
+    def _is_valid(self) -> None:
         """Check if the module is valid."""
         if not isinstance(self.label, str):
             raise TypeError(
@@ -133,13 +134,13 @@ class EditingTable(ABC):
         return layout
 
     @abstractmethod
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div | dbc.Tab:
         """Define the layout for the EditingTable module.
 
         This is an abstract method that must be implemented by subclasses to define the module's layout.
 
         Returns:
-            html.Div: A Dash HTML Div component representing the layout of the module.
+            html.Div | dbc.Tab: A Dash HTML Div component representing the layout of the module or a dbc.Tab to be displayed directly.
         """
         pass
 
@@ -156,7 +157,7 @@ class EditingTable(ABC):
             self.variableselector.get_states(),
         ]
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output(f"{self._editingtable_n}-tabelleditering-table1", "rowData"),
             Output(f"{self._editingtable_n}-tabelleditering-table1", "columnDefs"),
             *dynamic_states,
@@ -194,7 +195,7 @@ class EditingTable(ABC):
                 logger.error("Error loading data into table", exc_info=True)
                 raise e
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("alert_store", "data", allow_duplicate=True),
             Input(f"{self._editingtable_n}-tabelleditering-table1", "cellValueChanged"),
             State("alert_store", "data"),
@@ -232,11 +233,11 @@ class EditingTable(ABC):
                     )
                 )
                 return error_log
+            variable = edited[0]["colId"]
+            old_value = edited[0]["oldValue"]
+            new_value = edited[0]["value"]
+            row_id = edited[0]["data"]["row_id"]
             try:
-                variable = edited[0]["colId"]
-                old_value = edited[0]["oldValue"]
-                new_value = edited[0]["value"]
-                row_id = edited[0]["data"]["row_id"]
                 self.update_table_func(variable, new_value, row_id)
 
                 error_log.append(
@@ -290,9 +291,9 @@ class EditingTable(ABC):
             logger.debug(f"Output object: {output_objects}")
 
             def make_table_to_main_table_callback(
-                output: str, column: str, output_varselector_name: str
+                output: Output, column: str, output_varselector_name: str
             ) -> None:
-                @callback(  # type: ignore[misc]
+                @callback(
                     output,
                     Input(
                         f"{self._editingtable_n}-tabelleditering-table1", "cellClicked"

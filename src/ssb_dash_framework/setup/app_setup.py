@@ -56,7 +56,7 @@ def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> D
         external_stylesheets=[theme_map[stylesheet], dbc_css],
     )
 
-    @callback(  # type: ignore[misc]
+    @callback(
         Output("variable-selector-offcanvas", "is_open"),
         Input("sidebar-varvelger-button", "n_clicks"),
         State("variable-selector-offcanvas", "is_open"),

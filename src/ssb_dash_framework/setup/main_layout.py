@@ -6,14 +6,16 @@ from dash import html
 
 from ..utils.alert_handler import AlertHandler
 from ..utils.functions import sidebar_button
+from ..utils.implementations import TabModule
+from ..utils.implementations import WindowModule
 from .variableselector import VariableSelector
 
 logger = logging.getLogger(__name__)
 
 
 def main_layout(
-    window_list: list[html.Div],
-    tab_list: list[html.Div],
+    window_list: list[WindowModule],
+    tab_list: list[dbc.Tab | TabModule],
     variable_list: list[str] | None = None,
     default_values: dict[str, Any] | None = None,
 ) -> dbc.Container:
@@ -22,7 +24,7 @@ def main_layout(
     Args:
         window_list (list[html.Div]):
             A list of modal components to be included in the sidebar.
-        tab_list (list[html.Div]):
+        tab_list (list[html.Div | dbc.Tab]):
             A list of tab objects, each containing a `layout` method and a `label` attribute.
         variable_list (list[str] | None):
             A list of variable selection components to be included in the main layout. Defaults to all existing VariableSelectorOptions.
@@ -67,12 +69,8 @@ def main_layout(
         )
     ]
     window_modules_list = varvelger_toggle + window_modules_list
-    selected_tab_list = selected_tab_list = [
-        (
-            tab.layout()
-            if isinstance(tab, dbc.Tab)
-            else dbc.Tab(tab.layout(), label=tab.label)
-        )
+    selected_tab_list = [
+        (tab if isinstance(tab, dbc.Tab) else dbc.Tab(tab.layout(), label=tab.label))
         for tab in tab_list
     ]
     layout = dbc.Container(

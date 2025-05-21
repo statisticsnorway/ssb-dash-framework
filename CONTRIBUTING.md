@@ -261,7 +261,7 @@ An example of a use-case for this is a function to get/transform data to adhere 
 
 Add "# type: ignore[misc]" to decorator to avoid mypy reporting it as an error.
 
-    @callback(  # type: ignore[misc]
+    @callback(
         Input(),
         Output()
     )

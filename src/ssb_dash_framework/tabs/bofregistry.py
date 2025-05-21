@@ -322,7 +322,7 @@ class BofInformation:
             - The `bof_data` callback fetches and updates data in the cards based on the selected foretak.
         """
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("bofregistry-modal-ssb_foretak", "is_open"),
             Input("tab-vof-foretak-button1", "n_clicks"),
             State("bofregistry-modal-ssb_foretak", "is_open"),
@@ -336,7 +336,7 @@ class BofInformation:
             else:
                 raise PreventUpdate
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("bofregistry-modal-ssb_bedrift", "is_open"),
             Input("tab-vof-foretak-button2", "n_clicks"),
             State("bofregistry-modal-ssb_bedrift", "is_open"),
@@ -349,7 +349,7 @@ class BofInformation:
                     return True
             raise PreventUpdate
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("bofregistry-ssb_foretak-table", "rowData"),
             Output("bofregistry-ssb_foretak-table", "columnDefs"),
             Input("tab-vof-foretak-button1", "n_clicks"),
@@ -374,7 +374,7 @@ class BofInformation:
                 return df.to_dict("records"), columns
             raise PreventUpdate
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("bofregistry-ssb_bedrift-table", "rowData"),
             Output("bofregistry-ssb_bedrift-table", "columnDefs"),
             Input("tab-vof-foretak-button2", "n_clicks"),
@@ -400,7 +400,7 @@ class BofInformation:
                 return df.to_dict("records"), columns
             raise PreventUpdate
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("tab-bof_foretak-orgnrcard", "value"),
             Output("tab-bof_foretak-navncard", "value"),
             Output("tab-bof_foretak-nacecard", "value"),
@@ -466,7 +466,7 @@ class BofInformation:
                     typen,
                 )
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("tab-bof_foretak-table1", "rowData"),
             Output("tab-bof_foretak-table1", "columnDefs"),
             Input("tab-bof_foretak-foretaksnrcard", "value"),

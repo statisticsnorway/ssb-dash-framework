@@ -106,7 +106,7 @@ class FreeSearch(ABC):
             - The results are displayed in an editable table, with the "row_id" column hidden by default if present.
         """
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("tab-frisøk-table1", "rowData"),
             Output("tab-frisøk-table1", "columnDefs"),
             Input("tab-frisøk-button1", "n_clicks"),
