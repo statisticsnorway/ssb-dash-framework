@@ -82,6 +82,28 @@ class EditingTable(ABC):
         self.update_table_func = update_table_func
         self.module_layout = self._create_layout()
         self.module_callbacks()
+        self._is_valid()
+
+    def _is_valid(self):
+        """Check if the module is valid."""
+        if not isinstance(self.label, str):
+            raise TypeError(
+                f"label {self.label} is not a string, is type {type(self.label)}"
+            )
+        if self.output is not None and self.output_varselector_name is not None:
+            if isinstance(self.output, str) and not isinstance(
+                self.output_varselector_name, str
+            ):
+                raise TypeError(
+                    f"output is a string while output_varselector_name {self.output_varselector_name} is not a string, is type {type(self.output_varselector_name)}"
+                )
+            elif isinstance(self.output, list) and isinstance(
+                self.output_varselector_name, list
+            ):
+                if len(self.output) == len(self.output_varselector_name):
+                    raise ValueError(
+                        f"output {self.output} and output_varselector_name {self.output_varselector_name} are not the same length"
+                    )
 
     def _create_layout(self) -> html.Div:
         """Generate the layout for the EditingTable component.
