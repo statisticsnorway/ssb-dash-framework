@@ -45,8 +45,8 @@ class EditingTableWindow(EditingTable, WindowImplementation):
             states=states,
             get_data_func=get_data_func,
             update_table_func=update_table_func,
-            ident=output,
-            varselector_ident=output_varselector_name,
+            output=output,
+            output_varselector_name=output_varselector_name,
         )
         WindowImplementation.__init__(
             self,
