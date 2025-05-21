@@ -2,7 +2,7 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from dash import html
+import dash_bootstrap_components as dbc
 
 from ..modules.tables import EditingTable
 from ..utils import TabImplementation
@@ -50,7 +50,7 @@ class EditingTableTab(EditingTable, TabImplementation):
             self,
         )
 
-    def layout(self) -> html.Div:
+    def layout(self) -> dbc.Tab:
         """Generate the layout for the module as a tab."""
         layout = TabImplementation.layout(self)
         logger.debug("Generated layout")

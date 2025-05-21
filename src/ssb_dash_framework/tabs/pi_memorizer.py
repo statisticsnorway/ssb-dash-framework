@@ -218,7 +218,7 @@ class Pimemorizer:
               and the current sequence, score, and high score.
         """
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("text-box", "value"),
             Output("score", "value"),
             Output("highscore", "value"),

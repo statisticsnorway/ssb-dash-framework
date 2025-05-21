@@ -61,7 +61,7 @@ class SkjemapdfViewerWindow(SkjemapdfViewer):
         This includes a callback to toggle the visibility of the modal window.
         """
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("skjemapdf-modal", "is_open"),
             Input("sidebar-skjemapdf-button", "n_clicks"),
             State("skjemapdf-modal", "is_open"),

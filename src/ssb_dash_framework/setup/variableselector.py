@@ -220,7 +220,7 @@ class VariableSelector:
     def _make_alert_callback(self, component_id: str, component_name: str) -> Any:
         """Utility function to add alerts to updates on the variable selector."""
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("alert_store", "data", allow_duplicate=True),
             Input(component_id, "value"),
             State("alert_store", "data"),
