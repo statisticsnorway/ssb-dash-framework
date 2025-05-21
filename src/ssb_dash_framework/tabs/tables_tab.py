@@ -20,8 +20,8 @@ class EditingTableTab(EditingTable, TabImplementation):
         states: list[str],
         get_data_func: Callable[..., Any],
         update_table_func: Callable[..., Any],
-        ident: str | None = None,
-        varselector_ident: str | None = None,
+        output: str | None = None,
+        output_varselector_name: str | None = None,
     ) -> None:
         """Initialize the EditingTableTab.
 
@@ -33,8 +33,8 @@ class EditingTableTab(EditingTable, TabImplementation):
             states (list[str]): The list of state IDs.
             get_data_func (Callable[..., Any]): Function to get data for the table.
             update_table_func (Callable[..., Any]): Function to update the table.
-            ident (str | None, optional): Identifier for the table. Defaults to None.
-            varselector_ident (str | None, optional): Identifier for the variable selector. Defaults to None.
+            output (str | None, optional): Identifier for the table. Defaults to None.
+            output_varselector_name (str | None, optional): Identifier for the variable selector. Defaults to None.
         """
         EditingTable.__init__(
             self,
@@ -43,8 +43,8 @@ class EditingTableTab(EditingTable, TabImplementation):
             states=states,
             get_data_func=get_data_func,
             update_table_func=update_table_func,
-            ident=ident,
-            varselector_ident=varselector_ident,
+            output=output,
+            output_varselector_name=output_varselector_name,
         )
         TabImplementation.__init__(
             self,
