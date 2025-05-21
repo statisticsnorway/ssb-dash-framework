@@ -100,7 +100,7 @@ class EditingTable(ABC):
             elif isinstance(self.output, list) and isinstance(
                 self.output_varselector_name, list
             ):
-                if len(self.output) == len(self.output_varselector_name):
+                if len(self.output) != len(self.output_varselector_name):
                     raise ValueError(
                         f"output {self.output} and output_varselector_name {self.output_varselector_name} are not the same length"
                     )
