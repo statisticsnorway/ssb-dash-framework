@@ -15,8 +15,8 @@ for filename in os.listdir(MODULE_DIR):
         rst_path = os.path.join(OUT_DIR, f"{modname}.rst")
         with open(rst_path, "w") as f:
             f.write(
-                f"""{modname} module
-{'=' * (len(modname) + 7)}
+                f"""{modname}
+{'=' * (len(modname))}
 
 .. automodule:: ssb_dash_framework.modules.{modname}
    :members:
@@ -28,13 +28,15 @@ for filename in os.listdir(MODULE_DIR):
 # Write or update index.rst with capitalized clickable links
 index_path = os.path.join(OUT_DIR, "index.rst")
 with open(index_path, "w") as idx:
-    idx.write("""Modules
+    idx.write(
+        """Modules
 =======
 
 .. toctree::
    :maxdepth: 1
    :caption: Modules
 
-""")
+"""
+    )
     for modname in sorted(module_names):
         idx.write(f"   {modname.capitalize()} <{modname}>\n")

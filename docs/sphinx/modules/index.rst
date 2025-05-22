@@ -5,8 +5,8 @@ Modules
    :maxdepth: 1
    :caption: Modules
 
-   aarsregnskap
-   freesearch
-   skjemadataviewer
-   skjemapdfviewer
-   tables
+   Aarsregnskap <aarsregnskap>
+   Freesearch <freesearch>
+   Skjemadataviewer <skjemadataviewer>
+   Skjemapdfviewer <skjemapdfviewer>
+   Tables <tables>
