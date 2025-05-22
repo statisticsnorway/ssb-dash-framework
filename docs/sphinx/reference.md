@@ -19,15 +19,11 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
-   ssb_dash_framework.control
-   ssb_dash_framework.modals
-   ssb_dash_framework.modules
-   ssb_dash_framework.setup
-   ssb_dash_framework.tabs
-   ssb_dash_framework.utils
-   ssb_dash_framework.windows
-
-
-```
+   modals/index
+   modules/index
+   setup/index
+   tabs/index
+   utils/index
+   windows/index
