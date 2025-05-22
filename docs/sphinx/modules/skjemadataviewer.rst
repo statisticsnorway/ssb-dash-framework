@@ -1,5 +1,5 @@
-skjemadataviewer
-================
+skjemadataviewer module
+=======================
 
 .. automodule:: ssb_dash_framework.modules.skjemadataviewer
    :members:

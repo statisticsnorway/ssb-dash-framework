@@ -1,5 +1,5 @@
-tables
-======
+tables module
+=============
 
 .. automodule:: ssb_dash_framework.modules.tables
    :members:

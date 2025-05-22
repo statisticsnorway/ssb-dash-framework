@@ -1,5 +1,5 @@
-skjemapdfviewer
-===============
+skjemapdfviewer module
+======================
 
 .. automodule:: ssb_dash_framework.modules.skjemapdfviewer
    :members:

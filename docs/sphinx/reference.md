@@ -21,9 +21,9 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   Modals <ssb_dash_framework.modals>
+   modals/index
    modules/index
-   Setup <ssb_dash_framework.setup>
-   Tabs <ssb_dash_framework.tabs>
-   Utils<ssb_dash_framework.utils>
-   Windows <ssb_dash_framework.windows>
+   setup/index
+   tabs/index
+   utils/index
+   windows/index
