@@ -161,7 +161,7 @@ df = pd.DataFrame(data)
 app = app_setup()
 
 set_variables(["orgnr", "aar"]) # Dette gjør at orgnr og aar er tilgjengelig i applikasjonen din.
-default_values = { # Valgfritt å ha med, men kan være praktisk for brukervennlighet. Puttes inn i app.layout() funksjonen.
+default_values = { # Valgfritt å ha med, men kan være praktisk for brukervennlighet. Puttes inn i main_layout() funksjonen.
     "orgnr": "971526920",
     "aar": "2020"
 }
