@@ -10,10 +10,9 @@ end-before: <!-- github-only -->
 
 ```{toctree}
 ---
-hidden:
 maxdepth: 5
 ---
-
+documentation
 reference
 contributing
 Code of Conduct <codeofconduct>
