@@ -10,6 +10,8 @@ You can find the reference documentation in the docstrings, and as a part of the
 
 For information about how to contribute to the project, please see the [Contributor Guide].
 
+Note that the "sphinx" folder is for auto-generating documentation and not relevant for non-developers.
+
 <!-- github-only -->
 
 [contributor guide]: https://github.com/statisticsnorway/ssb-dash-framework/blob/main/CONTRIBUTING.md
