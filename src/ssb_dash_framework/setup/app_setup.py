@@ -1,4 +1,5 @@
 import logging
+import os
 
 import dash_bootstrap_components as dbc
 from dash import Dash
@@ -21,7 +22,12 @@ theme_map = {
 }
 
 
-def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> Dash:
+def app_setup(
+    port: int | None = None,
+    service_prefix: str | None = None,
+    domain: str | None = None,
+    stylesheet: str | None = None,
+) -> Dash:
     """Set up and configure a Dash application with the specified parameters.
 
     Args:
@@ -40,9 +46,17 @@ def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> D
           with the ID `main-varvelger` based on the number of clicks on `sidebar-varvelger-button`.
 
     Examples:
+        >>> app = app_setup()
         >>> app = app_setup(port=8050, service_prefix="/", domain="localhost", stylesheet="slate")
-        >>> app.run_server() # doctest: +SKIP
     """
+    if port is None:
+        port = 8070
+    if service_prefix is None:
+        service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
+    if domain is None:
+        domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
+    if stylesheet is None:
+        stylesheet = "darkly"
     template = theme_map[stylesheet]
     load_figure_template([template])
 
