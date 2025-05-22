@@ -1,5 +1,5 @@
-freesearch module
-=================
+freesearch
+==========
 
 .. automodule:: ssb_dash_framework.modules.freesearch
    :members:

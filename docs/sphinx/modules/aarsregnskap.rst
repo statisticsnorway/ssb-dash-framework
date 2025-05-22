@@ -1,5 +1,5 @@
-aarsregnskap module
-===================
+aarsregnskap
+============
 
 .. automodule:: ssb_dash_framework.modules.aarsregnskap
    :members:
