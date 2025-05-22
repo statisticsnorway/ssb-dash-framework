@@ -25,11 +25,7 @@ import os
 from ssb_dash_framework import main_layout
 from ssb_dash_framework import app_setup
 
-port = 8070
-service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
-domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
-theme = "darkly
-app = app_setup(port, service_prefix, domain, theme)
+app = app_setup()
 
 window_list = []
 
@@ -162,11 +158,7 @@ data = {
 }
 df = pd.DataFrame(data)
 
-port = 8070
-service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
-domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
-theme = "darkly"
-app = app_setup(port, service_prefix, domain, theme)
+app = app_setup()
 
 set_variables(["orgnr", "aar"]) # Dette gjør at orgnr og aar er tilgjengelig i applikasjonen din.
 default_values = { # Valgfritt å ha med, men kan være praktisk for brukervennlighet. Puttes inn i app.layout() funksjonen.
