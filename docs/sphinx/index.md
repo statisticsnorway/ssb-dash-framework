@@ -1,4 +1,4 @@
-```{include} ../README.md
+```{include} ../../README.md
 ---
 end-before: <!-- github-only -->
 ---
@@ -10,10 +10,9 @@ end-before: <!-- github-only -->
 
 ```{toctree}
 ---
-hidden:
-maxdepth: 1
+maxdepth: 5
 ---
-
+documentation
 reference
 contributing
 Code of Conduct <codeofconduct>

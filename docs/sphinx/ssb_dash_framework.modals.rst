@@ -2,10 +2,18 @@ ssb\_dash\_framework.modals package
 ===================================
 
 
-ssb\_dash\_framework.modals.AltinnDataCapture module
-----------------------------------------------------
+ssb\_dash\_framework.modals.altinn\_control\_view module
+--------------------------------------------------------
 
-.. automodule:: ssb_dash_framework.modals.AltinnDataCapture
+.. automodule:: ssb_dash_framework.modals.altinn_control_view
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ssb\_dash\_framework.modals.altinn\_data\_capture module
+--------------------------------------------------------
+
+.. automodule:: ssb_dash_framework.modals.altinn_data_capture
    :members:
    :undoc-members:
    :show-inheritance:
@@ -22,14 +30,6 @@ ssb\_dash\_framework.modals.hb\_method module
 ---------------------------------------------
 
 .. automodule:: ssb_dash_framework.modals.hb_method
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-ssb\_dash\_framework.modals.quality\_indicators module
-------------------------------------------------------
-
-.. automodule:: ssb_dash_framework.modals.quality_indicators
    :members:
    :undoc-members:
    :show-inheritance:

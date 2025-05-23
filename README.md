@@ -25,11 +25,9 @@
 [black]: https://github.com/psf/black
 [poetry]: https://python-poetry.org/
 
-## Vennligst se i mappen docs/norsk for brukerveiledning
+## Documentation
 
-The getting started guide is in norwegian and intended for Statistics Norway internal use, while more advanced documentation is in english.
-
-More technical and in-depth information can be found in the [Contributor Guide].
+The documentation for this project can be [found here](https://statisticsnorway.github.io/ssb-dash-framework/) or in the **docs** folder.
 
 ## Features
 - Dashboard for editing data, includes modules for among other things:
