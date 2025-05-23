@@ -326,3 +326,24 @@ class EditingTable(ABC):
                 )
 
         logger.debug("Generated callbacks")
+
+
+class Multitable(ABC):
+    
+    _id_number = 0
+    
+    def __init__(
+        self,
+        label: str,
+        table_list: list[EditingTable],
+    ):
+        self.label = label
+        self.table_list = table_list
+
+        self._editingtable_n = Multitable._id_number
+        self.module_name = self.__class__.__name__
+        Multitable._id_number += 1
+
+        self.module_layout = self._create_layout()
+        self.module_callbacks()
+        self._is_valid()
