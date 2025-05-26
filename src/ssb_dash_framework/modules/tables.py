@@ -7,6 +7,7 @@ from typing import Any
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import callback
+from dash import dcc
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -329,9 +330,9 @@ class EditingTable(ABC):
 
 
 class Multitable(ABC):
-    
+
     _id_number = 0
-    
+
     def __init__(
         self,
         label: str,
@@ -340,10 +341,73 @@ class Multitable(ABC):
         self.label = label
         self.table_list = table_list
 
-        self._editingtable_n = Multitable._id_number
+        self._multitable_n = Multitable._id_number
         self.module_name = self.__class__.__name__
         Multitable._id_number += 1
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self._is_valid()
+
+    def _is_valid(self) -> None:
+        for table in self.table_list:
+            if not hasattr(table, "label"):
+                raise ValueError(
+                    f"Table {table} does not have a label attribute, is type {type(table)}"
+                )
+
+    def _create_layout(self) -> html.Div:
+        layout = html.Div(
+            [
+                dcc.Dropdown(
+                    id=f"{self._multitable_n}-multitable-dropdown",
+                    options=[
+                        {"label": table.label, "value": table.label}
+                        for table in self.table_list
+                    ],
+                    value=self.table_list[0].label if self.table_list else None,
+                    clearable=False,
+                ),
+                dcc.Loading(
+                    id=f"{self._multitable_n}-multitable-loading",
+                    type="default",
+                    children=html.Div(
+                        id=f"{self._multitable_n}-multitable-content",
+                    ),
+                ),
+            ]
+        )
+        logger.debug("Generated layout")
+        return layout
+
+    @abstractmethod
+    def layout(self) -> html.Div | dbc.Tab:
+        """Define the layout for the Multitable module.
+
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
+
+        Returns:
+            html.Div | dbc.Tab: A Dash HTML Div component representing the layout of the module or a dbc.Tab to be displayed directly.
+        """
+        pass
+
+    def module_callbacks(self) -> None:
+        @callback(
+            Output(f"{self._multitable_n}-multitable-content", "children"),
+            Input(f"{self._multitable_n}-multitable-dropdown", "value"),
+        )
+        def update_table_content(selected_table_label: str) -> html.Div:
+            """Update the content of the multitable based on the selected table.
+
+            Args:
+                selected_table_label (str): The label of the selected table.
+
+            Returns:
+                html.Div: The layout of the selected EditingTable.
+            """
+            for table in self.table_list:
+                if table.label == selected_table_label:
+                    return table.module_layout
+            raise PreventUpdate
+
+        logger.debug("Generated callbacks for Multitable")
