@@ -17,11 +17,12 @@ from dash.exceptions import PreventUpdate
 from ..setup.variableselector import VariableSelector  # TODO TEMP!!!!
 from ..setup.variableselector import VariableSelectorOption  # TODO TEMP!!!!
 from ..utils.alert_handler import create_alert
+from ..utils.module_base_class import ModuleBaseClass
 
 logger = logging.getLogger(__name__)
 
 
-class EditingTable:
+class EditingTable(ModuleBaseClass):
     """A component for editing data using a Dash AgGrid table.
 
     This class provides a layout and functionality to:

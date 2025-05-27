@@ -8,6 +8,7 @@ from .modals import VisualizationBuilder
 from .modules import Aarsregnskap
 from .modules import EditingTable
 from .modules import FreeSearch
+from .modules import MultiTable
 from .modules import SkjemadataViewer
 from .modules import SkjemapdfViewer
 from .setup import VariableSelector
@@ -19,6 +20,7 @@ from .tabs import AarsregnskapTab
 from .tabs import BofInformation
 from .tabs import EditingTableTab  # TODO: Clean up and make into module
 from .tabs import FreeSearchTab
+from .tabs import MultiTableTab
 from .tabs import Pimemorizer
 from .tabs import SkjemapdfViewerTab
 from .utils import AlertHandler
@@ -32,6 +34,7 @@ from .utils import sidebar_button
 from .utils import th_error
 from .windows import EditingTableWindow
 from .windows import FreeSearchWindow
+from .windows import MultiTableWindow
 from .windows import SkjemapdfViewerWindow
 
 __all__ = [
@@ -50,6 +53,9 @@ __all__ = [
     "FreeSearchTab",
     "FreeSearchWindow",
     "HBMethod",
+    "MultiTable",
+    "MultiTableTab",
+    "MultiTableWindow",
     "Pimemorizer",
     "SkjemadataViewer",
     "SkjemapdfViewer",
