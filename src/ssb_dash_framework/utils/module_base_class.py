@@ -16,19 +16,19 @@ class ModuleBaseClass(ABC):
 
     @property
     @abstractmethod
-    def label() -> str:
+    def label(self) -> str:
         """"""
         pass
 
     @property
     @abstractmethod
-    def module_name() -> str:
+    def module_name(self) -> str:
         """"""
         pass
 
     @property
     @abstractmethod
-    def module_number() -> str:
+    def module_number(self) -> str:
         """"""
         pass
 
