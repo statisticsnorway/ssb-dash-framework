@@ -124,10 +124,10 @@ class EditingTable(ModuleBaseClass):
                     children=[
                         dag.AgGrid(
                             defaultColDef={"editable": True},
-                            id=f"{self._editingtable_n}-tabelleditering-table1",
+                            id=f"{self.module_number}-tabelleditering-table1",
                             className="ag-theme-alpine-dark header-style-on-filter",
                         ),
-                        html.P(id=f"{self._editingtable_n}-tabelleditering-status1"),
+                        html.P(id=f"{self.module_number}-tabelleditering-status1"),
                     ],
                 ),
             ],
@@ -160,8 +160,8 @@ class EditingTable(ModuleBaseClass):
         ]
 
         @callback(
-            Output(f"{self._editingtable_n}-tabelleditering-table1", "rowData"),
-            Output(f"{self._editingtable_n}-tabelleditering-table1", "columnDefs"),
+            Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
+            Output(f"{self.module_number}-tabelleditering-table1", "columnDefs"),
             *dynamic_states,
         )
         def load_to_table(
@@ -199,7 +199,7 @@ class EditingTable(ModuleBaseClass):
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
-            Input(f"{self._editingtable_n}-tabelleditering-table1", "cellValueChanged"),
+            Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
             State("alert_store", "data"),
             *dynamic_states,
             prevent_initial_call=True,
@@ -298,7 +298,7 @@ class EditingTable(ModuleBaseClass):
                 @callback(
                     output,
                     Input(
-                        f"{self._editingtable_n}-tabelleditering-table1", "cellClicked"
+                        f"{self.module_number}-tabelleditering-table1", "cellClicked"
                     ),
                     prevent_initial_call=True,
                 )
