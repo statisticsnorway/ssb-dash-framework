@@ -20,6 +20,13 @@ eimerdb_logger.addHandler(handler)
 # eimerdb_logger.propagate = False
 
 
+builder = DatabaseBuilderAltinnEimerdb(
+    database_name = "buildertest_kvartal",
+    storage_location = "ssb-strukt-naering-data-produkt-prod",
+    periods = ["aar", "kvartal"],
+)
+
+
 class DatabaseBuilderAltinnEimerdb:
     """This class provides help for creating an eimerdb datastorage for Altinn3 surveys.
 
@@ -47,8 +54,6 @@ class DatabaseBuilderAltinnEimerdb:
         self,
         database_name: str,
         storage_location: str,
-        ident_id: str,
-        ident_name: str,
         periods: str,
     ) -> None:
         """Initializes the databasebuilder for altinn3 surveys.
@@ -60,8 +65,6 @@ class DatabaseBuilderAltinnEimerdb:
         """
         self.database_name = database_name
         self.storage_location = storage_location
-        self.ident_id = ident_id
-        self.ident_name = ident_name
         self.periods = periods if isinstance(periods, list) else [periods]
         self._is_valid()
 
@@ -78,39 +81,12 @@ class DatabaseBuilderAltinnEimerdb:
             for period in self.periods
         ]
         ident_col = {
-            "name": self.ident_id,
+            "name": "ident",
             "type": "string",
-            "label": self.ident_name,
+            "label": "Identnummeret.",
         }
-        name_col = {"name": self.ident_name, "type": "string", "label": self.ident_name}
-        delivery_id_col = {
-            "name": "referanse",
-            "type": "string",
-            "label": "Altinn referanse.",
-        }
-        schema_col = {"name": "skjema", "type": "string", "label": "Skjema"}
 
-        schema_skjemainfo = [
-            *periods_cols,
-            ident_col,
-            {"name": "skjemaversjon", "type": "string", "label": "Skjemaets versjon."},
-            {
-                "name": "dato_mottatt",
-                "type": "pa.timestamp(s)",
-                "label": "Datoen og tidspunktet for når skjemaet ble mottatt.",
-            },
-            {
-                "name": "editert",
-                "type": "bool_",
-                "label": "Editeringskode. True = Editert. False = Ueditert.",
-            },
-            {"name": "kommentar", "type": "string", "label": "Editeringskommentar."},
-            {
-                "name": "aktiv",
-                "type": "bool_",
-                "label": "1 hvis skjemaet er aktivt. 0 hvis skjemaet er satt til inaktivt.",
-            },
-        ]
+        schema_col = {"name": "skjema", "type": "string", "label": "Skjema"}
 
         schema_skjemamottak = [
             *periods_cols,
@@ -281,13 +257,11 @@ class DatabaseBuilderAltinnEimerdb:
                 "name": "verdi",
                 "type": "string",
                 "label": "verdien til variabelen.",
-                "appvar": "var-nspekfelt",
                 "app_editable": True,
             },
         ]
 
         return {
-            "skjemainfo": schema_skjemainfo,
             "skjemamottak": schema_skjemamottak,
             "kontaktinfo": schema_kontaktinfo,
             "enheter": schema_enheter,
@@ -304,11 +278,19 @@ class DatabaseBuilderAltinnEimerdb:
     def build_storage(self):
         db.create_eimerdb(bucket_name=self.storage_location, db_name=self.database_name)
         conn = db.EimerDBInstance(self.storage_location, self.database_name)
+        
+        special_tables = {"skjemamottak", "skjemadata_hoved", "kontroller", "kontrollutslag", "kontaktinfo"}
+    
         for table in self.schemas:
+            if table in special_tables:
+                partition_columns = self.periods + ["skjema"]
+            else:
+                partition_columns = self.periods
+    
             conn.create_table(
                 table_name=table,
                 schema=self.schemas[table],
-                partition_columns=(self.periods),
+                partition_columns=partition_columns,
                 editable=True,
             )
         eimerdb_logger.info(
