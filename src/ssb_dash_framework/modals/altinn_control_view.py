@@ -311,7 +311,7 @@ class AltinnControlView:
             return df.to_dict("records"), columns
 
         @callback(  # type: ignore[misc]
-            Output("var-skjemaenhet", "value", allow_duplicate=True),
+            Output("var-ident", "value", allow_duplicate=True),
             Input("kontroller-table2", "selectedRows"),
             prevent_initial_call=True,
         )
