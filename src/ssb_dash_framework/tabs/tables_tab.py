@@ -5,6 +5,7 @@ from typing import Any
 import dash_bootstrap_components as dbc
 
 from ..modules.tables import EditingTable
+from ..modules.tables import Multitable
 from ..utils import TabImplementation
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,32 @@ class EditingTableTab(EditingTable, TabImplementation):
 
     def layout(self) -> dbc.Tab:
         """Generate the layout for the module as a tab."""
+        layout = TabImplementation.layout(self)
+        logger.debug("Generated layout")
+        return layout
+
+
+class MultitableTab(Multitable, TabImplementation):
+    """A class to implement a multitable module inside a tab."""
+
+    def __init__(
+        self,
+        label: str,
+        table_list: list[EditingTable],
+    ) -> None:
+        """Initialize the MultitableTab.
+
+        This class is used to create a tab to put in the tab_list.
+
+        Args:
+            label (str): The label for the tab.
+            tables (list[EditingTable]): List of EditingTable instances to be included in the multitable.
+        """
+        Multitable.__init__(self, label=label, table_list=table_list)
+        TabImplementation.__init__(self)
+
+    def layout(self) -> dbc.Tab:
+        """Generate the layout for the multitable module as a tab."""
         layout = TabImplementation.layout(self)
         logger.debug("Generated layout")
         return layout

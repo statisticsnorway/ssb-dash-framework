@@ -5,6 +5,7 @@ from typing import Any
 from dash import html
 
 from ..modules.tables import EditingTable
+from ..modules.tables import Multitable
 from ..utils import WindowImplementation
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,28 @@ class EditingTableWindow(EditingTable, WindowImplementation):
         WindowImplementation.__init__(
             self,
         )
+
+    def layout(self) -> html.Div:
+        """Generate the layout for the modal window using the WindowImplementation method."""
+        layout = WindowImplementation.layout(self)
+        return layout
+
+
+class MultitableWindow(Multitable, WindowImplementation):
+
+    def __init__(
+        self,
+        label: str,
+        table_list: list[EditingTable],
+    ) -> None:
+        """Initialize the MultitableWindow.
+
+        Args:
+            label (str): The label for the modal.
+            table_list (list[EditingTable]): List of EditingTable instances to be included in the modal.
+        """
+        Multitable.__init__(self, label=label, table_list=table_list)
+        WindowImplementation.__init__(self)
 
     def layout(self) -> html.Div:
         """Generate the layout for the modal window using the WindowImplementation method."""
