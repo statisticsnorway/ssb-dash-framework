@@ -9,10 +9,12 @@ from .functions import sidebar_button
 from .functions import th_error
 from .implementations import TabImplementation
 from .implementations import WindowImplementation
+from .module_base_class import ModuleBaseClass
 
 __all__ = [
     "AlertHandler",
     "DebugInspector",
+    "ModuleBaseClass",
     "TabImplementation",
     "WindowImplementation",
     "_get_kostra_r",
