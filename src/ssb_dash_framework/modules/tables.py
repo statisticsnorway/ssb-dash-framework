@@ -65,7 +65,7 @@ class EditingTable(ModuleBaseClass):
                 If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
         """
         self.module_number = EditingTable._id_number
-        self.module_name = self.__class__.__name__
+        # self.module_name = self.__class__.__name__
         EditingTable._id_number += 1
         self.label = label
         self.output = output
