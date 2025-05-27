@@ -10,6 +10,7 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from plotly.graph_objects import Figure
 
 from ..utils.functions import sidebar_button
 
@@ -247,7 +248,7 @@ class AltinnDataCapture:
             Input("datafangst-dd1", "value"),
             *self.create_callback_components("State"),
         )
-        def datafangst_graph(graph_option: str, skjema: str, *args: Any) -> px.Figure:
+        def datafangst_graph(graph_option: str, skjema: str, *args: Any) -> Figure:
             partition_args = dict(zip(self.time_units, args, strict=False))
             if graph_option == "antall":
                 df = self.database.query(
