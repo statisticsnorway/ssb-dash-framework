@@ -58,7 +58,7 @@ class EditingTableTab(EditingTable, TabImplementation):
         return layout
 
 
-class MultitableTab(MultiTable, TabImplementation):
+class MultiTableTab(MultiTable, TabImplementation):
     """A class to implement a multitable module inside a tab."""
 
     def __init__(
@@ -66,7 +66,7 @@ class MultitableTab(MultiTable, TabImplementation):
         label: str,
         table_list: list[EditingTable],
     ) -> None:
-        """Initialize the MultitableTab.
+        """Initialize the MultiTableTab.
 
         This class is used to create a tab to put in the tab_list.
 

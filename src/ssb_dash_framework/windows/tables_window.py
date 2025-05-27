@@ -59,7 +59,7 @@ class EditingTableWindow(EditingTable, WindowImplementation):
         return layout
 
 
-class MultitableWindow(MultiTable, WindowImplementation):
+class MultiTableWindow(MultiTable, WindowImplementation):
     """A class to implement a MultiTable module inside a modal."""
 
     def __init__(
@@ -67,7 +67,7 @@ class MultitableWindow(MultiTable, WindowImplementation):
         label: str,
         table_list: list[EditingTable],
     ) -> None:
-        """Initialize the MultitableWindow.
+        """Initialize the MultiTableWindow.
 
         Args:
             label (str): The label for the modal.
