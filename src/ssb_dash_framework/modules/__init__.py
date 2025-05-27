@@ -5,11 +5,13 @@ from .freesearch import FreeSearch
 from .skjemadataviewer import SkjemadataViewer
 from .skjemapdfviewer import SkjemapdfViewer
 from .tables import EditingTable
+from .tables import MultiTable
 
 __all__ = [
     "Aarsregnskap",
     "EditingTable",
     "FreeSearch",
+    "MultiTable",
     "SkjemadataViewer",
     "SkjemapdfViewer",
 ]
