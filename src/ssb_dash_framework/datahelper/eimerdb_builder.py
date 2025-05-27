@@ -20,13 +20,6 @@ eimerdb_logger.addHandler(handler)
 # eimerdb_logger.propagate = False
 
 
-builder = DatabaseBuilderAltinnEimerdb(
-    database_name = "buildertest_kvartal",
-    storage_location = "ssb-strukt-naering-data-produkt-prod",
-    periods = ["aar", "kvartal"],
-)
-
-
 class DatabaseBuilderAltinnEimerdb:
     """This class provides help for creating an eimerdb datastorage for Altinn3 surveys.
 
