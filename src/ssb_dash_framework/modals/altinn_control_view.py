@@ -175,8 +175,8 @@ class AltinnControlView:
         """Generates a list of dynamic Dash Input or State components."""
         component = Input if input_type == "Input" else State
         return [
-            component(f"test-{unit}", "value") for unit in self.time_units
-        ]  # TODO change from test- to something more meaningful
+            component(f"var-{unit}", "value") for unit in self.time_units
+        ]
 
     def callbacks(self) -> None:
         """Registers Dash callbacks for the AltinnControlView module."""
