@@ -21,7 +21,7 @@ from ..utils.alert_handler import create_alert
 logger = logging.getLogger(__name__)
 
 
-class EditingTable(ABC):
+class EditingTable:
     """A component for editing data using a Dash AgGrid table.
 
     This class provides a layout and functionality to:
@@ -134,16 +134,16 @@ class EditingTable(ABC):
         logger.debug("Generated layout")
         return layout
 
-    @abstractmethod
     def layout(self) -> html.Div | dbc.Tab:
         """Define the layout for the EditingTable module.
 
-        This is an abstract method that must be implemented by subclasses to define the module's layout.
+        Because this module can be used as a a component in other modules, it needs to have a layout method that is not abstract.
+        For implementations as tab or window, this method should still be overridden.
 
         Returns:
             html.Div | dbc.Tab: A Dash HTML Div component representing the layout of the module or a dbc.Tab to be displayed directly.
         """
-        pass
+        return self._create_layout()
 
     def module_callbacks(self) -> None:
         """Register Dash callbacks for the EditingTable component.
