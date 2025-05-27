@@ -170,7 +170,7 @@ class AltinnDataCapture:
     ) -> list[Input | State]:
         """Generates a list of dynamic Dash Input or State components."""
         component = Input if input_type == "Input" else State
-        return [component(f"test-{unit}", "value") for unit in self.time_units]
+        return [component(f"var-{unit}", "value") for unit in self.time_units]
 
     def callbacks(self) -> None:
         """Registers Dash callbacks for the Visualiseringsbygger module.
