@@ -329,7 +329,19 @@ class EditingTable(ABC):
         logger.debug("Generated callbacks")
 
 
-class Multitable(ABC):
+class MultiTable(ABC):
+    """A class to implement a multitable module.
+
+    This class is used to create a module that contains multiple EditingTable instances,
+    allowing users to switch between different tables using a dropdown menu.
+
+    Attributes:
+        label (str): The label for the multitable module.
+        table_list (list[EditingTable]): A list of EditingTable instances to be included in the multitable.
+        _multitable_n (int): A unique identifier for the multitable instance.
+        module_name (str): The name of the module class.
+        module_layout (html.Div): The layout of the multitable module.
+    """
 
     _id_number = 0
 
@@ -337,13 +349,19 @@ class Multitable(ABC):
         self,
         label: str,
         table_list: list[EditingTable],
-    ):
+    ) -> None:
+        """Initialize the MultiTable module.
+
+        Args:
+            label (str): The label for the multitable module.
+            table_list (list[EditingTable]): A list of EditingTable instances to be included in the multitable.
+        """
         self.label = label
         self.table_list = table_list
 
-        self._multitable_n = Multitable._id_number
+        self._multitable_n = MultiTable._id_number
         self.module_name = self.__class__.__name__
-        Multitable._id_number += 1
+        MultiTable._id_number += 1
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -351,21 +369,32 @@ class Multitable(ABC):
 
     def _is_valid(self) -> None:
         for table in self.table_list:
-            if not hasattr(table, "label"):
-                raise ValueError(
-                    f"Table {table} does not have a label attribute, is type {type(table)}"
-                )
+            self._validate_table(table)
+        if not isinstance(self.label, str):
+            raise TypeError(
+                f"label {self.label} is not a string, is type {type(self.label)}"
+            )
+        if not isinstance(self.table_list, list):
+            raise TypeError(
+                f"table_list {self.table_list} is not a list, is type {type(self.table_list)}"
+            )
+
+    def _validate_table(self, table: EditingTable | Any) -> None:
+        """Check if the supplied table module is valid."""
+        if not isinstance(table, EditingTable):
+            logger.warning(
+                f"Possible type error, {table} is not an EditingTable, is type {type(table)}"
+            )
+        if not hasattr(table, "label"):
+            raise ValueError(f"Table {table} does not have a label attribute")
 
     def _create_layout(self) -> html.Div:
         layout = html.Div(
             [
                 dcc.Dropdown(
                     id=f"{self._multitable_n}-multitable-dropdown",
-                    options=[
-                        {"label": table.label, "value": table.label}
-                        for table in self.table_list
-                    ],
-                    value=self.table_list[0].label if self.table_list else None,
+                    options=[table.label for table in self.table_list],
+                    value=self.table_list[0].label,
                     clearable=False,
                 ),
                 dcc.Loading(
@@ -382,7 +411,7 @@ class Multitable(ABC):
 
     @abstractmethod
     def layout(self) -> html.Div | dbc.Tab:
-        """Define the layout for the Multitable module.
+        """Define the layout for the MultiTable module.
 
         This is an abstract method that must be implemented by subclasses to define the module's layout.
 
@@ -392,6 +421,8 @@ class Multitable(ABC):
         pass
 
     def module_callbacks(self) -> None:
+        """Register Dash callbacks for the MultiTable component."""
+
         @callback(
             Output(f"{self._multitable_n}-multitable-content", "children"),
             Input(f"{self._multitable_n}-multitable-dropdown", "value"),
@@ -404,10 +435,15 @@ class Multitable(ABC):
 
             Returns:
                 html.Div: The layout of the selected EditingTable.
+
+            Raises:
+                ValueError: If the selected table label is not found in the table_list.
             """
             for table in self.table_list:
                 if table.label == selected_table_label:
                     return table.module_layout
-            raise PreventUpdate
+            raise ValueError(
+                f"Selected table {selected_table_label} not found in table_list"
+            )
 
-        logger.debug("Generated callbacks for Multitable")
+        logger.debug("Generated callbacks for MultiTable")
