@@ -11,7 +11,7 @@ import plotly.express as px
 from dash import Input, Output, State, callback, dcc, html
 import eimerdb as db
 
-from .modal_functions import sidebar_button
+from ..utils.functions import sidebar_button
 
 default_col_def = {
     "resizable": True,
