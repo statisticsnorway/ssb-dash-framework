@@ -24,7 +24,7 @@ class EditingTableWindow(EditingTable, WindowImplementation):
         inputs: list[str],
         states: list[str],
         get_data_func: Callable[..., Any],
-        update_table_func: Callable[..., Any],
+        update_table_func: Callable[..., Any] | None = None,
         output: str | None = None,
         output_varselector_name: str | None = None,
     ) -> None:

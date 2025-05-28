@@ -1,5 +1,31 @@
+from ssb_dash_framework import EditingTable
+from ssb_dash_framework import EditingTableTab
+from ssb_dash_framework import EditingTableWindow
+
+
 def test_import() -> None:
 
-    assert "EditingTable" != None
-    assert "EditingTableTab" != None
-    assert "EditingTableWindow" != None
+    assert EditingTable is not None
+    assert EditingTableTab is not None
+    assert EditingTableWindow is not None
+
+
+def test_initialization() -> None:
+    EditingTable(
+        label="test",
+        inputs=[""],
+        states=[""],
+        get_data_func=lambda x: x,
+    )
+    EditingTableTab(
+        label="test",
+        inputs=[""],
+        states=[""],
+        get_data_func=lambda x: x,
+    )
+    EditingTableWindow(
+        label="test",
+        inputs=[""],
+        states=[""],
+        get_data_func=lambda x: x,
+    )

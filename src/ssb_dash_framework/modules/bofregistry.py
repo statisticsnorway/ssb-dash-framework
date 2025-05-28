@@ -1,5 +1,7 @@
 import logging
 import sqlite3
+from abc import ABC
+from abc import abstractmethod
 from typing import Any
 
 import dash_ag_grid as dag
@@ -11,6 +13,8 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +98,7 @@ def ssb_bedrift_modal() -> dbc.Modal:
     return ssb_bedrift_modal
 
 
-class BofInformation:
+class BofInformation(ABC):
     """Tab for displaying and managing information from BoF.
 
     This component:
@@ -111,14 +115,27 @@ class BofInformation:
         callbacks(): Registers Dash callbacks for handling user interactions.
     """
 
+    _id_number = 0
+
     def __init__(self) -> None:
         """Initialize the BofInformation tab component.
 
         Attributes:
             label (str): The label for the tab, displayed as "🗃️ BoF Foretak".
         """
-        self.callbacks()
+        self.module_number = BofInformation._id_number
+        self.module_name = self.__class__.__name__
+        BofInformation._id_number += 1
+
         self.label = "🗃️ BoF Foretak"
+
+        self.module_layout = self._create_layout()
+        self.module_callbacks()
+        self._is_valid()
+        module_validator(self)
+
+    def _is_valid(self):
+        pass
 
     def generate_card(self, title: str, component_id: str, var_type: str) -> dbc.Card:
         """Generate a Dash Bootstrap card for displaying data.
@@ -145,7 +162,7 @@ class BofInformation:
         )
         return card
 
-    def layout(self) -> html.Div:
+    def _create_layout(self) -> html.Div:
         """Generate the layout for the BoF Foretak tab."""
         layout = html.Div(
             style={
@@ -315,7 +332,11 @@ class BofInformation:
         logger.debug("Generated layout")
         return layout
 
-    def callbacks(self) -> None:
+    @abstractmethod
+    def layout(self):
+        pass
+
+    def module_callbacks(self) -> None:
         """Register Dash callbacks for the BoF Foretak tab.
 
         Notes:
