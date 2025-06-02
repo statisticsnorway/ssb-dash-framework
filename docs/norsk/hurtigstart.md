@@ -28,7 +28,7 @@ from ssb_dash_framework import app_setup
 port = 8070
 service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
 domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
-theme = "darkly
+theme = "darkly"
 app = app_setup(port, service_prefix, domain, theme)
 
 window_list = []
@@ -110,7 +110,7 @@ enhetstabell = EditingTableTab(
     inputs=["orgnr"],
     states=[],
     get_data_func=get_data_orgnr,
-    ident="aar"
+    output="aar"
 )
 
 tab_list = [
@@ -129,7 +129,7 @@ aars_tabell = EditingTableTab(
     inputs=["aar"],
     states=[],
     get_data_func=get_data_aar,
-    ident="orgnr"
+    output="orgnr"
 )
 
 window_list = [
@@ -169,7 +169,7 @@ theme = "darkly"
 app = app_setup(port, service_prefix, domain, theme)
 
 set_variables(["orgnr", "aar"]) # Dette gjør at orgnr og aar er tilgjengelig i applikasjonen din.
-default_values = { # Valgfritt å ha med, men kan være praktisk for brukervennlighet. Puttes inn i app.layout() funksjonen.
+start_verdier = { # Valgfritt å ha med, men kan være praktisk for brukervennlighet. Puttes inn i app.layout() funksjonen.
     "orgnr": "971526920",
     "aar": "2020"
 }
@@ -183,7 +183,7 @@ enhetstabell = EditingTableTab(
     states=[],
     get_data_func=get_data_orgnr,
     update_table_func=lambda x:x,
-    ident="aar"
+    output="aar"
 )
 
 tab_list = [
@@ -199,7 +199,7 @@ aars_tabell = EditingTableWindow(
     states=[],
     get_data_func=get_data_aar,
     update_table_func=lambda x:x,
-    ident="orgnr"
+    output="orgnr"
 )
 
 window_list = [
