@@ -9,7 +9,7 @@ from ..utils import WindowImplementation
 logger = logging.getLogger(__name__)
 
 
-class EditingTableWindow(EditingTable, WindowImplementation):
+class EditingTableWindow(WindowImplementation, EditingTable):
     """A class to implement an EditingTable module inside a modal.
 
     It is used to create a modal window containing an EditingTable.
