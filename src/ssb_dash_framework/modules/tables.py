@@ -341,7 +341,7 @@ class MultiTable(ABC):
     Attributes:
         label (str): The label for the multitable module.
         table_list (list[EditingTable]): A list of EditingTable instances to be included in the multitable.
-        _multitable_n (int): A unique identifier for the multitable instance.
+        module_number (int): A unique identifier for the multitable instance.
         module_name (str): The name of the module class.
         module_layout (html.Div): The layout of the multitable module.
     """
@@ -362,13 +362,14 @@ class MultiTable(ABC):
         self.label = label
         self.table_list = table_list
 
-        self._multitable_n = MultiTable._id_number
+        self.module_number = MultiTable._id_number
         self.module_name = self.__class__.__name__
         MultiTable._id_number += 1
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self._is_valid()
+        module_validator(self)
 
     def _is_valid(self) -> None:
         for table in self.table_list:
@@ -395,16 +396,16 @@ class MultiTable(ABC):
         layout = html.Div(
             [
                 dcc.Dropdown(
-                    id=f"{self._multitable_n}-multitable-dropdown",
+                    id=f"{self.module_number}-multitable-dropdown",
                     options=[table.label for table in self.table_list],
                     value=self.table_list[0].label,
                     clearable=False,
                 ),
                 dcc.Loading(
-                    id=f"{self._multitable_n}-multitable-loading",
+                    id=f"{self.module_number}-multitable-loading",
                     type="default",
                     children=html.Div(
-                        id=f"{self._multitable_n}-multitable-content",
+                        id=f"{self.module_number}-multitable-content",
                     ),
                 ),
             ]
@@ -427,8 +428,8 @@ class MultiTable(ABC):
         """Register Dash callbacks for the MultiTable component."""
 
         @callback(
-            Output(f"{self._multitable_n}-multitable-content", "children"),
-            Input(f"{self._multitable_n}-multitable-dropdown", "value"),
+            Output(f"{self.module_number}-multitable-content", "children"),
+            Input(f"{self.module_number}-multitable-dropdown", "value"),
         )
         def update_table_content(selected_table_label: str) -> html.Div:
             """Update the content of the multitable based on the selected table.

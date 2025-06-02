@@ -1,9 +1,9 @@
 from ..modules import BofInformation
-from ..utils import TabImplementation
+from ..utils import WindowImplementation
 
 
-class BofInformationTab(TabImplementation, BofInformation):
-    """A class to implement a bof information module as a tab."""
+class BofInformationWindow(WindowImplementation, BofInformation):
+    """A class to implement a bof information module as a window."""
 
     def __init__(self) -> None:
         """Initialize the BofInformationTab.
@@ -11,4 +11,4 @@ class BofInformationTab(TabImplementation, BofInformation):
         This class is used to create a tab to put in the tab_list.
         """
         BofInformation.__init__(self)
-        TabImplementation.__init__(self)
+        WindowImplementation.__init__(self)

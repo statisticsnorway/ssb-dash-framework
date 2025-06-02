@@ -99,7 +99,7 @@ def ssb_bedrift_modal() -> dbc.Modal:
 
 
 class BofInformation(ABC):
-    """Tab for displaying and managing information from BoF.
+    """Module for displaying and managing information from BoF.
 
     This component:
     - Displays detailed information about selected foretak using cards and ag-grids.
@@ -111,7 +111,7 @@ class BofInformation(ABC):
 
     Methods:
         generate_card(title, component_id, var_type): Generates a Dash Bootstrap card for displaying information.
-        layout(): Generates the layout for the BoF Foretak tab.
+        layout(): Abstract method, needs to generate the layout for the BoF Foretak module.
         callbacks(): Registers Dash callbacks for handling user interactions.
     """
 
@@ -135,7 +135,24 @@ class BofInformation(ABC):
         module_validator(self)
 
     def _is_valid(self):
-        pass
+        self._check_connection()
+
+    def _check_connection(self):
+        conn = sqlite3.connect(SSB_FORETAK_PATH)
+        df = pd.read_sql_query("SELECT * FROM ssb_foretak LIMIT 1", conn)
+        if df.empty:
+            raise Exception(
+                "Data from ssb_bedrift is empty, check that you can connect to the database."
+            )
+        conn.close()
+
+        conn = sqlite3.connect(SSB_BEDRIFT_PATH)
+        df = pd.read_sql_query("SELECT * FROM ssb_bedrift LIMIT 1", conn)
+        if df.empty:
+            raise Exception(
+                "Data from ssb_bedrift is empty, check that you can connect to the database."
+            )
+        conn.close()
 
     def generate_card(self, title: str, component_id: str, var_type: str) -> dbc.Card:
         """Generate a Dash Bootstrap card for displaying data.
@@ -333,7 +350,14 @@ class BofInformation(ABC):
         return layout
 
     @abstractmethod
-    def layout(self):
+    def layout(self) -> html.Div | dbc.Tab:
+        """Define the layout for the BofInformation module.
+
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
+
+        Returns:
+            html.Div | dbc.Tab: A Dash HTML Div component representing the layout of the module or a dbc.Tab to be displayed directly.
+        """
         pass
 
     def module_callbacks(self) -> None:
