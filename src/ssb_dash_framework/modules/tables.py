@@ -17,6 +17,7 @@ from dash.exceptions import PreventUpdate
 from ..setup.variableselector import VariableSelector  # TODO TEMP!!!!
 from ..setup.variableselector import VariableSelectorOption  # TODO TEMP!!!!
 from ..utils.alert_handler import create_alert
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ class EditingTable:
             output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
                 If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
         """
-        self._editingtable_n = EditingTable._id_number
+        self.module_number = EditingTable._id_number
         self.module_name = self.__class__.__name__
         EditingTable._id_number += 1
         self.label = label
@@ -85,6 +86,8 @@ class EditingTable:
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self._is_valid()
+
+        module_validator(self)
 
     def _is_valid(self) -> None:
         """Check if the module is valid."""
@@ -123,10 +126,10 @@ class EditingTable:
                     children=[
                         dag.AgGrid(
                             defaultColDef={"editable": True},
-                            id=f"{self._editingtable_n}-tabelleditering-table1",
+                            id=f"{self.module_number}-tabelleditering-table1",
                             className="ag-theme-alpine-dark header-style-on-filter",
                         ),
-                        html.P(id=f"{self._editingtable_n}-tabelleditering-status1"),
+                        html.P(id=f"{self.module_number}-tabelleditering-status1"),
                     ],
                 ),
             ],
@@ -159,8 +162,8 @@ class EditingTable:
         ]
 
         @callback(
-            Output(f"{self._editingtable_n}-tabelleditering-table1", "rowData"),
-            Output(f"{self._editingtable_n}-tabelleditering-table1", "columnDefs"),
+            Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
+            Output(f"{self.module_number}-tabelleditering-table1", "columnDefs"),
             *dynamic_states,
         )
         def load_to_table(
@@ -198,7 +201,7 @@ class EditingTable:
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
-            Input(f"{self._editingtable_n}-tabelleditering-table1", "cellValueChanged"),
+            Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
             State("alert_store", "data"),
             *dynamic_states,
             prevent_initial_call=True,
@@ -297,7 +300,7 @@ class EditingTable:
                 @callback(
                     output,
                     Input(
-                        f"{self._editingtable_n}-tabelleditering-table1", "cellClicked"
+                        f"{self.module_number}-tabelleditering-table1", "cellClicked"
                     ),
                     prevent_initial_call=True,
                 )
@@ -338,7 +341,7 @@ class MultiTable(ABC):
     Attributes:
         label (str): The label for the multitable module.
         table_list (list[EditingTable]): A list of EditingTable instances to be included in the multitable.
-        _multitable_n (int): A unique identifier for the multitable instance.
+        module_number (int): A unique identifier for the multitable instance.
         module_name (str): The name of the module class.
         module_layout (html.Div): The layout of the multitable module.
     """
@@ -359,13 +362,14 @@ class MultiTable(ABC):
         self.label = label
         self.table_list = table_list
 
-        self._multitable_n = MultiTable._id_number
+        self.module_number = MultiTable._id_number
         self.module_name = self.__class__.__name__
         MultiTable._id_number += 1
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self._is_valid()
+        module_validator(self)
 
     def _is_valid(self) -> None:
         for table in self.table_list:
@@ -392,16 +396,16 @@ class MultiTable(ABC):
         layout = html.Div(
             [
                 dcc.Dropdown(
-                    id=f"{self._multitable_n}-multitable-dropdown",
+                    id=f"{self.module_number}-multitable-dropdown",
                     options=[table.label for table in self.table_list],
                     value=self.table_list[0].label,
                     clearable=False,
                 ),
                 dcc.Loading(
-                    id=f"{self._multitable_n}-multitable-loading",
+                    id=f"{self.module_number}-multitable-loading",
                     type="default",
                     children=html.Div(
-                        id=f"{self._multitable_n}-multitable-content",
+                        id=f"{self.module_number}-multitable-content",
                     ),
                 ),
             ]
@@ -424,8 +428,8 @@ class MultiTable(ABC):
         """Register Dash callbacks for the MultiTable component."""
 
         @callback(
-            Output(f"{self._multitable_n}-multitable-content", "children"),
-            Input(f"{self._multitable_n}-multitable-dropdown", "value"),
+            Output(f"{self.module_number}-multitable-content", "children"),
+            Input(f"{self.module_number}-multitable-dropdown", "value"),
         )
         def update_table_content(selected_table_label: str) -> html.Div:
             """Update the content of the multitable based on the selected table.

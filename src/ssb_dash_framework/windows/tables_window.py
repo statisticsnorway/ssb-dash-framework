@@ -2,8 +2,6 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from dash import html
-
 from ..modules.tables import EditingTable
 from ..modules.tables import MultiTable
 from ..utils import WindowImplementation
@@ -11,7 +9,7 @@ from ..utils import WindowImplementation
 logger = logging.getLogger(__name__)
 
 
-class EditingTableWindow(EditingTable, WindowImplementation):
+class EditingTableWindow(WindowImplementation, EditingTable):
     """A class to implement an EditingTable module inside a modal.
 
     It is used to create a modal window containing an EditingTable.
@@ -24,7 +22,7 @@ class EditingTableWindow(EditingTable, WindowImplementation):
         inputs: list[str],
         states: list[str],
         get_data_func: Callable[..., Any],
-        update_table_func: Callable[..., Any],
+        update_table_func: Callable[..., Any] | None = None,
         output: str | None = None,
         output_varselector_name: str | None = None,
     ) -> None:
@@ -53,13 +51,8 @@ class EditingTableWindow(EditingTable, WindowImplementation):
             self,
         )
 
-    def layout(self) -> html.Div:
-        """Generate the layout for the modal window using the WindowImplementation method."""
-        layout = WindowImplementation.layout(self)
-        return layout
 
-
-class MultitableWindow(MultiTable, WindowImplementation):
+class MultiTableWindow(WindowImplementation, MultiTable):
     """A class to implement a MultiTable module inside a modal."""
 
     def __init__(
@@ -75,8 +68,3 @@ class MultitableWindow(MultiTable, WindowImplementation):
         """
         MultiTable.__init__(self, label=label, table_list=table_list)
         WindowImplementation.__init__(self)
-
-    def layout(self) -> html.Div:
-        """Generate the layout for the modal window using the WindowImplementation method."""
-        layout = WindowImplementation.layout(self)
-        return layout

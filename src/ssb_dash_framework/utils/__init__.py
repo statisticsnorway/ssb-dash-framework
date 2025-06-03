@@ -9,6 +9,7 @@ from .functions import sidebar_button
 from .functions import th_error
 from .implementations import TabImplementation
 from .implementations import WindowImplementation
+from .module_validation import module_validator
 
 __all__ = [
     "AlertHandler",
@@ -18,6 +19,7 @@ __all__ = [
     "_get_kostra_r",
     "create_alert",
     "hb_method",
+    "module_validator",
     "sidebar_button",
     "th_error",
 ]
