@@ -5,7 +5,9 @@ from collections.abc import Callable
 from typing import Any
 
 import dash_ag_grid as dag
+import dash_bootstrap_components as dbc
 from dash import callback
+from dash import dcc
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -15,11 +17,12 @@ from dash.exceptions import PreventUpdate
 from ..setup.variableselector import VariableSelector  # TODO TEMP!!!!
 from ..setup.variableselector import VariableSelectorOption  # TODO TEMP!!!!
 from ..utils.alert_handler import create_alert
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
 
-class EditingTable(ABC):
+class EditingTable:
     """A component for editing data using a Dash AgGrid table.
 
     This class provides a layout and functionality to:
@@ -29,8 +32,8 @@ class EditingTable(ABC):
 
     Attributes:
         label (str): The label for the tab or component.
-        ident (str | None): Identifier for the table, used for callbacks.
-        varselector_ident (str | None): Identifier for the variable selector.
+        output (str | None): Identifier for the table, used for callbacks.
+        output_varselector_name (str | None): Identifier for the variable selector.
         variableselector (VariableSelector): A variable selector for managing inputs and states.
         get_data (Callable[..., Any]): Function to fetch data from the database.
         update_table (Callable[..., Any]): Function to update database records based on edits in the table.
@@ -46,8 +49,8 @@ class EditingTable(ABC):
         states: list[str],
         get_data_func: Callable[..., Any],
         update_table_func: Callable[..., Any] | None = None,
-        ident: str | None = None,
-        varselector_ident: str | None = None,
+        output: str | list[str] | None = None,
+        output_varselector_name: str | list[str] | None = None,
     ) -> None:
         """Initialize the EditingTable component.
 
@@ -57,16 +60,16 @@ class EditingTable(ABC):
             states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
             get_data_func (Callable[..., Any]): A function for retrieving data from the database.
             update_table_func (Callable[..., Any]): A function for updating data in the database.
-            ident (str | None, optional): Identifier for the table, used for callbacks. Defaults to None.
-            varselector_ident (str | None, optional): Identifier for the variable selector. Defaults to None.
-                If `ident` is provided but `varselector_ident` is not, it will default to the value of `ident`.
+            output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
+            output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
+                If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
         """
-        self._editingtable_n = EditingTable._id_number
+        self.module_number = EditingTable._id_number
         self.module_name = self.__class__.__name__
         EditingTable._id_number += 1
         self.label = label
-        self.ident = ident
-        self.varselector_ident = varselector_ident or ident
+        self.output = output
+        self.output_varselector_name = output_varselector_name or output
 
         for i in [*inputs, *states]:
             try:
@@ -79,9 +82,33 @@ class EditingTable(ABC):
         )
         self.get_data = get_data_func
         self.get_data_args = [x for x in self.variableselector.selected_variables]
-        self.update_table = update_table_func
+        self.update_table_func = update_table_func
         self.module_layout = self._create_layout()
         self.module_callbacks()
+        self._is_valid()
+
+        module_validator(self)
+
+    def _is_valid(self) -> None:
+        """Check if the module is valid."""
+        if not isinstance(self.label, str):
+            raise TypeError(
+                f"label {self.label} is not a string, is type {type(self.label)}"
+            )
+        if self.output is not None and self.output_varselector_name is not None:
+            if isinstance(self.output, str) and not isinstance(
+                self.output_varselector_name, str
+            ):
+                raise TypeError(
+                    f"output is a string while output_varselector_name {self.output_varselector_name} is not a string, is type {type(self.output_varselector_name)}"
+                )
+            elif isinstance(self.output, list) and isinstance(
+                self.output_varselector_name, list
+            ):
+                if len(self.output) != len(self.output_varselector_name):
+                    raise ValueError(
+                        f"output {self.output} and output_varselector_name {self.output_varselector_name} are not the same length"
+                    )
 
     def _create_layout(self) -> html.Div:
         """Generate the layout for the EditingTable component.
@@ -99,10 +126,10 @@ class EditingTable(ABC):
                     children=[
                         dag.AgGrid(
                             defaultColDef={"editable": True},
-                            id=f"{self._editingtable_n}-tabelleditering-table1",
+                            id=f"{self.module_number}-tabelleditering-table1",
                             className="ag-theme-alpine-dark header-style-on-filter",
                         ),
-                        html.P(id=f"{self._editingtable_n}-tabelleditering-status1"),
+                        html.P(id=f"{self.module_number}-tabelleditering-status1"),
                     ],
                 ),
             ],
@@ -110,16 +137,16 @@ class EditingTable(ABC):
         logger.debug("Generated layout")
         return layout
 
-    @abstractmethod
-    def layout(self) -> html.Div:
+    def layout(self) -> html.Div | dbc.Tab:
         """Define the layout for the EditingTable module.
 
-        This is an abstract method that must be implemented by subclasses to define the module's layout.
+        Because this module can be used as a a component in other modules, it needs to have a layout method that is not abstract.
+        For implementations as tab or window, this method should still be overridden.
 
         Returns:
-            html.Div: A Dash HTML Div component representing the layout of the module.
+            html.Div | dbc.Tab: A Dash HTML Div component representing the layout of the module or a dbc.Tab to be displayed directly.
         """
-        pass
+        return self._create_layout()
 
     def module_callbacks(self) -> None:
         """Register Dash callbacks for the EditingTable component.
@@ -134,18 +161,17 @@ class EditingTable(ABC):
             self.variableselector.get_states(),
         ]
 
-        @callback(  # type: ignore[misc]
-            Output(f"{self._editingtable_n}-tabelleditering-table1", "rowData"),
-            Output(f"{self._editingtable_n}-tabelleditering-table1", "columnDefs"),
+        @callback(
+            Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
+            Output(f"{self.module_number}-tabelleditering-table1", "columnDefs"),
             *dynamic_states,
         )
         def load_to_table(
-            tabell: str, *dynamic_states: list[str]
+            *dynamic_states: list[str],
         ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
             """Load data into the Dash AgGrid table.
 
             Args:
-                tabell (str): Name of the selected database table.
                 dynamic_states (list[str]): Dynamic state parameters for filtering data.
 
             Returns:
@@ -157,7 +183,7 @@ class EditingTable(ABC):
                 Exception: If there is an error loading data into the table.
             """
             try:
-                df = self.get_data(tabell, *dynamic_states)
+                df = self.get_data(*dynamic_states)
                 columns = [
                     {
                         "headerName": col,
@@ -173,102 +199,255 @@ class EditingTable(ABC):
                 logger.error("Error loading data into table", exc_info=True)
                 raise e
 
-        if self.update_table:
-            logger.debug("Adding callback for updating table")
+        @callback(
+            Output("alert_store", "data", allow_duplicate=True),
+            Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
+            State("alert_store", "data"),
+            *dynamic_states,
+            prevent_initial_call=True,
+        )
+        def update_table(
+            edited: list[dict[str, dict[str, Any] | Any]],
+            error_log: list[dict[str, Any]],
+            *dynamic_states: list[str],
+        ) -> list[dict[str, Any]]:
+            """Update the database based on edits made in the AgGrid table.
 
-            @callback(  # type: ignore[misc]
-                Output("alert_store", "data", allow_duplicate=True),
-                Input(
-                    f"{self._editingtable_n}-tabelleditering-table1", "cellValueChanged"
-                ),
-                State("alert_store", "data"),
-                *dynamic_states,
-                prevent_initial_call=True,
-            )
-            def update_table(
-                edited: list[dict[str, dict[str, Any] | Any]],
-                tabell: str,
-                error_log: list[dict[str, Any]],
-                *dynamic_states: list[str],
-            ) -> list[dict[str, Any]]:
-                """Update the database based on edits made in the AgGrid table.
+            Args:
+                edited (list[dict]): Information about the edited cell.
+                error_log (list[dict]): List of existing alerts in the alert handler.
+                dynamic_states (list[str]): Dynamic state parameters for filtering data.
 
-                Args:
-                    edited (list[dict]): Information about the edited cell.
-                    tabell (str): The name of the table being edited.
-                    error_log (list[dict]): List of existing alerts in the alert handler.
-                    dynamic_states (list[str]): Dynamic state parameters for filtering data.
+            Returns:
+                list[dict]: Updated error log with success or failure messages.
 
-                Returns:
-                    list[dict]: Updated error log with success or failure messages.
-
-                Raises:
-                    PreventUpdate: If no edits were made.
-                """
-                if not edited:
-                    raise PreventUpdate
-                logger.debug(f"Edited:\n{edited}")
-                try:
-                    variable = edited[0]["colId"]
-                    old_value = edited[0]["oldValue"]
-                    new_value = edited[0]["value"]
-                    row_id = edited[0]["data"]["row_id"]
-                    self.update_table(tabell, variable, new_value, row_id)
-
-                    error_log.append(
-                        create_alert(
-                            f"{variable} updatert fra {old_value} til {new_value}",
-                            "info",
-                            ephemeral=True,
-                        )
+            Raises:
+                PreventUpdate: If no edits were made.
+            """
+            if not edited:
+                raise PreventUpdate
+            logger.debug(f"Edited:\n{edited}")
+            if self.update_table_func is None:
+                logger.error("No update function provided")
+                error_log.append(
+                    create_alert(
+                        "Ingen oppdateringsfunksjon er definert",
+                        "warning",
+                        ephemeral=True,
                     )
-                    return error_log
+                )
+                return error_log
+            variable = edited[0]["colId"]
+            old_value = edited[0]["oldValue"]
+            new_value = edited[0]["value"]
+            row_id = edited[0]["data"]["row_id"]
+            try:
+                self.update_table_func(variable, new_value, row_id)
 
-                except Exception:
-                    logger.error("Error updating table", exc_info=True)
-                    error_log.append(
-                        create_alert(
-                            f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
-                            "warning",
-                            ephemeral=True,
-                        )
+                error_log.append(
+                    create_alert(
+                        f"{variable} updatert fra {old_value} til {new_value}",
+                        "info",
+                        ephemeral=True,
                     )
-                    return error_log
+                )
+                return error_log
 
-        if self.ident and self.varselector_ident:
+            except Exception:
+                logger.error("Error updating table", exc_info=True)
+                error_log.append(
+                    create_alert(
+                        f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
+                        "warning",
+                        ephemeral=True,
+                    )
+                )
+                return error_log
+
+        if self.output and self.output_varselector_name:
             logger.debug(
-                "Adding callback for returning clicked ident to variable selector"
+                "Adding callback for returning clicked output to variable selector"
             )
-            output_object = self.variableselector.get_output_object(
-                variable=self.varselector_ident
-            )
+            if isinstance(self.output, str) and isinstance(
+                self.output_varselector_name, str
+            ):
+                output_objects = [
+                    self.variableselector.get_output_object(
+                        variable=self.output_varselector_name
+                    )
+                ]
+                output_columns = [self.output]
+            elif isinstance(self.output, list) and isinstance(
+                self.output_varselector_name, list
+            ):
+                output_objects = [
+                    self.variableselector.get_output_object(variable=var)
+                    for var in self.output_varselector_name
+                ]
+                output_columns = self.output
+            else:
+                logger.error(
+                    f"output {self.output} is not a string or list, is type {type(self.output)}"
+                )
+                raise TypeError(
+                    f"output {self.output} is not a string or list, is type {type(self.output)}"
+                )
+            logger.debug(f"Output object: {output_objects}")
 
-            @callback(  # type: ignore[misc]
-                output_object,
-                Input(f"{self._editingtable_n}-tabelleditering-table1", "cellClicked"),
-                prevent_initial_call=True,
-            )
-            def table_to_main_table(clickdata: dict[str, Any]) -> str:
-                """Passes the selected observation identifier to `variabelvelger`.
+            def make_table_to_main_table_callback(
+                output: Output, column: str, output_varselector_name: str
+            ) -> None:
+                @callback(
+                    output,
+                    Input(
+                        f"{self.module_number}-tabelleditering-table1", "cellClicked"
+                    ),
+                    prevent_initial_call=True,
+                )
+                def table_to_main_table(clickdata: dict[str, Any]) -> str:
+                    if not clickdata:
+                        raise PreventUpdate
+                    if clickdata["colId"] != column:
+                        raise PreventUpdate
+                    output = clickdata["value"]
+                    if not isinstance(output, str):
+                        logger.debug(
+                            f"{output} is not a string, is type {type(output)}"
+                        )
+                        raise PreventUpdate
+                    logger.debug(f"Transfering {output} to {output_varselector_name}")
+                    return output
 
-                Args:
-                    clickdata (dict): Data from the clicked point in the HB visualization.
-
-                Returns:
-                    str: Identifier of the selected observation.
-
-                Raises:
-                    PreventUpdate: if clickdata is None.
-                """
-                if not clickdata:
-                    raise PreventUpdate
-                if clickdata["colId"] != self.ident:
-                    raise PreventUpdate
-                ident = clickdata["value"]
-                if not isinstance(ident, str):
-                    logger.debug(f"{ident} is not a string, is type {type(ident)}")
-                    raise PreventUpdate
-                logger.debug(f"Transfering {ident} to {self.varselector_ident}")
-                return ident
+            for i in range(len(output_objects)):
+                make_table_to_main_table_callback(
+                    output_objects[i],
+                    output_columns[i],
+                    (
+                        self.output_varselector_name[i]
+                        if isinstance(self.output_varselector_name, list)
+                        else self.output_varselector_name
+                    ),
+                )
 
         logger.debug("Generated callbacks")
+
+
+class MultiTable(ABC):
+    """A class to implement a multitable module.
+
+    This class is used to create a module that contains multiple EditingTable instances,
+    allowing users to switch between different tables using a dropdown menu.
+
+    Attributes:
+        label (str): The label for the multitable module.
+        table_list (list[EditingTable]): A list of EditingTable instances to be included in the multitable.
+        module_number (int): A unique identifier for the multitable instance.
+        module_name (str): The name of the module class.
+        module_layout (html.Div): The layout of the multitable module.
+    """
+
+    _id_number = 0
+
+    def __init__(
+        self,
+        label: str,
+        table_list: list[EditingTable],
+    ) -> None:
+        """Initialize the MultiTable module.
+
+        Args:
+            label (str): The label for the multitable module.
+            table_list (list[EditingTable]): A list of EditingTable instances to be included in the multitable.
+        """
+        self.label = label
+        self.table_list = table_list
+
+        self.module_number = MultiTable._id_number
+        self.module_name = self.__class__.__name__
+        MultiTable._id_number += 1
+
+        self.module_layout = self._create_layout()
+        self.module_callbacks()
+        self._is_valid()
+        module_validator(self)
+
+    def _is_valid(self) -> None:
+        for table in self.table_list:
+            self._validate_table(table)
+        if not isinstance(self.label, str):
+            raise TypeError(
+                f"label {self.label} is not a string, is type {type(self.label)}"
+            )
+        if not isinstance(self.table_list, list):
+            raise TypeError(
+                f"table_list {self.table_list} is not a list, is type {type(self.table_list)}"
+            )
+
+    def _validate_table(self, table: EditingTable | Any) -> None:
+        """Check if the supplied table module is valid."""
+        if not isinstance(table, EditingTable):
+            logger.warning(
+                f"Possible type error, {table} is not an EditingTable, is type {type(table)}"
+            )
+        if not hasattr(table, "label"):
+            raise ValueError(f"Table {table} does not have a label attribute")
+
+    def _create_layout(self) -> html.Div:
+        layout = html.Div(
+            [
+                dcc.Dropdown(
+                    id=f"{self.module_number}-multitable-dropdown",
+                    options=[table.label for table in self.table_list],
+                    value=self.table_list[0].label,
+                    clearable=False,
+                ),
+                dcc.Loading(
+                    id=f"{self.module_number}-multitable-loading",
+                    type="default",
+                    children=html.Div(
+                        id=f"{self.module_number}-multitable-content",
+                    ),
+                ),
+            ]
+        )
+        logger.debug("Generated layout")
+        return layout
+
+    @abstractmethod
+    def layout(self) -> html.Div | dbc.Tab:
+        """Define the layout for the MultiTable module.
+
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
+
+        Returns:
+            html.Div | dbc.Tab: A Dash HTML Div component representing the layout of the module or a dbc.Tab to be displayed directly.
+        """
+        pass
+
+    def module_callbacks(self) -> None:
+        """Register Dash callbacks for the MultiTable component."""
+
+        @callback(
+            Output(f"{self.module_number}-multitable-content", "children"),
+            Input(f"{self.module_number}-multitable-dropdown", "value"),
+        )
+        def update_table_content(selected_table_label: str) -> html.Div:
+            """Update the content of the multitable based on the selected table.
+
+            Args:
+                selected_table_label (str): The label of the selected table.
+
+            Returns:
+                html.Div: The layout of the selected EditingTable.
+
+            Raises:
+                ValueError: If the selected table label is not found in the table_list.
+            """
+            for table in self.table_list:
+                if table.label == selected_table_label:
+                    return table.module_layout
+            raise ValueError(
+                f"Selected table {selected_table_label} not found in table_list"
+            )
+
+        logger.debug("Generated callbacks for MultiTable")

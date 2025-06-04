@@ -2,15 +2,14 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from dash import html
-
 from ..modules.tables import EditingTable
+from ..modules.tables import MultiTable
 from ..utils import WindowImplementation
 
 logger = logging.getLogger(__name__)
 
 
-class EditingTableWindow(EditingTable, WindowImplementation):
+class EditingTableWindow(WindowImplementation, EditingTable):
     """A class to implement an EditingTable module inside a modal.
 
     It is used to create a modal window containing an EditingTable.
@@ -23,9 +22,9 @@ class EditingTableWindow(EditingTable, WindowImplementation):
         inputs: list[str],
         states: list[str],
         get_data_func: Callable[..., Any],
-        update_table_func: Callable[..., Any],
-        ident: str | None = None,
-        varselector_ident: str | None = None,
+        update_table_func: Callable[..., Any] | None = None,
+        output: str | None = None,
+        output_varselector_name: str | None = None,
     ) -> None:
         """Initialize the EditingTableWindow.
 
@@ -35,8 +34,8 @@ class EditingTableWindow(EditingTable, WindowImplementation):
             states (list[str]): The list of state IDs.
             get_data_func (Callable[..., Any]): Function to get data for the table.
             update_table_func (Callable[..., Any]): Function to update the table.
-            ident (str | None, optional): Identifier for the table. Defaults to None.
-            varselector_ident (str | None, optional): Identifier for the variable selector. Defaults to None.
+            output (str | None, optional): Identifier for the table. Defaults to None.
+            output_varselector_name (str | None, optional): Identifier for the variable selector. Defaults to None.
         """
         EditingTable.__init__(
             self,
@@ -45,14 +44,27 @@ class EditingTableWindow(EditingTable, WindowImplementation):
             states=states,
             get_data_func=get_data_func,
             update_table_func=update_table_func,
-            ident=ident,
-            varselector_ident=varselector_ident,
+            output=output,
+            output_varselector_name=output_varselector_name,
         )
         WindowImplementation.__init__(
             self,
         )
 
-    def layout(self) -> html.Div:
-        """Generate the layout for the modal window using the WindowImplementation method."""
-        layout = WindowImplementation.layout(self)
-        return layout
+
+class MultiTableWindow(WindowImplementation, MultiTable):
+    """A class to implement a MultiTable module inside a modal."""
+
+    def __init__(
+        self,
+        label: str,
+        table_list: list[EditingTable],
+    ) -> None:
+        """Initialize the MultitableWindow.
+
+        Args:
+            label (str): The label for the modal.
+            table_list (list[EditingTable]): List of EditingTable instances to be included in the modal.
+        """
+        MultiTable.__init__(self, label=label, table_list=table_list)
+        WindowImplementation.__init__(self)

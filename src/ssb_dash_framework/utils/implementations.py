@@ -1,4 +1,5 @@
 import logging
+from typing import Protocol
 
 import dash_bootstrap_components as dbc
 from dash import callback
@@ -10,6 +11,27 @@ from dash.dependencies import State
 from ..utils.functions import sidebar_button
 
 logger = logging.getLogger(__name__)
+
+
+class TabModule(Protocol):
+    """A protocol that defines the expected interface for a module to be used in a tab.
+
+    Attributes:
+        label (str): The label for the tab.
+        module_name (str): The name of the module, used for generating unique IDs.
+        module_layout (html.Div): The layout to display inside the tab.
+
+    Methods:
+        layout() -> dbc.Tab: Returns the layout of the module inside a tab.
+    """
+
+    label: str
+    module_name: str
+    module_layout: html.Div
+
+    def layout(self) -> dbc.Tab:
+        """This method should return the layout of the module inside a tab."""
+        ...
 
 
 class TabImplementation:
@@ -44,7 +66,7 @@ class TabImplementation:
                 "The class must have a 'module_name' attribute to use TabImplementation."
             )
 
-    def layout(self) -> html.Div:
+    def layout(self) -> dbc.Tab:
         """Generate the layout for the module as a tab.
 
         Returns:
@@ -64,6 +86,27 @@ class TabImplementation:
                 "The class using WindowImplementation must define 'module_layout'."
             )
         return self.module_layout
+
+
+class WindowModule(Protocol):
+    """A protocol that defines the expected interface for a module to be used in a window.
+
+    Attributes:
+        label (str): The label for the window.
+        module_name (str): The name of the module, used for generating unique IDs.
+        module_layout (html.Div): The layout to display inside the window.
+
+    Methods:
+        layout() -> html.Div: Returns the layout of the module inside a window.
+    """
+
+    label: str
+    module_name: str
+    module_layout: html.Div
+
+    def layout(self) -> html.Div:
+        """This method should return the layout of the module inside a window."""
+        ...
 
 
 class WindowImplementation:
@@ -155,7 +198,7 @@ class WindowImplementation:
         This includes a callback to toggle the visibility of the modal window.
         """
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output(f"{self._window_n}-{self.module_name}-modal", "is_open"),
             Input(
                 f"sidebar-{self._window_n}-{self.module_name}-modal-button", "n_clicks"

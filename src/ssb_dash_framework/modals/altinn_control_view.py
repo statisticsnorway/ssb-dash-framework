@@ -175,8 +175,8 @@ class AltinnControlView:
         """Generates a list of dynamic Dash Input or State components."""
         component = Input if input_type == "Input" else State
         return [
-            component(f"test-{unit}", "value") for unit in self.time_units
-        ]  # TODO change from test- to something more meaningful
+            component(f"var-{unit}", "value") for unit in self.time_units
+        ]
 
     def callbacks(self) -> None:
         """Registers Dash callbacks for the AltinnControlView module."""
@@ -311,7 +311,7 @@ class AltinnControlView:
             return df.to_dict("records"), columns
 
         @callback(  # type: ignore[misc]
-            Output("var-skjemaenhet", "value", allow_duplicate=True),
+            Output("var-ident", "value", allow_duplicate=True),
             Input("kontroller-table2", "selectedRows"),
             prevent_initial_call=True,
         )

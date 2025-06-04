@@ -57,7 +57,7 @@ class FreeSearchWindow(FreeSearch):
         This includes a callback to toggle the visibility of the modal window.
         """
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("freesearch-modal", "is_open"),
             Input("sidebar-freesearch-button", "n_clicks"),
             State("freesearch-modal", "is_open"),

@@ -118,7 +118,7 @@ class SkjemapdfViewer(ABC):
             self.variableselector.get_states(),
         ]
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("skjemapdf-input", "value"),
             *dynamic_states,
         )
@@ -133,7 +133,7 @@ class SkjemapdfViewer(ABC):
             """
             return orgnr
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("skjemapdf-iframe1", "src"),
             *dynamic_states,
         )

@@ -127,7 +127,7 @@ class Aarsregnskap(ABC):
     def module_callbacks(self) -> None:
         """Registers Dash callbacks for the Årsregnskap module."""
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("tab-aarsregnskap-input1", "value"),
             Input("var-aar", "value"),
         )
@@ -142,7 +142,7 @@ class Aarsregnskap(ABC):
             """
             return aar
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("tab-aarsregnskap-input2", "value"),
             Input("var-foretak", "value"),
         )
@@ -157,7 +157,7 @@ class Aarsregnskap(ABC):
             """
             return orgnr
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output("tab-aarsregnskap-iframe1", "src"),
             Input("tab-aarsregnskap-input1", "value"),
             Input("tab-aarsregnskap-input2", "value"),
