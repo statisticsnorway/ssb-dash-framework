@@ -72,7 +72,7 @@ class TabImplementation:
         Returns:
             html.Div: The layout containing the module layout.
         """
-        layout = dbc.Tab(self.get_module_layout(), label=self.label)
+        layout = dbc.Tab(html.Div(style={"height": "94vh","width": "100%", "display": "flex"}, children=self.get_module_layout()), label=self.label)
         logger.debug("Generated layout")
         return layout
 
