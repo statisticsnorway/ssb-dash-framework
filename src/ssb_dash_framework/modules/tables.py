@@ -165,6 +165,7 @@ class EditingTable:
             Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
             Output(f"{self.module_number}-tabelleditering-table1", "columnDefs"),
+            State("alert_store", "data"),
             *dynamic_states,
             prevent_initial_call=True,
         )
