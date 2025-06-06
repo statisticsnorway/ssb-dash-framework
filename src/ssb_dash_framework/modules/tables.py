@@ -120,18 +120,17 @@ class EditingTable:
                 - A status message for updates.
         """
         layout = html.Div(
-            style={"height": "100vh", "display": "flex", "flexDirection": "column"},
+            style={
+                "flex": 1,  # Allow this div to grow and fill the parent
+                "display": "flex",
+            },
             children=[
-                html.Div(
-                    children=[
-                        dag.AgGrid(
-                            defaultColDef={"editable": True},
-                            id=f"{self.module_number}-tabelleditering-table1",
-                            className="ag-theme-alpine-dark header-style-on-filter",
-                        ),
-                        html.P(id=f"{self.module_number}-tabelleditering-status1"),
-                    ],
-                ),
+                dag.AgGrid(
+                    defaultColDef={"editable": True},
+                    id=f"{self.module_number}-tabelleditering-table1",
+                    className="ag-theme-alpine-dark header-style-on-filter",
+                    style={"height": "100%", "width": "100%"},
+                )
             ],
         )
         logger.debug("Generated layout")
