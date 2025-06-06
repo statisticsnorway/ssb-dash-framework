@@ -165,7 +165,7 @@ class WindowImplementation:
                 dbc.Modal(
                     [
                         dbc.ModalHeader(dbc.ModalTitle(self.label)),
-                        dbc.ModalBody(self.get_module_layout()),
+                        dbc.ModalBody(html.Div(style={"height": "90vh","width": "100%", "display": "flex"},children=self.get_module_layout())),
                     ],
                     id=f"{self._window_n}-{self.module_name}-modal",
                     size="xl",
