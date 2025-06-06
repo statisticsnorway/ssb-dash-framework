@@ -257,7 +257,7 @@ class EditingTable:
                 error_log.append(
                     create_alert(
                         f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
-                        "warning",
+                        "error",
                         ephemeral=True,
                     )
                 )
