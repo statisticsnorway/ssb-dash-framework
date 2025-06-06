@@ -236,13 +236,12 @@ class EditingTable:
                     )
                 )
                 return error_log
-            variable = edited[0]["colId"]
-            old_value = edited[0]["oldValue"]
-            new_value = edited[0]["value"]
-            row_id = edited[0]["data"]["row_id"]
-            try:
-                self.update_table_func(variable, new_value, row_id)
 
+            try:
+                self.update_table_func(edited, *dynamic_states)
+                variable = edited[0]["colId"]
+                old_value = edited[0]["oldValue"]
+                new_value = edited[0]["value"]
                 error_log.append(
                     create_alert(
                         f"{variable} updatert fra {old_value} til {new_value}",
