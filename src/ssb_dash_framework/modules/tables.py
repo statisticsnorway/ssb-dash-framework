@@ -60,6 +60,7 @@ class EditingTable:
             states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
             get_data_func (Callable[..., Any]): A function for retrieving data from the database.
             update_table_func (Callable[..., Any]): A function for updating data in the database.
+                Note, the update_table_func is provided with the cellValueChanged from the Dash AgGrid in addition the inputs and states values.
             output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
             output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
                 If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
@@ -161,16 +162,20 @@ class EditingTable:
         ]
 
         @callback(
+            Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
             Output(f"{self.module_number}-tabelleditering-table1", "columnDefs"),
             *dynamic_states,
+            prevent_initial_call=True,
         )
         def load_to_table(
+            error_log: list[dict[str, Any]],
             *dynamic_states: list[str],
         ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
             """Load data into the Dash AgGrid table.
 
             Args:
+                error_log (list[dict[str, Any]]): List of existing alerts in the alert handler.
                 dynamic_states (list[str]): Dynamic state parameters for filtering data.
 
             Returns:
@@ -193,13 +198,23 @@ class EditingTable:
                 ]
                 columns[0]["checkboxSelection"] = True
                 columns[0]["headerCheckboxSelection"] = True
-                return df.to_dict("records"), columns
+
+                error_log.append(
+                    create_alert(
+                        f"Henting av data gjort for {self.label} - {self.module_name}",
+                        "info",
+                        ephemeral=True,
+                    )
+                )
+
+                return error_log, df.to_dict("records"), columns
             except Exception as e:
                 logger.error("Error loading data into table", exc_info=True)
                 raise e
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
+            Output(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
             Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
             State("alert_store", "data"),
             *dynamic_states,
@@ -235,14 +250,14 @@ class EditingTable:
                         ephemeral=True,
                     )
                 )
-                return error_log
+                return error_log, None
+
             variable = edited[0]["colId"]
             old_value = edited[0]["oldValue"]
             new_value = edited[0]["value"]
-            row_id = edited[0]["data"]["row_id"]
-            try:
-                self.update_table_func(variable, new_value, row_id)
 
+            try:
+                self.update_table_func(edited, *dynamic_states)
                 error_log.append(
                     create_alert(
                         f"{variable} updatert fra {old_value} til {new_value}",
@@ -250,18 +265,18 @@ class EditingTable:
                         ephemeral=True,
                     )
                 )
-                return error_log
+                return error_log, None
 
             except Exception:
                 logger.error("Error updating table", exc_info=True)
                 error_log.append(
                     create_alert(
                         f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
-                        "warning",
+                        "error",
                         ephemeral=True,
                     )
                 )
-                return error_log
+                return error_log, None
 
         if self.output and self.output_varselector_name:
             logger.debug(
