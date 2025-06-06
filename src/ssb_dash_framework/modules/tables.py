@@ -200,6 +200,7 @@ class EditingTable:
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
+            Output(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
             Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
             State("alert_store", "data"),
             *dynamic_states,
@@ -235,7 +236,7 @@ class EditingTable:
                         ephemeral=True,
                     )
                 )
-                return error_log
+                return error_log, None
 
             variable = edited[0]["colId"]
             old_value = edited[0]["oldValue"]
@@ -250,7 +251,7 @@ class EditingTable:
                         ephemeral=True,
                     )
                 )
-                return error_log
+                return error_log, None
 
             except Exception:
                 logger.error("Error updating table", exc_info=True)
@@ -261,7 +262,7 @@ class EditingTable:
                         ephemeral=True,
                     )
                 )
-                return error_log
+                return error_log, None
 
         if self.output and self.output_varselector_name:
             logger.debug(
