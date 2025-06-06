@@ -1,5 +1,6 @@
 """SSB Dash Framework."""
 
+from .control import ControlFrameworkBase
 from .modals import AltinnControlView
 from .modals import AltinnDataCapture
 from .modals import Control
@@ -41,6 +42,7 @@ from .windows import MultiTableWindow
 from .windows import SkjemapdfViewerWindow
 
 __all__ = [
+    "ControlFrameworkBase",
     "Aarsregnskap",
     "AarsregnskapTab",
     "AlertHandler",
