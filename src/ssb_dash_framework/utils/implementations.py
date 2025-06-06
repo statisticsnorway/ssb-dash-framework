@@ -72,7 +72,13 @@ class TabImplementation:
         Returns:
             html.Div: The layout containing the module layout.
         """
-        layout = dbc.Tab(html.Div(style={"height": "94vh","width": "100%", "display": "flex"}, children=self.get_module_layout()), label=self.label)
+        layout = dbc.Tab(
+            html.Div(
+                style={"height": "94vh", "width": "100%", "display": "flex"},
+                children=self.get_module_layout(),
+            ),
+            label=self.label,
+        )
         logger.debug("Generated layout")
         return layout
 
@@ -165,7 +171,16 @@ class WindowImplementation:
                 dbc.Modal(
                     [
                         dbc.ModalHeader(dbc.ModalTitle(self.label)),
-                        dbc.ModalBody(html.Div(style={"height": "90vh","width": "100%", "display": "flex"},children=self.get_module_layout())),
+                        dbc.ModalBody(
+                            html.Div(
+                                style={
+                                    "height": "90vh",
+                                    "width": "100%",
+                                    "display": "flex",
+                                },
+                                children=self.get_module_layout(),
+                            )
+                        ),
                     ],
                     id=f"{self._window_n}-{self.module_name}-modal",
                     size="xl",
