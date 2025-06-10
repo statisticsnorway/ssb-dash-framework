@@ -162,15 +162,12 @@ class EditingTable:
         ]
 
         @callback(
-            Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
             Output(f"{self.module_number}-tabelleditering-table1", "columnDefs"),
-            State("alert_store", "data"),
             *dynamic_states,
             prevent_initial_call=True,
         )
         def load_to_table(
-            error_log: list[dict[str, Any]],
             *dynamic_states: list[str],
         ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
             """Load data into the Dash AgGrid table.
@@ -187,8 +184,10 @@ class EditingTable:
             Raises:
                 Exception: If there is an error loading data into the table.
             """
+            logger.debug(f"Loading data to table with label {self.label}, module_number: {self.module_number}")
             try:
                 df = self.get_data(*dynamic_states)
+                logger.debug(f"{self.label} - {self.module_number}: Data from get_data: {df}")
                 columns = [
                     {
                         "headerName": col,
@@ -199,18 +198,10 @@ class EditingTable:
                 ]
                 columns[0]["checkboxSelection"] = True
                 columns[0]["headerCheckboxSelection"] = True
-
-                error_log.append(
-                    create_alert(
-                        f"Henting av data gjort for {self.label} - {self.module_name}",
-                        "info",
-                        ephemeral=True,
-                    )
-                )
-
-                return error_log, df.to_dict("records"), columns
+                logger.debug(f"{self.label} - {self.module_number}: Returning data")
+                return df.to_dict("records"), columns
             except Exception as e:
-                logger.error("Error loading data into table", exc_info=True)
+                logger.error(f"{self.label} - {self.module_number}: Error loading data into table", exc_info=True)
                 raise e
 
         @callback(
