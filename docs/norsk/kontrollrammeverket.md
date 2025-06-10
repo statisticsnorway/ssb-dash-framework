@@ -2,6 +2,7 @@
 # Hurtigstart: Kontrollrammeverk
 
 Dette dokumentet viser hvordan du bruker og utvider kontrollrammeverket for SSB sine datasett.
+Ikke endelig. Jeg skal kvalitetssikre og finpusse etter feriedagene mine.
 
 ## Struktur og bruk
 
