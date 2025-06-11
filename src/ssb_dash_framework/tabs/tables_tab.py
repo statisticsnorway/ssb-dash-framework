@@ -2,8 +2,6 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-import dash_bootstrap_components as dbc
-
 from ..modules.tables import EditingTable
 from ..modules.tables import MultiTable
 from ..utils import TabImplementation
@@ -11,7 +9,7 @@ from ..utils import TabImplementation
 logger = logging.getLogger(__name__)
 
 
-class EditingTableTab(EditingTable, TabImplementation):
+class EditingTableTab(TabImplementation, EditingTable):
     """A class to implement a module inside a tab."""
 
     def __init__(
@@ -20,7 +18,7 @@ class EditingTableTab(EditingTable, TabImplementation):
         inputs: list[str],
         states: list[str],
         get_data_func: Callable[..., Any],
-        update_table_func: Callable[..., Any],
+        update_table_func: Callable[..., Any] | None = None,
         output: str | None = None,
         output_varselector_name: str | None = None,
     ) -> None:
@@ -51,14 +49,8 @@ class EditingTableTab(EditingTable, TabImplementation):
             self,
         )
 
-    def layout(self) -> dbc.Tab:
-        """Generate the layout for the module as a tab."""
-        layout = TabImplementation.layout(self)
-        logger.debug("Generated layout")
-        return layout
 
-
-class MultitableTab(MultiTable, TabImplementation):
+class MultiTableTab(TabImplementation, MultiTable):
     """A class to implement a multitable module inside a tab."""
 
     def __init__(
@@ -76,9 +68,3 @@ class MultitableTab(MultiTable, TabImplementation):
         """
         MultiTable.__init__(self, label=label, table_list=table_list)
         TabImplementation.__init__(self)
-
-    def layout(self) -> dbc.Tab:
-        """Generate the layout for the multitable module as a tab."""
-        layout = TabImplementation.layout(self)
-        logger.debug("Generated layout")
-        return layout

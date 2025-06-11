@@ -1,5 +1,7 @@
 import logging
 import sqlite3
+from abc import ABC
+from abc import abstractmethod
 from typing import Any
 
 import dash_ag_grid as dag
@@ -11,6 +13,8 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -94,8 +98,8 @@ def ssb_bedrift_modal() -> dbc.Modal:
     return ssb_bedrift_modal
 
 
-class BofInformation:
-    """Tab for displaying and managing information from BoF.
+class BofInformation(ABC):
+    """Module for displaying and managing information from BoF.
 
     This component:
     - Displays detailed information about selected foretak using cards and ag-grids.
@@ -107,9 +111,11 @@ class BofInformation:
 
     Methods:
         generate_card(title, component_id, var_type): Generates a Dash Bootstrap card for displaying information.
-        layout(): Generates the layout for the BoF Foretak tab.
+        layout(): Abstract method, needs to generate the layout for the BoF Foretak module.
         callbacks(): Registers Dash callbacks for handling user interactions.
     """
+
+    _id_number = 0
 
     def __init__(self) -> None:
         """Initialize the BofInformation tab component.
@@ -117,8 +123,36 @@ class BofInformation:
         Attributes:
             label (str): The label for the tab, displayed as "🗃️ BoF Foretak".
         """
-        self.callbacks()
+        self.module_number = BofInformation._id_number
+        self.module_name = self.__class__.__name__
+        BofInformation._id_number += 1
+
         self.label = "🗃️ BoF Foretak"
+
+        self.module_layout = self._create_layout()
+        self.module_callbacks()
+        self._is_valid()
+        module_validator(self)
+
+    def _is_valid(self):
+        self._check_connection()
+
+    def _check_connection(self):
+        conn = sqlite3.connect(SSB_FORETAK_PATH)
+        df = pd.read_sql_query("SELECT * FROM ssb_foretak LIMIT 1", conn)
+        if df.empty:
+            raise Exception(
+                "Data from ssb_bedrift is empty, check that you can connect to the database."
+            )
+        conn.close()
+
+        conn = sqlite3.connect(SSB_BEDRIFT_PATH)
+        df = pd.read_sql_query("SELECT * FROM ssb_bedrift LIMIT 1", conn)
+        if df.empty:
+            raise Exception(
+                "Data from ssb_bedrift is empty, check that you can connect to the database."
+            )
+        conn.close()
 
     def generate_card(self, title: str, component_id: str, var_type: str) -> dbc.Card:
         """Generate a Dash Bootstrap card for displaying data.
@@ -145,7 +179,7 @@ class BofInformation:
         )
         return card
 
-    def layout(self) -> html.Div:
+    def _create_layout(self) -> html.Div:
         """Generate the layout for the BoF Foretak tab."""
         layout = html.Div(
             style={
@@ -315,7 +349,18 @@ class BofInformation:
         logger.debug("Generated layout")
         return layout
 
-    def callbacks(self) -> None:
+    @abstractmethod
+    def layout(self) -> html.Div | dbc.Tab:
+        """Define the layout for the BofInformation module.
+
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
+
+        Returns:
+            html.Div | dbc.Tab: A Dash HTML Div component representing the layout of the module or a dbc.Tab to be displayed directly.
+        """
+        pass
+
+    def module_callbacks(self) -> None:
         """Register Dash callbacks for the BoF Foretak tab.
 
         Notes:
