@@ -13,6 +13,8 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ..utils.module_validation import module_validator
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,6 +45,7 @@ class FreeSearch(ABC):
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self.label = label
+        module_validator(self)
 
     def _create_layout(self) -> html.Div:
         """Generate the default layout for the FreeSearch module.

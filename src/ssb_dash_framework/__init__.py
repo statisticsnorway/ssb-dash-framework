@@ -11,7 +11,6 @@ from .modules import BofInformation
 from .modules import EditingTable
 from .modules import FreeSearch
 from .modules import MultiTable
-from .modules import SkjemadataViewer
 from .modules import SkjemapdfViewer
 from .setup import VariableSelector
 from .setup import VariableSelectorOption
@@ -19,6 +18,7 @@ from .setup import app_setup
 from .setup import main_layout
 from .setup import set_variables
 from .tabs import AarsregnskapTab
+from .tabs import AltinnSkjemadataEditor
 from .tabs import BofInformationTab
 from .tabs import EditingTableTab
 from .tabs import FreeSearchTab
@@ -48,6 +48,7 @@ __all__ = [
     "AlertHandler",
     "AltinnControlView",
     "AltinnDataCapture",
+    "AltinnSkjemadataEditor",
     "BofInformation",
     "BofInformationTab",
     "BofInformationWindow",
@@ -64,7 +65,6 @@ __all__ = [
     "MultiTableTab",
     "MultiTableWindow",
     "Pimemorizer",
-    "SkjemadataViewer",
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",

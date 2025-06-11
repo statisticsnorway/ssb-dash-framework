@@ -8,12 +8,12 @@ from dash import callback
 from dash import html
 
 from ..modules.skjemapdfviewer import SkjemapdfViewer
-from ..utils.functions import sidebar_button
+from ..utils import WindowImplementation
 
 logger = logging.getLogger(__name__)
 
 
-class SkjemapdfViewerWindow(SkjemapdfViewer):
+class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
     """Implementation of the SkjemapdfViewer as a window."""
 
     def __init__(
@@ -27,56 +27,9 @@ class SkjemapdfViewerWindow(SkjemapdfViewer):
             pdf_folder_path (str): The path to the folder containing PDF files.
             form_identifier (str): The identifier for the form. Defaults to "skjemaversjon".
         """
-        super().__init__(form_identifier, pdf_folder_path)
-        self.callbacks()
-
-    def layout(self) -> html.Div:
-        """Generate the layout for the SkjemapdfViewer window.
-
-        Returns:
-            html.Div: A Div element containing:
-                - A modal with a title and body for the SkjemapdfViewer module layout.
-                - A sidebar button to toggle the modal.
-        """
-        layout = html.Div(
-            [
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle("Skjema PDF viewer")),
-                        dbc.ModalBody(self.module_layout),
-                    ],
-                    id="skjemapdf-modal",
-                    size="xl",
-                    fullscreen="xxl-down",
-                ),
-                sidebar_button("🔍", "skjemapdf", "sidebar-skjemapdf-button"),
-            ]
+        SkjemapdfViewer.__init__(form_identifier, pdf_folder_path)
+        WindowImplementation.__init__(
+            self,
         )
-        logger.debug("Generated layout")
-        return layout
 
-    def callbacks(self) -> None:
-        """Define the callbacks for the SkjemapdfViewer window.
 
-        This includes a callback to toggle the visibility of the modal window.
-        """
-
-        @callback(
-            Output("skjemapdf-modal", "is_open"),
-            Input("sidebar-skjemapdf-button", "n_clicks"),
-            State("skjemapdf-modal", "is_open"),
-        )
-        def freesearch_modal_toggle(n: int, is_open: bool) -> bool:
-            """Toggle the state of the modal window.
-
-            Args:
-                n (int): Number of clicks on the toggle button.
-                is_open (bool): Current state of the modal (open/closed).
-
-            Returns:
-                bool: The new state of the modal (open/closed).
-            """
-            logger.info("Toggle modal")
-            if n:
-                return not is_open
-            return is_open

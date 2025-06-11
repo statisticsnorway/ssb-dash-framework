@@ -11,6 +11,7 @@ from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ class SkjemapdfViewer(ABC):
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self.is_valid(form_identifier)
+        module_validator(self)
 
     def is_valid(self, form_identifier: str) -> None:
         """Validate the form identifier and PDF folder path.
