@@ -170,7 +170,21 @@ class WindowImplementation:
             [
                 dbc.Modal(
                     [
-                        dbc.ModalHeader(dbc.ModalTitle(self.label)),
+                        dbc.ModalHeader(
+                            dbc.ModalTitle(
+                                dbc.Row(
+                                    [
+                                        dbc.Col(self.label),
+                                        dbc.Col(
+                                            dbc.Button(
+                                                "🖵",
+                                                id=f"{self._window_n}-{self.module_name}-modal-fullscreen",
+                                            ),
+                                        ),
+                                    ]
+                                )
+                            )
+                        ),
                         dbc.ModalBody(
                             html.Div(
                                 style={
@@ -234,3 +248,18 @@ class WindowImplementation:
             if n:
                 return not is_open
             return is_open
+
+        @callback(
+            Output(f"{self._window_n}-{self.module_name}-modal", "fullscreen"),
+            Input(f"{self._window_n}-{self.module_name}-modal-fullscreen", "n_clicks"),
+            State(f"{self._window_n}-{self.module_name}-modal", "fullscreen"),
+        )
+        def toggle_fullscreen_modal(
+            n_clicks: int, fullscreen_state: str | bool
+        ) -> str | bool:
+            if n_clicks > 0:
+                if fullscreen_state is True:
+                    fullscreen = "xxl-down"
+                else:
+                    fullscreen = True
+                return fullscreen
