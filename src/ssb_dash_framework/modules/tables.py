@@ -15,7 +15,6 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector  # TODO TEMP!!!!
-from ..setup.variableselector import VariableSelectorOption  # TODO TEMP!!!!
 from ..utils.alert_handler import create_alert
 from ..utils.module_validation import module_validator
 
@@ -115,16 +114,16 @@ class EditingTable:
                 - A status message for updates.
         """
         layout = html.Div(
-            style={
-                "flex": 1,  # Allow this div to grow and fill the parent
-                "display": "flex",
-            },
+            # style={
+            #    "flex": 1,  # Allow this div to grow and fill the parent
+            #    "display": "flex",
+            # },
             children=[
                 dag.AgGrid(
                     defaultColDef={"editable": True},
                     id=f"{self.module_number}-tabelleditering-table1",
                     className="ag-theme-alpine-dark header-style-on-filter",
-                    style={"height": "100%", "width": "100%"},
+                    # style={"height": "100%", "width": "100%"},
                 )
             ],
         )
@@ -178,10 +177,14 @@ class EditingTable:
             Raises:
                 Exception: If there is an error loading data into the table.
             """
-            logger.debug(f"Loading data to table with label {self.label}, module_number: {self.module_number}")
+            logger.debug(
+                f"Loading data to table with label {self.label}, module_number: {self.module_number}"
+            )
             try:
                 df = self.get_data(*dynamic_states)
-                logger.debug(f"{self.label} - {self.module_number}: Data from get_data: {df}")
+                logger.debug(
+                    f"{self.label} - {self.module_number}: Data from get_data: {df}"
+                )
                 columns = [
                     {
                         "headerName": col,
@@ -195,7 +198,10 @@ class EditingTable:
                 logger.debug(f"{self.label} - {self.module_number}: Returning data")
                 return df.to_dict("records"), columns
             except Exception as e:
-                logger.error(f"{self.label} - {self.module_number}: Error loading data into table", exc_info=True)
+                logger.error(
+                    f"{self.label} - {self.module_number}: Error loading data into table",
+                    exc_info=True,
+                )
                 raise e
 
         @callback(
