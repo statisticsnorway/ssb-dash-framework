@@ -177,11 +177,14 @@ class WindowImplementation:
                                         dbc.Col(self.label),
                                         dbc.Col(
                                             dbc.Button(
-                                                "🖵",
+                                                "Fullscreen visning",
                                                 id=f"{self._window_n}-{self.module_name}-modal-fullscreen",
                                             ),
                                         ),
-                                    ]
+                                    ],
+                                    align="center",
+                                    justify="between",
+                                    className="w-100",
                                 )
                             )
                         ),
