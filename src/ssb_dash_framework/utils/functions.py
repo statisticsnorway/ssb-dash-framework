@@ -151,19 +151,25 @@ def sidebar_button(
     button = html.Div(
         dbc.Button(
             [
-                html.Span(icon, style={"display": "block", "font-size": "1.4rem"}),
-                html.Span(text, style={"display": "block", "font-size": "0.7rem"}),
+                html.Span(
+                    icon,
+                    # style={"display": "block", "font-size": "1.4rem"}
+                ),
+                html.Span(
+                    text,
+                    # style={"display": "block", "font-size": "0.7rem"}
+                ),
             ],
             id=component_id,
-            style={
-                "display": "flex",
-                "flex-direction": "column",
-                "align-items": "center",
-                "word-break": "break-all",
-                "margin-bottom": "5%",
-                "width": "100%",
-                **additional_styling,
-            },
+            # style={
+            #     "display": "flex",
+            #     "flex-direction": "column",
+            #     "align-items": "center",
+            #     "word-break": "break-all",
+            #     "margin-bottom": "5%",
+            #     "width": "100%",
+            #     **additional_styling,
+            # },
         )
     )
     return button

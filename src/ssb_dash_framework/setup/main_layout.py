@@ -79,9 +79,6 @@ def main_layout(
                 id="notifications-container",
                 style={"position": "fixed", "z-index": 9999},
             ),
-            html.P(
-                id="update-status", style={"font-size": "60%", "visibility": "hidden"}
-            ),
             html.Div(
                 id="main-layout",
                 style={
