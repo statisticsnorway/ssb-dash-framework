@@ -161,15 +161,15 @@ def sidebar_button(
                 ),
             ],
             id=component_id,
-            # style={
-            #     "display": "flex",
-            #     "flex-direction": "column",
-            #     "align-items": "center",
-            #     "word-break": "break-all",
-            #     "margin-bottom": "5%",
-            #     "width": "100%",
-            #     **additional_styling,
-            # },
+            style={
+                "display": "flex",
+                "flex-direction": "column",
+                "align-items": "center",
+                "word-break": "break-all",
+                "margin-bottom": "5%",
+                "width": "100%",
+                **additional_styling,
+            },
         )
     )
     return button
