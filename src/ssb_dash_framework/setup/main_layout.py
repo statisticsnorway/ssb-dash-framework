@@ -110,13 +110,14 @@ def main_layout(
                                         is_open=False,
                                         placement="end",
                                         backdrop=False,
-                                        style={"width": "22%", "height": "100%"},
+                                        style={
+                                            "width": "22%",
+                                        },
                                     ),
                                 ]
                             ),
                             html.Div(
                                 dbc.Tabs(selected_tab_list),
-                                style={"height": "5vh"},
                             ),
                         ],
                     ),

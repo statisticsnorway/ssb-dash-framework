@@ -190,18 +190,18 @@ class WindowImplementation:
                         ),
                         dbc.ModalBody(
                             html.Div(
-                                style={
-                                    "height": "90vh",
-                                    "width": "100%",
-                                    "display": "flex",
-                                },
                                 children=self.get_module_layout(),
+                                style = {"heigth":"100vh",}
                             )
                         ),
                     ],
                     id=f"{self._window_n}-{self.module_name}-modal",
                     size="xl",
                     fullscreen="xxl-down",
+                    style={
+                        "width": "100%",
+                        "display":"flex"
+                    }
                 ),
                 sidebar_button(
                     "🔍",
