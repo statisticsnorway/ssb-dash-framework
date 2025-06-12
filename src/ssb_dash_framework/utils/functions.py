@@ -153,11 +153,11 @@ def sidebar_button(
             [
                 html.Span(
                     icon,
-                    # style={"display": "block", "font-size": "1.4rem"}
+                    style={"display": "block", "font-size": "1.4rem"}
                 ),
                 html.Span(
                     text,
-                    # style={"display": "block", "font-size": "0.7rem"}
+                    style={"display": "block", "font-size": "0.7rem"}
                 ),
             ],
             id=component_id,
