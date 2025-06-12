@@ -4,11 +4,12 @@ from typing import Any
 from dash import html
 
 from ..modules.freesearch import FreeSearch
+from ..utils import TabImplementation
 
 logger = logging.getLogger(__name__)
 
 
-class FreeSearchTab(FreeSearch):
+class FreeSearchTab(TabImplementation, FreeSearch):
     """Implementation of the FreeSearch module as a tab in the application.
 
     This class extends the FreeSearch base class and provides a layout
@@ -21,16 +22,5 @@ class FreeSearchTab(FreeSearch):
         Args:
             database (Any): Database connection or interface used for executing SQL queries.
         """
-        super().__init__(database)
-
-    def layout(self) -> html.Div:
-        """Generate the layout for the FreeSearchTab.
-
-        Returns:
-            html.Div: A Div element containing the text area for SQL queries,
-                      input for partitions, a button to run the query,
-                      and a Dash AgGrid table for displaying results.
-        """
-        layout = self.module_layout
-        logger.debug("Generated layout")
-        return layout
+        FreeSearch.__init__(database)
+        TabImplementation.__init__(self)

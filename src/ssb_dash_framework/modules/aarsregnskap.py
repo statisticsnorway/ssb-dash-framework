@@ -12,6 +12,7 @@ from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ class Aarsregnskap(ABC):
         self._is_valid()
         self.module_layout = self._create_layout()
         self.module_callbacks()
+        module_validator(self)
 
     def _is_valid(self) -> None:
         """Validates the presence of required variables in VariableSelector.

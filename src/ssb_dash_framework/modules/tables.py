@@ -72,12 +72,6 @@ class EditingTable:
         self.output = output
         self.output_varselector_name = output_varselector_name or output
 
-        for i in [*inputs, *states]:
-            try:
-                VariableSelectorOption(i)
-            except ValueError:
-                logger.debug(f"{i} already exists as an option, skipping.")
-
         self.variableselector = VariableSelector(
             selected_inputs=inputs, selected_states=states
         )

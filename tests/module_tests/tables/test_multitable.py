@@ -13,14 +13,14 @@ def test_import() -> None:
 def test_base_class() -> None:
     table1 = EditingTable(
         label="test",
-        inputs=[""],
-        states=[""],
+        inputs=[],
+        states=[],
         get_data_func=lambda x: x,
     )
     table2 = EditingTable(
         label="test",
-        inputs=[""],
-        states=[""],
+        inputs=[],
+        states=[],
         get_data_func=lambda x: x,
     )
 
@@ -38,14 +38,14 @@ def test_tab() -> None:
 
     table1 = EditingTable(
         label="test",
-        inputs=[""],
-        states=[""],
+        inputs=[],
+        states=[],
         get_data_func=lambda x: x,
     )
     table2 = EditingTable(
         label="test",
-        inputs=[""],
-        states=[""],
+        inputs=[],
+        states=[],
         get_data_func=lambda x: x,
     )
 
@@ -56,14 +56,14 @@ def test_window() -> None:
 
     table1 = EditingTable(
         label="test",
-        inputs=[""],
-        states=[""],
+        inputs=[],
+        states=[],
         get_data_func=lambda x: x,
     )
     table2 = EditingTable(
         label="test",
-        inputs=[""],
-        states=[""],
+        inputs=[],
+        states=[],
         get_data_func=lambda x: x,
     )
 
