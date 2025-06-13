@@ -74,7 +74,7 @@ class TabImplementation:
         """
         layout = dbc.Tab(
             html.Div(
-                # style={"height": "94vh", "width": "100%", "display": "flex"},
+                style={"height": "94vh", "width": "100%", "display": "flex"},
                 children=self.get_module_layout(),
             ),
             label=self.label,
@@ -191,16 +191,17 @@ class WindowImplementation:
                         dbc.ModalBody(
                             html.Div(
                                 children=self.get_module_layout(),
-                                style={
-                                    "heigth": "100vh",
-                                },
+                                style = {"heigth":"100vh",}
                             )
                         ),
                     ],
                     id=f"{self._window_n}-{self.module_name}-modal",
                     size="xl",
                     fullscreen="xxl-down",
-                    style={"width": "100%", "display": "flex"},
+                    style={
+                        "width": "100%",
+                        "display":"flex"
+                    }
                 ),
                 sidebar_button(
                     "🔍",
