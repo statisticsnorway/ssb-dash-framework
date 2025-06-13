@@ -114,6 +114,10 @@ class EditingTable:
                 - A status message for updates.
         """
         layout = html.Div(
+            style={
+                "flex": 1,
+                "display": "flex",
+            },
             children=[
                 dag.AgGrid(
                     defaultColDef={"editable": True},
