@@ -394,7 +394,6 @@ class MultiTable(ABC):
             raise ValueError(f"Table {table} does not have a label attribute")
 
     def _create_layout(self) -> html.Div:
-        # Render all tables, each in a Div with a unique id
         table_divs = [
             html.Div(
                 table.module_layout,
@@ -442,11 +441,13 @@ class MultiTable(ABC):
         """Register Dash callbacks for the MultiTable component."""
 
         @callback(
-            [Output(f"{self.module_number}-multitable-table-{i}", "style") for i in range(len(self.table_list))],
+            [
+                Output(f"{self.module_number}-multitable-table-{i}", "style")
+                for i in range(len(self.table_list))
+            ],
             Input(f"{self.module_number}-multitable-dropdown", "value"),
         )
         def show_selected_table(selected_index: int):
-            # Only the selected table is visible
             return [
                 {"display": "block"} if i == selected_index else {"display": "none"}
                 for i in range(len(self.table_list))
