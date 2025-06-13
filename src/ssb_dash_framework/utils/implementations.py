@@ -74,8 +74,8 @@ class TabImplementation:
         """
         layout = dbc.Tab(
             html.Div(
-                # style={"height": "94vh", "width": "100%", "display": "flex"},
                 children=self.get_module_layout(),
+                style={"height": "100%","border": "2px solid red"}
             ),
             label=self.label,
         )
