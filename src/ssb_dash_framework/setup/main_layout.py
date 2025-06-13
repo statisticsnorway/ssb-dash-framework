@@ -82,6 +82,7 @@ def main_layout(
             html.Div(
                 id="main-layout",
                 style={
+                    "height": "100vh",
                     "overflow": "auto",
                     "display": "grid",
                     "grid-template-columns": "5% 95%",
@@ -92,12 +93,11 @@ def main_layout(
                         style={
                             "display": "flex",
                             "flex-direction": "column",
-                            "height": "100vh",
+                            "height": "100%",
                         },
                         children=window_modules_list,
                     ),
                     html.Div(
-                        style={"display":"flex", "flex-direction":"column"},
                         children=[
                             html.Div(
                                 [
@@ -117,8 +117,7 @@ def main_layout(
                                 ]
                             ),
                             html.Div(
-                                id="main-layout-tab-content",
-                                children=dbc.Tabs(selected_tab_list),
+                                dbc.Tabs(selected_tab_list),
                             ),
                         ],
                     ),
