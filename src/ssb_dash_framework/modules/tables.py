@@ -398,8 +398,11 @@ class MultiTable(ABC):
             [
                 dcc.Dropdown(
                     id=f"{self.module_number}-multitable-dropdown",
-                    options=[table.label for table in self.table_list],
-                    value=self.table_list[0].label,
+                    options=[
+                        {"label": table.label, "value": i}
+                        for i, table in enumerate(self.table_list)
+                    ],
+                    value=0,
                     clearable=False,
                 ),
                 dcc.Loading(
@@ -452,3 +455,17 @@ class MultiTable(ABC):
             )
 
         logger.debug("Generated callbacks for MultiTable")
+
+        @callback(
+            [
+                Output(f"{self.module_number}-multitable-table-{i}", "style")
+                for i in range(len(self.table_list))
+            ],
+            Input(f"{self.module_number}-multitable-dropdown", "value"),
+        )
+        def show_selected_table(selected_index: int):
+            # Only the selected table is visible
+            return [
+                {"display": "block"} if i == selected_index else {"display": "none"}
+                for i in range(len(self.table_list))
+            ]
