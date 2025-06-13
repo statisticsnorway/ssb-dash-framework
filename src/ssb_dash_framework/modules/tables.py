@@ -404,8 +404,7 @@ class MultiTable(ABC):
                 table.module_layout,
                 id=f"{self.module_number}-multitable-table-{i}",
                 style={
-                    "display": "flex" if i == 0 else "none",
-                    "flex": 1,
+                    "display": "block" if i == 0 else "none",
                 },
             )
             for i, table in enumerate(self.table_list)
@@ -426,6 +425,10 @@ class MultiTable(ABC):
                     type="default",
                     children=html.Div(
                         table_divs,
+                        style={
+                            "flex": 1,
+                            "display": "flex",
+                        },
                         id=f"{self.module_number}-multitable-content",
                     ),
                 ),
@@ -458,7 +461,7 @@ class MultiTable(ABC):
         )
         def show_selected_table(selected_index: int):
             return [
-                {"display": "flex"} if i == selected_index else {"display": "none"}
+                {"display": "block"} if i == selected_index else {"display": "none"}
                 for i in range(len(self.table_list))
             ]
 
