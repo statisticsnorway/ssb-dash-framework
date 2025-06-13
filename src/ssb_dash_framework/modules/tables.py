@@ -394,6 +394,15 @@ class MultiTable(ABC):
             raise ValueError(f"Table {table} does not have a label attribute")
 
     def _create_layout(self) -> html.Div:
+        # Render all tables, each in a Div with a unique id
+        table_divs = [
+            html.Div(
+                table.module_layout,
+                id=f"{self.module_number}-multitable-table-{i}",
+                style={"display": "block" if i == 0 else "none"},
+            )
+            for i, table in enumerate(self.table_list)
+        ]
         layout = html.Div(
             [
                 dcc.Dropdown(
@@ -409,12 +418,13 @@ class MultiTable(ABC):
                     id=f"{self.module_number}-multitable-loading",
                     type="default",
                     children=html.Div(
+                        table_divs,
                         id=f"{self.module_number}-multitable-content",
                     ),
                 ),
             ]
         )
-        logger.debug("Generated layout")
+        logger.debug("Generated layout with all tables rendered")
         return layout
 
     @abstractmethod
@@ -432,35 +442,7 @@ class MultiTable(ABC):
         """Register Dash callbacks for the MultiTable component."""
 
         @callback(
-            Output(f"{self.module_number}-multitable-content", "children"),
-            Input(f"{self.module_number}-multitable-dropdown", "value"),
-        )
-        def update_table_content(selected_table_label: str) -> html.Div:
-            """Update the content of the multitable based on the selected table.
-
-            Args:
-                selected_table_label (str): The label of the selected table.
-
-            Returns:
-                html.Div: The layout of the selected EditingTable.
-
-            Raises:
-                ValueError: If the selected table label is not found in the table_list.
-            """
-            for table in self.table_list:
-                if table.label == selected_table_label:
-                    return table.module_layout
-            raise ValueError(
-                f"Selected table {selected_table_label} not found in table_list"
-            )
-
-        logger.debug("Generated callbacks for MultiTable")
-
-        @callback(
-            [
-                Output(f"{self.module_number}-multitable-table-{i}", "style")
-                for i in range(len(self.table_list))
-            ],
+            [Output(f"{self.module_number}-multitable-table-{i}", "style") for i in range(len(self.table_list))],
             Input(f"{self.module_number}-multitable-dropdown", "value"),
         )
         def show_selected_table(selected_index: int):
@@ -469,3 +451,5 @@ class MultiTable(ABC):
                 {"display": "block"} if i == selected_index else {"display": "none"}
                 for i in range(len(self.table_list))
             ]
+
+        logger.debug("Generated callbacks for MultiTable")
