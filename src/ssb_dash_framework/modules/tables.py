@@ -115,7 +115,7 @@ class EditingTable:
         """
         layout = html.Div(
             style={
-                "flex": 1,  # Allow this div to grow and fill the parent
+                "flex": 1,
                 "display": "flex",
             },
             children=[
@@ -403,7 +403,10 @@ class MultiTable(ABC):
             html.Div(
                 table.module_layout,
                 id=f"{self.module_number}-multitable-table-{i}",
-                style={"display": "block" if i == 0 else "none"},
+                style={
+                    "display": "flex" if i == 0 else "none",
+                    "flex": 1,
+                },
             )
             for i, table in enumerate(self.table_list)
         ]
@@ -454,7 +457,7 @@ class MultiTable(ABC):
         )
         def show_selected_table(selected_index: int):
             return [
-                {"display": "block"} if i == selected_index else {"display": "none"}
+                {"display": "flex"} if i == selected_index else {"display": "none"}
                 for i in range(len(self.table_list))
             ]
 
