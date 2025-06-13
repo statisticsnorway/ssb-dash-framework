@@ -429,7 +429,8 @@ class MultiTable(ABC):
                         id=f"{self.module_number}-multitable-content",
                     ),
                 ),
-            ]
+            ],
+            style={"width": "100%", "height":"100%"}
         )
         logger.debug("Generated layout with all tables rendered")
         return layout
