@@ -2,6 +2,8 @@
 The idea with this file is to have all the style rules that are used in the SSB Dash Framework in one place.
 
 Creating a css class for each component used instead of using inline styles keeps the code clean and makes tweaking the styles easier.
+
+Another upside is that updating the stylesheet.css instantly makes visible the changes you've made in the running app, making it easier to develop and nitpick.
 */
 
 /*
@@ -63,7 +65,7 @@ Implementations
 }
 
 .window-implementation-modal-body {
-    height: 90%;
+    height: 90vh;
     width: 100%;
     display: flex;
 }
@@ -86,6 +88,11 @@ Tables
     height: 100%;
     width: 100%;
 
+}
+
+.editingtable-aggrid-style {
+    height: 100% !important; /* For some reason this needed !important to work. */
+    width: 100%;
 }
 
 .multitable {

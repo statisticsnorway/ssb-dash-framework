@@ -119,8 +119,7 @@ class EditingTable:
                 dag.AgGrid(
                     defaultColDef={"editable": True},
                     id=f"{self.module_number}-tabelleditering-table1",
-                    className="ag-theme-alpine-dark header-style-on-filter",
-                    style={"height": "100%", "width": "100%"},
+                    className="ag-theme-alpine-dark header-style-on-filter editingtable-aggrid-style",
                 )
             ],
         )
@@ -401,7 +400,7 @@ class MultiTable(ABC):
                 table.module_layout,
                 className="multitable-content",
                 id=f"{self.module_number}-multitable-table-{i}",
-                style={
+                style={  # Needs to be inline so that the callback logic is clearer
                     "display": "block" if i == 0 else "none",
                 },
             )
@@ -419,12 +418,12 @@ class MultiTable(ABC):
                     clearable=False,
                 ),
                 html.Div(
-                        className="multitable-content",
-                        children=table_divs,
-                        id=f"{self.module_number}-multitable-content",
-                    ),
+                    className="multitable-content",
+                    children=table_divs,
+                    id=f"{self.module_number}-multitable-content",
+                ),
             ],
-            className="multitable"
+            className="multitable",
         )
         logger.debug("Generated layout with all tables rendered")
         return layout
@@ -451,8 +450,13 @@ class MultiTable(ABC):
             Input(f"{self.module_number}-multitable-dropdown", "value"),
         )
         def show_selected_table(selected_index: int):
+            """This callback is used for showing/hiding tables, so that all of them exists at the same time but only the one selected is shown.
+
+            This method of showing/hiding makes it more responsive and reduces unnecessary 'id not found' type errors in the application.
+            Easier to understand if styles is defined inline.
+            """
             return [
-                {"height": "100%", "display": "block"} if i == selected_index else {"display": "none"}
+                {"display": "block"} if i == selected_index else {"display": "none"}
                 for i in range(len(self.table_list))
             ]
 
