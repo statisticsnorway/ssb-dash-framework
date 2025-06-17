@@ -10,7 +10,16 @@ Implementations
 */
 
 .tab-implementation {
+    width: 100%;
     height: 94vh;
+}
+
+/* 
+Freesearch
+*/
+
+.freesearch {
+    width: 100%;
 }
 
 /* 

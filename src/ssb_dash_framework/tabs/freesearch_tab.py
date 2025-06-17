@@ -22,5 +22,5 @@ class FreeSearchTab(TabImplementation, FreeSearch):
         Args:
             database (Any): Database connection or interface used for executing SQL queries.
         """
-        FreeSearch.__init__(database)
+        FreeSearch.__init__(self, database)
         TabImplementation.__init__(self)
