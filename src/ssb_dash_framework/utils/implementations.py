@@ -75,7 +75,6 @@ class TabImplementation:
         layout = dbc.Tab(
             html.Div(
                 className="tab-implementation",
-                style={"height": "94vh", "width": "100%", "display": "flex"},
                 children=self.get_module_layout(),
             ),
             label=self.label,
@@ -191,11 +190,7 @@ class WindowImplementation:
                         ),
                         dbc.ModalBody(
                             html.Div(
-                                style={
-                                    "height": "90vh",
-                                    "width": "100%",
-                                    "display": "flex",
-                                },
+                                className="window-implementation-modal-body",
                                 children=self.get_module_layout(),
                             )
                         ),

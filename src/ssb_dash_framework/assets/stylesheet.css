@@ -1,9 +1,56 @@
+/*
+The idea with this file is to have all the style rules that are used in the SSB Dash Framework in one place.
+
+Creating a css class for each component used instead of using inline styles keeps the code clean and makes tweaking the styles easier.
+*/
 
 /*
 Main layout
 */
 
+.main-layout {
+    height: 100vh;
+    overflow: auto;
+    display: grid;
+    grid-template-columns: 5% 95%;
+}
 
+.main-layout-notifications-container {
+    position: fixed;
+    z-index: 9999;
+}
+
+.main-layout-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.main-layout-offcanvas-variable-selector {
+    width: 22%;
+    height: 100%;
+}
+
+.main-layout-tab-container {
+    height: 5vh;
+}
+
+/*
+Variable selector
+*/
+
+.variable-selector-card {
+    max-height: 100%;
+}
+
+.variable-selector-cardbody {
+    max-height: 100%;
+}
+
+.variable-selector-cardbody-content {
+    display: grid;
+    grid-template-columns: 100%;
+}
 
 /*
 Implementations
@@ -12,9 +59,16 @@ Implementations
 .tab-implementation {
     width: 100%;
     height: 94vh;
+    display: flex;
 }
 
-/* 
+.window-implementation-modal-body {
+    height: 90%;
+    width: 100%;
+    display: flex;
+}
+
+/*
 Freesearch
 */
 
@@ -22,7 +76,7 @@ Freesearch
     width: 100%;
 }
 
-/* 
+/*
 Tables
 */
 
