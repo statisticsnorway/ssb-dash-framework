@@ -256,7 +256,7 @@ class WindowImplementation:
         def toggle_fullscreen_modal(
             n_clicks: int, fullscreen_state: str | bool
         ) -> str | bool:
-            if n_clicks > 0:
+            if n_clicks and n_clicks > 0:
                 if fullscreen_state is True:
                     fullscreen = "xxl-down"
                 else:
