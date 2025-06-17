@@ -1,0 +1,36 @@
+
+/*
+Main layout
+*/
+
+
+
+/*
+Implementations
+*/
+
+.tab-implementation {
+    height: 94vh;
+}
+
+/* 
+Tables
+*/
+
+.editingtable {
+    display: block;
+    flex: 1;
+    height: 100%;
+    width: 100%;
+
+}
+
+.multitable {
+    height: 100%;
+    width: 100%;
+}
+
+.multitable-content {
+    height: 100%;
+    width: 100%;
+}

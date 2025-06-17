@@ -114,10 +114,7 @@ class EditingTable:
                 - A status message for updates.
         """
         layout = html.Div(
-            style={
-                "flex": 1,
-                "display": "flex",
-            },
+            className="editingtable",
             children=[
                 dag.AgGrid(
                     defaultColDef={"editable": True},
@@ -402,6 +399,7 @@ class MultiTable(ABC):
         table_divs = [
             html.Div(
                 table.module_layout,
+                className="multitable-content",
                 id=f"{self.module_number}-multitable-table-{i}",
                 style={
                     "display": "block" if i == 0 else "none",
@@ -420,20 +418,13 @@ class MultiTable(ABC):
                     value=0,
                     clearable=False,
                 ),
-                dcc.Loading(
-                    id=f"{self.module_number}-multitable-loading",
-                    type="default",
-                    children=html.Div(
-                        table_divs,
-                        style={
-                            "flex": 1,
-                            "display": "flex",
-                        },
+                html.Div(
+                        className="multitable-content",
+                        children=table_divs,
                         id=f"{self.module_number}-multitable-content",
                     ),
-                ),
             ],
-            style={"width": "100%", "height":"100%"}
+            className="multitable"
         )
         logger.debug("Generated layout with all tables rendered")
         return layout
@@ -461,7 +452,7 @@ class MultiTable(ABC):
         )
         def show_selected_table(selected_index: int):
             return [
-                {"display": "block"} if i == selected_index else {"display": "none"}
+                {"height": "100%", "display": "block"} if i == selected_index else {"display": "none"}
                 for i in range(len(self.table_list))
             ]
 
