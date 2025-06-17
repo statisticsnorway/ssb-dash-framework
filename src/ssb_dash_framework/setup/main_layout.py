@@ -92,6 +92,7 @@ def main_layout(
                 },
                 children=[
                     html.Div(
+                        id="main-layout-sidebar",
                         className="bg-secondary",
                         style={
                             "display": "flex",
@@ -103,7 +104,8 @@ def main_layout(
                     html.Div(
                         children=[
                             html.Div(
-                                [
+                                id="main-layout-offcanvas",
+                                children=[
                                     dbc.Offcanvas(
                                         html.Div(
                                             children=variable_selector.layout(),
@@ -118,8 +120,9 @@ def main_layout(
                                 ]
                             ),
                             html.Div(
-                                dbc.Tabs(selected_tab_list),
-                                style={"height": "5vh"},
+                                id="main-layout-tab-div",
+                                children=dbc.Tabs(selected_tab_list),
+                                style={"height": "5vh"}
                             ),
                         ],
                     ),

@@ -35,12 +35,17 @@ class FreeSearch(ABC):
         layout(): Abstract method to define the module's layout.
         module_callbacks(): Registers the Dash callbacks for interactivity.
     """
-
+    
+    _id_number = 0
+    
     def __init__(self, database: Any, label: str | None = "🔍 Frisøk") -> None:
         """Initialize the FreeSearch module with a database connection and optional label."""
         assert hasattr(
             database, "query"
         ), "The database object must have a 'query' method."
+        self.module_number = FreeSearch._id_number
+        self.module_name = self.__class__.__name__
+        FreeSearch._id_number += 1
         self.database = database
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -58,7 +63,8 @@ class FreeSearch(ABC):
                 - A Dash AgGrid table for displaying the query results.
         """
         return html.Div(
-            [
+            className="freesearch",
+            children=[
                 html.Div(
                     dbc.Textarea(
                         id="tab-frisøk-textarea1",

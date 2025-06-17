@@ -74,6 +74,7 @@ class TabImplementation:
         """
         layout = dbc.Tab(
             html.Div(
+                className="tab-implementation",
                 style={"height": "94vh", "width": "100%", "display": "flex"},
                 children=self.get_module_layout(),
             ),
