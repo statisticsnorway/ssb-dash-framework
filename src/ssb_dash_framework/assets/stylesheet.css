@@ -127,6 +127,29 @@ Bofregistry
     padding: 1rem;
 }
 
+.bofregistry-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.bofregistry-card-body {
+    overflow-y: auto;
+}
+
+.bofregistry-table-bedrift-header {
+    text-align: center;
+    font-weight: bold;
+}
+
+.bofregistry-modal {
+    height: 90vh !important;
+}
+
+.bofregistry-modal-body {
+    height: 80vh;
+}
+
 /*
 SkjemapdfViewer
 */
