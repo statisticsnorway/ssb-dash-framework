@@ -13,5 +13,5 @@ class AarsregnskapTab(TabImplementation, Aarsregnskap):
 
     def __init__(self) -> None:
         """Initializes the AarsregnskapTab class."""
-        Aarsregnskap.__init__()
+        Aarsregnskap.__init__(self)
         TabImplementation.__init__(self)

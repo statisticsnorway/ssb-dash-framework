@@ -77,28 +77,19 @@ def main_layout(
         [
             html.Div(
                 id="notifications-container",
-                style={"position": "fixed", "z-index": 9999},
+                className="main-layout-notifications-container",
             ),
             html.P(
-                id="update-status", style={"font-size": "60%", "visibility": "hidden"}
+                id="update-status",
+                style={"font-size": "60%", "visibility": "hidden"},  # What is this!?
             ),
             html.Div(
                 id="main-layout",
-                style={
-                    "height": "100vh",
-                    "overflow": "auto",
-                    "display": "grid",
-                    "grid-template-columns": "5% 95%",
-                },
+                className="main-layout",
                 children=[
                     html.Div(
                         id="main-layout-sidebar",
-                        className="bg-secondary",
-                        style={
-                            "display": "flex",
-                            "flex-direction": "column",
-                            "height": "100%",
-                        },
+                        className="main-layout-sidebar bg-secondary",
                         children=window_modules_list,
                     ),
                     html.Div(
@@ -111,18 +102,18 @@ def main_layout(
                                             children=variable_selector.layout(),
                                         ),
                                         id="variable-selector-offcanvas",
+                                        className="main-layout-offcanvas-variable-selector",
                                         title="Variabler",
                                         is_open=False,
                                         placement="end",
                                         backdrop=False,
-                                        style={"width": "22%", "height": "100%"},
                                     ),
-                                ]
+                                ],
                             ),
                             html.Div(
                                 id="main-layout-tab-div",
+                                className="main-layout-tab-container",
                                 children=dbc.Tabs(selected_tab_list),
-                                style={"height": "5vh"}
                             ),
                         ],
                     ),

@@ -23,7 +23,9 @@ class Aarsregnskap(ABC):
     Attributes:
         label (str): Label for the module when initialized, displayed as "🧾 Årsregnskap".
     """
-
+    
+    _id_number = 0
+    
     def __init__(
         self,
     ) -> None:
@@ -32,6 +34,9 @@ class Aarsregnskap(ABC):
         Sets up the label, validates required variables, and initializes the
         layout and callbacks for the module.
         """
+        self.module_number = Aarsregnskap._id_number
+        self.module_name = self.__class__.__name__
+        Aarsregnskap._id_number += 1
         self.label = "🧾 Årsregnskap"
         self._is_valid()
         self.module_layout = self._create_layout()
@@ -64,11 +69,11 @@ class Aarsregnskap(ABC):
             organization number, and an iframe to display the PDF content.
         """
         layout = html.Div(
-            style={"height": "94vh", "display": "flex", "flexDirection": "column"},
+            className="aarsregnskap",
             children=[
                 dbc.Container(
                     fluid=True,
-                    style={"display": "flex", "flexDirection": "column", "flex": "1"},
+                    className="aarsregnskap-container",
                     children=[
                         dbc.Row(
                             [
@@ -77,7 +82,7 @@ class Aarsregnskap(ABC):
                                         [
                                             dbc.Label("År"),
                                             dbc.Input(
-                                                id="tab-aarsregnskap-input1",
+                                                id="tab-aarsregnskap-input-aar",
                                                 type="number",
                                             ),
                                         ]
@@ -87,26 +92,24 @@ class Aarsregnskap(ABC):
                                     html.Div(
                                         [
                                             dbc.Label("Orgnr"),
-                                            dbc.Input(id="tab-aarsregnskap-input2"),
+                                            dbc.Input(
+                                                id="tab-aarsregnskap-input-orgnr"
+                                            ),
                                         ]
                                     )
                                 ),
                             ],
-                            style={"flex": "0 0 auto"},
+                            className="aarsregnskap-aar-foretak-row",
                         ),
                         dbc.Row(
                             dbc.Col(
                                 html.Iframe(
-                                    id="tab-aarsregnskap-iframe1",
-                                    style={
-                                        "width": "100%",
-                                        "height": "100%",
-                                        "border": "none",
-                                    },
+                                    className="aarsregnskap-pdf-iframe",
+                                    id="tab-aarsregnskap-iframe",
                                 ),
-                                style={"flex": "1", "minHeight": 0},
+                                className="aarsregnskap-pdf-col",
                             ),
-                            style={"flex": "1", "overflow": "hidden"},
+                            className="aarsregnskap-pdf-row",
                         ),
                     ],
                 ),
@@ -130,7 +133,7 @@ class Aarsregnskap(ABC):
         """Registers Dash callbacks for the Årsregnskap module."""
 
         @callback(
-            Output("tab-aarsregnskap-input1", "value"),
+            Output("tab-aarsregnskap-input-aar", "value"),
             Input("var-aar", "value"),
         )
         def update_aar(aar: int) -> int:
@@ -145,7 +148,7 @@ class Aarsregnskap(ABC):
             return aar
 
         @callback(
-            Output("tab-aarsregnskap-input2", "value"),
+            Output("tab-aarsregnskap-input-orgnr", "value"),
             Input("var-foretak", "value"),
         )
         def update_orgnr(orgnr: str) -> str:
@@ -160,9 +163,9 @@ class Aarsregnskap(ABC):
             return orgnr
 
         @callback(
-            Output("tab-aarsregnskap-iframe1", "src"),
-            Input("tab-aarsregnskap-input1", "value"),
-            Input("tab-aarsregnskap-input2", "value"),
+            Output("tab-aarsregnskap-iframe", "src"),
+            Input("tab-aarsregnskap-input-aar", "value"),
+            Input("tab-aarsregnskap-input-orgnr", "value"),
         )
         def update_pdf_source(aar: int, orgnr: str) -> str | None:
             """Fetch and encode the PDF source based on the year and organization number.
