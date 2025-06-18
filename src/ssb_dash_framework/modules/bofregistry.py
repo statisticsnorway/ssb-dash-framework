@@ -35,8 +35,7 @@ def ssb_foretak_modal() -> dbc.Modal:
                 [
                     dag.AgGrid(
                         id="bofregistry-ssb_foretak-table",
-                        className="ag-theme-alpine-dark header-style-on-filter",
-                        style={"width": "100%", "height": "100%"},
+                        className="ag-theme-alpine-dark header-style-on-filter bofregistry-modal-aggrid",
                         defaultColDef={
                             "editable": True,
                             "filter": True,
@@ -46,8 +45,7 @@ def ssb_foretak_modal() -> dbc.Modal:
                         columnSize="responsiveSizeToFit",
                     )
                 ],
-                className="flex-grow-1 p-0",
-                style={"height": "80vh"},
+                className="flex-grow-1 p-0 bofregistry-modal-body",
             ),
         ],
         id="bofregistry-modal-ssb_foretak",
@@ -72,8 +70,7 @@ def ssb_bedrift_modal() -> dbc.Modal:
                 [
                     dag.AgGrid(
                         id="bofregistry-ssb_bedrift-table",
-                        className="ag-theme-alpine-dark header-style-on-filter",
-                        style={"width": "100%", "height": "100%"},
+                        className="ag-theme-alpine-dark header-style-on-filter bofregistry-modal-aggrid",
                         defaultColDef={
                             "editable": True,
                             "filter": True,
@@ -83,8 +80,7 @@ def ssb_bedrift_modal() -> dbc.Modal:
                         columnSize="responsiveSizeToFit",
                     )
                 ],
-                className="flex-grow-1 p-0",
-                style={"height": "80vh"},
+                className="flex-grow-1 p-0 bofregistry-modal-body",
             ),
         ],
         id="bofregistry-modal-ssb_bedrift",
@@ -317,7 +313,7 @@ class BofInformation(ABC):
                 html.Div(
                     dag.AgGrid(
                         id="tab-bof_foretak-table1",
-                        className="ag-theme-alpine-dark header-style-on-filter",
+                        className="ag-theme-alpine-dark header-style-on-filter bofregistry-table-bedrift-aggrid",
                         columnSize="responsiveSizeToFit",
                         defaultColDef={
                             "filter": True,
@@ -331,7 +327,6 @@ class BofInformation(ABC):
                             "rowSelection": "single",
                             "rowHeight": 25,
                         },
-                        style={"width": "100%", "height": "45vh"},
                     ),
                 ),
             ],
