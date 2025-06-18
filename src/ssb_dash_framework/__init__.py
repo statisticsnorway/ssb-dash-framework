@@ -9,6 +9,7 @@ from .modals import VisualizationBuilder
 from .modules import Aarsregnskap
 from .modules import BofInformation
 from .modules import EditingTable
+from .modules import FigureDisplay
 from .modules import FreeSearch
 from .modules import MultiTable
 from .modules import SkjemapdfViewer
@@ -37,12 +38,12 @@ from .utils import sidebar_button
 from .utils import th_error
 from .windows import BofInformationWindow
 from .windows import EditingTableWindow
+from .windows import FigureDisplayWindow
 from .windows import FreeSearchWindow
 from .windows import MultiTableWindow
 from .windows import SkjemapdfViewerWindow
 
 __all__ = [
-    "ControlFrameworkBase",
     "Aarsregnskap",
     "AarsregnskapTab",
     "AlertHandler",
@@ -53,10 +54,13 @@ __all__ = [
     "BofInformationTab",
     "BofInformationWindow",
     "Control",
+    "ControlFrameworkBase",
     "DebugInspector",
     "EditingTable",
     "EditingTableTab",
     "EditingTableWindow",
+    "FigureDisplay",
+    "FigureDisplayWindow",
     "FreeSearch",
     "FreeSearchTab",
     "FreeSearchWindow",
