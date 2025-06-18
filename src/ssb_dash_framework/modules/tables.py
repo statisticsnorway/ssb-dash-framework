@@ -154,7 +154,6 @@ class EditingTable:
             Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
             Output(f"{self.module_number}-tabelleditering-table1", "columnDefs"),
             *dynamic_states,
-            prevent_initial_call=True,
         )
         def load_to_table(
             *dynamic_states: list[str],
