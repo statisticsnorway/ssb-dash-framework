@@ -2,6 +2,7 @@
 
 from .aarsregnskap import Aarsregnskap
 from .bofregistry import BofInformation
+from .figuredisplay import FigureDisplay
 from .freesearch import FreeSearch
 from .skjemapdfviewer import SkjemapdfViewer
 from .tables import EditingTable
@@ -11,6 +12,7 @@ __all__ = [
     "Aarsregnskap",
     "BofInformation",
     "EditingTable",
+    "FigureDisplay",
     "FreeSearch",
     "MultiTable",
     "SkjemapdfViewer",

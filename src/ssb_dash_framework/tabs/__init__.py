@@ -3,6 +3,7 @@
 from .aarsregnskap_tab import AarsregnskapTab
 from .altinn_editor import AltinnSkjemadataEditor
 from .bofregistry_tab import BofInformationTab
+from .figuredisplay_tab import FigureDisplayTab
 from .freesearch_tab import FreeSearchTab
 from .pi_memorizer import Pimemorizer
 from .skjemapdfviewer_tab import SkjemapdfViewerTab
@@ -14,6 +15,7 @@ __all__ = [
     "AltinnSkjemadataEditor",
     "BofInformationTab",
     "EditingTableTab",
+    "FigureDisplayTab",
     "FreeSearchTab",
     "MultiTableTab",
     "Pimemorizer",

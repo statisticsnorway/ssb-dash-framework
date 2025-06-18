@@ -184,6 +184,20 @@ Bofregistry
 }
 
 /*
+Figuredisplay
+*/
+
+.figuredisplay {
+    height:100%;
+    width: 100%;
+}
+
+.figuredisplay-graph {
+    height:100%;
+    width: 100%;
+}
+
+/*
 SkjemapdfViewer
 */
 
