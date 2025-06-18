@@ -62,7 +62,9 @@ class FigureDisplay(ABC):
         def display_figure(*dynamic_states):
             return self.figure_func(*dynamic_states)
 
-        if self.output:
+        if (
+            self.output
+        ):  # TODO Fix known limitation of only having a single output to the variable selector. Should be possible to return a list/tuple
 
             @callback(
                 self.variableselector.get_output_object(variable=self.output),
