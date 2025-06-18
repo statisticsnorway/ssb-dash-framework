@@ -38,6 +38,17 @@ Main layout
 }
 
 /*
+Alert handler
+*/
+
+.alert-container {
+    position: fixed;
+    z-index: 2000;
+    bottom: 10px;
+    left: 10px;
+}
+
+/*
 Variable selector
 */
 
@@ -71,11 +82,67 @@ Implementations
 }
 
 /*
+Aarsregnskap
+*/
+
+.aarsregnskap {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.aarsregnskap-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.aarsregnskap-aar-foretak-row {
+    flex: 0 0 auto;
+}
+
+.aarsregnskap-pdf-row {
+    flex: 1;
+    overflow: hidden;
+}
+
+.aarsregnskap-pdf-col {
+    flex: 1;
+    min-height: 0;
+}
+
+.aarsregnskap-pdf-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/*
+SkjemapdfViewer
+*/
+
+.skjemapdfviewer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.skjemapdf-pdf-iframe {
+    width: 100%;
+    height: 80vh;
+}
+
+/*
 Freesearch
 */
 
 .freesearch {
     width: 100%;
+}
+
+.freesearch-partition-button {
+    display: grid;
+    grid-template-columns: 80 20;
 }
 
 /*

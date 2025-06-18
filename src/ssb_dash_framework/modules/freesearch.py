@@ -35,9 +35,9 @@ class FreeSearch(ABC):
         layout(): Abstract method to define the module's layout.
         module_callbacks(): Registers the Dash callbacks for interactivity.
     """
-    
+
     _id_number = 0
-    
+
     def __init__(self, database: Any, label: str | None = "🔍 Frisøk") -> None:
         """Initialize the FreeSearch module with a database connection and optional label."""
         assert hasattr(
@@ -73,7 +73,7 @@ class FreeSearch(ABC):
                     ),
                 ),
                 html.Div(
-                    style={"display": "grid", "grid-template-columns": "80% 20%"},
+                    className="freesearch-partition-button",
                     children=[
                         dbc.Input(
                             id="tab-frisøk-input1",
@@ -90,7 +90,7 @@ class FreeSearch(ABC):
                     id="tab-frisøk-table1",
                     className="ag-theme-alpine-dark header-style-on-filter",
                 ),
-            ]
+            ],
         )
 
     @abstractmethod
