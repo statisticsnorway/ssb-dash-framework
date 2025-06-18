@@ -9,9 +9,9 @@ from .modals import VisualizationBuilder
 from .modules import Aarsregnskap
 from .modules import BofInformation
 from .modules import EditingTable
+from .modules import FigureDisplay
 from .modules import FreeSearch
 from .modules import MultiTable
-from .modules import SkjemadataViewer
 from .modules import SkjemapdfViewer
 from .setup import VariableSelector
 from .setup import VariableSelectorOption
@@ -19,8 +19,10 @@ from .setup import app_setup
 from .setup import main_layout
 from .setup import set_variables
 from .tabs import AarsregnskapTab
+from .tabs import AltinnSkjemadataEditor
 from .tabs import BofInformationTab
 from .tabs import EditingTableTab
+from .tabs import FigureDisplayTab
 from .tabs import FreeSearchTab
 from .tabs import MultiTableTab
 from .tabs import Pimemorizer
@@ -37,25 +39,30 @@ from .utils import sidebar_button
 from .utils import th_error
 from .windows import BofInformationWindow
 from .windows import EditingTableWindow
+from .windows import FigureDisplayWindow
 from .windows import FreeSearchWindow
 from .windows import MultiTableWindow
 from .windows import SkjemapdfViewerWindow
 
 __all__ = [
-    "ControlFrameworkBase",
     "Aarsregnskap",
     "AarsregnskapTab",
     "AlertHandler",
     "AltinnControlView",
     "AltinnDataCapture",
+    "AltinnSkjemadataEditor",
     "BofInformation",
     "BofInformationTab",
     "BofInformationWindow",
     "Control",
+    "ControlFrameworkBase",
     "DebugInspector",
     "EditingTable",
     "EditingTableTab",
     "EditingTableWindow",
+    "FigureDisplay",
+    "FigureDisplayTab",
+    "FigureDisplayWindow",
     "FreeSearch",
     "FreeSearchTab",
     "FreeSearchWindow",
@@ -64,7 +71,6 @@ __all__ = [
     "MultiTableTab",
     "MultiTableWindow",
     "Pimemorizer",
-    "SkjemadataViewer",
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",

@@ -13,6 +13,8 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ..utils.module_validation import module_validator
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,15 +36,21 @@ class FreeSearch(ABC):
         module_callbacks(): Registers the Dash callbacks for interactivity.
     """
 
+    _id_number = 0
+
     def __init__(self, database: Any, label: str | None = "🔍 Frisøk") -> None:
         """Initialize the FreeSearch module with a database connection and optional label."""
         assert hasattr(
             database, "query"
         ), "The database object must have a 'query' method."
+        self.module_number = FreeSearch._id_number
+        self.module_name = self.__class__.__name__
+        FreeSearch._id_number += 1
         self.database = database
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self.label = label
+        module_validator(self)
 
     def _create_layout(self) -> html.Div:
         """Generate the default layout for the FreeSearch module.
@@ -55,7 +63,8 @@ class FreeSearch(ABC):
                 - A Dash AgGrid table for displaying the query results.
         """
         return html.Div(
-            [
+            className="freesearch",
+            children=[
                 html.Div(
                     dbc.Textarea(
                         id="tab-frisøk-textarea1",
@@ -64,7 +73,7 @@ class FreeSearch(ABC):
                     ),
                 ),
                 html.Div(
-                    style={"display": "grid", "grid-template-columns": "80% 20%"},
+                    className="freesearch-partition-button",
                     children=[
                         dbc.Input(
                             id="tab-frisøk-input1",
@@ -81,7 +90,7 @@ class FreeSearch(ABC):
                     id="tab-frisøk-table1",
                     className="ag-theme-alpine-dark header-style-on-filter",
                 ),
-            ]
+            ],
         )
 
     @abstractmethod

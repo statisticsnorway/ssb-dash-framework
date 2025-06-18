@@ -79,12 +79,7 @@ class AlertHandler:
                 # Container for ephemeral alerts.
                 html.Div(
                     id="alert_ephemeral_container",
-                    style={
-                        "position": "fixed",
-                        "bottom": "10px",
-                        "left": "10px",
-                        "zIndex": 2000,
-                    },
+                    className="alert-container",
                 ),
                 dcc.Interval(
                     id="alert_ephemeral_interval", interval=1000, n_intervals=0

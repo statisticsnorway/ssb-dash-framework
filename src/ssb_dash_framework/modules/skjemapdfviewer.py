@@ -11,6 +11,7 @@ from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ class SkjemapdfViewer(ABC):
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self.is_valid(form_identifier)
+        module_validator(self)
 
     def is_valid(self, form_identifier: str) -> None:
         """Validate the form identifier and PDF folder path.
@@ -67,7 +69,7 @@ class SkjemapdfViewer(ABC):
                       and an iframe to display the PDF content.
         """
         layout = html.Div(
-            style={"height": "100%", "display": "flex", "flexDirection": "column"},
+            className="skjemapdfviewer",
             children=[
                 dbc.Container(
                     children=[
@@ -84,8 +86,8 @@ class SkjemapdfViewer(ABC):
                             ]
                         ),
                         html.Iframe(
+                            className="skjemapdf-pdf-iframe",
                             id="skjemapdf-iframe1",
-                            style={"width": "100%", "height": "80vh"},
                         ),
                     ],
                     fluid=True,

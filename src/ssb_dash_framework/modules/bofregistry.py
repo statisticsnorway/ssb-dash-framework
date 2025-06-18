@@ -35,8 +35,7 @@ def ssb_foretak_modal() -> dbc.Modal:
                 [
                     dag.AgGrid(
                         id="bofregistry-ssb_foretak-table",
-                        className="ag-theme-alpine-dark header-style-on-filter",
-                        style={"width": "100%", "height": "100%"},
+                        className="ag-theme-alpine-dark header-style-on-filter bofregistry-modal-aggrid",
                         defaultColDef={
                             "editable": True,
                             "filter": True,
@@ -46,16 +45,14 @@ def ssb_foretak_modal() -> dbc.Modal:
                         columnSize="responsiveSizeToFit",
                     )
                 ],
-                className="flex-grow-1 p-0",
-                style={"height": "80vh"},
+                className="flex-grow-1 p-0 bofregistry-modal-body",
             ),
         ],
         id="bofregistry-modal-ssb_foretak",
         is_open=False,
         size="xl",
         scrollable=True,
-        className="d-flex flex-column",
-        style={"height": "90vh"},
+        className="d-flex flex-column bofregistry-modal",
     )
     return ssb_foretak_modal
 
@@ -73,8 +70,7 @@ def ssb_bedrift_modal() -> dbc.Modal:
                 [
                     dag.AgGrid(
                         id="bofregistry-ssb_bedrift-table",
-                        className="ag-theme-alpine-dark header-style-on-filter",
-                        style={"width": "100%", "height": "100%"},
+                        className="ag-theme-alpine-dark header-style-on-filter bofregistry-modal-aggrid",
                         defaultColDef={
                             "editable": True,
                             "filter": True,
@@ -84,16 +80,14 @@ def ssb_bedrift_modal() -> dbc.Modal:
                         columnSize="responsiveSizeToFit",
                     )
                 ],
-                className="flex-grow-1 p-0",
-                style={"height": "80vh"},
+                className="flex-grow-1 p-0 bofregistry-modal-body",
             ),
         ],
         id="bofregistry-modal-ssb_bedrift",
         is_open=False,
         size="xl",
         scrollable=True,
-        className="d-flex flex-column",
-        style={"height": "90vh"},
+        className="d-flex flex-column bofregistry-modal",
     )
     return ssb_bedrift_modal
 
@@ -172,24 +166,17 @@ class BofInformation(ABC):
                     [
                         dbc.Input(id=component_id, type=var_type),
                     ],
-                    style={"overflowY": "auto"},
+                    className="bofregistry-card-body",
                 ),
             ],
-            style={"height": "100%", "display": "flex", "flexDirection": "column"},
+            className="bofregistry-card",
         )
         return card
 
     def _create_layout(self) -> html.Div:
         """Generate the layout for the BoF Foretak tab."""
         layout = html.Div(
-            style={
-                "display": "flex",
-                "flexDirection": "column",
-                "overflowY": "auto",
-                "maxHeight": "95vh",
-                "minHeight": "95vh",
-                "padding": "1rem",
-            },
+            className="bofregistry",
             children=[
                 ssb_foretak_modal(),
                 ssb_bedrift_modal(),
@@ -319,14 +306,14 @@ class BofInformation(ABC):
                 html.Div(
                     html.P(
                         "Tilhørende bedrifter",
-                        style={"textAlign": "center", "fontWeight": "bold"},
+                        className="bofregistry-table-bedrift-header",
                     ),
                     className="mb-2",
                 ),
                 html.Div(
                     dag.AgGrid(
                         id="tab-bof_foretak-table1",
-                        className="ag-theme-alpine-dark header-style-on-filter",
+                        className="ag-theme-alpine-dark header-style-on-filter bofregistry-table-bedrift-aggrid",
                         columnSize="responsiveSizeToFit",
                         defaultColDef={
                             "filter": True,
@@ -340,7 +327,6 @@ class BofInformation(ABC):
                             "rowSelection": "single",
                             "rowHeight": 25,
                         },
-                        style={"width": "100%", "height": "45vh"},
                     ),
                 ),
             ],

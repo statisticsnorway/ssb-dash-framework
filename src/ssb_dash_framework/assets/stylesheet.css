@@ -1,0 +1,253 @@
+/*
+The idea with this file is to have all the style rules that are used in the SSB Dash Framework in one place.
+
+Creating a css class for each component used instead of using inline styles keeps the code clean and makes tweaking the styles easier.
+
+Another upside is that updating the stylesheet.css instantly makes visible the changes you've made in the running app, making it easier to develop and nitpick.
+*/
+
+/*
+Main layout
+*/
+
+.main-layout {
+    height: 100vh;
+    overflow: auto;
+    display: grid;
+    grid-template-columns: 5% 95%;
+}
+
+.main-layout-notifications-container {
+    position: fixed;
+    z-index: 9999;
+}
+
+.main-layout-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.main-layout-offcanvas-variable-selector {
+    width: 22%;
+    height: 100%;
+}
+
+.main-layout-tab-container {
+    height: 5vh;
+}
+
+/*
+Alert handler
+*/
+
+.alert-container {
+    position: fixed;
+    z-index: 2000;
+    bottom: 10px;
+    left: 10px;
+}
+
+/*
+Variable selector
+*/
+
+.variable-selector-card {
+    max-height: 100%;
+}
+
+.variable-selector-cardbody {
+    max-height: 100%;
+}
+
+.variable-selector-cardbody-content {
+    display: grid;
+    grid-template-columns: 100%;
+}
+
+/*
+Sidebar button
+*/
+
+.sidebar-button-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    word-break: break-all;
+    margin-bottom: 5%;
+    width: 100%;
+}
+
+.sidebar-button-icon-spot {
+    display: block;
+    font-size: 1.5rem;
+}
+
+.sidebar-button-label-spot {
+    display: block;
+    font-size: 0.7rem;
+}
+
+/*
+Implementations
+*/
+
+.tab-implementation {
+    width: 100%;
+    height: 94vh;
+    display: flex;
+}
+
+.window-implementation-modal-body {
+    height: 90vh;
+    width: 100%;
+    display: flex;
+}
+
+/*
+Aarsregnskap
+*/
+
+.aarsregnskap {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.aarsregnskap-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.aarsregnskap-aar-foretak-row {
+    flex: 0 0 auto;
+}
+
+.aarsregnskap-pdf-row {
+    flex: 1;
+    overflow: hidden;
+}
+
+.aarsregnskap-pdf-col {
+    flex: 1;
+    min-height: 0;
+}
+
+.aarsregnskap-pdf-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/*
+Bofregistry
+*/
+
+.bofregistry {
+    height: 100%;
+    width: 100%;
+    padding: 1rem;
+}
+
+.bofregistry-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.bofregistry-card-body {
+    overflow-y: auto;
+}
+
+.bofregistry-table-bedrift-header {
+    text-align: center;
+    font-weight: bold;
+}
+
+.bofregistry-table-bedrift-aggrid {
+    width: 100%;
+    height: 45vh;
+}
+
+.bofregistry-modal {
+    height: 90vh !important;
+}
+
+.bofregistry-modal-body {
+    height: 80vh;
+}
+
+.bofregistry-modal-aggrid {
+    height: 100% !important;
+    width: 100% !important;
+}
+
+/*
+Figuredisplay
+*/
+
+.figuredisplay {
+    height:100%;
+    width: 100%;
+}
+
+.figuredisplay-graph {
+    height:100%;
+    width: 100%;
+}
+
+/*
+SkjemapdfViewer
+*/
+
+.skjemapdfviewer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.skjemapdf-pdf-iframe {
+    width: 100%;
+    height: 80vh;
+}
+
+/*
+Freesearch
+*/
+
+.freesearch {
+    width: 100%;
+}
+
+.freesearch-partition-button {
+    display: grid;
+    grid-template-columns: 80 20;
+}
+
+/*
+Tables
+*/
+
+.editingtable {
+    display: block;
+    flex: 1;
+    height: 100%;
+    width: 100%;
+
+}
+
+.editingtable-aggrid-style {
+    height: 100% !important; /* For some reason this needed !important to work. */
+    width: 100%;
+}
+
+.multitable {
+    height: 100%;
+    width: 100%;
+}
+
+.multitable-content {
+    height: 100%;
+    width: 100%;
+}

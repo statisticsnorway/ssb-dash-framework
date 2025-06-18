@@ -15,7 +15,6 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector  # TODO TEMP!!!!
-from ..setup.variableselector import VariableSelectorOption  # TODO TEMP!!!!
 from ..utils.alert_handler import create_alert
 from ..utils.module_validation import module_validator
 
@@ -72,12 +71,6 @@ class EditingTable:
         self.output = output
         self.output_varselector_name = output_varselector_name or output
 
-        for i in [*inputs, *states]:
-            try:
-                VariableSelectorOption(i)
-            except ValueError:
-                logger.debug(f"{i} already exists as an option, skipping.")
-
         self.variableselector = VariableSelector(
             selected_inputs=inputs, selected_states=states
         )
@@ -121,16 +114,12 @@ class EditingTable:
                 - A status message for updates.
         """
         layout = html.Div(
-            style={
-                "flex": 1,  # Allow this div to grow and fill the parent
-                "display": "flex",
-            },
+            className="editingtable",
             children=[
                 dag.AgGrid(
                     defaultColDef={"editable": True},
                     id=f"{self.module_number}-tabelleditering-table1",
-                    className="ag-theme-alpine-dark header-style-on-filter",
-                    style={"height": "100%", "width": "100%"},
+                    className="ag-theme-alpine-dark header-style-on-filter editingtable-aggrid-style",
                 )
             ],
         )
@@ -165,7 +154,6 @@ class EditingTable:
             Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
             Output(f"{self.module_number}-tabelleditering-table1", "columnDefs"),
             *dynamic_states,
-            prevent_initial_call=True,
         )
         def load_to_table(
             *dynamic_states: list[str],
@@ -184,10 +172,14 @@ class EditingTable:
             Raises:
                 Exception: If there is an error loading data into the table.
             """
-            logger.debug(f"Loading data to table with label {self.label}, module_number: {self.module_number}")
+            logger.debug(
+                f"Loading data to table with label {self.label}, module_number: {self.module_number}"
+            )
             try:
                 df = self.get_data(*dynamic_states)
-                logger.debug(f"{self.label} - {self.module_number}: Data from get_data: {df}")
+                logger.debug(
+                    f"{self.label} - {self.module_number}: Data from get_data: {df}"
+                )
                 columns = [
                     {
                         "headerName": col,
@@ -201,7 +193,10 @@ class EditingTable:
                 logger.debug(f"{self.label} - {self.module_number}: Returning data")
                 return df.to_dict("records"), columns
             except Exception as e:
-                logger.error(f"{self.label} - {self.module_number}: Error loading data into table", exc_info=True)
+                logger.error(
+                    f"{self.label} - {self.module_number}: Error loading data into table",
+                    exc_info=True,
+                )
                 raise e
 
         @callback(
@@ -399,24 +394,37 @@ class MultiTable(ABC):
             raise ValueError(f"Table {table} does not have a label attribute")
 
     def _create_layout(self) -> html.Div:
+        table_divs = [
+            html.Div(
+                table.module_layout,
+                className="multitable-content",
+                id=f"{self.module_number}-multitable-table-{i}",
+                style={  # Needs to be inline so that the callback logic is clearer
+                    "display": "block" if i == 0 else "none",
+                },
+            )
+            for i, table in enumerate(self.table_list)
+        ]
         layout = html.Div(
             [
                 dcc.Dropdown(
                     id=f"{self.module_number}-multitable-dropdown",
-                    options=[table.label for table in self.table_list],
-                    value=self.table_list[0].label,
+                    options=[
+                        {"label": table.label, "value": i}
+                        for i, table in enumerate(self.table_list)
+                    ],
+                    value=0,
                     clearable=False,
                 ),
-                dcc.Loading(
-                    id=f"{self.module_number}-multitable-loading",
-                    type="default",
-                    children=html.Div(
-                        id=f"{self.module_number}-multitable-content",
-                    ),
+                html.Div(
+                    className="multitable-content",
+                    children=table_divs,
+                    id=f"{self.module_number}-multitable-content",
                 ),
-            ]
+            ],
+            className="multitable",
         )
-        logger.debug("Generated layout")
+        logger.debug("Generated layout with all tables rendered")
         return layout
 
     @abstractmethod
@@ -434,26 +442,21 @@ class MultiTable(ABC):
         """Register Dash callbacks for the MultiTable component."""
 
         @callback(
-            Output(f"{self.module_number}-multitable-content", "children"),
+            [
+                Output(f"{self.module_number}-multitable-table-{i}", "style")
+                for i in range(len(self.table_list))
+            ],
             Input(f"{self.module_number}-multitable-dropdown", "value"),
         )
-        def update_table_content(selected_table_label: str) -> html.Div:
-            """Update the content of the multitable based on the selected table.
+        def show_selected_table(selected_index: int):
+            """This callback is used for showing/hiding tables, so that all of them exists at the same time but only the one selected is shown.
 
-            Args:
-                selected_table_label (str): The label of the selected table.
-
-            Returns:
-                html.Div: The layout of the selected EditingTable.
-
-            Raises:
-                ValueError: If the selected table label is not found in the table_list.
+            This method of showing/hiding makes it more responsive and reduces unnecessary 'id not found' type errors in the application.
+            Easier to understand if styles is defined inline.
             """
-            for table in self.table_list:
-                if table.label == selected_table_label:
-                    return table.module_layout
-            raise ValueError(
-                f"Selected table {selected_table_label} not found in table_list"
-            )
+            return [
+                {"display": "block"} if i == selected_index else {"display": "none"}
+                for i in range(len(self.table_list))
+            ]
 
         logger.debug("Generated callbacks for MultiTable")

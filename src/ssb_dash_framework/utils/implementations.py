@@ -74,7 +74,7 @@ class TabImplementation:
         """
         layout = dbc.Tab(
             html.Div(
-                style={"height": "94vh", "width": "100%", "display": "flex"},
+                className="tab-implementation",
                 children=self.get_module_layout(),
             ),
             label=self.label,
@@ -170,14 +170,27 @@ class WindowImplementation:
             [
                 dbc.Modal(
                     [
-                        dbc.ModalHeader(dbc.ModalTitle(self.label)),
+                        dbc.ModalHeader(
+                            dbc.ModalTitle(
+                                dbc.Row(
+                                    [
+                                        dbc.Col(self.label),
+                                        dbc.Col(
+                                            dbc.Button(
+                                                "Fullscreen visning",
+                                                id=f"{self._window_n}-{self.module_name}-modal-fullscreen",
+                                            ),
+                                        ),
+                                    ],
+                                    align="center",
+                                    justify="between",
+                                    className="w-100",
+                                )
+                            )
+                        ),
                         dbc.ModalBody(
                             html.Div(
-                                style={
-                                    "height": "90vh",
-                                    "width": "100%",
-                                    "display": "flex",
-                                },
+                                className="window-implementation-modal-body",
                                 children=self.get_module_layout(),
                             )
                         ),
@@ -234,3 +247,18 @@ class WindowImplementation:
             if n:
                 return not is_open
             return is_open
+
+        @callback(
+            Output(f"{self._window_n}-{self.module_name}-modal", "fullscreen"),
+            Input(f"{self._window_n}-{self.module_name}-modal-fullscreen", "n_clicks"),
+            State(f"{self._window_n}-{self.module_name}-modal", "fullscreen"),
+        )
+        def toggle_fullscreen_modal(
+            n_clicks: int, fullscreen_state: str | bool
+        ) -> str | bool:
+            if n_clicks and n_clicks > 0:
+                if fullscreen_state is True:
+                    fullscreen = "xxl-down"
+                else:
+                    fullscreen = True
+                return fullscreen

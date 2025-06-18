@@ -190,14 +190,13 @@ class VariableSelector:
             value = ""
         card = dbc.Col(
             dbc.Card(
-                dbc.CardBody(
-                    [
+                className="variable-selector-card",
+                children=dbc.CardBody(
+                    className="variable-selector-cardbody",
+                    children=[
                         html.H5(text, className="card-title"),
                         html.Div(
-                            style={
-                                "display": "grid",
-                                "grid-template-columns": "100%",
-                            },
+                            className="variable-selector-cardbody-content",
                             children=[
                                 dbc.Input(
                                     value=value,
@@ -207,14 +206,10 @@ class VariableSelector:
                             ],
                         ),
                     ],
-                    style={"max-height": "100%"},
                 ),
-                style={"max-height": "100%"},
             )
         )
-        self._make_alert_callback(
-            component_id, text
-        )  # Should be made optional, maybe as an argument in main_layout
+        self._make_alert_callback(component_id, text)
         return card
 
     def _make_alert_callback(self, component_id: str, component_name: str) -> Any:
