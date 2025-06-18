@@ -23,7 +23,9 @@ class Aarsregnskap(ABC):
     Attributes:
         label (str): Label for the module when initialized, displayed as "🧾 Årsregnskap".
     """
-
+    
+    _id_number = 0
+    
     def __init__(
         self,
     ) -> None:
@@ -32,6 +34,9 @@ class Aarsregnskap(ABC):
         Sets up the label, validates required variables, and initializes the
         layout and callbacks for the module.
         """
+        self.module_number = Aarsregnskap._id_number
+        self.module_name = self.__class__.__name__
+        Aarsregnskap._id_number += 1
         self.label = "🧾 Årsregnskap"
         self._is_valid()
         self.module_layout = self._create_layout()
@@ -94,7 +99,7 @@ class Aarsregnskap(ABC):
                                     )
                                 ),
                             ],
-                            classname="aarsregnskap-aar-foretak-row",
+                            className="aarsregnskap-aar-foretak-row",
                         ),
                         dbc.Row(
                             dbc.Col(

@@ -182,14 +182,15 @@ class BofInformation(ABC):
     def _create_layout(self) -> html.Div:
         """Generate the layout for the BoF Foretak tab."""
         layout = html.Div(
-            style={
-                "display": "flex",
-                "flexDirection": "column",
-                "overflowY": "auto",
-                "maxHeight": "95vh",
-                "minHeight": "95vh",
-                "padding": "1rem",
-            },
+            className="bofregistry",
+            #style={
+            #    "display": "flex",
+            #    "flexDirection": "column",
+            #    "overflowY": "auto",
+            #    "maxHeight": "95vh",
+            #    "minHeight": "95vh",
+            #    "padding": "1rem",
+            #},
             children=[
                 ssb_foretak_modal(),
                 ssb_bedrift_modal(),
