@@ -22,6 +22,7 @@ from .tabs import AarsregnskapTab
 from .tabs import AltinnSkjemadataEditor
 from .tabs import BofInformationTab
 from .tabs import EditingTableTab
+from .tabs import FigureDisplayTab
 from .tabs import FreeSearchTab
 from .tabs import MultiTableTab
 from .tabs import Pimemorizer
@@ -60,6 +61,7 @@ __all__ = [
     "EditingTableTab",
     "EditingTableWindow",
     "FigureDisplay",
+    "FigureDisplayTab",
     "FigureDisplayWindow",
     "FreeSearch",
     "FreeSearchTab",
