@@ -4,11 +4,10 @@ The purpose of this type of module is to enable the user to create their own cus
 """
 
 from .figuredisplay import FigureDisplay
-from .figuredisplay import MultiModule
+from .multimodule import MultiModule
+from .multimodule import MultiModuleTab
+from .multimodule import MultiModuleWindow
 from .tables import EditingTable
-from .tables import MultiModule
-
-from .multimodule import MultiModule, MultiModuleTab, MultiModuleWindow
 
 __all__ = [
     "EditingTable",

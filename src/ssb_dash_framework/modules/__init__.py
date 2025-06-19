@@ -5,9 +5,10 @@ from .bofregistry import BofInformation
 from .building_blocks import EditingTable
 from .building_blocks import FigureDisplay
 from .building_blocks import MultiModule
+from .building_blocks import MultiModuleTab
+from .building_blocks import MultiModuleWindow
 from .freesearch import FreeSearch
 from .skjemapdfviewer import SkjemapdfViewer
-from .building_blocks import MultiModule, MultiModuleTab, MultiModuleWindow
 
 __all__ = [
     "Aarsregnskap",
@@ -16,9 +17,7 @@ __all__ = [
     "FigureDisplay",
     "FreeSearch",
     "MultiModule",
-    "MultiModule",
-    "SkjemapdfViewer",
-    "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",
+    "SkjemapdfViewer",
 ]

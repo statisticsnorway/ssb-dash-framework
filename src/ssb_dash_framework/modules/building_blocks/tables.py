@@ -1,13 +1,10 @@
 import logging
-from abc import ABC
-from abc import abstractmethod
 from collections.abc import Callable
 from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import callback
-from dash import dcc
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -331,132 +328,3 @@ class EditingTable:
                 )
 
         logger.debug("Generated callbacks")
-
-
-class MultiModule(ABC):
-    """A class to implement a multitable module.
-
-    This class is used to create a module that contains multiple EditingTable instances,
-    allowing users to switch between different tables using a dropdown menu.
-
-    Attributes:
-        label (str): The label for the multitable module.
-        table_list (list[EditingTable]): A list of EditingTable instances to be included in the multitable.
-        module_number (int): A unique identifier for the multitable instance.
-        module_name (str): The name of the module class.
-        module_layout (html.Div): The layout of the multitable module.
-    """
-
-    _id_number = 0
-
-    def __init__(
-        self,
-        label: str,
-        table_list: list[EditingTable],
-    ) -> None:
-        """Initialize the MultiModule module.
-
-        Args:
-            label (str): The label for the multitable module.
-            table_list (list[EditingTable]): A list of EditingTable instances to be included in the multitable.
-        """
-        self.label = label
-        self.table_list = table_list
-
-        self.module_number = MultiModule._id_number
-        self.module_name = self.__class__.__name__
-        MultiModule._id_number += 1
-
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
-        self._is_valid()
-        module_validator(self)
-
-    def _is_valid(self) -> None:
-        for table in self.table_list:
-            self._validate_table(table)
-        if not isinstance(self.label, str):
-            raise TypeError(
-                f"label {self.label} is not a string, is type {type(self.label)}"
-            )
-        if not isinstance(self.table_list, list):
-            raise TypeError(
-                f"table_list {self.table_list} is not a list, is type {type(self.table_list)}"
-            )
-
-    def _validate_table(self, table: EditingTable | Any) -> None:
-        """Check if the supplied table module is valid."""
-        if not isinstance(table, EditingTable):
-            logger.warning(
-                f"Possible type error, {table} is not an EditingTable, is type {type(table)}"
-            )
-        if not hasattr(table, "label"):
-            raise ValueError(f"Table {table} does not have a label attribute")
-
-    def _create_layout(self) -> html.Div:
-        table_divs = [
-            html.Div(
-                table.module_layout,
-                className="multitable-content",
-                id=f"{self.module_number}-multitable-table-{i}",
-                style={  # Needs to be inline so that the callback logic is clearer
-                    "display": "block" if i == 0 else "none",
-                },
-            )
-            for i, table in enumerate(self.table_list)
-        ]
-        layout = html.Div(
-            [
-                dcc.Dropdown(
-                    id=f"{self.module_number}-multitable-dropdown",
-                    options=[
-                        {"label": table.label, "value": i}
-                        for i, table in enumerate(self.table_list)
-                    ],
-                    value=0,
-                    clearable=False,
-                ),
-                html.Div(
-                    className="multitable-content",
-                    children=table_divs,
-                    id=f"{self.module_number}-multitable-content",
-                ),
-            ],
-            className="multitable",
-        )
-        logger.debug("Generated layout with all tables rendered")
-        return layout
-
-    @abstractmethod
-    def layout(self) -> html.Div | dbc.Tab:
-        """Define the layout for the MultiModule module.
-
-        This is an abstract method that must be implemented by subclasses to define the module's layout.
-
-        Returns:
-            html.Div | dbc.Tab: A Dash HTML Div component representing the layout of the module or a dbc.Tab to be displayed directly.
-        """
-        pass
-
-    def module_callbacks(self) -> None:
-        """Register Dash callbacks for the MultiModule component."""
-
-        @callback(
-            [
-                Output(f"{self.module_number}-multitable-table-{i}", "style")
-                for i in range(len(self.table_list))
-            ],
-            Input(f"{self.module_number}-multitable-dropdown", "value"),
-        )
-        def show_selected_table(selected_index: int):
-            """This callback is used for showing/hiding tables, so that all of them exists at the same time but only the one selected is shown.
-
-            This method of showing/hiding makes it more responsive and reduces unnecessary 'id not found' type errors in the application.
-            Easier to understand if styles is defined inline.
-            """
-            return [
-                {"display": "block"} if i == selected_index else {"display": "none"}
-                for i in range(len(self.table_list))
-            ]
-
-        logger.debug("Generated callbacks for MultiModule")

@@ -6,7 +6,8 @@ from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 
-from ...utils import WindowImplementation, TabImplementation
+from ...utils import TabImplementation
+from ...utils import WindowImplementation
 
 logger = logging.getLogger(__name__)
 
@@ -91,21 +92,16 @@ class MultiModule:
                 for i in range(len(self.module_list))
             ]
 
+
 class MultiModuleTab(TabImplementation, MultiModule):
     def __init__(self, label, module_list):
-        MultiModule.__init__(self, label = label, module_list=module_list)
+        MultiModule.__init__(self, label=label, module_list=module_list)
         TabImplementation.__init__(
             self,
         )
 
-class MultiModuleWindow(WindowImplementation,MultiModule):
+
+class MultiModuleWindow(WindowImplementation, MultiModule):
     def __init__(self, label, module_list):
-        MultiModule.__init__(self, label = label, module_list=module_list)
+        MultiModule.__init__(self, label=label, module_list=module_list)
         WindowImplementation.__init__(self)
-        
-
-
-
-
-
-    
