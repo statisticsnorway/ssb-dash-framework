@@ -24,7 +24,6 @@ from .tabs import BofInformationTab
 from .tabs import EditingTableTab
 from .tabs import FigureDisplayTab
 from .tabs import FreeSearchTab
-from .tabs import MultiModuleTab
 from .tabs import Pimemorizer
 from .tabs import SkjemapdfViewerTab
 from .utils import AlertHandler
@@ -41,9 +40,9 @@ from .windows import BofInformationWindow
 from .windows import EditingTableWindow
 from .windows import FigureDisplayWindow
 from .windows import FreeSearchWindow
-from .windows import MultiModuleWindow
 from .windows import SkjemapdfViewerWindow
 from .modules import MultiModule, MultiModuleTab, MultiModuleWindow
+
 __all__ = [
     "Aarsregnskap",
     "AarsregnskapTab",
