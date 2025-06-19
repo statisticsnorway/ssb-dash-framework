@@ -2,8 +2,8 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from ..modules.tables import EditingTable
-from ..modules.tables import MultiTable
+from ..modules.building_blocks.tables import EditingTable
+from ..modules.building_blocks.tables import MultiTable
 from ..utils import TabImplementation
 
 logger = logging.getLogger(__name__)

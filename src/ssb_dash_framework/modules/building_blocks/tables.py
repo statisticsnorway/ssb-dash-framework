@@ -14,9 +14,9 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
-from ..setup.variableselector import VariableSelector  # TODO TEMP!!!!
-from ..utils.alert_handler import create_alert
-from ..utils.module_validation import module_validator
+from ...setup.variableselector import VariableSelector
+from ...utils.alert_handler import create_alert
+from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 

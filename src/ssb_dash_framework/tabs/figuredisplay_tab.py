@@ -1,4 +1,4 @@
-from ..modules.figuredisplay import FigureDisplay
+from ..modules.building_blocks.figuredisplay import FigureDisplay
 from ..utils import TabImplementation
 
 
