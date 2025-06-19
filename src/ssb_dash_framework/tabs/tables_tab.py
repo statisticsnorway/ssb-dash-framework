@@ -3,7 +3,6 @@ from collections.abc import Callable
 from typing import Any
 
 from ..modules.building_blocks.tables import EditingTable
-from ..modules.building_blocks.tables import MultiTable
 from ..utils import TabImplementation
 
 logger = logging.getLogger(__name__)
@@ -49,22 +48,3 @@ class EditingTableTab(TabImplementation, EditingTable):
             self,
         )
 
-
-class MultiTableTab(TabImplementation, MultiTable):
-    """A class to implement a multitable module inside a tab."""
-
-    def __init__(
-        self,
-        label: str,
-        table_list: list[EditingTable],
-    ) -> None:
-        """Initialize the MultitableTab.
-
-        This class is used to create a tab to put in the tab_list.
-
-        Args:
-            label (str): The label for the tab.
-            table_list (list[EditingTable]): List of EditingTable instances to be included in the multitable.
-        """
-        MultiTable.__init__(self, label=label, table_list=table_list)
-        TabImplementation.__init__(self)

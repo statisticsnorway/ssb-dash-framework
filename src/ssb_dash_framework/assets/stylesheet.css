@@ -184,6 +184,20 @@ Bofregistry
 }
 
 /*
+Multimodule
+*/
+
+.multimodule {
+    height: 100%;
+    width: 100%;
+}
+
+.multimodule-content {
+    height: 100%;
+    width: 100%;
+}
+
+/*
 Figuredisplay
 */
 
@@ -194,16 +208,6 @@ Figuredisplay
 
 .figuredisplay-graph {
     height:100%;
-    width: 100%;
-}
-
-.multifigure {
-    height: 100%;
-    width: 100%;
-}
-
-.multifigure-content {
-    height: 100%;
     width: 100%;
 }
 
@@ -252,12 +256,3 @@ Tables
     width: 100%;
 }
 
-.multitable {
-    height: 100%;
-    width: 100%;
-}
-
-.multitable-content {
-    height: 100%;
-    width: 100%;
-}
