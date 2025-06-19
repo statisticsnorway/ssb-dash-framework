@@ -41,6 +41,7 @@ from .windows import BofInformationWindow
 from .windows import EditingTableWindow
 from .windows import FigureDisplayWindow
 from .windows import FreeSearchWindow
+from .windows import MultiFigureWindow
 from .windows import MultiTableWindow
 from .windows import SkjemapdfViewerWindow
 
@@ -67,6 +68,7 @@ __all__ = [
     "FreeSearchTab",
     "FreeSearchWindow",
     "HBMethod",
+    "MultiFigureWindow",
     "MultiTable",
     "MultiTableTab",
     "MultiTableWindow",

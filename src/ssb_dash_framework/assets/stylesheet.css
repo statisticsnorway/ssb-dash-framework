@@ -197,6 +197,16 @@ Figuredisplay
     width: 100%;
 }
 
+.multifigure {
+    height: 100%;
+    width: 100%;
+}
+
+.multifigure-content {
+    height: 100%;
+    width: 100%;
+}
+
 /*
 SkjemapdfViewer
 */
