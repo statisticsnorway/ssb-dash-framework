@@ -11,7 +11,7 @@ from .modules import BofInformation
 from .modules import EditingTable
 from .modules import FigureDisplay
 from .modules import FreeSearch
-from .modules import MultiTable
+from .modules import MultiModule
 from .modules import SkjemapdfViewer
 from .setup import VariableSelector
 from .setup import VariableSelectorOption
@@ -24,7 +24,7 @@ from .tabs import BofInformationTab
 from .tabs import EditingTableTab
 from .tabs import FigureDisplayTab
 from .tabs import FreeSearchTab
-from .tabs import MultiTableTab
+from .tabs import MultiModuleTab
 from .tabs import Pimemorizer
 from .tabs import SkjemapdfViewerTab
 from .utils import AlertHandler
@@ -41,8 +41,7 @@ from .windows import BofInformationWindow
 from .windows import EditingTableWindow
 from .windows import FigureDisplayWindow
 from .windows import FreeSearchWindow
-from .windows import MultiFigureWindow
-from .windows import MultiTableWindow
+from .windows import MultiModuleWindow
 from .windows import SkjemapdfViewerWindow
 
 __all__ = [
@@ -68,10 +67,10 @@ __all__ = [
     "FreeSearchTab",
     "FreeSearchWindow",
     "HBMethod",
-    "MultiFigureWindow",
-    "MultiTable",
-    "MultiTableTab",
-    "MultiTableWindow",
+    "MultiModule",
+    "MultiModuleTab",
+    "MultiModuleWindow",
+    "MultiModuleWindow",
     "Pimemorizer",
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",

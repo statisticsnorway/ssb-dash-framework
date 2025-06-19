@@ -1,13 +1,13 @@
 from ssb_dash_framework import EditingTable
-from ssb_dash_framework import MultiTable
-from ssb_dash_framework import MultiTableTab
-from ssb_dash_framework import MultiTableWindow
+from ssb_dash_framework import MultiModule
+from ssb_dash_framework import MultiModuleTab
+from ssb_dash_framework import MultiModuleWindow
 
 
 def test_import() -> None:
-    assert MultiTable is not None
-    assert MultiTableTab is not None
-    assert MultiTableWindow is not None
+    assert MultiModule is not None
+    assert MultiModuleTab is not None
+    assert MultiModuleWindow is not None
 
 
 def test_base_class() -> None:
@@ -24,7 +24,7 @@ def test_base_class() -> None:
         get_data_func=lambda x: x,
     )
 
-    class test_implementation(MultiTable):
+    class test_implementation(MultiModule):
         def __init__(self, label, table_list) -> None:
             super().__init__(label=label, table_list=table_list)
 
@@ -49,7 +49,7 @@ def test_tab() -> None:
         get_data_func=lambda x: x,
     )
 
-    MultiTableTab(label="test multitable", table_list=[table1, table2])
+    MultiModuleTab(label="test multitable", table_list=[table1, table2])
 
 
 def test_window() -> None:
@@ -67,4 +67,4 @@ def test_window() -> None:
         get_data_func=lambda x: x,
     )
 
-    MultiTableWindow(label="test multitable", table_list=[table1, table2])
+    MultiModuleWindow(label="test multitable", table_list=[table1, table2])

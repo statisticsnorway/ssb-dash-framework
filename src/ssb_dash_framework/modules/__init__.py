@@ -4,8 +4,7 @@ from .aarsregnskap import Aarsregnskap
 from .bofregistry import BofInformation
 from .building_blocks import EditingTable
 from .building_blocks import FigureDisplay
-from .building_blocks import MultiFigure
-from .building_blocks import MultiTable
+from .building_blocks import MultiModule
 from .freesearch import FreeSearch
 from .skjemapdfviewer import SkjemapdfViewer
 
@@ -15,7 +14,7 @@ __all__ = [
     "EditingTable",
     "FigureDisplay",
     "FreeSearch",
-    "MultiFigure",
-    "MultiTable",
+    "MultiModule",
+    "MultiModule",
     "SkjemapdfViewer",
 ]

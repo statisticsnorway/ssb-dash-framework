@@ -8,7 +8,7 @@ from .freesearch_tab import FreeSearchTab
 from .pi_memorizer import Pimemorizer
 from .skjemapdfviewer_tab import SkjemapdfViewerTab
 from .tables_tab import EditingTableTab
-from .tables_tab import MultiTableTab
+from .tables_tab import MultiModuleTab
 
 __all__ = [
     "AarsregnskapTab",
@@ -17,7 +17,7 @@ __all__ = [
     "EditingTableTab",
     "FigureDisplayTab",
     "FreeSearchTab",
-    "MultiTableTab",
+    "MultiModuleTab",
     "Pimemorizer",
     "SkjemapdfViewerTab",
 ]

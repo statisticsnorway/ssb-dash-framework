@@ -75,7 +75,7 @@ class FigureDisplay:
                 return self.clickdata_func(clickdata)
 
 
-class MultiFigure(ABC):
+class MultiModule(ABC):
 
     _id_number = 0
 
@@ -130,7 +130,7 @@ class MultiFigure(ABC):
         pass
 
     def module_callbacks(self):
-        """Register Dash callbacks for the MultiFigure component."""
+        """Register Dash callbacks for the MultiModule component."""
 
         @callback(
             [

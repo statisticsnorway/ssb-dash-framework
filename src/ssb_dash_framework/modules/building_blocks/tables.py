@@ -333,7 +333,7 @@ class EditingTable:
         logger.debug("Generated callbacks")
 
 
-class MultiTable(ABC):
+class MultiModule(ABC):
     """A class to implement a multitable module.
 
     This class is used to create a module that contains multiple EditingTable instances,
@@ -354,7 +354,7 @@ class MultiTable(ABC):
         label: str,
         table_list: list[EditingTable],
     ) -> None:
-        """Initialize the MultiTable module.
+        """Initialize the MultiModule module.
 
         Args:
             label (str): The label for the multitable module.
@@ -363,9 +363,9 @@ class MultiTable(ABC):
         self.label = label
         self.table_list = table_list
 
-        self.module_number = MultiTable._id_number
+        self.module_number = MultiModule._id_number
         self.module_name = self.__class__.__name__
-        MultiTable._id_number += 1
+        MultiModule._id_number += 1
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -429,7 +429,7 @@ class MultiTable(ABC):
 
     @abstractmethod
     def layout(self) -> html.Div | dbc.Tab:
-        """Define the layout for the MultiTable module.
+        """Define the layout for the MultiModule module.
 
         This is an abstract method that must be implemented by subclasses to define the module's layout.
 
@@ -439,7 +439,7 @@ class MultiTable(ABC):
         pass
 
     def module_callbacks(self) -> None:
-        """Register Dash callbacks for the MultiTable component."""
+        """Register Dash callbacks for the MultiModule component."""
 
         @callback(
             [
@@ -459,4 +459,4 @@ class MultiTable(ABC):
                 for i in range(len(self.table_list))
             ]
 
-        logger.debug("Generated callbacks for MultiTable")
+        logger.debug("Generated callbacks for MultiModule")

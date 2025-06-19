@@ -3,7 +3,7 @@ from collections.abc import Callable
 from typing import Any
 
 from ..modules.building_blocks.tables import EditingTable
-from ..modules.building_blocks.tables import MultiTable
+from ..modules.building_blocks.tables import MultiModule
 from ..utils import WindowImplementation
 
 logger = logging.getLogger(__name__)
@@ -52,8 +52,8 @@ class EditingTableWindow(WindowImplementation, EditingTable):
         )
 
 
-class MultiTableWindow(WindowImplementation, MultiTable):
-    """A class to implement a MultiTable module inside a modal."""
+class MultiModuleWindow(WindowImplementation, MultiModule):
+    """A class to implement a MultiModule module inside a modal."""
 
     def __init__(
         self,
@@ -66,5 +66,5 @@ class MultiTableWindow(WindowImplementation, MultiTable):
             label (str): The label for the modal.
             table_list (list[EditingTable]): List of EditingTable instances to be included in the modal.
         """
-        MultiTable.__init__(self, label=label, table_list=table_list)
+        MultiModule.__init__(self, label=label, table_list=table_list)
         WindowImplementation.__init__(self)
