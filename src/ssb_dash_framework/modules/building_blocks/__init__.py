@@ -8,9 +8,12 @@ from .figuredisplay import MultiModule
 from .tables import EditingTable
 from .tables import MultiModule
 
+from .multimodule import MultiModule, MultiModuleTab, MultiModuleWindow
+
 __all__ = [
     "EditingTable",
     "FigureDisplay",
     "MultiModule",
-    "MultiModule",
+    "MultiModuleTab",
+    "MultiModuleWindow",
 ]

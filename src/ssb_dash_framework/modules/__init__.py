@@ -7,6 +7,7 @@ from .building_blocks import FigureDisplay
 from .building_blocks import MultiModule
 from .freesearch import FreeSearch
 from .skjemapdfviewer import SkjemapdfViewer
+from .building_blocks import MultiModule, MultiModuleTab, MultiModuleWindow
 
 __all__ = [
     "Aarsregnskap",
@@ -17,4 +18,7 @@ __all__ = [
     "MultiModule",
     "MultiModule",
     "SkjemapdfViewer",
+    "MultiModule",
+    "MultiModuleTab",
+    "MultiModuleWindow",
 ]

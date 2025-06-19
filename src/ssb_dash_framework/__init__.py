@@ -43,7 +43,7 @@ from .windows import FigureDisplayWindow
 from .windows import FreeSearchWindow
 from .windows import MultiModuleWindow
 from .windows import SkjemapdfViewerWindow
-
+from .modules import MultiModule, MultiModuleTab, MultiModuleWindow
 __all__ = [
     "Aarsregnskap",
     "AarsregnskapTab",
@@ -79,6 +79,9 @@ __all__ = [
     "VariableSelector",
     "VariableSelectorOption",
     "VisualizationBuilder",
+    "MultiModule",
+    "MultiModuleTab",
+    "MultiModuleWindow",
     "WindowImplementation",
     "_get_kostra_r",
     "app_setup",
