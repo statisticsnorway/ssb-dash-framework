@@ -8,10 +8,15 @@ from .modals import HBMethod
 from .modals import VisualizationBuilder
 from .modules import Aarsregnskap
 from .modules import BofInformation
+from .modules import Canvas
+from .modules import CanvasTab
+from .modules import CanvasWindow
 from .modules import EditingTable
 from .modules import FigureDisplay
 from .modules import FreeSearch
 from .modules import MultiModule
+from .modules import MultiModuleTab
+from .modules import MultiModuleWindow
 from .modules import SkjemapdfViewer
 from .setup import VariableSelector
 from .setup import VariableSelectorOption
@@ -41,7 +46,6 @@ from .windows import EditingTableWindow
 from .windows import FigureDisplayWindow
 from .windows import FreeSearchWindow
 from .windows import SkjemapdfViewerWindow
-from .modules import MultiModule, MultiModuleTab, MultiModuleWindow
 
 __all__ = [
     "Aarsregnskap",
@@ -53,6 +57,9 @@ __all__ = [
     "BofInformation",
     "BofInformationTab",
     "BofInformationWindow",
+    "Canvas",
+    "CanvasTab",
+    "CanvasWindow",
     "Control",
     "ControlFrameworkBase",
     "DebugInspector",
@@ -67,7 +74,10 @@ __all__ = [
     "FreeSearchWindow",
     "HBMethod",
     "MultiModule",
+    "MultiModule",
     "MultiModuleTab",
+    "MultiModuleTab",
+    "MultiModuleWindow",
     "MultiModuleWindow",
     "MultiModuleWindow",
     "Pimemorizer",
@@ -78,9 +88,6 @@ __all__ = [
     "VariableSelector",
     "VariableSelectorOption",
     "VisualizationBuilder",
-    "MultiModule",
-    "MultiModuleTab",
-    "MultiModuleWindow",
     "WindowImplementation",
     "_get_kostra_r",
     "app_setup",
