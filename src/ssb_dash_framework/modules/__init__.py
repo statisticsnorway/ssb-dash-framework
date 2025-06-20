@@ -2,6 +2,9 @@
 
 from .aarsregnskap import Aarsregnskap
 from .bofregistry import BofInformation
+from .building_blocks import Canvas
+from .building_blocks import CanvasTab
+from .building_blocks import CanvasWindow
 from .building_blocks import EditingTable
 from .building_blocks import FigureDisplay
 from .building_blocks import MultiModule
@@ -13,6 +16,9 @@ from .skjemapdfviewer import SkjemapdfViewer
 __all__ = [
     "Aarsregnskap",
     "BofInformation",
+    "Canvas",
+    "CanvasTab",
+    "CanvasWindow",
     "EditingTable",
     "FigureDisplay",
     "FreeSearch",
