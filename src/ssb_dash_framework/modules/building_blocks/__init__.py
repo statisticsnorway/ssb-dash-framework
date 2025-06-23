@@ -3,6 +3,9 @@
 The purpose of this type of module is to enable the user to create their own customizable views, while still being easy to integrate with the rest of the framework.
 """
 
+from .canvas import Canvas
+from .canvas import CanvasTab
+from .canvas import CanvasWindow
 from .figuredisplay import FigureDisplay
 from .multimodule import MultiModule
 from .multimodule import MultiModuleTab
@@ -10,6 +13,9 @@ from .multimodule import MultiModuleWindow
 from .tables import EditingTable
 
 __all__ = [
+    "Canvas",
+    "CanvasTab",
+    "CanvasWindow",
     "EditingTable",
     "FigureDisplay",
     "MultiModule",
