@@ -112,9 +112,7 @@ class BofInformation(ABC):
 
     _id_number = 0
 
-    def __init__(
-        self, label="🗃️ BoF Foretak", variableselector_foretak_name="foretak"
-    ) -> None:
+    def __init__(self, label=None, variableselector_foretak_name="foretak") -> None:
         """Initialize the BofInformation tab component.
 
         Attributes:
@@ -124,8 +122,11 @@ class BofInformation(ABC):
         self.module_name = self.__class__.__name__
         BofInformation._id_number += 1
 
+        if label is None:
+            label = "🗃️ BoF Foretak"
         self.label = label
-        self.variableselector_foretak_name = variableselector_foretak_name
+        if variableselector_foretak_name is None:
+            variableselector_foretak_name = "foretak"
         self.variableselector = VariableSelector(
             selected_inputs=[variableselector_foretak_name], selected_states=[]
         )
