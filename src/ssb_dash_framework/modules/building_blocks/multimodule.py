@@ -8,6 +8,7 @@ from dash.dependencies import Output
 
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
+from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ class MultiModule:
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self._is_valid()
+        module_validator(self)
 
     def _is_valid(self):
         if not isinstance(self.label, str):
