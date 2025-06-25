@@ -31,6 +31,13 @@ Here is a list of important resources for contributors:
 
 8. [How to Request a Feature](#how-to-request-a-feature)
 
+## Before-release checklist
+
+- All tests pass.
+- All demos work.
+- Create a pre-release and have it tested by several users to ensure compatibility.
+  - If breaking changes, make a list of them and a guide for updating.
+
 ## Our design and making a new module
 
 Pre-requisites for building a new module:
