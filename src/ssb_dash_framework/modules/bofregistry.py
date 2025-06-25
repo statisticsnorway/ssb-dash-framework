@@ -14,6 +14,7 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ..setup.variableselector import VariableSelector
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -111,7 +112,7 @@ class BofInformation(ABC):
 
     _id_number = 0
 
-    def __init__(self) -> None:
+    def __init__(self, label=None, variableselector_foretak_name="foretak") -> None:
         """Initialize the BofInformation tab component.
 
         Attributes:
@@ -121,8 +122,14 @@ class BofInformation(ABC):
         self.module_name = self.__class__.__name__
         BofInformation._id_number += 1
 
-        self.label = "🗃️ BoF Foretak"
-
+        if label is None:
+            label = "🗃️ BoF Foretak"
+        self.label = label
+        if variableselector_foretak_name is None:
+            variableselector_foretak_name = "foretak"
+        self.variableselector = VariableSelector(
+            selected_inputs=[variableselector_foretak_name], selected_states=[]
+        )
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self._is_valid()
@@ -352,6 +359,10 @@ class BofInformation(ABC):
         Notes:
             - The `bof_data` callback fetches and updates data in the cards based on the selected foretak.
         """
+        dynamic_states = [
+            self.variableselector.get_inputs(),
+            self.variableselector.get_states(),
+        ]
 
         @callback(
             Output("bofregistry-modal-ssb_foretak", "is_open"),
@@ -444,7 +455,7 @@ class BofInformation(ABC):
             Output("tab-bof_foretak-totansattecard", "value"),
             Output("tab-bof_foretak-omsetning", "value"),
             Output("tab-bof_foretak-typecard", "value"),
-            Input("var-foretak", "value"),
+            *dynamic_states,
         )
         def bof_data(
             orgf: str,
