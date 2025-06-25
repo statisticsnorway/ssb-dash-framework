@@ -4,6 +4,7 @@ from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import pandas as pd
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -47,6 +48,7 @@ class EditingTable:
         update_table_func: Callable[..., Any] | None = None,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
+        number_format=None,
     ) -> None:
         """Initialize the EditingTable component.
 
@@ -67,6 +69,11 @@ class EditingTable:
         self.label = label
         self.output = output
         self.output_varselector_name = output_varselector_name or output
+
+        if number_format is None:
+            self.number_format = "d3.format(',.1f')(params.value).replace(/,/g, ' ')"
+        else:
+            self.number_format = number_format
 
         self.variableselector = VariableSelector(
             selected_inputs=inputs, selected_states=states
@@ -182,6 +189,11 @@ class EditingTable:
                         "headerName": col,
                         "field": col,
                         "hide": col == "row_id",
+                        "valueFormatter": (
+                            {"function": self.number_format}
+                            if pd.api.types.is_numeric_dtype(df[col])
+                            else None
+                        ),
                     }
                     for col in df.columns
                 ]

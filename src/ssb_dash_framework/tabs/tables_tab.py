@@ -20,6 +20,7 @@ class EditingTableTab(TabImplementation, EditingTable):
         update_table_func: Callable[..., Any] | None = None,
         output: str | None = None,
         output_varselector_name: str | None = None,
+        number_format=None,
     ) -> None:
         """Initialize the EditingTableTab.
 
@@ -47,4 +48,3 @@ class EditingTableTab(TabImplementation, EditingTable):
         TabImplementation.__init__(
             self,
         )
-
