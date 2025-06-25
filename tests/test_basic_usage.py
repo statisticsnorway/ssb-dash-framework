@@ -8,9 +8,11 @@ from ssb_dash_framework import app_setup
 from ssb_dash_framework import main_layout
 from ssb_dash_framework import set_variables
 
+# TODO add checks to ensure that options are added as intended
+
 
 def test_add_option() -> None:
-    VariableSelectorOption("foretak")
+    VariableSelectorOption("ident")
 
 
 def test_set_variables() -> None:
