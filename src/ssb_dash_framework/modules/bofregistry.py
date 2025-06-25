@@ -111,7 +111,7 @@ class BofInformation(ABC):
 
     _id_number = 0
 
-    def __init__(self) -> None:
+    def __init__(self, label = "🗃️ BoF Foretak", variableselector_foretak_name = "foretak") -> None:
         """Initialize the BofInformation tab component.
 
         Attributes:
@@ -121,7 +121,8 @@ class BofInformation(ABC):
         self.module_name = self.__class__.__name__
         BofInformation._id_number += 1
 
-        self.label = "🗃️ BoF Foretak"
+        self.label = 
+        self.variableselector_foretak_name = variableselector_foretak_name
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -444,7 +445,7 @@ class BofInformation(ABC):
             Output("tab-bof_foretak-totansattecard", "value"),
             Output("tab-bof_foretak-omsetning", "value"),
             Output("tab-bof_foretak-typecard", "value"),
-            Input("var-foretak", "value"),
+            Input(f"var-{self.variableselector_foretak_name}", "value"),
         )
         def bof_data(
             orgf: str,
