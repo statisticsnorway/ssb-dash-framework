@@ -72,7 +72,7 @@ class MultiModule:
                     id=f"{self.module_number}-multimodule-content",
                 ),
             ],
-            className="multimodule",
+            className="dbc multimodule",
         )
         logger.debug("Generated layout with all modules rendered")
         return layout
