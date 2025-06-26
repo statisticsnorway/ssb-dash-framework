@@ -49,6 +49,7 @@ class EditingTable:
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
         number_format=None,
+        **kwargs,
     ) -> None:
         """Initialize the EditingTable component.
 
@@ -62,7 +63,12 @@ class EditingTable:
             output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
             output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
                 If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
+
+        Note:
+            kwargs are passed to the AgGrid to allow more customization. An example option would be adding dashGridOptions = {"singleClickEdit": True}
         """
+        self.kwargs = kwargs
+
         self.module_number = EditingTable._id_number
         self.module_name = self.__class__.__name__
         EditingTable._id_number += 1
@@ -108,7 +114,7 @@ class EditingTable:
                         f"output {self.output} and output_varselector_name {self.output_varselector_name} are not the same length"
                     )
 
-    def _create_layout(self) -> html.Div:
+    def _create_layout(self, **kwargs) -> html.Div:
         """Generate the layout for the EditingTable component.
 
         Returns:
@@ -121,9 +127,12 @@ class EditingTable:
             className="editingtable",
             children=[
                 dag.AgGrid(
-                    defaultColDef={"editable": True},
+                    defaultColDef=self.kwargs.get(
+                        "defaultColDef", {"editable": True}
+                    ),  # This is to make sure the user can override the defaultColDef
                     id=f"{self.module_number}-tabelleditering-table1",
                     className="ag-theme-alpine-dark header-style-on-filter editingtable-aggrid-style",
+                    **{k: v for k, v in self.kwargs.items() if k != "defaultColDef"},
                 )
             ],
         )

@@ -21,6 +21,7 @@ class EditingTableTab(TabImplementation, EditingTable):
         output: str | None = None,
         output_varselector_name: str | None = None,
         number_format=None,
+        **kwargs
     ) -> None:
         """Initialize the EditingTableTab.
 
@@ -44,6 +45,7 @@ class EditingTableTab(TabImplementation, EditingTable):
             update_table_func=update_table_func,
             output=output,
             output_varselector_name=output_varselector_name,
+            **kwargs
         )
         TabImplementation.__init__(
             self,

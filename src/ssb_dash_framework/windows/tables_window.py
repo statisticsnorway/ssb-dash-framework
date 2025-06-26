@@ -25,6 +25,7 @@ class EditingTableWindow(WindowImplementation, EditingTable):
         output: str | None = None,
         output_varselector_name: str | None = None,
         number_format=None,
+        **kwargs
     ) -> None:
         """Initialize the EditingTableWindow.
 
