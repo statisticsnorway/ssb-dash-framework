@@ -2,6 +2,7 @@ from collections.abc import Generator
 
 import pytest
 
+from ssb_dash_framework import set_variables
 from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.setup.variableselector import VariableSelectorOption
 
@@ -61,3 +62,24 @@ def test_no_codes_again() -> None:
     assert len(VariableSelector._variableselectoroptions) == 0
     variableselector = VariableSelector([], [])
     assert len(variableselector.options) == 0
+
+
+def test_options_order() -> None:
+    """Tests that the order inputs and states are requested in is the order they are returned.
+    """
+    set_variables(["orgnr", "aar", "kvartal"])
+
+    test_orders = {
+        "order_1": ["orgnr", "aar", "kvartal"],
+        "order_2": ["aar", "kvartal", "orgnr"],
+        "order_3": ["kvartal", "orgnr", "aar"]
+    }
+    
+    for order in test_orders:
+        test_order = test_orders[order]
+        expected = [
+            VariableSelector(selected_inputs = [value], selected_states=[]).get_inputs()[0] for value in test_order
+        ]
+        actual = VariableSelector(selected_inputs = test_order, selected_states=[]).get_inputs()
+        assert actual == expected, f"Options are sorted in the wrong order for test order {order}. Expected order {expected} but returned actual order {actual}"
+        
