@@ -135,16 +135,19 @@ class VariableSelector:
         """Retrieves a list of Dash Input objects for selected inputs."""
         return [
             Input(option.id, "value")
+            for input_title in self.inputs
             for option in self._variableselectoroptions
-            if option.title in self.inputs
+            if option.title == input_title
         ]
+
 
     def get_states(self) -> list[State]:
         """Retrieves a list of Dash State objects for selected states."""
         return [
             State(option.id, "value")
+            for state_title in self.states
             for option in self._variableselectoroptions
-            if option.title in self.states
+            if option.title == state_title
         ]
 
     def get_output_object(self, variable: str) -> Output:
