@@ -81,5 +81,13 @@ def test_options_order() -> None:
             VariableSelector(selected_inputs = [value], selected_states=[]).get_inputs()[0] for value in test_order
         ]
         actual = VariableSelector(selected_inputs = test_order, selected_states=[]).get_inputs()
-        assert actual == expected, f"Options are sorted in the wrong order for test order {order}. Expected order {expected} but returned actual order {actual}"
+        assert actual == expected, f"Options are sorted in the wrong order when creating inputs for test order {order}. Expected order {expected} but returned actual order {actual}"
+
+    for order in test_orders:
+        test_order = test_orders[order]
+        expected = [
+            VariableSelector(selected_inputs = [], selected_states=[value]).get_states()[0] for value in test_order
+        ]
+        actual = VariableSelector(selected_inputs = [], selected_states=test_order).get_states()
+        assert actual == expected, f"Options are sorted in the wrong order when creating states for test order {order}. Expected order {expected} but returned actual order {actual}"
         
