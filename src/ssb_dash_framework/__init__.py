@@ -9,6 +9,8 @@ from .modules import Aarsregnskap
 
 # from .modals import AltinnDataCapture
 from .modules import AltinnDataCapture
+from .modules import AltinnDataCaptureTab
+from .modules import AltinnDataCaptureWindow
 from .modules import BofInformation
 from .modules import Canvas
 from .modules import CanvasTab
@@ -55,6 +57,8 @@ __all__ = [
     "AlertHandler",
     "AltinnControlView",
     "AltinnDataCapture",
+    "AltinnDataCaptureTab",
+    "AltinnDataCaptureWindow",
     "AltinnSkjemadataEditor",
     "BofInformation",
     "BofInformationTab",

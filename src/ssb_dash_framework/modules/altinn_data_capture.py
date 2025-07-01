@@ -12,6 +12,8 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from plotly.graph_objects import Figure
 
+from ...utils import TabImplementation
+from ...utils import WindowImplementation
 from ..setup.variableselector import VariableSelector
 from ..utils.module_validation import module_validator
 
@@ -324,3 +326,39 @@ class AltinnDataCapture(ABC):
                     borderpad=5,
                 )
                 return fig
+
+
+class AltinnDataCaptureTab(TabImplementation, AltinnDataCapture):
+    def __init__(
+        self,
+        time_units: list[str],
+        label: str = "🎣 Datafangst",
+        database_type: str | None = None,
+        database: object | None = None,
+    ) -> None:
+        AltinnDataCapture.__init__(
+            self,
+            time_units=time_units,
+            label=label,
+            database_type=database_type,
+            database=database,
+        )
+        TabImplementation.__init__(self)
+
+
+class AltinnDataCaptureWindow(WindowImplementation, AltinnDataCapture):
+    def __init__(
+        self,
+        time_units: list[str],
+        label: str = "🎣 Datafangst",
+        database_type: str | None = None,
+        database: object | None = None,
+    ) -> None:
+        AltinnDataCapture.__init__(
+            self,
+            time_units=time_units,
+            label=label,
+            database_type=database_type,
+            database=database,
+        )
+        WindowImplementation.__init__(self)
