@@ -141,6 +141,19 @@ Aarsregnskap
 }
 
 /*
+AltinnDataCapture
+*/
+
+.altinn-data-capture {
+    height: 100%;
+    width: 100%;
+}
+
+.altinn-data-capture-loading {
+
+}
+
+/*
 Bofregistry
 */
 
@@ -263,4 +276,3 @@ Tables
     height: 100% !important; /* For some reason this needed !important to work. */
     width: 100%;
 }
-
