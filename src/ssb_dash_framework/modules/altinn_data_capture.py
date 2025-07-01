@@ -102,76 +102,72 @@ class AltinnDataCapture(ABC):
             layout: A Div element containing components for the graphs.
         """
         layout = html.Div(
-            [
+            # style={
+            #    "display": "grid",
+            #    "height": "100%",
+            #    "grid-template-rows": "100%",
+            # },
+            children=[
                 html.Div(
-                    style={
-                        "display": "grid",
-                        "height": "100%",
-                        "grid-template-rows": "100%",
-                    },
                     children=[
-                        html.Div(
-                            children=[
-                                dbc.Col(
-                                    dbc.Row(
+                        dbc.Col(
+                            dbc.Row(
+                                [
+                                    dbc.Col(
                                         [
-                                            dbc.Col(
-                                                [
-                                                    dbc.Label("Velg graf"),
-                                                    dbc.RadioItems(
-                                                        options=[
-                                                            {
-                                                                "label": "Antall/dag",
-                                                                "value": "antall",
-                                                            },
-                                                            {
-                                                                "label": "Kumulativ",
-                                                                "value": "kumulativ",
-                                                            },
-                                                        ],
-                                                        value="antall",
-                                                        id="datafangst-radioitem1",
-                                                    ),
+                                            dbc.Label("Velg graf"),
+                                            dbc.RadioItems(
+                                                options=[
+                                                    {
+                                                        "label": "Antall/dag",
+                                                        "value": "antall",
+                                                    },
+                                                    {
+                                                        "label": "Kumulativ",
+                                                        "value": "kumulativ",
+                                                    },
                                                 ],
+                                                value="antall",
+                                                id="datafangst-radioitem1",
+                                            ),
+                                        ],
+                                    ),
+                                    dbc.Col(
+                                        [
+                                            dbc.Label(
+                                                "Skjema",
+                                                # width=12,
+                                                className="mb-1",
                                             ),
                                             dbc.Col(
-                                                [
-                                                    dbc.Label(
-                                                        "Skjema",
-                                                        width=12,
-                                                        className="mb-1",
-                                                    ),
-                                                    dbc.Col(
-                                                        dcc.Dropdown(
-                                                            id="datafangst-dd1",
-                                                            className="dbc",
-                                                        )
-                                                    ),
-                                                ]
+                                                dcc.Dropdown(
+                                                    id="datafangst-dd1",
+                                                    className="dbc",
+                                                )
                                             ),
-                                        ],
+                                        ]
                                     ),
-                                ),
-                                dbc.Col(
-                                    dcc.Loading(
-                                        id="datafangst-graph1-loading",
-                                        children=[
-                                            dcc.Graph(
-                                                id="datafangst-graph1",
-                                            ),
-                                        ],
-                                        type="graph",
-                                        style={
-                                            "position": "fixed",
-                                            "z-index": 9999,
-                                        },
+                                ],
+                            ),
+                        ),
+                        dbc.Col(
+                            dcc.Loading(
+                                id="datafangst-graph1-loading",
+                                children=[
+                                    dcc.Graph(
+                                        id="datafangst-graph1",
                                     ),
-                                ),
-                            ],
-                            style={"width": "90%", "margin-left": "5%"},
+                                ],
+                                type="graph",
+                                # style={
+                                #    "position": "fixed",
+                                #    "z-index": 9999,
+                                # },
+                            ),
                         ),
                     ],
-                )
+                    # style={"width": "90%", "margin-left": "5%"},
+                ),
             ],
         )
         logger.debug("AltinnDataCapture layout created")
