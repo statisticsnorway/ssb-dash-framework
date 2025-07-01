@@ -28,6 +28,8 @@ class AltinnDataCapture(ABC):
         database (object): The eimerdb connection.
     """
 
+    implemented_database_types = ["eimerdb_default"]
+
     _id_number = 0
 
     def __init__(
@@ -71,9 +73,9 @@ class AltinnDataCapture(ABC):
         if self.database:
             if not isinstance(self.database_type, str):
                 raise TypeError("database_type must be a string.")
-            if self.database_type not in ["eimerdb_default", "custom"]:
+            if self.database_type not in AltinnDataCapture.implemented_database_types:
                 raise ValueError(
-                    "database_type must be 'eimerdb_default' or 'eimerdb_custom'."
+                    f"database_type must be one of {AltinnDataCapture.implemented_database_types}."
                 )
             if not hasattr(self.database, "query"):
                 raise TypeError("The provided object does not have a 'query' method.")
@@ -220,9 +222,6 @@ class AltinnDataCapture(ABC):
                     }
                 },
             )
-            if df.empty:
-                logger.debug("No skjemaer found in the database.")
-                return {"label": "Alle skjemaer", "value": "all"}, "all"
             all_skjemas = df["skjemaer"].dropna().str.split(",").sum()
             distinct_skjemas = list(set(s.strip() for s in all_skjemas))
             default_value = distinct_skjemas[0]
