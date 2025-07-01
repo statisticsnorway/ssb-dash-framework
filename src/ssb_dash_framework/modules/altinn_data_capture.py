@@ -69,14 +69,15 @@ class AltinnDataCapture(ABC):
     def is_valid(self) -> None:
         """Checks if the module is valid."""
         if self.database:
-            if not hasattr(self.database, "query"):
-                raise TypeError("The provided object does not have a 'query' method.")
             if not isinstance(self.database_type, str):
                 raise TypeError("database_type must be a string.")
             if self.database_type not in ["eimerdb_default", "custom"]:
                 raise ValueError(
                     "database_type must be 'eimerdb_default' or 'eimerdb_custom'."
                 )
+            if not hasattr(self.database, "query"):
+                raise TypeError("The provided object does not have a 'query' method.")
+
         elif self.database_type is None:
             if self.get_amount_func is None or self.get_cumulative_func is None:
                 logger.warning("Currently this behavior is not implemented") # TODO implement this functionality.
