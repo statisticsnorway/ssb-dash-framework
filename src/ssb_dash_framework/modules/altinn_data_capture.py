@@ -12,9 +12,9 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from plotly.graph_objects import Figure
 
+from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
-from ..setup.variableselector import VariableSelector
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ class AltinnDataCapture(ABC):
         self.database_type = database_type
         self.database = database
         self.time_units = time_units
-        self.get_amount_func = None,
+        self.get_amount_func = (None,)
         self.get_cumulative_func = None
         self.is_valid()
 
@@ -80,10 +80,13 @@ class AltinnDataCapture(ABC):
 
         elif self.database_type is None:
             if self.get_amount_func is None or self.get_cumulative_func is None:
-                logger.warning("Currently this behavior is not implemented") # TODO implement this functionality.
                 raise ValueError(
                     "Either a database connection or custom functions must be provided."
                 )
+            else:
+                raise NotImplementedError(
+                    "Currently this behavior is not implemented"
+                )  # TODO implement this functionality.
         if not isinstance(self.time_units, list) and not all(
             isinstance(unit, str) for unit in self.time_units
         ):
