@@ -240,6 +240,13 @@ class AltinnSkjemadataEditor(AltinnComponents):
             *self.create_callback_components("State"),
         )
         def hovedside_update_altinnskjema(skjemaversjon, tabell, skjema, *args):
+            schema = self.conn.tables[tabell]["schema"]
+            columns = {field["name"] for field in schema}
+            if "variabel" in columns and "verdi" in columns:
+                long_format = True
+            else:
+                long_format = False
+
             if (
                 skjemaversjon is None
                 or tabell is None
@@ -247,44 +254,67 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 or any(arg is None for arg in args)
             ):
                 return None, None
-
-            try:
-                partition_args = dict(zip(self.time_units, args, strict=False))
-                df = self.conn.query(
-                    f"""
-                    SELECT t.*, subquery.radnr
-                    FROM {tabell} AS t
-                    JOIN (
-                        SELECT aar, radnr, tabell, variabel
-                        FROM datatyper
-                    ) AS subquery
-                    ON subquery.aar = t.aar AND subquery.variabel = t.variabel
-                    WHERE t.skjemaversjon = '{skjemaversjon}'
-                    AND subquery.tabell = '{tabell}'
-                    ORDER BY subquery.radnr ASC
-                    """,
-                    partition_select={
-                        tabell: self.create_partition_select(
+            if long_format == True:
+                try:
+                    partition_args = dict(zip(self.time_units, args, strict=False))
+                    df = self.conn.query(
+                        f"""
+                        SELECT t.*, subquery.radnr
+                        FROM {tabell} AS t
+                        JOIN (
+                            SELECT aar, radnr, tabell, variabel
+                            FROM datatyper
+                        ) AS subquery
+                        ON subquery.aar = t.aar AND subquery.variabel = t.variabel
+                        WHERE t.skjemaversjon = '{skjemaversjon}'
+                        AND subquery.tabell = '{tabell}'
+                        ORDER BY subquery.radnr ASC
+                        """,
+                        partition_select={
+                            tabell: self.create_partition_select(
+                                skjema=skjema, **partition_args
+                            ),
+                            "datatyper": self.create_partition_select(
+                                skjema=None, **partition_args
+                            ),
+                        },
+                    )
+                    df.drop(columns=["radnr"], inplace=True)
+                    columns = [
+                        {
+                            "headerName": col,
+                            "field": col,
+                            "hide": col == "row_id",
+                            "flex": 2 if col == "variabel" else 1,
+                        }
+                        for col in df.columns
+                    ]
+                    return df.to_dict("records"), columns
+                except Exception:
+                    return None, None
+            else:
+                try:
+                    partition_args = dict(zip(self.time_units, args, strict=False))
+                    df = self.conn.query(
+                        f"""
+                        SELECT * FROM {tabell}
+                        WHERE skjemaversjon = '{skjemaversjon}'
+                        """,
+                        partition_select=self.create_partition_select(
                             skjema=skjema, **partition_args
                         ),
-                        "datatyper": self.create_partition_select(
-                            skjema=None, **partition_args
-                        ),
-                    },
-                )
-                df.drop(columns=["radnr"], inplace=True)
-                columns = [
-                    {
-                        "headerName": col,
-                        "field": col,
-                        "hide": col == "row_id",
-                        "flex": 2 if col == "variabel" else 1,
-                    }
-                    for col in df.columns
-                ]
-                return df.to_dict("records"), columns
-            except Exception:
-                return None, None
+                    )
+                    columns = [
+                        {
+                            "headerName": col,
+                            "field": col,
+                            "hide": col == "row_id",
+                        }
+                        for col in df.columns
+                    ]
+                    return df.to_dict("records"), columns
+                except Exception:
+                    return None, None
 
         @callback(
             Output(
@@ -736,12 +766,19 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 table_editable_dict = tables_editable_dict[tabell]
                 edited_column = edited[0]["colId"]
 
+                schema = self.conn.tables[tabell]["schema"]
+                columns = {field["name"] for field in schema}
+                if "variabel" in columns and "verdi" in columns:
+                    long_format = True
+                else:
+                    long_format = False
+
                 if table_editable_dict[edited_column] == True:
                     old_value = edited[0]["oldValue"]
                     new_value = edited[0]["value"]
                     row_id = edited[0]["data"]["row_id"]
                     ident = edited[0]["data"]["ident"]
-                    variabel = edited[0]["data"]["variabel"]
+
                     try:
                         self.conn.query(
                             f"""UPDATE {tabell}
@@ -752,15 +789,25 @@ class AltinnSkjemadataEditor(AltinnComponents):
                                 skjema=skjema, **partition_args
                             ),
                         )
-
-                        alert_store = [
-                            create_alert(
-                                f"row_id: {row_id}, ident: {ident}, variabel: {variabel} er oppdatert fra {old_value} til {new_value}!",
-                                "success",
-                                ephemeral=True,
-                            ),
-                            *alert_store,
-                        ]
+                        if long_format == True:
+                            variabel = edited[0]["data"]["variabel"]
+                            alert_store = [
+                                create_alert(
+                                    f"ident: {ident}, variabel: {variabel} er oppdatert fra {old_value} til {new_value}!",
+                                    "success",
+                                    ephemeral=True,
+                                ),
+                                *alert_store,
+                            ]
+                        else:
+                            alert_store = [
+                                create_alert(
+                                    f"ident: {ident}, {edited_column} er oppdatert fra {old_value} til {new_value}!",
+                                    "success",
+                                    ephemeral=True,
+                                ),
+                                *alert_store,
+                            ]
                     except Exception as e:
                         alert_store = [
                             create_alert(
@@ -772,7 +819,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         ]
                     return alert_store
                 else:
-                    return f"Kolonna {edited_column} kan ikke editeres!"
+                    return f"Kolonnen {edited_column} kan ikke editeres!"
 
         @callback(
             Output("skjemadata-sidebar-enhetsinfo", "children"),
