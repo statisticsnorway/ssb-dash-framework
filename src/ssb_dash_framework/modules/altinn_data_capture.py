@@ -54,6 +54,8 @@ class AltinnDataCapture(ABC):
         self.database_type = database_type
         self.database = database
         self.time_units = time_units
+        self.get_amount_func = None,
+        self.get_cumulative_func = None
         self.is_valid()
 
         self.module_layout = self._create_layout()
@@ -74,6 +76,12 @@ class AltinnDataCapture(ABC):
             if self.database_type not in ["eimerdb_default", "custom"]:
                 raise ValueError(
                     "database_type must be 'eimerdb_default' or 'eimerdb_custom'."
+                )
+        elif self.database_type is None:
+            if self.get_amount_func is None or self.get_cumulative_func is None:
+                logger.warning("Currently this behavior is not implemented") # TODO implement this functionality.
+                raise ValueError(
+                    "Either a database connection or custom functions must be provided."
                 )
         if not isinstance(self.time_units, list) and not all(
             isinstance(unit, str) for unit in self.time_units
