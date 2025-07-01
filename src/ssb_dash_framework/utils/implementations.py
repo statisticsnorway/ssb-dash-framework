@@ -65,6 +65,9 @@ class TabImplementation:
             raise AttributeError(
                 "The class must have a 'module_name' attribute to use TabImplementation."
             )
+        if not hasattr(self, "icon"):
+            self.icon = ""
+
 
     def layout(self) -> dbc.Tab:
         """Generate the layout for the module as a tab.
@@ -77,7 +80,7 @@ class TabImplementation:
                 className="tab-implementation",
                 children=self.get_module_layout(),
             ),
-            label=self.label,
+            label=f"{self.icon} {self.label}",
         )
         logger.debug("Generated layout")
         return layout
@@ -152,6 +155,8 @@ class WindowImplementation:
             raise AttributeError(
                 "The class must have a 'module_name' attribute to use WindowImplementation."
             )
+        if not hasattr(self, "icon"):
+            self.icon = ""
 
         self._window_n = WindowImplementation._window_number
         self.window_callbacks()
@@ -174,7 +179,7 @@ class WindowImplementation:
                             dbc.ModalTitle(
                                 dbc.Row(
                                     [
-                                        dbc.Col(self.label),
+                                        dbc.Col(f"{self.icon} {self.label}"),
                                         dbc.Col(
                                             dbc.Button(
                                                 "Fullscreen visning",
@@ -200,7 +205,7 @@ class WindowImplementation:
                     fullscreen="xxl-down",
                 ),
                 sidebar_button(
-                    "🔍",
+                    f"{self.icon}",
                     f"{self.label}",
                     f"sidebar-{self._window_n}-{self.module_name}-modal-button",
                 ),

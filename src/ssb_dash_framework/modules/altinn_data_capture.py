@@ -52,6 +52,7 @@ class AltinnDataCapture(ABC):
         self.module_name = self.__class__.__name__
         AltinnDataCapture._id_number += 1
 
+        self.icon = "🎣"
         self.label = label
         self.database_type = database_type
         self.database = database
@@ -361,7 +362,7 @@ class AltinnDataCaptureWindow(WindowImplementation, AltinnDataCapture):
     def __init__(
         self,
         time_units: list[str],
-        label: str = "🎣 Datafangst",
+        label: str = "Datafangst",
         database_type: str | None = None,
         database: object | None = None,
     ) -> None:
