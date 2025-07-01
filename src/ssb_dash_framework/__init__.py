@@ -2,11 +2,13 @@
 
 from .control import ControlFrameworkBase
 from .modals import AltinnControlView
-from .modals import AltinnDataCapture
 from .modals import Control
 from .modals import HBMethod
 from .modals import VisualizationBuilder
 from .modules import Aarsregnskap
+
+# from .modals import AltinnDataCapture
+from .modules import AltinnDataCapture
 from .modules import BofInformation
 from .modules import Canvas
 from .modules import CanvasTab
