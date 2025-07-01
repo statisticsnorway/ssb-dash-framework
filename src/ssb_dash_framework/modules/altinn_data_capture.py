@@ -12,8 +12,8 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from plotly.graph_objects import Figure
 
-from ...utils import TabImplementation
-from ...utils import WindowImplementation
+from ..utils import TabImplementation
+from ..utils import WindowImplementation
 from ..setup.variableselector import VariableSelector
 from ..utils.module_validation import module_validator
 
