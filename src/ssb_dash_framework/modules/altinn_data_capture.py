@@ -1,4 +1,6 @@
 import logging
+from abc import ABC
+from abc import abstractmethod
 from typing import Any
 
 import dash_bootstrap_components as dbc
@@ -16,13 +18,15 @@ from ..utils.module_validation import module_validator
 logger = logging.getLogger(__name__)
 
 
-class AltinnDataCapture:
+class AltinnDataCapture(ABC):
     """Provides a layout and functionality for a modal that offers a graphical overview of the data capture from altinn3.
 
     Attributes:
         time_units (list): A list of the time units used.
         database (object): The eimerdb connection.
     """
+
+    _id_number = 0
 
     def __init__(
         self,
@@ -40,15 +44,22 @@ class AltinnDataCapture:
         Raises:
             TypeError: If database object does not have query method.
         """
+        self.module_number = AltinnDataCapture._id_number
+        self.module_name = self.__class__.__name__
+        AltinnDataCapture._id_number += 1
+
         self.label = label
         self.database_type = database_type
         self.database = database
         self.time_units = time_units
         self.is_valid()
+
+        self.module_layout = self._create_layout()
+
         self.variableselector = VariableSelector(
             selected_inputs=self.time_units, selected_states=[]
         )
-        self.callbacks()
+        self.module_callbacks()
         module_validator(self)
 
     def is_valid(self) -> None:
@@ -67,7 +78,7 @@ class AltinnDataCapture:
         ):
             raise TypeError("time_units must be a list of strings.")
 
-    def layout(self) -> html.Div:
+    def _create_layout(self) -> html.Div:
         """Generates the layout for the AltinnDataCapture module.
 
         Returns:
@@ -149,18 +160,18 @@ class AltinnDataCapture:
         logger.debug("AltinnDataCapture layout created")
         return layout
 
-    def create_partition_select(
-        self, skjema: str | None = None, **kwargs: Any
-    ) -> dict[str, Any]:  # TODO check return type hint for dict
-        """Creates the partition select argument based on the chosen time units."""
-        partition_select = {
-            unit: [kwargs[unit]] for unit in self.time_units if unit in kwargs
-        }
-        if skjema is not None:
-            partition_select["skjema"] = [skjema]
-        return partition_select
+    @abstractmethod
+    def layout(self) -> html.Div:
+        """Defines the layout for the AltinnDataCapture module.
 
-    def callbacks(self) -> None:
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
+
+        Returns:
+            html.Div: A Dash HTML Div component representing the layout of the module.
+        """
+        pass
+
+    def module_callbacks(self) -> None:
         """Registers Dash callbacks for the Visualiseringsbygger module.
 
         Notes:
