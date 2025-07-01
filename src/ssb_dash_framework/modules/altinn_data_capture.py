@@ -214,6 +214,7 @@ class AltinnDataCapture(ABC):
         def get_skjemas(
             *args: Any,
         ) -> tuple[list[dict[str, str]], str]:  # TODO doublecheck return type hint
+            print("Test")
             df = self.database.query(
                 "SELECT DISTINCT skjemaer FROM enheter",
                 partition_select={
@@ -223,6 +224,7 @@ class AltinnDataCapture(ABC):
                     }
                 },
             )
+            print(df)
             all_skjemas = df["skjemaer"].dropna().str.split(",").sum()
             distinct_skjemas = list(set(s.strip() for s in all_skjemas))
             default_value = distinct_skjemas[0]
