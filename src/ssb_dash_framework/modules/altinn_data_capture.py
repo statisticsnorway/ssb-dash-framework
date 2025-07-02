@@ -20,7 +20,6 @@ from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
-
 class AltinnDataCapture(ABC):
     """Provides a layout and functionality for a modal that offers a graphical overview of the data capture from altinn3.
 
@@ -59,6 +58,7 @@ class AltinnDataCapture(ABC):
         self.label = label
         self.database_type = database_type
         self.database = database
+        print(type(self.database_type))
         self.time_units = time_units
         self.get_amount_func = (None,)
         self.get_cumulative_func = None
@@ -332,7 +332,7 @@ class AltinnDataCaptureTab(TabImplementation, AltinnDataCapture):
         self,
         time_units: list[str],
         label: str = "🎣 Datafangst",
-        database_type: str | None = None,
+        database_type: str | None = "altinn_default",
         database: object | None = None,
     ) -> None:
         """Initializes the AltinnDataCaptureTab module."""
@@ -353,7 +353,7 @@ class AltinnDataCaptureWindow(WindowImplementation, AltinnDataCapture):
         self,
         time_units: list[str],
         label: str = "Datafangst",
-        database_type: str | None = None,
+        database_type: str | None = "altinn_default",
         database: object | None = None,
     ) -> None:
         """Initializes the AltinnDataCaptureWindow module."""
