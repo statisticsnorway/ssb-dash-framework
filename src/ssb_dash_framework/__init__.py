@@ -6,8 +6,6 @@ from .modals import Control
 from .modals import HBMethod
 from .modals import VisualizationBuilder
 from .modules import Aarsregnskap
-
-# from .modals import AltinnDataCapture
 from .modules import AltinnDataCapture
 from .modules import AltinnDataCaptureTab
 from .modules import AltinnDataCaptureWindow
