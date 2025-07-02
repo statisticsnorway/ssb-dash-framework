@@ -2,6 +2,7 @@ import logging
 from abc import ABC
 from abc import abstractmethod
 from typing import Any
+from typing import ClassVar
 
 import dash_bootstrap_components as dbc
 import plotly.express as px
@@ -23,31 +24,33 @@ logger = logging.getLogger(__name__)
 class AltinnDataCapture(ABC):
     """Provides a layout and functionality for a modal that offers a graphical overview of the data capture from altinn3.
 
-    Attributes:
-        time_units (list): A list of the time units used.
-        database (object): The eimerdb connection.
+    This module vizualizes the data capture and makes it easy to see how many forms have been received over time.
+
+    Currently it only suppoerts the altinn_default with default schemas.
     """
 
-    implemented_database_types = ["eimerdb_default"]
+    implemented_database_types: ClassVar[list[str]] = ["altinn_default"]
 
-    _id_number = 0
+    _id_number: int = 0
 
     def __init__(
         self,
         time_units: list[str],
         label: str = "🎣 Datafangst",
-        database_type: str | None = None,
+        database_type: str | None = "altinn_default",
         database: object | None = None,
     ) -> None:  # TODO check type hint for time_units
         """Initializes the AntinnDataCapture module.
 
         Args:
             time_units (list): A list of the time units used.
-            database (object): The eimerdb connection.
-
-        Raises:
-            TypeError: If database object does not have query method.
+            label (str): The label for the module.
+            database_type (str | None): The selected method / set of database connections. Defaults to None.
+            database (object): The database connection (eimerdb or other with a .query method).
         """
+        assert (
+            hasattr(database, "query") or database is None  # Necessary because of mypy
+        ), "The database object, if defined, must have a 'query' method."
         self.module_number = AltinnDataCapture._id_number
         self.module_name = self.__class__.__name__
         AltinnDataCapture._id_number += 1
@@ -70,7 +73,13 @@ class AltinnDataCapture(ABC):
         module_validator(self)
 
     def is_valid(self) -> None:
-        """Checks if the module is valid."""
+        """Checks if the module is valid.
+
+        Raises:
+            TypeError: If database object does not have query method.
+            ValueError: If database_type is not one of the implemented types.
+            NotImplementedError: If attempting to create custom functions.
+        """
         if self.database:
             if not isinstance(self.database_type, str):
                 raise TypeError("database_type must be a string.")
@@ -90,7 +99,7 @@ class AltinnDataCapture(ABC):
                 raise NotImplementedError(
                     "Currently this behavior is not implemented"
                 )  # TODO implement this functionality.
-        if not isinstance(self.time_units, list) and not all(
+        if not isinstance(self.time_units, list) or not all(
             isinstance(unit, str) for unit in self.time_units
         ):
             raise TypeError("time_units must be a list of strings.")
@@ -130,7 +139,6 @@ class AltinnDataCapture(ABC):
                                 [
                                     dbc.Label(
                                         "Skjema",
-                                        # width=12,
                                         className="mb-1",
                                     ),
                                     dbc.Col(
@@ -154,14 +162,9 @@ class AltinnDataCapture(ABC):
                             ),
                         ],
                         type="graph",
-                        # style={
-                        #    "position": "fixed",
-                        #    "z-index": 9999,
-                        # },
                     ),
                 ),
             ],
-            # style={"width": "90%", "margin-left": "5%"},
         )
         logger.debug("AltinnDataCapture layout created")
         return layout
@@ -178,22 +181,19 @@ class AltinnDataCapture(ABC):
         pass
 
     def module_callbacks(self) -> None:
-        """Registers Dash callbacks for the Visualiseringsbygger module.
+        """Defines the callbacks for the AltinnDataCapture module.
 
-        Notes:
-            - `get_skjemas`: Gets all the schemas from the eimerdb enheter table and adds them to a dropdown.
-            - `update_altinnskjema`: Updates the chosen schema from the variable selector.
-            - `datafangstmodal_toggle`: Toggles the modal, which contains the layout.
-            - 'datafangst_graph': Queries the skjemamottak table in eimerdb and returns a graph.
+        Importantly this method is told which specific callbacks to use based on the database_type.
         """
         dynamic_states = [
             self.variableselector.get_inputs(),
-            self.variableselector.get_states(),
         ]
-        if self.database_type == "eimerdb_default":
+        if self.database_type == "altinn_default":
             self.callbacks_eimerdb_default(dynamic_states)
 
-    def callbacks_eimerdb_default(self, dynamic_states) -> None:
+    def callbacks_eimerdb_default(self, dynamic_states: list[Input]) -> None:
+        """Defines the callbacks when using the altinn_default database type."""
+
         @callback(  # type: ignore[misc]
             Output("datafangst-dd1", "options"),
             Output("datafangst-dd1", "value", allow_duplicate=True),
@@ -326,6 +326,8 @@ class AltinnDataCapture(ABC):
 
 
 class AltinnDataCaptureTab(TabImplementation, AltinnDataCapture):
+    """AltinnDatacapture implemented as a tab."""
+
     def __init__(
         self,
         time_units: list[str],
@@ -333,6 +335,7 @@ class AltinnDataCaptureTab(TabImplementation, AltinnDataCapture):
         database_type: str | None = None,
         database: object | None = None,
     ) -> None:
+        """Initializes the AltinnDataCaptureTab module."""
         AltinnDataCapture.__init__(
             self,
             time_units=time_units,
@@ -344,6 +347,8 @@ class AltinnDataCaptureTab(TabImplementation, AltinnDataCapture):
 
 
 class AltinnDataCaptureWindow(WindowImplementation, AltinnDataCapture):
+    """AltinnDatacapture implemented as a window."""
+
     def __init__(
         self,
         time_units: list[str],
@@ -351,6 +356,7 @@ class AltinnDataCaptureWindow(WindowImplementation, AltinnDataCapture):
         database_type: str | None = None,
         database: object | None = None,
     ) -> None:
+        """Initializes the AltinnDataCaptureWindow module."""
         AltinnDataCapture.__init__(
             self,
             time_units=time_units,
