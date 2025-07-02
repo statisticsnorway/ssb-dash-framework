@@ -58,7 +58,6 @@ class AltinnDataCapture(ABC):
         self.label = label
         self.database_type = database_type
         self.database = database
-        print(type(self.database_type))
         self.time_units = time_units
         self.get_amount_func = (None,)
         self.get_cumulative_func = None
