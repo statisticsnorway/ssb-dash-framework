@@ -1,26 +1,6 @@
-from collections.abc import Generator
-
-import pytest
-
 from ssb_dash_framework import set_variables
 from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.setup.variableselector import VariableSelectorOption
-
-
-@pytest.fixture(autouse=True)
-def clear_VariableSelector_variableselectoroptions() -> Generator[None, None, None]:
-    """Automatically clears the VariableSelector registry before each test.
-
-    This ensures that each test starts with an empty codelist (so VariableSelector
-    sees no codes unless the test explicitly creates some). After yielding to
-    the test, it clears the registry again.
-
-    Yields:
-        None: Control is yielded to the test, after which the registry is cleared.
-    """
-    VariableSelector._variableselectoroptions.clear()
-    yield
-    VariableSelector._variableselectoroptions.clear()
 
 
 def test_empty_variableselectoroptions_at_start() -> None:
@@ -65,29 +45,41 @@ def test_no_codes_again() -> None:
 
 
 def test_options_order() -> None:
-    """Tests that the order inputs and states are requested in is the order they are returned.
-    """
+    """Tests that the order inputs and states are requested in is the order they are returned."""
     set_variables(["orgnr", "aar", "kvartal"])
 
     test_orders = {
         "order_1": ["orgnr", "aar", "kvartal"],
         "order_2": ["aar", "kvartal", "orgnr"],
-        "order_3": ["kvartal", "orgnr", "aar"]
+        "order_3": ["kvartal", "orgnr", "aar"],
     }
-    
-    for order in test_orders:
-        test_order = test_orders[order]
-        expected = [
-            VariableSelector(selected_inputs = [value], selected_states=[]).get_inputs()[0] for value in test_order
-        ]
-        actual = VariableSelector(selected_inputs = test_order, selected_states=[]).get_inputs()
-        assert actual == expected, f"Options are sorted in the wrong order when creating inputs for test order {order}. Expected order {expected} but returned actual order {actual}"
 
     for order in test_orders:
         test_order = test_orders[order]
         expected = [
-            VariableSelector(selected_inputs = [], selected_states=[value]).get_states()[0] for value in test_order
+            VariableSelector(selected_inputs=[value], selected_states=[]).get_inputs()[
+                0
+            ]
+            for value in test_order
         ]
-        actual = VariableSelector(selected_inputs = [], selected_states=test_order).get_states()
-        assert actual == expected, f"Options are sorted in the wrong order when creating states for test order {order}. Expected order {expected} but returned actual order {actual}"
-        
+        actual = VariableSelector(
+            selected_inputs=test_order, selected_states=[]
+        ).get_inputs()
+        assert (
+            actual == expected
+        ), f"Options are sorted in the wrong order when creating inputs for test order {order}. Expected order {expected} but returned actual order {actual}"
+
+    for order in test_orders:
+        test_order = test_orders[order]
+        expected = [
+            VariableSelector(selected_inputs=[], selected_states=[value]).get_states()[
+                0
+            ]
+            for value in test_order
+        ]
+        actual = VariableSelector(
+            selected_inputs=[], selected_states=test_order
+        ).get_states()
+        assert (
+            actual == expected
+        ), f"Options are sorted in the wrong order when creating states for test order {order}. Expected order {expected} but returned actual order {actual}"
