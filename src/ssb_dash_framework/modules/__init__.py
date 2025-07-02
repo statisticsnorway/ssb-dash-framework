@@ -1,6 +1,9 @@
 """Modules for use in the application, implmented as a view (tab/window) or directly with a custom layout implementation."""
 
 from .aarsregnskap import Aarsregnskap
+from .altinn_data_capture import AltinnDataCapture
+from .altinn_data_capture import AltinnDataCaptureTab
+from .altinn_data_capture import AltinnDataCaptureWindow
 from .bofregistry import BofInformation
 from .building_blocks import Canvas
 from .building_blocks import CanvasTab
@@ -15,6 +18,9 @@ from .skjemapdfviewer import SkjemapdfViewer
 
 __all__ = [
     "Aarsregnskap",
+    "AltinnDataCapture",
+    "AltinnDataCaptureTab",
+    "AltinnDataCaptureWindow",
     "BofInformation",
     "Canvas",
     "CanvasTab",

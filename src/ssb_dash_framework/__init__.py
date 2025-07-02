@@ -2,11 +2,13 @@
 
 from .control import ControlFrameworkBase
 from .modals import AltinnControlView
-from .modals import AltinnDataCapture
 from .modals import Control
 from .modals import HBMethod
 from .modals import VisualizationBuilder
 from .modules import Aarsregnskap
+from .modules import AltinnDataCapture
+from .modules import AltinnDataCaptureTab
+from .modules import AltinnDataCaptureWindow
 from .modules import BofInformation
 from .modules import Canvas
 from .modules import CanvasTab
@@ -53,6 +55,8 @@ __all__ = [
     "AlertHandler",
     "AltinnControlView",
     "AltinnDataCapture",
+    "AltinnDataCaptureTab",
+    "AltinnDataCaptureWindow",
     "AltinnSkjemadataEditor",
     "BofInformation",
     "BofInformationTab",
