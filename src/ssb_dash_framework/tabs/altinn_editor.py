@@ -9,6 +9,7 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 
+from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
 from .altinn_components import AltinnComponents
 
@@ -50,10 +51,18 @@ class AltinnSkjemadataEditor(AltinnComponents):
             time_units (list): A list of strings, where each string is a time unit.
         """
         super().__init__(time_units)
+        self.variableselector = VariableSelector(
+            selected_inputs=["ident", *time_units],
+            selected_states=[],  # Hard coding ident for now, using variableselector to re-use error message if ident is missing.
+        )
         self.label = "🗊 Altinn3-skjemadata"
         self.variable_connection = variable_connection
         self.conn = conn
+        self.is_valid()
         self.callbacks()
+
+    def is_valid(self):  # TODO add validation
+        pass
 
     def get_skjemadata_table_names(self):
         """Retrieves the names of all the skjemadata-tables in the eimerdb."""
@@ -115,7 +124,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
 
         @callback(
             Output("altinnedit-ident", "value"),
-            Input("var-ident", "value"),
+            self.variableselector.get_inputs(),
         )
         def aar_to_tab(ident):
             return ident
@@ -128,6 +137,10 @@ class AltinnSkjemadataEditor(AltinnComponents):
         )
         def update_enhetsinfotabell(ident, *args):
             if ident is None or any(arg is None for arg in args):
+                logger.debug(
+                    f"update_enhetsinfotabell is lacking input, returning None. ident is {ident} Received args: %s",
+                    args,
+                )
                 return None, None
             try:
                 partition_args = dict(zip(self.time_units, args, strict=False))
@@ -138,7 +151,8 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 df.drop(columns=["row_id"], inplace=True)
                 columns = [{"headerName": col, "field": col} for col in df.columns]
                 return df.to_dict("records"), columns
-            except Exception:
+            except Exception as e:
+                logger.error(f"Error in update_enhetsinfotabell: {e}", exc_info=True)
                 return None, None
 
         @callback(
@@ -166,6 +180,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 value = skjemaer_dd_options[0]["value"]
                 return options, value
             except:
+                logger.error(f"Error in update_skjemaer: {e}", exc_info=True)
                 return [], None
 
         @callback(
@@ -197,6 +212,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 ]
                 return df.to_dict("records"), columns
             except Exception:
+                logger.error(f"Error in update_sidebar_table: {e}", exc_info=True)
                 return None, None
 
         @callback(
@@ -291,6 +307,10 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     ]
                     return df.to_dict("records"), columns
                 except Exception:
+                    logger.error(
+                        f"Error in hovedside_update_altinnskjema (long format): {e}",
+                        exc_info=True,
+                    )
                     return None, None
             else:
                 try:
@@ -314,6 +334,10 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     ]
                     return df.to_dict("records"), columns
                 except Exception:
+                    logger.error(
+                        f"Error in hovedside_update_altinnskjema (non-long format): {e}",
+                        exc_info=True,
+                    )
                     return None, None
 
         @callback(
@@ -655,6 +679,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     ]
                     return df_wide.to_dict("records"), columns
                 except Exception:
+                    logger.error(f"Error in hjelpetabeller: {e}", exc_info=True)
                     return None, None
 
         @callback(
@@ -702,6 +727,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
 
                 return df.to_dict("records"), columns, style, button_text
             except Exception:
+                logger.error(f"Error in kontrollutslagstabell: {e}", exc_info=True)
                 return None, None, None, "Se kontrollutslag"
 
         @callback(
@@ -738,6 +764,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     ]
                     return df.to_dict("records"), columns
                 except Exception:
+                    logger.error(f"Error in historikktabell: {e}", exc_info=True)
                     return None, None
 
         @callback(
