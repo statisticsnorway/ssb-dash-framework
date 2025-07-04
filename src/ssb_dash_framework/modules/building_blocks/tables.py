@@ -35,6 +35,7 @@ class EditingTable:
         get_data (Callable[..., Any]): Function to fetch data from the database.
         update_table (Callable[..., Any]): Function to update database records based on edits in the table.
         module_layout (html.Div): The layout of the component.
+        number_format (str): A d3 format string for formatting numeric values in the table.
     """
 
     _id_number = 0
@@ -48,8 +49,8 @@ class EditingTable:
         update_table_func: Callable[..., Any] | None = None,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
-        number_format=None,
-        **kwargs,
+        number_format: str | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize the EditingTable component.
 
@@ -63,6 +64,8 @@ class EditingTable:
             output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
             output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
                 If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
+            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
+                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
 
         Note:
             kwargs are passed to the AgGrid to allow more customization. An example option would be adding dashGridOptions = {"singleClickEdit": True}
@@ -114,7 +117,7 @@ class EditingTable:
                         f"output {self.output} and output_varselector_name {self.output_varselector_name} are not the same length"
                     )
 
-    def _create_layout(self, **kwargs) -> html.Div:
+    def _create_layout(self, **kwargs: Any) -> html.Div:
         """Generate the layout for the EditingTable component.
 
         Returns:

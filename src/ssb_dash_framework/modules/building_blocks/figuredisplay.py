@@ -1,4 +1,6 @@
 import logging
+from collections.abc import Callable
+from typing import Any
 
 from dash import callback
 from dash import dcc
@@ -16,12 +18,22 @@ class FigureDisplay:
 
     _id_number = 0
 
-    def __init__(self, label, inputs, states, figure_func, output, clickdata_func):
+    def __init__(
+        self,
+        label: str,
+        figure_func: Callable[..., Any],
+        inputs: list[str],
+        states: list[str] | None = None,
+        output: str | None = None,
+        clickdata_func: Callable[..., Any] | None = None,
+    ):
         self.module_number = FigureDisplay._id_number
         self.module_name = self.__class__.__name__
         FigureDisplay._id_number += 1
 
         self.label = label
+        if states is None:
+            states = []
         self.variableselector = VariableSelector(
             selected_inputs=inputs, selected_states=states
         )
@@ -34,7 +46,7 @@ class FigureDisplay:
 
         module_validator(self)
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
         layout = html.Div(
             dcc.Graph(
                 id=f"{self.module_number}-figuredisplay",
@@ -45,10 +57,10 @@ class FigureDisplay:
         logger.debug("Generated layout.")
         return layout
 
-    def layout(self):
+    def layout(self) -> html.Div:
         return self.module_layout
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
         dynamic_states = [
             self.variableselector.get_inputs(),
             self.variableselector.get_states(),
@@ -57,7 +69,9 @@ class FigureDisplay:
         @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-figuredisplay", "figure"), *dynamic_states
         )
-        def display_figure(*dynamic_states):
+        def display_figure(
+            *dynamic_states,
+        ) -> Any:  # Should be a figure, might need a more specific type hint.
             return self.figure_func(*dynamic_states)
 
         if (
@@ -69,6 +83,11 @@ class FigureDisplay:
                 Input(f"{self.module_number}-figuredisplay", "clickData"),
                 prevent_initial_call=True,
             )
-            def transfer_clickdata(clickdata):
+            def transfer_clickdata(clickdata) -> str:
                 logger.debug(clickdata)
-                return self.clickdata_func(clickdata)
+                if self.clickdata_func is None:
+                    logger.warning(
+                        "No clickdata_func provided, click data will not be processed."
+                    )
+                    return "No clickdata_func provided"
+                return str(self.clickdata_func(clickdata))
