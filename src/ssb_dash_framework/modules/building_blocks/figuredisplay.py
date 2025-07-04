@@ -42,6 +42,7 @@ class FigureDisplay:
             ),
             className="figuredisplay",
         )
+        logger.debug("Generated layout.")
         return layout
 
     def layout(self):

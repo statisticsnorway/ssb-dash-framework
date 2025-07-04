@@ -8,6 +8,7 @@ from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
@@ -53,7 +54,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
         super().__init__(time_units)
         self.variableselector = VariableSelector(
             selected_inputs=["ident", *time_units],
-            selected_states=[],  # Hard coding ident for now, using variableselector to re-use error message if ident is missing.
+            selected_states=[],  # Hard coding ident for now, using variableselector to re-use error message if ident or time_units is missing.
         )
         self.label = "🗊 Altinn3-skjemadata"
         self.variable_connection = variable_connection
@@ -179,7 +180,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 options = skjemaer_dd_options
                 value = skjemaer_dd_options[0]["value"]
                 return options, value
-            except:
+            except Exception as e:
                 logger.error(f"Error in update_skjemaer: {e}", exc_info=True)
                 return [], None
 
@@ -211,7 +212,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     for col in df.columns
                 ]
                 return df.to_dict("records"), columns
-            except Exception:
+            except Exception as e:
                 logger.error(f"Error in update_sidebar_table: {e}", exc_info=True)
                 return None, None
 
@@ -306,7 +307,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         for col in df.columns
                     ]
                     return df.to_dict("records"), columns
-                except Exception:
+                except Exception as e:
                     logger.error(
                         f"Error in hovedside_update_altinnskjema (long format): {e}",
                         exc_info=True,
@@ -333,7 +334,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         for col in df.columns
                     ]
                     return df.to_dict("records"), columns
-                except Exception:
+                except Exception as e:
                     logger.error(
                         f"Error in hovedside_update_altinnskjema (non-long format): {e}",
                         exc_info=True,
@@ -678,7 +679,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         for col in df_wide.columns
                     ]
                     return df_wide.to_dict("records"), columns
-                except Exception:
+                except Exception as e:
                     logger.error(f"Error in hjelpetabeller: {e}", exc_info=True)
                     return None, None
 
@@ -726,7 +727,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     button_text = "Se kontrollutslag"
 
                 return df.to_dict("records"), columns, style, button_text
-            except Exception:
+            except Exception as e:
                 logger.error(f"Error in kontrollutslagstabell: {e}", exc_info=True)
                 return None, None, None, "Se kontrollutslag"
 
@@ -740,7 +741,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             *self.create_callback_components("State"),
         )
         def historikktabell(is_open, tabell, selected_row, skjema, *args):
-            if is_open == True:
+            if is_open:
                 try:
                     partition_args = dict(zip(self.time_units, args, strict=False))
                     skjemaversjon = selected_row[0]["skjemaversjon"]
@@ -763,9 +764,11 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         for col in df.columns
                     ]
                     return df.to_dict("records"), columns
-                except Exception:
+                except Exception as e:
                     logger.error(f"Error in historikktabell: {e}", exc_info=True)
                     return None, None
+            else:
+                raise PreventUpdate
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
@@ -777,7 +780,9 @@ class AltinnSkjemadataEditor(AltinnComponents):
             prevent_initial_call=True,
         )
         def update_table(edited, tabell, skjema, alert_store, *args):
-            if edited is not None:
+            if edited is None:
+                raise PreventUpdate
+            else:
                 partition_args = dict(zip(self.time_units, args, strict=False))
                 tables_editable_dict = {}
                 data_dict = self.conn.tables
@@ -912,6 +917,8 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     skjema=skjema, **partition_args
                 ),
             )
+            if df_skjemainfo.empty:
+                logger.info("Kontaktinfo table for ")
             kontaktperson = df_skjemainfo["kontaktperson"][0]
             epost = df_skjemainfo["epost"][0]
             telefon = df_skjemainfo["telefon"][0]
