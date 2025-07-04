@@ -23,9 +23,9 @@ class Aarsregnskap(ABC):
     Attributes:
         label (str): Label for the module when initialized, displayed as "🧾 Årsregnskap".
     """
-    
+
     _id_number = 0
-    
+
     def __init__(
         self,
     ) -> None:
@@ -182,10 +182,12 @@ class Aarsregnskap(ABC):
             """
             if not aar or not orgnr:
                 raise PreventUpdate
+            path_to_file = f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/aarsregn/g{aar}/{orgnr}_{aar}.pdf"
+            logger.debug(f"Trying to open file: {path_to_file}")
             try:
                 fs = FileClient.get_gcs_file_system()
                 with fs.open(
-                    f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/aarsregn/g{aar}/{orgnr}_{aar}.pdf",
+                    path_to_file,
                     "rb",
                 ) as f:
                     pdf_bytes = f.read()
@@ -193,6 +195,7 @@ class Aarsregnskap(ABC):
                 pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
                 pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
             except FileNotFoundError:
+                logger.debug(f"Returning None. Could not open file: {path_to_file}")
                 return None
             pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
             pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"

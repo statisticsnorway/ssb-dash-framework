@@ -123,4 +123,5 @@ def main_layout(
         fluid=True,
         className="dbc dbc-ag-grid",
     )
+    logger.debug("Generated layout.")
     return layout

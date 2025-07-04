@@ -20,6 +20,7 @@ from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
+
 class AltinnDataCapture(ABC):
     """Provides a layout and functionality for a modal that offers a graphical overview of the data capture from altinn3.
 
@@ -215,6 +216,9 @@ class AltinnDataCapture(ABC):
             skjema_options = [
                 {"label": skjema, "value": skjema} for skjema in distinct_skjemas
             ]
+            logger.debug(
+                f"get_skjemas returns. skjema_options: {skjema_options}, default_value: {default_value}"
+            )
             return skjema_options, default_value
 
         @callback(  # type: ignore[misc]
@@ -257,7 +261,7 @@ class AltinnDataCapture(ABC):
                 )
                 return fig
 
-            if graph_option == "kumulativ":
+            elif graph_option == "kumulativ":
                 df = self.database.query(
                     """SELECT ranked.dato_mottatt,
                         COUNT(DISTINCT ranked.ident) AS antall,
@@ -322,6 +326,10 @@ class AltinnDataCapture(ABC):
                     borderpad=5,
                 )
                 return fig
+            else:
+                logger.debug(
+                    f"Something went wrong, args: {graph_options}, {skjema}, {args}"
+                )
 
 
 class AltinnDataCaptureTab(TabImplementation, AltinnDataCapture):
