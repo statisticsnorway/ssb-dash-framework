@@ -313,7 +313,7 @@ class HBMethod:
         )
         #        output_object = Output(component_id, property_name, allow_duplicate=True)
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("hb_figure", "figure"),
             Input("hb_button", "n_clicks"),
             State("hb_pc", "value"),
@@ -374,7 +374,7 @@ class HBMethod:
             else:
                 raise PreventUpdate
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("hb-modal", "is_open"),
             Input("sidebar-hb-button", "n_clicks"),
             State("hb-modal", "is_open"),
@@ -394,7 +394,7 @@ class HBMethod:
                 return not is_open
             return is_open
 
-        @callback(
+        @callback(  # type: ignore[misc]
             output_object,
             Input("hb_figure", "clickData"),
             prevent_initial_call=True,

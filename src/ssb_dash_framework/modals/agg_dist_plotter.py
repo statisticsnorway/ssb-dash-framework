@@ -223,7 +223,7 @@ class AggDistPlotter:
         return partition_dict
 
     def callbacks(self):
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("aggdistplotter-modal", "fullscreen"),
             Input("aggdistplotter-modal-fullscreen", "n_clicks"),
             State("aggdistplotter-modal", "fullscreen"),
@@ -236,7 +236,7 @@ class AggDistPlotter:
                     fullscreen = True
                 return fullscreen
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("aggdistplotter-radioitems", "options"),
             Input("var-altinnskjema", "value"),
         )
@@ -249,7 +249,7 @@ class AggDistPlotter:
             else:
                 return INITIAL_OPTIONS
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("aggdistplotter-modal", "is_open"),
             Input("sidebar-aggdistplotter-button", "n_clicks"),
             State("aggdistplotter-modal", "is_open"),
@@ -259,7 +259,7 @@ class AggDistPlotter:
                 return not is_open
             return is_open
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("aggdistplotter-table1", "rowData"),
             Output("aggdistplotter-table1", "columnDefs"),
             Input("aggdistplotter-refresh", "n_clicks"),
@@ -389,7 +389,7 @@ class AggDistPlotter:
                 columns[0]["headerCheckboxSelection"] = True
                 return df_wide.to_dict("records"), columns
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("aggdistplotter-graph1", "figure"),
             Input("aggdistplotter-table1", "selectedRows"),
             Input("aggdistplotter-radioitems", "value"),
@@ -498,7 +498,7 @@ class AggDistPlotter:
                 )
             return fig
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
             Input("aggdistplotter-graph1", "clickData"),
             prevent_initial_call=True,

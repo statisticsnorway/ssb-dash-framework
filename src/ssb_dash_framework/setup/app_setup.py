@@ -57,7 +57,7 @@ def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> D
         assets_folder="../assets",
     )
 
-    @callback(
+    @callback(  # type: ignore[misc]
         Output("variable-selector-offcanvas", "is_open"),
         Input("sidebar-varvelger-button", "n_clicks"),
         State("variable-selector-offcanvas", "is_open"),

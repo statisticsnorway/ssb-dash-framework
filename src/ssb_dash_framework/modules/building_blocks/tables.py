@@ -163,7 +163,7 @@ class EditingTable:
             self.variableselector.get_states(),
         ]
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
             Output(f"{self.module_number}-tabelleditering-table1", "columnDefs"),
             *dynamic_states,
@@ -217,7 +217,7 @@ class EditingTable:
                 )
                 raise e
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
             Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
@@ -316,7 +316,7 @@ class EditingTable:
             def make_table_to_main_table_callback(
                 output: Output, column: str, output_varselector_name: str
             ) -> None:
-                @callback(
+                @callback(  # type: ignore[misc]
                     output,
                     Input(
                         f"{self.module_number}-tabelleditering-table1", "cellClicked"

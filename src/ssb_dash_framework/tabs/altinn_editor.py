@@ -112,7 +112,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
         for unit in self.time_units:
 
             def generate_callback(unit):
-                @callback(
+                @callback(  # type: ignore[misc]
                     Output(f"altinnedit-{unit}", "value"),
                     Input(f"var-{unit}", "value"),
                 )
@@ -123,14 +123,14 @@ class AltinnSkjemadataEditor(AltinnComponents):
 
             generate_callback(unit)
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-ident", "value"),
             self.variableselector.get_inputs(),
         )
         def aar_to_tab(ident, *args):
             return ident
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-enhetsinfomodal-table1", "rowData"),
             Output("skjemadata-enhetsinfomodal-table1", "columnDefs"),
             Input("altinnedit-ident", "value"),
@@ -156,7 +156,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 logger.error(f"Error in update_enhetsinfotabell: {e}", exc_info=True)
                 return None, None
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-skjemaer", "options"),
             Output("altinnedit-skjemaer", "value"),
             Input("altinnedit-ident", "value"),
@@ -184,7 +184,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 logger.error(f"Error in update_skjemaer: {e}", exc_info=True)
                 return [], None
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemaer", "rowData"),
             Output("altinnedit-table-skjemaer", "columnDefs"),
             Input("altinnedit-skjemaer", "value"),
@@ -216,7 +216,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 logger.error(f"Error in update_sidebar_table: {e}", exc_info=True)
                 return None, None
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemaer", "selectedRows"),
             Input("altinnedit-table-skjemaer", "rowData"),
             prevent_initial_call=True,
@@ -228,7 +228,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             selected_row = rows[0]
             return [selected_row]
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-skjemaversjon", "value"),
             Input("altinnedit-table-skjemaer", "selectedRows"),
         )
@@ -239,7 +239,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             skjemaversjon = selected_row[0]["skjemaversjon"]
             return skjemaversjon
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("var-valgt_tabell", "value"),
             Input("altinnedit-option1", "value"),
         )
@@ -248,7 +248,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 return None
             return tabell
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemadata", "rowData"),
             Output("altinnedit-table-skjemadata", "columnDefs"),
             Input("altinnedit-skjemaversjon", "value"),
@@ -341,7 +341,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     )
                     return None, None
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output(
                 "skjemadata-hovedtabell-updatestatus", "children", allow_duplicate=True
             ),
@@ -391,7 +391,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 except Exception:
                     return "En feil skjedde under oppdatering av editeringsstatusen"
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("var-statistikkvariabel", "value"),
             Input("altinnedit-table-skjemadata", "cellClicked"),
             State("altinnedit-table-skjemadata", "rowData"),
@@ -401,7 +401,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 return no_update
             return row_data[click["rowIndex"]]["variabel"]
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("offcanvas-kontrollutslag", "is_open"),
             Input("altinnedit-option5", "n_clicks"),
             State("offcanvas-kontrollutslag", "is_open"),
@@ -414,7 +414,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-kontaktinfocanvas", "is_open"),
             Input("altinnedit-option2", "n_clicks"),
             State("skjemadata-kontaktinfocanvas", "is_open"),
@@ -427,7 +427,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-historikkmodal", "is_open"),
             Input("altinnedit-option4", "n_clicks"),
             State("skjemadata-historikkmodal", "is_open"),
@@ -440,7 +440,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-skjemaversjonsmodal", "is_open"),
             Input("altinnedit-skjemaversjon-button", "n_clicks"),
             State("skjemadata-skjemaversjonsmodal", "is_open"),
@@ -453,7 +453,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-kommentarmodal", "is_open"),
             Input("altinnedit-option6", "n_clicks"),
             State("skjemadata-kommentarmodal", "is_open"),
@@ -466,7 +466,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-kommentarmodal-table1", "rowData"),
             Output("altinnedit-kommentarmodal-table1", "columnDefs"),
             Input("altinnedit-option6", "n_clicks"),
@@ -489,7 +489,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             ]
             return df.to_dict("records"), columns
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-kommentarmodal-aar-kommentar", "value"),
             Input("altinnedit-kommentarmodal-table1", "selectedRows"),
         )
@@ -500,7 +500,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 kommentar = ""
             return kommentar
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Input("skjemadata-kommentarmodal-savebutton", "n_clicks"),
             State("altinnedit-kommentarmodal-table1", "selectedRows"),
@@ -540,7 +540,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     ]
                 return alert_store
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-hjelpetabellmodal", "is_open"),
             Input("altinnedit-option3", "n_clicks"),
             State("skjemadata-hjelpetabellmodal", "is_open"),
@@ -553,7 +553,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-enhetsinfomodal", "is_open"),
             Input("altinnedit-enhetsinfo-button", "n_clicks"),
             State("skjemadata-enhetsinfomodal", "is_open"),
@@ -566,7 +566,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-hjelpetabellmodal-table1", "rowData"),
             Output("skjemadata-hjelpetabellmodal-table1", "columnDefs"),
             Input("skjemadata-hjelpetabellmodal-tabs", "active_tab"),
@@ -683,7 +683,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     logger.error(f"Error in hjelpetabeller: {e}", exc_info=True)
                     return None, None
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("offcanvas-kontrollutslag-table1", "rowData"),
             Output("offcanvas-kontrollutslag-table1", "columnDefs"),
             Output("altinnedit-option5", "style"),
@@ -731,7 +731,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 logger.error(f"Error in kontrollutslagstabell: {e}", exc_info=True)
                 return None, None, None, "Se kontrollutslag"
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-historikkmodal-table1", "rowData"),
             Output("skjemadata-historikkmodal-table1", "columnDefs"),
             Input("skjemadata-historikkmodal", "is_open"),
@@ -770,7 +770,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 raise PreventUpdate
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Input("altinnedit-table-skjemadata", "cellValueChanged"),
             State("altinnedit-option1", "value"),
@@ -853,7 +853,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 else:
                     return f"Kolonnen {edited_column} kan ikke editeres!"
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-sidebar-enhetsinfo", "children"),
             Input("skjemadata-enhetsinfomodal-table1", "rowData"),
         )
@@ -871,7 +871,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
 
         for output_id, variable in self.variable_connection.items():
 
-            @callback(
+            @callback(  # type: ignore[misc]
                 Output(output_id, "value", allow_duplicate=True),
                 Input("skjemadata-enhetsinfomodal-table1", "rowData"),
                 prevent_initial_call=True,
@@ -884,7 +884,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         return row.get("verdi", "")
                 return ""
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("var-altinnskjema", "value"),
             Input("altinnedit-skjemaer", "value"),
         )
@@ -893,7 +893,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 return no_update
             return skjema
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-kontaktinfo-navn", "value"),
             Output("skjemadata-kontaktinfo-epost", "value"),
             Output("skjemadata-kontaktinfo-telefon", "value"),

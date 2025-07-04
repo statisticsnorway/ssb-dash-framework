@@ -54,7 +54,7 @@ class FigureDisplay:
             self.variableselector.get_states(),
         ]
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-figuredisplay", "figure"), *dynamic_states
         )
         def display_figure(*dynamic_states):
@@ -64,7 +64,7 @@ class FigureDisplay:
             self.output
         ):  # TODO Fix known limitation of only having a single output to the variable selector. Should be possible to return a list/tuple
 
-            @callback(
+            @callback(  # type: ignore[misc]
                 self.variableselector.get_output_object(variable=self.output),
                 Input(f"{self.module_number}-figuredisplay", "clickData"),
                 prevent_initial_call=True,

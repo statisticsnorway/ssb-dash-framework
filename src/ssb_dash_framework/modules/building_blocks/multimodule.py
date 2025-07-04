@@ -81,7 +81,7 @@ class MultiModule:
         return self.module_layout
 
     def module_callbacks(self):
-        @callback(
+        @callback(  # type: ignore[misc]
             [
                 Output(f"{self.module_number}-multimodule-module-{i}", "style")
                 for i in range(len(self.module_list))
