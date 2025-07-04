@@ -127,7 +127,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             Output("altinnedit-ident", "value"),
             self.variableselector.get_inputs(),
         )
-        def aar_to_tab(ident):
+        def aar_to_tab(ident, *args):
             return ident
 
         @callback(
