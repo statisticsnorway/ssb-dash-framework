@@ -1,7 +1,5 @@
 import logging
 
-from dash import html
-
 from ..modules.aarsregnskap import Aarsregnskap
 from ..utils import TabImplementation
 

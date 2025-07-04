@@ -1,13 +1,6 @@
 import logging
 from typing import Any
 
-import dash_bootstrap_components as dbc
-from dash import Input
-from dash import Output
-from dash import State
-from dash import callback
-from dash import html
-
 from ..modules.freesearch import FreeSearch
 from ..utils import WindowImplementation
 

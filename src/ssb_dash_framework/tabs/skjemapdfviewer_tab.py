@@ -1,7 +1,5 @@
 import logging
 
-from dash import html
-
 from ..modules.skjemapdfviewer import SkjemapdfViewer
 from ..utils import TabImplementation
 

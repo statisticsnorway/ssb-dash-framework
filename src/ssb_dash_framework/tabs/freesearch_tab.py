@@ -1,8 +1,6 @@
 import logging
 from typing import Any
 
-from dash import html
-
 from ..modules.freesearch import FreeSearch
 from ..utils import TabImplementation
 

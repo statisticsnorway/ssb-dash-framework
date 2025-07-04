@@ -1,12 +1,5 @@
 import logging
 
-import dash_bootstrap_components as dbc
-from dash import Input
-from dash import Output
-from dash import State
-from dash import callback
-from dash import html
-
 from ..modules.skjemapdfviewer import SkjemapdfViewer
 from ..utils import WindowImplementation
 
@@ -31,5 +24,3 @@ class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
         WindowImplementation.__init__(
             self,
         )
-
-
