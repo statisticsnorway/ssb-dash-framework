@@ -67,7 +67,7 @@ class TabImplementation:
             )
         if not hasattr(self, "icon"):
             self.icon = ""
-
+        logger.debug(f"Implementing {self.module_name} as tab.")
 
     def layout(self) -> dbc.Tab:
         """Generate the layout for the module as a tab.
@@ -161,6 +161,7 @@ class WindowImplementation:
         self._window_n = WindowImplementation._window_number
         self.window_callbacks()
         WindowImplementation._window_number += 1
+        logger.debug(f"Implementing {self.module_name} as window.")
 
     def layout(self) -> html.Div:
         """Generate the layout for the modal window.

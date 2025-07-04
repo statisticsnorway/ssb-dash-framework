@@ -2,6 +2,7 @@
 
 from .alert_handler import AlertHandler
 from .alert_handler import create_alert
+from .app_logger import enable_app_logging
 from .debugger_modal import DebugInspector
 from .functions import _get_kostra_r
 from .functions import hb_method
@@ -18,6 +19,7 @@ __all__ = [
     "WindowImplementation",
     "_get_kostra_r",
     "create_alert",
+    "enable_app_logging",
     "hb_method",
     "module_validator",
     "sidebar_button",

@@ -62,7 +62,7 @@ class FreeSearch(ABC):
                 - A button to execute the query.
                 - A Dash AgGrid table for displaying the query results.
         """
-        return html.Div(
+        layout = html.Div(
             className="freesearch",
             children=[
                 html.Div(
@@ -92,6 +92,8 @@ class FreeSearch(ABC):
                 ),
             ],
         )
+        logger.debug("Generated layout.")
+        return layout
 
     @abstractmethod
     def layout(self) -> html.Div:

@@ -74,7 +74,7 @@ class MultiModule:
             ],
             className="dbc multimodule",
         )
-        logger.debug("Generated layout with all modules rendered")
+        logger.debug("Generated layout.")
         return layout
 
     def layout(self):

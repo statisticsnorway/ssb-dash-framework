@@ -24,8 +24,14 @@ class Canvas(ABC):
 
         self.module_layout = self._create_layout()
 
+    def _is_valid(self):
+        """Needs to recursively check everything in the layout to ensure"""
+        pass
+
     def _create_layout(self):
-        return html.Div(self.content, className="canvas")
+        layout = html.Div(self.content, className="canvas")
+        logger.debug("Generated layout.")
+        return layout
 
     @abstractmethod
     def layout(self):

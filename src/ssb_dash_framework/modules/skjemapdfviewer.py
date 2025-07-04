@@ -153,8 +153,9 @@ class SkjemapdfViewer(ABC):
             """
             if not form_identifier:
                 raise PreventUpdate
+            path_to_file = f"{self.pdf_folder_path}/{form_identifier}.pdf"
+            logger.debug(f"Trying to open file: {path_to_file}")
             try:
-                print(f"{self.pdf_folder_path}/{form_identifier}.pdf")
                 fs = FileClient.get_gcs_file_system()
                 with fs.open(
                     f"{self.pdf_folder_path}/{form_identifier}.pdf",
@@ -165,6 +166,7 @@ class SkjemapdfViewer(ABC):
                 pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
                 pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
             except FileNotFoundError:
+                logger.debug(f"Returning None. Could not open file: {path_to_file}")
                 return None
             pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
             pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"

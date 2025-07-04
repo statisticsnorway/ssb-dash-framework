@@ -370,6 +370,7 @@ class BofInformation(ABC):
             State("bofregistry-modal-ssb_foretak", "is_open"),
         )
         def toggle_bof_modal(n_clicks: int, is_open: bool) -> bool:
+            logger.debug("Toggling bof modal")
             if n_clicks > 0:
                 if is_open:
                     return False
@@ -384,6 +385,7 @@ class BofInformation(ABC):
             State("bofregistry-modal-ssb_bedrift", "is_open"),
         )
         def toggle_bedrift_modal(n_clicks: int, is_open: bool) -> bool:
+            logger.debug("Toggling bedrift modal")
             if n_clicks > 0:
                 if is_open:
                     return False
