@@ -63,7 +63,7 @@ def main_layout(
         html.Div(
             [
                 sidebar_button(
-                    "🛆", "vis/skjul variabelvelger", "sidebar-varvelger-button"
+                    "🛆", "Vis variabler", "sidebar-varvelger-button"
                 )
             ]
         )
