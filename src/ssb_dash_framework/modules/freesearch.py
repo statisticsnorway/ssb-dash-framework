@@ -40,7 +40,7 @@ class FreeSearch(ABC):
 
     _id_number = 0
 
-    def __init__(self, database: Any, label: str | None = "🔍 Frisøk") -> None:
+    def __init__(self, database: Any, label: str = "Frisøk") -> None:
         """Initialize the FreeSearch module with a database connection and optional label."""
         assert hasattr(
             database, "query"
@@ -48,10 +48,12 @@ class FreeSearch(ABC):
         self.module_number = FreeSearch._id_number
         self.module_name = self.__class__.__name__
         FreeSearch._id_number += 1
+        self.icon = "🔍"
+        self.label = label
+
         self.database = database
         self.module_layout = self._create_layout()
         self.module_callbacks()
-        self.label = label
         module_validator(self)
 
     def _create_layout(self) -> html.Div:
