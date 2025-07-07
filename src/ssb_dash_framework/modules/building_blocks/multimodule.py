@@ -33,6 +33,7 @@ class MultiModule:
                 - `module_layout`: A Dash HTML Div component representing the layout of the module.
               The module can be validated using the module_validator function.
         """
+        self.icon = "📚"
         self.label = label
         self.module_list = module_list
         self.module_number = MultiModule._id_number
