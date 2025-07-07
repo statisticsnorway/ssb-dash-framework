@@ -2,12 +2,12 @@ import logging
 import sys
 
 
-def enable_app_logging(level="info"):
+def enable_app_logging(level: str = "info") -> None:
     """This function enables logging for the editing framework.
 
     Args:
         level (str): The logging level to set. Can be one of "debug", "info", "warning", "error", or "critical".
-        Defaults to "info".
+            Defaults to "info".
 
     Raises:
         ValueError: If the provided logging level is not valid.
