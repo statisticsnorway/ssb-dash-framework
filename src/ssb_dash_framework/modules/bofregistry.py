@@ -15,6 +15,8 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
+from ..utils import TabImplementation
+from ..utils import WindowImplementation
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -101,7 +103,7 @@ class BofInformation(ABC):
     - The sqlite files can be accessed from the oracle-hns shared bucket from the vof team.
 
     Attributes:
-        label (str): Label for the tab, displayed as "🗃️ BoF Foretak".
+        label (str): Label for the tab, displayed as "BoF Foretak".
 
     Methods:
         generate_card(title, component_id, var_type): Generates a Dash Bootstrap card for displaying information.
@@ -115,22 +117,17 @@ class BofInformation(ABC):
         self,
         label: str | None = None,
         variableselector_foretak_name: str | None = None,
-        icon: str | None = None,
     ) -> None:
         """Initialize the BofInformation tab component.
 
         Args:
-            label (str): The label for the tab, displayed as "🗃️ BoF Foretak".
+            label (str): The label for the tab, displayed as "BoF Foretak".
             variableselector_foretak_name (str): The name of the variable selector that holds the foretak number, default is "foretak".
-            icon (str): The icon to be displayed in the tab, default is "🗃️".
         """
         self.module_number = BofInformation._id_number
         self.module_name = self.__class__.__name__
         BofInformation._id_number += 1
-        if icon is None:
-            self.icon = "🗃️"
-        else:
-            self.icon = icon
+        self.icon = "🗃️"
 
         if label is None:
             label = "BoF Foretak"
@@ -558,3 +555,39 @@ class BofInformation(ABC):
             raise PreventUpdate
 
         logger.debug("Generated callbacks")
+
+
+class BofInformationTab(TabImplementation, BofInformation):
+    """A class to implement a bof information module as a tab."""
+
+    def __init__(
+        self, label: str | None = None, variableselector_foretak_name: str | None = None
+    ) -> None:
+        """Initialize the BofInformationTab.
+
+        This class is used to create a tab to put in the tab_list.
+        """
+        BofInformation.__init__(
+            self,
+            label=label,
+            variableselector_foretak_name=variableselector_foretak_name,
+        )
+        TabImplementation.__init__(self)
+
+
+class BofInformationWindow(WindowImplementation, BofInformation):
+    """A class to implement a bof information module as a window."""
+
+    def __init__(
+        self, label: str | None = None, variableselector_foretak_name: str | None = None
+    ) -> None:
+        """Initialize the BofInformationTab.
+
+        This class is used to create a tab to put in the tab_list.
+        """
+        BofInformation.__init__(
+            self,
+            label=label,
+            variableselector_foretak_name=variableselector_foretak_name,
+        )
+        WindowImplementation.__init__(self)

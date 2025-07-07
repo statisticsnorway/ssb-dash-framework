@@ -13,6 +13,8 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ..utils import TabImplementation
+from ..utils import WindowImplementation
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -164,3 +166,35 @@ class FreeSearch(ABC):
             return df.to_dict("records"), columns
 
         logger.debug("Generated callbacks")
+
+
+class FreeSearchTab(TabImplementation, FreeSearch):
+    """Implementation of the FreeSearch module as a tab in the application.
+
+    This class extends the FreeSearch base class and provides a layout
+    specific to the tab interface.
+    """
+
+    def __init__(self, database: Any) -> None:
+        """Initialize the FreeSearchTab with a database connection.
+
+        Args:
+            database (Any): Database connection or interface used for executing SQL queries.
+        """
+        FreeSearch.__init__(self, database=database)
+        TabImplementation.__init__(self)
+
+
+class FreeSearchWindow(WindowImplementation, FreeSearch):
+    """FreeSearchWindow is a class that creates a modal based on the FreeSearch module."""
+
+    def __init__(self, database: Any) -> None:
+        """Initialize the FreeSearchWindow class.
+
+        Args:
+            database: The database connection or object used for querying.
+        """
+        FreeSearch.__init__(self, database=database)
+        WindowImplementation.__init__(
+            self,
+        )

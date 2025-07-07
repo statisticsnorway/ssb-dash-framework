@@ -12,6 +12,8 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
+from ...utils import TabImplementation
+from ...utils import WindowImplementation
 from ...utils.alert_handler import create_alert
 from ...utils.module_validation import module_validator
 
@@ -37,7 +39,7 @@ class EditingTable:
         number_format (str): A d3 format string for formatting numeric values in the table.
     """
 
-    _id_number = 0
+    _id_number: int = 0
 
     def __init__(
         self,
@@ -354,3 +356,101 @@ class EditingTable:
                 )
 
         logger.debug("Generated callbacks")
+
+
+class EditingTableTab(TabImplementation, EditingTable):
+    """A class to implement a module inside a tab."""
+
+    def __init__(
+        self,
+        label: str,
+        inputs: list[str],
+        states: list[str],
+        get_data_func: Callable[..., Any],
+        update_table_func: Callable[..., Any] | None = None,
+        output: str | None = None,
+        output_varselector_name: str | None = None,
+        number_format: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize the EditingTableTab.
+
+        This class is used to create a tab to put in the tab_list.
+
+        Args:
+            label (str): The label for the tab.
+            inputs (list[str]): The list of input IDs.
+            states (list[str]): The list of state IDs.
+            get_data_func (Callable[..., Any]): Function to get data for the table.
+            update_table_func (Callable[..., Any]): Function to update the table.
+            output (str | None, optional): Identifier for the table. Defaults to None.
+            output_varselector_name (str | None, optional): Identifier for the variable selector. Defaults to None.
+            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
+                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
+            **kwargs: Additional keyword arguments for the Dash AgGrid component.
+        """
+        EditingTable.__init__(
+            self,
+            label=label,
+            inputs=inputs,
+            states=states,
+            get_data_func=get_data_func,
+            update_table_func=update_table_func,
+            output=output,
+            output_varselector_name=output_varselector_name,
+            number_format=number_format,
+            **kwargs,
+        )
+        TabImplementation.__init__(
+            self,
+        )
+
+
+class EditingTableWindow(WindowImplementation, EditingTable):
+    """A class to implement an EditingTable module inside a modal.
+
+    It is used to create a modal window containing an EditingTable.
+    This class inherits from both EditingTable and WindowImplementation, where WindowImplementation is a mixin that handles the modal functionality.
+    """
+
+    def __init__(
+        self,
+        label: str,
+        inputs: list[str],
+        states: list[str],
+        get_data_func: Callable[..., Any],
+        update_table_func: Callable[..., Any] | None = None,
+        output: str | None = None,
+        output_varselector_name: str | None = None,
+        number_format: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize the EditingTableWindow.
+
+        Args:
+            label (str): The label for the modal.
+            inputs (list[str]): The list of input IDs.
+            states (list[str]): The list of state IDs.
+            get_data_func (Callable[..., Any]): Function to get data for the table.
+            update_table_func (Callable[..., Any]): Function to update the table.
+            output (str | None, optional): Identifier for the table. Defaults to None.
+            output_varselector_name (str | None, optional): Identifier for the variable selector. Defaults to None.
+            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
+                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
+            **kwargs: Additional keyword arguments for the Dash AgGrid component.
+        """
+        EditingTable.__init__(
+            self,
+            label=label,
+            inputs=inputs,
+            states=states,
+            get_data_func=get_data_func,
+            update_table_func=update_table_func,
+            output=output,
+            output_varselector_name=output_varselector_name,
+            number_format=number_format,
+            **kwargs,
+        )
+        WindowImplementation.__init__(
+            self,
+        )

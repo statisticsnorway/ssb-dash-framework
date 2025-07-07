@@ -9,6 +9,8 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 
 from ...setup.variableselector import VariableSelector
+from ...utils import TabImplementation
+from ...utils import WindowImplementation
 from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -147,3 +149,53 @@ class FigureDisplay:
                     )
                     return "No clickdata_func provided"
                 return str(self.clickdata_func(clickdata))
+
+
+class FigureDisplayTab(TabImplementation, FigureDisplay):
+    """FigureDisplay implemented as a tab."""
+
+    def __init__(
+        self,
+        label: str,
+        figure_func: Callable[..., Any],
+        inputs: list[str],
+        states: list[str] | None = None,
+        output: str | None = None,
+        clickdata_func: Callable[..., Any] | None = None,
+    ) -> None:
+        """Initializes FigureDisplayTab."""
+        FigureDisplay.__init__(
+            self,
+            label=label,
+            inputs=inputs,
+            states=states,
+            figure_func=figure_func,
+            output=output,
+            clickdata_func=clickdata_func,
+        )
+        TabImplementation.__init__(self)
+
+
+class FigureDisplayWindow(WindowImplementation, FigureDisplay):
+    """FigureDisplay implemented as a window."""
+
+    def __init__(
+        self,
+        label: str,
+        figure_func: Callable[..., Any],
+        inputs: list[str],
+        states: list[str] | None = None,
+        output: str | None = None,
+        clickdata_func: Callable[..., Any] | None = None,
+    ) -> None:
+        """Initializes FigureDisplayWindow."""
+        FigureDisplay.__init__(
+            self,
+            label=label,
+            inputs=inputs,
+            states=states,
+            figure_func=figure_func,
+            output=output,
+            clickdata_func=clickdata_func,
+        )
+        WindowImplementation.__init__(self)

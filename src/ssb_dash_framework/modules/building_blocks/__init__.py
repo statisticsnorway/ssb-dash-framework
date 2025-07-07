@@ -7,17 +7,25 @@ from .canvas import Canvas
 from .canvas import CanvasTab
 from .canvas import CanvasWindow
 from .figuredisplay import FigureDisplay
+from .figuredisplay import FigureDisplayTab
+from .figuredisplay import FigureDisplayWindow
 from .multimodule import MultiModule
 from .multimodule import MultiModuleTab
 from .multimodule import MultiModuleWindow
 from .tables import EditingTable
+from .tables import EditingTableTab
+from .tables import EditingTableWindow
 
 __all__ = [
     "Canvas",
     "CanvasTab",
     "CanvasWindow",
     "EditingTable",
+    "EditingTableTab",
+    "EditingTableWindow",
     "FigureDisplay",
+    "FigureDisplayTab",
+    "FigureDisplayWindow",
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",
