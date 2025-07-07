@@ -145,15 +145,23 @@ class BofInformation(ABC):
         self._is_valid()
         module_validator(self)
 
-    def _is_valid(self):
+    def _is_valid(self) -> None:
         self._check_connection()
+        if not isinstance(self.label, str):
+            raise TypeError(
+                f"label must be a string, got {type(self.label).__name__} instead."
+            )
+        if not isinstance(self.icon, str):
+            raise TypeError(
+                f"icon must be a string, got {type(self.icon).__name__} instead."
+            )
 
-    def _check_connection(self):
+    def _check_connection(self) -> None:
         conn = sqlite3.connect(SSB_FORETAK_PATH)
         df = pd.read_sql_query("SELECT * FROM ssb_foretak LIMIT 1", conn)
         if df.empty:
             raise Exception(
-                "Data from ssb_bedrift is empty, check that you can connect to the database."
+                "Data from ssb_bedrift is empty, check that you can connect to the database. You need to add the oracle-hns bucket to your Dapla Lab."
             )
         conn.close()
 
