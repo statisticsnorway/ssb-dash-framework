@@ -66,6 +66,7 @@ class EditingTable:
                 If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
             number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
                 If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
+            **kwargs: Additional keyword arguments for the Dash AgGrid component.
 
         Note:
             kwargs are passed to the AgGrid to allow more customization. An example option would be adding dashGridOptions = {"singleClickEdit": True}
@@ -119,6 +120,9 @@ class EditingTable:
 
     def _create_layout(self, **kwargs: Any) -> html.Div:
         """Generate the layout for the EditingTable component.
+
+        Args:
+            **kwargs: Additional keyword arguments for the Dash AgGrid component.
 
         Returns:
             html.Div: A Div element containing:
@@ -177,7 +181,6 @@ class EditingTable:
             """Load data into the Dash AgGrid table.
 
             Args:
-                error_log (list[dict[str, Any]]): List of existing alerts in the alert handler.
                 dynamic_states (list[str]): Dynamic state parameters for filtering data.
 
             Returns:
@@ -232,7 +235,7 @@ class EditingTable:
             edited: list[dict[str, dict[str, Any] | Any]],
             error_log: list[dict[str, Any]],
             *dynamic_states: list[str],
-        ) -> list[dict[str, Any]]:
+        ) -> tuple[list[dict[str, Any]], None]:
             """Update the database based on edits made in the AgGrid table.
 
             Args:
