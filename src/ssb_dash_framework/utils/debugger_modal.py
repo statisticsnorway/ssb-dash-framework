@@ -97,7 +97,7 @@ class DebugInspector:
                 return not is_open
             return is_open
 
-        @callback(  # type: ignore[misc],
+        @callback(  # type: ignore[misc]
             Output("debuggerhelper_output", "children"), *dynamic_states
         )
         def debuggerhelper_dynamic_states(*args: Any) -> html.Div:
@@ -124,7 +124,7 @@ class DebugInspector:
                 ]
             )
 
-        @callback(  # type: ignore[misc],
+        @callback(  # type: ignore[misc]
             Output("debuggerhelper_func_output", "children"), *dynamic_states
         )
         def debuggerhelper_func(*args: Any) -> Any:

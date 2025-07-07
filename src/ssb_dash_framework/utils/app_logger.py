@@ -17,19 +17,19 @@ def enable_app_logging(level: str = "info") -> None:
         Also adds a logging message to indicate that the app was started. This is to make it possible to differentaiate different sessions.
     """
     if level == "debug":
-        level = logging.DEBUG
+        chosen_level = logging.DEBUG
     elif level == "info":
-        level = logging.INFO
+        chosen_level = logging.INFO
     elif level == "warning":
-        level = logging.WARNING
+        chosen_level = logging.WARNING
     elif level == "error":
-        level = logging.ERROR
+        chosen_level = logging.ERROR
     elif level == "critical":
-        level = logging.CRITICAL
+        chosen_level = logging.CRITICAL
     else:
         raise ValueError(f"Invalid logging level: {level}")
     logger = logging.getLogger("ssb_dash_framework")
-    logger.setLevel(level)
+    logger.setLevel(chosen_level)
 
     console_handler = logging.StreamHandler(sys.stdout)
     file_handler = logging.FileHandler("app.log", mode="a")
@@ -37,7 +37,8 @@ def enable_app_logging(level: str = "info") -> None:
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    for handler in [console_handler, file_handler]:
+    handlers: list[logging.Handler] = [console_handler, file_handler]
+    for handler in handlers:
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 

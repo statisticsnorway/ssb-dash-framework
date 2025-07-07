@@ -7,6 +7,7 @@ from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
 from ..utils.functions import sidebar_button
 
@@ -262,9 +263,12 @@ class WindowImplementation:
         def toggle_fullscreen_modal(
             n_clicks: int, fullscreen_state: str | bool
         ) -> str | bool:
+            fullscreen: str | bool
             if n_clicks and n_clicks > 0:
                 if fullscreen_state is True:
                     fullscreen = "xxl-down"
                 else:
                     fullscreen = True
                 return fullscreen
+            else:
+                raise PreventUpdate
