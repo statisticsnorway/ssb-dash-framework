@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import Literal
 
@@ -14,6 +15,8 @@ from dash import html
 
 from ..utils.functions import sidebar_button
 
+logger = logging.getLogger(__name__)
+
 default_col_def = {
     "resizable": True,
     "sortable": True,
@@ -29,12 +32,24 @@ SQL_COLUMN_CONCAT = " || '_' || "
 
 
 class AggDistPlotter:
-    def __init__(self, time_units, conn: object) -> None:
+    """The AggDistPlotter module lets you view macro values for your variables and find the distribution between them and the largest contributors.
+
+    This module requires your data to follow the default eimerdb structure.
+    """
+
+    def __init__(self, time_units: list[str], conn: object) -> None:
+        """Initializes the AggDistPlotter.
+
+        Args:
+            time_units (list[str]): Your time variables used in the variable selector. Example year, quarter, month, etc.
+            conn (object): A connection object to a database. It must have a .query method that can handle SQL queries.
+                Currently designed with eimerdb in mind.
+        """
         self.time_units = time_units
         self.conn = conn
         self.callbacks()
 
-    def layout(self):
+    def layout(self) -> html.Div:
         layout = html.Div(
             [
                 dbc.Modal(
@@ -191,6 +206,7 @@ class AggDistPlotter:
                 sidebar_button("🌌", "Aggregering", "sidebar-aggdistplotter-button"),
             ]
         )
+        logger.debug("Layout generated.")
         return layout
 
     def create_partition_select(self, skjema: str | None = None, **kwargs) -> dict:
