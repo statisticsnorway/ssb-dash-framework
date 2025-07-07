@@ -103,7 +103,14 @@ class FigureDisplay:
         return layout
 
     def layout(self) -> html.Div:
-        """Return the layout of the module."""
+        """Define the layout for the FigureDisplay module.
+
+        Because this module can be used as a a component in other modules, it needs to have a layout method that is not abstract.
+        For implementations as tab or window, this method should still be overridden.
+
+        Returns:
+            html.Div: A Dash HTML Div component representing the layout of the module to be displayed directly.
+        """
         return self.module_layout
 
     def module_callbacks(self) -> None:

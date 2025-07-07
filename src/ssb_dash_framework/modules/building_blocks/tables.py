@@ -3,7 +3,6 @@ from collections.abc import Callable
 from typing import Any
 
 import dash_ag_grid as dag
-import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import callback
 from dash import html
@@ -146,14 +145,14 @@ class EditingTable:
         logger.debug("Generated layout")
         return layout
 
-    def layout(self) -> html.Div | dbc.Tab:
+    def layout(self) -> html.Div:
         """Define the layout for the EditingTable module.
 
         Because this module can be used as a a component in other modules, it needs to have a layout method that is not abstract.
         For implementations as tab or window, this method should still be overridden.
 
         Returns:
-            html.Div | dbc.Tab: A Dash HTML Div component representing the layout of the module or a dbc.Tab to be displayed directly.
+            html.Div: A Dash HTML Div component representing the layout of the module to be displayed directly.
         """
         return self._create_layout()
 
