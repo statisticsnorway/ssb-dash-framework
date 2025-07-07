@@ -328,7 +328,7 @@ class AltinnDataCapture(ABC):
                 return fig
             else:
                 logger.debug(
-                    f"Something went wrong, args: {graph_options}, {skjema}, {args}"
+                    f"Something went wrong, args: {graph_option}, {skjema}, {args}"
                 )
 
 
