@@ -15,8 +15,15 @@ logger = logging.getLogger(__name__)
 
 
 class FigureDisplay:
+    """This module is used to display a plotly figure in the editing framework.
 
-    _id_number = 0
+    It simplifies connecting a figure to the variable selector and allows for any figure to be used as long as it works in Dash.
+    It also allows for click data to be processed and passed to the variable selector.
+
+
+    """
+
+    _id_number: int = 0
 
     def __init__(
         self,
@@ -26,7 +33,45 @@ class FigureDisplay:
         states: list[str] | None = None,
         output: str | None = None,
         clickdata_func: Callable[..., Any] | None = None,
-    ):
+    ) -> None:
+        """Initialize the FigureDisplay module.
+
+        Args:
+            label (str): The label for the module.
+            figure_func (Callable[..., Any]): A function that returns a plotly figure. It should accept the dynamic states as arguments.
+            inputs (list[str]): A list of input variable names to be used in the figure function.
+            states (list[str] | None, optional): A list of state variable names to be used in the figure function. Defaults to None.
+            output (str | None, optional): The name of the output variable to which the click data will be sent.
+                If provided, the click data will be processed and sent to this variable.
+                If None, no click data will be processed. Defaults to None.
+            clickdata_func (Callable[..., Any] | None, optional): A function to process the click data.
+                It should accept the click data as an argument and return a value to be sent to the output variable.
+                If None, no click data will be processed. Defaults to None.
+
+        Note:
+            - The clickdata_func needs to process the click data and return a string value that will be sent to the output variable specified in the output argument.
+            - clickdata is a dictionary with the structure:
+                {
+                    "points": [
+                        {
+                        "curveNumber": 1,
+                        "pointNumber": 0,
+                        "pointIndex": 0,
+                        "x": 1,
+                        "y": 3,
+                        "bbox": {
+                            "x0": 189.35,
+                            "x1": 209.35,
+                            "y0": 1057.72,
+                            "y1": 1077.72
+                        },
+                        "customdata": [
+                            3
+                        ]
+                        }
+                    ]
+                }
+        """
         self.module_number = FigureDisplay._id_number
         self.module_name = self.__class__.__name__
         FigureDisplay._id_number += 1
@@ -58,9 +103,11 @@ class FigureDisplay:
         return layout
 
     def layout(self) -> html.Div:
+        """Return the layout of the module."""
         return self.module_layout
 
     def module_callbacks(self) -> None:
+        """Define the callbacks for the module."""
         dynamic_states = [
             self.variableselector.get_inputs(),
             self.variableselector.get_states(),
@@ -70,7 +117,7 @@ class FigureDisplay:
             Output(f"{self.module_number}-figuredisplay", "figure"), *dynamic_states
         )
         def display_figure(
-            *dynamic_states,
+            *dynamic_states: list[str],
         ) -> Any:  # Should be a figure, might need a more specific type hint.
             return self.figure_func(*dynamic_states)
 
@@ -83,7 +130,9 @@ class FigureDisplay:
                 Input(f"{self.module_number}-figuredisplay", "clickData"),
                 prevent_initial_call=True,
             )
-            def transfer_clickdata(clickdata) -> str:
+            def transfer_clickdata(
+                clickdata: dict[str, list[dict[str, str | int | float | bool]]],
+            ) -> str:
                 logger.debug(clickdata)
                 if self.clickdata_func is None:
                     logger.warning(
