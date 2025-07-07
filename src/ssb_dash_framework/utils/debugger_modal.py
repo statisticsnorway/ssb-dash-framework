@@ -87,7 +87,7 @@ class DebugInspector:
             self.variableselector.get_states(),
         ]
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("debugger_modal", "is_open"),
             Input("sidebar-debugger-button", "n_clicks"),
             State("debugger_modal", "is_open"),
@@ -97,7 +97,9 @@ class DebugInspector:
                 return not is_open
             return is_open
 
-        @callback(Output("debuggerhelper_output", "children"), *dynamic_states)
+        @callback(  # type: ignore[misc]
+            Output("debuggerhelper_output", "children"), *dynamic_states
+        )
         def debuggerhelper_dynamic_states(*args: Any) -> html.Div:
             ctx = callback_context  # Get callback context
 
@@ -122,6 +124,8 @@ class DebugInspector:
                 ]
             )
 
-        @callback(Output("debuggerhelper_func_output", "children"), *dynamic_states)
+        @callback(  # type: ignore[misc]
+            Output("debuggerhelper_func_output", "children"), *dynamic_states
+        )
         def debuggerhelper_func(*args: Any) -> Any:
             return self.func(args)

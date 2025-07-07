@@ -12,6 +12,8 @@ from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
+from ..utils import TabImplementation
+from ..utils import WindowImplementation
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -21,7 +23,7 @@ class Aarsregnskap(ABC):
     """Module for displaying annual financial statements (Årsregnskap).
 
     Attributes:
-        label (str): Label for the module when initialized, displayed as "🧾 Årsregnskap".
+        label (str): Label for the module when initialized, displayed as "Årsregnskap".
     """
 
     _id_number = 0
@@ -37,7 +39,8 @@ class Aarsregnskap(ABC):
         self.module_number = Aarsregnskap._id_number
         self.module_name = self.__class__.__name__
         Aarsregnskap._id_number += 1
-        self.label = "🧾 Årsregnskap"
+        self.label = "Årsregnskap"
+        self.icon = "🧾"
         self._is_valid()
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -132,7 +135,7 @@ class Aarsregnskap(ABC):
     def module_callbacks(self) -> None:
         """Registers Dash callbacks for the Årsregnskap module."""
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("tab-aarsregnskap-input-aar", "value"),
             Input("var-aar", "value"),
         )
@@ -147,7 +150,7 @@ class Aarsregnskap(ABC):
             """
             return aar
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("tab-aarsregnskap-input-orgnr", "value"),
             Input("var-foretak", "value"),
         )
@@ -162,7 +165,7 @@ class Aarsregnskap(ABC):
             """
             return orgnr
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("tab-aarsregnskap-iframe", "src"),
             Input("tab-aarsregnskap-input-aar", "value"),
             Input("tab-aarsregnskap-input-orgnr", "value"),
@@ -202,3 +205,21 @@ class Aarsregnskap(ABC):
             return pdf_data_uri
 
         logger.debug("Generated callbacks")
+
+
+class AarsregnskapTab(TabImplementation, Aarsregnskap):
+    """AarsregnskapTab is an implementation of the Aarsregnskap module as a tab in a Dash application."""
+
+    def __init__(self) -> None:
+        """Initializes the AarsregnskapTab class."""
+        Aarsregnskap.__init__(self)
+        TabImplementation.__init__(self)
+
+
+class AarsregnskapWindow(WindowImplementation, Aarsregnskap):
+    """AarsregnskapTab is an implementation of the Aarsregnskap module as a tab in a Dash application."""
+
+    def __init__(self) -> None:
+        """Initializes the AarsregnskapTab class."""
+        Aarsregnskap.__init__(self)
+        WindowImplementation.__init__(self)

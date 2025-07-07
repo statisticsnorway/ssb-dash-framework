@@ -54,10 +54,10 @@ def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> D
         __name__,
         requests_pathname_prefix=f"{service_prefix}proxy/{port}/",
         external_stylesheets=[theme_map[stylesheet], dbc_css],
-        assets_folder = "../assets"
+        assets_folder="../assets",
     )
 
-    @callback(
+    @callback(  # type: ignore[misc]
         Output("variable-selector-offcanvas", "is_open"),
         Input("sidebar-varvelger-button", "n_clicks"),
         State("variable-selector-offcanvas", "is_open"),

@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 class ControlFrameworkBase:
     """Base class for running control checks on partitioned data and managing inserts and updates
     to the 'kontrollutslag' table via a connection interface.
@@ -23,7 +24,7 @@ class ControlFrameworkBase:
 
     def _run_all_controls(self):
         """Runs control methods named like 'control_<kontrollid>' where <id> is in self.controls.
-    
+
         Returns:
             pd.DataFrame: Combined DataFrame with all control results.
         """
@@ -114,11 +115,9 @@ class ControlFrameworkBase:
             indicator=True,
         ).dropna()
 
-        df_endrede = total_merge[
-            total_merge["utslag_x"] != total_merge["utslag_y"]
-        ][["kontrollid", "ident", "skjemaversjon", "verdi", "utslag_x"]].rename(
-            columns={"utslag_x": "utslag"}
-        )
+        df_endrede = total_merge[total_merge["utslag_x"] != total_merge["utslag_y"]][
+            ["kontrollid", "ident", "skjemaversjon", "verdi", "utslag_x"]
+        ].rename(columns={"utslag_x": "utslag"})
 
         return df_endrede
 
@@ -140,12 +139,16 @@ class ControlFrameworkBase:
             )
 
         update_query += " ELSE utslag END"
-        update_query += " WHERE " + " OR ".join(
-            [
-                f"(kontrollid = '{row['kontrollid']}' AND skjemaversjon = '{row['skjemaversjon']}')"
-                for _, row in df_updates.iterrows()
-            ]
-        ) + ";"
+        update_query += (
+            " WHERE "
+            + " OR ".join(
+                [
+                    f"(kontrollid = '{row['kontrollid']}' AND skjemaversjon = '{row['skjemaversjon']}')"
+                    for _, row in df_updates.iterrows()
+                ]
+            )
+            + ";"
+        )
 
         return update_query
 
@@ -158,7 +161,9 @@ class ControlFrameworkBase:
         df_updates = self._control_updates()
         if len(df_updates) > 0:
             print(f"{len(df_updates)} rader oppdateres...")
-            self.conn.query(self._generate_update_query(df_updates), self.partitions_skjema)
+            self.conn.query(
+                self._generate_update_query(df_updates), self.partitions_skjema
+            )
             print("Oppdatering fullført!")
         else:
             print("Ingen rader å oppdatere")

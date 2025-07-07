@@ -7,6 +7,7 @@ from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
 from ..utils.functions import sidebar_button
 
@@ -232,7 +233,7 @@ class WindowImplementation:
         This includes a callback to toggle the visibility of the modal window.
         """
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output(f"{self._window_n}-{self.module_name}-modal", "is_open"),
             Input(
                 f"sidebar-{self._window_n}-{self.module_name}-modal-button", "n_clicks"
@@ -254,7 +255,7 @@ class WindowImplementation:
                 return not is_open
             return is_open
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output(f"{self._window_n}-{self.module_name}-modal", "fullscreen"),
             Input(f"{self._window_n}-{self.module_name}-modal-fullscreen", "n_clicks"),
             State(f"{self._window_n}-{self.module_name}-modal", "fullscreen"),
@@ -262,9 +263,12 @@ class WindowImplementation:
         def toggle_fullscreen_modal(
             n_clicks: int, fullscreen_state: str | bool
         ) -> str | bool:
+            fullscreen: str | bool
             if n_clicks and n_clicks > 0:
                 if fullscreen_state is True:
                     fullscreen = "xxl-down"
                 else:
                     fullscreen = True
                 return fullscreen
+            else:
+                raise PreventUpdate

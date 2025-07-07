@@ -13,6 +13,8 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ..utils import TabImplementation
+from ..utils import WindowImplementation
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -38,7 +40,7 @@ class FreeSearch(ABC):
 
     _id_number = 0
 
-    def __init__(self, database: Any, label: str | None = "🔍 Frisøk") -> None:
+    def __init__(self, database: Any, label: str = "Frisøk") -> None:
         """Initialize the FreeSearch module with a database connection and optional label."""
         assert hasattr(
             database, "query"
@@ -46,10 +48,12 @@ class FreeSearch(ABC):
         self.module_number = FreeSearch._id_number
         self.module_name = self.__class__.__name__
         FreeSearch._id_number += 1
+        self.icon = "🔍"
+        self.label = label
+
         self.database = database
         self.module_layout = self._create_layout()
         self.module_callbacks()
-        self.label = label
         module_validator(self)
 
     def _create_layout(self) -> html.Div:
@@ -117,7 +121,7 @@ class FreeSearch(ABC):
             - The results are displayed in an editable table, with the "row_id" column hidden by default if present.
         """
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("tab-frisøk-table1", "rowData"),
             Output("tab-frisøk-table1", "columnDefs"),
             Input("tab-frisøk-button1", "n_clicks"),
@@ -164,3 +168,35 @@ class FreeSearch(ABC):
             return df.to_dict("records"), columns
 
         logger.debug("Generated callbacks")
+
+
+class FreeSearchTab(TabImplementation, FreeSearch):
+    """Implementation of the FreeSearch module as a tab in the application.
+
+    This class extends the FreeSearch base class and provides a layout
+    specific to the tab interface.
+    """
+
+    def __init__(self, database: Any) -> None:
+        """Initialize the FreeSearchTab with a database connection.
+
+        Args:
+            database (Any): Database connection or interface used for executing SQL queries.
+        """
+        FreeSearch.__init__(self, database=database)
+        TabImplementation.__init__(self)
+
+
+class FreeSearchWindow(WindowImplementation, FreeSearch):
+    """FreeSearchWindow is a class that creates a modal based on the FreeSearch module."""
+
+    def __init__(self, database: Any) -> None:
+        """Initialize the FreeSearchWindow class.
+
+        Args:
+            database: The database connection or object used for querying.
+        """
+        FreeSearch.__init__(self, database=database)
+        WindowImplementation.__init__(
+            self,
+        )

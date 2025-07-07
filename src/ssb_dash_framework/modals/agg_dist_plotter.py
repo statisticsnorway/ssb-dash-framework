@@ -1,17 +1,21 @@
-import os
+import logging
 import re
-
-from typing import Any
 from typing import Literal
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-import pandas as pd
 import plotly.express as px
-from dash import Input, Output, State, callback, dcc, html
-import eimerdb as db
+import plotly.graph_objects as go
+from dash import Input
+from dash import Output
+from dash import State
+from dash import callback
+from dash import dcc
+from dash import html
 
 from ..utils.functions import sidebar_button
+
+logger = logging.getLogger(__name__)
 
 default_col_def = {
     "resizable": True,
@@ -26,13 +30,26 @@ INITIAL_OPTIONS = [
 
 SQL_COLUMN_CONCAT = " || '_' || "
 
+
 class AggDistPlotter:
-    def __init__(self, time_units, conn: object) -> None:
+    """The AggDistPlotter module lets you view macro values for your variables and find the distribution between them and the largest contributors.
+
+    This module requires your data to follow the default eimerdb structure.
+    """
+
+    def __init__(self, time_units: list[str], conn: object) -> None:
+        """Initializes the AggDistPlotter.
+
+        Args:
+            time_units (list[str]): Your time variables used in the variable selector. Example year, quarter, month, etc.
+            conn (object): A connection object to a database. It must have a .query method that can handle SQL queries.
+                Currently designed with eimerdb in mind.
+        """
         self.time_units = time_units
         self.conn = conn
         self.callbacks()
 
-    def layout(self):
+    def layout(self) -> html.Div:
         layout = html.Div(
             [
                 dbc.Modal(
@@ -80,18 +97,30 @@ class AggDistPlotter:
                                             dbc.Row(
                                                 [
                                                     dbc.Col(
-                                                        html.P("Velg rullerende tidsenhet"),
+                                                        html.P(
+                                                            "Velg rullerende tidsenhet"
+                                                        ),
                                                         width="auto",
-                                                        style={"display": "flex", "alignItems": "center"}
+                                                        style={
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                        },
                                                     ),
                                                     dbc.Col(
                                                         dcc.Dropdown(
                                                             id="aggdistplotter-rullvar-dd",
                                                             options=[
-                                                                {"label": unit, "value": unit}
+                                                                {
+                                                                    "label": unit,
+                                                                    "value": unit,
+                                                                }
                                                                 for unit in self.time_units
                                                             ],
-                                                            value=self.time_units[0] if self.time_units else None,
+                                                            value=(
+                                                                self.time_units[0]
+                                                                if self.time_units
+                                                                else None
+                                                            ),
                                                             clearable=False,
                                                             className="dbc",
                                                             style={"width": "150px"},
@@ -101,7 +130,7 @@ class AggDistPlotter:
                                                 ],
                                                 align="center",
                                             )
-                                        )
+                                        ),
                                     ]
                                 ),
                                 dbc.Row(
@@ -127,9 +156,18 @@ class AggDistPlotter:
                                             dbc.RadioItems(
                                                 id="aggdistplotter-graph-type",
                                                 options=[
-                                                    {"label": "📦 Boksplott", "value": "box"},
-                                                    {"label": "🎻 Fiolin", "value": "fiolin"},
-                                                    {"label": "🥇 Bidrag", "value": "bidrag"},
+                                                    {
+                                                        "label": "📦 Boksplott",
+                                                        "value": "box",
+                                                    },
+                                                    {
+                                                        "label": "🎻 Fiolin",
+                                                        "value": "fiolin",
+                                                    },
+                                                    {
+                                                        "label": "🥇 Bidrag",
+                                                        "value": "bidrag",
+                                                    },
                                                 ],
                                                 value="box",
                                                 inline=True,
@@ -168,6 +206,7 @@ class AggDistPlotter:
                 sidebar_button("🌌", "Aggregering", "sidebar-aggdistplotter-button"),
             ]
         )
+        logger.debug("Layout generated.")
         return layout
 
     def create_partition_select(self, skjema: str | None = None, **kwargs) -> dict:
@@ -187,21 +226,20 @@ class AggDistPlotter:
         return [component(f"var-{unit}", "value") for unit in self.time_units]
 
     def update_partition_select(self, partition_dict, key_to_update):
-        """
-        Updates the dictionary by adding the previous value (N-1) 
+        """Updates the dictionary by adding the previous value (N-1)
         to the list for a single specified key.
-    
+
         :param partition_dict: Dictionary containing lists of values
         :param key_to_update: Key to update by appending (N-1)
         :return: Updated dictionary
         """
-        if key_to_update in partition_dict and partition_dict[key_to_update]:
+        if partition_dict.get(key_to_update):
             min_value = min(partition_dict[key_to_update])
             partition_dict[key_to_update].append(int(min_value) - 1)
         return partition_dict
 
     def callbacks(self):
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("aggdistplotter-modal", "fullscreen"),
             Input("aggdistplotter-modal-fullscreen", "n_clicks"),
             State("aggdistplotter-modal", "fullscreen"),
@@ -214,20 +252,20 @@ class AggDistPlotter:
                     fullscreen = True
                 return fullscreen
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("aggdistplotter-radioitems", "options"),
             Input("var-altinnskjema", "value"),
         )
         def oppdater_valgt_skjema(skjema):
             if skjema is not None:
                 return [
-                    {"label": "Alle skjemaer", 'value': "all"},
+                    {"label": "Alle skjemaer", "value": "all"},
                     {"label": f"Bare {skjema}", "value": skjema},
                 ]
             else:
                 return INITIAL_OPTIONS
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("aggdistplotter-modal", "is_open"),
             Input("sidebar-aggdistplotter-button", "n_clicks"),
             State("aggdistplotter-modal", "is_open"),
@@ -237,7 +275,7 @@ class AggDistPlotter:
                 return not is_open
             return is_open
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("aggdistplotter-table1", "rowData"),
             Output("aggdistplotter-table1", "columnDefs"),
             Input("aggdistplotter-refresh", "n_clicks"),
@@ -252,7 +290,9 @@ class AggDistPlotter:
             rullerende_var = args[-2]
             tabell = args[-1]
             if n_clicks > 0:
-                partition_args = dict(zip(self.time_units, component_inputs))
+                partition_args = dict(
+                    zip(self.time_units, component_inputs, strict=False)
+                )
                 partition_select_no_skjema = self.create_partition_select(
                     skjema=None, **partition_args
                 )
@@ -277,43 +317,43 @@ class AggDistPlotter:
                     where_query_add = ""
 
                 query = f"""
-                    SELECT 
+                    SELECT
                         s.variabel,
                         {column_name_expr_s} AS time_combination,
                         SUM(CAST(s.verdi AS NUMERIC)) AS verdi
                     FROM {tabell} AS s
                     JOIN (
-                        SELECT 
+                        SELECT
                             {column_name_expr_t2} AS time_combination,
-                            t2.ident, 
-                            t2.skjemaversjon, 
+                            t2.ident,
+                            t2.skjemaversjon,
                             t2.dato_mottatt
-                        FROM 
+                        FROM
                             skjemamottak AS t2
                         WHERE aktiv = True
-                        QUALIFY 
+                        QUALIFY
                             ROW_NUMBER() OVER (
-                                PARTITION BY {column_name_expr_t2}, t2.ident 
+                                PARTITION BY {column_name_expr_t2}, t2.ident
                                 ORDER BY t2.dato_mottatt DESC
-                            ) = 1       
-                    ) AS mottak_subquery 
+                            ) = 1
+                    ) AS mottak_subquery
                         ON {column_name_expr_s} = mottak_subquery.time_combination
                         AND s.ident = mottak_subquery.ident
                         AND s.skjemaversjon = mottak_subquery.skjemaversjon
                     JOIN (
-                        SELECT 
+                        SELECT
                             d.variabel,
                             {column_name_expr_d} AS time_combination,
                             d.radnr,
                             d.datatype
                         FROM datatyper AS d
-                    ) AS datatype_subquery 
+                    ) AS datatype_subquery
                         ON s.variabel = datatype_subquery.variabel
                         AND {column_name_expr_s} = datatype_subquery.time_combination
                     WHERE datatype_subquery.datatype = 'int' {where_query_add}
-                    GROUP BY 
-                        s.variabel, 
-                        datatype_subquery.radnr, 
+                    GROUP BY
+                        s.variabel,
+                        datatype_subquery.radnr,
                         {group_by_clause}
                     ORDER BY datatype_subquery.radnr;
                 """
@@ -323,7 +363,7 @@ class AggDistPlotter:
                     partition_select={
                         tabell: updated_partition_select,
                         "datatyper": updated_partition_select,
-                    }
+                    },
                 )
 
                 df_wide = df.pivot(
@@ -331,8 +371,10 @@ class AggDistPlotter:
                 ).reset_index()
 
                 df_wide = df_wide.rename(
-                    columns={col: f"verdi_{col}" if col != "variabel"
-                             else col for col in df_wide.columns}
+                    columns={
+                        col: f"verdi_{col}" if col != "variabel" else col
+                        for col in df_wide.columns
+                    }
                 )
 
                 df_wide.columns.name = None
@@ -363,7 +405,7 @@ class AggDistPlotter:
                 columns[0]["headerCheckboxSelection"] = True
                 return df_wide.to_dict("records"), columns
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("aggdistplotter-graph1", "figure"),
             Input("aggdistplotter-table1", "selectedRows"),
             Input("aggdistplotter-radioitems", "value"),
@@ -372,8 +414,8 @@ class AggDistPlotter:
             *self.create_callback_components("State"),
         )
         def agg_graph1(current_row, skjema, graph_type, tabell, *args):
-            partition_args = dict(zip(self.time_units, args))
-            
+            partition_args = dict(zip(self.time_units, args, strict=False))
+
             if skjema == "all":
                 partition_select = self.create_partition_select(
                     skjema=None, **partition_args
@@ -389,23 +431,23 @@ class AggDistPlotter:
                 f"""SELECT t1.aar, t1.ident, t1.variabel, t1.verdi
                 FROM {tabell} as t1
                 JOIN (
-                    SELECT 
+                    SELECT
                         t2.ident,
                         t2.skjemaversjon,
                         MAX(t2.dato_mottatt) AS newest_dato_mottatt
-                    FROM 
+                    FROM
                         skjemamottak AS t2
-                    GROUP BY 
+                    GROUP BY
                         t2.ident,
                         t2.skjemaversjon
-                ) AS subquery ON 
+                ) AS subquery ON
                     t1.ident = subquery.ident
                     AND t1.skjemaversjon = subquery.skjemaversjon
                 WHERE variabel = '{variabel}' AND verdi IS NOT NULL AND verdi != 0
                 """,
-                partition_select=partition_select
+                partition_select=partition_select,
             )
-        
+
             df["verdi"] = df["verdi"].astype(int)
 
             top5_df = df.nlargest(5, "verdi")
@@ -417,7 +459,7 @@ class AggDistPlotter:
                     y="verdi",
                     hover_data=["ident", "verdi"],
                     points="all",
-                    title=f"📦 Boksplott for {variabel}, {str(partition_select)}.",
+                    title=f"📦 Boksplott for {variabel}, {partition_select!s}.",
                     template="plotly_dark",
                 )
             elif graph_type == "fiolin":
@@ -428,14 +470,14 @@ class AggDistPlotter:
                     hover_data=["ident", "verdi"],
                     box=True,
                     points="all",
-                    title=f"🎻 Fiolinplott for {variabel}, {str(partition_select)}.",
+                    title=f"🎻 Fiolinplott for {variabel}, {partition_select!s}.",
                     template="plotly_dark",
                 )
             elif graph_type == "bidrag":
                 agg_df = df.groupby("ident", as_index=False)["verdi"].sum()
-                agg_df["verdi"] = (
-                    agg_df["verdi"] / agg_df["verdi"].sum() * 100
-                ).round(2)
+                agg_df["verdi"] = (agg_df["verdi"] / agg_df["verdi"].sum() * 100).round(
+                    2
+                )
                 agg_df = agg_df.sort_values("verdi", ascending=False).head(10)
 
                 fig = px.bar(
@@ -449,7 +491,7 @@ class AggDistPlotter:
                     custom_data=["ident"],
                 )
 
-                fig.update_layout(yaxis={'categoryorder': 'total ascending'})
+                fig.update_layout(yaxis={"categoryorder": "total ascending"})
 
             else:
                 fig = go.Figure()
@@ -463,7 +505,7 @@ class AggDistPlotter:
                         size=13,
                         color="#00CC96",
                         symbol="diamond",
-                        line=dict(width=1, color="white")
+                        line=dict(width=1, color="white"),
                     ),
                     name="De fem største",
                     hovertext=top5_df["ident"],
@@ -472,7 +514,7 @@ class AggDistPlotter:
                 )
             return fig
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
             Input("aggdistplotter-graph1", "clickData"),
             prevent_initial_call=True,

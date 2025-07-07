@@ -1,6 +1,8 @@
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-from dash import dcc, html
+from dash import dcc
+from dash import html
+
 
 class AltinnComponents:
     """Components for the Altinn Skjemadata Editor.
