@@ -29,7 +29,7 @@ def ssb_foretak_modal() -> dbc.Modal:
     Returns:
         dbc.Modal: A modal component containing an AgGrid table for bof data.
     """
-    ssb_foretak_modal = dbc.Modal(
+    return dbc.Modal(
         [
             dbc.ModalHeader(dbc.ModalTitle("ssb_foretak")),
             dbc.ModalBody(
@@ -55,7 +55,6 @@ def ssb_foretak_modal() -> dbc.Modal:
         scrollable=True,
         className="d-flex flex-column bofregistry-modal",
     )
-    return ssb_foretak_modal
 
 
 def ssb_bedrift_modal() -> dbc.Modal:
@@ -110,20 +109,31 @@ class BofInformation(ABC):
         callbacks(): Registers Dash callbacks for handling user interactions.
     """
 
-    _id_number = 0
+    _id_number: int = 0
 
-    def __init__(self, label=None, variableselector_foretak_name="foretak") -> None:
+    def __init__(
+        self,
+        label: str | None = None,
+        variableselector_foretak_name: str | None = None,
+        icon: str | None = None,
+    ) -> None:
         """Initialize the BofInformation tab component.
 
-        Attributes:
+        Args:
             label (str): The label for the tab, displayed as "🗃️ BoF Foretak".
+            variableselector_foretak_name (str): The name of the variable selector that holds the foretak number, default is "foretak".
+            icon (str): The icon to be displayed in the tab, default is "🗃️".
         """
         self.module_number = BofInformation._id_number
         self.module_name = self.__class__.__name__
         BofInformation._id_number += 1
+        if icon is None:
+            self.icon = "🗃️"
+        else:
+            self.icon = icon
 
         if label is None:
-            label = "🗃️ BoF Foretak"
+            label = "BoF Foretak"
         self.label = label
         if variableselector_foretak_name is None:
             variableselector_foretak_name = "foretak"
