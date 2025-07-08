@@ -45,6 +45,9 @@ class AggDistPlotter:
             conn (object): A connection object to a database. It must have a .query method that can handle SQL queries.
                 Currently designed with eimerdb in mind.
         """
+        logger.warning(
+            f"{self.__class__.__name__} is under development and may change in future releases."
+        )
         self.time_units = time_units
         self.conn = conn
         self.callbacks()

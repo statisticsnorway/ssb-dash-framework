@@ -39,6 +39,9 @@ class Pimemorizer:
         Attributes:
             label (str): The label for the tab, displayed as "𝝅 Pi memorizer".
         """
+        logger.warning(
+            f"{self.__class__.__name__} is intended as a proof of concept for the flexibility of the framework, not as a production module."
+        )
         self.label = "𝝅 Pi memorizer"
         self.callbacks()
 
