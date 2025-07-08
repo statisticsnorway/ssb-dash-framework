@@ -21,13 +21,14 @@ theme_map = {
 }
 
 
-def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> Dash:
+def app_setup(
+    port: int, service_prefix: str | None = None, stylesheet: str = "darkly"
+) -> Dash:
     """Set up and configure a Dash application with the specified parameters.
 
     Args:
         port (int): The port number for the Dash application.
         service_prefix (str): The service prefix used for constructing the app's pathname.
-        domain (str): The domain name where the app is hosted.
         stylesheet (str): The name of the Bootstrap theme to apply to the app.
                           Must be a key in `theme_map`.
 
@@ -40,7 +41,7 @@ def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> D
           with the ID `main-varvelger` based on the number of clicks on `sidebar-varvelger-button`.
 
     Examples:
-        >>> app = app_setup(port=8050, service_prefix="/", domain="localhost", stylesheet="slate")
+        >>> app = app_setup(port=8050, service_prefix=os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/"), domain="localhost")
         >>> app.run_server() # doctest: +SKIP
     """
     template = theme_map[stylesheet]
@@ -52,7 +53,9 @@ def app_setup(port: int, service_prefix: str, domain: str, stylesheet: str) -> D
 
     app = Dash(
         __name__,
-        requests_pathname_prefix=f"{service_prefix}proxy/{port}/",
+        requests_pathname_prefix=(
+            f"{service_prefix}proxy/{port}/" if service_prefix else None
+        ),
         external_stylesheets=[theme_map[stylesheet], dbc_css],
         assets_folder="../assets",
     )

@@ -4,7 +4,6 @@ from .control import ControlFrameworkBase
 from .modals import AggDistPlotter
 from .modals import AltinnControlView
 from .modals import Control
-from .modals import HBMethod
 from .modals import VisualizationBuilder
 from .modules import Aarsregnskap
 from .modules import AarsregnskapTab
@@ -44,13 +43,15 @@ from .utils import AlertHandler
 from .utils import DebugInspector
 from .utils import TabImplementation
 from .utils import WindowImplementation
-from .utils import _get_kostra_r
 from .utils import create_alert
 from .utils import enable_app_logging
-from .utils import hb_method
 from .utils import module_validator
 from .utils import sidebar_button
-from .utils import th_error
+
+# from .modals import HBMethod
+# from .utils import _get_kostra_r
+# from .utils import hb_method
+# from .utils import th_error
 
 __all__ = [
     "Aarsregnskap",
@@ -98,14 +99,14 @@ __all__ = [
     "VariableSelectorOption",
     "VisualizationBuilder",
     "WindowImplementation",
-    "_get_kostra_r",
     "app_setup",
     "create_alert",
     "enable_app_logging",
-    "hb_method",
     "main_layout",
     "module_validator",
     "set_variables",
     "sidebar_button",
-    "th_error",
+    #    "hb_method",
+    #    "_get_kostra_r",
+    #    "th_error",
 ]
