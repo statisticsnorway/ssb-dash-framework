@@ -77,6 +77,7 @@ class FigureDisplay:
         self.module_number = FigureDisplay._id_number
         self.module_name = self.__class__.__name__
         FigureDisplay._id_number += 1
+        self.icon = "📈"
 
         self.label = label
         if states is None:

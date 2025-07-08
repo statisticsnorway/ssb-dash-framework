@@ -35,6 +35,7 @@ class Canvas(ABC):
         self.module_number = Canvas._id_number
         self.module_name = self.__class__.__name__
         Canvas._id_number += 1
+        self.icon = "⬜"
 
         self.label = label
         self.content = content

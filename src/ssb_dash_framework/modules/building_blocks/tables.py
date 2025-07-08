@@ -77,6 +77,7 @@ class EditingTable:
         self.module_number = EditingTable._id_number
         self.module_name = self.__class__.__name__
         EditingTable._id_number += 1
+        self.icon = "📒"
         self.label = label
         self.output = output
         self.output_varselector_name = output_varselector_name or output

@@ -86,6 +86,7 @@ Sidebar button
 .sidebar-button-label-spot {
     display: block;
     font-size: 0.7rem;
+    word-break: break-word;
 }
 
 /*
