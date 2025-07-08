@@ -1,6 +1,7 @@
 """SSB Dash Framework."""
 
 from .control import ControlFrameworkBase
+from .modals import AggDistPlotter
 from .modals import AltinnControlView
 from .modals import Control
 from .modals import HBMethod
@@ -55,6 +56,7 @@ __all__ = [
     "Aarsregnskap",
     "AarsregnskapTab",
     "AarsregnskapWindow",
+    "AggDistPlotter",
     "AlertHandler",
     "AltinnControlView",
     "AltinnDataCapture",
