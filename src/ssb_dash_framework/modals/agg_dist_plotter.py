@@ -313,7 +313,7 @@ class AggDistPlotter:
             radio_value: str,
             rullerende_var: str,
             tabell: str,
-            dynamic_states: Any,
+            *dynamic_states: Any,
         ):  # TODO replace Any
             skjema = radio_value
             if refresh > 0:
@@ -447,9 +447,9 @@ class AggDistPlotter:
             skjema: str,
             graph_type: str,
             tabell: str,
-            *args: Any,
+            dynamic_states: Any,
         ):  # TODO replace Any
-            partition_args = dict(zip(self.time_units, args, strict=False))
+            partition_args = dict(zip(self.time_units, *dynamic_states, strict=False))
 
             if skjema == "all":
                 partition_select = self.create_partition_select(
