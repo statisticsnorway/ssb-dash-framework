@@ -70,7 +70,6 @@ class AggDistPlotter(ABC):
         self.icon = "🌌"
         self.label = "Aggregering"
 
-        self._is_valid()
         self.time_units = time_units
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
@@ -79,6 +78,7 @@ class AggDistPlotter(ABC):
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
+        self._is_valid()
         module_validator(self)
 
     def _is_valid(self) -> None:
