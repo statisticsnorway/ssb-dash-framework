@@ -93,7 +93,8 @@ class AggDistPlotter(ABC):
     def _create_layout(self) -> html.Div:
         """Generates the layout for the AggDistPlotter module."""
         layout = html.Div(
-            [
+            className="aggdistplotter",
+            children=[
                 dbc.Row(
                     [
                         dbc.Col(
@@ -210,7 +211,7 @@ class AggDistPlotter(ABC):
                         )
                     ]
                 ),
-            ]
+            ],
         )
         logger.debug("Layout generated.")
         return layout
