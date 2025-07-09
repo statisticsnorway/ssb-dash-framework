@@ -449,7 +449,7 @@ class AggDistPlotter:
             tabell: str,
             *args: Any,
         ):  # TODO replace Any
-            print("args: " +args)
+            print(f"args: {[int(x) for x in args]}")
             partition_args = dict(zip(self.time_units, [int(x) for x in args], strict=False))
 
             if skjema == "all":
