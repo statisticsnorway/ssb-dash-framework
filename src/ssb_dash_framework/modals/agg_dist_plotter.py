@@ -1,5 +1,7 @@
 import logging
 import re
+from abc import ABC
+from abc import abstractmethod
 from typing import Any
 from typing import ClassVar
 
@@ -15,7 +17,10 @@ from dash import dcc
 from dash import html
 
 from ..setup.variableselector import VariableSelector
+from ..utils import TabImplementation
+from ..utils import WindowImplementation
 from ..utils.functions import sidebar_button
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +38,13 @@ INITIAL_OPTIONS = [
 SQL_COLUMN_CONCAT = " || '_' || "
 
 
-class AggDistPlotter:
+class AggDistPlotter(ABC):
     """The AggDistPlotter module lets you view macro values for your variables and find the distribution between them and the largest contributors.
 
     This module requires your data to follow the default eimerdb structure and requires som specific variables defined in the variable selector.
     """
 
+    _id_number: ClassVar[int] = 0
     _required_variables: ClassVar[list[str]] = (
         [  # Used for validating that the variable selector has the required variables set. These are hard-coded in the callbacks.
             "ident",
@@ -58,23 +64,35 @@ class AggDistPlotter:
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
         )
+        self.module_number = AggDistPlotter._id_number
+        self.module_name = self.__class__.__name__
+        AggDistPlotter._id_number += 1
+
+        self.icon = "🌌"
+        self.label = "Aggregering"
+
+        self._is_valid()
         self.time_units = time_units
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
         )
         self.conn = conn
-        self.module_callbacks()
 
-    def _is_valid():
+        self.module_layout = self._create_layout()
+        self.module_callbacks()
+        module_validator(self)
+
+    def _is_valid(self) -> None:
         for var in AggDistPlotter._required_variables:
             try:
                 self.variableselector.get_option(var)
-            except ValueError:
+            except ValueError as e:
                 raise ValueError(
                     f"AggDistPlotter requires the variable selector option '{var}' to be set."
-                )
+                ) from e
 
-    def layout(self) -> html.Div:
+    def _create_layout(self) -> html.Div:
+        """Generates the layout for the AggDistPlotter module."""
         layout = html.Div(
             [
                 dbc.Modal(
@@ -234,6 +252,17 @@ class AggDistPlotter:
         logger.debug("Layout generated.")
         return layout
 
+    @abstractmethod
+    def layout(self) -> html.Div:
+        """Define the layout for the Aarsregnskap module.
+
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
+
+        Returns:
+            html.Div: A Dash HTML Div component representing the layout of the module.
+        """
+        pass
+
     def create_partition_select(
         self, skjema: str | None = None, **kwargs: Any
     ) -> dict[str, list[int]]:
@@ -248,8 +277,9 @@ class AggDistPlotter:
     def update_partition_select(
         self, partition_dict: dict[str, list[int]], key_to_update: str
     ) -> dict[str, list[int]]:
-        """Updates the dictionary by adding the previous value (N-1)
-        to the list for a single specified key.
+        """Updates the partition select dictionary.
+
+        Adds the previous value (N-1) to the list for a single specified key.
 
         :param partition_dict: Dictionary containing lists of values
         :param key_to_update: Key to update by appending (N-1)
@@ -261,6 +291,7 @@ class AggDistPlotter:
         return partition_dict
 
     def module_callbacks(self) -> None:
+        """Defines the callbacks for the AggDistPlotter module."""
         dynamic_states = self.variableselector.get_inputs()
 
         @callback(  # type: ignore[misc]
@@ -449,7 +480,9 @@ class AggDistPlotter:
             tabell: str,
             *args: Any,
         ):  # TODO replace Any
-            partition_args = dict(zip(self.time_units, [int(x) for x in args], strict=False))
+            partition_args = dict(
+                zip(self.time_units, [int(x) for x in args], strict=False)
+            )
 
             if skjema == "all":
                 partition_select = self.create_partition_select(
@@ -558,3 +591,21 @@ class AggDistPlotter:
             if clickdata:
                 ident = clickdata["points"][0]["customdata"][0]
                 return ident
+
+
+class AggDistPlotterTab(TabImplementation, AggDistPlotter):
+    """AggDistPlotterTab is an implementation of the AggDistPlotter module as a tab in a Dash application."""
+
+    def __init__(self) -> None:
+        """Initializes the AggDistPlotterTab class."""
+        AggDistPlotter.__init__(self)
+        TabImplementation.__init__(self)
+
+
+class AggDistPlotterWindow(WindowImplementation, AggDistPlotter):
+    """AggDistPlotterWindow is an implementation of the AggDistPlotter module as a tab in a Dash application."""
+
+    def __init__(self) -> None:
+        """Initializes the AggDistPlotterWindow class."""
+        AggDistPlotter.__init__(self)
+        WindowImplementation.__init__(self)
