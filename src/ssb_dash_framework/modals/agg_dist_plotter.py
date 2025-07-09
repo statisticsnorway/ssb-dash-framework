@@ -1,6 +1,7 @@
 import logging
 import re
-from typing import Literal
+from typing import Any
+from typing import ClassVar
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -13,6 +14,7 @@ from dash import callback
 from dash import dcc
 from dash import html
 
+from ..setup.variableselector import VariableSelector
 from ..utils.functions import sidebar_button
 
 logger = logging.getLogger(__name__)
@@ -34,8 +36,16 @@ SQL_COLUMN_CONCAT = " || '_' || "
 class AggDistPlotter:
     """The AggDistPlotter module lets you view macro values for your variables and find the distribution between them and the largest contributors.
 
-    This module requires your data to follow the default eimerdb structure.
+    This module requires your data to follow the default eimerdb structure and requires som specific variables defined in the variable selector.
     """
+
+    _required_variables: ClassVar[list[str]] = (
+        [  # Used for validating that the variable selector has the required variables set. These are hard-coded in the callbacks.
+            "ident",
+            "valgt_tabell",
+            "altinnskjema",
+        ]
+    )
 
     def __init__(self, time_units: list[str], conn: object) -> None:
         """Initializes the AggDistPlotter.
@@ -49,8 +59,20 @@ class AggDistPlotter:
             f"{self.__class__.__name__} is under development and may change in future releases."
         )
         self.time_units = time_units
+        self.variableselector = VariableSelector(
+            selected_inputs=time_units, selected_states=[]
+        )
         self.conn = conn
-        self.callbacks()
+        self.module_callbacks()
+
+    def _is_valid():
+        for var in AggDistPlotter._required_variables:
+            try:
+                self.variableselector.get_option(var)
+            except ValueError:
+                raise ValueError(
+                    f"AggDistPlotter requires the variable selector option '{var}' to be set."
+                )
 
     def layout(self) -> html.Div:
         layout = html.Div(
@@ -212,7 +234,9 @@ class AggDistPlotter:
         logger.debug("Layout generated.")
         return layout
 
-    def create_partition_select(self, skjema: str | None = None, **kwargs) -> dict:
+    def create_partition_select(
+        self, skjema: str | None = None, **kwargs: Any
+    ) -> dict[str, list[int]]:
         """Creates the partition select argument based on the chosen time units."""
         partition_select = {
             unit: [kwargs[unit]] for unit in self.time_units if unit in kwargs
@@ -221,14 +245,9 @@ class AggDistPlotter:
             partition_select["skjema"] = [skjema]
         return partition_select
 
-    def create_callback_components(
-        self, input_type: Literal["Input", "State"] = "Input"
-    ) -> list:
-        """Generates a list of dynamic Dash Input or State components."""
-        component = Input if input_type == "Input" else State
-        return [component(f"var-{unit}", "value") for unit in self.time_units]
-
-    def update_partition_select(self, partition_dict, key_to_update):
+    def update_partition_select(
+        self, partition_dict: dict[str, list[int]], key_to_update: str
+    ) -> dict[str, list[int]]:
         """Updates the dictionary by adding the previous value (N-1)
         to the list for a single specified key.
 
@@ -241,7 +260,9 @@ class AggDistPlotter:
             partition_dict[key_to_update].append(int(min_value) - 1)
         return partition_dict
 
-    def callbacks(self):
+    def module_callbacks(self) -> None:
+        dynamic_states = self.variableselector.get_inputs()
+
         @callback(  # type: ignore[misc]
             Output("aggdistplotter-modal", "fullscreen"),
             Input("aggdistplotter-modal-fullscreen", "n_clicks"),
@@ -259,7 +280,7 @@ class AggDistPlotter:
             Output("aggdistplotter-radioitems", "options"),
             Input("var-altinnskjema", "value"),
         )
-        def oppdater_valgt_skjema(skjema):
+        def oppdater_valgt_skjema(skjema: str):
             if skjema is not None:
                 return [
                     {"label": "Alle skjemaer", "value": "all"},
@@ -282,19 +303,22 @@ class AggDistPlotter:
             Output("aggdistplotter-table1", "rowData"),
             Output("aggdistplotter-table1", "columnDefs"),
             Input("aggdistplotter-refresh", "n_clicks"),
-            *self.create_callback_components("Input"),
             Input("aggdistplotter-radioitems", "value"),
             Input("aggdistplotter-rullvar-dd", "value"),
             State("var-valgt_tabell", "value"),
+            *dynamic_states,
         )
-        def agg_table(n_clicks, *args):
-            component_inputs = args[:-3]
-            skjema = args[-3]
-            rullerende_var = args[-2]
-            tabell = args[-1]
-            if n_clicks > 0:
+        def agg_table(
+            refresh: int | None,
+            radio_value: str,
+            rullerende_var: str,
+            tabell: str,
+            dynamic_states: Any,
+        ):  # TODO replace Any
+            skjema = radio_value
+            if refresh > 0:
                 partition_args = dict(
-                    zip(self.time_units, component_inputs, strict=False)
+                    zip(self.time_units, dynamic_states, strict=False)
                 )
                 partition_select_no_skjema = self.create_partition_select(
                     skjema=None, **partition_args
@@ -382,7 +406,9 @@ class AggDistPlotter:
 
                 df_wide.columns.name = None
 
-                def extract_numeric_sum(col_name):
+                def extract_numeric_sum(
+                    col_name: str,
+                ) -> int:  # TODO should return int | float?
                     numbers = list(map(int, re.findall(r"\d+", col_name)))
                     return sum(numbers) if numbers else 0
 
@@ -414,9 +440,15 @@ class AggDistPlotter:
             Input("aggdistplotter-radioitems", "value"),
             Input("aggdistplotter-graph-type", "value"),
             State("var-valgt_tabell", "value"),
-            *self.create_callback_components("State"),
+            *dynamic_states,
         )
-        def agg_graph1(current_row, skjema, graph_type, tabell, *args):
+        def agg_graph1(
+            current_row: list[dict[str, int | float | str]],
+            skjema: str,
+            graph_type: str,
+            tabell: str,
+            *args: Any,
+        ):  # TODO replace Any
             partition_args = dict(zip(self.time_units, args, strict=False))
 
             if skjema == "all":
@@ -488,7 +520,7 @@ class AggDistPlotter:
                     x="verdi",
                     y="ident",
                     orientation="h",
-                    title=f"🥇 Bidragsanalyse – % av total verdi ({variabel})",
+                    title=f"🥇 Bidragsanalyse - % av total verdi ({variabel})",
                     template="plotly_dark",
                     labels={"verdi": "%"},
                     custom_data=["ident"],
@@ -519,6 +551,7 @@ class AggDistPlotter:
 
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
+            self.variableselector.get_output_object(variable="ident"),
             Input("aggdistplotter-graph1", "clickData"),
             prevent_initial_call=True,
         )
