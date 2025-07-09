@@ -95,7 +95,7 @@ class AggDistPlotter(ABC):
         """Generates the layout for the AggDistPlotter module."""
         layout = html.Div(
             [
-                                dbc.Row(
+                        dbc.Row(
                                     [
                                         dbc.Col(
                                             dbc.Button(
