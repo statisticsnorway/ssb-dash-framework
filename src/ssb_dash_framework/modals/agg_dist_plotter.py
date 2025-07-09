@@ -95,32 +95,6 @@ class AggDistPlotter(ABC):
         """Generates the layout for the AggDistPlotter module."""
         layout = html.Div(
             [
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(
-                            dbc.Row(
-                                [
-                                    dbc.Col(
-                                        dbc.ModalTitle("🌌 Aggregering"), width="auto"
-                                    ),
-                                    dbc.Col(
-                                        [
-                                            dbc.Button(
-                                                "🖵",
-                                                id="aggdistplotter-modal-fullscreen",
-                                            ),
-                                        ],
-                                        width="auto",
-                                        className="ms-auto",
-                                    ),
-                                ],
-                                align="center",
-                                justify="between",
-                                className="w-100",
-                            )
-                        ),
-                        dbc.ModalBody(
-                            [
                                 dbc.Row(
                                     [
                                         dbc.Col(
@@ -240,14 +214,6 @@ class AggDistPlotter(ABC):
                                     ]
                                 ),
                             ]
-                        ),
-                    ],
-                    id="aggdistplotter-modal",
-                    size="xl",
-                    fullscreen="xxl-down",
-                ),
-                sidebar_button("🌌", "Aggregering", "sidebar-aggdistplotter-button"),
-            ]
         )
         logger.debug("Layout generated.")
         return layout
