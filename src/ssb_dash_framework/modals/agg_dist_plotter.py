@@ -115,10 +115,10 @@ class AggDistPlotter(ABC):
                                     dbc.Col(
                                         html.P("Velg rullerende tidsenhet"),
                                         width="auto",
-                                        style={
-                                            "display": "flex",
-                                            "alignItems": "center",
-                                        },
+                                        # style={
+                                        #    "display": "flex",
+                                        #    "alignItems": "center",
+                                        # },
                                     ),
                                     dbc.Col(
                                         dcc.Dropdown(
@@ -137,7 +137,7 @@ class AggDistPlotter(ABC):
                                             ),
                                             clearable=False,
                                             className="dbc",
-                                            style={"width": "150px"},
+                                            #   style={"width": "150px"},
                                         ),
                                         width="auto",
                                     ),
