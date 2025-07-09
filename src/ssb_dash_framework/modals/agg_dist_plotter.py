@@ -15,6 +15,7 @@ from dash import State
 from dash import callback
 from dash import dcc
 from dash import html
+from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
@@ -62,6 +63,11 @@ class AggDistPlotter(ABC):
         """
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
+        )
+        assert hasattr(
+            conn, "query"
+        ), (  # Necessary because of mypy
+            "The database object must have a 'query' method."
         )
         self.module_number = AggDistPlotter._id_number
         self.module_name = self.__class__.__name__
@@ -257,8 +263,8 @@ class AggDistPlotter(ABC):
             Output("aggdistplotter-radioitems", "options"),
             Input("var-altinnskjema", "value"),
         )
-        def oppdater_valgt_skjema(skjema: str):
-            if skjema is not None:
+        def oppdater_valgt_skjema(skjema: str) -> list[dict[str, str]]:
+            if skjema:
                 return [
                     {"label": "Alle skjemaer", "value": "all"},
                     {"label": f"Bare {skjema}", "value": skjema},
@@ -281,9 +287,13 @@ class AggDistPlotter(ABC):
             rullerende_var: str,
             tabell: str,
             *dynamic_states: Any,
-        ):  # TODO replace Any
+        ) -> tuple[
+            list[dict[str, Any]], list[dict[str, str | bool]]
+        ]:  # TODO replace Any
             skjema = radio_value
-            if refresh > 0:
+            if not refresh:
+                raise PreventUpdate
+            else:
                 partition_args = dict(
                     zip(self.time_units, dynamic_states, strict=False)
                 )
@@ -415,7 +425,7 @@ class AggDistPlotter(ABC):
             graph_type: str,
             tabell: str,
             *args: Any,
-        ):  # TODO replace Any
+        ) -> go.Figure:  # TODO replace Any
             partition_args = dict(
                 zip(self.time_units, [int(x) for x in args], strict=False)
             )
@@ -523,10 +533,13 @@ class AggDistPlotter(ABC):
             Input("aggdistplotter-graph1", "clickData"),
             prevent_initial_call=True,
         )
-        def output_to_variabelvelger(clickdata: dict):
+        def output_to_variabelvelger(clickdata: dict[str, list[dict[str, Any]]]) -> str:
+            logger.debug(clickdata)
             if clickdata:
                 ident = clickdata["points"][0]["customdata"][0]
-                return ident
+                return str(ident)
+            else:
+                raise PreventUpdate
 
 
 class AggDistPlotterTab(TabImplementation, AggDistPlotter):
