@@ -2,6 +2,8 @@
 
 from .control import ControlFrameworkBase
 from .modals import AggDistPlotter
+from .modals import AggDistPlotterTab
+from .modals import AggDistPlotterWindow
 from .modals import AltinnControlView
 from .modals import Control
 from .modals import VisualizationBuilder
@@ -58,6 +60,8 @@ __all__ = [
     "AarsregnskapTab",
     "AarsregnskapWindow",
     "AggDistPlotter",
+    "AggDistPlotterTab",
+    "AggDistPlotterWindow",
     "AlertHandler",
     "AltinnControlView",
     "AltinnDataCapture",
