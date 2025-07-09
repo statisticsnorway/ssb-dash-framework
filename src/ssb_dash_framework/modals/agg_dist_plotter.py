@@ -447,10 +447,10 @@ class AggDistPlotter:
             skjema: str,
             graph_type: str,
             tabell: str,
-            dynamic_states: Any,
+            *args: Any,
         ):  # TODO replace Any
-            print(dynamic_states)
-            partition_args = dict(zip(self.time_units, [int(x) for x in dynamic_states], strict=False))
+            print("args: " +args)
+            partition_args = dict(zip(self.time_units, [int(x) for x in args], strict=False))
 
             if skjema == "all":
                 partition_select = self.create_partition_select(
