@@ -449,6 +449,7 @@ class AggDistPlotter:
             tabell: str,
             dynamic_states: Any,
         ):  # TODO replace Any
+            print(dynamic_states)
             partition_args = dict(zip(self.time_units, [int(x) for x in dynamic_states], strict=False))
 
             if skjema == "all":
@@ -482,6 +483,7 @@ class AggDistPlotter:
                 """,
                 partition_select=partition_select,
             )
+            print(df)
 
             df["verdi"] = df["verdi"].astype(int)
 
