@@ -19,7 +19,6 @@ from dash import html
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
-from ..utils.functions import sidebar_button
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -95,125 +94,123 @@ class AggDistPlotter(ABC):
         """Generates the layout for the AggDistPlotter module."""
         layout = html.Div(
             [
-                        dbc.Row(
-                                    [
-                                        dbc.Col(
-                                            dbc.Button(
-                                                "Refresh/hent data",
-                                                id="aggdistplotter-refresh",
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            dbc.Button(
+                                "Refresh/hent data",
+                                id="aggdistplotter-refresh",
+                            ),
+                        ),
+                        dbc.Col(
+                            dcc.RadioItems(
+                                id="aggdistplotter-radioitems",
+                                options=INITIAL_OPTIONS,
+                                value="all",
+                            ),
+                        ),
+                        dbc.Col(
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        html.P("Velg rullerende tidsenhet"),
+                                        width="auto",
+                                        style={
+                                            "display": "flex",
+                                            "alignItems": "center",
+                                        },
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="aggdistplotter-rullvar-dd",
+                                            options=[
+                                                {
+                                                    "label": unit,
+                                                    "value": unit,
+                                                }
+                                                for unit in self.time_units
+                                            ],
+                                            value=(
+                                                self.time_units[0]
+                                                if self.time_units
+                                                else None
                                             ),
+                                            clearable=False,
+                                            className="dbc",
+                                            style={"width": "150px"},
                                         ),
-                                        dbc.Col(
-                                            dcc.RadioItems(
-                                                id="aggdistplotter-radioitems",
-                                                options=INITIAL_OPTIONS,
-                                                value="all",
-                                            ),
-                                        ),
-                                        dbc.Col(
-                                            dbc.Row(
-                                                [
-                                                    dbc.Col(
-                                                        html.P(
-                                                            "Velg rullerende tidsenhet"
-                                                        ),
-                                                        width="auto",
-                                                        style={
-                                                            "display": "flex",
-                                                            "alignItems": "center",
-                                                        },
-                                                    ),
-                                                    dbc.Col(
-                                                        dcc.Dropdown(
-                                                            id="aggdistplotter-rullvar-dd",
-                                                            options=[
-                                                                {
-                                                                    "label": unit,
-                                                                    "value": unit,
-                                                                }
-                                                                for unit in self.time_units
-                                                            ],
-                                                            value=(
-                                                                self.time_units[0]
-                                                                if self.time_units
-                                                                else None
-                                                            ),
-                                                            clearable=False,
-                                                            className="dbc",
-                                                            style={"width": "150px"},
-                                                        ),
-                                                        width="auto",
-                                                    ),
-                                                ],
-                                                align="center",
-                                            )
-                                        ),
-                                    ]
-                                ),
-                                dbc.Row(
-                                    [
-                                        dbc.Col(
-                                            dag.AgGrid(
-                                                id="aggdistplotter-table1",
-                                                defaultColDef=default_col_def,
-                                                className="ag-theme-alpine-dark header-style-on-filter",
-                                                columnSize="responsiveSizeToFit",
-                                                dashGridOptions={
-                                                    "rowHeight": 38,
-                                                    "suppressLoadingOverlay": True,
-                                                },
-                                            ),
-                                            width=12,
-                                        )
-                                    ],
-                                ),
-                                dbc.Row(
-                                    [
-                                        dbc.Col(
-                                            dbc.RadioItems(
-                                                id="aggdistplotter-graph-type",
-                                                options=[
-                                                    {
-                                                        "label": "📦 Boksplott",
-                                                        "value": "box",
-                                                    },
-                                                    {
-                                                        "label": "🎻 Fiolin",
-                                                        "value": "fiolin",
-                                                    },
-                                                    {
-                                                        "label": "🥇 Bidrag",
-                                                        "value": "bidrag",
-                                                    },
-                                                ],
-                                                value="box",
-                                                inline=True,
-                                                inputClassName="btn-check",
-                                                labelClassName="btn btn-outline-info me-2",
-                                                labelCheckedClassName="active",
-                                            ),
-                                            width=12,
-                                        )
-                                    ],
-                                ),
-                                dbc.Row(
-                                    [
-                                        dbc.Col(
-                                            dcc.Loading(
-                                                id="aggdistplotter-graph1-loading",
-                                                children=[
-                                                    dcc.Graph(
-                                                        id="aggdistplotter-graph1",
-                                                        className="m-1",
-                                                    )
-                                                ],
-                                                type="graph",
-                                            ),
-                                            width=12,
-                                        )
-                                    ]
-                                ),
-                            ]
+                                        width="auto",
+                                    ),
+                                ],
+                                align="center",
+                            )
+                        ),
+                    ]
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            dag.AgGrid(
+                                id="aggdistplotter-table1",
+                                defaultColDef=default_col_def,
+                                className="ag-theme-alpine-dark header-style-on-filter",
+                                columnSize="responsiveSizeToFit",
+                                dashGridOptions={
+                                    "rowHeight": 38,
+                                    "suppressLoadingOverlay": True,
+                                },
+                            ),
+                            width=12,
+                        )
+                    ],
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            dbc.RadioItems(
+                                id="aggdistplotter-graph-type",
+                                options=[
+                                    {
+                                        "label": "📦 Boksplott",
+                                        "value": "box",
+                                    },
+                                    {
+                                        "label": "🎻 Fiolin",
+                                        "value": "fiolin",
+                                    },
+                                    {
+                                        "label": "🥇 Bidrag",
+                                        "value": "bidrag",
+                                    },
+                                ],
+                                value="box",
+                                inline=True,
+                                inputClassName="btn-check",
+                                labelClassName="btn btn-outline-info me-2",
+                                labelCheckedClassName="active",
+                            ),
+                            width=12,
+                        )
+                    ],
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            dcc.Loading(
+                                id="aggdistplotter-graph1-loading",
+                                children=[
+                                    dcc.Graph(
+                                        id="aggdistplotter-graph1",
+                                        className="m-1",
+                                    )
+                                ],
+                                type="graph",
+                            ),
+                            width=12,
+                        )
+                    ]
+                ),
+            ]
         )
         logger.debug("Layout generated.")
         return layout
@@ -261,19 +258,6 @@ class AggDistPlotter(ABC):
         dynamic_states = self.variableselector.get_inputs()
 
         @callback(  # type: ignore[misc]
-            Output("aggdistplotter-modal", "fullscreen"),
-            Input("aggdistplotter-modal-fullscreen", "n_clicks"),
-            State("aggdistplotter-modal", "fullscreen"),
-        )
-        def toggle_fullscreen_modal(n_clicks: int, fullscreen_state):
-            if n_clicks > 0:
-                if fullscreen_state is True:
-                    fullscreen = "xxl-down"
-                else:
-                    fullscreen = True
-                return fullscreen
-
-        @callback(  # type: ignore[misc]
             Output("aggdistplotter-radioitems", "options"),
             Input("var-altinnskjema", "value"),
         )
@@ -285,16 +269,6 @@ class AggDistPlotter(ABC):
                 ]
             else:
                 return INITIAL_OPTIONS
-
-        @callback(  # type: ignore[misc]
-            Output("aggdistplotter-modal", "is_open"),
-            Input("sidebar-aggdistplotter-button", "n_clicks"),
-            State("aggdistplotter-modal", "is_open"),
-        )
-        def aggregeringsmodal_toggle(n, is_open):
-            if n:
-                return not is_open
-            return is_open
 
         @callback(  # type: ignore[misc]
             Output("aggdistplotter-table1", "rowData"),
@@ -562,16 +536,16 @@ class AggDistPlotter(ABC):
 class AggDistPlotterTab(TabImplementation, AggDistPlotter):
     """AggDistPlotterTab is an implementation of the AggDistPlotter module as a tab in a Dash application."""
 
-    def __init__(self) -> None:
+    def __init__(self, time_units: list[str], conn: object) -> None:
         """Initializes the AggDistPlotterTab class."""
-        AggDistPlotter.__init__(self)
+        AggDistPlotter.__init__(self, time_units=time_units, conn=conn)
         TabImplementation.__init__(self)
 
 
 class AggDistPlotterWindow(WindowImplementation, AggDistPlotter):
     """AggDistPlotterWindow is an implementation of the AggDistPlotter module as a tab in a Dash application."""
 
-    def __init__(self) -> None:
+    def __init__(self, time_units: list[str], conn: object) -> None:
         """Initializes the AggDistPlotterWindow class."""
-        AggDistPlotter.__init__(self)
+        AggDistPlotter.__init__(self, time_units=time_units, conn=conn)
         WindowImplementation.__init__(self)
