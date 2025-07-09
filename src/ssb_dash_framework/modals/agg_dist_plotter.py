@@ -449,7 +449,7 @@ class AggDistPlotter:
             tabell: str,
             dynamic_states: Any,
         ):  # TODO replace Any
-            partition_args = dict(zip(self.time_units, dynamic_states, strict=False))
+            partition_args = dict(zip(self.time_units, [int(x) for x in dynamic_states], strict=False))
 
             if skjema == "all":
                 partition_select = self.create_partition_select(
