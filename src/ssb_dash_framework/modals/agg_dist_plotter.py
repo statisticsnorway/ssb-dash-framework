@@ -551,7 +551,6 @@ class AggDistPlotter:
 
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
-            self.variableselector.get_output_object(variable="ident"),
             Input("aggdistplotter-graph1", "clickData"),
             prevent_initial_call=True,
         )
