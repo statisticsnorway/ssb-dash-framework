@@ -76,7 +76,7 @@ class TabImplementation:
         Returns:
             html.Div: The layout containing the module layout.
         """
-        self.label = self.icon+" "+self.label
+        self.label = self.icon + " " + self.label
         layout = dbc.Tab(
             html.Div(
                 className="tab-implementation",
@@ -84,7 +84,7 @@ class TabImplementation:
             ),
             label=f"{self.label}",
         )
-        logger.debug("Generated layout")
+        logger.debug(f"Generated {self.module_name} - {self.label} tab layout")
         return layout
 
     def get_module_layout(self) -> html.Div:
