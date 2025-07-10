@@ -39,7 +39,7 @@ class AltinnComponents:
                         # self.historikkmodal(),
                         self.hjelpetabellmodal(),
                         # self.kommentarmodal(),
-                        self.skjemaversjonsmodal(),s
+                        self.skjemaversjonsmodal(),
                         self.enhetsinfomodal(),
                         *self.create_cards(),
                         dbc.Card(

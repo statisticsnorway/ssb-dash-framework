@@ -426,8 +426,6 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-
-
         @callback(  # type: ignore[misc]
             Output("skjemadata-hjelpetabellmodal", "is_open"),
             Input("altinnedit-option3", "n_clicks"),

@@ -13,7 +13,12 @@ from ...utils import create_alert
 
 logger = logging.getLogger(__name__)
 
-class AltinnEditor
+class AltinnEditorComment:
+
+    def __init__(self, conn):
+        self.conn = conn
+        self.layout = self._create_layout()
+        self.module_callbacks()
 
     def open_button(self):
         return dbc.Button(
@@ -69,6 +74,15 @@ class AltinnEditor
             id="skjemadata-kommentarmodal",
             is_open=False,
             size="xl",
+        )
+    
+    def _create_layout(self):
+        """Creates the layout for the Altinn Editor Comment module."""
+        return html.Div(
+            [
+                self.open_button(),
+                self.kommentarmodal(),
+            ]
         )
 
     def module_callbacks(self):
