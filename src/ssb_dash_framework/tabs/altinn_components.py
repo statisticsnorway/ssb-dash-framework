@@ -39,7 +39,7 @@ class AltinnComponents:
                         # self.historikkmodal(),
                         self.hjelpetabellmodal(),
                         # self.kommentarmodal(),
-                        self.skjemaversjonsmodal(),
+                        # self.skjemaversjonsmodal(),
                         self.enhetsinfomodal(),
                         *self.create_cards(),
                         dbc.Card(
@@ -302,25 +302,6 @@ class AltinnComponents:
                     style={"width": "25%", "height": "100%"},
                 ),
             ]
-        )
-
-    def enhetsinfomodal(self) -> dbc.Modal:
-        """Returns a modal component containing a table with enhetsinfo."""
-        return dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Enhetsinfo")),
-                dbc.ModalBody(
-                    dag.AgGrid(
-                        defaultColDef={"editable": True},
-                        id="skjemadata-enhetsinfomodal-table1",
-                        className="ag-theme-alpine-dark header-style-on-filter",
-                    ),
-                    className="d-flex flex-column justify-content-center align-items-center",
-                ),
-            ],
-            id="skjemadata-enhetsinfomodal",
-            is_open=False,
-            size="xl",
         )
 
     def create_cards(self) -> list[dbc.Card]:
