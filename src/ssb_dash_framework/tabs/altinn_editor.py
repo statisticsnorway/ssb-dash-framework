@@ -268,32 +268,6 @@ class AltinnSkjemadataEditor(AltinnComponents):
             return row_data[click["rowIndex"]]["variabel"]
 
         @callback(  # type: ignore[misc]
-            Output("skjemadata-kontaktinfocanvas", "is_open"),
-            Input("altinnedit-option2", "n_clicks"),
-            State("skjemadata-kontaktinfocanvas", "is_open"),
-        )
-        def toggle_offcanvas_kontaktinfo(n_clicks, is_open):
-            if n_clicks is None:
-                return no_update
-            if is_open == False:
-                return True
-            else:
-                return False
-
-        @callback(  # type: ignore[misc]
-            Output("skjemadata-hjelpetabellmodal", "is_open"),
-            Input("altinnedit-option3", "n_clicks"),
-            State("skjemadata-hjelpetabellmodal", "is_open"),
-        )
-        def toggle_hjelpetabellmodal(n_clicks, is_open):
-            if n_clicks is None:
-                return no_update
-            if is_open == False:
-                return True
-            else:
-                return False
-
-        @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Input("altinnedit-table-skjemadata", "cellValueChanged"),
             State("altinnedit-option1", "value"),
@@ -384,37 +358,3 @@ class AltinnSkjemadataEditor(AltinnComponents):
             if skjema is None:
                 return no_update
             return skjema
-
-        @callback(  # type: ignore[misc]
-            Output("skjemadata-kontaktinfo-navn", "value"),
-            Output("skjemadata-kontaktinfo-epost", "value"),
-            Output("skjemadata-kontaktinfo-telefon", "value"),
-            Output("skjemadata-kontaktinfo-kommentar1", "value"),
-            Output("skjemadata-kontaktinfo-kommentar2", "value"),
-            Input("altinnedit-option2", "n_clicks"),
-            State("altinnedit-skjemaversjon", "value"),
-            State("altinnedit-skjemaer", "value"),
-            *self.create_callback_components("State"),
-            prevent_initial_call=True,
-        )
-        def kontaktinfocanvas(n_clicks, skjemaversjon, skjema, *args):
-            partition_args = dict(zip(self.time_units, args, strict=False))
-            df_skjemainfo = self.conn.query(
-                f"""SELECT
-                kontaktperson, epost, telefon, kommentar_kontaktinfo, kommentar_krevende
-                FROM kontaktinfo
-                WHERE skjemaversjon = '{skjemaversjon}'
-                """,
-                partition_select=self.create_partition_select(
-                    skjema=skjema, **partition_args
-                ),
-            )
-            if df_skjemainfo.empty:
-                logger.info("Kontaktinfo table for ")
-            kontaktperson = df_skjemainfo["kontaktperson"][0]
-            epost = df_skjemainfo["epost"][0]
-            telefon = df_skjemainfo["telefon"][0]
-            kommentar1 = df_skjemainfo["kommentar_kontaktinfo"][0]
-            kommentar2 = df_skjemainfo["kommentar_krevende"][0]
-            button_text = "kontaktinfo"
-            return kontaktperson, epost, telefon, kommentar1, kommentar2
