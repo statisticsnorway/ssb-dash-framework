@@ -9,6 +9,8 @@ from dash import callback
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import load_figure_template
 
+from ..utils.app_logger import enable_app_logging
+
 logger = logging.getLogger(__name__)
 theme_map = {
     "sketchy": dbc.themes.SKETCHY,
@@ -22,7 +24,11 @@ theme_map = {
 
 
 def app_setup(
-    port: int, service_prefix: str | None = None, stylesheet: str = "darkly"
+    port: int,
+    service_prefix: str | None = None,
+    stylesheet: str = "darkly",
+    enable_logging: bool = True,
+    logging_level: str = "info",
 ) -> Dash:
     """Set up and configure a Dash application with the specified parameters.
 
@@ -31,6 +37,8 @@ def app_setup(
         service_prefix (str): The service prefix used for constructing the app's pathname.
         stylesheet (str): The name of the Bootstrap theme to apply to the app.
                           Must be a key in `theme_map`.
+        enable_logging (bool): Decides if ssb_dash_framework logging should be used. Defaults to True.
+        logging_level (str): The logging level set for the application logging. Valid values are "debug", "info", "warning", "error", or "critical".
 
     Returns:
         Dash: Configured Dash application instance.
@@ -44,6 +52,8 @@ def app_setup(
         >>> app = app_setup(port=8050, service_prefix=os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/"), domain="localhost")
         >>> app.run_server() # doctest: +SKIP
     """
+    if enable_logging:
+        enable_app_logging(level=logging_level)
     template = theme_map[stylesheet]
     load_figure_template([template])
 

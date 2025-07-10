@@ -1,6 +1,8 @@
 import logging
 import sys
 
+_LOGGING_ENABLED: bool = False
+
 
 def enable_app_logging(level: str = "info") -> None:
     """This function enables logging for the editing framework.
@@ -16,6 +18,7 @@ def enable_app_logging(level: str = "info") -> None:
         The logging output will be sent to both the console and a file named "app.log".
         Also adds a logging message to indicate that the app was started. This is to make it possible to differentaiate different sessions.
     """
+    level = level.lower()
     if level == "debug":
         chosen_level = logging.DEBUG
     elif level == "info":
@@ -45,5 +48,6 @@ def enable_app_logging(level: str = "info") -> None:
     logger.propagate = (
         False  # Nødvendig pga jupyter som insisterer på å legge til enda en handler.
     )
+    _LOGGING_ENABLED = True
 
     logger.info("App started.")
