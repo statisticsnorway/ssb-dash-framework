@@ -323,33 +323,6 @@ class AltinnComponents:
             size="xl",
         )
 
-
-
-    def skjemaversjonsmodal(self) -> dbc.Modal:
-        """Returns a modal component with a table containing all the skjema versions."""
-        return dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Skjemaversjoner")),
-                dbc.ModalBody(
-                    dag.AgGrid(
-                        defaultColDef={
-                            "resizable": True,
-                            "sortable": True,
-                            "floatingFilter": True,
-                            "filter": "agTextColumnFilter",
-                        },
-                        id="altinnedit-table-skjemaer",
-                        dashGridOptions={"rowSelection": "single"},
-                        columnSize="responsiveSizeToFit",
-                        className="ag-theme-alpine-dark header-style-on-filter",
-                    ),
-                ),
-            ],
-            id="skjemadata-skjemaversjonsmodal",
-            is_open=False,
-            size="xl",
-        )
-
     def create_cards(self) -> list[dbc.Card]:
         """Return a list of dbc.Card components dynamically generated for each time unit."""
         return [
