@@ -90,7 +90,7 @@ class AltinnEditorComment:
     def module_callbacks(self):
         @callback(  # type: ignore[misc]
             Output("skjemadata-kommentarmodal", "is_open"),
-            Input("altinnedit-option6", "n_clicks"),
+            Input("altinn-comment-button", "n_clicks"),
             State("skjemadata-kommentarmodal", "is_open"),
         )
         def toggle_kommentarmodal(n_clicks, is_open):
@@ -104,7 +104,7 @@ class AltinnEditorComment:
         @callback(  # type: ignore[misc]
             Output("altinnedit-kommentarmodal-table1", "rowData"),
             Output("altinnedit-kommentarmodal-table1", "columnDefs"),
-            Input("altinnedit-option6", "n_clicks"),
+            Input("altinn-comment-button", "n_clicks"),
             State("altinnedit-skjemaer", "value"),
             State("altinnedit-ident", "value"),
         )
