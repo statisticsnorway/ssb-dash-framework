@@ -2,6 +2,7 @@ import base64
 import logging
 from abc import ABC
 from abc import abstractmethod
+from typing import ClassVar
 
 import dash_bootstrap_components as dbc
 from dapla import FileClient
@@ -26,7 +27,7 @@ class Aarsregnskap(ABC):
         label (str): Label for the module when initialized, displayed as "Årsregnskap".
     """
 
-    _id_number = 0
+    _id_number: ClassVar[int] = 0
 
     def __init__(
         self,
@@ -217,9 +218,9 @@ class AarsregnskapTab(TabImplementation, Aarsregnskap):
 
 
 class AarsregnskapWindow(WindowImplementation, Aarsregnskap):
-    """AarsregnskapTab is an implementation of the Aarsregnskap module as a tab in a Dash application."""
+    """AarsregnskapWindow is an implementation of the Aarsregnskap module as a window in a Dash application."""
 
     def __init__(self) -> None:
-        """Initializes the AarsregnskapTab class."""
+        """Initializes the AarsregnskapWindow class."""
         Aarsregnskap.__init__(self)
         WindowImplementation.__init__(self)
