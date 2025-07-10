@@ -35,7 +35,7 @@ def enable_app_logging(level: str = "info") -> None:
     file_handler = logging.FileHandler("app.log", mode="a")
 
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        "%(asctime)s - %(levelname)s - %(name)s - %(funcName)s - %(message)s",
     )
     handlers: list[logging.Handler] = [console_handler, file_handler]
     for handler in handlers:
