@@ -153,7 +153,7 @@ class AggDistPlotter(ABC):
                     [
                         dbc.Col(
                             dag.AgGrid(
-                                id="aggdistplotter-table1",
+                                id="aggdistplotter-table",
                                 defaultColDef=default_col_def,
                                 className="ag-theme-alpine-dark header-style-on-filter",
                                 columnSize="responsiveSizeToFit",
@@ -199,10 +199,10 @@ class AggDistPlotter(ABC):
                     [
                         dbc.Col(
                             dcc.Loading(
-                                id="aggdistplotter-graph1-loading",
+                                id="aggdistplotter-graph-loading",
                                 children=[
                                     dcc.Graph(
-                                        id="aggdistplotter-graph1",
+                                        id="aggdistplotter-graph",
                                         className="m-1",
                                     )
                                 ],
@@ -273,8 +273,8 @@ class AggDistPlotter(ABC):
                 return INITIAL_OPTIONS
 
         @callback(  # type: ignore[misc]
-            Output("aggdistplotter-table1", "rowData"),
-            Output("aggdistplotter-table1", "columnDefs"),
+            Output("aggdistplotter-table", "rowData"),
+            Output("aggdistplotter-table", "columnDefs"),
             Input("aggdistplotter-refresh", "n_clicks"),
             Input("aggdistplotter-radioitems", "value"),
             Input("aggdistplotter-rullvar-dd", "value"),
@@ -412,8 +412,8 @@ class AggDistPlotter(ABC):
                 return df_wide.to_dict("records"), columns
 
         @callback(  # type: ignore[misc]
-            Output("aggdistplotter-graph1", "figure"),
-            Input("aggdistplotter-table1", "selectedRows"),
+            Output("aggdistplotter-graph", "figure"),
+            Input("aggdistplotter-table", "selectedRows"),
             Input("aggdistplotter-radioitems", "value"),
             Input("aggdistplotter-graph-type", "value"),
             State("var-valgt_tabell", "value"),
@@ -426,9 +426,20 @@ class AggDistPlotter(ABC):
             tabell: str,
             *args: Any,
         ) -> go.Figure:  # TODO replace Any
+            if (
+                current_row is None
+                or skjema is None
+                or graph_type is None
+                or tabell is None
+            ):
+                raise PreventUpdate
+            logger.debug(
+                f"Creating graph for skjema: {skjema}, graph_type: {graph_type}, tabell: {tabell}"
+            )
             partition_args = dict(
                 zip(self.time_units, [int(x) for x in args], strict=False)
             )
+            logger.debug(f"Partition args: {partition_args}")
 
             if skjema == "all":
                 partition_select = self.create_partition_select(
@@ -530,7 +541,7 @@ class AggDistPlotter(ABC):
 
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
-            Input("aggdistplotter-graph1", "clickData"),
+            Input("aggdistplotter-graph", "clickData"),
             prevent_initial_call=True,
         )
         def output_to_variabelvelger(clickdata: dict[str, list[dict[str, Any]]]) -> str:
