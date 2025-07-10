@@ -34,9 +34,9 @@ class AltinnComponents:
                 html.Div(
                     style={"width": "10%", "padding": "0.5rem"},
                     children=[
-                        self.offcanvas_kontrollutslag(),
+                        # self.offcanvas_kontrollutslag(),
                         self.kontaktcanvas(),
-                        self.historikkmodal(),
+                        # self.historikkmodal(),
                         self.hjelpetabellmodal(),
                         self.kommentarmodal(),
                         self.skjemaversjonsmodal(),
@@ -302,25 +302,6 @@ class AltinnComponents:
                     style={"width": "25%", "height": "100%"},
                 ),
             ]
-        )
-
-    def historikkmodal(self) -> dbc.Modal:
-        """Retuns a modal component containing a table with the editing history."""
-        return dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Historikk")),
-                dbc.ModalBody(
-                    dag.AgGrid(
-                        defaultColDef={"editable": True},
-                        id="skjemadata-historikkmodal-table1",
-                        className="ag-theme-alpine-dark header-style-on-filter",
-                    ),
-                    className="d-flex flex-column justify-content-center align-items-center",
-                ),
-            ],
-            id="skjemadata-historikkmodal",
-            is_open=False,
-            size="xl",
         )
 
     def enhetsinfomodal(self) -> dbc.Modal:

@@ -1,7 +1,6 @@
 import logging
 import re
 
-import pandas as pd
 from dash import callback
 from dash import html
 from dash import no_update
@@ -415,19 +414,6 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 return False
 
         @callback(  # type: ignore[misc]
-            Output("skjemadata-historikkmodal", "is_open"),
-            Input("altinnedit-option4", "n_clicks"),
-            State("skjemadata-historikkmodal", "is_open"),
-        )
-        def toggle_historikkmodal(n_clicks, is_open):
-            if n_clicks is None:
-                return no_update
-            if is_open == False:
-                return True
-            else:
-                return False
-
-        @callback(  # type: ignore[misc]
             Output("skjemadata-skjemaversjonsmodal", "is_open"),
             Input("altinnedit-skjemaversjon-button", "n_clicks"),
             State("skjemadata-skjemaversjonsmodal", "is_open"),
@@ -669,45 +655,6 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 except Exception as e:
                     logger.error(f"Error in hjelpetabeller: {e}", exc_info=True)
                     return None, None
-
-        @callback(  # type: ignore[misc]
-            Output("skjemadata-historikkmodal-table1", "rowData"),
-            Output("skjemadata-historikkmodal-table1", "columnDefs"),
-            Input("skjemadata-historikkmodal", "is_open"),
-            State("altinnedit-option1", "value"),
-            State("altinnedit-table-skjemaer", "selectedRows"),
-            State("altinnedit-skjemaer", "value"),
-            *self.create_callback_components("State"),
-        )
-        def historikktabell(is_open, tabell, selected_row, skjema, *args):
-            if is_open:
-                try:
-                    partition_args = dict(zip(self.time_units, args, strict=False))
-                    skjemaversjon = selected_row[0]["skjemaversjon"]
-                    df = self.conn.query_changes(
-                        f"""SELECT * FROM {tabell}
-                        WHERE skjemaversjon = '{skjemaversjon}'
-                        ORDER BY datetime DESC
-                        """,
-                        partition_select=self.create_partition_select(
-                            skjema=skjema, **partition_args
-                        ),
-                    )
-                    if df is None:
-                        df = pd.DataFrame(columns=["ingen", "data"])
-                    columns = [
-                        {
-                            "headerName": col,
-                            "field": col,
-                        }
-                        for col in df.columns
-                    ]
-                    return df.to_dict("records"), columns
-                except Exception as e:
-                    logger.error(f"Error in historikktabell: {e}", exc_info=True)
-                    return None, None
-            else:
-                raise PreventUpdate
 
         @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
