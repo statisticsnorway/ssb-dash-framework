@@ -1,6 +1,7 @@
 import logging
 import re
 
+import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import callback
 from dash import html
@@ -10,9 +11,8 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
-from ..setup.variableselector import VariableSelector
-from ..utils.alert_handler import create_alert
-from .altinn_components import AltinnComponents
+from ...utils.alert_handler import create_alert
+from ..altinn_components import AltinnComponents
 
 logger = logging.getLogger(__name__)
 
@@ -37,32 +37,14 @@ class AltinnSkjemadataEditor(AltinnComponents):
         callbacks(): Registers the Dash callbacks for handling user interactions.
     """
 
-    def __init__(
-        self,
-        time_units: list[str],
-        variable_connection: dict,
-        conn: object,
-    ) -> None:
-        """Initialize the PimemorizerTab component.
-
-        Attributes:
-            label (str): The label for the tab.
-            conn (str): An EimerDB class instance.
-            variable_connection (dict): A dictionary that connects the variables in the app with the enhetsinfotabell.
-            time_units (list): A list of strings, where each string is a time unit.
-        """
-        super().__init__(time_units)
-        self.variableselector = VariableSelector(
-            selected_inputs=["ident", *time_units],
-            selected_states=[],  # Hard coding ident for now, using variableselector to re-use error message if ident or time_units is missing.
-        )
-        self.label = "🗊 Altinn3-skjemadata"
-        self.variable_connection = variable_connection
+    def __init__(self, time_units, conn, variable_connection: dict | None = None):
+        self.icon = "🗊"
+        self.label = "Data editor"
+        self.time_units = time_units
         self.conn = conn
-        self.is_valid()
-        self.callbacks()
+        self.variable_connection = variable_connection
 
-    def is_valid(self):  # TODO add validation
+    def _is_valid(self):
         pass
 
     def get_skjemadata_table_names(self):
@@ -76,6 +58,11 @@ class AltinnSkjemadataEditor(AltinnComponents):
         ]
         return skjemadata_dd_options
 
+    def create_callback_components(self, input_type="Input"):
+        """Generates a list of dynamic Dash Input or State components."""
+        component = Input if input_type == "Input" else State
+        return [component(f"altinnedit-{unit}", "value") for unit in self.time_units]
+
     def create_partition_select(self, skjema=None, **kwargs):
         partition_select = {
             unit: [kwargs[unit]] for unit in self.time_units if unit in kwargs
@@ -83,11 +70,6 @@ class AltinnSkjemadataEditor(AltinnComponents):
         if skjema is not None:
             partition_select["skjema"] = [skjema]
         return partition_select
-
-    def create_callback_components(self, input_type="Input"):
-        """Generates a list of dynamic Dash Input or State components."""
-        component = Input if input_type == "Input" else State
-        return [component(f"altinnedit-{unit}", "value") for unit in self.time_units]
 
     def update_partition_select(self, partition_dict, key_to_update):
         """Updates the dictionary by adding the previous value (N-1)
@@ -102,7 +84,214 @@ class AltinnSkjemadataEditor(AltinnComponents):
             partition_dict[key_to_update].append(int(min_value) - 1)
         return partition_dict
 
-    def callbacks(self) -> None:
+    def _create_layout(self):
+        layout = html.Div(
+            style={
+                "display": "flex",
+                "flexDirection": "row",
+                "overflowY": "auto",
+                "minHeight": "95vh",
+                "maxHeight": "95vh",
+            },
+            children=[
+                html.Div(
+                    style={"width": "10%", "padding": "0.5rem"},
+                    children=[
+                        self.offcanvas_kontrollutslag(),  # Replace with the module
+                        self.kontaktcanvas(),
+                        self.historikkmodal(),
+                        self.hjelpetabellmodal(),
+                        self.kommentarmodal(),
+                        self.skjemaversjonsmodal(),
+                        self.enhetsinfomodal(),
+                        *self.create_cards(),
+                        dbc.Card(
+                            dbc.CardBody(
+                                [
+                                    html.H5("ident", className="card-title"),
+                                    dbc.Input(id="altinnedit-ident", type="text"),
+                                ]
+                            ),
+                            className="mb-2",
+                        ),
+                        dbc.Card(
+                            dbc.CardBody(
+                                [
+                                    html.H5("skjemaer", className="card-title"),
+                                    dcc.Dropdown(id="altinnedit-skjemaer"),
+                                ]
+                            ),
+                            className="mb-2",
+                        ),
+                        dbc.Card(
+                            dbc.CardBody(
+                                [
+                                    html.H5("Skjemaversjon", className="card-title"),
+                                    dbc.Input(
+                                        id="altinnedit-skjemaversjon",
+                                        type="text",
+                                        className="mb-2",
+                                    ),
+                                    dbc.Button(
+                                        "Se alle",
+                                        id="altinnedit-skjemaversjon-button",
+                                        type="text",
+                                    ),
+                                ]
+                            ),
+                            className="mb-2",
+                        ),
+                        dbc.Card(
+                            dbc.CardBody(
+                                [
+                                    html.H5("Enhetsinfo", className="card-title"),
+                                    dbc.Button(
+                                        "Se all enhetsinfo",
+                                        id="altinnedit-enhetsinfo-button",
+                                        type="text",
+                                    ),
+                                ]
+                            ),
+                            className="mb-2",
+                        ),
+                        html.Div(id="skjemadata-sidebar-enhetsinfo"),
+                    ],
+                ),
+                html.Div(
+                    style={
+                        "width": "90%",
+                        "padding": "1rem",
+                    },
+                    children=[
+                        dbc.Container(
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dbc.Form(
+                                            [
+                                                dbc.Label("Tabell", className="mb-1"),
+                                                dcc.Dropdown(
+                                                    id="altinnedit-option1",
+                                                    options=skjemadata_table_names,
+                                                    value=skjemadata_table_names[0][
+                                                        "value"
+                                                    ],
+                                                ),
+                                            ]
+                                        ),
+                                        md=2,
+                                    ),
+                                    dbc.Col(
+                                        dbc.Form(
+                                            [
+                                                dbc.Label(
+                                                    "Kontaktinfo", className="mb-1"
+                                                ),
+                                                dbc.Button(
+                                                    "Se kontaktinfo",
+                                                    id="altinnedit-option2",
+                                                    className="w-100",
+                                                ),
+                                            ]
+                                        ),
+                                        md=2,
+                                    ),
+                                    dbc.Col(
+                                        dbc.Form(
+                                            [
+                                                dbc.Label(
+                                                    "Hjelpetabeller",
+                                                    className="mb-1",
+                                                ),
+                                                dbc.Button(
+                                                    "Åpn hjelpetabeller",
+                                                    id="altinnedit-option3",
+                                                    className="w-100",
+                                                ),
+                                            ]
+                                        ),
+                                        md=2,
+                                    ),
+                                    dbc.Col(
+                                        dbc.Form(
+                                            [
+                                                dbc.Label(
+                                                    "Historikk",
+                                                    className="mb-1",
+                                                ),
+                                                dbc.Button(
+                                                    "Se historikk",
+                                                    id="altinnedit-option4",
+                                                    className="w-100",
+                                                ),
+                                            ]
+                                        ),
+                                        md=2,
+                                    ),
+                                    dbc.Col(
+                                        dbc.Form(
+                                            [
+                                                dbc.Label(  # Replace with the control view module
+                                                    "Kontroller", className="mb-1"
+                                                ),
+                                                dbc.Button(
+                                                    "Se kontrollutslag",
+                                                    id="altinnedit-option5",
+                                                    className="w-100",
+                                                ),
+                                            ]
+                                        ),
+                                        md=2,
+                                    ),
+                                    dbc.Col(
+                                        dbc.Form(
+                                            [
+                                                dbc.Label(
+                                                    "Editeringskommentar",
+                                                    className="mb-1",
+                                                ),
+                                                dbc.Button(
+                                                    "Se kommentarer",
+                                                    id="altinnedit-option6",
+                                                    className="w-100",
+                                                ),
+                                            ]
+                                        ),
+                                        md=2,
+                                    ),
+                                ]
+                            ),
+                            fluid=True,
+                            className="mb-3",
+                        ),
+                        dag.AgGrid(
+                            id="altinnedit-table-skjemadata",
+                            className="ag-theme-alpine-dark header-style-on-filter",
+                            style={"width": "100%", "height": "90%"},
+                            defaultColDef={
+                                "resizable": True,
+                                "sortable": True,
+                                "floatingFilter": True,
+                                "editable": True,
+                                "filter": "agTextColumnFilter",
+                                "flex": 1,
+                            },
+                            dashGridOptions={"rowHeight": 38},
+                        ),
+                        dbc.Row(
+                            html.P(id="skjemadata-hovedtabell-updatestatus"),
+                            className="mt-2",
+                        ),
+                    ],
+                ),
+            ],
+        )
+        return layout
+
+    def layout(self):
+        pass
+
+    def module_callbacks(self):
         """Register Dash callbacks for the Pi memorizer tab.
 
         Notes:
@@ -402,6 +591,19 @@ class AltinnSkjemadataEditor(AltinnComponents):
             return row_data[click["rowIndex"]]["variabel"]
 
         @callback(  # type: ignore[misc]
+            Output("offcanvas-kontrollutslag", "is_open"),
+            Input("altinnedit-option5", "n_clicks"),
+            State("offcanvas-kontrollutslag", "is_open"),
+        )
+        def toggle_offcanvas_kontrollutslag(n_clicks, is_open):
+            if n_clicks is None:
+                return no_update
+            if is_open == False:
+                return True
+            else:
+                return False
+
+        @callback(  # type: ignore[misc]
             Output("skjemadata-kontaktinfocanvas", "is_open"),
             Input("altinnedit-option2", "n_clicks"),
             State("skjemadata-kontaktinfocanvas", "is_open"),
@@ -669,6 +871,54 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 except Exception as e:
                     logger.error(f"Error in hjelpetabeller: {e}", exc_info=True)
                     return None, None
+
+        @callback(  # type: ignore[misc]
+            Output("offcanvas-kontrollutslag-table1", "rowData"),
+            Output("offcanvas-kontrollutslag-table1", "columnDefs"),
+            Output("altinnedit-option5", "style"),
+            Output("altinnedit-option5", "children"),
+            Input("altinnedit-table-skjemaer", "selectedRows"),
+            State("altinnedit-skjemaer", "value"),
+            *self.create_callback_components("State"),
+        )
+        def kontrollutslagstabell(selected_row, skjema, *args):
+            if (
+                selected_row is None
+                or len(selected_row) == 0
+                or skjema is None
+                or any(arg is None for arg in args)
+            ):
+                return None, None, None, "Se kontrollutslag"
+            try:
+                partition_args = dict(zip(self.time_units, args, strict=False))
+                skjemaversjon = selected_row[0]["skjemaversjon"]
+                df = self.conn.query(
+                    f"""SELECT t1.kontrollid, subquery.skildring, t1.utslag
+                    FROM kontrollutslag AS t1
+                    JOIN (
+                        SELECT t2.kontrollid, t2.skildring
+                        FROM kontroller AS t2
+                    ) AS subquery ON t1.kontrollid = subquery.kontrollid
+                    WHERE skjemaversjon = '{skjemaversjon}'
+                    AND utslag = True""",
+                    partition_select=self.create_partition_select(
+                        skjema=skjema, **partition_args
+                    ),
+                )
+                columns = [{"headerName": col, "field": col} for col in df.columns]
+                antall_utslag = len(df)
+
+                if antall_utslag > 0:
+                    style = {"color": "#dc3545", "background-color": "#343a40"}
+                    button_text = f"Se kontrollutslag ({antall_utslag})"
+                else:
+                    style = None
+                    button_text = "Se kontrollutslag"
+
+                return df.to_dict("records"), columns, style, button_text
+            except Exception as e:
+                logger.error(f"Error in kontrollutslagstabell: {e}", exc_info=True)
+                return None, None, None, "Se kontrollutslag"
 
         @callback(  # type: ignore[misc]
             Output("skjemadata-historikkmodal-table1", "rowData"),

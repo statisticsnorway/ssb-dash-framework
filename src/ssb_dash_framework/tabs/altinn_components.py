@@ -225,29 +225,6 @@ class AltinnComponents:
         )
         return layout
 
-    def offcanvas_kontrollutslag(self) -> html.Div:
-        """Returns an offcanvas component containing a table for kontrollutslag."""
-        return html.Div(
-            [
-                dbc.Offcanvas(
-                    html.Div(
-                        dag.AgGrid(
-                            defaultColDef={"editable": False},
-                            id="offcanvas-kontrollutslag-table1",
-                            className="ag-theme-alpine-dark header-style-on-filter",
-                            columnSize="responsiveSizeToFit",
-                        ),
-                    ),
-                    id="offcanvas-kontrollutslag",
-                    title="Kontrollutslag",
-                    is_open=False,
-                    placement="end",
-                    backdrop=False,
-                    style={"width": "50%", "height": "100%"},
-                ),
-            ]
-        )
-
     def kontaktcanvas(self) -> html.Div:
         """Retuns an offcanvas component containing a table with contact information."""
         return html.Div(
