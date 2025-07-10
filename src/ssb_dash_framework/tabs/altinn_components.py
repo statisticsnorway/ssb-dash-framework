@@ -38,8 +38,8 @@ class AltinnComponents:
                         self.kontaktcanvas(),
                         # self.historikkmodal(),
                         self.hjelpetabellmodal(),
-                        self.kommentarmodal(),
-                        self.skjemaversjonsmodal(),
+                        # self.kommentarmodal(),
+                        self.skjemaversjonsmodal(),s
                         self.enhetsinfomodal(),
                         *self.create_cards(),
                         dbc.Card(
@@ -323,54 +323,7 @@ class AltinnComponents:
             size="xl",
         )
 
-    def kommentarmodal(self) -> dbc.Modal:
-        """Returns a modal component containing editing comments."""
-        return dbc.Modal(
-            [
-                dbc.ModalHeader(dbc.ModalTitle("Kommentarer")),
-                dbc.ModalBody(
-                    [
-                        dbc.Row(
-                            dag.AgGrid(
-                                defaultColDef={
-                                    "resizable": True,
-                                    "sortable": True,
-                                    "floatingFilter": True,
-                                    "filter": "agTextColumnFilter",
-                                },
-                                id="altinnedit-kommentarmodal-table1",
-                                dashGridOptions={"rowSelection": "single"},
-                                columnSize="responsiveSizeToFit",
-                                className="ag-theme-alpine-dark header-style-on-filter",
-                            )
-                        ),
-                        dbc.Row(
-                            [
-                                dbc.Col(html.P(id="skjemadata-kommentarmodal-aar-p")),
-                                dbc.Col(
-                                    html.P(id="skjemadata-kommentarmodal-updatestatus")
-                                ),
-                                dbc.Col(
-                                    dbc.Button(
-                                        "Lagre kommentar",
-                                        id="skjemadata-kommentarmodal-savebutton",
-                                    )
-                                ),
-                            ]
-                        ),
-                        dbc.Row(
-                            dcc.Textarea(
-                                id="skjemadata-kommentarmodal-aar-kommentar",
-                                style={"width": "100%", "height": 300},
-                            )
-                        ),
-                    ]
-                ),
-            ],
-            id="skjemadata-kommentarmodal",
-            is_open=False,
-            size="xl",
-        )
+
 
     def skjemaversjonsmodal(self) -> dbc.Modal:
         """Returns a modal component with a table containing all the skjema versions."""
