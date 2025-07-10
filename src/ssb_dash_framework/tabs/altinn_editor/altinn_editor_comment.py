@@ -1,17 +1,19 @@
 import logging
 
+import dash_ag_grid as dag
+import dash_bootstrap_components as dbc
 from dash import callback
+from dash import dcc
+from dash import html
 from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
-import dash_bootstrap_components as dbc
-from dash import dcc
-from dash import html
 
 from ...utils import create_alert
 
 logger = logging.getLogger(__name__)
+
 
 class AltinnEditorComment:
 
@@ -75,7 +77,7 @@ class AltinnEditorComment:
             is_open=False,
             size="xl",
         )
-    
+
     def _create_layout(self):
         """Creates the layout for the Altinn Editor Comment module."""
         return html.Div(
@@ -86,7 +88,7 @@ class AltinnEditorComment:
         )
 
     def module_callbacks(self):
-            @callback(  # type: ignore[misc]
+        @callback(  # type: ignore[misc]
             Output("skjemadata-kommentarmodal", "is_open"),
             Input("altinnedit-option6", "n_clicks"),
             State("skjemadata-kommentarmodal", "is_open"),
