@@ -23,7 +23,7 @@ class AltinnEditorControl:
 
     def open_button(self):
         return dbc.Button(
-            "Se kontrollutslag",
+            "Kontrollutslag",
             id="altinn-control-button",
             className="altinn-editor-module-button",
         )
