@@ -81,7 +81,7 @@ class AltinnSkjemadataEditor:
         )
 
 
-class AltinnSkjemadataEditor2(AltinnComponents):
+class AltinnSkjemadataEditor2():
     """A tab for editing skjemadata.
 
     This module provides:
