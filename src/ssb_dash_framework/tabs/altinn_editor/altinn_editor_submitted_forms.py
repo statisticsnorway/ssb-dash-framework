@@ -49,7 +49,7 @@ class AltinnEditorSubmittedForms:
         )
 
     def layout(self):
-        return self.layout
+        return self.module_layout
 
     def submitted_forms_modal(self) -> dbc.Modal:
         """Returns a modal component with a table containing all the skjema versions."""
