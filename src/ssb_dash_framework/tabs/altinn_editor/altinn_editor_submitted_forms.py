@@ -25,7 +25,7 @@ class AltinnEditorSubmittedForms:
                 "variable_selector_instance must be an instance of VariableSelector"
             )
         self.variable_selector = variable_selector_instance
-        self.layout = self._create_layout()
+        self.module_layout = self._create_layout()
         self.module_callbacks()
 
     def _create_layout(self):
