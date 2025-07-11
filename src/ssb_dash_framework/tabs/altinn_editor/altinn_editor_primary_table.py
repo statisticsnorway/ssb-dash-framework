@@ -32,7 +32,12 @@ class AltinnEditorPrimaryTable:
     def _create_layout(self):
         return html.Div(
             id="altinn-editor-primary-table",
+            style={
+                "height": "100%",
+                "width": "100%",
+            },
             children=[
+                
                 dag.AgGrid(
                     id="altinnedit-table-skjemadata",
                     className="ag-theme-alpine-dark header-style-on-filter",
