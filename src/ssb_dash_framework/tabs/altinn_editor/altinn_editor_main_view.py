@@ -68,7 +68,7 @@ class AltinnSkjemadataEditor:
             style={
                 "height": "100vh",
                 "width": "100%",
-            }
+            },
             children=[
                 html.Div(
                     id="altinn-editor-sidepanels",
