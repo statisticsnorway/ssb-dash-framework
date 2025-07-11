@@ -2,6 +2,7 @@ import logging
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+from dash import html
 from dash import callback
 from dash import no_update
 from dash.dependencies import Input
