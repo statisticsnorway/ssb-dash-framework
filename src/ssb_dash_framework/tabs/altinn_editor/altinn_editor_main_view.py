@@ -143,6 +143,7 @@ class AltinnSkjemadataEditor:
                                     ],
                                 ],
                             ),
+                            width=1
                         ),
                         dbc.Col(
                             [
