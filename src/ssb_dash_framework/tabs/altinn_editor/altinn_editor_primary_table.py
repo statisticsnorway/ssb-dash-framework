@@ -1,24 +1,31 @@
 import logging
 
 import dash_ag_grid as dag
-from dash import html
 from dash import callback
+from dash import html
 from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ...setup.variableselector import VariableSelector
 from ...utils.alert_handler import create_alert
 from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
 
+
 class AltinnEditorPrimaryTable:
 
-    def __init__(self, time_units, conn) -> None:
+    def __init__(self, time_units, conn, variable_selector_instance) -> None:
         self.time_units = time_units
         self.conn = conn
+        if not isinstance(variable_selector_instance, VariableSelector):
+            raise TypeError(
+                "variable_selector_instance must be an instance of VariableSelector"
+            )
+        self.variable_selector = variable_selector_instance
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
@@ -53,7 +60,7 @@ class AltinnEditorPrimaryTable:
             Input("altinnedit-skjemaversjon", "value"),
             Input("altinnedit-option1", "value"),
             State("altinnedit-skjemaer", "value"),
-            *self.create_callback_components("State"),
+            self.variable_selector.get_states(),
         )
         def hovedside_update_altinnskjema(skjemaversjon, tabell, skjema, *args):
             schema = self.conn.tables[tabell]["schema"]
@@ -162,7 +169,7 @@ class AltinnEditorPrimaryTable:
             State("altinnedit-option1", "value"),
             State("altinnedit-skjemaer", "value"),
             State("alert_store", "data"),
-            *self.create_callback_components("State"),
+            self.variable_selector.get_states(),
             prevent_initial_call=True,
         )
         def update_table(edited, tabell, skjema, alert_store, *args):

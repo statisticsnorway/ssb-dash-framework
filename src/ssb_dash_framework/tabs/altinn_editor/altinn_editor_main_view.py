@@ -12,6 +12,7 @@ from dash.exceptions import PreventUpdate
 
 from ...utils.alert_handler import create_alert
 from ...utils.eimerdb_helpers import create_partition_select
+from ..setup.variableselector import VariableSelector
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 
 logger = logging.getLogger(__name__)
@@ -31,9 +32,14 @@ class AltinnSkjemadataEditor:
         self.conn = conn
         self.variable_connection = variable_connection
 
+        self.variableselector = VariableSelector(
+            selected_inputs=[], selected_states=self.time_units
+        )
+
         self.primary_table = AltinnEditorPrimaryTable(
             time_units=self.time_units,
             conn=self.conn,
+            variable_selector_instance=self.variableselector,
         )
         # Below is futureproofing in case of increasing modularity
         if sidepanels is None:
@@ -81,7 +87,7 @@ class AltinnSkjemadataEditor:
         )
 
 
-class AltinnSkjemadataEditor2():
+class AltinnSkjemadataEditor2:
     """A tab for editing skjemadata.
 
     This module provides:
