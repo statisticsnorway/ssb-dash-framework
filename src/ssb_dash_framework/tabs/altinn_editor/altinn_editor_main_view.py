@@ -10,9 +10,9 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ...setup.variableselector import VariableSelector
 from ...utils.alert_handler import create_alert
 from ...utils.eimerdb_helpers import create_partition_select
-from ..setup.variableselector import VariableSelector
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 
 logger = logging.getLogger(__name__)
