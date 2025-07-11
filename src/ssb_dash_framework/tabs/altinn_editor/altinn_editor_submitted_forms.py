@@ -18,11 +18,26 @@ class AltinnEditorSubmittedForms:
         self.module_callbacks()
 
     def open_button(self):
-        return dbc.Button(
-            "Historikk",
-            id="altinn-history-button",
-            className="altinn-editor-module-button",
+        return dbc.Card(
+            dbc.CardBody(
+                [
+                    html.H5("Skjemaversjon", className="card-title"),
+                    dbc.Input(
+                        id="altinnedit-skjemaversjon",
+                        type="text",
+                        className="mb-2",
+                    ),
+                    dbc.Button(
+                        "Se alle",
+                        id="altinnedit-skjemaversjon-button",
+                        type="text",
+                    ),
+                ]
+            ),
+            className="mb-2",
         )
+    
+    
 
     def submitted_forms_modal(self) -> dbc.Modal:
         """Returns a modal component with a table containing all the skjema versions."""
