@@ -65,6 +65,10 @@ class AltinnSkjemadataEditor:
     def _create_layout(self):
         return html.Div(
             id="altinn-editor-main-view",
+            style={
+                "height": "100vh",
+                "width": "100%",
+            }
             children=[
                 html.Div(
                     id="altinn-editor-sidepanels",
