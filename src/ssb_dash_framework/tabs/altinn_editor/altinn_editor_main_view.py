@@ -85,6 +85,10 @@ class AltinnSkjemadataEditor:
                 ),
             ],
         )
+    
+    def layout(self):
+        """Generates the layout for the Altinn Skjemadata Editor tab."""
+        return self._create_layout()
 
 
 class AltinnSkjemadataEditor2:
