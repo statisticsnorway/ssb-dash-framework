@@ -8,16 +8,26 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 
+from ...setup.variableselector import VariableSelector
+from ...utils.eimerdb_helpers import create_partition_select
+
 logger = logging.getLogger(__name__)
 
 
 class AltinnEditorSubmittedForms:
 
-    def __init__(self):
+    def __init__(self, time_units, conn, variable_selector_instance):
+        self.time_units = time_units
+        self.conn = conn
+        if not isinstance(variable_selector_instance, VariableSelector):
+            raise TypeError(
+                "variable_selector_instance must be an instance of VariableSelector"
+            )
+        self.variable_selector = variable_selector_instance
         self.layout = self._create_layout()
         self.module_callbacks()
 
-    def open_button(self):
+    def _create_layout(self):
         return dbc.Card(
             dbc.CardBody(
                 [
@@ -36,8 +46,9 @@ class AltinnEditorSubmittedForms:
             ),
             className="mb-2",
         )
-    
-    
+
+    def layout(self):
+        return self.layout
 
     def submitted_forms_modal(self) -> dbc.Modal:
         """Returns a modal component with a table containing all the skjema versions."""
@@ -84,7 +95,7 @@ class AltinnEditorSubmittedForms:
             ),
             Input("altinnedit-table-skjemaer", "cellValueChanged"),
             State("altinnedit-skjemaer", "value"),
-            *self.create_callback_components("State"),
+            self.variable_selector.get_states(),
             prevent_initial_call=True,
         )
         def set_skjema_to_edited(edited, skjema, *args):
@@ -105,8 +116,10 @@ class AltinnEditorSubmittedForms:
                         SET editert = {new_value}
                         WHERE skjemaversjon = '{skjemaversjon}'
                         """,
-                        partition_select=self.create_partition_select(
-                            skjema=skjema, **partition_args
+                        partition_select=create_partition_select(
+                            desired_partitions=self.time_units,
+                            skjema=skjema,
+                            **partition_args,
                         ),
                     )
                     return f"Skjema {skjemaversjon} sin editeringsstatus er satt til {new_value}."
@@ -120,8 +133,10 @@ class AltinnEditorSubmittedForms:
                         SET aktiv = {new_value}
                         WHERE skjemaversjon = '{skjemaversjon}'
                         """,
-                        partition_select=self.create_partition_select(
-                            skjema=skjema, **partition_args
+                        partition_select=create_partition_select(
+                            desired_partitions=self.time_units,
+                            skjema=skjema,
+                            **partition_args,
                         ),
                     )
                     return f"Skjema {skjemaversjon} sin aktivstatus er satt til {new_value}."
@@ -133,7 +148,7 @@ class AltinnEditorSubmittedForms:
             Output("altinnedit-table-skjemaer", "columnDefs"),
             Input("altinnedit-skjemaer", "value"),
             State("altinnedit-ident", "value"),
-            *self.create_callback_components("State"),
+            self.variable_selector.get_states(),
         )
         def update_sidebar_table(skjema, ident, *args):
             if skjema is None or ident is None or any(arg is None for arg in args):
@@ -145,7 +160,11 @@ class AltinnEditorSubmittedForms:
                     f"""SELECT skjemaversjon, dato_mottatt, editert, aktiv
                     FROM skjemamottak WHERE ident = '{ident}' AND aktiv = True
                     ORDER BY dato_mottatt DESC""",
-                    self.create_partition_select(skjema=skjema, **partition_args),
+                    create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=skjema,
+                        **partition_args,
+                    ),
                 )
                 columns = [
                     (

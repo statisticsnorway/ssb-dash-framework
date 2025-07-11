@@ -70,30 +70,49 @@ class AltinnSkjemadataEditor:
                 "width": "100%",
             },
             children=[
-                html.Div(
-                    id="altinn-editor-sidepanels",
-                    style={
-                        "height": "100%",
-                        "width": "100%",
-                    },
-                    children=[
-                        [
-                            sidepanel_module.layout()
-                            for sidepanel_module in self.sidepanels
-                        ]
-                    ],
-                ),
-                html.Div(
-                    id="altinn-editor-top-panels",
-                    style={
-                        "height": "100%",
-                        "width": "100%",
-                    },
-                    children=[[top_panels.layout() for top_panels in self.top_panels]],
-                ),
-                html.Div(
-                    children=[self.primary_table.layout()],
-                ),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            html.Div(
+                                id="altinn-editor-sidepanels",
+                                style={
+                                    "height": "100%",
+                                    "width": "100%",
+                                },
+                                children=[
+                                    [
+                                        sidepanel_module.layout()
+                                        for sidepanel_module in self.sidepanels
+                                    ]
+                                ],
+                            ),
+                        ),
+                        dbc.Col(
+                            [
+                                dbc.Row(
+                                    html.Div(
+                                        id="altinn-editor-top-panels",
+                                        style={
+                                            "height": "100%",
+                                            "width": "100%",
+                                        },
+                                        children=[
+                                            [
+                                                top_panels.layout()
+                                                for top_panels in self.top_panels
+                                            ]
+                                        ],
+                                    )
+                                ),
+                                dbc.Row(
+                                    html.Div(
+                                        children=[self.primary_table.layout()],
+                                    )
+                                ),
+                            ]
+                        ),
+                    ]
+                )
             ],
         )
 
