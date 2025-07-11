@@ -143,7 +143,7 @@ class AltinnSkjemadataEditor:
                                     ],
                                 ],
                             ),
-                            width=1
+                            width=1,
                         ),
                         dbc.Col(
                             [
@@ -438,7 +438,7 @@ class AltinnSkjemadataEditor2:
 
         @callback(  # type: ignore[misc]
             Output("altinnedit-ident", "value"),
-            self.variableselector.get_inputs(),
+            Input("var-ident", "value"),
         )
         def aar_to_tab(ident, *args):
             return ident
