@@ -98,10 +98,49 @@ class AltinnSkjemadataEditor:
                                     "width": "100%",
                                 },
                                 children=[
-                                    [
+                                    *[
+                                        dbc.Card(
+                                            dbc.CardBody(
+                                                [
+                                                    html.H5(
+                                                        unit, className="card-title"
+                                                    ),
+                                                    html.Div(
+                                                        style={
+                                                            "display": "grid",
+                                                            "grid-template-columns": "100%",
+                                                        },
+                                                        children=[
+                                                            dbc.Input(
+                                                                id=f"altinnedit-{unit}",
+                                                                type="number",
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ],
+                                                style={"max-height": "100%"},
+                                            ),
+                                            style={"max-height": "100%"},
+                                        )
+                                        for unit in self.time_units
+                                    ],
+                                    dbc.Card(
+                                        dbc.CardBody(
+                                            [
+                                                html.H5(
+                                                    "ident", className="card-title"
+                                                ),
+                                                dbc.Input(
+                                                    id="altinnedit-ident", type="text"
+                                                ),
+                                            ]
+                                        ),
+                                        className="mb-2",
+                                    ),
+                                    *[
                                         dbc.Row(sidepanel_module.layout())
                                         for sidepanel_module in self.sidepanels
-                                    ]
+                                    ],
                                 ],
                             ),
                         ),
