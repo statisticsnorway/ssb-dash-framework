@@ -36,11 +36,11 @@ class AltinnSkjemadataEditor:
             selected_inputs=[], selected_states=self.time_units
         )
 
-        # self.primary_table = AltinnEditorPrimaryTable(
-        #     time_units=self.time_units,
-        #     conn=self.conn,
-        #     variable_selector_instance=self.variableselector,
-        # )
+        self.primary_table = AltinnEditorPrimaryTable(
+            time_units=self.time_units,
+            conn=self.conn,
+            variable_selector_instance=self.variableselector,
+        )
         # Below is futureproofing in case of increasing modularity
         if sidepanels is None:
             self.sidepanels = []
@@ -63,7 +63,7 @@ class AltinnSkjemadataEditor:
         return skjemadata_dd_options
 
     def _create_layout(self):
-        html.Div(
+        return html.Div(
             id="altinn-editor-main-view",
             children=[
                 html.Div(
@@ -80,15 +80,9 @@ class AltinnSkjemadataEditor:
                     children=[[top_panels.layout() for top_panels in self.top_panels]],
                 ),
                 html.Div(
-                    children=[
-                        html.P("Test")
-                        #self.primary_table.layout()
-                    ],
+                    children=[self.primary_table.layout()],
                 ),
             ],
-            style={
-                "height": "90vh",
-            }
         )
     
     def layout(self):
