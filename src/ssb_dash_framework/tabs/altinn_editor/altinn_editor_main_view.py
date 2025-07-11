@@ -80,7 +80,6 @@ class AltinnSkjemadataEditor:
                     children=[[top_panels.layout() for top_panels in self.top_panels]],
                 ),
                 html.Div(
-                    id="altinn-editor-primary-table",
                     children=[self.primary_table.layout()],
                 ),
             ],
