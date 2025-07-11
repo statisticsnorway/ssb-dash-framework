@@ -86,6 +86,9 @@ class AltinnSkjemadataEditor:
                     ],
                 ),
             ],
+            style={
+                "height": "90vh",
+            }
         )
     
     def layout(self):
