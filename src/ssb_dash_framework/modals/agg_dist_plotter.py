@@ -228,17 +228,6 @@ class AggDistPlotter(ABC):
         """
         pass
 
-    def create_partition_select(
-        self, skjema: str | None = None, **kwargs: Any
-    ) -> dict[str, list[int]]:
-        """Creates the partition select argument based on the chosen time units."""
-        partition_select = {
-            unit: [kwargs[unit]] for unit in self.time_units if unit in kwargs
-        }
-        if skjema is not None:
-            partition_select["skjema"] = [skjema]
-        return partition_select
-
     def update_partition_select(
         self, partition_dict: dict[str, list[int]], key_to_update: str
     ) -> dict[str, list[int]]:
@@ -297,8 +286,8 @@ class AggDistPlotter(ABC):
                 partition_args = dict(
                     zip(self.time_units, dynamic_states, strict=False)
                 )
-                partition_select_no_skjema = self.create_partition_select(
-                    skjema=None, **partition_args
+                partition_select_no_skjema = create_partition_select(
+                    desired_partitions=self.time_units, skjema=None, **partition_args
                 )
                 updated_partition_select = self.update_partition_select(
                     partition_select_no_skjema, rullerende_var
@@ -442,12 +431,12 @@ class AggDistPlotter(ABC):
             logger.debug(f"Partition args: {partition_args}")
 
             if skjema == "all":
-                partition_select = self.create_partition_select(
-                    skjema=None, **partition_args
+                partition_select = create_partition_select(
+                    desired_partitions=self.time_units, skjema=None, **partition_args
                 )
             else:
-                partition_select = self.create_partition_select(
-                    skjema=skjema, **partition_args
+                partition_select = create_partition_select(
+                    desired_partitions=self.time_units, skjema=skjema, **partition_args
                 )
 
             variabel = current_row[0]["variabel"]

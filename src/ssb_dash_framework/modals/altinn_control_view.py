@@ -12,6 +12,7 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
 from ..utils.alert_handler import create_alert
+from ..utils.eimerdb_helpers import create_partition_select
 from ..utils.functions import sidebar_button
 
 logger = logging.getLogger(__name__)
@@ -165,17 +166,6 @@ class AltinnControlView:
         )
         return layout
 
-    def create_partition_select(
-        self, skjema: str | None = None, **kwargs: Any
-    ) -> dict[str, list[Any]]:  # TODO fix return annotation
-        """Creates the partition select argument based on the chosen time units."""
-        partition_select = {
-            unit: [kwargs[unit]] for unit in self.time_units if unit in kwargs
-        }
-        if skjema is not None:
-            partition_select["skjema"] = [skjema]
-        return partition_select
-
     def create_callback_components(
         self, input_type: Literal["Input", "State"] = "Input"
     ) -> list[str]:
@@ -243,7 +233,9 @@ class AltinnControlView:
                     GROUP BY kontrollid
                     ) AS utslag ON kontroller.kontrollid = utslag.kontrollid
                 """,
-                self.create_partition_select(skjema=skjema, **partition_args),
+                create_partition_select(
+                    desired_partitions=self.time_units, skjema=skjema, **partition_args
+                ),
             )
             df2 = self.conn.query(
                 """SELECT k.kontrollid, COUNT(row_id) AS uediterte FROM kontrollutslag AS k
@@ -253,7 +245,9 @@ class AltinnControlView:
                 ) AS subq ON subq.ident = k.ident AND subq.skjemaversjon = k.skjemaversjon
                 WHERE utslag = True
                 GROUP BY k.kontrollid""",
-                self.create_partition_select(skjema=skjema, **partition_args),
+                create_partition_select(
+                    desired_partitions=self.time_units, skjema=skjema, **partition_args
+                ),
             )
             df = df1.merge(df2, on="kontrollid", how="left")
             columns = [
@@ -299,14 +293,20 @@ class AltinnControlView:
                     ORDER BY editert, utslag.verdi {varsort}
                 """,
                 partition_select={
-                    "kontrollutslag": self.create_partition_select(
-                        skjema=skjema, **partition_args
+                    "kontrollutslag": create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=skjema,
+                        **partition_args,
                     ),
-                    "enhetsinfo": self.create_partition_select(
-                        skjema=None, **partition_args
+                    "enhetsinfo": create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=None,
+                        **partition_args,
                     ),
-                    "skjemamottak": self.create_partition_select(
-                        skjema=skjema, **partition_args
+                    "skjemamottak": create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=skjema,
+                        **partition_args,
                     ),
                 },
             ).rename(columns={"verdi": kontrollvar})
@@ -353,9 +353,11 @@ class AltinnControlView:
             n_clicks: int, skjema: str, alert_store: list[dict[str, Any]], *args: Any
         ) -> list[dict[str, Any]]:  # TODO can *args be more specific?
             partition_args = dict(zip(self.time_units, args, strict=False))
-            partitions = self.create_partition_select(skjema=None, **partition_args)
-            partitions_skjema = self.create_partition_select(
-                skjema=skjema, **partition_args
+            partitions = create_partition_select(
+                desired_partitions=self.time_units, skjema=None, **partition_args
+            )
+            partitions_skjema = create_partition_select(
+                desired_partitions=self.time_units, skjema=skjema, **partition_args
             )
             if n_clicks > 0:
                 try:
@@ -395,9 +397,11 @@ class AltinnControlView:
             n_clicks: int, skjema: str, alert_store: list[dict[str, Any]], *args: Any
         ) -> list[dict[str, Any]]:  # TODO can *args be more specific?
             partition_args = dict(zip(self.time_units, args, strict=False))
-            partitions = self.create_partition_select(skjema=None, **partition_args)
-            partitions_skjema = self.create_partition_select(
-                skjema=skjema, **partition_args
+            partitions = create_partition_select(
+                desired_partitions=self.time_units, skjema=None, **partition_args
+            )
+            partitions_skjema = create_partition_select(
+                desired_partitions=self.time_units, skjema=skjema, **partition_args
             )
             if n_clicks > 0:
                 try:

@@ -11,11 +11,74 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
 from ...utils.alert_handler import create_alert
-from ..altinn_components import AltinnComponents
+from ...utils.eimerdb_helpers import create_partition_select
+from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 
 logger = logging.getLogger(__name__)
 
 SQL_COLUMN_CONCAT = " || '_' || "
+
+
+class AltinnSkjemadataEditor:
+
+    def __init__(
+        self, time_units, conn, variable_connection, sidepanels=None, top_panels=None
+    ) -> None:
+        self.icon = "🗊"
+        self.label = "Data editor"
+
+        self.time_units = time_units
+        self.conn = conn
+        self.variable_connection = variable_connection
+
+        self.primary_table = AltinnEditorPrimaryTable(
+            time_units=self.time_units,
+            conn=self.conn,
+        )
+        # Below is futureproofing in case of increasing modularity
+        if sidepanels is None:
+            self.sidepanels = []
+        else:
+            self.sidepanels = sidepanels
+        if top_panels is None:
+            self.top_panels = []
+        else:
+            self.top_panels = top_panels
+
+    def get_skjemadata_table_names(self):
+        """Retrieves the names of all the skjemadata-tables in the eimerdb."""
+        all_tables = list(self.conn.tables.keys())
+        skjemadata_tables = [
+            element for element in all_tables if element.startswith("skjemadata")
+        ]
+        skjemadata_dd_options = [
+            {"label": item, "value": item} for item in skjemadata_tables
+        ]
+        return skjemadata_dd_options
+
+    def _create_layout(self):
+        html.Div(
+            id="altinn-editor-main-view",
+            children=[
+                html.Div(
+                    id="altinn-editor-sidepanels",
+                    children=[
+                        [
+                            sidepanel_module.layout()
+                            for sidepanel_module in self.sidepanels
+                        ]
+                    ],
+                ),
+                html.Div(
+                    id="altinn-editor-top-panels",
+                    children=[[top_panels.layout() for top_panels in self.top_panels]],
+                ),
+                html.Div(
+                    id="altinn-editor-primary-table",
+                    children=[self.primary_table.layout()],
+                ),
+            ],
+        )
 
 
 class AltinnSkjemadataEditor(AltinnComponents):
@@ -46,29 +109,10 @@ class AltinnSkjemadataEditor(AltinnComponents):
     def _is_valid(self):
         pass
 
-    def get_skjemadata_table_names(self):
-        """Retrieves the names of all the skjemadata-tables in the eimerdb."""
-        all_tables = list(self.conn.tables.keys())
-        skjemadata_tables = [
-            element for element in all_tables if element.startswith("skjemadata")
-        ]
-        skjemadata_dd_options = [
-            {"label": item, "value": item} for item in skjemadata_tables
-        ]
-        return skjemadata_dd_options
-
     def create_callback_components(self, input_type="Input"):
         """Generates a list of dynamic Dash Input or State components."""
         component = Input if input_type == "Input" else State
         return [component(f"altinnedit-{unit}", "value") for unit in self.time_units]
-
-    def create_partition_select(self, skjema=None, **kwargs):
-        partition_select = {
-            unit: [kwargs[unit]] for unit in self.time_units if unit in kwargs
-        }
-        if skjema is not None:
-            partition_select["skjema"] = [skjema]
-        return partition_select
 
     def update_partition_select(self, partition_dict, key_to_update):
         """Updates the dictionary by adding the previous value (N-1)
@@ -263,24 +307,6 @@ class AltinnSkjemadataEditor(AltinnComponents):
                             fluid=True,
                             className="mb-3",
                         ),
-                        dag.AgGrid(
-                            id="altinnedit-table-skjemadata",
-                            className="ag-theme-alpine-dark header-style-on-filter",
-                            style={"width": "100%", "height": "90%"},
-                            defaultColDef={
-                                "resizable": True,
-                                "sortable": True,
-                                "floatingFilter": True,
-                                "editable": True,
-                                "filter": "agTextColumnFilter",
-                                "flex": 1,
-                            },
-                            dashGridOptions={"rowHeight": 38},
-                        ),
-                        dbc.Row(
-                            html.P(id="skjemadata-hovedtabell-updatestatus"),
-                            className="mt-2",
-                        ),
                     ],
                 ),
             ],
@@ -319,32 +345,6 @@ class AltinnSkjemadataEditor(AltinnComponents):
             return ident
 
         @callback(  # type: ignore[misc]
-            Output("skjemadata-enhetsinfomodal-table1", "rowData"),
-            Output("skjemadata-enhetsinfomodal-table1", "columnDefs"),
-            Input("altinnedit-ident", "value"),
-            *self.create_callback_components("Input"),
-        )
-        def update_enhetsinfotabell(ident, *args):
-            if ident is None or any(arg is None for arg in args):
-                logger.debug(
-                    f"update_enhetsinfotabell is lacking input, returning None. ident is {ident} Received args: %s",
-                    args,
-                )
-                return None, None
-            try:
-                partition_args = dict(zip(self.time_units, args, strict=False))
-                df = self.conn.query(
-                    f"SELECT * FROM enhetsinfo WHERE ident = '{ident}'",
-                    self.create_partition_select(skjema=None, **partition_args),
-                )
-                df.drop(columns=["row_id"], inplace=True)
-                columns = [{"headerName": col, "field": col} for col in df.columns]
-                return df.to_dict("records"), columns
-            except Exception as e:
-                logger.error(f"Error in update_enhetsinfotabell: {e}", exc_info=True)
-                return None, None
-
-        @callback(  # type: ignore[misc]
             Output("altinnedit-skjemaer", "options"),
             Output("altinnedit-skjemaer", "value"),
             Input("altinnedit-ident", "value"),
@@ -358,7 +358,11 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 partition_args = dict(zip(self.time_units, args, strict=False))
                 skjemaer = self.conn.query(
                     f"SELECT * FROM enheter WHERE ident = '{ident}'",
-                    self.create_partition_select(skjema=None, **partition_args),
+                    create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=None,
+                        **partition_args,
+                    ),
                 )["skjemaer"][0]
 
                 skjemaer = [item.strip() for item in skjemaer.split(",")]
@@ -389,7 +393,11 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     f"""SELECT skjemaversjon, dato_mottatt, editert, aktiv
                     FROM skjemamottak WHERE ident = '{ident}' AND aktiv = True
                     ORDER BY dato_mottatt DESC""",
-                    self.create_partition_select(skjema=skjema, **partition_args),
+                    create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=skjema,
+                        **partition_args,
+                    ),
                 )
                 columns = [
                     (
@@ -437,99 +445,6 @@ class AltinnSkjemadataEditor(AltinnComponents):
             return tabell
 
         @callback(  # type: ignore[misc]
-            Output("altinnedit-table-skjemadata", "rowData"),
-            Output("altinnedit-table-skjemadata", "columnDefs"),
-            Input("altinnedit-skjemaversjon", "value"),
-            Input("altinnedit-option1", "value"),
-            State("altinnedit-skjemaer", "value"),
-            *self.create_callback_components("State"),
-        )
-        def hovedside_update_altinnskjema(skjemaversjon, tabell, skjema, *args):
-            schema = self.conn.tables[tabell]["schema"]
-            columns = {field["name"] for field in schema}
-            if "variabel" in columns and "verdi" in columns:
-                long_format = True
-            else:
-                long_format = False
-
-            if (
-                skjemaversjon is None
-                or tabell is None
-                or skjema is None
-                or any(arg is None for arg in args)
-            ):
-                return None, None
-            if long_format == True:
-                try:
-                    partition_args = dict(zip(self.time_units, args, strict=False))
-                    df = self.conn.query(
-                        f"""
-                        SELECT t.*, subquery.radnr
-                        FROM {tabell} AS t
-                        JOIN (
-                            SELECT aar, radnr, tabell, variabel
-                            FROM datatyper
-                        ) AS subquery
-                        ON subquery.aar = t.aar AND subquery.variabel = t.variabel
-                        WHERE t.skjemaversjon = '{skjemaversjon}'
-                        AND subquery.tabell = '{tabell}'
-                        ORDER BY subquery.radnr ASC
-                        """,
-                        partition_select={
-                            tabell: self.create_partition_select(
-                                skjema=skjema, **partition_args
-                            ),
-                            "datatyper": self.create_partition_select(
-                                skjema=None, **partition_args
-                            ),
-                        },
-                    )
-                    df.drop(columns=["radnr"], inplace=True)
-                    columns = [
-                        {
-                            "headerName": col,
-                            "field": col,
-                            "hide": col == "row_id",
-                            "flex": 2 if col == "variabel" else 1,
-                        }
-                        for col in df.columns
-                    ]
-                    return df.to_dict("records"), columns
-                except Exception as e:
-                    logger.error(
-                        f"Error in hovedside_update_altinnskjema (long format): {e}",
-                        exc_info=True,
-                    )
-                    return None, None
-            else:
-                try:
-                    partition_args = dict(zip(self.time_units, args, strict=False))
-                    df = self.conn.query(
-                        f"""
-                        SELECT * FROM {tabell}
-                        WHERE skjemaversjon = '{skjemaversjon}'
-                        """,
-                        partition_select=self.create_partition_select(
-                            skjema=skjema, **partition_args
-                        ),
-                    )
-                    columns = [
-                        {
-                            "headerName": col,
-                            "field": col,
-                            "hide": col == "row_id",
-                        }
-                        for col in df.columns
-                    ]
-                    return df.to_dict("records"), columns
-                except Exception as e:
-                    logger.error(
-                        f"Error in hovedside_update_altinnskjema (non-long format): {e}",
-                        exc_info=True,
-                    )
-                    return None, None
-
-        @callback(  # type: ignore[misc]
             Output(
                 "skjemadata-hovedtabell-updatestatus", "children", allow_duplicate=True
             ),
@@ -556,8 +471,10 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         SET editert = {new_value}
                         WHERE skjemaversjon = '{skjemaversjon}'
                         """,
-                        partition_select=self.create_partition_select(
-                            skjema=skjema, **partition_args
+                        partition_select=create_partition_select(
+                            desired_partitions=self.time_units,
+                            skjema=skjema,
+                            **partition_args,
                         ),
                     )
                     return f"Skjema {skjemaversjon} sin editeringsstatus er satt til {new_value}."
@@ -571,23 +488,15 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         SET aktiv = {new_value}
                         WHERE skjemaversjon = '{skjemaversjon}'
                         """,
-                        partition_select=self.create_partition_select(
-                            skjema=skjema, **partition_args
+                        partition_select=create_partition_select(
+                            desired_partitions=self.time_units,
+                            skjema=skjema,
+                            **partition_args,
                         ),
                     )
                     return f"Skjema {skjemaversjon} sin aktivstatus er satt til {new_value}."
                 except Exception:
                     return "En feil skjedde under oppdatering av editeringsstatusen"
-
-        @callback(  # type: ignore[misc]
-            Output("var-statistikkvariabel", "value"),
-            Input("altinnedit-table-skjemadata", "cellClicked"),
-            State("altinnedit-table-skjemadata", "rowData"),
-        )
-        def select_variabel(click, row_data):
-            if row_data is None:
-                return no_update
-            return row_data[click["rowIndex"]]["variabel"]
 
         @callback(  # type: ignore[misc]
             Output("offcanvas-kontrollutslag", "is_open"),
@@ -783,8 +692,10 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     ) AS subquery ON t1.kontrollid = subquery.kontrollid
                     WHERE skjemaversjon = '{skjemaversjon}'
                     AND utslag = True""",
-                    partition_select=self.create_partition_select(
-                        skjema=skjema, **partition_args
+                    partition_select=create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=skjema,
+                        **partition_args,
                     ),
                 )
                 columns = [{"headerName": col, "field": col} for col in df.columns]
@@ -821,8 +732,10 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         WHERE skjemaversjon = '{skjemaversjon}'
                         ORDER BY datetime DESC
                         """,
-                        partition_select=self.create_partition_select(
-                            skjema=skjema, **partition_args
+                        partition_select=create_partition_select(
+                            desired_partitions=self.time_units,
+                            skjema=skjema,
+                            **partition_args,
                         ),
                     )
                     if df is None:
@@ -840,89 +753,6 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     return None, None
             else:
                 raise PreventUpdate
-
-        @callback(  # type: ignore[misc]
-            Output("alert_store", "data", allow_duplicate=True),
-            Input("altinnedit-table-skjemadata", "cellValueChanged"),
-            State("altinnedit-option1", "value"),
-            State("altinnedit-skjemaer", "value"),
-            State("alert_store", "data"),
-            *self.create_callback_components("State"),
-            prevent_initial_call=True,
-        )
-        def update_table(edited, tabell, skjema, alert_store, *args):
-            if edited is None:
-                raise PreventUpdate
-            else:
-                partition_args = dict(zip(self.time_units, args, strict=False))
-                tables_editable_dict = {}
-                data_dict = self.conn.tables
-
-                for table, details in data_dict.items():
-                    if table.startswith("skjemadata") and "schema" in details:
-                        field_editable_dict = {
-                            field["name"]: field.get("app_editable", False)
-                            for field in details["schema"]
-                        }
-                        tables_editable_dict[table] = field_editable_dict
-
-                table_editable_dict = tables_editable_dict[tabell]
-                edited_column = edited[0]["colId"]
-
-                schema = self.conn.tables[tabell]["schema"]
-                columns = {field["name"] for field in schema}
-                if "variabel" in columns and "verdi" in columns:
-                    long_format = True
-                else:
-                    long_format = False
-
-                if table_editable_dict[edited_column] == True:
-                    old_value = edited[0]["oldValue"]
-                    new_value = edited[0]["value"]
-                    row_id = edited[0]["data"]["row_id"]
-                    ident = edited[0]["data"]["ident"]
-
-                    try:
-                        self.conn.query(
-                            f"""UPDATE {tabell}
-                            SET {edited_column} = '{new_value}'
-                            WHERE row_id = '{row_id}'
-                            """,
-                            partition_select=self.create_partition_select(
-                                skjema=skjema, **partition_args
-                            ),
-                        )
-                        if long_format == True:
-                            variabel = edited[0]["data"]["variabel"]
-                            alert_store = [
-                                create_alert(
-                                    f"ident: {ident}, variabel: {variabel} er oppdatert fra {old_value} til {new_value}!",
-                                    "success",
-                                    ephemeral=True,
-                                ),
-                                *alert_store,
-                            ]
-                        else:
-                            alert_store = [
-                                create_alert(
-                                    f"ident: {ident}, {edited_column} er oppdatert fra {old_value} til {new_value}!",
-                                    "success",
-                                    ephemeral=True,
-                                ),
-                                *alert_store,
-                            ]
-                    except Exception as e:
-                        alert_store = [
-                            create_alert(
-                                f"Oppdateringa feilet. {str(e)[:60]}",
-                                "danger",
-                                ephemeral=True,
-                            ),
-                            *alert_store,
-                        ]
-                    return alert_store
-                else:
-                    return f"Kolonnen {edited_column} kan ikke editeres!"
 
         @callback(  # type: ignore[misc]
             Output("skjemadata-sidebar-enhetsinfo", "children"),
@@ -984,8 +814,8 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 FROM kontaktinfo
                 WHERE skjemaversjon = '{skjemaversjon}'
                 """,
-                partition_select=self.create_partition_select(
-                    skjema=skjema, **partition_args
+                partition_select=create_partition_select(
+                    desired_partitions=self.time_units, skjema=skjema, **partition_args
                 ),
             )
             if df_skjemainfo.empty:
