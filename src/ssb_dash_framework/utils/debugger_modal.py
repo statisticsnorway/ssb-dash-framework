@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -11,6 +12,8 @@ from dash import html
 
 from ..setup.variableselector import VariableSelector
 from ..utils.functions import sidebar_button
+
+logger = logging.getLogger(__name__)
 
 
 class DebugInspector:
@@ -41,6 +44,9 @@ class DebugInspector:
             states (list[str]): List of state IDs to be monitored.
             func (Callable[..., Any], optional): Function to be called when the debugger is triggered. Defaults to default_func.
         """
+        logger.warning(
+            f"{self.__class__.__name__} is made for checking how modules behave and is not intended for production."
+        )
         self.func = func
         self.inputs = inputs
         self.states = states

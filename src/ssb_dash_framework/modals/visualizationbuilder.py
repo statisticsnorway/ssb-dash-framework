@@ -35,6 +35,9 @@ class VisualizationBuilder:
         Raises:
             TypeError: If database object does not have query method.
         """
+        logger.warning(
+            f"{self.__class__.__name__} is under development and may change in future releases."
+        )
         if not hasattr(database, "query"):
             raise TypeError("The provided object does not have a 'query' method.")
         self.database = database

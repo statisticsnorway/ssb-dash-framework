@@ -142,6 +142,19 @@ Aarsregnskap
 }
 
 /*
+AggDistPlotter
+*/
+
+.aggdistplotter {
+    height: 100%;
+    width: 100%;
+}
+
+.aggdistplotter-dropdown {
+    min-width: 150px;
+}
+
+/*
 AltinnDataCapture
 */
 
