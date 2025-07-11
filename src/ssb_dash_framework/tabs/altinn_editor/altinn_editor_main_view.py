@@ -44,7 +44,11 @@ class AltinnSkjemadataEditor:
         # Below is futureproofing in case of increasing modularity
         if sidepanels is None:
             self.sidepanels = [
-                AltinnEditorSubmittedForms(time_units=self.time_units, conn=self.conn)
+                AltinnEditorSubmittedForms(
+                    time_units=self.time_units,
+                    conn=self.conn,
+                    variable_selector_instance=self.variableselector,
+                )
             ]
         else:
             self.sidepanels = sidepanels
