@@ -3,6 +3,7 @@ import logging
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import callback
+from dash import dcc
 from dash import html
 from dash import no_update
 from dash.dependencies import Input
@@ -14,10 +15,9 @@ from ...setup.variableselector import VariableSelector
 from ...utils.alert_handler import create_alert
 from ...utils.eimerdb_helpers import create_partition_select
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
+from .altinn_editor_submitted_forms import AltinnEditorSubmittedForms
 
 logger = logging.getLogger(__name__)
-
-SQL_COLUMN_CONCAT = " || '_' || "
 
 
 class AltinnSkjemadataEditor:
@@ -43,7 +43,9 @@ class AltinnSkjemadataEditor:
         )
         # Below is futureproofing in case of increasing modularity
         if sidepanels is None:
-            self.sidepanels = []
+            self.sidepanels = [
+                AltinnEditorSubmittedForms(time_units=self.time_units, conn=self.conn)
+            ]
         else:
             self.sidepanels = sidepanels
         if top_panels is None:
@@ -57,10 +59,22 @@ class AltinnSkjemadataEditor:
         skjemadata_tables = [
             element for element in all_tables if element.startswith("skjemadata")
         ]
-        skjemadata_dd_options = [
-            {"label": item, "value": item} for item in skjemadata_tables
-        ]
-        return skjemadata_dd_options
+        return [{"label": item, "value": item} for item in skjemadata_tables]
+
+    def skjemadata_table_selector(self):
+        skjemadata_table_names = self.get_skjemadata_table_names()
+        return dbc.Col(
+            dbc.Form(
+                [
+                    dbc.Label("Tabell", className="mb-1"),
+                    dcc.Dropdown(
+                        id="altinnedit-option1",
+                        options=skjemadata_table_names,
+                        value=skjemadata_table_names[0]["value"],
+                    ),
+                ]
+            )
+        )
 
     def _create_layout(self):
         return html.Div(
@@ -81,7 +95,7 @@ class AltinnSkjemadataEditor:
                                 },
                                 children=[
                                     [
-                                        sidepanel_module.layout()
+                                        dbc.Row(sidepanel_module.layout())
                                         for sidepanel_module in self.sidepanels
                                     ]
                                 ],
@@ -97,10 +111,11 @@ class AltinnSkjemadataEditor:
                                             "width": "100%",
                                         },
                                         children=[
+                                            self.skjemadata_table_selector(),
                                             [
-                                                top_panels.layout()
-                                                for top_panels in self.top_panels
-                                            ]
+                                                dbc.Col(top_panel.layout())
+                                                for top_panel in self.top_panels
+                                            ],
                                         ],
                                     )
                                 ),

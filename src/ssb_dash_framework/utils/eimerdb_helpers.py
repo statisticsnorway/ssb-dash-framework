@@ -1,3 +1,6 @@
+SQL_COLUMN_CONCAT = " || '_' || "
+
+
 def create_partition_select(
     desired_partitions: list[str], skjema: str | None = None, **kwargs
 ) -> dict[str, list[int]]:

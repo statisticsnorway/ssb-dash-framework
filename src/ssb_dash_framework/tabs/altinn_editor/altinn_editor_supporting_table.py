@@ -1,5 +1,7 @@
 import logging
 
+from ...utils.eimerdb_helpers import SQL_COLUMN_CONCAT
+
 logger = logging.getLogger(__name__)
 
 
