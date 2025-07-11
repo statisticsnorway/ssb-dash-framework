@@ -36,11 +36,11 @@ class AltinnSkjemadataEditor:
             selected_inputs=[], selected_states=self.time_units
         )
 
-        self.primary_table = AltinnEditorPrimaryTable(
-            time_units=self.time_units,
-            conn=self.conn,
-            variable_selector_instance=self.variableselector,
-        )
+        # self.primary_table = AltinnEditorPrimaryTable(
+        #     time_units=self.time_units,
+        #     conn=self.conn,
+        #     variable_selector_instance=self.variableselector,
+        # )
         # Below is futureproofing in case of increasing modularity
         if sidepanels is None:
             self.sidepanels = []
@@ -80,7 +80,10 @@ class AltinnSkjemadataEditor:
                     children=[[top_panels.layout() for top_panels in self.top_panels]],
                 ),
                 html.Div(
-                    children=[self.primary_table.layout()],
+                    children=[
+                        html.Div("Test")
+                        #self.primary_table.layout()
+                    ],
                 ),
             ],
         )
