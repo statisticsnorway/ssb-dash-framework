@@ -1,6 +1,8 @@
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-from dash import dcc, html
+from dash import dcc
+from dash import html
+
 
 class AltinnComponents:
     """Components for the Altinn Skjemadata Editor.
@@ -13,7 +15,7 @@ class AltinnComponents:
     """
 
     def __init__(self, time_units: int) -> None:
-        "Altinn editing module layout and some other methods."
+        """Altinn editing module layout and some other methods."""
         self.time_units = time_units
 
     def layout(self) -> html.Div:
@@ -83,7 +85,8 @@ class AltinnComponents:
                                     dbc.Button(
                                         "Se all enhetsinfo",
                                         id="altinnedit-enhetsinfo-button",
-                                        type="text"),
+                                        type="text",
+                                    ),
                                 ]
                             ),
                             className="mb-2",
@@ -103,13 +106,13 @@ class AltinnComponents:
                                     dbc.Col(
                                         dbc.Form(
                                             [
-                                                dbc.Label(
-                                                    "Tabell", className="mb-1"
-                                                ),
+                                                dbc.Label("Tabell", className="mb-1"),
                                                 dcc.Dropdown(
                                                     id="altinnedit-option1",
                                                     options=skjemadata_table_names,
-                                                    value=skjemadata_table_names[0]["value"],
+                                                    value=skjemadata_table_names[0][
+                                                        "value"
+                                                    ],
                                                 ),
                                             ]
                                         ),
@@ -182,7 +185,7 @@ class AltinnComponents:
                                             [
                                                 dbc.Label(
                                                     "Editeringskommentar",
-                                                    className="mb-1"
+                                                    className="mb-1",
                                                 ),
                                                 dbc.Button(
                                                     "Se kommentarer",
@@ -385,16 +388,14 @@ class AltinnComponents:
                         ),
                         dbc.Row(
                             [
-                                dbc.Col(
-                                    html.P(id="skjemadata-kommentarmodal-aar-p")
-                                ),
+                                dbc.Col(html.P(id="skjemadata-kommentarmodal-aar-p")),
                                 dbc.Col(
                                     html.P(id="skjemadata-kommentarmodal-updatestatus")
                                 ),
                                 dbc.Col(
                                     dbc.Button(
                                         "Lagre kommentar",
-                                        id="skjemadata-kommentarmodal-savebutton"
+                                        id="skjemadata-kommentarmodal-savebutton",
                                     )
                                 ),
                             ]
@@ -474,7 +475,8 @@ class AltinnComponents:
                             dcc.Dropdown(
                                 id="skjemadata-hjelpetablellmodal-dd",
                                 options=[
-                                    {"label": unit, "value": unit} for unit in self.time_units
+                                    {"label": unit, "value": unit}
+                                    for unit in self.time_units
                                 ],
                                 value=self.time_units[0] if self.time_units else None,
                                 clearable=False,
@@ -494,13 +496,14 @@ class AltinnComponents:
                                             "skjemadata-hjelpetabellmodal-table2"
                                         ),
                                         tab_id="modal-hjelpetabeller-tab2",
-                                        label="Tabell2"),
+                                        label="Tabell2",
+                                    ),
                                 ],
                                 id="skjemadata-hjelpetabellmodal-tabs",
                             ),
                         ],
                     ),
-                )        
+                ),
             ],
             id="skjemadata-hjelpetabellmodal",
             is_open=False,

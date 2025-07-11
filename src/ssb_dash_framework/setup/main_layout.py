@@ -63,7 +63,7 @@ def main_layout(
         html.Div(
             [
                 sidebar_button(
-                    "🛆", "vis/skjul variabelvelger", "sidebar-varvelger-button"
+                    "🛆", "Vis variabler", "sidebar-varvelger-button"
                 )
             ]
         )
@@ -123,4 +123,5 @@ def main_layout(
         fluid=True,
         className="dbc dbc-ag-grid",
     )
+    logger.debug("Generated layout.")
     return layout

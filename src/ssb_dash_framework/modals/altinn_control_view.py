@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 from typing import Literal
 
@@ -12,6 +13,9 @@ from dash.exceptions import PreventUpdate
 
 from ..utils.alert_handler import create_alert
 from ..utils.functions import sidebar_button
+
+logger = logging.getLogger(__name__)
+
 
 default_col_def = {
     "filter": True,
@@ -41,6 +45,9 @@ class AltinnControlView:
             control_dict (dict): A dictionary with one control class per skjema.
             conn (object): The eimerdb connection.
         """
+        logger.warning(
+            f"{self.__class__.__name__} is under development and may change in future releases."
+        )
         assert hasattr(
             conn, "query"
         ), "The database connection object must have a 'query' method."
@@ -174,9 +181,7 @@ class AltinnControlView:
     ) -> list[str]:
         """Generates a list of dynamic Dash Input or State components."""
         component = Input if input_type == "Input" else State
-        return [
-            component(f"var-{unit}", "value") for unit in self.time_units
-        ]
+        return [component(f"var-{unit}", "value") for unit in self.time_units]
 
     def callbacks(self) -> None:
         """Registers Dash callbacks for the AltinnControlView module."""

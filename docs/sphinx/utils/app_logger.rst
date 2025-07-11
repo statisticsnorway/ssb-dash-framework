@@ -1,7 +1,7 @@
-tables_tab module
+app_logger module
 =================
 
-.. automodule:: ssb_dash_framework.tabs.tables_tab
+.. automodule:: ssb_dash_framework.utils.app_logger
    :members:
    :undoc-members:
    :show-inheritance:

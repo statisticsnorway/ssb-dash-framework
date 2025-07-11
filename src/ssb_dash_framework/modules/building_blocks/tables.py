@@ -3,7 +3,7 @@ from collections.abc import Callable
 from typing import Any
 
 import dash_ag_grid as dag
-import dash_bootstrap_components as dbc
+import pandas as pd
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -12,6 +12,8 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
+from ...utils import TabImplementation
+from ...utils import WindowImplementation
 from ...utils.alert_handler import create_alert
 from ...utils.module_validation import module_validator
 
@@ -34,9 +36,10 @@ class EditingTable:
         get_data (Callable[..., Any]): Function to fetch data from the database.
         update_table (Callable[..., Any]): Function to update database records based on edits in the table.
         module_layout (html.Div): The layout of the component.
+        number_format (str): A d3 format string for formatting numeric values in the table.
     """
 
-    _id_number = 0
+    _id_number: int = 0
 
     def __init__(
         self,
@@ -47,6 +50,8 @@ class EditingTable:
         update_table_func: Callable[..., Any] | None = None,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
+        number_format: str | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize the EditingTable component.
 
@@ -60,13 +65,27 @@ class EditingTable:
             output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
             output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
                 If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
+            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
+                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
+            **kwargs: Additional keyword arguments for the Dash AgGrid component.
+
+        Note:
+            kwargs are passed to the AgGrid to allow more customization. An example option would be adding dashGridOptions = {"singleClickEdit": True}
         """
+        self.kwargs = kwargs
+
         self.module_number = EditingTable._id_number
         self.module_name = self.__class__.__name__
         EditingTable._id_number += 1
+        self.icon = "📒"
         self.label = label
         self.output = output
         self.output_varselector_name = output_varselector_name or output
+
+        if number_format is None:
+            self.number_format = "d3.format(',.1f')(params.value).replace(/,/g, ' ')"
+        else:
+            self.number_format = number_format
 
         self.variableselector = VariableSelector(
             selected_inputs=inputs, selected_states=states
@@ -101,8 +120,11 @@ class EditingTable:
                         f"output {self.output} and output_varselector_name {self.output_varselector_name} are not the same length"
                     )
 
-    def _create_layout(self) -> html.Div:
+    def _create_layout(self, **kwargs: Any) -> html.Div:
         """Generate the layout for the EditingTable component.
+
+        Args:
+            **kwargs: Additional keyword arguments for the Dash AgGrid component.
 
         Returns:
             html.Div: A Div element containing:
@@ -114,23 +136,26 @@ class EditingTable:
             className="editingtable",
             children=[
                 dag.AgGrid(
-                    defaultColDef={"editable": True},
+                    defaultColDef=self.kwargs.get(
+                        "defaultColDef", {"editable": True}
+                    ),  # This is to make sure the user can override the defaultColDef
                     id=f"{self.module_number}-tabelleditering-table1",
                     className="ag-theme-alpine-dark header-style-on-filter editingtable-aggrid-style",
+                    **{k: v for k, v in self.kwargs.items() if k != "defaultColDef"},
                 )
             ],
         )
         logger.debug("Generated layout")
         return layout
 
-    def layout(self) -> html.Div | dbc.Tab:
+    def layout(self) -> html.Div:
         """Define the layout for the EditingTable module.
 
         Because this module can be used as a a component in other modules, it needs to have a layout method that is not abstract.
         For implementations as tab or window, this method should still be overridden.
 
         Returns:
-            html.Div | dbc.Tab: A Dash HTML Div component representing the layout of the module or a dbc.Tab to be displayed directly.
+            html.Div: A Dash HTML Div component representing the layout of the module to be displayed directly.
         """
         return self._create_layout()
 
@@ -147,7 +172,7 @@ class EditingTable:
             self.variableselector.get_states(),
         ]
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
             Output(f"{self.module_number}-tabelleditering-table1", "columnDefs"),
             *dynamic_states,
@@ -158,7 +183,6 @@ class EditingTable:
             """Load data into the Dash AgGrid table.
 
             Args:
-                error_log (list[dict[str, Any]]): List of existing alerts in the alert handler.
                 dynamic_states (list[str]): Dynamic state parameters for filtering data.
 
             Returns:
@@ -182,6 +206,11 @@ class EditingTable:
                         "headerName": col,
                         "field": col,
                         "hide": col == "row_id",
+                        "valueFormatter": (
+                            {"function": self.number_format}
+                            if pd.api.types.is_numeric_dtype(df[col])
+                            else None
+                        ),
                     }
                     for col in df.columns
                 ]
@@ -196,7 +225,7 @@ class EditingTable:
                 )
                 raise e
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
             Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
@@ -208,7 +237,7 @@ class EditingTable:
             edited: list[dict[str, dict[str, Any] | Any]],
             error_log: list[dict[str, Any]],
             *dynamic_states: list[str],
-        ) -> list[dict[str, Any]]:
+        ) -> tuple[list[dict[str, Any]], None]:
             """Update the database based on edits made in the AgGrid table.
 
             Args:
@@ -295,7 +324,7 @@ class EditingTable:
             def make_table_to_main_table_callback(
                 output: Output, column: str, output_varselector_name: str
             ) -> None:
-                @callback(
+                @callback(  # type: ignore[misc]
                     output,
                     Input(
                         f"{self.module_number}-tabelleditering-table1", "cellClicked"
@@ -328,3 +357,101 @@ class EditingTable:
                 )
 
         logger.debug("Generated callbacks")
+
+
+class EditingTableTab(TabImplementation, EditingTable):
+    """A class to implement a module inside a tab."""
+
+    def __init__(
+        self,
+        label: str,
+        inputs: list[str],
+        states: list[str],
+        get_data_func: Callable[..., Any],
+        update_table_func: Callable[..., Any] | None = None,
+        output: str | None = None,
+        output_varselector_name: str | None = None,
+        number_format: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize the EditingTableTab.
+
+        This class is used to create a tab to put in the tab_list.
+
+        Args:
+            label (str): The label for the tab.
+            inputs (list[str]): The list of input IDs.
+            states (list[str]): The list of state IDs.
+            get_data_func (Callable[..., Any]): Function to get data for the table.
+            update_table_func (Callable[..., Any]): Function to update the table.
+            output (str | None, optional): Identifier for the table. Defaults to None.
+            output_varselector_name (str | None, optional): Identifier for the variable selector. Defaults to None.
+            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
+                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
+            **kwargs: Additional keyword arguments for the Dash AgGrid component.
+        """
+        EditingTable.__init__(
+            self,
+            label=label,
+            inputs=inputs,
+            states=states,
+            get_data_func=get_data_func,
+            update_table_func=update_table_func,
+            output=output,
+            output_varselector_name=output_varselector_name,
+            number_format=number_format,
+            **kwargs,
+        )
+        TabImplementation.__init__(
+            self,
+        )
+
+
+class EditingTableWindow(WindowImplementation, EditingTable):
+    """A class to implement an EditingTable module inside a modal.
+
+    It is used to create a modal window containing an EditingTable.
+    This class inherits from both EditingTable and WindowImplementation, where WindowImplementation is a mixin that handles the modal functionality.
+    """
+
+    def __init__(
+        self,
+        label: str,
+        inputs: list[str],
+        states: list[str],
+        get_data_func: Callable[..., Any],
+        update_table_func: Callable[..., Any] | None = None,
+        output: str | None = None,
+        output_varselector_name: str | None = None,
+        number_format: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize the EditingTableWindow.
+
+        Args:
+            label (str): The label for the modal.
+            inputs (list[str]): The list of input IDs.
+            states (list[str]): The list of state IDs.
+            get_data_func (Callable[..., Any]): Function to get data for the table.
+            update_table_func (Callable[..., Any]): Function to update the table.
+            output (str | None, optional): Identifier for the table. Defaults to None.
+            output_varselector_name (str | None, optional): Identifier for the variable selector. Defaults to None.
+            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
+                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
+            **kwargs: Additional keyword arguments for the Dash AgGrid component.
+        """
+        EditingTable.__init__(
+            self,
+            label=label,
+            inputs=inputs,
+            states=states,
+            get_data_func=get_data_func,
+            update_table_func=update_table_func,
+            output=output,
+            output_varselector_name=output_varselector_name,
+            number_format=number_format,
+            **kwargs,
+        )
+        WindowImplementation.__init__(
+            self,
+        )

@@ -141,5 +141,3 @@ There are some costs involved in using AiO components:
 - Debugging could be harder, as Dash's callback graph can be harder to interpret in the AiO pattern
 
 We find that our way of structuring the code is easier to understand and use, while still allowing for a high degree of flexibility and reusability. We also find that the costs of using AiO components outweigh the benefits in our case as we want the lowest possible barrier to entry for new users.
-
-

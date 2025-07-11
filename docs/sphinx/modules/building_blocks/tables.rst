@@ -1,7 +1,7 @@
 tables module
 =============
 
-.. automodule:: ssb_dash_framework.modules.tables
+.. automodule:: ssb_dash_framework.modules.building_blocks.tables
    :members:
    :undoc-members:
    :show-inheritance:
