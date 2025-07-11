@@ -1,5 +1,8 @@
+import logging
+
 import dash_ag_grid as dag
 from dash import html
+from dash import callback
 from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -9,6 +12,7 @@ from dash.exceptions import PreventUpdate
 from ...utils.alert_handler import create_alert
 from ...utils.eimerdb_helpers import create_partition_select
 
+logger = logging.getLogger(__name__)
 
 class AltinnEditorPrimaryTable:
 
