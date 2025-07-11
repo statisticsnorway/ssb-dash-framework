@@ -81,7 +81,7 @@ class AltinnSkjemadataEditor:
                 ),
                 html.Div(
                     children=[
-                        html.Div("Test")
+                        html.P("Test")
                         #self.primary_table.layout()
                     ],
                 ),
