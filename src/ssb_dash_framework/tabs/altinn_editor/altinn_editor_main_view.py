@@ -72,6 +72,10 @@ class AltinnSkjemadataEditor:
             children=[
                 html.Div(
                     id="altinn-editor-sidepanels",
+                    style={
+                        "height": "100%",
+                        "width": "100%",
+                    },
                     children=[
                         [
                             sidepanel_module.layout()
@@ -81,6 +85,10 @@ class AltinnSkjemadataEditor:
                 ),
                 html.Div(
                     id="altinn-editor-top-panels",
+                    style={
+                        "height": "100%",
+                        "width": "100%",
+                    },
                     children=[[top_panels.layout() for top_panels in self.top_panels]],
                 ),
                 html.Div(
@@ -88,7 +96,7 @@ class AltinnSkjemadataEditor:
                 ),
             ],
         )
-    
+
     def layout(self):
         """Generates the layout for the Altinn Skjemadata Editor tab."""
         return self._create_layout()
