@@ -10,12 +10,22 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ...setup.variableselector import VariableSelector
+from ...utils.eimerdb_helpers import create_partition_select
+
 logger = logging.getLogger(__name__)
 
 
 class AltinnEditorHistory:
 
-    def __init__(self):
+    def __init__(self, time_units, conn, variable_selector_instance):
+        self.time_units = time_units
+        self.conn = conn
+        if not isinstance(variable_selector_instance, VariableSelector):
+            raise TypeError(
+                "variable_selector_instance must be an instance of VariableSelector"
+            )
+        self.variable_selector = variable_selector_instance
         self.layout = self._create_layout()
         self.module_callbacks()
 
@@ -47,7 +57,19 @@ class AltinnEditorHistory:
     def _create_layout(self):
         return html.Div(
             [
-                self.open_button(),
+                dbc.Form(
+                    [
+                        dbc.Label(
+                            "Historikk",
+                            className="mb-1",
+                        ),
+                        dbc.Button(
+                            "Se historikk",
+                            id="altinn-history-button",
+                            className="w-100",
+                        ),
+                    ]
+                ),
                 self.history_modal(),
             ]
         )
@@ -73,7 +95,7 @@ class AltinnEditorHistory:
             State("altinnedit-option1", "value"),
             State("altinnedit-table-skjemaer", "selectedRows"),
             State("altinnedit-skjemaer", "value"),
-            *self.create_callback_components("State"),
+            self.variable_selector.get_states(),
         )
         def historikktabell(is_open, tabell, selected_row, skjema, *args):
             if is_open:
@@ -85,8 +107,10 @@ class AltinnEditorHistory:
                         WHERE skjemaversjon = '{skjemaversjon}'
                         ORDER BY datetime DESC
                         """,
-                        partition_select=self.create_partition_select(
-                            skjema=skjema, **partition_args
+                        partition_select=create_partition_select(
+                            desired_partitions=self.time_units,
+                            skjema=skjema,
+                            **partition_args,
                         ),
                     )
                     if df is None:
