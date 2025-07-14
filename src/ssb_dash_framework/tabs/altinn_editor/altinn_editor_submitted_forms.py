@@ -40,7 +40,7 @@ class AltinnEditorSubmittedForms:
                         [
                             html.H5("Skjemaversjon", className="card-title"),
                             dbc.Input(
-                                id="altinnedit-skjemaversjon",
+                                id="altinnedit-skjemaer",
                                 type="text",
                             ),
                             dbc.Button(
