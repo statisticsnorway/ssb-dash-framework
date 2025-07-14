@@ -256,3 +256,5 @@ class AltinnEditorSupportTables:
                 except Exception as e:
                     logger.error(f"Error in hjelpetabeller: {e}", exc_info=True)
                     return None, None
+            else:
+                logger.debug("HVA FAEN")
