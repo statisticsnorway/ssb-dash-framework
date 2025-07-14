@@ -10,6 +10,7 @@ from dash.dependencies import Output
 from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
 from .altinn_editor_contact import AltinnEditorContact
+from .altinn_editor_control import AltinnEditorControl
 from .altinn_editor_history import AltinnEditorHistory
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 from .altinn_editor_submitted_forms import AltinnEditorSubmittedForms
@@ -51,6 +52,11 @@ class AltinnSkjemadataEditor:
                     time_units=self.time_units,
                     conn=self.conn,
                     variable_connection=self.variable_connection,
+                    variable_selector_instance=self.variableselector,
+                ),
+                AltinnEditorControl(
+                    time_units=self.time_units,
+                    conn=self.conn,
                     variable_selector_instance=self.variableselector,
                 ),
             ]
