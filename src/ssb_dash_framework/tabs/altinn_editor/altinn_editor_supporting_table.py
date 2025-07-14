@@ -12,6 +12,7 @@ from dash.dependencies import State
 
 from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import SQL_COLUMN_CONCAT
+from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +29,6 @@ class AltinnEditorSupportTables:
         self.variable_selector = variable_selector_instance
         self.module_layout = self._create_layout()
         self.module_callbacks()
-
-    def open_button(self):
-        return dbc.Button(
-            "Hjelpetabeller",
-            id="altinn-support-tables-button",
-            className="altinn-editor-module-button",
-        )
 
     def support_tables_modal(self):
         """Return a modal component containing tab content. Future versions may support adding new tabs."""
@@ -95,7 +89,19 @@ class AltinnEditorSupportTables:
     def _create_layout(self):
         return html.Div(
             [
-                self.open_button(),
+                dbc.Form(
+                    [
+                        dbc.Label(
+                            "Hjelpetabeller",
+                            className="mb-1",
+                        ),
+                        dbc.Button(
+                            "Se hjelpetabeller",
+                            id="altinn-support-tables-button",
+                            className="w-100",
+                        ),
+                    ]
+                ),
                 self.support_tables_modal(),
             ]
         )
