@@ -9,21 +9,26 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 
+from ...setup.variableselector import VariableSelector
+
 logger = logging.getLogger(__name__)
 
 
 class AltinnEditorUnitDetails:
 
-    def __init__(self):
+    def __init__(
+        self, time_units, conn, variable_connection, variable_selector_instance
+    ):
+        self.time_units = time_units
+        self.conn = conn
+        self.variable_connection = variable_connection
+        if not isinstance(variable_selector_instance, VariableSelector):
+            raise TypeError(
+                "variable_selector_instance must be an instance of VariableSelector"
+            )
+        self.variable_selector = variable_selector_instance
         self.layout = self._create_layout()
         self.module_callbacks()
-
-    def open_button(self):
-        return dbc.Button(
-            "Enhetsdetaljer",
-            id="altinn-unit-details-button",
-            className="altinn-editor-module-button",
-        )
 
     def unit_details_modal(self):
         """Returns a modal component containing a table with enhetsinfo."""
@@ -45,14 +50,35 @@ class AltinnEditorUnitDetails:
         )
 
     def _create_layout(self):
-        pass
+        return html.Div(
+            [
+                dbc.Card(
+                    dbc.CardBody(
+                        [
+                            html.H5("Skjemaversjon", className="card-title"),
+                            dbc.Input(
+                                id="altinnedit-skjemaversjon",
+                                type="text",
+                            ),
+                            dbc.Button(
+                                "Se alle",
+                                id="altinnedit-skjemaversjon-button",
+                                type="text",
+                            ),
+                        ],
+                    ),
+                    className="mb-2",
+                ),
+                self.unit_details_modal(),
+            ]
+        )
 
     def module_callbacks(self):
         @callback(  # type: ignore[misc]
             Output("skjemadata-enhetsinfomodal-table1", "rowData"),
             Output("skjemadata-enhetsinfomodal-table1", "columnDefs"),
             Input("altinnedit-ident", "value"),
-            *self.create_callback_components("Input"),
+            self.variable_selector.get_inputs(),
         )
         def update_enhetsinfotabell(ident, *args):
             if ident is None or any(arg is None for arg in args):
