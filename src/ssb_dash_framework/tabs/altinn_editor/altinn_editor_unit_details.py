@@ -10,6 +10,7 @@ from dash.dependencies import Output
 from dash.dependencies import State
 
 from ...setup.variableselector import VariableSelector
+from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,11 @@ class AltinnEditorUnitDetails:
                 partition_args = dict(zip(self.time_units, args, strict=False))
                 df = self.conn.query(
                     f"SELECT * FROM enhetsinfo WHERE ident = '{ident}'",
-                    self.create_partition_select(skjema=None, **partition_args),
+                    create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=None,
+                        **partition_args,
+                    ),
                 )
                 df.drop(columns=["row_id"], inplace=True)
                 columns = [{"headerName": col, "field": col} for col in df.columns]
