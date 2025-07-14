@@ -98,6 +98,9 @@ class AltinnEditorComment:
                 self.kommentarmodal(),
             ]
         )
+    
+    def layout(self):
+        return self.module_layout
 
     def module_callbacks(self):
         @callback(  # type: ignore[misc]
