@@ -167,7 +167,7 @@ class AltinnSkjemadataEditor:
                                         },
                                         children=[
                                             self.skjemadata_table_selector(),
-                                            [
+                                            *[
                                                 dbc.Col(top_panel.layout())
                                                 for top_panel in self.top_panels
                                             ],
