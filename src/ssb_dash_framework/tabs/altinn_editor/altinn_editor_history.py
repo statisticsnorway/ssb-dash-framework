@@ -26,7 +26,7 @@ class AltinnEditorHistory:
                 "variable_selector_instance must be an instance of VariableSelector"
             )
         self.variable_selector = variable_selector_instance
-        self.layout = self._create_layout()
+        self.module_layout = self._create_layout()
         self.module_callbacks()
 
     def open_button(self):
@@ -73,6 +73,9 @@ class AltinnEditorHistory:
                 self.history_modal(),
             ]
         )
+    
+    def layout(self):
+        return self.module_layout
 
     def module_callbacks(self):
         @callback(  # type: ignore[misc]
