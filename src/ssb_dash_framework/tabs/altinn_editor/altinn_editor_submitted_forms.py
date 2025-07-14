@@ -2,8 +2,8 @@ import logging
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-from dash import html
 from dash import callback
+from dash import html
 from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -33,22 +33,25 @@ class AltinnEditorSubmittedForms:
         VariableSelector([], []).get_option("skjemaversjon")
 
     def _create_layout(self):
-        return dbc.Card(
-            dbc.CardBody(
-                [
-                    html.H5("Skjemaversjon", className="card-title"),
-                    dbc.Input(
-                        id="altinnedit-skjemaversjon",
-                        type="text",
-                    ),
-                    dbc.Button(
-                        "Se alle",
-                        id="altinnedit-skjemaversjon-button",
-                        type="text",
-                    ),
-                ],
+        return html.Div(
+            dbc.Card(
+                dbc.CardBody(
+                    [
+                        html.H5("Skjemaversjon", className="card-title"),
+                        dbc.Input(
+                            id="altinnedit-skjemaversjon",
+                            type="text",
+                        ),
+                        dbc.Button(
+                            "Se alle",
+                            id="altinnedit-skjemaversjon-button",
+                            type="text",
+                        ),
+                    ],
+                ),
+                className="mb-2",
             ),
-            className="mb-2",
+            self.submitted_forms_modal(),
         )
 
     def layout(self):
