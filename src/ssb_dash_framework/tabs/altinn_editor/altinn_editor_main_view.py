@@ -15,6 +15,7 @@ from .altinn_editor_control import AltinnEditorControl
 from .altinn_editor_history import AltinnEditorHistory
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 from .altinn_editor_submitted_forms import AltinnEditorSubmittedForms
+from .altinn_editor_supporting_table import AltinnEditorSupportTables
 from .altinn_editor_unit_details import AltinnEditorUnitDetails
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,11 @@ class AltinnSkjemadataEditor:
             self.sidepanels = sidepanels
         if top_panels is None:
             self.top_panels = [
+                AltinnEditorSupportTables(
+                    time_units=self.time_units,
+                    conn=self.conn,
+                    variable_selector_instance=self.variableselector,
+                ),
                 AltinnEditorContact(
                     time_units=self.time_units,
                     conn=self.conn,

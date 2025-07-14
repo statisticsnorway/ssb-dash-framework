@@ -1,5 +1,15 @@
 import logging
 
+import dash_ag_grid as dag
+import dash_bootstrap_components as dbc
+from dash import dcc
+from dash import html
+from dash import no_update
+from dash.dependencies import Input
+from dash.dependencies import Output
+from dash.dependencies import State
+
+from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import SQL_COLUMN_CONCAT
 
 logger = logging.getLogger(__name__)
@@ -7,8 +17,15 @@ logger = logging.getLogger(__name__)
 
 class AltinnEditorSupportTables:
 
-    def __init__(self):
-        self.layout = self._create_layout()
+    def __init__(self, time_units, conn, variable_selector_instance):
+        self.time_units = time_units
+        self.conn = conn
+        if not isinstance(variable_selector_instance, VariableSelector):
+            raise TypeError(
+                "variable_selector_instance must be an instance of VariableSelector"
+            )
+        self.variable_selector = variable_selector_instance
+        self.module_layout = self._create_layout()
         self.module_callbacks()
 
     def open_button(self):
@@ -82,6 +99,22 @@ class AltinnEditorSupportTables:
             ]
         )
 
+    def layout(self):
+        return self.module_layout
+
+    def update_partition_select(self, partition_dict, key_to_update):
+        """Updates the dictionary by adding the previous value (N-1)
+        to the list for a single specified key.
+
+        :param partition_dict: Dictionary containing lists of values
+        :param key_to_update: Key to update by appending (N-1)
+        :return: Updated dictionary
+        """
+        if partition_dict.get(key_to_update):
+            min_value = min(partition_dict[key_to_update])
+            partition_dict[key_to_update].append(int(min_value) - 1)
+        return partition_dict
+
     def module_callbacks(self):
         @callback(  # type: ignore[misc]
             Output("skjemadata-hjelpetabellmodal", "is_open"),
@@ -105,7 +138,7 @@ class AltinnEditorSupportTables:
             State("altinnedit-option1", "value"),
             State("altinnedit-ident", "value"),
             State("altinnedit-skjemaer", "value"),
-            *self.create_callback_components("State"),
+            self.variable_selector.get_states(),
             prevent_initial_call=True,
         )
         def hjelpetabeller(
@@ -114,11 +147,15 @@ class AltinnEditorSupportTables:
             if tab == "modal-hjelpetabeller-tab1":
                 try:
                     partition_args = dict(zip(self.time_units, args, strict=False))
-                    partition_select = self.create_partition_select(
-                        skjema=skjema, **partition_args
+                    partition_select = create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=skjema,
+                        **partition_args,
                     )
-                    partition_select_no_skjema = self.create_partition_select(
-                        skjema=None, **partition_args
+                    partition_select_no_skjema = create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=None,
+                        **partition_args,
                     )
                     updated_partition_select = self.update_partition_select(
                         partition_select, rullerende_var
