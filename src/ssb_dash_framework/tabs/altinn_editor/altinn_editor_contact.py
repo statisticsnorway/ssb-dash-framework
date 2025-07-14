@@ -9,6 +9,7 @@ from dash.dependencies import Output
 from dash.dependencies import State
 
 from ...setup.variableselector import VariableSelector
+from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
 
@@ -163,8 +164,8 @@ class AltinnEditorContact:
                 FROM kontaktinfo
                 WHERE skjemaversjon = '{skjemaversjon}'
                 """,
-                partition_select=self.create_partition_select(
-                    skjema=skjema, **partition_args
+                partition_select=create_partition_select(
+                    desired_partitions=self.time_units, skjema=skjema, **partition_args
                 ),
             )
             if df_skjemainfo.empty:

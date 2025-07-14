@@ -88,7 +88,8 @@ class AltinnSkjemadataEditor:
                         value=skjemadata_table_names[0]["value"],
                     ),
                 ]
-            )
+            ),
+            md=2,
         )
 
     def _create_layout(self):
@@ -168,7 +169,7 @@ class AltinnSkjemadataEditor:
                                         children=[
                                             self.skjemadata_table_selector(),
                                             *[
-                                                dbc.Col(top_panel.layout())
+                                                dbc.Col(top_panel.layout(), md=2)
                                                 for top_panel in self.top_panels
                                             ],
                                         ],
