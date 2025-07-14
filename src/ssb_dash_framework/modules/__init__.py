@@ -6,6 +6,7 @@ from .aarsregnskap import AarsregnskapWindow
 from .altinn_data_capture import AltinnDataCapture
 from .altinn_data_capture import AltinnDataCaptureTab
 from .altinn_data_capture import AltinnDataCaptureWindow
+from .altinn_editor import AltinnSkjemadataEditor
 from .bofregistry import BofInformation
 from .bofregistry import BofInformationTab
 from .bofregistry import BofInformationWindow
@@ -35,6 +36,7 @@ __all__ = [
     "AltinnDataCapture",
     "AltinnDataCaptureTab",
     "AltinnDataCaptureWindow",
+    "AltinnSkjemadataEditor",
     "BofInformation",
     "BofInformationTab",
     "BofInformationWindow",
