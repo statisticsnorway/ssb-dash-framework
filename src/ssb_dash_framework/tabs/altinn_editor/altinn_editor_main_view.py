@@ -160,7 +160,6 @@ class AltinnSkjemadataEditor:
                         dbc.Col(
                             [
                                 dbc.Row(
-                                    html.Div(
                                         id="altinn-editor-top-panels",
                                         style={
                                             "height": "100%",
@@ -172,8 +171,8 @@ class AltinnSkjemadataEditor:
                                                 dbc.Col(top_panel.layout(), md=2)
                                                 for top_panel in self.top_panels
                                             ],
-                                        ],
-                                    )
+                                        ]
+                                    
                                 ),
                                 dbc.Row(
                                     html.Div(
