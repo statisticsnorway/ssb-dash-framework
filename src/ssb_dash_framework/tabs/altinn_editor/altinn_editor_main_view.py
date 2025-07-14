@@ -13,6 +13,7 @@ from .altinn_editor_contact import AltinnEditorContact
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 from .altinn_editor_submitted_forms import AltinnEditorSubmittedForms
 from .altinn_editor_unit_details import AltinnEditorUnitDetails
+from .altinn_editor_history import AltinnEditorHistory
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,12 @@ class AltinnSkjemadataEditor:
                     time_units=self.time_units,
                     conn=self.conn,
                     variable_selector_instance=self.variableselector,
-                )
+                ),
+                AltinnEditorHistory(
+                    time_units=self.time_units,
+                    conn=self.conn,
+                    variable_selector_instance=self.variableselector,
+                ),
             ]
         else:
             self.top_panels = top_panels
