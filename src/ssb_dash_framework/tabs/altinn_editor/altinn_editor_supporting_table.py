@@ -5,6 +5,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc
 from dash import html
 from dash import no_update
+from dash import callback
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
