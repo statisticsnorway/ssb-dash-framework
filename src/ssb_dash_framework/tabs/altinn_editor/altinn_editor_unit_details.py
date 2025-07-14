@@ -56,14 +56,10 @@ class AltinnEditorUnitDetails:
                 dbc.Card(
                     dbc.CardBody(
                         [
-                            html.H5("Skjemaversjon", className="card-title"),
-                            dbc.Input(
-                                id="altinnedit-skjemaversjon",
-                                type="text",
-                            ),
+                            html.H5("Enhetsinfo", className="card-title"),
                             dbc.Button(
                                 "Se alle",
-                                id="altinnedit-skjemaversjon-button",
+                                id="altinnedit-enhetsinfo-button",
                                 type="text",
                             ),
                         ],
