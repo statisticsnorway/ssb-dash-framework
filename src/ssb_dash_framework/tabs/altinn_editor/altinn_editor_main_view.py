@@ -54,11 +54,6 @@ class AltinnSkjemadataEditor:
                     variable_connection=self.variable_connection,
                     variable_selector_instance=self.variableselector,
                 ),
-                AltinnEditorControl(
-                    time_units=self.time_units,
-                    conn=self.conn,
-                    variable_selector_instance=self.variableselector,
-                ),
             ]
         else:
             self.sidepanels = sidepanels
@@ -70,6 +65,11 @@ class AltinnSkjemadataEditor:
                     variable_selector_instance=self.variableselector,
                 ),
                 AltinnEditorHistory(
+                    time_units=self.time_units,
+                    conn=self.conn,
+                    variable_selector_instance=self.variableselector,
+                ),
+                AltinnEditorControl(
                     time_units=self.time_units,
                     conn=self.conn,
                     variable_selector_instance=self.variableselector,

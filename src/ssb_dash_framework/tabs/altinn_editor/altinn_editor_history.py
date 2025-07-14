@@ -29,13 +29,6 @@ class AltinnEditorHistory:
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
-    def open_button(self):
-        return dbc.Button(
-            "Historikk",
-            id="altinn-history-button",
-            className="altinn-editor-module-button",
-        )
-
     def history_modal(self):
         return dbc.Modal(
             [
@@ -73,7 +66,7 @@ class AltinnEditorHistory:
                 self.history_modal(),
             ]
         )
-    
+
     def layout(self):
         return self.module_layout
 
