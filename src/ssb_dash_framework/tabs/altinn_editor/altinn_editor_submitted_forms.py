@@ -36,14 +36,14 @@ class AltinnEditorSubmittedForms:
                     dbc.Input(
                         id="altinnedit-skjemaversjon",
                         type="text",
-                        className="mb-2",
                     ),
                     dbc.Button(
                         "Se alle",
                         id="altinnedit-skjemaversjon-button",
                         type="text",
                     ),
-                ]
+                ],
+                className="mb-2",
             ),
             className="mb-2",
         )
