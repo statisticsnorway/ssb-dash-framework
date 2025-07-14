@@ -10,6 +10,7 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 
+from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
 
 logger = logging.getLogger(__name__)
@@ -17,17 +18,16 @@ logger = logging.getLogger(__name__)
 
 class AltinnEditorComment:
 
-    def __init__(self, conn):
+    def __init__(self, time_units, conn, variable_selector_instance):
+        self.time_units = time_units
         self.conn = conn
-        self.layout = self._create_layout()
+        if not isinstance(variable_selector_instance, VariableSelector):
+            raise TypeError(
+                "variable_selector_instance must be an instance of VariableSelector"
+            )
+        self.variable_selector = variable_selector_instance
+        self.module_layout = self._create_layout()
         self.module_callbacks()
-
-    def open_button(self):
-        return dbc.Button(
-            "Editeringskommentarer",
-            id="altinn-comment-button",
-            className="altinn-editor-module-button",
-        )
 
     def kommentarmodal(self) -> dbc.Modal:
         """Returns a modal component containing editing comments."""
@@ -82,7 +82,19 @@ class AltinnEditorComment:
         """Creates the layout for the Altinn Editor Comment module."""
         return html.Div(
             [
-                self.open_button(),
+                dbc.Form(
+                    [
+                        dbc.Label(
+                            "Editeringskommentar",
+                            className="mb-1",
+                        ),
+                        dbc.Button(
+                            "Se kommentarer",
+                            id="altinn-comment-button",
+                            className="w-100",
+                        ),
+                    ]
+                ),
                 self.kommentarmodal(),
             ]
         )
