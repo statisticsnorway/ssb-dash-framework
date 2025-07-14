@@ -98,7 +98,7 @@ class AltinnEditorComment:
                 self.kommentarmodal(),
             ]
         )
-    
+
     def layout(self):
         return self.module_layout
 
