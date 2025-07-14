@@ -2,10 +2,10 @@ import logging
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+from dash import callback
 from dash import dcc
 from dash import html
 from dash import no_update
-from dash import callback
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
@@ -31,7 +31,7 @@ class AltinnEditorSupportTables:
 
     def open_button(self):
         return dbc.Button(
-            "Støtte Tabeller",
+            "Hjelpetabeller",
             id="altinn-support-tables-button",
             className="altinn-editor-module-button",
         )
@@ -119,7 +119,7 @@ class AltinnEditorSupportTables:
     def module_callbacks(self):
         @callback(  # type: ignore[misc]
             Output("skjemadata-hjelpetabellmodal", "is_open"),
-            Input("altinnedit-option3", "n_clicks"),
+            Input("altinn-support-tables-button", "n_clicks"),
             State("skjemadata-hjelpetabellmodal", "is_open"),
         )
         def toggle_hjelpetabellmodal(n_clicks, is_open):
