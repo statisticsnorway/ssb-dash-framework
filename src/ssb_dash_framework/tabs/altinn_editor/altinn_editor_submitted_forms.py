@@ -30,7 +30,7 @@ class AltinnEditorSubmittedForms:
         self.module_callbacks()
 
     def _is_valid(self):
-        VariableSelector().get_option("skjemaversjon")
+        VariableSelector([], []).get_option("skjemaversjon")
 
     def _create_layout(self):
         return dbc.Card(
