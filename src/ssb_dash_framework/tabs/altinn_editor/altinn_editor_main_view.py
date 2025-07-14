@@ -10,10 +10,10 @@ from dash.dependencies import Output
 from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
 from .altinn_editor_contact import AltinnEditorContact
+from .altinn_editor_history import AltinnEditorHistory
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 from .altinn_editor_submitted_forms import AltinnEditorSubmittedForms
 from .altinn_editor_unit_details import AltinnEditorUnitDetails
-from .altinn_editor_history import AltinnEditorHistory
 
 logger = logging.getLogger(__name__)
 
@@ -166,19 +166,14 @@ class AltinnSkjemadataEditor:
                         dbc.Col(
                             [
                                 dbc.Row(
-                                        id="altinn-editor-top-panels",
-                                        style={
-                                            "height": "100%",
-                                            "width": "100%",
-                                        },
-                                        children=[
-                                            self.skjemadata_table_selector(),
-                                            *[
-                                                dbc.Col(top_panel.layout(), md=2)
-                                                for top_panel in self.top_panels
-                                            ],
-                                        ]
-                                    
+                                    id="altinn-editor-top-panels",
+                                    children=[
+                                        self.skjemadata_table_selector(),
+                                        *[
+                                            dbc.Col(top_panel.layout(), md=2)
+                                            for top_panel in self.top_panels
+                                        ],
+                                    ],
                                 ),
                                 dbc.Row(
                                     html.Div(
