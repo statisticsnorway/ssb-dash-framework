@@ -8,21 +8,23 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 
+from ...setup.variableselector import VariableSelector
+
 logger = logging.getLogger(__name__)
 
 
 class AltinnEditorContact:
 
-    def __init__(self):
-        self.layout = self._create_layout()
+    def __init__(self, time_units, conn, variable_selector_instance):
+        self.time_units = time_units
+        self.conn = conn
+        if not isinstance(variable_selector_instance, VariableSelector):
+            raise TypeError(
+                "variable_selector_instance must be an instance of VariableSelector"
+            )
+        self.variable_selector = variable_selector_instance
+        self.module_layout = self._create_layout()
         self.module_callbacks()
-
-    def open_button(self):
-        return dbc.Button(
-            "Kontakt",
-            id="altinn-contact-button",
-            className="altinn-editor-module-button",
-        )
 
     def offcanvas_contact(self) -> html.Div:
         """Retuns an offcanvas component containing a table with contact information."""
@@ -106,16 +108,31 @@ class AltinnEditorContact:
     def _create_layout(self):
         return html.Div(
             [
-                self.open_button(),
+                dbc.Col(
+                    dbc.Form(
+                        [
+                            dbc.Label("Kontaktinfo", className="mb-1"),
+                            dbc.Button(
+                                "Se kontaktinfo",
+                                id="altinnedit-contact-button",
+                                className="w-100",
+                            ),
+                        ]
+                    ),
+                    md=2,
+                ),
                 self.offcanvas_contact(),
             ]
         )
+
+    def layout(self):
+        return self.module_layout
 
     def module_callbacks(self):
 
         @callback(  # type: ignore[misc]
             Output("skjemadata-kontaktinfocanvas", "is_open"),
-            Input("altinnedit-option2", "n_clicks"),
+            Input("altinnedit-contact-button", "n_clicks"),
             State("skjemadata-kontaktinfocanvas", "is_open"),
         )
         def toggle_offcanvas_kontaktinfo(n_clicks, is_open):
@@ -132,10 +149,10 @@ class AltinnEditorContact:
             Output("skjemadata-kontaktinfo-telefon", "value"),
             Output("skjemadata-kontaktinfo-kommentar1", "value"),
             Output("skjemadata-kontaktinfo-kommentar2", "value"),
-            Input("altinnedit-option2", "n_clicks"),
+            Input("altinnedit-contact-button", "n_clicks"),
             State("altinnedit-skjemaversjon", "value"),
             State("altinnedit-skjemaer", "value"),
-            *self.create_callback_components("State"),
+            self.variable_selector.get_states(),
             prevent_initial_call=True,
         )
         def kontaktinfocanvas(n_clicks, skjemaversjon, skjema, *args):
