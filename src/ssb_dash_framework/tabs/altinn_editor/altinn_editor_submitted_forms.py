@@ -145,7 +145,8 @@ class AltinnEditorSubmittedForms:
             Output("alert_store", "data", allow_duplicate=True),
             Input("altinnedit-table-skjemaer", "cellValueChanged"),
             State("altinnedit-skjemaer", "value"),
-            State("alert_store", "data") * self.create_callback_components("State"),
+            State("alert_store", "data"),
+            self.variable_selector.get_states(),
             prevent_initial_call=True,
         )
         def set_skjema_to_edited(edited, skjema, alert_store, *args):
