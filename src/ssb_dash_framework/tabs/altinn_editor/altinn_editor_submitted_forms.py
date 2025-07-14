@@ -4,6 +4,7 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import callback
 from dash import html
+from dash import dcc
 from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -38,9 +39,18 @@ class AltinnEditorSubmittedForms:
                 dbc.Card(
                     dbc.CardBody(
                         [
+                            html.H5("skjemaer", className="card-title"),
+                            dcc.Dropdown(id="altinnedit-skjemaer"),
+                        ]
+                    ),
+                    className="mb-2",
+                ),
+                dbc.Card(
+                    dbc.CardBody(
+                        [
                             html.H5("Skjemaversjon", className="card-title"),
                             dbc.Input(
-                                id="altinnedit-skjemaer",
+                                id="altinnedit-skjemaversjon",
                                 type="text",
                             ),
                             dbc.Button(
