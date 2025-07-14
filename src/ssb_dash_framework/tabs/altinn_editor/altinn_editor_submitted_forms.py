@@ -47,7 +47,6 @@ class AltinnEditorSubmittedForms:
                         type="text",
                     ),
                 ],
-                className="mb-2",
             ),
             className="mb-2",
         )
@@ -156,6 +155,7 @@ class AltinnEditorSubmittedForms:
             self.variable_selector.get_states(),
         )
         def update_sidebar_table(skjema, ident, *args):
+            logger.debug(f"Inputs. Skjema: {skjema}, Ident: {ident}, Args: {args}")
             if skjema is None or ident is None or any(arg is None for arg in args):
                 return None, None
 
