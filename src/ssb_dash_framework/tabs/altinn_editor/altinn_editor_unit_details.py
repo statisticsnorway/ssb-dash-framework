@@ -66,6 +66,7 @@ class AltinnEditorUnitDetails:
                     ),
                     className="mb-2",
                 ),
+                html.Div(id="skjemadata-sidebar-enhetsinfo"),
                 self.unit_details_modal(),
             ]
         )
