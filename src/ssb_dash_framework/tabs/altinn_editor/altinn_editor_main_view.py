@@ -138,7 +138,7 @@ class AltinnSkjemadataEditor:
                                         className="mb-2",
                                     ),
                                     *[
-                                        dbc.Row(sidepanel_module.layout())
+                                        sidepanel_module.layout()
                                         for sidepanel_module in self.sidepanels
                                     ],
                                 ],
