@@ -9,6 +9,7 @@ from dash.dependencies import Output
 
 from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
+from .altinn_editor_contact import AltinnEditorContact
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 from .altinn_editor_submitted_forms import AltinnEditorSubmittedForms
 from .altinn_editor_unit_details import AltinnEditorUnitDetails
@@ -55,7 +56,13 @@ class AltinnSkjemadataEditor:
         else:
             self.sidepanels = sidepanels
         if top_panels is None:
-            self.top_panels = []
+            self.top_panels = [
+                AltinnEditorContact(
+                    time_units=self.time_units,
+                    conn=self.conn,
+                    variable_selector_instance=self.variableselector,
+                )
+            ]
         else:
             self.top_panels = top_panels
 
