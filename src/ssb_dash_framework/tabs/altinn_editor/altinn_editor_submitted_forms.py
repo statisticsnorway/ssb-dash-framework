@@ -34,24 +34,26 @@ class AltinnEditorSubmittedForms:
 
     def _create_layout(self):
         return html.Div(
-            dbc.Card(
-                dbc.CardBody(
-                    [
-                        html.H5("Skjemaversjon", className="card-title"),
-                        dbc.Input(
-                            id="altinnedit-skjemaversjon",
-                            type="text",
-                        ),
-                        dbc.Button(
-                            "Se alle",
-                            id="altinnedit-skjemaversjon-button",
-                            type="text",
-                        ),
-                    ],
+            [
+                dbc.Card(
+                    dbc.CardBody(
+                        [
+                            html.H5("Skjemaversjon", className="card-title"),
+                            dbc.Input(
+                                id="altinnedit-skjemaversjon",
+                                type="text",
+                            ),
+                            dbc.Button(
+                                "Se alle",
+                                id="altinnedit-skjemaversjon-button",
+                                type="text",
+                            ),
+                        ],
+                    ),
+                    className="mb-2",
                 ),
-                className="mb-2",
-            ),
-            self.submitted_forms_modal(),
+                self.submitted_forms_modal(),
+            ]
         )
 
     def layout(self):
