@@ -8,6 +8,7 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 
 from ...setup.variableselector import VariableSelector
+from ...utils import create_alert
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 from .altinn_editor_submitted_forms import AltinnEditorSubmittedForms
 
@@ -563,15 +564,13 @@ class AltinnSkjemadataEditor2:
             return tabell
 
         @callback(  # type: ignore[misc]
-            Output(
-                "skjemadata-hovedtabell-updatestatus", "children", allow_duplicate=True
-            ),
+            Output("alert_store", "data", allow_duplicate=True),
             Input("altinnedit-table-skjemaer", "cellValueChanged"),
             State("altinnedit-skjemaer", "value"),
-            *self.create_callback_components("State"),
+            State("alert_store", "data") * self.create_callback_components("State"),
             prevent_initial_call=True,
         )
-        def set_skjema_to_edited(edited, skjema, *args):
+        def set_skjema_to_edited(edited, skjema, alert_store, *args):
             if edited is None or skjema is None or any(arg is None for arg in args):
                 return None
 
@@ -595,9 +594,23 @@ class AltinnSkjemadataEditor2:
                             **partition_args,
                         ),
                     )
-                    return f"Skjema {skjemaversjon} sin editeringsstatus er satt til {new_value}."
+                    return [
+                        create_alert(
+                            f"Skjema {skjemaversjon} sin editeringsstatus er satt til {new_value}.",
+                            "success",
+                            ephemeral=True,
+                        ),
+                        *alert_store,
+                    ]
                 except Exception:
-                    return "En feil skjedde under oppdatering av editeringsstatusen"
+                    return [
+                        create_alert(
+                            "En feil skjedde under oppdatering av editeringsstatusen",
+                            "danger",
+                            ephemeral=True,
+                        ),
+                        *alert_store,
+                    ]
             elif variabel == "aktiv":
                 try:
                     self.conn.query(
@@ -612,9 +625,23 @@ class AltinnSkjemadataEditor2:
                             **partition_args,
                         ),
                     )
-                    return f"Skjema {skjemaversjon} sin aktivstatus er satt til {new_value}."
+                    return [
+                        create_alert(
+                            f"Skjema {skjemaversjon} sin aktivstatus er satt til {new_value}.",
+                            "success",
+                            ephemeral=True,
+                        ),
+                        *alert_store,
+                    ]
                 except Exception:
-                    return "En feil skjedde under oppdatering av editeringsstatusen"
+                    return [
+                        create_alert(
+                            "En feil skjedde under oppdatering av aktivstatusen",
+                            "danger",
+                            ephemeral=True,
+                        ),
+                        *alert_store,
+                    ]
 
         @callback(  # type: ignore[misc]
             Output("offcanvas-kontrollutslag", "is_open"),

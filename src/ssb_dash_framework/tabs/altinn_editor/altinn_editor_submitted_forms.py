@@ -3,14 +3,15 @@ import logging
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import callback
-from dash import html
 from dash import dcc
+from dash import html
 from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 
 from ...setup.variableselector import VariableSelector
+from ...utils import create_alert
 from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
@@ -107,7 +108,7 @@ class AltinnEditorSubmittedForms:
                 return True
             else:
                 return False
-        
+
         @callback(  # type: ignore[misc]
             Output("altinnedit-skjemaer", "options"),
             Output("altinnedit-skjemaer", "value"),
@@ -141,15 +142,13 @@ class AltinnEditorSubmittedForms:
                 return [], None
 
         @callback(  # type: ignore[misc]
-            Output(
-                "skjemadata-hovedtabell-updatestatus", "children", allow_duplicate=True
-            ),
+            Output("alert_store", "data", allow_duplicate=True),
             Input("altinnedit-table-skjemaer", "cellValueChanged"),
             State("altinnedit-skjemaer", "value"),
-            self.variable_selector.get_states(),
+            State("alert_store", "data") * self.create_callback_components("State"),
             prevent_initial_call=True,
         )
-        def set_skjema_to_edited(edited, skjema, *args):
+        def set_skjema_to_edited(edited, skjema, alert_store, *args):
             if edited is None or skjema is None or any(arg is None for arg in args):
                 return None
 
@@ -173,9 +172,23 @@ class AltinnEditorSubmittedForms:
                             **partition_args,
                         ),
                     )
-                    return f"Skjema {skjemaversjon} sin editeringsstatus er satt til {new_value}."
+                    return [
+                        create_alert(
+                            f"Skjema {skjemaversjon} sin editeringsstatus er satt til {new_value}.",
+                            "success",
+                            ephemeral=True,
+                        ),
+                        *alert_store,
+                    ]
                 except Exception:
-                    return "En feil skjedde under oppdatering av editeringsstatusen"
+                    return [
+                        create_alert(
+                            "En feil skjedde under oppdatering av editeringsstatusen",
+                            "danger",
+                            ephemeral=True,
+                        ),
+                        *alert_store,
+                    ]
             elif variabel == "aktiv":
                 try:
                     self.conn.query(
@@ -190,9 +203,23 @@ class AltinnEditorSubmittedForms:
                             **partition_args,
                         ),
                     )
-                    return f"Skjema {skjemaversjon} sin aktivstatus er satt til {new_value}."
+                    return [
+                        create_alert(
+                            f"Skjema {skjemaversjon} sin aktivstatus er satt til {new_value}.",
+                            "success",
+                            ephemeral=True,
+                        ),
+                        *alert_store,
+                    ]
                 except Exception:
-                    return "En feil skjedde under oppdatering av editeringsstatusen"
+                    return [
+                        create_alert(
+                            "En feil skjedde under oppdatering av aktivstatusen",
+                            "danger",
+                            ephemeral=True,
+                        ),
+                        *alert_store,
+                    ]
 
         @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemaer", "rowData"),
