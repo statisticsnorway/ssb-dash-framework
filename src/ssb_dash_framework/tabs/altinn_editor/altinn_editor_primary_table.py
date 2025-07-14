@@ -33,15 +33,14 @@ class AltinnEditorPrimaryTable:
         return html.Div(
             id="altinn-editor-primary-table",
             style={
-                "height": "100%",
+                "height": "100vh",
                 "width": "100%",
             },
             children=[
-                
                 dag.AgGrid(
                     id="altinnedit-table-skjemadata",
                     className="ag-theme-alpine-dark header-style-on-filter",
-                    style={"width": "100%", "height": "90%"},
+                    style={"width": "100%", "height": "90vh"},
                     defaultColDef={
                         "resizable": True,
                         "sortable": True,
