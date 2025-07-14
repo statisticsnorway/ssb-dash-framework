@@ -109,18 +109,15 @@ class AltinnEditorContact:
     def _create_layout(self):
         return html.Div(
             [
-                dbc.Col(
-                    dbc.Form(
-                        [
-                            dbc.Label("Kontaktinfo", className="mb-1"),
-                            dbc.Button(
-                                "Se kontaktinfo",
-                                id="altinnedit-contact-button",
-                                className="w-100",
-                            ),
-                        ]
-                    ),
-                    md=2,
+                dbc.Form(
+                    [
+                        dbc.Label("Kontaktinfo", className="mb-1"),
+                        dbc.Button(
+                            "Se kontaktinfo",
+                            id="altinnedit-contact-button",
+                            className="w-100",
+                        ),
+                    ]
                 ),
                 self.offcanvas_contact(),
             ]
