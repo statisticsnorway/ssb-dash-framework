@@ -1,19 +1,13 @@
 import logging
 
 import dash_bootstrap_components as dbc
-import pandas as pd
 from dash import callback
 from dash import dcc
 from dash import html
-from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
-from dash.dependencies import State
-from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
-from ...utils.alert_handler import create_alert
-from ...utils.eimerdb_helpers import create_partition_select
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 from .altinn_editor_submitted_forms import AltinnEditorSubmittedForms
 
@@ -56,6 +50,8 @@ class AltinnSkjemadataEditor:
             self.top_panels = []
         else:
             self.top_panels = top_panels
+
+        self.module_callbacks()
 
     def get_skjemadata_table_names(self):
         """Retrieves the names of all the skjemadata-tables in the eimerdb."""
@@ -178,6 +174,29 @@ class AltinnSkjemadataEditor:
     def layout(self):
         """Generates the layout for the Altinn Skjemadata Editor tab."""
         return self._create_layout()
+
+    def module_callbacks(self):
+        def generate_callback(unit):
+            @callback(  # type: ignore[misc]
+                Output(f"altinnedit-{unit}", "value"),
+                Input(f"var-{unit}", "value"),
+            )
+            def callback_function(value):
+                return value
+
+            return callback_function
+
+        for unit in self.time_units:
+            generate_callback(unit)
+
+        @callback(  # type: ignore[misc]
+            Output("altinnedit-ident", "value"),
+            Input("var-ident", "value"),
+        )
+        def aar_to_tab(ident):
+            return ident
+
+        return None
 
 
 class AltinnSkjemadataEditor2:
@@ -440,7 +459,7 @@ class AltinnSkjemadataEditor2:
             Output("altinnedit-ident", "value"),
             Input("var-ident", "value"),
         )
-        def aar_to_tab(ident, *args):
+        def aar_to_tab(ident):
             return ident
 
         @callback(  # type: ignore[misc]
