@@ -97,6 +97,38 @@ class AltinnEditorSubmittedForms:
                 return True
             else:
                 return False
+        
+        @callback(  # type: ignore[misc]
+            Output("altinnedit-skjemaer", "options"),
+            Output("altinnedit-skjemaer", "value"),
+            Input("altinnedit-ident", "value"),
+            self.variable_selector.get_inputs(),
+        )
+        def update_skjemaer(ident, *args):
+            if ident is None or any(arg is None for arg in args):
+                return [], None
+
+            try:
+                partition_args = dict(zip(self.time_units, args, strict=False))
+                skjemaer = self.conn.query(
+                    f"SELECT * FROM enheter WHERE ident = '{ident}'",
+                    create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=None,
+                        **partition_args,
+                    ),
+                )["skjemaer"][0]
+
+                skjemaer = [item.strip() for item in skjemaer.split(",")]
+                skjemaer_dd_options = [
+                    {"label": item, "value": item} for item in skjemaer
+                ]
+                options = skjemaer_dd_options
+                value = skjemaer_dd_options[0]["value"]
+                return options, value
+            except Exception as e:
+                logger.error(f"Error in update_skjemaer: {e}", exc_info=True)
+                return [], None
 
         @callback(  # type: ignore[misc]
             Output(
