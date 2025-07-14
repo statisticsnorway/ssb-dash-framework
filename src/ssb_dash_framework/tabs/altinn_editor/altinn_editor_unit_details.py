@@ -122,7 +122,9 @@ class AltinnEditorUnitDetails:
             Output("skjemadata-sidebar-enhetsinfo", "children"),
             Input("skjemadata-enhetsinfomodal-table1", "rowData"),
         )
-        def update_sidebar(enhetsinfo_rows):
+        def update_sidebar(
+            enhetsinfo_rows,
+        ):  # TODO: Reduce amount of information sent here
             if not enhetsinfo_rows:
                 return html.P("Ingen enhetsinfo tilgjengelig.")
 
