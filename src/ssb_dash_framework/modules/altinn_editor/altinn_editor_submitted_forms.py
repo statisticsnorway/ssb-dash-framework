@@ -1,14 +1,15 @@
 import logging
+from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import callback
 from dash import dcc
 from dash import html
-from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
@@ -18,8 +19,25 @@ logger = logging.getLogger(__name__)
 
 
 class AltinnEditorSubmittedForms:
+    """Module for viewing and selecting between submitted forms, and choose if they are active and/or checked."""
 
-    def __init__(self, time_units, conn, variable_selector_instance):
+    def __init__(
+        self,
+        time_units: list[str],
+        conn: object,
+        variable_selector_instance: VariableSelector,
+    ) -> None:
+        """Initializes the Altinn Editor submitted forms module.
+
+        Args:
+            time_units (list[str]): List of time units to be used in the module.
+            conn (object): Database connection object that must have a 'query' method.
+            variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
+
+        Raises:
+            TypeError: If variable_selector_instance is not an instance of VariableSelector.
+            AssertionError: If the connection object does not have a 'query' method.
+        """
         self.time_units = time_units
         assert hasattr(conn, "query"), "The database object must have a 'query' method."
         self.conn = conn
@@ -32,10 +50,11 @@ class AltinnEditorSubmittedForms:
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
-    def _is_valid(self):
+    def _is_valid(self) -> None:
         VariableSelector([], []).get_option("skjemaversjon")
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
+        """Creates the module layout."""
         return html.Div(
             [
                 dbc.Card(
@@ -68,7 +87,8 @@ class AltinnEditorSubmittedForms:
             ]
         )
 
-    def layout(self):
+    def layout(self) -> html.Div:
+        """Returns the module layout."""
         return self.module_layout
 
     def submitted_forms_modal(self) -> dbc.Modal:
@@ -96,19 +116,20 @@ class AltinnEditorSubmittedForms:
             size="xl",
         )
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
+        """Defines the callbacks for the module."""
+
         @callback(  # type: ignore[misc]
             Output("skjemadata-skjemaversjonsmodal", "is_open"),
             Input("altinnedit-skjemaversjon-button", "n_clicks"),
             State("skjemadata-skjemaversjonsmodal", "is_open"),
         )
-        def toggle_skjemaversjonsmodal(n_clicks, is_open):
+        def toggle_skjemaversjonsmodal(n_clicks: None | int, is_open: bool) -> bool:
             if n_clicks is None:
-                return no_update
-            if is_open == False:
+                raise PreventUpdate
+            if not is_open:
                 return True
-            else:
-                return False
+            return False
 
         @callback(  # type: ignore[misc]
             Output("altinnedit-skjemaer", "options"),
@@ -116,7 +137,9 @@ class AltinnEditorSubmittedForms:
             Input("altinnedit-ident", "value"),
             self.variable_selector.get_inputs(),
         )
-        def update_skjemaer(ident, *args):
+        def update_skjemaer(
+            ident: str, *args: Any
+        ) -> tuple[list[dict[str, str]], str | None]:
             if ident is None or any(arg is None for arg in args):
                 return [], None
 
@@ -150,13 +173,17 @@ class AltinnEditorSubmittedForms:
             self.variable_selector.get_states(),
             prevent_initial_call=True,
         )
-        def set_skjema_to_edited(edited, skjema, alert_store, *args):
+        def set_skjema_to_edited(
+            edited: list[dict[str, Any]],
+            skjema: str,
+            alert_store: list[dict[str, Any]],
+            *args: Any,
+        ) -> list[dict[str, Any]] | None:
             if edited is None or skjema is None or any(arg is None for arg in args):
                 return None
 
             partition_args = dict(zip(self.time_units, args, strict=False))
             variabel = edited[0]["colId"]
-            old_value = edited[0]["oldValue"]
             new_value = edited[0]["value"]
             skjemaversjon = edited[0]["data"]["skjemaversjon"]
 
@@ -222,6 +249,9 @@ class AltinnEditorSubmittedForms:
                         ),
                         *alert_store,
                     ]
+            else:
+                logging.debug(f"Tried to edit {variabel}, preventing update.")
+                raise PreventUpdate
 
         @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemaer", "rowData"),
@@ -230,7 +260,7 @@ class AltinnEditorSubmittedForms:
             State("altinnedit-ident", "value"),
             self.variable_selector.get_states(),
         )
-        def update_sidebar_table(skjema, ident, *args):
+        def update_sidebar_table(skjema: str, ident: str, *args: Any):
             logger.debug(f"Inputs. Skjema: {skjema}, Ident: {ident}, Args: {args}")
             if skjema is None or ident is None or any(arg is None for arg in args):
                 return None, None
@@ -265,9 +295,11 @@ class AltinnEditorSubmittedForms:
             Input("altinnedit-table-skjemaer", "rowData"),
             prevent_initial_call=True,
         )
-        def hovedside_update_valgt_rad(rows):
+        def hovedside_update_valgt_rad(
+            rows: list[dict[str, Any]],
+        ) -> list[dict[str, Any]]:
             if not rows:
-                return None
+                raise PreventUpdate
 
             selected_row = rows[0]
             return [selected_row]
@@ -276,9 +308,9 @@ class AltinnEditorSubmittedForms:
             Output("altinnedit-skjemaversjon", "value"),
             Input("altinnedit-table-skjemaer", "selectedRows"),
         )
-        def selected_skjemaversjon(selected_row):
+        def selected_skjemaversjon(selected_row: list[dict[str, Any]]) -> str:
             if not selected_row:
-                return None
+                raise PreventUpdate
 
             skjemaversjon = selected_row[0]["skjemaversjon"]
-            return skjemaversjon
+            return str(skjemaversjon)
