@@ -260,7 +260,9 @@ class AltinnEditorSubmittedForms:
             State("altinnedit-ident", "value"),
             self.variable_selector.get_states(),
         )
-        def update_sidebar_table(skjema: str, ident: str, *args: Any):
+        def update_sidebar_table(
+            skjema: str, ident: str, *args: Any
+        ) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
             logger.debug(f"Inputs. Skjema: {skjema}, Ident: {ident}, Args: {args}")
             if skjema is None or ident is None or any(arg is None for arg in args):
                 return None, None
