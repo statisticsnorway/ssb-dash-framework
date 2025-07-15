@@ -1,25 +1,45 @@
 import logging
+from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import pandas as pd
 from dash import callback
 from dash import html
-from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
 
 
 class AltinnEditorHistory:
+    """Module for viewing the editing history for the selected observation."""
 
-    def __init__(self, time_units, conn, variable_selector_instance):
-        """Initializes the Altinn Editor History module."""
-        assert hasattr(conn, "query"), "The database object must have a 'query' method."
+    def __init__(
+        self,
+        time_units: list[str],
+        conn: object,
+        variable_selector_instance: VariableSelector,
+    ) -> None:
+        """Initializes the Altinn Editor History module.
+
+        Args:
+            time_units (list[str]): List of time units to be used in the module.
+            conn (object): Database connection object that must have a 'query_changes' method.
+            variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
+
+        Raises:
+            TypeError: If variable_selector_instance is not an instance of VariableSelector.
+            AssertionError: If the connection object does not have a 'query_changes' method.
+        """
+        assert hasattr(
+            conn, "query_changes"
+        ), "The database object must have a 'query_changes' method."
         self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
@@ -30,7 +50,8 @@ class AltinnEditorHistory:
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
-    def history_modal(self):
+    def history_modal(self) -> dbc.Modal:
+        """Creates the history modal."""
         return dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle("Historikk")),
@@ -48,7 +69,8 @@ class AltinnEditorHistory:
             size="xl",
         )
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
+        """Creates the layout for the module."""
         return html.Div(
             [
                 dbc.Form(
@@ -68,22 +90,24 @@ class AltinnEditorHistory:
             ]
         )
 
-    def layout(self):
+    def layout(self) -> html.Div:
+        """Returns the layout of the module."""
         return self.module_layout
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
+        """Defines callbacks for the module."""
+
         @callback(  # type: ignore[misc]
             Output("skjemadata-historikkmodal", "is_open"),
             Input("altinn-history-button", "n_clicks"),
             State("skjemadata-historikkmodal", "is_open"),
         )
-        def toggle_historikkmodal(n_clicks, is_open):
+        def toggle_historikkmodal(n_clicks: None | int, is_open: bool) -> bool:
             if n_clicks is None:
-                return no_update
-            if is_open == False:
+                raise PreventUpdate
+            if not is_open:
                 return True
-            else:
-                return False
+            return False
 
         @callback(  # type: ignore[misc]
             Output("skjemadata-historikkmodal-table1", "rowData"),
@@ -94,7 +118,13 @@ class AltinnEditorHistory:
             State("altinnedit-skjemaer", "value"),
             self.variable_selector.get_states(),
         )
-        def historikktabell(is_open, tabell, selected_row, skjema, *args):
+        def historikktabell(
+            is_open: bool,
+            tabell: str,
+            selected_row: list[dict[str, int | float | str]],
+            skjema: str,
+            *args: Any,
+        ) -> tuple[list[dict[str, Any]] | None, list[dict[str, str | bool]] | None]:
             if is_open:
                 try:
                     partition_args = dict(zip(self.time_units, args, strict=False))
