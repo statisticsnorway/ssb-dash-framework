@@ -9,23 +9,20 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
-from ...setup.variableselector import VariableSelector
 from ...utils.alert_handler import create_alert
 from ...utils.eimerdb_helpers import create_partition_select
+from .altinn_component_base_class import AltinnComponentBaseClass
 
 logger = logging.getLogger(__name__)
 
 
-class AltinnEditorPrimaryTable:
+class AltinnEditorPrimaryTable(AltinnComponentBaseClass):
 
     def __init__(self, time_units, conn, variable_selector_instance) -> None:
         self.time_units = time_units
-        self.conn = conn
-        if not isinstance(variable_selector_instance, VariableSelector):
-            raise TypeError(
-                "variable_selector_instance must be an instance of VariableSelector"
-            )
-        self.variable_selector = variable_selector_instance
+        AltinnComponentBaseClass.__init__(
+            self, conn=conn, variable_selector_instance=variable_selector_instance
+        )
         self.module_layout = self._create_layout()
         self.module_callbacks()
 

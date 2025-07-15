@@ -45,6 +45,9 @@ class AltinnEditorSupportTables(AltinnComponentBaseClass):
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
             AssertionError: If the connection object does not have a 'query' method.
         """
+        AltinnComponentBaseClass.__init__(
+            self, conn=conn, variable_selector_instance=variable_selector_instance
+        )
         self.time_units = time_units
         self.module_layout = self._create_layout()
         self.module_callbacks()

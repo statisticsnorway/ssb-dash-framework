@@ -20,8 +20,8 @@ class AltinnEditorUnitDetails(AltinnComponentBaseClass):
     def __init__(
         self, time_units, conn, variable_connection, variable_selector_instance
     ):
-        super().__init__(
-            conn=conn, variable_selector_instance=variable_selector_instance
+        AltinnComponentBaseClass.__init__(
+            self, conn=conn, variable_selector_instance=variable_selector_instance
         )
         self.variable_connection = variable_connection
         self.time_units = time_units

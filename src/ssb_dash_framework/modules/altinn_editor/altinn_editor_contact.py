@@ -35,8 +35,8 @@ class AltinnEditorContact(AltinnComponentBaseClass):
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
         """
-        super().__init__(
-            conn=conn, variable_selector_instance=variable_selector_instance
+        AltinnComponentBaseClass.__init__(
+            self, conn=conn, variable_selector_instance=variable_selector_instance
         )
         self.time_units = time_units
         self.module_layout = self._create_layout()
