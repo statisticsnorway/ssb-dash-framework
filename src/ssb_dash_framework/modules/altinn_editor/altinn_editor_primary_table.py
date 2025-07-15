@@ -142,7 +142,7 @@ class AltinnEditorPrimaryTable:
                         },
                     )
                     df.drop(columns=["radnr"], inplace=True)
-                    columns = [
+                    columndefs = [
                         {
                             "headerName": col,
                             "field": col,
@@ -151,7 +151,7 @@ class AltinnEditorPrimaryTable:
                         }
                         for col in df.columns
                     ]
-                    return df.to_dict("records"), columns
+                    return df.to_dict("records"), columndefs
                 except Exception as e:
                     logger.error(
                         f"Error in hovedside_update_altinnskjema (long format): {e}",
@@ -172,7 +172,7 @@ class AltinnEditorPrimaryTable:
                             **partition_args,
                         ),
                     )
-                    columns = [
+                    columndefs = [
                         {
                             "headerName": col,
                             "field": col,
@@ -180,7 +180,7 @@ class AltinnEditorPrimaryTable:
                         }
                         for col in df.columns
                     ]
-                    return df.to_dict("records"), columns
+                    return df.to_dict("records"), columndefs
                 except Exception as e:
                     logger.error(
                         f"Error in hovedside_update_altinnskjema (non-long format): {e}",
