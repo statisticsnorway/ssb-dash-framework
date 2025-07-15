@@ -13,18 +13,17 @@ from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
-from .altinn_component_base_class import AltinnComponentBaseClass
 
 logger = logging.getLogger(__name__)
 
 
-class AltinnEditorComment(AltinnComponentBaseClass):
+class AltinnEditorComment:
     """Module for viewing and editing comments in the Altinn Editor."""
 
     def __init__(
         self,
         time_units: list[str],
-        conn,
+        conn: object,
         variable_selector_instance: VariableSelector,
     ) -> None:
         """Initializes the Altinn Editor Comment module.
@@ -37,9 +36,13 @@ class AltinnEditorComment(AltinnComponentBaseClass):
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
         """
-        AltinnComponentBaseClass.__init__(
-            self, conn=conn, variable_selector_instance=variable_selector_instance
-        )
+        assert hasattr(conn, "query"), "The database object must have a 'query' method."
+        self.conn = conn
+        if not isinstance(variable_selector_instance, VariableSelector):
+            raise TypeError(
+                "variable_selector_instance must be an instance of VariableSelector"
+            )
+        self.variable_selector = variable_selector_instance
         self.time_units = time_units
         self.module_layout = self._create_layout()
         self.module_callbacks()

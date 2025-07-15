@@ -10,19 +10,22 @@ from dash.dependencies import Output
 from dash.dependencies import State
 
 from ...utils.eimerdb_helpers import create_partition_select
-from .altinn_component_base_class import AltinnComponentBaseClass
 
 logger = logging.getLogger(__name__)
 
 
-class AltinnEditorUnitDetails(AltinnComponentBaseClass):
+class AltinnEditorUnitDetails:
 
     def __init__(
         self, time_units, conn, variable_connection, variable_selector_instance
     ):
-        AltinnComponentBaseClass.__init__(
-            self, conn=conn, variable_selector_instance=variable_selector_instance
-        )
+        assert hasattr(conn, "query"), "The database object must have a 'query' method."
+        self.conn = conn
+        if not isinstance(variable_selector_instance, VariableSelector):
+            raise TypeError(
+                "variable_selector_instance must be an instance of VariableSelector"
+            )
+        self.variable_selector = variable_selector_instance
         self.variable_connection = variable_connection
         self.time_units = time_units
         self.module_layout = self._create_layout()

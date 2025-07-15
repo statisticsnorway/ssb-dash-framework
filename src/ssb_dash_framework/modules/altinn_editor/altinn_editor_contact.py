@@ -11,12 +11,11 @@ from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import create_partition_select
-from .altinn_component_base_class import AltinnComponentBaseClass
 
 logger = logging.getLogger(__name__)
 
 
-class AltinnEditorContact(AltinnComponentBaseClass):
+class AltinnEditorContact:
     """Module for displaying contact information in the Altinn Editor."""
 
     def __init__(
@@ -35,9 +34,13 @@ class AltinnEditorContact(AltinnComponentBaseClass):
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
         """
-        AltinnComponentBaseClass.__init__(
-            self, conn=conn, variable_selector_instance=variable_selector_instance
-        )
+        assert hasattr(conn, "query"), "The database object must have a 'query' method."
+        self.conn = conn
+        if not isinstance(variable_selector_instance, VariableSelector):
+            raise TypeError(
+                "variable_selector_instance must be an instance of VariableSelector"
+            )
+        self.variable_selector = variable_selector_instance
         self.time_units = time_units
         self.module_layout = self._create_layout()
         self.module_callbacks()
