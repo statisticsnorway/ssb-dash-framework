@@ -235,7 +235,7 @@ class AltinnSkjemadataEditor:
             def callback_function(value: str) -> str:
                 return value
 
-            return callback_function  # TODO test removal
+            return callback_function
 
         for unit in self.time_units:
             generate_callback(unit)
