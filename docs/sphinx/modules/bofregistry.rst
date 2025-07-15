@@ -1,7 +1,7 @@
 bofregistry module
 ==================
 
-.. automodule:: ssb_dash_framework.tabs.bofregistry
+.. automodule:: ssb_dash_framework.modules.bofregistry
    :members:
    :undoc-members:
    :show-inheritance:

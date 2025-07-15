@@ -2,6 +2,7 @@ import base64
 import logging
 from abc import ABC
 from abc import abstractmethod
+from typing import ClassVar
 
 import dash_bootstrap_components as dbc
 from dapla import FileClient
@@ -12,6 +13,8 @@ from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
+from ..utils import TabImplementation
+from ..utils import WindowImplementation
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -21,11 +24,11 @@ class Aarsregnskap(ABC):
     """Module for displaying annual financial statements (Årsregnskap).
 
     Attributes:
-        label (str): Label for the module when initialized, displayed as "🧾 Årsregnskap".
+        label (str): Label for the module when initialized, displayed as "Årsregnskap".
     """
-    
-    _id_number = 0
-    
+
+    _id_number: ClassVar[int] = 0
+
     def __init__(
         self,
     ) -> None:
@@ -37,7 +40,8 @@ class Aarsregnskap(ABC):
         self.module_number = Aarsregnskap._id_number
         self.module_name = self.__class__.__name__
         Aarsregnskap._id_number += 1
-        self.label = "🧾 Årsregnskap"
+        self.label = "Årsregnskap"
+        self.icon = "🧾"
         self._is_valid()
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -132,7 +136,7 @@ class Aarsregnskap(ABC):
     def module_callbacks(self) -> None:
         """Registers Dash callbacks for the Årsregnskap module."""
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("tab-aarsregnskap-input-aar", "value"),
             Input("var-aar", "value"),
         )
@@ -147,7 +151,7 @@ class Aarsregnskap(ABC):
             """
             return aar
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("tab-aarsregnskap-input-orgnr", "value"),
             Input("var-foretak", "value"),
         )
@@ -162,7 +166,7 @@ class Aarsregnskap(ABC):
             """
             return orgnr
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("tab-aarsregnskap-iframe", "src"),
             Input("tab-aarsregnskap-input-aar", "value"),
             Input("tab-aarsregnskap-input-orgnr", "value"),
@@ -182,10 +186,12 @@ class Aarsregnskap(ABC):
             """
             if not aar or not orgnr:
                 raise PreventUpdate
+            path_to_file = f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/aarsregn/g{aar}/{orgnr}_{aar}.pdf"
+            logger.debug(f"Trying to open file: {path_to_file}")
             try:
                 fs = FileClient.get_gcs_file_system()
                 with fs.open(
-                    f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/aarsregn/g{aar}/{orgnr}_{aar}.pdf",
+                    path_to_file,
                     "rb",
                 ) as f:
                     pdf_bytes = f.read()
@@ -193,9 +199,28 @@ class Aarsregnskap(ABC):
                 pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
                 pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
             except FileNotFoundError:
+                logger.debug(f"Returning None. Could not open file: {path_to_file}")
                 return None
             pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
             pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
             return pdf_data_uri
 
         logger.debug("Generated callbacks")
+
+
+class AarsregnskapTab(TabImplementation, Aarsregnskap):
+    """AarsregnskapTab is an implementation of the Aarsregnskap module as a tab in a Dash application."""
+
+    def __init__(self) -> None:
+        """Initializes the AarsregnskapTab class."""
+        Aarsregnskap.__init__(self)
+        TabImplementation.__init__(self)
+
+
+class AarsregnskapWindow(WindowImplementation, Aarsregnskap):
+    """AarsregnskapWindow is an implementation of the Aarsregnskap module as a window in a Dash application."""
+
+    def __init__(self) -> None:
+        """Initializes the AarsregnskapWindow class."""
+        Aarsregnskap.__init__(self)
+        WindowImplementation.__init__(self)

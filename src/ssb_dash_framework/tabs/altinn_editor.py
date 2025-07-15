@@ -8,7 +8,9 @@ from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
+from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
 from .altinn_components import AltinnComponents
 
@@ -50,10 +52,18 @@ class AltinnSkjemadataEditor(AltinnComponents):
             time_units (list): A list of strings, where each string is a time unit.
         """
         super().__init__(time_units)
+        self.variableselector = VariableSelector(
+            selected_inputs=["ident", *time_units],
+            selected_states=[],  # Hard coding ident for now, using variableselector to re-use error message if ident or time_units is missing.
+        )
         self.label = "🗊 Altinn3-skjemadata"
         self.variable_connection = variable_connection
         self.conn = conn
+        self.is_valid()
         self.callbacks()
+
+    def is_valid(self):  # TODO add validation
+        pass
 
     def get_skjemadata_table_names(self):
         """Retrieves the names of all the skjemadata-tables in the eimerdb."""
@@ -102,7 +112,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
         for unit in self.time_units:
 
             def generate_callback(unit):
-                @callback(
+                @callback(  # type: ignore[misc]
                     Output(f"altinnedit-{unit}", "value"),
                     Input(f"var-{unit}", "value"),
                 )
@@ -113,14 +123,14 @@ class AltinnSkjemadataEditor(AltinnComponents):
 
             generate_callback(unit)
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-ident", "value"),
-            Input("var-ident", "value"),
+            self.variableselector.get_inputs(),
         )
-        def aar_to_tab(ident):
+        def aar_to_tab(ident, *args):
             return ident
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-enhetsinfomodal-table1", "rowData"),
             Output("skjemadata-enhetsinfomodal-table1", "columnDefs"),
             Input("altinnedit-ident", "value"),
@@ -128,6 +138,10 @@ class AltinnSkjemadataEditor(AltinnComponents):
         )
         def update_enhetsinfotabell(ident, *args):
             if ident is None or any(arg is None for arg in args):
+                logger.debug(
+                    f"update_enhetsinfotabell is lacking input, returning None. ident is {ident} Received args: %s",
+                    args,
+                )
                 return None, None
             try:
                 partition_args = dict(zip(self.time_units, args, strict=False))
@@ -138,10 +152,11 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 df.drop(columns=["row_id"], inplace=True)
                 columns = [{"headerName": col, "field": col} for col in df.columns]
                 return df.to_dict("records"), columns
-            except Exception:
+            except Exception as e:
+                logger.error(f"Error in update_enhetsinfotabell: {e}", exc_info=True)
                 return None, None
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-skjemaer", "options"),
             Output("altinnedit-skjemaer", "value"),
             Input("altinnedit-ident", "value"),
@@ -165,10 +180,11 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 options = skjemaer_dd_options
                 value = skjemaer_dd_options[0]["value"]
                 return options, value
-            except:
+            except Exception as e:
+                logger.error(f"Error in update_skjemaer: {e}", exc_info=True)
                 return [], None
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemaer", "rowData"),
             Output("altinnedit-table-skjemaer", "columnDefs"),
             Input("altinnedit-skjemaer", "value"),
@@ -196,10 +212,11 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     for col in df.columns
                 ]
                 return df.to_dict("records"), columns
-            except Exception:
+            except Exception as e:
+                logger.error(f"Error in update_sidebar_table: {e}", exc_info=True)
                 return None, None
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemaer", "selectedRows"),
             Input("altinnedit-table-skjemaer", "rowData"),
             prevent_initial_call=True,
@@ -211,7 +228,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             selected_row = rows[0]
             return [selected_row]
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-skjemaversjon", "value"),
             Input("altinnedit-table-skjemaer", "selectedRows"),
         )
@@ -222,7 +239,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             skjemaversjon = selected_row[0]["skjemaversjon"]
             return skjemaversjon
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("var-valgt_tabell", "value"),
             Input("altinnedit-option1", "value"),
         )
@@ -231,7 +248,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 return None
             return tabell
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemadata", "rowData"),
             Output("altinnedit-table-skjemadata", "columnDefs"),
             Input("altinnedit-skjemaversjon", "value"),
@@ -240,6 +257,13 @@ class AltinnSkjemadataEditor(AltinnComponents):
             *self.create_callback_components("State"),
         )
         def hovedside_update_altinnskjema(skjemaversjon, tabell, skjema, *args):
+            schema = self.conn.tables[tabell]["schema"]
+            columns = {field["name"] for field in schema}
+            if "variabel" in columns and "verdi" in columns:
+                long_format = True
+            else:
+                long_format = False
+
             if (
                 skjemaversjon is None
                 or tabell is None
@@ -247,46 +271,77 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 or any(arg is None for arg in args)
             ):
                 return None, None
-
-            try:
-                partition_args = dict(zip(self.time_units, args, strict=False))
-                df = self.conn.query(
-                    f"""
-                    SELECT t.*, subquery.radnr
-                    FROM {tabell} AS t
-                    JOIN (
-                        SELECT aar, radnr, tabell, variabel
-                        FROM datatyper
-                    ) AS subquery
-                    ON subquery.aar = t.aar AND subquery.variabel = t.variabel
-                    WHERE t.skjemaversjon = '{skjemaversjon}'
-                    AND subquery.tabell = '{tabell}'
-                    ORDER BY subquery.radnr ASC
-                    """,
-                    partition_select={
-                        tabell: self.create_partition_select(
+            if long_format == True:
+                try:
+                    partition_args = dict(zip(self.time_units, args, strict=False))
+                    df = self.conn.query(
+                        f"""
+                        SELECT t.*, subquery.radnr
+                        FROM {tabell} AS t
+                        JOIN (
+                            SELECT aar, radnr, tabell, variabel
+                            FROM datatyper
+                        ) AS subquery
+                        ON subquery.aar = t.aar AND subquery.variabel = t.variabel
+                        WHERE t.skjemaversjon = '{skjemaversjon}'
+                        AND subquery.tabell = '{tabell}'
+                        ORDER BY subquery.radnr ASC
+                        """,
+                        partition_select={
+                            tabell: self.create_partition_select(
+                                skjema=skjema, **partition_args
+                            ),
+                            "datatyper": self.create_partition_select(
+                                skjema=None, **partition_args
+                            ),
+                        },
+                    )
+                    df.drop(columns=["radnr"], inplace=True)
+                    columns = [
+                        {
+                            "headerName": col,
+                            "field": col,
+                            "hide": col == "row_id",
+                            "flex": 2 if col == "variabel" else 1,
+                        }
+                        for col in df.columns
+                    ]
+                    return df.to_dict("records"), columns
+                except Exception as e:
+                    logger.error(
+                        f"Error in hovedside_update_altinnskjema (long format): {e}",
+                        exc_info=True,
+                    )
+                    return None, None
+            else:
+                try:
+                    partition_args = dict(zip(self.time_units, args, strict=False))
+                    df = self.conn.query(
+                        f"""
+                        SELECT * FROM {tabell}
+                        WHERE skjemaversjon = '{skjemaversjon}'
+                        """,
+                        partition_select=self.create_partition_select(
                             skjema=skjema, **partition_args
                         ),
-                        "datatyper": self.create_partition_select(
-                            skjema=None, **partition_args
-                        ),
-                    },
-                )
-                df.drop(columns=["radnr"], inplace=True)
-                columns = [
-                    {
-                        "headerName": col,
-                        "field": col,
-                        "hide": col == "row_id",
-                        "flex": 2 if col == "variabel" else 1,
-                    }
-                    for col in df.columns
-                ]
-                return df.to_dict("records"), columns
-            except Exception:
-                return None, None
+                    )
+                    columns = [
+                        {
+                            "headerName": col,
+                            "field": col,
+                            "hide": col == "row_id",
+                        }
+                        for col in df.columns
+                    ]
+                    return df.to_dict("records"), columns
+                except Exception as e:
+                    logger.error(
+                        f"Error in hovedside_update_altinnskjema (non-long format): {e}",
+                        exc_info=True,
+                    )
+                    return None, None
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output(
                 "skjemadata-hovedtabell-updatestatus", "children", allow_duplicate=True
             ),
@@ -336,7 +391,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 except Exception:
                     return "En feil skjedde under oppdatering av editeringsstatusen"
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("var-statistikkvariabel", "value"),
             Input("altinnedit-table-skjemadata", "cellClicked"),
             State("altinnedit-table-skjemadata", "rowData"),
@@ -346,7 +401,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 return no_update
             return row_data[click["rowIndex"]]["variabel"]
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("offcanvas-kontrollutslag", "is_open"),
             Input("altinnedit-option5", "n_clicks"),
             State("offcanvas-kontrollutslag", "is_open"),
@@ -359,7 +414,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-kontaktinfocanvas", "is_open"),
             Input("altinnedit-option2", "n_clicks"),
             State("skjemadata-kontaktinfocanvas", "is_open"),
@@ -372,7 +427,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-historikkmodal", "is_open"),
             Input("altinnedit-option4", "n_clicks"),
             State("skjemadata-historikkmodal", "is_open"),
@@ -385,7 +440,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-skjemaversjonsmodal", "is_open"),
             Input("altinnedit-skjemaversjon-button", "n_clicks"),
             State("skjemadata-skjemaversjonsmodal", "is_open"),
@@ -398,7 +453,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-kommentarmodal", "is_open"),
             Input("altinnedit-option6", "n_clicks"),
             State("skjemadata-kommentarmodal", "is_open"),
@@ -411,7 +466,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("altinnedit-kommentarmodal-table1", "rowData"),
             Output("altinnedit-kommentarmodal-table1", "columnDefs"),
             Input("altinnedit-option6", "n_clicks"),
@@ -434,7 +489,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             ]
             return df.to_dict("records"), columns
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-kommentarmodal-aar-kommentar", "value"),
             Input("altinnedit-kommentarmodal-table1", "selectedRows"),
         )
@@ -445,7 +500,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 kommentar = ""
             return kommentar
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Input("skjemadata-kommentarmodal-savebutton", "n_clicks"),
             State("altinnedit-kommentarmodal-table1", "selectedRows"),
@@ -485,7 +540,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     ]
                 return alert_store
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-hjelpetabellmodal", "is_open"),
             Input("altinnedit-option3", "n_clicks"),
             State("skjemadata-hjelpetabellmodal", "is_open"),
@@ -498,7 +553,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-enhetsinfomodal", "is_open"),
             Input("altinnedit-enhetsinfo-button", "n_clicks"),
             State("skjemadata-enhetsinfomodal", "is_open"),
@@ -511,7 +566,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             else:
                 return False
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-hjelpetabellmodal-table1", "rowData"),
             Output("skjemadata-hjelpetabellmodal-table1", "columnDefs"),
             Input("skjemadata-hjelpetabellmodal-tabs", "active_tab"),
@@ -624,10 +679,11 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         for col in df_wide.columns
                     ]
                     return df_wide.to_dict("records"), columns
-                except Exception:
+                except Exception as e:
+                    logger.error(f"Error in hjelpetabeller: {e}", exc_info=True)
                     return None, None
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("offcanvas-kontrollutslag-table1", "rowData"),
             Output("offcanvas-kontrollutslag-table1", "columnDefs"),
             Output("altinnedit-option5", "style"),
@@ -671,10 +727,11 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     button_text = "Se kontrollutslag"
 
                 return df.to_dict("records"), columns, style, button_text
-            except Exception:
+            except Exception as e:
+                logger.error(f"Error in kontrollutslagstabell: {e}", exc_info=True)
                 return None, None, None, "Se kontrollutslag"
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-historikkmodal-table1", "rowData"),
             Output("skjemadata-historikkmodal-table1", "columnDefs"),
             Input("skjemadata-historikkmodal", "is_open"),
@@ -684,7 +741,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             *self.create_callback_components("State"),
         )
         def historikktabell(is_open, tabell, selected_row, skjema, *args):
-            if is_open == True:
+            if is_open:
                 try:
                     partition_args = dict(zip(self.time_units, args, strict=False))
                     skjemaversjon = selected_row[0]["skjemaversjon"]
@@ -707,10 +764,13 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         for col in df.columns
                     ]
                     return df.to_dict("records"), columns
-                except Exception:
+                except Exception as e:
+                    logger.error(f"Error in historikktabell: {e}", exc_info=True)
                     return None, None
+            else:
+                raise PreventUpdate
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Input("altinnedit-table-skjemadata", "cellValueChanged"),
             State("altinnedit-option1", "value"),
@@ -720,7 +780,9 @@ class AltinnSkjemadataEditor(AltinnComponents):
             prevent_initial_call=True,
         )
         def update_table(edited, tabell, skjema, alert_store, *args):
-            if edited is not None:
+            if edited is None:
+                raise PreventUpdate
+            else:
                 partition_args = dict(zip(self.time_units, args, strict=False))
                 tables_editable_dict = {}
                 data_dict = self.conn.tables
@@ -736,12 +798,19 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 table_editable_dict = tables_editable_dict[tabell]
                 edited_column = edited[0]["colId"]
 
+                schema = self.conn.tables[tabell]["schema"]
+                columns = {field["name"] for field in schema}
+                if "variabel" in columns and "verdi" in columns:
+                    long_format = True
+                else:
+                    long_format = False
+
                 if table_editable_dict[edited_column] == True:
                     old_value = edited[0]["oldValue"]
                     new_value = edited[0]["value"]
                     row_id = edited[0]["data"]["row_id"]
                     ident = edited[0]["data"]["ident"]
-                    variabel = edited[0]["data"]["variabel"]
+
                     try:
                         self.conn.query(
                             f"""UPDATE {tabell}
@@ -752,15 +821,25 @@ class AltinnSkjemadataEditor(AltinnComponents):
                                 skjema=skjema, **partition_args
                             ),
                         )
-
-                        alert_store = [
-                            create_alert(
-                                f"row_id: {row_id}, ident: {ident}, variabel: {variabel} er oppdatert fra {old_value} til {new_value}!",
-                                "success",
-                                ephemeral=True,
-                            ),
-                            *alert_store,
-                        ]
+                        if long_format == True:
+                            variabel = edited[0]["data"]["variabel"]
+                            alert_store = [
+                                create_alert(
+                                    f"ident: {ident}, variabel: {variabel} er oppdatert fra {old_value} til {new_value}!",
+                                    "success",
+                                    ephemeral=True,
+                                ),
+                                *alert_store,
+                            ]
+                        else:
+                            alert_store = [
+                                create_alert(
+                                    f"ident: {ident}, {edited_column} er oppdatert fra {old_value} til {new_value}!",
+                                    "success",
+                                    ephemeral=True,
+                                ),
+                                *alert_store,
+                            ]
                     except Exception as e:
                         alert_store = [
                             create_alert(
@@ -772,9 +851,9 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         ]
                     return alert_store
                 else:
-                    return f"Kolonna {edited_column} kan ikke editeres!"
+                    return f"Kolonnen {edited_column} kan ikke editeres!"
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-sidebar-enhetsinfo", "children"),
             Input("skjemadata-enhetsinfomodal-table1", "rowData"),
         )
@@ -792,7 +871,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
 
         for output_id, variable in self.variable_connection.items():
 
-            @callback(
+            @callback(  # type: ignore[misc]
                 Output(output_id, "value", allow_duplicate=True),
                 Input("skjemadata-enhetsinfomodal-table1", "rowData"),
                 prevent_initial_call=True,
@@ -805,7 +884,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         return row.get("verdi", "")
                 return ""
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("var-altinnskjema", "value"),
             Input("altinnedit-skjemaer", "value"),
         )
@@ -814,7 +893,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 return no_update
             return skjema
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemadata-kontaktinfo-navn", "value"),
             Output("skjemadata-kontaktinfo-epost", "value"),
             Output("skjemadata-kontaktinfo-telefon", "value"),
@@ -838,6 +917,8 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     skjema=skjema, **partition_args
                 ),
             )
+            if df_skjemainfo.empty:
+                logger.info("Kontaktinfo table for ")
             kontaktperson = df_skjemainfo["kontaktperson"][0]
             epost = df_skjemainfo["epost"][0]
             telefon = df_skjemainfo["telefon"][0]

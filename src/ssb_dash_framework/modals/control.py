@@ -44,6 +44,9 @@ class Control:
         Attributes Set:
             ident (str): The resolved name of the identification variable.
         """
+        logger.warning(
+            f"{self.__class__.__name__} is under development and may change in future releases."
+        )
         self.ident = ident_options[0][ident]
         self.callbacks()
 
@@ -104,7 +107,7 @@ class Control:
     def callbacks(self) -> None:
         """Sets up interactivity for the control modal, including linking table clicks and navigation back to the main view."""
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("control-modal", "is_open"),
             Input("sidebar-control-button", "n_clicks"),
             State("control-modal", "is_open"),
@@ -123,7 +126,7 @@ class Control:
                 return not is_open
             return is_open
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("control-table-detailed", "filterModel"),
             Input("control-table-overview", "cellClicked"),
             State("control-table-overview", "rowData"),
@@ -159,7 +162,7 @@ class Control:
                 }
             }
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output(self.ident[0], self.ident[1]),
             Input("control-table-detailed", "cellClicked"),
             State("control-table-detailed", "rowData"),

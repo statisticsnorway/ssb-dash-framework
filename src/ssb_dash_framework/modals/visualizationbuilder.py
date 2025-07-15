@@ -35,6 +35,9 @@ class VisualizationBuilder:
         Raises:
             TypeError: If database object does not have query method.
         """
+        logger.warning(
+            f"{self.__class__.__name__} is under development and may change in future releases."
+        )
         if not hasattr(database, "query"):
             raise TypeError("The provided object does not have a 'query' method.")
         self.database = database
@@ -189,7 +192,7 @@ class VisualizationBuilder:
             - `update_graph`: Generates graphs based on selected columns and graph type.
         """
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("sql-modal", "is_open"),
             Input("sidebar-sql-button", "n_clicks"),
             State("sql-modal", "is_open"),
@@ -208,7 +211,7 @@ class VisualizationBuilder:
                 return not is_open
             return is_open
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("sql-output-table", "rowData"),
             Output("sql-output-table", "columnDefs"),
             Output("sql-x", "options"),
@@ -246,7 +249,7 @@ class VisualizationBuilder:
             columns = [{"headerName": col, "field": col} for col in df.columns]
             return df.to_dict("records"), columns, options, options, options
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("sql-graph1", "figure"),
             Input("sql-x", "value"),
             Input("sql-y", "value"),
