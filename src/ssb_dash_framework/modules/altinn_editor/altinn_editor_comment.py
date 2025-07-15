@@ -13,6 +13,7 @@ from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
+from ...utils.type_helpers import DatabaseConnection
 
 logger = logging.getLogger(__name__)
 
@@ -23,25 +24,19 @@ class AltinnEditorComment:
     def __init__(
         self,
         time_units: list[str],
-        conn: object,
+        conn: DatabaseConnection,
         variable_selector_instance: VariableSelector,
     ) -> None:
         """Initializes the Altinn Editor Comment module.
 
         Args:
             time_units (list[str]): List of time units to be used in the module.
-            conn (object): Database connection object that must have a 'query' method.
+            conn (DatabaseConnection): Database connection object that must have a 'query' method.
             variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
-            AssertionError: If the connection object does not have a 'query' method.
         """
-        assert hasattr(
-            conn, "query"
-        ), (  # Necessary because of mypy
-            "The database object must have a 'query' method."
-        )
         self.time_units = time_units
         self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):

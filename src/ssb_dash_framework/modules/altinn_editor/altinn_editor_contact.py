@@ -1,22 +1,40 @@
 import logging
+from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import callback
 from dash import html
-from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import create_partition_select
+from ...utils.type_helpers import DatabaseConnection
 
 logger = logging.getLogger(__name__)
 
 
 class AltinnEditorContact:
+    """Module for displaying contact information in the Altinn Editor."""
 
-    def __init__(self, time_units, conn, variable_selector_instance):
+    def __init__(
+        self,
+        time_units: list[str],
+        conn: DatabaseConnection,
+        variable_selector_instance: VariableSelector,
+    ) -> None:
+        """Initializes the Altinn Editor Contact module.
+
+        Args:
+            time_units (list[str]): List of time units to be used in the module.
+            conn (DatabaseConnection): Database connection object that must have a 'query' method.
+            variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
+
+        Raises:
+            TypeError: If variable_selector_instance is not an instance of VariableSelector.
+        """
         self.time_units = time_units
         self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
@@ -106,7 +124,8 @@ class AltinnEditorContact:
             ]
         )
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
+        """Creates the layout for the Altinn Editor Contact module."""
         return html.Div(
             [
                 dbc.Form(
@@ -123,23 +142,24 @@ class AltinnEditorContact:
             ]
         )
 
-    def layout(self):
+    def layout(self) -> html.Div:
+        """Returns the layout for the Altinn Editor Contact module."""
         return self.module_layout
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
+        """Defines the callbacks for the Altinn Editor Contact module."""
 
         @callback(  # type: ignore[misc]
             Output("skjemadata-kontaktinfocanvas", "is_open"),
             Input("altinnedit-contact-button", "n_clicks"),
             State("skjemadata-kontaktinfocanvas", "is_open"),
         )
-        def toggle_offcanvas_kontaktinfo(n_clicks, is_open):
+        def toggle_offcanvas_kontaktinfo(n_clicks: None | int, is_open: bool) -> bool:
             if n_clicks is None:
-                return no_update
-            if is_open == False:
+                raise PreventUpdate
+            if not is_open:
                 return True
-            else:
-                return False
+            return False
 
         @callback(  # type: ignore[misc]
             Output("skjemadata-kontaktinfo-navn", "value"),
@@ -153,7 +173,9 @@ class AltinnEditorContact:
             self.variable_selector.get_states(),
             prevent_initial_call=True,
         )
-        def kontaktinfocanvas(n_clicks, skjemaversjon, skjema, *args):
+        def kontaktinfocanvas(
+            n_clicks: None | int, skjemaversjon: str, skjema: str, *args: Any
+        ) -> tuple[str, str, str, str, str]:
             partition_args = dict(zip(self.time_units, args, strict=False))
             df_skjemainfo = self.conn.query(
                 f"""SELECT
@@ -172,5 +194,4 @@ class AltinnEditorContact:
             telefon = df_skjemainfo["telefon"][0]
             kommentar1 = df_skjemainfo["kommentar_kontaktinfo"][0]
             kommentar2 = df_skjemainfo["kommentar_krevende"][0]
-            button_text = "kontaktinfo"
             return kontaktperson, epost, telefon, kommentar1, kommentar2
