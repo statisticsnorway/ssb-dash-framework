@@ -1,15 +1,16 @@
 import logging
 import re
+from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import callback
 from dash import dcc
 from dash import html
-from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import SQL_COLUMN_CONCAT
@@ -19,8 +20,35 @@ logger = logging.getLogger(__name__)
 
 
 class AltinnEditorSupportTables:
+    """This module provides supporting tables for the Altinn editor.
 
-    def __init__(self, time_units, conn, variable_selector_instance):
+    It adds a button that opens a modal with tabs containing tables with extra informatiion.
+
+    Note:
+        Adding your own supporting tables is not supported at this time.
+    """
+
+    def __init__(
+        self,
+        time_units: list[str],
+        conn: object,
+        variable_selector_instance: dict[str, str],
+    ) -> None:
+        """Initializes the AltinnEditorSupportTables module.
+
+        Args:
+            time_units (list[str]): List of time units to be used in the module.
+            conn (object): Database connection object.
+            variable_selector_instance (VariableSelector): Instance of VariableSelector for variable selection.
+
+        Raises:
+            TypeError: If variable_selector_instance is not an instance of VariableSelector.
+        """
+        assert hasattr(
+            conn, "query"
+        ), (  # Necessary because of mypy
+            "The database object must have a 'query' method."
+        )
         self.time_units = time_units
         self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
@@ -31,8 +59,8 @@ class AltinnEditorSupportTables:
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
-    def support_tables_modal(self):
-        """Return a modal component containing tab content. Future versions may support adding new tabs."""
+    def support_tables_modal(self) -> dbc.Modal:
+        """Return a modal component containing tab content."""
         hjelpetabellmodal = dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle("Hjelpetabeller")),
@@ -77,6 +105,7 @@ class AltinnEditorSupportTables:
             is_open=False,
             size="xl",
         )
+        logger.debug("Created support tables modal")
         return hjelpetabellmodal
 
     def create_ag_grid(self, component_id: str) -> dag.AgGrid:
@@ -107,12 +136,14 @@ class AltinnEditorSupportTables:
             ]
         )
 
-    def layout(self):
+    def layout(self) -> html.Div:
+        """Returns the layout for the Altinn Editor Support Tables module."""
         return self.module_layout
 
-    def update_partition_select(self, partition_dict, key_to_update):
-        """Updates the dictionary by adding the previous value (N-1)
-        to the list for a single specified key.
+    def update_partition_select(
+        self, partition_dict: dict[str, list[int]], key_to_update: str
+    ) -> dict[str, list[int]]:
+        """Updates the dictionary by adding the previous value (N-1) to the list for a single specified key.
 
         :param partition_dict: Dictionary containing lists of values
         :param key_to_update: Key to update by appending (N-1)
@@ -123,19 +154,20 @@ class AltinnEditorSupportTables:
             partition_dict[key_to_update].append(int(min_value) - 1)
         return partition_dict
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
+        """Registers the callbacks for the Altinn Editor Support Tables module."""
+
         @callback(  # type: ignore[misc]
             Output("skjemadata-hjelpetabellmodal", "is_open"),
             Input("altinn-support-tables-button", "n_clicks"),
             State("skjemadata-hjelpetabellmodal", "is_open"),
         )
-        def toggle_hjelpetabellmodal(n_clicks, is_open):
+        def toggle_hjelpetabellmodal(n_clicks: None | int, is_open: bool) -> bool:
             if n_clicks is None:
-                return no_update
-            if is_open == False:
+                raise PreventUpdate
+            if not is_open:
                 return True
-            else:
-                return False
+            return False
 
         @callback(  # type: ignore[misc]
             Output("skjemadata-hjelpetabellmodal-table1", "rowData"),
@@ -150,8 +182,14 @@ class AltinnEditorSupportTables:
             prevent_initial_call=True,
         )
         def hjelpetabeller(
-            tab, selected_row, rullerende_var, tabell, ident, skjema, *args
-        ):
+            tab: str,
+            selected_row: list[dict[str, int | float | str]],
+            rullerende_var: str,
+            tabell: str,
+            ident: str,
+            skjema: str,
+            *args: Any,
+        ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
             if tab == "modal-hjelpetabeller-tab1":
                 try:
                     partition_args = dict(zip(self.time_units, args, strict=False))
@@ -168,7 +206,6 @@ class AltinnEditorSupportTables:
                     updated_partition_select = self.update_partition_select(
                         partition_select, rullerende_var
                     )
-                    skjemaversjon = selected_row[0]["skjemaversjon"]
                     column_name_expr_outer = SQL_COLUMN_CONCAT.join(
                         [f"s.{unit}" for unit in self.time_units]
                     )
@@ -231,7 +268,7 @@ class AltinnEditorSupportTables:
 
                     df_wide.columns.name = None
 
-                    def extract_numeric_sum(col_name):
+                    def extract_numeric_sum(col_name: str) -> int | float:
                         numbers = list(map(int, re.findall(r"\d+", col_name)))
                         return sum(numbers) if numbers else 0
 
@@ -256,6 +293,6 @@ class AltinnEditorSupportTables:
                     return df_wide.to_dict("records"), columns
                 except Exception as e:
                     logger.error(f"Error in hjelpetabeller: {e}", exc_info=True)
-                    return None, None
+                    raise PreventUpdate from e
             else:
-                logger.debug("HVA FAEN")
+                raise PreventUpdate
