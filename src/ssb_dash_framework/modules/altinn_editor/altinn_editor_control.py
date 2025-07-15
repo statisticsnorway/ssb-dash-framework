@@ -1,23 +1,41 @@
 import logging
+from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import callback
 from dash import html
-from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import create_partition_select
+from ...utils.type_helpers import DatabaseConnection
 
 logger = logging.getLogger(__name__)
 
 
 class AltinnEditorControl:
+    """Module for viewing control results for the selected observation in the Altinn Editor."""
 
-    def __init__(self, time_units, conn, variable_selector_instance):
+    def __init__(
+        self,
+        time_units: list[str],
+        conn: DatabaseConnection,
+        variable_selector_instance: VariableSelector,
+    ) -> None:
+        """Initializes the Altinn Editor Control module.
+
+        Args:
+            time_units (list[str]): List of time units to be used in the module.
+            conn (DatabaseConnection): Database connection object that must have a 'query' method.
+            variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
+
+        Raises:
+            TypeError: If variable_selector_instance is not an instance of VariableSelector.
+        """
         self.time_units = time_units
         self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
@@ -29,6 +47,7 @@ class AltinnEditorControl:
         self.module_callbacks()
 
     def _create_layout(self) -> html.Div:
+        """Creates the layout for the Altinn Editor Control module."""
         return html.Div(
             [
                 dbc.Form(
@@ -45,7 +64,8 @@ class AltinnEditorControl:
             ]
         )
 
-    def layout(self):
+    def layout(self) -> html.Div:
+        """Returns the layout of the Altinn Editor Control module."""
         return self.module_layout
 
     def offcanvas_kontrollutslag(self) -> html.Div:
@@ -71,19 +91,20 @@ class AltinnEditorControl:
             ]
         )
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
+        """Defines the callbacks for the Altinn Editor Control module."""
+
         @callback(  # type: ignore[misc]
             Output("offcanvas-control", "is_open"),
             Input("altinnedit-option5", "n_clicks"),
             State("offcanvas-control", "is_open"),
         )
-        def toggle_offcanvas_kontrollutslag(n_clicks, is_open):
+        def toggle_offcanvas_kontrollutslag(n_clicks: None | int, is_open: bool):
             if n_clicks is None:
-                return no_update
-            if is_open == False:
+                raise PreventUpdate
+            if not is_open:
                 return True
-            else:
-                return False
+            return False
 
         @callback(  # type: ignore[misc]
             Output("offcanvas-control-table1", "rowData"),
@@ -94,7 +115,9 @@ class AltinnEditorControl:
             State("altinnedit-skjemaer", "value"),
             self.variable_selector.get_states(),
         )
-        def kontrollutslagstabell(selected_row, skjema, *args):
+        def kontrollutslagstabell(
+            selected_row: list[dict[str, int | float | str]], skjema: str, *args: Any
+        ):
             if (
                 selected_row is None
                 or len(selected_row) == 0
