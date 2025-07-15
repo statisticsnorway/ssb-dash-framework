@@ -13,7 +13,6 @@ from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
-from ...utils.type_helpers import DatabaseConnection
 from .altinn_component_base_class import AltinnComponentBaseClass
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,7 @@ class AltinnEditorComment(AltinnComponentBaseClass):
     def __init__(
         self,
         time_units: list[str],
-        conn: DatabaseConnection,
+        conn,
         variable_selector_instance: VariableSelector,
     ) -> None:
         """Initializes the Altinn Editor Comment module.

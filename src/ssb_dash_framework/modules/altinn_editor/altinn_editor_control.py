@@ -12,7 +12,6 @@ from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import create_partition_select
-from ...utils.type_helpers import DatabaseConnection
 from .altinn_component_base_class import AltinnComponentBaseClass
 
 logger = logging.getLogger(__name__)
@@ -24,7 +23,7 @@ class AltinnEditorControl(AltinnComponentBaseClass):
     def __init__(
         self,
         time_units: list[str],
-        conn: DatabaseConnection,
+        conn,
         variable_selector_instance: VariableSelector,
     ) -> None:
         """Initializes the Altinn Editor Control module.
