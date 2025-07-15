@@ -21,10 +21,28 @@ logger = logging.getLogger(__name__)
 
 
 class AltinnSkjemadataEditor:
+    """A fully functional module for editing Altinn forms.
+
+    This module contains submodules with specific functionality.
+    """
 
     def __init__(
-        self, time_units, conn, variable_connection, sidepanels=None, top_panels=None
+        self,
+        time_units: list[str],
+        conn: object,
+        variable_connection: dict[str, str],
+        sidepanels: None = None,
+        top_panels: None = None,
     ) -> None:
+        """Initialize the Altinn Skjemadata Editor module.
+
+        Args:
+            time_units (list[str]): List of time units to be used in the module.
+            conn (object): Database connection object that must have a 'query' method.
+            variable_connection (dict[str, str]): Dict containing the name of characteristics from the dataset as keys and the variable selector name associated with it as value.
+            sidepanels (None): Later might be used for customizing sidepanel modules.
+            top_panels (None): Later might be used for customizing top-panel modules.
+        """
         self.icon = "🗊"
         self.label = "Data editor"
 
@@ -91,7 +109,7 @@ class AltinnSkjemadataEditor:
 
         self.module_callbacks()
 
-    def get_skjemadata_table_names(self):
+    def get_skjemadata_table_names(self) -> list[dict[str, str]]:
         """Retrieves the names of all the skjemadata-tables in the eimerdb."""
         all_tables = list(self.conn.tables.keys())
         skjemadata_tables = [
@@ -99,7 +117,8 @@ class AltinnSkjemadataEditor:
         ]
         return [{"label": item, "value": item} for item in skjemadata_tables]
 
-    def skjemadata_table_selector(self):
+    def skjemadata_table_selector(self) -> dbc.Col:
+        """Makes a dropdown for selecting which 'skjemadata' table to view."""
         skjemadata_table_names = self.get_skjemadata_table_names()
         return dbc.Col(
             dbc.Form(
@@ -204,17 +223,19 @@ class AltinnSkjemadataEditor:
             ],
         )
 
-    def layout(self):
+    def layout(self) -> html.Div:
         """Generates the layout for the Altinn Skjemadata Editor tab."""
         return self._create_layout()
 
-    def module_callbacks(self):
-        def generate_callback(unit):
+    def module_callbacks(self) -> None:
+        """Defines the callbacks for the module."""
+
+        def generate_callback(unit: str):
             @callback(  # type: ignore[misc]
                 Output(f"altinnedit-{unit}", "value"),
                 Input(f"var-{unit}", "value"),
             )
-            def callback_function(value):
+            def callback_function(value: str) -> str:
                 return value
 
             return callback_function
@@ -226,7 +247,5 @@ class AltinnSkjemadataEditor:
             Output("altinnedit-ident", "value"),
             Input("var-ident", "value"),
         )
-        def aar_to_tab(ident):
+        def aar_to_tab(ident: str) -> str:
             return ident
-
-        return None
