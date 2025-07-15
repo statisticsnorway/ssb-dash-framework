@@ -43,6 +43,7 @@ class AltinnEditorSupportTables:
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
+            AssertionError: If the connection object does not have a 'query' method.
         """
         assert hasattr(
             conn, "query"
@@ -173,7 +174,9 @@ class AltinnEditorSupportTables:
             Output("skjemadata-hjelpetabellmodal-table1", "rowData"),
             Output("skjemadata-hjelpetabellmodal-table1", "columnDefs"),
             Input("skjemadata-hjelpetabellmodal-tabs", "active_tab"),
-            Input("altinnedit-table-skjemaer", "selectedRows"),
+            Input(
+                "altinnedit-table-skjemaer", "selectedRows"
+            ),  # TODO: Is this even needed?
             Input("skjemadata-hjelpetablellmodal-dd", "value"),
             State("altinnedit-option1", "value"),
             State("altinnedit-ident", "value"),
