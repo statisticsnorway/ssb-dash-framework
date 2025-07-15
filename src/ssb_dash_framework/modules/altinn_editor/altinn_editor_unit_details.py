@@ -1,24 +1,43 @@
 import logging
+from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import callback
 from dash import html
-from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
+from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
 
 
 class AltinnEditorUnitDetails:
+    """Module for viewing details about the selected unit."""
 
     def __init__(
-        self, time_units, conn, variable_connection, variable_selector_instance
-    ):
+        self,
+        time_units: list[str],
+        conn: object,
+        variable_selector_instance: VariableSelector,
+        variable_connection: dict[str, str],
+    ) -> None:
+        """Initializes the Altinn Editor Unit Details module.
+
+        Args:
+            time_units (list[str]): List of time units to be used in the module.
+            conn (object): Database connection object that must have a 'query' method.
+            variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
+            variable_connection (dict[str, str]): Dict containing the name of characteristics from the dataset as keys and the variable selector name associated with it as value.
+
+        Raises:
+            TypeError: If variable_selector_instance is not an instance of VariableSelector.
+            AssertionError: If the connection object does not have a 'query' method.
+        """
         assert hasattr(conn, "query"), "The database object must have a 'query' method."
         self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
@@ -31,7 +50,7 @@ class AltinnEditorUnitDetails:
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
-    def unit_details_modal(self):
+    def unit_details_modal(self) -> dbc.Modal:
         """Returns a modal component containing a table with enhetsinfo."""
         return dbc.Modal(
             [
@@ -50,7 +69,8 @@ class AltinnEditorUnitDetails:
             size="xl",
         )
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
+        """Creates the layout of the module."""
         return html.Div(
             [
                 dbc.Card(
@@ -71,17 +91,22 @@ class AltinnEditorUnitDetails:
             ]
         )
 
-    def layout(self):
+    def layout(self) -> html.Div:
+        """Returns the layout of the module."""
         return self.module_layout
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
+        """Defines the callbacks for the module."""
+
         @callback(  # type: ignore[misc]
             Output("skjemadata-enhetsinfomodal-table1", "rowData"),
             Output("skjemadata-enhetsinfomodal-table1", "columnDefs"),
             Input("altinnedit-ident", "value"),
             self.variable_selector.get_inputs(),
         )
-        def update_enhetsinfotabell(ident, *args):
+        def update_enhetsinfotabell(
+            ident: str, *args: Any
+        ) -> tuple[list[dict[str, Any]] | None, list[dict[str, str | bool]] | None]:
             if ident is None or any(arg is None for arg in args):
                 logger.debug(
                     f"update_enhetsinfotabell is lacking input, returning None. ident is {ident} Received args: %s",
@@ -110,21 +135,20 @@ class AltinnEditorUnitDetails:
             Input("altinnedit-enhetsinfo-button", "n_clicks"),
             State("skjemadata-enhetsinfomodal", "is_open"),
         )
-        def toggle_enhetsinfomodal(n_clicks, is_open):
+        def toggle_enhetsinfomodal(n_clicks: None | int, is_open: bool) -> bool:
             if n_clicks is None:
-                return no_update
-            if is_open == False:
+                raise PreventUpdate
+            if not is_open:
                 return True
-            else:
-                return False
+            return False
 
         @callback(  # type: ignore[misc]
             Output("skjemadata-sidebar-enhetsinfo", "children"),
             Input("skjemadata-enhetsinfomodal-table1", "rowData"),
         )
         def update_sidebar(
-            enhetsinfo_rows,
-        ):  # TODO: Reduce amount of information sent here
+            enhetsinfo_rows: list[dict[str, Any]],
+        ) -> list[html.Div] | html.P:  # TODO: Reduce amount of information sent here
             if not enhetsinfo_rows:
                 return html.P("Ingen enhetsinfo tilgjengelig.")
 
@@ -143,10 +167,10 @@ class AltinnEditorUnitDetails:
                 Input("skjemadata-enhetsinfomodal-table1", "rowData"),
                 prevent_initial_call=True,
             )
-            def update_variable(row_data, variable=variable):
-                if row_data is None:
-                    return ""
+            def update_variable(
+                row_data: list[dict[str, Any]], variable: str = variable
+            ) -> str:
                 for row in row_data:
                     if row.get("variabel") == variable:
-                        return row.get("verdi", "")
+                        return str(row.get("verdi", ""))
                 return ""
