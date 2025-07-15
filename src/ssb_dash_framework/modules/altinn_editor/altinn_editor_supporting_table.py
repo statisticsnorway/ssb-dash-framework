@@ -32,7 +32,7 @@ class AltinnEditorSupportTables:
         self,
         time_units: list[str],
         conn: object,
-        variable_selector_instance: dict[str, str],
+        variable_selector_instance: VariableSelector,
     ) -> None:
         """Initializes the AltinnEditorSupportTables module.
 

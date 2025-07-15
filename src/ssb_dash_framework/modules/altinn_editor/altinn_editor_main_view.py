@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Callable
+from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import callback
@@ -44,6 +44,9 @@ class AltinnSkjemadataEditor:
             sidepanels (None): Later might be used for customizing sidepanel modules.
             top_panels (None): Later might be used for customizing top-panel modules.
         """
+        assert hasattr(
+            conn, "tables"
+        ), "The database object must have a 'tables' attribute."
         self.icon = "🗊"
         self.label = "Data editor"
 
@@ -227,7 +230,7 @@ class AltinnSkjemadataEditor:
     def module_callbacks(self) -> None:
         """Defines the callbacks for the module."""
 
-        def generate_callback(unit: str) -> Callable[[str], str]:
+        def generate_callback(unit: str) -> Any:
             @callback(  # type: ignore[misc]
                 Output(f"altinnedit-{unit}", "value"),
                 Input(f"var-{unit}", "value"),
