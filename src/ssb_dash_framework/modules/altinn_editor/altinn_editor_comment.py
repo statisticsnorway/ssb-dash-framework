@@ -171,7 +171,8 @@ class AltinnEditorComment:
             Input("altinnedit-kommentarmodal-table1", "selectedRows"),
         )
         def comment_select(selected_row: list[dict[str, int | float | str]]) -> str:
-            return selected_row[0]["kommentar"] if selected_row is not None else ""
+            kommentar = selected_row[0]["kommentar"] if selected_row is not None else ""
+            return str(kommentar)  # To make mypy happy
 
         @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
@@ -218,3 +219,4 @@ class AltinnEditorComment:
                         *alert_store,
                     ]
                 return alert_store
+            raise PreventUpdate
