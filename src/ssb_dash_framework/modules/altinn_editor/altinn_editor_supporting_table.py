@@ -12,6 +12,7 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import SQL_COLUMN_CONCAT
 from ...utils.eimerdb_helpers import create_partition_select
 
@@ -37,8 +38,8 @@ class AltinnEditorSupportTables:
 
         Args:
             time_units (list[str]): List of time units to be used in the module.
-            conn (object): Database connection object.
-            variable_selector_instance (VariableSelector): Instance of VariableSelector for variable selection.
+            conn (object): Database connection object that must have a 'query' method.
+            variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
