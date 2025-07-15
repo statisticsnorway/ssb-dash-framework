@@ -30,11 +30,12 @@ class AltinnEditorComment:
 
         Args:
             time_units (list[str]): List of time units to be used in the module.
-            conn (DatabaseConnection): Database connection object that must have a 'query' method.
+            conn (object): Database connection object that must have a 'query' method.
             variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
+            AssertionError: If the connection object does not have a 'query' method.
         """
         assert hasattr(conn, "query"), "The database object must have a 'query' method."
         self.conn = conn
