@@ -99,7 +99,9 @@ class AltinnEditorControl:
             Input("altinnedit-option5", "n_clicks"),
             State("offcanvas-control", "is_open"),
         )
-        def toggle_offcanvas_kontrollutslag(n_clicks: None | int, is_open: bool):
+        def toggle_offcanvas_kontrollutslag(
+            n_clicks: None | int, is_open: bool
+        ) -> bool:
             if n_clicks is None:
                 raise PreventUpdate
             if not is_open:
@@ -117,7 +119,12 @@ class AltinnEditorControl:
         )
         def kontrollutslagstabell(
             selected_row: list[dict[str, int | float | str]], skjema: str, *args: Any
-        ):
+        ) -> tuple[
+            list[dict[str, Any]] | None,
+            list[dict[str, str | bool]] | None,
+            dict[str, str] | None,
+            str,
+        ]:
             if (
                 selected_row is None
                 or len(selected_row) == 0
