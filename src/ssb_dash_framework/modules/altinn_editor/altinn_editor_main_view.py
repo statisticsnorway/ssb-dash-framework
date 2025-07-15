@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 
 import dash_bootstrap_components as dbc
 from dash import callback
@@ -74,8 +75,6 @@ class AltinnSkjemadataEditor:
                     variable_selector_instance=self.variableselector,
                 ),
             ]
-        else:
-            self.sidepanels = sidepanels
         if top_panels is None:
             self.top_panels = [
                 AltinnEditorSupportTables(
@@ -104,8 +103,6 @@ class AltinnSkjemadataEditor:
                     variable_selector_instance=self.variableselector,
                 ),
             ]
-        else:
-            self.top_panels = top_panels
 
         self.module_callbacks()
 
@@ -134,7 +131,7 @@ class AltinnSkjemadataEditor:
             md=2,
         )
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
         return html.Div(
             id="altinn-editor-main-view",
             style={
@@ -230,7 +227,7 @@ class AltinnSkjemadataEditor:
     def module_callbacks(self) -> None:
         """Defines the callbacks for the module."""
 
-        def generate_callback(unit: str):
+        def generate_callback(unit: str) -> Callable[[str], str]:
             @callback(  # type: ignore[misc]
                 Output(f"altinnedit-{unit}", "value"),
                 Input(f"var-{unit}", "value"),
@@ -238,7 +235,7 @@ class AltinnSkjemadataEditor:
             def callback_function(value: str) -> str:
                 return value
 
-            return callback_function
+            return callback_function  # TODO test removal
 
         for unit in self.time_units:
             generate_callback(unit)
