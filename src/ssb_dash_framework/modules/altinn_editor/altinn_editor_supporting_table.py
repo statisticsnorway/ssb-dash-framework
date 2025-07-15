@@ -116,7 +116,7 @@ class AltinnEditorSupportTables:
             className="ag-theme-alpine-dark header-style-on-filter",
         )
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
         return html.Div(
             [
                 dbc.Form(
