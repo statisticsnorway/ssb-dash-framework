@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+from typing import Protocol
 
 import dash_bootstrap_components as dbc
 from dash import callback
@@ -19,6 +20,14 @@ from .altinn_editor_supporting_table import AltinnEditorSupportTables
 from .altinn_editor_unit_details import AltinnEditorUnitDetails
 
 logger = logging.getLogger(__name__)
+
+
+class AltinnEditorModule(Protocol):
+    """Protocol to make mypy accept looping through modules and using the method layout() on them."""
+
+    def layout(self) -> Any:
+        """Returns layout."""
+        ...
 
 
 class AltinnSkjemadataEditor:
@@ -65,7 +74,7 @@ class AltinnSkjemadataEditor:
         )
         # Below is futureproofing in case of increasing modularity
         if sidepanels is None:
-            self.sidepanels = [
+            self.sidepanels: list[AltinnEditorModule] = [
                 AltinnEditorSubmittedForms(
                     time_units=self.time_units,
                     conn=self.conn,
@@ -79,7 +88,7 @@ class AltinnSkjemadataEditor:
                 ),
             ]
         if top_panels is None:
-            self.top_panels = [
+            self.top_panels: list[AltinnEditorModule] = [
                 AltinnEditorSupportTables(
                     time_units=self.time_units,
                     conn=self.conn,
