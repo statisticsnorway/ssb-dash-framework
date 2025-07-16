@@ -230,8 +230,8 @@ class AggDistPlotter(ABC):
         pass
 
     def update_partition_select(
-        self, partition_dict: dict[str, list[int]], key_to_update: str
-    ) -> dict[str, list[int]]:
+        self, partition_dict: dict[str, list[int | str]], key_to_update: str
+    ) -> dict[str, list[int | str]]:
         """Updates the partition select dictionary.
 
         Adds the previous value (N-1) to the list for a single specified key.
