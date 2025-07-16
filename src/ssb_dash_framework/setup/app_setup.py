@@ -49,6 +49,7 @@ def app_setup(
           with the ID `main-varvelger` based on the number of clicks on `sidebar-varvelger-button`.
 
     Examples:
+        >>> import os
         >>> app = app_setup(port=8050, service_prefix=os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/"))
         >>> app.run_server() # doctest: +SKIP
     """
