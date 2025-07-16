@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 
 from ssb_dash_framework import AltinnDataCapture
@@ -13,17 +15,19 @@ def test_import() -> None:
 
 
 class DummyDatabase:
-    def query(self, *args, **kwargs):
+    def query(self, *args: Any, **kwargs: Any) -> Any:
         return []
 
 
 def test_base_class_instantiation() -> None:
+    from dash import html
+
     set_variables(["year", "month"])
 
     # AltinnDataCapture is abstract, so we need to subclass it for instantiation
     class DummyAltinnDataCapture(AltinnDataCapture):
-        def layout(self):
-            return "Dummy layout"
+        def layout(self) -> html.Div:
+            return self.module_layout
 
     DummyAltinnDataCapture(
         time_units=["year", "month"],
@@ -57,7 +61,7 @@ def test_invalid_time_units_type() -> None:
     set_variables(["notalist"])
     with pytest.raises(TypeError):
         AltinnDataCaptureTab(
-            time_units="notalist",  # should be a list
+            time_units="notalist",  # type: ignore[arg-type]
             label="test",
             database_type="altinn_default",
             database=DummyDatabase(),

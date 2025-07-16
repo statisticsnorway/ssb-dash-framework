@@ -13,6 +13,8 @@ def test_import() -> None:
 
 
 def test_base_class() -> None:
+    from dash import html
+
     set_variables(["foretak"])
     with patch.object(
         BofInformation, "_check_connection", lambda self: None
@@ -22,13 +24,13 @@ def test_base_class() -> None:
             def __init__(self) -> None:
                 super().__init__()
 
-            def layout(self):
-                pass
+            def layout(self) -> html.Div:
+                return self.module_layout
 
         test_implementation()
 
 
-def test_tab():
+def test_tab() -> None:
     set_variables(["foretak"])
     with patch.object(
         BofInformation, "_check_connection", lambda self: None
@@ -36,7 +38,7 @@ def test_tab():
         BofInformationTab()
 
 
-def test_window():
+def test_window() -> None:
     set_variables(["foretak"])
     with patch.object(
         BofInformation, "_check_connection", lambda self: None

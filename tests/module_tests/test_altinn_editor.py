@@ -1,3 +1,5 @@
+from typing import Any
+
 from ssb_dash_framework import AltinnSkjemadataEditor
 from ssb_dash_framework import set_variables
 
@@ -8,14 +10,14 @@ def test_import() -> None:
 
 class DummyDatabase:
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initializes the dummy class."""
-        self.tables = {}
+        self.tables: dict[str, Any] = {}
 
-    def query(self, *args, **kwargs):
+    def query(self, *args: Any, **kwargs: Any) -> Any:
         return []
 
-    def query_changes(self, *args, **kwargs):
+    def query_changes(self, *args: Any, **kwargs: Any) -> Any:
         return []
 
 
