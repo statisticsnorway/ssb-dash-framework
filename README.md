@@ -25,9 +25,15 @@
 [black]: https://github.com/psf/black
 [poetry]: https://python-poetry.org/
 
-## Features
+## Documentation
 
-- TODO
+The documentation for this project can be [found here](https://statisticsnorway.github.io/ssb-dash-framework/) or in the **docs** folder.
+
+## Features
+- Dashboard for editing data, includes modules for among other things:
+    - Controls for the data
+    - Visualizations to find outliers
+    - Seeing micro-level information about observations
 
 ## Requirements
 
@@ -35,10 +41,48 @@
 
 ## Installation
 
-You can install _SSB Dash Framework_ via [pip] from [PyPI]:
+You can install _SSB Sirius Dash_ via [pip] from [PyPI]:
 
 ```console
 pip install ssb-dash-framework
+```
+or using poetry:
+```console
+poetry add ssb-dash-framework
+```
+
+The above will install the latest stable release.
+
+### Installing the pre-release version
+
+This version contains new features and improvements that are heading to the stable release eventually, but is still subject to changes.
+
+```console
+poetry add ssb-dash-framework --allow-prereleases
+```
+
+### Installing the development version
+
+This is the currently in-development version. Be aware that this is a very unstable version and is subject to rapid breaking changes.
+- Primarily intended for testing of in-development features.
+
+First make sure this is in your pyproject.toml:
+
+> [[tool.poetry.source]]<br>
+>name = "testpypi"<br>
+>url = "https://test.pypi.org/simple"<br>
+>priority = "supplemental"<br>
+
+It can be added manually or using the command below.
+
+```console
+poetry source add --priority=supplemental testpypi https://test.pypi.org/simple
+```
+
+If it is in your pyproject.toml, run this command with --allow-prereleases to ensure you get the latest version.
+
+```console
+poetry add --source testpypi ssb-dash-framework --allow-prereleases
 ```
 
 ## Usage
@@ -50,10 +94,13 @@ Please see the [Reference Guide] for details.
 Contributions are very welcome.
 To learn more, see the [Contributor Guide].
 
+We are following the gitflow workflow, meaning that the main branch is the release version, while development happens on the develop branch.
+An explanation of how gitflow works can be found here: https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow
+
 ## License
 
-Distributed under the terms of the [GPL 3.0 license][license],
-_SSB Dash Framework_ is free and open source software.
+Distributed under the terms of the [GNU license][license],
+_SSB Sirius Dash_ is free and open source software.
 
 ## Issues
 

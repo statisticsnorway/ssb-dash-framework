@@ -24,18 +24,20 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/statisticsnorway/docker-rpython-base:latest
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
 
       - name: Install Poetry
         run: |
-          pipx install --pip-args "-c ${{ github.workspace }}/.github/workflows/constraints.txt" poetry
+          pipx install --pip-args "-c $GITHUB_WORKSPACE/.github/workflows/constraints.txt" poetry
           pipx inject poetry poetry-plugin-export
           poetry --version
 
       - name: Set up Python
-        uses: actions/setup-python@v5.4.0
+        uses: actions/setup-python@v5.6.0
         with:
           python-version: "3.12"
           cache: "poetry"
@@ -46,7 +48,7 @@ jobs:
 
       - name: Build doc with Sphinx
         run: |
-          poetry run sphinx-build docs docs/_build
+          poetry run sphinx-build docs/sphinx docs/_build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

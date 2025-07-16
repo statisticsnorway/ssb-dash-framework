@@ -1,0 +1,2 @@
+```{include} ../../norsk/hurtigstart.md
+```
