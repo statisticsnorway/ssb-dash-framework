@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from typing import Any
 
 import pytest
 
@@ -19,3 +20,17 @@ def clear_VariableSelector_variableselectoroptions() -> Generator[None, None, No
     VariableSelector._variableselectoroptions.clear()
     yield
     VariableSelector._variableselectoroptions.clear()
+
+
+class DummyDatabase:
+    """Dummy class for mocking a database connection during initialization."""
+
+    def __init__(self) -> None:
+        """Initializes the dummy class."""
+        self.tables: dict[str, Any] = {}
+
+    def query(self, *args: Any, **kwargs: Any) -> Any:
+        return []
+
+    def query_changes(self, *args: Any, **kwargs: Any) -> Any:
+        return []

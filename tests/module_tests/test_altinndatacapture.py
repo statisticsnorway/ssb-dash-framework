@@ -1,5 +1,3 @@
-from typing import Any
-
 import pytest
 
 from ssb_dash_framework import AltinnDataCapture
@@ -7,16 +5,13 @@ from ssb_dash_framework import AltinnDataCaptureTab
 from ssb_dash_framework import AltinnDataCaptureWindow
 from ssb_dash_framework import set_variables
 
+from ..conftest import DummyDatabase
+
 
 def test_import() -> None:
     assert AltinnDataCapture is not None
     assert AltinnDataCaptureTab is not None
     assert AltinnDataCaptureWindow is not None
-
-
-class DummyDatabase:
-    def query(self, *args: Any, **kwargs: Any) -> Any:
-        return []
 
 
 def test_base_class_instantiation() -> None:
