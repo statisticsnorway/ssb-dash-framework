@@ -13,6 +13,7 @@ from .modules import AarsregnskapWindow
 from .modules import AltinnDataCapture
 from .modules import AltinnDataCaptureTab
 from .modules import AltinnDataCaptureWindow
+from .modules import AltinnSkjemadataEditor
 from .modules import BofInformation
 from .modules import BofInformationTab
 from .modules import BofInformationWindow
@@ -39,7 +40,6 @@ from .setup import VariableSelectorOption
 from .setup import app_setup
 from .setup import main_layout
 from .setup import set_variables
-from .tabs import AltinnSkjemadataEditor
 from .tabs import Pimemorizer
 from .utils import AlertHandler
 from .utils import DebugInspector
