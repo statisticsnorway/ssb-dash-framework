@@ -35,3 +35,49 @@ During the app setup the main_layout function will create a variable selector mo
 Ideally each module should define its own VariableSelector instance with their own inputs and states specified.
 
 ## How it is used
+
+Firstly, it needs to be defined in the `init` function of a module.
+
+```python
+class MyModule(ABC):
+    def __init__(self, inputs: list[str], states: list[str]):
+        self.inputs = inputs
+        self.states = states
+        self.variableselector = VariableSelector(
+            selected_inputs=inputs,
+            selected_states=states,
+        )
+        self.output_to = output_to, # We'll get to this later
+        self.module_callbacks()
+```
+
+Secondly, it needs to be included in callbacks. There are many ways to connect your variable selector to the callbacks. The simplest is to use the built in methods `get_inputs`, `get_states`, `get_callback_objects` and `get_output_object`.
+
+In order to simplify usage of inputs and states we recommend creating a dict called dynamic_states.
+
+Lets assume you have the input 'identifier' and the states 'year' and 'quarter'.
+
+```python
+    def module_callbacks(self):
+        dynamic_states = [
+            self.variableselector.get_inputs(),
+            self.variableselector.get_states(),
+        ]
+        @callback(
+            Output("tab-frisøk-table1", "rowData"),
+            Output("tab-frisøk-table1", "columnDefs"),            *dynamic_states
+        )
+        def placeholder_callbackfunc(*args):
+            data = pd.read_parquet(my_path)
+            for column, arg in zip(self.inputs+self.states, args):
+                data = data.loc[data[column] == arg]
+            columns = [
+                {
+                    "headerName": col,
+                    "field": col,
+                    "hide": True if col == "row_id" else False,
+                }
+                for col in df.columns
+            ]
+            return df.to_dict("records"), columns
+```
