@@ -55,7 +55,7 @@ Secondly, it needs to be included in callbacks. There are many ways to connect y
 
 In order to simplify usage of inputs and states we recommend creating a dict called dynamic_states.
 
-Lets assume you have the input 'identifier' and the states 'year' and 'quarter'.
+Lets assume you have the input 'identifier' and the states 'year' and 'quarter', and want to return a dataframe filtered on those variables. You could try something like the below example.
 
 ```python
     def module_callbacks(self):
@@ -64,8 +64,9 @@ Lets assume you have the input 'identifier' and the states 'year' and 'quarter'.
             self.variableselector.get_states(),
         ]
         @callback(
-            Output("tab-frisøk-table1", "rowData"),
-            Output("tab-frisøk-table1", "columnDefs"),            *dynamic_states
+            Output("my-ag-grid", "rowData"),
+            Output("my-ag-grid", "columnDefs"),
+            *dynamic_states
         )
         def placeholder_callbackfunc(*args):
             data = pd.read_parquet(my_path)
