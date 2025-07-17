@@ -89,7 +89,8 @@ class MapDisplay:
 
     def module_callbacks(self):
         @callback(
-            Output("map-figure", "Figure"), self.variableselector.get_callback_objects()
+            Output("map-figure", "Figure"),
+            *self.variableselector.get_callback_objects()
         )
         def update_map(year, *args):
             print(f"update_map args: {args}")
