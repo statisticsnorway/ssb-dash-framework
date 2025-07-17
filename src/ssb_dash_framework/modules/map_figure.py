@@ -88,11 +88,15 @@ class MapDisplay:
         return html.Div(dcc.Graph(id="map-figure"))
 
     def module_callbacks(self):
+        dynamic_states = [
+            self.variableselector.get_inputs(),
+            self.variableselector.get_states(),
+        ]
         @callback(
             Output("map-figure", "Figure"),
-            *self.variableselector.get_callback_objects()
+            *dynamic_states
         )
-        def update_map(year, *args):
+        def update_map(*args):
             print(f"update_map args: {args}")
             self.get_data(args)
             return self.create_map_figure(year=args[0])
