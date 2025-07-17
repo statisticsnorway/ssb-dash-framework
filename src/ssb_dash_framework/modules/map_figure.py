@@ -54,9 +54,9 @@ class MapDisplay:
     def get_data(self, *args):
         self.data = self.get_data_func(*args)
         if self.map_type == "komm_nr":
-            required_columns = {"komm_nr", "value"}
+            required_columns = {"komm_nr", "verdi"}
         elif self.map_type == "fylke_nr":
-            required_columns = {"fylke_nr", "value"}
+            required_columns = {"fylke_nr", "verdi"}
         else:
             raise ValueError("Map type is invalid.")
         missing = required_columns - set(self.data.columns)
