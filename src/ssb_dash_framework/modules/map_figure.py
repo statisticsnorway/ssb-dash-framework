@@ -98,7 +98,7 @@ class MapDisplay:
         )
         def update_map(*args):
             print(f"update_map args: {args}")
-            self.get_data(args)
+            self.get_data(*args)
             return self.create_map_figure(year=args[0])
 
         @callback(
