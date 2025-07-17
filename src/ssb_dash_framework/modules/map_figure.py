@@ -99,6 +99,7 @@ class MapDisplay:
         @callback(
             self.variableselector.get_output_object(self.map_type),
             Input("map-figure", "clickdata"),
+            prevent_initial_call = True
         )
         def click_to_varselector(clickdata):
             print(clickdata)
