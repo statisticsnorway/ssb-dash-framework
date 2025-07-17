@@ -34,7 +34,7 @@ class MapDisplay:
         self.map_type = map_type
 
         self.get_data_func = get_data_func
-
+        print([aar_var, *inputs])
         self.variableselector = VariableSelector(
             selected_inputs=[aar_var, *inputs], selected_states=states
         )
@@ -93,9 +93,8 @@ class MapDisplay:
         )
         def update_map(year, *args):
             print(f"update_map args: {args}")
-            year = args[0]
-            self.get_data(year, *args[1:])
-            return self.create_map_figure(year=year)
+            self.get_data(args)
+            return self.create_map_figure(year=args[0])
 
         @callback(
             self.variableselector.get_output_object(self.map_type),
