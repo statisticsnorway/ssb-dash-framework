@@ -69,13 +69,14 @@ class MyModule(ABC):
 
 - The module is a class that inherits from `ABC`, which is a base class for defining abstract base classes in Python. This allows us to define abstract methods that must be implemented by subclasses.
 - The `__init__` method is where we set some general properties for the module, such as the module name and id. We also connect to the variable selector and create the layout for the module. The `__init__` should also take arguments for inputs and states that it connects to through the variable selector.
-- '_id_number' is used to make sure that it is possible to have more instances of the class running at the same time. This is why the `__init__` needs to give it +1, so that the number is different next time it is instantiated.
-- Assigning `self.module_number` and `self.module_name` is to make it possible to make several instances in the same applicatoin, and to simplify identifying which instantiated module is which when debugging and logging.
+- `_id_number` is used to make sure that it is possible to have more instances of the class running at the same time. This is why the `__init__` needs to give it +1, so that the number is different next time it is instantiated.
+- Assigning `self.module_number` and `self.module_name` is to make it possible to make several instances in the same application, and to simplify identifying which instantiated module is which when debugging and logging.
 - The `icon` and `label` attributes are used to make the module simpler to recognize in the layout. These can be set by the user if that makes more sense for your module, but a default value is often practical.
 - The `self.variableselector` attribute is used to connect to the variable selector. This allows us to use the variable selector in the module. See separate explanation of how the variable selector works.
-- The `_create_layout` method is where we create the layout for the module. It should be set as an attribute of the module called 'module_layout'.
-- The `layout` method is an abstract method that must be implemented by subclasses to define the module's layout. This allows us to define the layout for the module in a consistent way across different modules. For most modules it makes sense to make the layout method abstract, but if you want it to be useable directly it can instead be an ordinary method and return self.module_layout
-- The `module_callbacks` method is where we create the callbacks for the module. This is where we register the callbacks for the module. Make sure to use the variableselector methods for getting inputs/states/outputs where it is supposed to share data/receive data from the variable selector. It needs to be called in the `__init__`.
+- The `_create_layout` method is where we create the layout for the module. It should be set as an attribute of the module called 'module_layout' during the `__init__`.
+- The `layout` method is an abstract method that must be implemented by subclasses to define the module's layout. This allows us to define the layout for the module in a consistent way across different modules. For most modules it makes sense to make the layout method abstract to ensure it is possible to implement in many different ways. But if you want it to be useable directly it can instead be an ordinary method and return self.module_layout.
+- The `module_callbacks` method is where we create the callbacks for the module. This is where we register the callbacks for the module. Make sure to use the variableselector methods for getting inputs/states/outputs where it is supposed to share data/receive data from the variable selector. It needs to be called in the `__init__`. A tip to ensure it doesn't have name conflicts with id's is to use f"{self.module_name}-{self.module_number}..." in the id-names.
+- Running `module_validator(self)` at the end of the `__init__` is useful for ensuring your module has the required attributes.
 
 #### Implementations of the module (mixin classes)
 
@@ -124,7 +125,7 @@ class MyModuleWindow(WindowImplementation, MyModule):
         WindowImplementation.__init__(self)
 ```
 
-A big advantage of this design is that if we want to add a new way to implement a module, we create a new mixin class. If we want to add more functionality to the window implmenetation, we edit the WindowImplementation class.
+A big advantage of this design is that if we want to add a new way to implement a module, we create a new mixin class. If we want to add more functionality to the window implementation, we edit the WindowImplementation class.
 
 It also makes it simple to validate that a module has the required attributes to play well in the framework and be used as a window.
 

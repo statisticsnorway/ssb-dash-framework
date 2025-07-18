@@ -10,23 +10,21 @@ The problem that needed solving was how we could make sure all modules communica
 
 In addition to this, we needed a way for users to define which information should be shared between modules, and how. And without making the configuration too complex.
 
-## The solution
+### The solution
 
-The solution was the VariableSelector.
+The solution was the VariableSelector which consists of two classes. These classes used together ensures that a central state storage exists to coordinate all modules.
 
-It consists of two classes:
+#### VariableSelectorOption
 
-### VariableSelectorOption
+The VariableSelectorOption consists of a title and id (type is defined in case a use case arises later, but curently only text is used).
 
-The VariableSelectorOption consists of a title and id*. The title is what is shown in the interface, while id is used for callbacks.
+The title is what is shown in the interface, while id is used for callbacks.
 
-When initialized, it adds itself to a list used later for coordinating modules through the VariableSelector class. It also makes sure that there are no duplicates.
+When initialized, it adds itself to a list used later for coordinating modules through the VariableSelector class. It also makes sure that there are no duplicate options.
 
 To simplify initialization we have created the function `set_variables()` which takes a list of strings and sets up each as an option.
 
-* It also has a type, but for now it only supports text.
-
-### VariableSelector
+#### VariableSelector
 
 This class will be used to set up most interactions between modules. It contains a class variable containing all currently initialized options and several methods to access them.
 
@@ -34,9 +32,9 @@ During the app setup the main_layout function will create a variable selector mo
 
 Ideally each module should define its own VariableSelector instance with their own inputs and states specified.
 
-## How it is used
+## How it is used in a module
 
-Firstly, it needs to be defined in the `init` function of a module.
+First it needs to be defined as an attribute of the module in the `init` function of a module.
 
 ```python
 class MyModule(ABC):
@@ -47,11 +45,10 @@ class MyModule(ABC):
             selected_inputs=inputs,
             selected_states=states,
         )
-        self.output_to = output_to, # We'll get to this later
         self.module_callbacks()
 ```
 
-Secondly, it needs to be included in callbacks. There are many ways to connect your variable selector to the callbacks. The simplest is to use the built in methods `get_inputs`, `get_states`, `get_callback_objects` and `get_output_object`.
+Secondly, it needs to be included in callbacks. There are many ways to connect your variable selector to the callbacks. The simplest is to use the built in methods `get_inputs()`, `get_states()`, `get_callback_objects()` and `get_output_object()`.
 
 In order to simplify usage of inputs and states we recommend creating a dict called dynamic_states.
 
@@ -82,3 +79,5 @@ Lets assume you have the input 'identifier' and the states 'year' and 'quarter',
             ]
             return df.to_dict("records"), columns
 ```
+
+If the code is set up like in the above example, a user creating an instance of MyModule in their application using inputs=["ident"] and states=["year", "month"] will have a module with a callback where a dataframe being read will be filtered on "ident", "year" and "month" before being loaded to an ag grid table.
