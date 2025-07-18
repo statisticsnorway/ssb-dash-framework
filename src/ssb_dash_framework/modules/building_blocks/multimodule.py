@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 class MultiModule:
-    """Generic class for switching between modules with a label and module_layout."""
+    """Generic class for switching between modules with a label and module_layout.
+
+    If you have several modules, for an example several tables or figures, and you want them to take up less tabs/window button spaces, you can use this module.
+    They keep the same functionality, but can be contained inside a single module instead of taking up extra space.
+    """
 
     _id_number = 0
 
