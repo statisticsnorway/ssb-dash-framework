@@ -1,22 +1,11 @@
 from ssb_dash_framework import AltinnSkjemadataEditor
 from ssb_dash_framework import set_variables
 
+from ..conftest import DummyDatabase
+
 
 def test_import() -> None:
     assert AltinnSkjemadataEditor is not None
-
-
-class DummyDatabase:
-
-    def __init__(self):
-        """Initializes the dummy class."""
-        self.tables = {}
-
-    def query(self, *args, **kwargs):
-        return []
-
-    def query_changes(self, *args, **kwargs):
-        return []
 
 
 def test_instantiation() -> None:
