@@ -63,7 +63,9 @@ class MapDisplay:
         if missing:
             raise ValueError(f"Missing required columns in DataFrame: {missing}")
 
-    def get_geojson(self, year):  # TODO use year from variableselector
+    def get_geojson(
+        self, year
+    ):  # TODO rewrite getting geo-file using geopandas instead
         if self.map_type == "komm_nr":
             self.geojson = fs = FileClient.get_gcs_file_system()
             with fs.open(
@@ -92,10 +94,8 @@ class MapDisplay:
             self.variableselector.get_inputs(),
             self.variableselector.get_states(),
         ]
-        @callback(
-            Output("map-figure", "Figure"),
-            *dynamic_states
-        )
+
+        @callback(Output("map-figure", "Figure"), *dynamic_states)
         def update_map(*args):
             print(f"update_map args: {args}")
             self.get_data(*args)
@@ -104,7 +104,7 @@ class MapDisplay:
         @callback(
             self.variableselector.get_output_object(self.map_type),
             Input("map-figure", "clickdata"),
-            prevent_initial_call = True
+            prevent_initial_call=True,
         )
         def click_to_varselector(clickdata):
             print(clickdata)
