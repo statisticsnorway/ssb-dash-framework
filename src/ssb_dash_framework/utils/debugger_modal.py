@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -11,6 +12,8 @@ from dash import html
 
 from ..setup.variableselector import VariableSelector
 from ..utils.functions import sidebar_button
+
+logger = logging.getLogger(__name__)
 
 
 class DebugInspector:
@@ -41,6 +44,9 @@ class DebugInspector:
             states (list[str]): List of state IDs to be monitored.
             func (Callable[..., Any], optional): Function to be called when the debugger is triggered. Defaults to default_func.
         """
+        logger.warning(
+            f"{self.__class__.__name__} is made for checking how modules behave and is not intended for production."
+        )
         self.func = func
         self.inputs = inputs
         self.states = states
@@ -87,7 +93,7 @@ class DebugInspector:
             self.variableselector.get_states(),
         ]
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("debugger_modal", "is_open"),
             Input("sidebar-debugger-button", "n_clicks"),
             State("debugger_modal", "is_open"),
@@ -97,7 +103,9 @@ class DebugInspector:
                 return not is_open
             return is_open
 
-        @callback(Output("debuggerhelper_output", "children"), *dynamic_states)
+        @callback(  # type: ignore[misc]
+            Output("debuggerhelper_output", "children"), *dynamic_states
+        )
         def debuggerhelper_dynamic_states(*args: Any) -> html.Div:
             ctx = callback_context  # Get callback context
 
@@ -122,6 +130,8 @@ class DebugInspector:
                 ]
             )
 
-        @callback(Output("debuggerhelper_func_output", "children"), *dynamic_states)
+        @callback(  # type: ignore[misc]
+            Output("debuggerhelper_func_output", "children"), *dynamic_states
+        )
         def debuggerhelper_func(*args: Any) -> Any:
             return self.func(args)

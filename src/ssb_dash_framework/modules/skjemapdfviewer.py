@@ -11,6 +11,9 @@ from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
+from ..utils import TabImplementation
+from ..utils import WindowImplementation
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +43,7 @@ class SkjemapdfViewer(ABC):
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self.is_valid(form_identifier)
+        module_validator(self)
 
     def is_valid(self, form_identifier: str) -> None:
         """Validate the form identifier and PDF folder path.
@@ -67,7 +71,7 @@ class SkjemapdfViewer(ABC):
                       and an iframe to display the PDF content.
         """
         layout = html.Div(
-            style={"height": "100%", "display": "flex", "flexDirection": "column"},
+            className="skjemapdfviewer",
             children=[
                 dbc.Container(
                     children=[
@@ -84,8 +88,8 @@ class SkjemapdfViewer(ABC):
                             ]
                         ),
                         html.Iframe(
+                            className="skjemapdf-pdf-iframe",
                             id="skjemapdf-iframe1",
-                            style={"width": "100%", "height": "80vh"},
                         ),
                     ],
                     fluid=True,
@@ -118,7 +122,7 @@ class SkjemapdfViewer(ABC):
             self.variableselector.get_states(),
         ]
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemapdf-input", "value"),
             *dynamic_states,
         )
@@ -133,7 +137,7 @@ class SkjemapdfViewer(ABC):
             """
             return orgnr
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("skjemapdf-iframe1", "src"),
             *dynamic_states,
         )
@@ -151,8 +155,9 @@ class SkjemapdfViewer(ABC):
             """
             if not form_identifier:
                 raise PreventUpdate
+            path_to_file = f"{self.pdf_folder_path}/{form_identifier}.pdf"
+            logger.debug(f"Trying to open file: {path_to_file}")
             try:
-                print(f"{self.pdf_folder_path}/{form_identifier}.pdf")
                 fs = FileClient.get_gcs_file_system()
                 with fs.open(
                     f"{self.pdf_folder_path}/{form_identifier}.pdf",
@@ -163,9 +168,47 @@ class SkjemapdfViewer(ABC):
                 pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
                 pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
             except FileNotFoundError:
+                logger.debug(f"Returning None. Could not open file: {path_to_file}")
                 return None
             pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
             pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
             return pdf_data_uri
 
         logger.debug("Generated callbacks")
+
+
+class SkjemapdfViewerTab(TabImplementation, SkjemapdfViewer):
+    """SkjemapdfViewerTab is an implementation of the SkjemapdfViewer module as a tab in a Dash application."""
+
+    def __init__(
+        self, pdf_folder_path: str, form_identifier: str = "skjemaversjon"
+    ) -> None:
+        """Initializes the SkjemapdfViewerTab class.
+
+        Args:
+            pdf_folder_path (str): The path to the folder containing PDF files.
+            form_identifier (str): The identifier for the form. This should be the VariableSelector value that matches the PDF file name.
+                Defaults to "skjemaversjon".
+        """
+        SkjemapdfViewer.__init__(self, form_identifier, pdf_folder_path)
+        TabImplementation.__init__(self)
+
+
+class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
+    """Implementation of the SkjemapdfViewer as a window."""
+
+    def __init__(
+        self, pdf_folder_path: str, form_identifier: str = "skjemaversjon"
+    ) -> None:
+        """Initialize the SkjemapdfViewerWindow class.
+
+        This class is a subclass of SkjemapdfViewer and is used to create a window for viewing PDF files.
+
+        Args:
+            pdf_folder_path (str): The path to the folder containing PDF files.
+            form_identifier (str): The identifier for the form. Defaults to "skjemaversjon".
+        """
+        SkjemapdfViewer.__init__(self, form_identifier, pdf_folder_path)
+        WindowImplementation.__init__(
+            self,
+        )

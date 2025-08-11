@@ -79,12 +79,7 @@ class AlertHandler:
                 # Container for ephemeral alerts.
                 html.Div(
                     id="alert_ephemeral_container",
-                    style={
-                        "position": "fixed",
-                        "bottom": "10px",
-                        "left": "10px",
-                        "zIndex": 2000,
-                    },
+                    className="alert-container",
                 ),
                 dcc.Interval(
                     id="alert_ephemeral_interval", interval=1000, n_intervals=0
@@ -133,7 +128,7 @@ class AlertHandler:
                     size="xl",
                     fullscreen="xxl-down",
                 ),
-                sidebar_button("📜", "App logg", "sidebar-alerts-button"),
+                sidebar_button("📜", "App-logg", "sidebar-alerts-button"),
             ]
         )
 
@@ -151,7 +146,7 @@ class AlertHandler:
             - Alerts must be added to each callback to ensure proper functionality.
         """
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alerts_modal", "is_open"),
             Input("sidebar-alerts-button", "n_clicks"),
             State("alerts_modal", "is_open"),
@@ -171,7 +166,7 @@ class AlertHandler:
                 return not is_open
             return is_open
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_filter", "data"),
             Input("alert_filter_all", "n_clicks"),
             Input("alert_filter_info", "n_clicks"),
@@ -203,7 +198,7 @@ class AlertHandler:
             else:
                 return "all"
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_modal_container", "children"),
             Input("alert_store", "data"),
             Input("alert_filter", "data"),
@@ -249,7 +244,7 @@ class AlertHandler:
                 )
             return components
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Input({"type": "modal_alert", "index": ALL}, "is_open"),
             State("alert_store", "data"),
@@ -285,7 +280,7 @@ class AlertHandler:
 
             return new_list
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_ephemeral_container", "children"),
             Input("alert_ephemeral_interval", "n_intervals"),
             State("alert_store", "data"),
