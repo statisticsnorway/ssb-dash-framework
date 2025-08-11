@@ -95,7 +95,7 @@ extend-exclude = [
     "old",
     ".ipynb_checkpoints",
     "noxfile.py",
-    "docs/conf.py",
+    "docs/sphinx/conf.py",
 ]
 
 # Ruff rules may be customized as desired: https://docs.astral.sh/ruff/rules/
