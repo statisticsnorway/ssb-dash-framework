@@ -1,17 +1,28 @@
-[tool.poetry]
+[project]
 name = "ssb-dash-framework"
 version = "0.1.0"
 description = "SSB Dash Framework"
-authors = ["Magnus Theodor Engh <dor@ssb.no>"]
+authors = [{ name = "Magnus Theodor Engh", email = "dor@ssb.no" }]
 license = "GPL-3.0"
 readme = "README.md"
+requires-python = ">=3.10,<4.0"
+dynamic = ["classifiers"]
+dependencies = [
+    "click>=8.0.1",
+]
+
+[project.urls]
 homepage = "https://github.com/statisticsnorway/ssb-dash-framework"
 repository = "https://github.com/statisticsnorway/ssb-dash-framework"
 documentation = "https://statisticsnorway.github.io/ssb-dash-framework"
-classifiers = ["Development Status :: 4 - Beta"]
-
-[tool.poetry.urls]
 Changelog = "https://github.com/statisticsnorway/ssb-dash-framework/releases"
+
+[project.scripts]
+ssb-dash-framework = "ssb_dash_framework.__main__:main"
+
+[tool.poetry]
+classifiers = ["Development Status :: 4 - Beta"]
+requires-poetry = ">=2.0"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -45,12 +56,13 @@ sphinx-click = ">=3.0.2"
 typeguard = ">=2.13.3"
 xdoctest = { extras = ["colors"], version = ">=0.15.10" }
 myst-parser = { version = ">=0.16.1" }
+deptry = ">=0.23.0"
+
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.9"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-
-[tool.poetry.scripts]
-ssb-dash-framework = "ssb_dash_framework.__main__:main"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
@@ -64,6 +76,9 @@ relative_files = true
 [tool.coverage.report]
 show_missing = true
 fail_under = 50
+
+[tool.deptry.per_rule_ignores]
+DEP001 = ["nox", "nox_poetry"]  # packages available by default
 
 [tool.mypy]
 strict = true
@@ -102,7 +117,7 @@ select = [
     "RUF",  # the ruff developer's own rules
 ]
 ignore = [
-    "ANN202", # Don't requiere return type annotation for private functions.
+    "ANN202", # Don't require return type annotation for private functions.
     "ANN401", # Allow type annotation with type Any.
     "D100",   # Supress undocumented-public-module. Only doc of public api required.
     "FBT001", # Allow boolean positional arguments in a function.
