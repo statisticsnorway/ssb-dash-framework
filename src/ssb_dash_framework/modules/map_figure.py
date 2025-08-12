@@ -71,7 +71,7 @@ class MapDisplay:
     def create_map_figure(self):
         px.choropleth_mapbox(
             self.data,
-            geojson=self.geoshape,
+            geojson=self.data.index,
             color="verdi",
             locations=self.data[self.map_type],
             featureidkey=f"properties.{self.map_type}",
