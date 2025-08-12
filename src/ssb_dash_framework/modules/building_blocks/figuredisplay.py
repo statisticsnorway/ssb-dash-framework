@@ -21,8 +21,6 @@ class FigureDisplay:
 
     It simplifies connecting a figure to the variable selector and allows for any figure to be used as long as it works in Dash.
     It also allows for click data to be processed and passed to the variable selector.
-
-
     """
 
     _id_number: int = 0

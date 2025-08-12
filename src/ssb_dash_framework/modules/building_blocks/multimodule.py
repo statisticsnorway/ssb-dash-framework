@@ -15,7 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class MultiModule:
-    """Generic class for switching between modules with a label and module_layout."""
+    """Generic class for putting multiple modules in the same layout spot.
+
+    Enables switching between modules with a label and module_layout.
+    """
 
     _id_number = 0
 
@@ -31,7 +34,6 @@ class MultiModule:
             - The module requires some attributes to be present in each module in the `module_list`:
                 - `label`: A string representing the label of the module.
                 - `module_layout`: A Dash HTML Div component representing the layout of the module.
-              The module can be validated using the module_validator function.
         """
         self.icon = "📚"
         self.label = label
