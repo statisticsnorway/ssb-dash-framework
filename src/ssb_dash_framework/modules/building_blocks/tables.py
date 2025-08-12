@@ -26,7 +26,7 @@ class EditingTable:
     This class provides a layout and functionality to:
     - Select a database table from a dropdown menu.
     - Load data into an editable Dash AgGrid table.
-    - Update database values based on user edits in the table.
+    - Update values based on user edits in the table.
 
     Attributes:
         label (str): The label for the tab or component.
@@ -34,7 +34,7 @@ class EditingTable:
         output_varselector_name (str | None): Identifier for the variable selector.
         variableselector (VariableSelector): A variable selector for managing inputs and states.
         get_data (Callable[..., Any]): Function to fetch data from the database.
-        update_table (Callable[..., Any]): Function to update database records based on edits in the table.
+        update_table (Callable[..., Any]): Function to update database records based on edit made in the table.
         module_layout (html.Div): The layout of the component.
         number_format (str): A d3 format string for formatting numeric values in the table.
     """
@@ -70,6 +70,8 @@ class EditingTable:
             **kwargs: Additional keyword arguments for the Dash AgGrid component.
 
         Note:
+            get_data_func receives the selected inputs as its first arguments and then the selected states. This can be used to subset so you only see the relevant data.
+            update_table_func receives the Dash ag grid value for "cellValueChanged" as its first argument, followed by the selected inputs and lastly the selected states. Consider this when writing your update function.
             kwargs are passed to the AgGrid to allow more customization. An example option would be adding dashGridOptions = {"singleClickEdit": True}
         """
         self.kwargs = kwargs
