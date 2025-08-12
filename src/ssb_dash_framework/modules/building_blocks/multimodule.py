@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class MultiModule:
     """Generic class for putting multiple modules in the same layout spot.
-    
+
     Enables switching between modules with a label and module_layout.
     """
 
