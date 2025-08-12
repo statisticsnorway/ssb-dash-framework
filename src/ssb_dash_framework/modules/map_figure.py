@@ -7,6 +7,7 @@ from dash import Output
 from dash import callback
 from dash import dcc
 from dash import html
+import geopandas as gpd
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
@@ -62,23 +63,18 @@ class MapDisplay:
         missing = required_columns - set(self.data.columns)
         if missing:
             raise ValueError(f"Missing required columns in DataFrame: {missing}")
+        self.data = self.data.merge(self.geoshape).to_crs(4326).set_index(self.map_type)
 
-    def get_geojson(
+    def get_geoshape(
         self, year
-    ):  # TODO rewrite getting geo-file using geopandas instead
+    ):
         if self.map_type == "komm_nr":
-            self.geojson = fs = FileClient.get_gcs_file_system()
-            with fs.open(
-                f"gs://ssb-areal-data-delt-kart-prod/visualisering_data/klargjorte-data/{year}/geojson/N5000_kommune_flate_4326_p{year}.geojson",
-                "r",
-            ) as f:
-                self.geojson = json.load(f)
+            self.geoshape = gpd.read_parquet(f"gs://ssb-areal-data-delt-kart-prod/visualisering_data/klargjorte-data/{year}/parquet/N5000_kommune_flate_p{year}.parquet")
 
-    def create_map_figure(self, year):
-        self.get_geojson(year)
+    def create_map_figure(self):
         px.choropleth_mapbox(
             self.data,
-            geojson=self.geojson,
+            geojson=self.geoshape,
             color="verdi",
             locations=self.data[self.map_type],
             featureidkey=f"properties.{self.map_type}",
@@ -98,8 +94,9 @@ class MapDisplay:
         @callback(Output("map-figure", "Figure"), *dynamic_states)
         def update_map(*args):
             print(f"update_map args: {args}")
+            self.get_geoshape(year=args[0])
             self.get_data(*args)
-            return self.create_map_figure(year=args[0])
+            return self.create_map_figure()
 
         @callback(
             self.variableselector.get_output_object(self.map_type),
