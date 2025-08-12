@@ -1,13 +1,10 @@
-import json
-
+import geopandas as gpd
 import plotly.express as px
-from dapla import FileClient
 from dash import Input
 from dash import Output
 from dash import callback
 from dash import dcc
 from dash import html
-import geopandas as gpd
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
@@ -65,11 +62,11 @@ class MapDisplay:
             raise ValueError(f"Missing required columns in DataFrame: {missing}")
         self.data = self.data.merge(self.geoshape).to_crs(4326).set_index(self.map_type)
 
-    def get_geoshape(
-        self, year
-    ):
+    def get_geoshape(self, year):
         if self.map_type == "komm_nr":
-            self.geoshape = gpd.read_parquet(f"gs://ssb-areal-data-delt-kart-prod/visualisering_data/klargjorte-data/{year}/parquet/N5000_kommune_flate_p{year}.parquet")
+            self.geoshape = gpd.read_parquet(
+                f"gs://ssb-areal-data-delt-kart-prod/visualisering_data/klargjorte-data/{year}/parquet/N5000_kommune_flate_p{year}.parquet"
+            )
 
     def create_map_figure(self):
         px.choropleth_mapbox(
