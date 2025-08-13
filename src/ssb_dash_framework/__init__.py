@@ -1,15 +1,15 @@
 """SSB Dash Framework."""
 
 from .control import ControlFrameworkBase
-from .modals import AggDistPlotter
-from .modals import AggDistPlotterTab
-from .modals import AggDistPlotterWindow
 from .modals import AltinnControlView
 from .modals import Control
 from .modals import VisualizationBuilder
 from .modules import Aarsregnskap
 from .modules import AarsregnskapTab
 from .modules import AarsregnskapWindow
+from .modules import AggDistPlotter
+from .modules import AggDistPlotterTab
+from .modules import AggDistPlotterWindow
 from .modules import AltinnDataCapture
 from .modules import AltinnDataCaptureTab
 from .modules import AltinnDataCaptureWindow
