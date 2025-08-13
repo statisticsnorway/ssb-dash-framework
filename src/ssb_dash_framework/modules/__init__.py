@@ -3,6 +3,9 @@
 from .aarsregnskap import Aarsregnskap
 from .aarsregnskap import AarsregnskapTab
 from .aarsregnskap import AarsregnskapWindow
+from .agg_dist_plotter import AggDistPlotter
+from .agg_dist_plotter import AggDistPlotterTab
+from .agg_dist_plotter import AggDistPlotterWindow
 from .altinn_data_capture import AltinnDataCapture
 from .altinn_data_capture import AltinnDataCaptureTab
 from .altinn_data_capture import AltinnDataCaptureWindow
@@ -34,6 +37,9 @@ __all__ = [
     "Aarsregnskap",
     "AarsregnskapTab",
     "AarsregnskapWindow",
+    "AggDistPlotter",
+    "AggDistPlotterTab",
+    "AggDistPlotterWindow",
     "AltinnDataCapture",
     "AltinnDataCaptureTab",
     "AltinnDataCaptureWindow",
