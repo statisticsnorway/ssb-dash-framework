@@ -562,8 +562,6 @@ class BofInformation(ABC):
                     ]
                 )
                 return df.to_dict("records"), columns
-            logger.debug("Raised PreventUpdate")
-            raise PreventUpdate
 
         logger.debug("Generated callbacks")
 

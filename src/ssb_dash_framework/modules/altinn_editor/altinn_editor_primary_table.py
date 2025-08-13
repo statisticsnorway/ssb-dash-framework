@@ -7,7 +7,6 @@ from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
-from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils.alert_handler import create_alert
@@ -204,9 +203,6 @@ class AltinnEditorPrimaryTable:
             click: dict[str, Any], row_data: list[dict[str, Any]]
         ) -> str:
             logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")
-            if row_data is None:
-                logger.debug("Raised PreventUpdate")
-                raise PreventUpdate
             return str(row_data[click["rowIndex"]]["variabel"])
 
         @callback(  # type: ignore[misc]
@@ -233,86 +229,83 @@ class AltinnEditorPrimaryTable:
                 f"alert_store: {alert_store}\n"
                 f"args: {args}"
             )
-            if edited is None:
-                logger.debug("Raised PreventUpdate")
-                raise PreventUpdate
+
+            partition_args = dict(zip(self.time_units, args, strict=False))
+            tables_editable_dict = {}
+            data_dict = self.conn.tables
+
+            for table, details in data_dict.items():
+                if table.startswith("skjemadata") and "schema" in details:
+                    field_editable_dict = {
+                        field["name"]: field.get("app_editable", False)
+                        for field in details["schema"]
+                    }
+                    tables_editable_dict[table] = field_editable_dict
+
+            table_editable_dict = tables_editable_dict[tabell]
+            edited_column = edited[0]["colId"]
+
+            schema = self.conn.tables[tabell]["schema"]
+            columns = {field["name"] for field in schema}
+            if "variabel" in columns and "verdi" in columns:
+                long_format = True
             else:
-                partition_args = dict(zip(self.time_units, args, strict=False))
-                tables_editable_dict = {}
-                data_dict = self.conn.tables
+                long_format = False
 
-                for table, details in data_dict.items():
-                    if table.startswith("skjemadata") and "schema" in details:
-                        field_editable_dict = {
-                            field["name"]: field.get("app_editable", False)
-                            for field in details["schema"]
-                        }
-                        tables_editable_dict[table] = field_editable_dict
+            if table_editable_dict[edited_column] is True:
+                old_value = edited[0]["oldValue"]
+                new_value = edited[0]["value"]
+                row_id = edited[0]["data"]["row_id"]
+                ident = edited[0]["data"]["ident"]
 
-                table_editable_dict = tables_editable_dict[tabell]
-                edited_column = edited[0]["colId"]
-
-                schema = self.conn.tables[tabell]["schema"]
-                columns = {field["name"] for field in schema}
-                if "variabel" in columns and "verdi" in columns:
-                    long_format = True
-                else:
-                    long_format = False
-
-                if table_editable_dict[edited_column] is True:
-                    old_value = edited[0]["oldValue"]
-                    new_value = edited[0]["value"]
-                    row_id = edited[0]["data"]["row_id"]
-                    ident = edited[0]["data"]["ident"]
-
-                    try:
-                        self.conn.query(
-                            f"""UPDATE {tabell}
-                            SET {edited_column} = '{new_value}'
-                            WHERE row_id = '{row_id}'
-                            """,
-                            partition_select=create_partition_select(
-                                desired_partitions=self.time_units,
-                                skjema=skjema,
-                                **partition_args,
-                            ),
-                        )
-                        if long_format:
-                            variabel = edited[0]["data"]["variabel"]
-                            alert_store = [
-                                create_alert(
-                                    f"ident: {ident}, variabel: {variabel} er oppdatert fra {old_value} til {new_value}!",
-                                    "success",
-                                    ephemeral=True,
-                                ),
-                                *alert_store,
-                            ]
-                        else:
-                            alert_store = [
-                                create_alert(
-                                    f"ident: {ident}, {edited_column} er oppdatert fra {old_value} til {new_value}!",
-                                    "success",
-                                    ephemeral=True,
-                                ),
-                                *alert_store,
-                            ]
-                    except Exception as e:
+                try:
+                    self.conn.query(
+                        f"""UPDATE {tabell}
+                        SET {edited_column} = '{new_value}'
+                        WHERE row_id = '{row_id}'
+                        """,
+                        partition_select=create_partition_select(
+                            desired_partitions=self.time_units,
+                            skjema=skjema,
+                            **partition_args,
+                        ),
+                    )
+                    if long_format:
+                        variabel = edited[0]["data"]["variabel"]
                         alert_store = [
                             create_alert(
-                                f"Oppdateringa feilet. {str(e)[:60]}",
-                                "danger",
+                                f"ident: {ident}, variabel: {variabel} er oppdatert fra {old_value} til {new_value}!",
+                                "success",
                                 ephemeral=True,
                             ),
                             *alert_store,
                         ]
-                    return alert_store
-                else:
+                    else:
+                        alert_store = [
+                            create_alert(
+                                f"ident: {ident}, {edited_column} er oppdatert fra {old_value} til {new_value}!",
+                                "success",
+                                ephemeral=True,
+                            ),
+                            *alert_store,
+                        ]
+                except Exception as e:
                     alert_store = [
                         create_alert(
-                            f"Kolonnen {edited_column} kan ikke editeres!",
+                            f"Oppdateringa feilet. {str(e)[:60]}",
                             "danger",
                             ephemeral=True,
                         ),
                         *alert_store,
                     ]
-                    return alert_store
+                return alert_store
+            else:
+                alert_store = [
+                    create_alert(
+                        f"Kolonnen {edited_column} kan ikke editeres!",
+                        "danger",
+                        ephemeral=True,
+                    ),
+                    *alert_store,
+                ]
+                return alert_store

@@ -234,3 +234,4 @@ class AltinnEditorComment:
                     ]
                 return alert_store
             logger.debug("Raised PreventUpdate")
+            raise PreventUpdate
