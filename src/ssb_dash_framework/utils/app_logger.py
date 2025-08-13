@@ -1,3 +1,4 @@
+from pathlib import Path
 import logging
 import sys
 
@@ -44,7 +45,10 @@ def enable_app_logging(level: str = "info", log_to_file: bool = False) -> None:
     console_handler = logging.StreamHandler(sys.stdout)
     handlers.append(console_handler)
     if log_to_file:
-        file_handler = logging.FileHandler("app.log", mode="a")
+        log_path = Path("/home/onyxia/work/app.log")
+        if not log_path.parent.exists():
+            raise FileNotFoundError(f"Directory does not exist: {log_path.parent}")
+        file_handler = logging.FileHandler(log_path, mode="a")
         handlers.append(file_handler)
 
     formatter = logging.Formatter(
