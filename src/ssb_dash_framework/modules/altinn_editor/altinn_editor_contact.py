@@ -156,7 +156,9 @@ class AltinnEditorContact:
             State("skjemadata-kontaktinfocanvas", "is_open"),
         )
         def toggle_offcanvas_kontaktinfo(n_clicks: None | int, is_open: bool) -> bool:
+            logger.debug(f"Args:\nn_clicks: {n_clicks}\nis_open: {is_open}")
             if n_clicks is None:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             if not is_open:
                 return True
@@ -177,6 +179,13 @@ class AltinnEditorContact:
         def kontaktinfocanvas(
             n_clicks: None | int, skjemaversjon: str, skjema: str, *args: Any
         ) -> tuple[str, str, str, str, str]:
+            logger.debug(
+                f"Args:\n"
+                f"n_clicks: {n_clicks}\n"
+                f"skjemaversjon: {skjemaversjon}\n"
+                f"skjema: {skjema}\n"
+                f"args: {args}"
+            )
             partition_args = dict(zip(self.time_units, args, strict=False))
             df_skjemainfo = self.conn.query(
                 f"""SELECT

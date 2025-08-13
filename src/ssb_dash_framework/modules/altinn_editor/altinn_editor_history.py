@@ -103,7 +103,9 @@ class AltinnEditorHistory:
             State("skjemadata-historikkmodal", "is_open"),
         )
         def toggle_historikkmodal(n_clicks: None | int, is_open: bool) -> bool:
+            logger.debug(f"Args:\nn_clicks: {n_clicks}\nis_open: {is_open}")
             if n_clicks is None:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             if not is_open:
                 return True
@@ -125,6 +127,14 @@ class AltinnEditorHistory:
             skjema: str,
             *args: Any,
         ) -> tuple[list[dict[str, Any]] | None, list[dict[str, str | bool]] | None]:
+            logger.debug(
+                f"Args:\n"
+                f"is_open: {is_open}\n"
+                f"tabell: {tabell}\n"
+                f"selected_row: {selected_row}\n"
+                f"skjema: {skjema}\n"
+                f"args: {args}"
+            )
             if is_open:
                 try:
                     partition_args = dict(zip(self.time_units, args, strict=False))
@@ -154,4 +164,5 @@ class AltinnEditorHistory:
                     logger.error(f"Error in historikktabell: {e}", exc_info=True)
                     return None, None
             else:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
