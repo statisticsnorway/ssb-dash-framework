@@ -107,6 +107,7 @@ class AltinnEditorUnitDetails:
         def update_enhetsinfotabell(
             ident: str, *args: Any
         ) -> tuple[list[dict[str, Any]] | None, list[dict[str, str | bool]] | None]:
+            logger.debug(f"Args:\nident: {ident}\nargs: {args}")
             if ident is None or any(arg is None for arg in args):
                 logger.debug(
                     f"update_enhetsinfotabell is lacking input, returning None. ident is {ident} Received args: %s",
@@ -136,7 +137,9 @@ class AltinnEditorUnitDetails:
             State("skjemadata-enhetsinfomodal", "is_open"),
         )
         def toggle_enhetsinfomodal(n_clicks: None | int, is_open: bool) -> bool:
+            logger.debug(f"Args:\nn_clicks: {n_clicks}\nis_open: {is_open}")
             if n_clicks is None:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             if not is_open:
                 return True
@@ -149,6 +152,7 @@ class AltinnEditorUnitDetails:
         def update_sidebar(
             enhetsinfo_rows: list[dict[str, Any]],
         ) -> list[html.Div] | html.P:  # TODO: Reduce amount of information sent here
+            logger.debug(f"Args:\nenhetsinfo_rows: {enhetsinfo_rows}")
             if not enhetsinfo_rows:
                 return html.P("Ingen enhetsinfo tilgjengelig.")
 
@@ -170,7 +174,11 @@ class AltinnEditorUnitDetails:
             def update_variable(
                 row_data: list[dict[str, Any]], variable: str = variable
             ) -> str:
+                logger.debug(f"Args:\nrow_data: {row_data}\nvariable: {variable}")
                 for row in row_data:
                     if row.get("variabel") == variable:
                         return str(row.get("verdi", ""))
+                logger.info(
+                    f"Variable '{variable}' not found in row data, returning empty string."
+                )
                 return ""

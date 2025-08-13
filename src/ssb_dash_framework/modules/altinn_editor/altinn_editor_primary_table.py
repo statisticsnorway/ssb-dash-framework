@@ -98,6 +98,13 @@ class AltinnEditorPrimaryTable:
         def hovedside_update_altinnskjema(
             skjemaversjon: str, tabell: str, skjema: str, *args: Any
         ) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
+            logger.debug(
+                f"Args:\n"
+                f"skjemaversjon: {skjemaversjon}\n"
+                f"tabell: {tabell}\n"
+                f"skjema: {skjema}\n"
+                f"args: {args}"
+            )
             schema = self.conn.tables[tabell]["schema"]
             columns = {field["name"] for field in schema}
             if "variabel" in columns and "verdi" in columns:
@@ -196,7 +203,9 @@ class AltinnEditorPrimaryTable:
         def select_variabel(
             click: dict[str, Any], row_data: list[dict[str, Any]]
         ) -> str:
+            logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")
             if row_data is None:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             return str(row_data[click["rowIndex"]]["variabel"])
 
@@ -216,7 +225,16 @@ class AltinnEditorPrimaryTable:
             alert_store: list[dict[str, Any]],
             *args: Any,
         ) -> list[dict[str, Any]]:
+            logger.debug(
+                f"Args:\n"
+                f"edited: {edited}\n"
+                f"tabell: {tabell}\n"
+                f"skjema: {skjema}\n"
+                f"alert_store: {alert_store}\n"
+                f"args: {args}"
+            )
             if edited is None:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             else:
                 partition_args = dict(zip(self.time_units, args, strict=False))

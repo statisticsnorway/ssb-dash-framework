@@ -245,6 +245,7 @@ class AltinnSkjemadataEditor:
                 Input(f"var-{unit}", "value"),
             )
             def callback_function(value: str) -> str:
+                logger.debug(f"Args:\nvalue: {value}")
                 return value
 
             return callback_function
@@ -257,4 +258,5 @@ class AltinnSkjemadataEditor:
             Input("var-ident", "value"),
         )
         def aar_to_tab(ident: str) -> str:
+            logger.debug(f"Args:\nident: {ident}")
             return ident

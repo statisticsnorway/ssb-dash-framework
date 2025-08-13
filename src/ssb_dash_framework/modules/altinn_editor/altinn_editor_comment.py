@@ -131,7 +131,9 @@ class AltinnEditorComment:
             State("skjemadata-kommentarmodal", "is_open"),
         )
         def toggle_kommentarmodal(n_clicks: None | int, is_open: bool) -> bool:
+            logger.debug(f"Args:\nn_clicks: {n_clicks}\nis_open: {is_open}")
             if n_clicks is None:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             if not is_open:
                 return True
@@ -147,7 +149,14 @@ class AltinnEditorComment:
         def kommentar_table(
             n_clicks: None | int, skjema: str, ident: str
         ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
+            logger.debug(
+                f"Args:\n"
+                f"n_clicks: {n_clicks}\n"
+                f"skjema: {skjema}\n"
+                f"ident: {ident}"
+            )
             if n_clicks is None:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             df = self.conn.query(
                 f"SELECT * FROM skjemamottak WHERE ident = '{ident}'",
@@ -167,6 +176,7 @@ class AltinnEditorComment:
             Input("altinnedit-kommentarmodal-table1", "selectedRows"),
         )
         def comment_select(selected_row: list[dict[str, int | float | str]]) -> str:
+            logger.debug(f"Args:\nselected_row: {selected_row}")
             kommentar = selected_row[0]["kommentar"] if selected_row is not None else ""
             return str(kommentar)  # To make mypy happy
 
@@ -186,6 +196,14 @@ class AltinnEditorComment:
             skjema: str,
             alert_store: list[dict[str, Any]],
         ) -> list[dict[str, Any]]:
+            logger.debug(
+                f"Args:\n"
+                f"n_clicks: {n_clicks}\n"
+                f"selected_row: {selected_row}\n"
+                f"kommentar: {kommentar}\n"
+                f"skjema: {skjema}\n"
+                f"alert_store: {alert_store}"
+            )
             if n_clicks and n_clicks > 0 and selected_row:
                 try:
                     row_id = selected_row[0]["row_id"]
@@ -215,4 +233,4 @@ class AltinnEditorComment:
                         *alert_store,
                     ]
                 return alert_store
-            raise PreventUpdate
+            logger.debug("Raised PreventUpdate")

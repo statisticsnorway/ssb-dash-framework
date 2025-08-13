@@ -125,7 +125,9 @@ class AltinnEditorSubmittedForms:
             State("skjemadata-skjemaversjonsmodal", "is_open"),
         )
         def toggle_skjemaversjonsmodal(n_clicks: None | int, is_open: bool) -> bool:
+            logger.debug(f"Args:\nn_clicks: {n_clicks}\nis_open: {is_open}")
             if n_clicks is None:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             if not is_open:
                 return True
@@ -140,6 +142,7 @@ class AltinnEditorSubmittedForms:
         def update_skjemaer(
             ident: str, *args: Any
         ) -> tuple[list[dict[str, str]], str | None]:
+            logger.debug(f"Args:\nident: {ident}\nargs: {args}")
             if ident is None or any(arg is None for arg in args):
                 return [], None
 
@@ -179,6 +182,13 @@ class AltinnEditorSubmittedForms:
             alert_store: list[dict[str, Any]],
             *args: Any,
         ) -> list[dict[str, Any]] | None:
+            logger.debug(
+                f"Args:\n"
+                f"edited: {edited}\n"
+                f"skjema: {skjema}\n"
+                f"alert_store: {alert_store}\n"
+                f"args: {args}"
+            )
             if edited is None or skjema is None or any(arg is None for arg in args):
                 return None
 
@@ -250,7 +260,8 @@ class AltinnEditorSubmittedForms:
                         *alert_store,
                     ]
             else:
-                logging.debug(f"Tried to edit {variabel}, preventing update.")
+                logger.debug(f"Tried to edit {variabel}, preventing update.")
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
 
         @callback(  # type: ignore[misc]
@@ -263,7 +274,7 @@ class AltinnEditorSubmittedForms:
         def update_sidebar_table(
             skjema: str, ident: str, *args: Any
         ) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
-            logger.debug(f"Inputs. Skjema: {skjema}, Ident: {ident}, Args: {args}")
+            logger.debug(f"Args:\nskjema: {skjema}\nident: {ident}\nargs: {args}")
             if skjema is None or ident is None or any(arg is None for arg in args):
                 return None, None
 
@@ -300,7 +311,9 @@ class AltinnEditorSubmittedForms:
         def hovedside_update_valgt_rad(
             rows: list[dict[str, Any]],
         ) -> list[dict[str, Any]]:
+            logger.debug(f"Args:\nrows: {rows}")
             if not rows:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
 
             selected_row = rows[0]
@@ -311,7 +324,9 @@ class AltinnEditorSubmittedForms:
             Input("altinnedit-table-skjemaer", "selectedRows"),
         )
         def selected_skjemaversjon(selected_row: list[dict[str, Any]]) -> str:
+            logger.debug(f"Args:\nselected_row: {selected_row}")
             if not selected_row:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
 
             skjemaversjon = selected_row[0]["skjemaversjon"]
