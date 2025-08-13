@@ -40,7 +40,7 @@ from .setup import VariableSelectorOption
 from .setup import app_setup
 from .setup import main_layout
 from .setup import set_variables
-from .tabs import Pimemorizer
+from .tabs import PimemorizerTab
 from .utils import AlertHandler
 from .utils import DebugInspector
 from .utils import TabImplementation
@@ -94,7 +94,7 @@ __all__ = [
     "MultiModuleWindow",
     "MultiModuleWindow",
     "MultiModuleWindow",
-    "Pimemorizer",
+    "PimemorizerTab",
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",
