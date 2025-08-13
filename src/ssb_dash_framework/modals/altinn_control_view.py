@@ -185,7 +185,9 @@ class AltinnControlView:
             n_clicks: int, fullscreen_state: str | bool
         ) -> str | bool:
             logger.debug(
-                f"Args:\nn_clicks: {n_clicks}\nfullscreen_state: {fullscreen_state}"
+                f"Args:\n"
+                f"n_clicks: {n_clicks}\n"
+                f"fullscreen_state: {fullscreen_state}"
             )
             fullscreen: str | bool
             if n_clicks > 0:
