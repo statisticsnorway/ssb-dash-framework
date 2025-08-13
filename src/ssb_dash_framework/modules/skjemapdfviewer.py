@@ -135,6 +135,7 @@ class SkjemapdfViewer(ABC):
             Returns:
                 str: The updated organization number value.
             """
+            logger.debug("Args:\n" + f"orgnr: {orgnr}")
             return orgnr
 
         @callback(  # type: ignore[misc]
@@ -153,7 +154,9 @@ class SkjemapdfViewer(ABC):
             Raises:
                 PreventUpdate: If the form identifier is not provided.
             """
+            logger.debug("Args:\n" + f"form_identifier: {form_identifier}")
             if not form_identifier:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             path_to_file = f"{self.pdf_folder_path}/{form_identifier}.pdf"
             logger.debug(f"Trying to open file: {path_to_file}")

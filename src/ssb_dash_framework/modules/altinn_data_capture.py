@@ -203,6 +203,9 @@ class AltinnDataCapture(ABC):
         def get_skjemas(
             *args: Any,
         ) -> tuple[list[dict[str, str]], str]:  # TODO doublecheck return type hint
+            logger.debug(
+                "Args:\n" + "\n".join([f"arg{i}: {arg}" for i, arg in enumerate(args)])
+            )
             df = self.database.query(
                 "SELECT DISTINCT skjemaer FROM enheter",
                 partition_select={
@@ -228,6 +231,12 @@ class AltinnDataCapture(ABC):
             *dynamic_states,
         )
         def datafangst_graph(graph_option: str, skjema: str, *args: Any) -> Figure:
+            logger.debug(
+                "Args:\n"
+                f"graph_option: {graph_option}\n"
+                f"skjema: {skjema}\n"
+                "\n".join([f"arg{i}: {arg}" for i, arg in enumerate(args)])
+            )
             partition_select = (
                 {
                     column: [value]
