@@ -25,6 +25,7 @@ from .building_blocks import MultiModuleWindow
 from .freesearch import FreeSearch
 from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
+from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab
 from .skjemapdfviewer import SkjemapdfViewerWindow
@@ -55,6 +56,7 @@ __all__ = [
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",
+    "PimemorizerTab",
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",

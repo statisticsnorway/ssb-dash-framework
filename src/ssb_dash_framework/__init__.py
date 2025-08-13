@@ -32,6 +32,7 @@ from .modules import FreeSearchWindow
 from .modules import MultiModule
 from .modules import MultiModuleTab
 from .modules import MultiModuleWindow
+from .modules import PimemorizerTab
 from .modules import SkjemapdfViewer
 from .modules import SkjemapdfViewerTab
 from .modules import SkjemapdfViewerWindow
@@ -40,7 +41,6 @@ from .setup import VariableSelectorOption
 from .setup import app_setup
 from .setup import main_layout
 from .setup import set_variables
-from .tabs import PimemorizerTab
 from .utils import AlertHandler
 from .utils import DebugInspector
 from .utils import TabImplementation
