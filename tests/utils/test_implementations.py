@@ -8,7 +8,7 @@ from ssb_dash_framework import TabImplementation
 from ssb_dash_framework import WindowImplementation
 
 
-def test_tab_implementation():
+def test_tab_implementation() -> None:
     class test_module(ABC):
         _id_number = 0
 
@@ -20,10 +20,10 @@ def test_tab_implementation():
             self.module_callbacks()
 
         @abstractmethod
-        def layout(self):
+        def layout(self) -> None:
             pass
 
-        def module_callbacks(self):
+        def module_callbacks(self) -> str:
             return ""
 
     class test_module_tab(TabImplementation, test_module):
@@ -39,7 +39,7 @@ def test_tab_implementation():
         )
 
 
-def test_window_implementation():
+def test_window_implementation() -> None:
     class test_module(ABC):
         _id_number = 0
 
@@ -51,10 +51,10 @@ def test_window_implementation():
             self.module_callbacks()
 
         @abstractmethod
-        def layout(self):
+        def layout(self) -> None:
             pass
 
-        def module_callbacks(self):
+        def module_callbacks(self) -> str:
             return ""
 
     class test_module_window(WindowImplementation, test_module):
