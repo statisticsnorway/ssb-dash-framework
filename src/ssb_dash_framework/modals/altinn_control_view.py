@@ -184,6 +184,9 @@ class AltinnControlView:
         def toggle_fullscreen_modal(
             n_clicks: int, fullscreen_state: str | bool
         ) -> str | bool:
+            logger.debug(
+                f"Args:\nn_clicks: {n_clicks}\nfullscreen_state: {fullscreen_state}"
+            )
             fullscreen: str | bool
             if n_clicks > 0:
                 if fullscreen_state is True:
@@ -191,6 +194,7 @@ class AltinnControlView:
                 else:
                     fullscreen = True
                 return fullscreen
+            logger.debug("PreventUpdate raised")
             raise PreventUpdate
 
         @callback(  # type: ignore[misc]
@@ -199,6 +203,7 @@ class AltinnControlView:
             State("kontroller-modal", "is_open"),
         )
         def kontrollermodal_toggle(n: int, is_open: bool) -> bool:
+            logger.debug(f"Args:\nn: {n}\nis_open: {is_open}")
             if n:
                 return not is_open
             return is_open
@@ -212,9 +217,13 @@ class AltinnControlView:
         )
         def kontrollutslag_antall(
             skjema: str, n_clicks: int, *args: Any
-        ) -> tuple[
-            list[dict[str, Any]], list[dict[str, str | bool]]
-        ]:  # TODO can *args be more specific?
+        ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
+            logger.debug(
+                f"Args:\n"
+                f"skjema: {skjema}\n"
+                f"n_clicks: {n_clicks}\n"
+                f"args: {args}"
+            )
             partition_args = dict(zip(self.time_units, args, strict=False))
             df1 = self.conn.query(
                 """SELECT
@@ -272,9 +281,8 @@ class AltinnControlView:
         )
         def kontrollutslag_mikro(
             current_row: list[dict[str, Any]], *args: Any
-        ) -> tuple[
-            list[dict[str, Any]], list[dict[str, str | bool]]
-        ]:  # TODO can *args be more specific?
+        ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
+            logger.debug(f"Args:\ncurrent_row: {current_row}\nargs: {args}")
             partition_args = dict(zip(self.time_units, args, strict=False))
             kontrollid = current_row[0]["kontrollid"]
             kontrollvar = current_row[0]["kontrollvar"]
@@ -321,9 +329,8 @@ class AltinnControlView:
             prevent_initial_call=True,
         )
         def kontroll_detail_click(input1: list[dict[str, Any]]) -> str:
-            selected = str(
-                input1[0]["ident"]
-            )  # TODO: check if this is correct, can it be more than one?
+            logger.debug(f"Args:\ninput1: {input1}")
+            selected = str(input1[0]["ident"])
             return selected
 
         @callback(  # type: ignore[misc]
@@ -331,9 +338,8 @@ class AltinnControlView:
             Input("var-altinnskjema", "value"),
             *self.create_callback_components("Input"),
         )
-        def altinnskjema(
-            skjema: str, *args: Any
-        ) -> str:  # TODO can *args be more specific?
+        def altinnskjema(skjema: str, *args: Any) -> str:
+            logger.debug(f"Args:\nskjema: {skjema}\nargs: {args}")
             partition_args = dict(zip(self.time_units, args, strict=False))
             if partition_args is not None and skjema is not None:
                 valgte_vars = (
@@ -351,7 +357,14 @@ class AltinnControlView:
         )
         def kontrollkjøring(
             n_clicks: int, skjema: str, alert_store: list[dict[str, Any]], *args: Any
-        ) -> list[dict[str, Any]]:  # TODO can *args be more specific?
+        ) -> list[dict[str, Any]]:
+            logger.debug(
+                f"Args:\n"
+                f"n_clicks: {n_clicks}\n"
+                f"skjema: {skjema}\n"
+                f"alert_store: {alert_store}\n"
+                f"args: {args}"
+            )
             partition_args = dict(zip(self.time_units, args, strict=False))
             partitions = create_partition_select(
                 desired_partitions=self.time_units, skjema=None, **partition_args
@@ -383,6 +396,7 @@ class AltinnControlView:
                         *alert_store,
                     ]
                 return alert_store
+            logger.debug("kontrollkjøring: PreventUpdate raised")
             raise PreventUpdate
 
         @callback(  # type: ignore[misc]
@@ -395,7 +409,14 @@ class AltinnControlView:
         )
         def kontrollkjøring_insert(
             n_clicks: int, skjema: str, alert_store: list[dict[str, Any]], *args: Any
-        ) -> list[dict[str, Any]]:  # TODO can *args be more specific?
+        ) -> list[dict[str, Any]]:
+            logger.debug(
+                f"Args:\n"
+                f"n_clicks: {n_clicks}\n"
+                f"skjema: {skjema}\n"
+                f"alert_store: {alert_store}\n"
+                f"args: {args}"
+            )
             partition_args = dict(zip(self.time_units, args, strict=False))
             partitions = create_partition_select(
                 desired_partitions=self.time_units, skjema=None, **partition_args
@@ -427,4 +448,5 @@ class AltinnControlView:
                         *alert_store,
                     ]
                 return alert_store
+            logger.debug("PreventUpdate raised")
             raise PreventUpdate
