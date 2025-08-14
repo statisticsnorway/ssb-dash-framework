@@ -48,4 +48,3 @@ Having consistent ways to display modules simplifies reuse and makes it simpler 
 During development we realized that a user would need feedback about what is going on when there is no direct visual feedback. If you change a value in the variableselector through a module, getting a message letting you know what was changed might be convenient. If you try to update a value, getting a confirmation of what was changed is also important to ensure that you know the app is working. And if something goes wrong, it is useful to get a visible error message to let you know something went wrong.
 
 The AlertHandler can sort messages by type and modules can send messages to it so that the user gets feedback about what's going on inside the module if necessary.
-

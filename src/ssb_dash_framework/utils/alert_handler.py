@@ -49,6 +49,7 @@ class AlertHandler:
     - Showing ephemeral alerts at the top-middle of the screen for 4 seconds without removing them from the store.
 
     In order to add alerts to the AlertHandler, you need to modify your callback to include an extra State and Output and append your alert to the list of existing alerts.
+
     Example:
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
