@@ -103,7 +103,9 @@ class AltinnEditorControl:
         def toggle_offcanvas_kontrollutslag(
             n_clicks: None | int, is_open: bool
         ) -> bool:
+            logger.debug(f"Args:\nn_clicks: {n_clicks}\nis_open: {is_open}")
             if n_clicks is None:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             if not is_open:
                 return True
@@ -126,6 +128,12 @@ class AltinnEditorControl:
             dict[str, str] | None,
             str,
         ]:
+            logger.debug(
+                f"Args:\n"
+                f"selected_row: {selected_row}\n"
+                f"skjema: {skjema}\n"
+                f"args: {args}"
+            )
             if (
                 selected_row is None
                 or len(selected_row) == 0

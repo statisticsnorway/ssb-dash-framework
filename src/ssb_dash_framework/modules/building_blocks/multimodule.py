@@ -116,6 +116,7 @@ class MultiModule:
             Input(f"{self.module_number}-multimodule-dropdown", "value"),
         )
         def show_selected_module(selected_index: int) -> list[dict[str, str]]:
+            logger.debug(f"Args:\nselected_index: {selected_index}\n")
             return [
                 {"display": "block"} if i == selected_index else {"display": "none"}
                 for i in range(len(self.module_list))

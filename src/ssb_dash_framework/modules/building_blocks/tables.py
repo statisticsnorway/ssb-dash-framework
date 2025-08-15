@@ -196,7 +196,13 @@ class EditingTable:
                 Exception: If there is an error loading data into the table.
             """
             logger.debug(
-                f"Loading data to table with label {self.label}, module_number: {self.module_number}"
+                "Args:\n"
+                + "\n".join(
+                    [
+                        f"dynamic_state_{i}: {state}"
+                        for i, state in enumerate(dynamic_states)
+                    ]
+                )
             )
             try:
                 df = self.get_data(*dynamic_states)
@@ -254,6 +260,7 @@ class EditingTable:
                 PreventUpdate: If no edits were made.
             """
             if not edited:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             logger.debug(f"Edited:\n{edited}")
             if self.update_table_func is None:
@@ -334,15 +341,24 @@ class EditingTable:
                     prevent_initial_call=True,
                 )
                 def table_to_main_table(clickdata: dict[str, Any]) -> str:
+                    logger.debug(
+                        f"Args:\n"
+                        f"clickdata: {clickdata}\n"
+                        f"column: {column}\n"
+                        f"output_varselector_name: {output_varselector_name}"
+                    )
                     if not clickdata:
+                        logger.debug("Raised PreventUpdate")
                         raise PreventUpdate
                     if clickdata["colId"] != column:
+                        logger.debug("Raised PreventUpdate")
                         raise PreventUpdate
                     output = clickdata["value"]
                     if not isinstance(output, str):
                         logger.debug(
                             f"{output} is not a string, is type {type(output)}"
                         )
+                        logger.debug("Raised PreventUpdate")
                         raise PreventUpdate
                     logger.debug(f"Transfering {output} to {output_varselector_name}")
                     return output
