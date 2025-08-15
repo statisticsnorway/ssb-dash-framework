@@ -251,9 +251,9 @@ class AltinnControlView:
             df2 = self.conn.query(
                 """SELECT k.kontrollid, COUNT(row_id) AS uediterte FROM kontrollutslag AS k
                 JOIN (
-                    SELECT ident, skjemaversjon FROM skjemamottak
+                    SELECT ident, refnr FROM skjemamottak
                     WHERE editert = False
-                ) AS subq ON subq.ident = k.ident AND subq.skjemaversjon = k.skjemaversjon
+                ) AS subq ON subq.ident = k.ident AND subq.refnr = k.refnr
                 WHERE utslag = True
                 GROUP BY k.kontrollid""",
                 create_partition_select(
@@ -292,13 +292,13 @@ class AltinnControlView:
             varsort = current_row[0]["varsort"]
             df = self.conn.query(
                 f"""
-                    SELECT utslag.ident, utslag.skjemaversjon, utslag.kontrollid, utslag.utslag, s.editert, utslag.verdi
+                    SELECT utslag.ident, utslag.refnr, utslag.kontrollid, utslag.utslag, s.editert, utslag.verdi
                     FROM kontrollutslag AS utslag
                     JOIN (
-                        SELECT skjemaversjon AS s_skjemaversjon, editert, ident
+                        SELECT refnr AS s_refnr, editert, ident
                         FROM skjemamottak
                         WHERE aktiv = True
-                    ) AS s ON utslag.skjemaversjon = s.s_skjemaversjon AND utslag.ident = s.ident
+                    ) AS s ON utslag.refnr = s.s_refnr AND utslag.ident = s.ident
                     WHERE utslag.kontrollid = '{kontrollid}' AND utslag.utslag = True
                     ORDER BY editert, utslag.verdi {varsort}
                 """,

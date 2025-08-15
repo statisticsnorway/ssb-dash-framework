@@ -138,10 +138,10 @@ class AltinnEditorHistory:
             if is_open:
                 try:
                     partition_args = dict(zip(self.time_units, args, strict=False))
-                    skjemaversjon = selected_row[0]["skjemaversjon"]
+                    refnr = selected_row[0]["refnr"]
                     df = self.conn.query_changes(
                         f"""SELECT * FROM {tabell}
-                        WHERE skjemaversjon = '{skjemaversjon}'
+                        WHERE refnr = '{refnr}'
                         ORDER BY datetime DESC
                         """,
                         partition_select=create_partition_select(

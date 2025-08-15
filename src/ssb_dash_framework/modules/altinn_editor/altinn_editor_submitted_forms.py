@@ -51,7 +51,7 @@ class AltinnEditorSubmittedForms:
         self.module_callbacks()
 
     def _is_valid(self) -> None:
-        VariableSelector([], []).get_option("skjemaversjon")
+        VariableSelector([], []).get_option("refnr")
 
     def _create_layout(self) -> html.Div:
         """Creates the module layout."""
@@ -69,14 +69,14 @@ class AltinnEditorSubmittedForms:
                 dbc.Card(
                     dbc.CardBody(
                         [
-                            html.H5("Skjemaversjon", className="card-title"),
+                            html.H5("refnr", className="card-title"),
                             dbc.Input(
-                                id="altinnedit-skjemaversjon",
+                                id="altinnedit-refnr",
                                 type="text",
                             ),
                             dbc.Button(
                                 "Se alle",
-                                id="altinnedit-skjemaversjon-button",
+                                id="altinnedit-refnr-button",
                                 type="text",
                             ),
                         ],
@@ -95,7 +95,7 @@ class AltinnEditorSubmittedForms:
         """Returns a modal component with a table containing all the skjema versions."""
         return dbc.Modal(
             [
-                dbc.ModalHeader(dbc.ModalTitle("Skjemaversjoner")),
+                dbc.ModalHeader(dbc.ModalTitle("refnrer")),
                 dbc.ModalBody(
                     dag.AgGrid(
                         defaultColDef={
@@ -111,7 +111,7 @@ class AltinnEditorSubmittedForms:
                     ),
                 ),
             ],
-            id="skjemadata-skjemaversjonsmodal",
+            id="skjemadata-refnrsmodal",
             is_open=False,
             size="xl",
         )
@@ -120,11 +120,11 @@ class AltinnEditorSubmittedForms:
         """Defines the callbacks for the module."""
 
         @callback(  # type: ignore[misc]
-            Output("skjemadata-skjemaversjonsmodal", "is_open"),
-            Input("altinnedit-skjemaversjon-button", "n_clicks"),
-            State("skjemadata-skjemaversjonsmodal", "is_open"),
+            Output("skjemadata-refnrsmodal", "is_open"),
+            Input("altinnedit-refnr-button", "n_clicks"),
+            State("skjemadata-refnrsmodal", "is_open"),
         )
-        def toggle_skjemaversjonsmodal(n_clicks: None | int, is_open: bool) -> bool:
+        def toggle_refnrsmodal(n_clicks: None | int, is_open: bool) -> bool:
             logger.debug(f"Args:\nn_clicks: {n_clicks}\nis_open: {is_open}")
             if n_clicks is None:
                 logger.debug("Raised PreventUpdate")
@@ -195,7 +195,7 @@ class AltinnEditorSubmittedForms:
             partition_args = dict(zip(self.time_units, args, strict=False))
             variabel = edited[0]["colId"]
             new_value = edited[0]["value"]
-            skjemaversjon = edited[0]["data"]["skjemaversjon"]
+            refnr = edited[0]["data"]["refnr"]
 
             if variabel == "editert":
                 try:
@@ -203,7 +203,7 @@ class AltinnEditorSubmittedForms:
                         f"""
                         UPDATE skjemamottak
                         SET editert = {new_value}
-                        WHERE skjemaversjon = '{skjemaversjon}'
+                        WHERE refnr = '{refnr}'
                         """,
                         partition_select=create_partition_select(
                             desired_partitions=self.time_units,
@@ -213,7 +213,7 @@ class AltinnEditorSubmittedForms:
                     )
                     return [
                         create_alert(
-                            f"Skjema {skjemaversjon} sin editeringsstatus er satt til {new_value}.",
+                            f"Skjema {refnr} sin editeringsstatus er satt til {new_value}.",
                             "success",
                             ephemeral=True,
                         ),
@@ -234,7 +234,7 @@ class AltinnEditorSubmittedForms:
                         f"""
                         UPDATE skjemamottak
                         SET aktiv = {new_value}
-                        WHERE skjemaversjon = '{skjemaversjon}'
+                        WHERE refnr = '{refnr}'
                         """,
                         partition_select=create_partition_select(
                             desired_partitions=self.time_units,
@@ -244,7 +244,7 @@ class AltinnEditorSubmittedForms:
                     )
                     return [
                         create_alert(
-                            f"Skjema {skjemaversjon} sin aktivstatus er satt til {new_value}.",
+                            f"Skjema {refnr} sin aktivstatus er satt til {new_value}.",
                             "success",
                             ephemeral=True,
                         ),
@@ -281,7 +281,7 @@ class AltinnEditorSubmittedForms:
             try:
                 partition_args = dict(zip(self.time_units, args, strict=False))
                 df = self.conn.query(
-                    f"""SELECT skjemaversjon, dato_mottatt, editert, aktiv
+                    f"""SELECT refnr, dato_mottatt, editert, aktiv
                     FROM skjemamottak WHERE ident = '{ident}' AND aktiv = True
                     ORDER BY dato_mottatt DESC""",
                     create_partition_select(
@@ -320,14 +320,14 @@ class AltinnEditorSubmittedForms:
             return [selected_row]
 
         @callback(  # type: ignore[misc]
-            Output("altinnedit-skjemaversjon", "value"),
+            Output("altinnedit-refnr", "value"),
             Input("altinnedit-table-skjemaer", "selectedRows"),
         )
-        def selected_skjemaversjon(selected_row: list[dict[str, Any]]) -> str:
+        def selected_refnr(selected_row: list[dict[str, Any]]) -> str:
             logger.debug(f"Args:\nselected_row: {selected_row}")
             if not selected_row:
                 logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
 
-            skjemaversjon = selected_row[0]["skjemaversjon"]
-            return str(skjemaversjon)
+            refnr = selected_row[0]["refnr"]
+            return str(refnr)
