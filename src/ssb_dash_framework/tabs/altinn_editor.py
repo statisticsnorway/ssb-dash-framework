@@ -198,7 +198,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             try:
                 partition_args = dict(zip(self.time_units, args, strict=False))
                 df = self.conn.query(
-                    f"""SELECT skjemaversjon, dato_mottatt, editert, aktiv
+                    f"""SELECT refnr, dato_mottatt, editert, aktiv
                     FROM skjemamottak WHERE ident = '{ident}' AND aktiv = True
                     ORDER BY dato_mottatt DESC""",
                     self.create_partition_select(skjema=skjema, **partition_args),
@@ -229,15 +229,15 @@ class AltinnSkjemadataEditor(AltinnComponents):
             return [selected_row]
 
         @callback(  # type: ignore[misc]
-            Output("altinnedit-skjemaversjon", "value"),
+            Output("altinnedit-refnr", "value"),
             Input("altinnedit-table-skjemaer", "selectedRows"),
         )
-        def selected_skjemaversjon(selected_row):
+        def selected_refnr(selected_row):
             if not selected_row:
                 return None
 
-            skjemaversjon = selected_row[0]["skjemaversjon"]
-            return skjemaversjon
+            refnr = selected_row[0]["refnr"]
+            return refnr
 
         @callback(  # type: ignore[misc]
             Output("var-valgt_tabell", "value"),
@@ -251,12 +251,12 @@ class AltinnSkjemadataEditor(AltinnComponents):
         @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemadata", "rowData"),
             Output("altinnedit-table-skjemadata", "columnDefs"),
-            Input("altinnedit-skjemaversjon", "value"),
+            Input("altinnedit-refnr", "value"),
             Input("altinnedit-option1", "value"),
             State("altinnedit-skjemaer", "value"),
             *self.create_callback_components("State"),
         )
-        def hovedside_update_altinnskjema(skjemaversjon, tabell, skjema, *args):
+        def hovedside_update_altinnskjema(refnr, tabell, skjema, *args):
             schema = self.conn.tables[tabell]["schema"]
             columns = {field["name"] for field in schema}
             if "variabel" in columns and "verdi" in columns:
@@ -265,7 +265,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 long_format = False
 
             if (
-                skjemaversjon is None
+                refnr is None
                 or tabell is None
                 or skjema is None
                 or any(arg is None for arg in args)
@@ -283,7 +283,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                             FROM datatyper
                         ) AS subquery
                         ON subquery.aar = t.aar AND subquery.variabel = t.variabel
-                        WHERE t.skjemaversjon = '{skjemaversjon}'
+                        WHERE t.refnr = '{refnr}'
                         AND subquery.tabell = '{tabell}'
                         ORDER BY subquery.radnr ASC
                         """,
@@ -319,7 +319,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     df = self.conn.query(
                         f"""
                         SELECT * FROM {tabell}
-                        WHERE skjemaversjon = '{skjemaversjon}'
+                        WHERE refnr = '{refnr}'
                         """,
                         partition_select=self.create_partition_select(
                             skjema=skjema, **partition_args
@@ -358,7 +358,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
             variabel = edited[0]["colId"]
             old_value = edited[0]["oldValue"]
             new_value = edited[0]["value"]
-            skjemaversjon = edited[0]["data"]["skjemaversjon"]
+            refnr = edited[0]["data"]["refnr"]
 
             if variabel == "editert":
                 try:
@@ -366,13 +366,13 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         f"""
                         UPDATE skjemamottak
                         SET editert = {new_value}
-                        WHERE skjemaversjon = '{skjemaversjon}'
+                        WHERE refnr = '{refnr}'
                         """,
                         partition_select=self.create_partition_select(
                             skjema=skjema, **partition_args
                         ),
                     )
-                    return f"Skjema {skjemaversjon} sin editeringsstatus er satt til {new_value}."
+                    return f"Skjema {refnr} sin editeringsstatus er satt til {new_value}."
                 except Exception:
                     return "En feil skjedde under oppdatering av editeringsstatusen"
             elif variabel == "aktiv":
@@ -381,13 +381,13 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         f"""
                         UPDATE skjemamottak
                         SET aktiv = {new_value}
-                        WHERE skjemaversjon = '{skjemaversjon}'
+                        WHERE refnr = '{refnr}'
                         """,
                         partition_select=self.create_partition_select(
                             skjema=skjema, **partition_args
                         ),
                     )
-                    return f"Skjema {skjemaversjon} sin aktivstatus er satt til {new_value}."
+                    return f"Skjema {refnr} sin aktivstatus er satt til {new_value}."
                 except Exception:
                     return "En feil skjedde under oppdatering av editeringsstatusen"
 
@@ -441,11 +441,11 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 return False
 
         @callback(  # type: ignore[misc]
-            Output("skjemadata-skjemaversjonsmodal", "is_open"),
-            Input("altinnedit-skjemaversjon-button", "n_clicks"),
-            State("skjemadata-skjemaversjonsmodal", "is_open"),
+            Output("skjemadata-refnrsmodal", "is_open"),
+            Input("altinnedit-refnr-button", "n_clicks"),
+            State("skjemadata-refnrsmodal", "is_open"),
         )
-        def toggle_skjemaversjonsmodal(n_clicks, is_open):
+        def toggle_refnrsmodal(n_clicks, is_open):
             if n_clicks is None:
                 return no_update
             if is_open == False:
@@ -593,7 +593,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                     updated_partition_select = self.update_partition_select(
                         partition_select, rullerende_var
                     )
-                    skjemaversjon = selected_row[0]["skjemaversjon"]
+                    refnr = selected_row[0]["refnr"]
                     column_name_expr_outer = SQL_COLUMN_CONCAT.join(
                         [f"s.{unit}" for unit in self.time_units]
                     )
@@ -615,7 +615,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                             SELECT
                                 {column_name_expr_inner} AS time_combination,
                                 t2.ident,
-                                t2.skjemaversjon,
+                                t2.refnr,
                                 t2.dato_mottatt
                             FROM
                                 skjemamottak AS t2
@@ -625,7 +625,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         ) AS mottak_subquery ON
                             {column_name_expr_outer} = mottak_subquery.time_combination
                             AND s.ident = mottak_subquery.ident
-                            AND s.skjemaversjon = mottak_subquery.skjemaversjon
+                            AND s.refnr = mottak_subquery.refnr
                         JOIN (
                         SELECT * FROM datatyper AS d
                         ) AS subquery ON s.variabel = subquery.variabel
@@ -702,7 +702,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                 return None, None, None, "Se kontrollutslag"
             try:
                 partition_args = dict(zip(self.time_units, args, strict=False))
-                skjemaversjon = selected_row[0]["skjemaversjon"]
+                refnr = selected_row[0]["refnr"]
                 df = self.conn.query(
                     f"""SELECT t1.kontrollid, subquery.skildring, t1.utslag
                     FROM kontrollutslag AS t1
@@ -710,7 +710,7 @@ class AltinnSkjemadataEditor(AltinnComponents):
                         SELECT t2.kontrollid, t2.skildring
                         FROM kontroller AS t2
                     ) AS subquery ON t1.kontrollid = subquery.kontrollid
-                    WHERE skjemaversjon = '{skjemaversjon}'
+                    WHERE refnr = '{refnr}'
                     AND utslag = True""",
                     partition_select=self.create_partition_select(
                         skjema=skjema, **partition_args
@@ -744,10 +744,10 @@ class AltinnSkjemadataEditor(AltinnComponents):
             if is_open:
                 try:
                     partition_args = dict(zip(self.time_units, args, strict=False))
-                    skjemaversjon = selected_row[0]["skjemaversjon"]
+                    refnr = selected_row[0]["refnr"]
                     df = self.conn.query_changes(
                         f"""SELECT * FROM {tabell}
-                        WHERE skjemaversjon = '{skjemaversjon}'
+                        WHERE refnr = '{refnr}'
                         ORDER BY datetime DESC
                         """,
                         partition_select=self.create_partition_select(
@@ -900,18 +900,18 @@ class AltinnSkjemadataEditor(AltinnComponents):
             Output("skjemadata-kontaktinfo-kommentar1", "value"),
             Output("skjemadata-kontaktinfo-kommentar2", "value"),
             Input("altinnedit-option2", "n_clicks"),
-            State("altinnedit-skjemaversjon", "value"),
+            State("altinnedit-refnr", "value"),
             State("altinnedit-skjemaer", "value"),
             *self.create_callback_components("State"),
             prevent_initial_call=True,
         )
-        def kontaktinfocanvas(n_clicks, skjemaversjon, skjema, *args):
+        def kontaktinfocanvas(n_clicks, refnr, skjema, *args):
             partition_args = dict(zip(self.time_units, args, strict=False))
             df_skjemainfo = self.conn.query(
                 f"""SELECT
                 kontaktperson, epost, telefon, kommentar_kontaktinfo, kommentar_krevende
                 FROM kontaktinfo
-                WHERE skjemaversjon = '{skjemaversjon}'
+                WHERE refnr = '{refnr}'
                 """,
                 partition_select=self.create_partition_select(
                     skjema=skjema, **partition_args

@@ -181,14 +181,14 @@ class SkjemapdfViewerTab(TabImplementation, SkjemapdfViewer):
     """SkjemapdfViewerTab is an implementation of the SkjemapdfViewer module as a tab in a Dash application."""
 
     def __init__(
-        self, pdf_folder_path: str, form_identifier: str = "skjemaversjon"
+        self, pdf_folder_path: str, form_identifier: str = "refnr"
     ) -> None:
         """Initializes the SkjemapdfViewerTab class.
 
         Args:
             pdf_folder_path (str): The path to the folder containing PDF files.
             form_identifier (str): The identifier for the form. This should be the VariableSelector value that matches the PDF file name.
-                Defaults to "skjemaversjon".
+                Defaults to "refnr".
         """
         SkjemapdfViewer.__init__(self, form_identifier, pdf_folder_path)
         TabImplementation.__init__(self)
@@ -198,7 +198,7 @@ class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
     """Implementation of the SkjemapdfViewer as a window."""
 
     def __init__(
-        self, pdf_folder_path: str, form_identifier: str = "skjemaversjon"
+        self, pdf_folder_path: str, form_identifier: str = "refnr"
     ) -> None:
         """Initialize the SkjemapdfViewerWindow class.
 
@@ -206,7 +206,7 @@ class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
 
         Args:
             pdf_folder_path (str): The path to the folder containing PDF files.
-            form_identifier (str): The identifier for the form. Defaults to "skjemaversjon".
+            form_identifier (str): The identifier for the form. Defaults to "refnr".
         """
         SkjemapdfViewer.__init__(self, form_identifier, pdf_folder_path)
         WindowImplementation.__init__(
