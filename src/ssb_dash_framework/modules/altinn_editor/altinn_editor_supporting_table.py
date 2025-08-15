@@ -238,7 +238,7 @@ class AltinnEditorSupportTables:
                             SELECT
                                 {column_name_expr_inner} AS time_combination,
                                 t2.ident,
-                                t2.skjemaversjon,
+                                t2.refnr,
                                 t2.dato_mottatt
                             FROM
                                 skjemamottak AS t2
@@ -248,7 +248,7 @@ class AltinnEditorSupportTables:
                         ) AS mottak_subquery ON
                             {column_name_expr_outer} = mottak_subquery.time_combination
                             AND s.ident = mottak_subquery.ident
-                            AND s.skjemaversjon = mottak_subquery.skjemaversjon
+                            AND s.refnr = mottak_subquery.refnr
                         JOIN (
                         SELECT * FROM datatyper AS d
                         ) AS subquery ON s.variabel = subquery.variabel

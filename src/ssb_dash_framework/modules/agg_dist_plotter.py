@@ -332,7 +332,7 @@ class AggDistPlotter(ABC):
                         SELECT
                             {column_name_expr_t2} AS time_combination,
                             t2.ident,
-                            t2.skjemaversjon,
+                            t2.refnr,
                             t2.dato_mottatt
                         FROM
                             skjemamottak AS t2
@@ -345,7 +345,7 @@ class AggDistPlotter(ABC):
                     ) AS mottak_subquery
                         ON {column_name_expr_s} = mottak_subquery.time_combination
                         AND s.ident = mottak_subquery.ident
-                        AND s.skjemaversjon = mottak_subquery.skjemaversjon
+                        AND s.refnr = mottak_subquery.refnr
                     JOIN (
                         SELECT
                             d.variabel,
@@ -463,16 +463,16 @@ class AggDistPlotter(ABC):
                 JOIN (
                     SELECT
                         t2.ident,
-                        t2.skjemaversjon,
+                        t2.refnr,
                         MAX(t2.dato_mottatt) AS newest_dato_mottatt
                     FROM
                         skjemamottak AS t2
                     GROUP BY
                         t2.ident,
-                        t2.skjemaversjon
+                        t2.refnr
                 ) AS subquery ON
                     t1.ident = subquery.ident
-                    AND t1.skjemaversjon = subquery.skjemaversjon
+                    AND t1.refnr = subquery.refnr
                 WHERE variabel = '{variabel}' AND verdi IS NOT NULL AND verdi != 0
                 """,
                 partition_select=partition_select,

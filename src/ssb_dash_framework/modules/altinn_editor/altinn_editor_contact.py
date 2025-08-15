@@ -171,18 +171,18 @@ class AltinnEditorContact:
             Output("skjemadata-kontaktinfo-kommentar1", "value"),
             Output("skjemadata-kontaktinfo-kommentar2", "value"),
             Input("altinnedit-contact-button", "n_clicks"),
-            State("altinnedit-skjemaversjon", "value"),
+            State("altinnedit-refnr", "value"),
             State("altinnedit-skjemaer", "value"),
             self.variable_selector.get_states(),
             prevent_initial_call=True,
         )
         def kontaktinfocanvas(
-            n_clicks: None | int, skjemaversjon: str, skjema: str, *args: Any
+            n_clicks: None | int, refnr: str, skjema: str, *args: Any
         ) -> tuple[str, str, str, str, str]:
             logger.debug(
                 f"Args:\n"
                 f"n_clicks: {n_clicks}\n"
-                f"skjemaversjon: {skjemaversjon}\n"
+                f"refnr: {refnr}\n"
                 f"skjema: {skjema}\n"
                 f"args: {args}"
             )
@@ -191,7 +191,7 @@ class AltinnEditorContact:
                 f"""SELECT
                 kontaktperson, epost, telefon, kommentar_kontaktinfo, kommentar_krevende
                 FROM kontaktinfo
-                WHERE skjemaversjon = '{skjemaversjon}'
+                WHERE refnr = '{refnr}'
                 """,
                 partition_select=create_partition_select(
                     desired_partitions=self.time_units, skjema=skjema, **partition_args
