@@ -47,6 +47,23 @@ class AlertHandler:
     This class provides functionality for:
     - Displaying a modal with all alerts, which can be filtered and dismissed.
     - Showing ephemeral alerts at the top-middle of the screen for 4 seconds without removing them from the store.
+
+    In order to add alerts to the AlertHandler, you need to modify your callback to include an extra State and Output and append your alert to the list of existing alerts.
+
+    Example:
+        @callback(
+            Output("alert_store", "data", allow_duplicate=True),
+            State("alert_store", "data"),
+        )
+        def callback_function_with_alert(alert_log):
+            alert_log.append(
+                create_alert(
+                    f"Your message",
+                    "info", # The type of alert
+                    ephemeral=True, # If true, pops up as a notification
+                )
+            )
+            return alert_log
     """
 
     def __init__(self) -> None:

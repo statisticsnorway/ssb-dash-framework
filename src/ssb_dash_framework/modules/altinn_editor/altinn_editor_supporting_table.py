@@ -160,7 +160,9 @@ class AltinnEditorSupportTables:
             State("skjemadata-hjelpetabellmodal", "is_open"),
         )
         def toggle_hjelpetabellmodal(n_clicks: None | int, is_open: bool) -> bool:
+            logger.debug(f"Args:\nn_clicks: {n_clicks}\nis_open: {is_open}")
             if n_clicks is None:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             if not is_open:
                 return True
@@ -189,6 +191,16 @@ class AltinnEditorSupportTables:
             skjema: str,
             *args: Any,
         ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
+            logger.debug(
+                f"Args:\n"
+                f"tab: {tab}\n"
+                f"selected_row: {selected_row}\n"
+                f"rullerende_var: {rullerende_var}\n"
+                f"tabell: {tabell}\n"
+                f"ident: {ident}\n"
+                f"skjema: {skjema}\n"
+                f"args: {args}"
+            )
             if tab == "modal-hjelpetabeller-tab1":
                 try:
                     partition_args = dict(zip(self.time_units, args, strict=False))
@@ -292,6 +304,8 @@ class AltinnEditorSupportTables:
                     return df_wide.to_dict("records"), columns
                 except Exception as e:
                     logger.error(f"Error in hjelpetabeller: {e}", exc_info=True)
+                    logger.debug("Raised PreventUpdate")
                     raise PreventUpdate from e
             else:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate

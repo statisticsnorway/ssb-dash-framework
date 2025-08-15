@@ -15,7 +15,7 @@ mp.dps = 1000
 pi = str(mp.pi)
 
 
-class Pimemorizer:
+class PimemorizerTab:
     """A tab for testing and improving memory of the digits of π (Pi).
 
     This component provides:

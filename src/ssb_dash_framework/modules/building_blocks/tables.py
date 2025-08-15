@@ -33,7 +33,7 @@ class EditingTable:
         output_varselector_name (str | None): Identifier for the variable selector.
         variableselector (VariableSelector): A variable selector for managing inputs and states.
         get_data (Callable[..., Any]): Function to fetch data from the database.
-        update_table (Callable[..., Any]): Function to update database records based on edits in the table.
+        update_table (Callable[..., Any]): Function to update database records based on edit made in the table.
         module_layout (html.Div): The layout of the component.
         number_format (str): A d3 format string for formatting numeric values in the table.
     """
@@ -69,6 +69,8 @@ class EditingTable:
             **kwargs: Additional keyword arguments for the Dash AgGrid component.
 
         Note:
+            get_data_func receives the selected inputs as its first arguments and then the selected states. This can be used to subset so you only see the relevant data.
+            update_table_func receives the Dash ag grid value for "cellValueChanged" as its first argument, followed by the selected inputs and lastly the selected states. Consider this when writing your update function.
             kwargs are passed to the AgGrid to allow more customization. An example option would be adding dashGridOptions = {"singleClickEdit": True}
         """
         self.kwargs = kwargs
@@ -193,7 +195,13 @@ class EditingTable:
                 Exception: If there is an error loading data into the table.
             """
             logger.debug(
-                f"Loading data to table with label {self.label}, module_number: {self.module_number}"
+                "Args:\n"
+                + "\n".join(
+                    [
+                        f"dynamic_state_{i}: {state}"
+                        for i, state in enumerate(dynamic_states)
+                    ]
+                )
             )
             try:
                 df = self.get_data(*dynamic_states)
@@ -251,6 +259,7 @@ class EditingTable:
                 PreventUpdate: If no edits were made.
             """
             if not edited:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             logger.debug(f"Edited:\n{edited}")
             if self.update_table_func is None:
@@ -331,15 +340,24 @@ class EditingTable:
                     prevent_initial_call=True,
                 )
                 def table_to_main_table(clickdata: dict[str, Any]) -> str:
+                    logger.debug(
+                        f"Args:\n"
+                        f"clickdata: {clickdata}\n"
+                        f"column: {column}\n"
+                        f"output_varselector_name: {output_varselector_name}"
+                    )
                     if not clickdata:
+                        logger.debug("Raised PreventUpdate")
                         raise PreventUpdate
                     if clickdata["colId"] != column:
+                        logger.debug("Raised PreventUpdate")
                         raise PreventUpdate
                     output = clickdata["value"]
                     if not isinstance(output, str):
                         logger.debug(
                             f"{output} is not a string, is type {type(output)}"
                         )
+                        logger.debug("Raised PreventUpdate")
                         raise PreventUpdate
                     logger.debug(f"Transfering {output} to {output_varselector_name}")
                     return output
