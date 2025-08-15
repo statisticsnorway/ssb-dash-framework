@@ -34,6 +34,7 @@ def set_variables(variable_list: str | list[str]) -> None:
         raise TypeError(
             f"Expected all elements in variable_list to be str, received {variable_list}"
         )
+    logger.debug(f"Sets up variable options for {variable_list}")
     for variable in variable_list:
         VariableSelectorOption(variable)
 
@@ -64,6 +65,10 @@ class VariableSelector:
         Examples:
             >>> VariableSelector(selected_inputs = ["foretak"], selected_states = ["aar"])
             >>> VariableSelector(selected_inputs = ["foretak"], selected_states = ["aar"], default_values = {"aar": "2024"})
+
+        Notes:
+            - Usage in a module involves using the callback objects returned by either `get_inputs` and `get_states` or `get_callback_objects` to register callbacks.
+            - The `get_output_object` method can be used to create an Output object updating the main VariableSelector in the app through a callback.
         """
         self.options = [option.title for option in self._variableselectoroptions]
         self.inputs = selected_inputs
@@ -133,19 +138,31 @@ class VariableSelector:
 
     def get_inputs(self) -> list[Input]:
         """Retrieves a list of Dash Input objects for selected inputs."""
-        return [
+        to_be_returned = [
             Input(option.id, "value")
+            for input_title in self.inputs
             for option in self._variableselectoroptions
-            if option.title in self.inputs
+            if option.title == input_title
         ]
+        logger.debug(f"Gettings inputs: {to_be_returned}")
+        return to_be_returned
 
     def get_states(self) -> list[State]:
         """Retrieves a list of Dash State objects for selected states."""
-        return [
+        to_be_returned = [
             State(option.id, "value")
+            for state_title in self.states
             for option in self._variableselectoroptions
-            if option.title in self.states
+            if option.title == state_title
         ]
+        logger.debug(f"Gettings inputs: {to_be_returned}")
+        return to_be_returned
+
+    def get_callback_objects(self) -> list[Input | State]:
+        """Retrieves a list of Dash Input and State objects for all selected variables."""
+        to_be_returned = self.get_inputs() + self.get_states()
+        logger.debug(f"Getting callback objects: {to_be_returned}")
+        return to_be_returned
 
     def get_output_object(self, variable: str) -> Output:
         """Creates a Dash Output object for a given variable.
@@ -166,7 +183,9 @@ class VariableSelector:
                 f"Invalid variable name, expected one of {[option.title for option in self._variableselectoroptions]}. Received {variable}"
             )
         option = self.get_option(variable)
-        return Output(option.id, "value", allow_duplicate=True)
+        output_object = Output(option.id, "value", allow_duplicate=True)
+        logger.debug(f"Getting output object for {variable}: {output_object}")
+        return output_object
 
     def _create_variable_card(
         self,
@@ -190,14 +209,13 @@ class VariableSelector:
             value = ""
         card = dbc.Col(
             dbc.Card(
-                dbc.CardBody(
-                    [
+                className="variable-selector-card",
+                children=dbc.CardBody(
+                    className="variable-selector-cardbody",
+                    children=[
                         html.H5(text, className="card-title"),
                         html.Div(
-                            style={
-                                "display": "grid",
-                                "grid-template-columns": "100%",
-                            },
+                            className="variable-selector-cardbody-content",
                             children=[
                                 dbc.Input(
                                     value=value,
@@ -207,20 +225,16 @@ class VariableSelector:
                             ],
                         ),
                     ],
-                    style={"max-height": "100%"},
                 ),
-                style={"max-height": "100%"},
             )
         )
-        self._make_alert_callback(
-            component_id, text
-        )  # Should be made optional, maybe as an argument in main_layout
+        self._make_alert_callback(component_id, text)
         return card
 
     def _make_alert_callback(self, component_id: str, component_name: str) -> Any:
         """Utility function to add alerts to updates on the variable selector."""
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
             Input(component_id, "value"),
             State("alert_store", "data"),

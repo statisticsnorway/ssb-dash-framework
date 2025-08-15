@@ -2,6 +2,7 @@ import base64
 import logging
 from abc import ABC
 from abc import abstractmethod
+from typing import ClassVar
 
 import dash_bootstrap_components as dbc
 from dapla import FileClient
@@ -12,6 +13,9 @@ from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
+from ..utils import TabImplementation
+from ..utils import WindowImplementation
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +24,10 @@ class Aarsregnskap(ABC):
     """Module for displaying annual financial statements (Årsregnskap).
 
     Attributes:
-        label (str): Label for the module when initialized, displayed as "🧾 Årsregnskap".
+        label (str): Label for the module when initialized, displayed as "Årsregnskap".
     """
+
+    _id_number: ClassVar[int] = 0
 
     def __init__(
         self,
@@ -31,10 +37,15 @@ class Aarsregnskap(ABC):
         Sets up the label, validates required variables, and initializes the
         layout and callbacks for the module.
         """
-        self.label = "🧾 Årsregnskap"
+        self.module_number = Aarsregnskap._id_number
+        self.module_name = self.__class__.__name__
+        Aarsregnskap._id_number += 1
+        self.label = "Årsregnskap"
+        self.icon = "🧾"
         self._is_valid()
         self.module_layout = self._create_layout()
         self.module_callbacks()
+        module_validator(self)
 
     def _is_valid(self) -> None:
         """Validates the presence of required variables in VariableSelector.
@@ -62,11 +73,11 @@ class Aarsregnskap(ABC):
             organization number, and an iframe to display the PDF content.
         """
         layout = html.Div(
-            style={"height": "94vh", "display": "flex", "flexDirection": "column"},
+            className="aarsregnskap",
             children=[
                 dbc.Container(
                     fluid=True,
-                    style={"display": "flex", "flexDirection": "column", "flex": "1"},
+                    className="aarsregnskap-container",
                     children=[
                         dbc.Row(
                             [
@@ -75,7 +86,7 @@ class Aarsregnskap(ABC):
                                         [
                                             dbc.Label("År"),
                                             dbc.Input(
-                                                id="tab-aarsregnskap-input1",
+                                                id="tab-aarsregnskap-input-aar",
                                                 type="number",
                                             ),
                                         ]
@@ -85,26 +96,24 @@ class Aarsregnskap(ABC):
                                     html.Div(
                                         [
                                             dbc.Label("Orgnr"),
-                                            dbc.Input(id="tab-aarsregnskap-input2"),
+                                            dbc.Input(
+                                                id="tab-aarsregnskap-input-orgnr"
+                                            ),
                                         ]
                                     )
                                 ),
                             ],
-                            style={"flex": "0 0 auto"},
+                            className="aarsregnskap-aar-foretak-row",
                         ),
                         dbc.Row(
                             dbc.Col(
                                 html.Iframe(
-                                    id="tab-aarsregnskap-iframe1",
-                                    style={
-                                        "width": "100%",
-                                        "height": "100%",
-                                        "border": "none",
-                                    },
+                                    className="aarsregnskap-pdf-iframe",
+                                    id="tab-aarsregnskap-iframe",
                                 ),
-                                style={"flex": "1", "minHeight": 0},
+                                className="aarsregnskap-pdf-col",
                             ),
-                            style={"flex": "1", "overflow": "hidden"},
+                            className="aarsregnskap-pdf-row",
                         ),
                     ],
                 ),
@@ -127,8 +136,8 @@ class Aarsregnskap(ABC):
     def module_callbacks(self) -> None:
         """Registers Dash callbacks for the Årsregnskap module."""
 
-        @callback(
-            Output("tab-aarsregnskap-input1", "value"),
+        @callback(  # type: ignore[misc]
+            Output("tab-aarsregnskap-input-aar", "value"),
             Input("var-aar", "value"),
         )
         def update_aar(aar: int) -> int:
@@ -140,10 +149,11 @@ class Aarsregnskap(ABC):
             Returns:
                 int: The updated year value.
             """
+            logger.debug(f"Args:\naar: {aar}\n")
             return aar
 
-        @callback(
-            Output("tab-aarsregnskap-input2", "value"),
+        @callback(  # type: ignore[misc]
+            Output("tab-aarsregnskap-input-orgnr", "value"),
             Input("var-foretak", "value"),
         )
         def update_orgnr(orgnr: str) -> str:
@@ -155,12 +165,13 @@ class Aarsregnskap(ABC):
             Returns:
                 str: The updated organization number value.
             """
+            logger.debug(f"Args:\norgnr: {orgnr}\n")
             return orgnr
 
-        @callback(
-            Output("tab-aarsregnskap-iframe1", "src"),
-            Input("tab-aarsregnskap-input1", "value"),
-            Input("tab-aarsregnskap-input2", "value"),
+        @callback(  # type: ignore[misc]
+            Output("tab-aarsregnskap-iframe", "src"),
+            Input("tab-aarsregnskap-input-aar", "value"),
+            Input("tab-aarsregnskap-input-orgnr", "value"),
         )
         def update_pdf_source(aar: int, orgnr: str) -> str | None:
             """Fetch and encode the PDF source based on the year and organization number.
@@ -175,12 +186,15 @@ class Aarsregnskap(ABC):
             Raises:
                 PreventUpdate: If the year or organization number is not provided.
             """
+            logger.debug(f"Args:\naar: {aar}\norgnr: {orgnr}\n")
             if not aar or not orgnr:
                 raise PreventUpdate
+            path_to_file = f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/aarsregn/g{aar}/{orgnr}_{aar}.pdf"
+            logger.debug(f"Trying to open file: {path_to_file}")
             try:
                 fs = FileClient.get_gcs_file_system()
                 with fs.open(
-                    f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/aarsregn/g{aar}/{orgnr}_{aar}.pdf",
+                    path_to_file,
                     "rb",
                 ) as f:
                     pdf_bytes = f.read()
@@ -188,9 +202,28 @@ class Aarsregnskap(ABC):
                 pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
                 pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
             except FileNotFoundError:
+                logger.debug(f"Returning None. Could not open file: {path_to_file}")
                 return None
             pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
             pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
             return pdf_data_uri
 
         logger.debug("Generated callbacks")
+
+
+class AarsregnskapTab(TabImplementation, Aarsregnskap):
+    """AarsregnskapTab is an implementation of the Aarsregnskap module as a tab in a Dash application."""
+
+    def __init__(self) -> None:
+        """Initializes the AarsregnskapTab class."""
+        Aarsregnskap.__init__(self)
+        TabImplementation.__init__(self)
+
+
+class AarsregnskapWindow(WindowImplementation, Aarsregnskap):
+    """AarsregnskapWindow is an implementation of the Aarsregnskap module as a window in a Dash application."""
+
+    def __init__(self) -> None:
+        """Initializes the AarsregnskapWindow class."""
+        Aarsregnskap.__init__(self)
+        WindowImplementation.__init__(self)

@@ -60,13 +60,7 @@ def main_layout(
     window_modules_list = [alerthandler.layout(), *window_modules]
 
     varvelger_toggle = [
-        html.Div(
-            [
-                sidebar_button(
-                    "🛆", "vis/skjul variabelvelger", "sidebar-varvelger-button"
-                )
-            ]
-        )
+        html.Div([sidebar_button("🛆", "Vis variabler", "sidebar-varvelger-button")])
     ]
     window_modules_list = varvelger_toggle + window_modules_list
     selected_tab_list = [
@@ -77,49 +71,43 @@ def main_layout(
         [
             html.Div(
                 id="notifications-container",
-                style={"position": "fixed", "z-index": 9999},
+                className="main-layout-notifications-container",
             ),
             html.P(
-                id="update-status", style={"font-size": "60%", "visibility": "hidden"}
+                id="update-status",
+                style={"font-size": "60%", "visibility": "hidden"},  # What is this!?
             ),
             html.Div(
                 id="main-layout",
-                style={
-                    "height": "100vh",
-                    "overflow": "auto",
-                    "display": "grid",
-                    "grid-template-columns": "5% 95%",
-                },
+                className="main-layout",
                 children=[
                     html.Div(
-                        className="bg-secondary",
-                        style={
-                            "display": "flex",
-                            "flex-direction": "column",
-                            "height": "100%",
-                        },
+                        id="main-layout-sidebar",
+                        className="main-layout-sidebar bg-secondary",
                         children=window_modules_list,
                     ),
                     html.Div(
                         children=[
                             html.Div(
-                                [
+                                id="main-layout-offcanvas",
+                                children=[
                                     dbc.Offcanvas(
                                         html.Div(
                                             children=variable_selector.layout(),
                                         ),
                                         id="variable-selector-offcanvas",
+                                        className="main-layout-offcanvas-variable-selector",
                                         title="Variabler",
                                         is_open=False,
                                         placement="end",
                                         backdrop=False,
-                                        style={"width": "22%", "height": "100%"},
                                     ),
-                                ]
+                                ],
                             ),
                             html.Div(
-                                dbc.Tabs(selected_tab_list),
-                                style={"height": "5vh"},
+                                id="main-layout-tab-div",
+                                className="main-layout-tab-container",
+                                children=dbc.Tabs(selected_tab_list),
                             ),
                         ],
                     ),
@@ -129,4 +117,5 @@ def main_layout(
         fluid=True,
         className="dbc dbc-ag-grid",
     )
+    logger.debug("Generated layout.")
     return layout
