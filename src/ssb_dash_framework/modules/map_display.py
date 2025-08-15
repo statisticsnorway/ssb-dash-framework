@@ -155,7 +155,7 @@ class MapDisplay:
             geojson=self.data["geometry"],
             locations=self.data.index,
             color=self.data["value"],
-            center={"lat": 59.9138, "lon": 10.7387},
+            center={"lat": 65.0, "lon": 15},
             mapbox_style="open-street-map",
             zoom=4,
             opacity=0.7,
