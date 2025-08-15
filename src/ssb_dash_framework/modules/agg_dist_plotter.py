@@ -240,9 +240,13 @@ class AggDistPlotter(ABC):
         :param key_to_update: Key to update by appending (N-1)
         :return: Updated dictionary
         """
+        logger.debug(
+            f"Arg values\npartition_dict: {partition_dict}\nkey_to_update: {key_to_update}"
+        )
         if partition_dict.get(key_to_update):
             min_value = min(partition_dict[key_to_update])
             partition_dict[key_to_update].append(int(min_value) - 1)
+        logger.debug(f"Returning: {partition_dict}")
         return partition_dict
 
     def module_callbacks(self) -> None:
@@ -254,12 +258,16 @@ class AggDistPlotter(ABC):
             Input("var-altinnskjema", "value"),
         )
         def oppdater_valgt_skjema(skjema: str) -> list[dict[str, str]]:
+            logger.debug(f"Skjema: {skjema}")
             if skjema:
-                return [
+                radio_item_options = [
                     {"label": "Alle skjemaer", "value": "all"},
                     {"label": f"Bare {skjema}", "value": skjema},
                 ]
+                logger.debug(f"Returning:\n{radio_item_options}")
+                return radio_item_options
             else:
+                logger.debug(f"Returning: {INITIAL_OPTIONS}")
                 return INITIAL_OPTIONS
 
         @callback(  # type: ignore[misc]
@@ -280,8 +288,12 @@ class AggDistPlotter(ABC):
         ) -> tuple[
             list[dict[str, Any]], list[dict[str, str | bool]]
         ]:  # TODO replace Any
+            logger.debug(
+                f"Args:\nrefresh: {refresh}\nradio_value: {radio_value}\nrullerende_var: {rullerende_var}\ntabell: {tabell}\ndynamic_states: {dynamic_states}"
+            )
             skjema = radio_value
             if not refresh:
+                logger.debug("Preventing update")
                 raise PreventUpdate
             else:
                 partition_args = dict(
@@ -416,6 +428,9 @@ class AggDistPlotter(ABC):
             tabell: str,
             *args: Any,
         ) -> go.Figure:  # TODO replace Any
+            logger.debug(
+                f"Args:\ncurrent_row: {current_row}\nskjema: {skjema}\n graph_type: {graph_type}\n tabell: {tabell}\n args: {args}"
+            )
             if (
                 current_row is None
                 or skjema is None

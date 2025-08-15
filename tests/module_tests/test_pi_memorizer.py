@@ -1,5 +1,5 @@
-from ssb_dash_framework import Pimemorizer
+from ssb_dash_framework import PimemorizerTab
 
 
 def test_import() -> None:
-    assert Pimemorizer is not None
+    assert PimemorizerTab is not None

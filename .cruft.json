@@ -1,7 +1,7 @@
 {
   "template": "https://github.com/statisticsnorway/ssb-pypitemplate.git",
-  "commit": "0d33fca0d1c29c79aef9c7053e36d9e7cdd2bd20",
-  "checkout": "2025.2.19",
+  "commit": "9e3c49f6680d4c400567c39d70b768f0a322c95e",
+  "checkout": "2025.7.18",
   "context": {
     "cookiecutter": {
       "project_name": "ssb-dash-framework",
@@ -16,6 +16,8 @@
       "license": "GPL-3.0",
       "development_status": "Development Status :: 4 - Beta",
       "code_quality_level": "Medium",
+      "dependency_manager_tool": "poetry",
+      "department_number": "",
       "_copy_without_render": [
         "*.rst_t"
       ],
@@ -24,7 +26,7 @@
         "trim_blocks": true
       },
       "_template": "https://github.com/statisticsnorway/ssb-pypitemplate.git",
-      "_commit": "0d33fca0d1c29c79aef9c7053e36d9e7cdd2bd20"
+      "_commit": "9e3c49f6680d4c400567c39d70b768f0a322c95e"
     }
   },
   "directory": null

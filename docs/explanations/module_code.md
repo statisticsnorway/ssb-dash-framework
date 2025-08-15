@@ -13,7 +13,7 @@ Pre-requisites for building a new module:
 
 ## The module structure
 
-Our module structure seeks to accomplish a few things:
+Our module structure aims to accomplish a few things:
 - Simplicity: The module should be easy to understand and use.
 - Flexibility: The module should be flexible enough to be used in different contexts and with different data sources.
 - Reusability: The module should be reusable in different projects and contexts.
@@ -23,7 +23,7 @@ These goals are sometimes contradictory, and we have tried to find a balance bet
 
 ### The base module
 
-Lets take a look at the module structure with a kind of template for a module.
+Lets take a look at the code structure for a module structure with a simple example.
 
 ```python
 from abc import ABC

@@ -18,7 +18,6 @@
 [pypi status]: https://pypi.org/project/ssb-dash-framework/
 [documentation]: https://statisticsnorway.github.io/ssb-dash-framework
 [tests]: https://github.com/statisticsnorway/ssb-dash-framework/actions?workflow=Tests
-
 [sonarcov]: https://sonarcloud.io/summary/overall?id=statisticsnorway_ssb-dash-framework
 [sonarquality]: https://sonarcloud.io/summary/overall?id=statisticsnorway_ssb-dash-framework
 [pre-commit]: https://github.com/pre-commit/pre-commit
