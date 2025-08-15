@@ -148,7 +148,7 @@ class MapDisplay:
             color=self.data["value"],
             center={"lat": 59.9138, "lon": 10.7387},
             mapbox_style="open-street-map",
-            zoom=2,
+            zoom=4,
         ).update_traces(marker_line_width=0)
         fig.write_html("Kart.html")
         logger.debug("Returning map figure")
