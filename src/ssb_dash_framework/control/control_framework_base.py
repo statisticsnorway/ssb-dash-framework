@@ -48,12 +48,12 @@ class ControlFrameworkBase:
         """
         try:
             df_allerede_kontrollert = self.conn.query(
-                "SELECT aar, skjema, kontrollid, ident, skjemaversjon, utslag FROM kontrollutslag",
+                "SELECT aar, skjema, kontrollid, ident, refnr, utslag FROM kontrollutslag",
                 self.partitions_skjema,
             )
         except Exception:
             df_allerede_kontrollert = pd.DataFrame(
-                columns=["aar", "skjema", "kontrollid", "ident", "skjemaversjon"]
+                columns=["aar", "skjema", "kontrollid", "ident", "refnr"]
             )
 
         if len(df_allerede_kontrollert) == 0:
@@ -62,7 +62,7 @@ class ControlFrameworkBase:
             df = self._run_all_controls()
             total_merge = df.merge(
                 df_allerede_kontrollert,
-                on=["aar", "skjema", "kontrollid", "ident", "skjemaversjon"],
+                on=["aar", "skjema", "kontrollid", "ident", "refnr"],
                 how="outer",
                 indicator=True,
             )
@@ -73,7 +73,7 @@ class ControlFrameworkBase:
                     "skjema",
                     "kontrollid",
                     "ident",
-                    "skjemaversjon",
+                    "refnr",
                     "verdi",
                     "utslag_x",
                 ]
@@ -104,19 +104,19 @@ class ControlFrameworkBase:
             pd.DataFrame: DataFrame of rows that need to be updated.
         """
         df_allerede_kontrollert = self.conn.query(
-            "SELECT kontrollid, ident, skjemaversjon, utslag FROM kontrollutslag",
+            "SELECT kontrollid, ident, refnr, utslag FROM kontrollutslag",
             self.partitions_skjema,
         )
         df = self._run_all_controls()
         total_merge = df.merge(
             df_allerede_kontrollert,
-            on=["kontrollid", "ident", "skjemaversjon"],
+            on=["kontrollid", "ident", "refnr"],
             how="outer",
             indicator=True,
         ).dropna()
 
         df_endrede = total_merge[total_merge["utslag_x"] != total_merge["utslag_y"]][
-            ["kontrollid", "ident", "skjemaversjon", "verdi", "utslag_x"]
+            ["kontrollid", "ident", "refnr", "verdi", "utslag_x"]
         ].rename(columns={"utslag_x": "utslag"})
 
         return df_endrede
@@ -135,7 +135,7 @@ class ControlFrameworkBase:
         for _, row in df_updates.iterrows():
             update_query += (
                 f" WHEN kontrollid = '{row['kontrollid']}' AND "
-                f"skjemaversjon = '{row['skjemaversjon']}' THEN {row['utslag']}"
+                f"refnr = '{row['refnr']}' THEN {row['utslag']}"
             )
 
         update_query += " ELSE utslag END"
@@ -143,7 +143,7 @@ class ControlFrameworkBase:
             " WHERE "
             + " OR ".join(
                 [
-                    f"(kontrollid = '{row['kontrollid']}' AND skjemaversjon = '{row['skjemaversjon']}')"
+                    f"(kontrollid = '{row['kontrollid']}' AND refnr = '{row['refnr']}')"
                     for _, row in df_updates.iterrows()
                 ]
             )

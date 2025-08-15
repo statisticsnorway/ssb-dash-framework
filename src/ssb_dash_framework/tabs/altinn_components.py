@@ -39,7 +39,7 @@ class AltinnComponents:
                         self.historikkmodal(),
                         self.hjelpetabellmodal(),
                         self.kommentarmodal(),
-                        self.skjemaversjonsmodal(),
+                        self.refnrsmodal(),
                         self.enhetsinfomodal(),
                         *self.create_cards(),
                         dbc.Card(
@@ -63,15 +63,15 @@ class AltinnComponents:
                         dbc.Card(
                             dbc.CardBody(
                                 [
-                                    html.H5("Skjemaversjon", className="card-title"),
+                                    html.H5("refnr", className="card-title"),
                                     dbc.Input(
-                                        id="altinnedit-skjemaversjon",
+                                        id="altinnedit-refnr",
                                         type="text",
                                         className="mb-2",
                                     ),
                                     dbc.Button(
                                         "Se alle",
-                                        id="altinnedit-skjemaversjon-button",
+                                        id="altinnedit-refnr-button",
                                         type="text",
                                     ),
                                 ]
@@ -414,11 +414,11 @@ class AltinnComponents:
             size="xl",
         )
 
-    def skjemaversjonsmodal(self) -> dbc.Modal:
+    def refnrsmodal(self) -> dbc.Modal:
         """Returns a modal component with a table containing all the skjema versions."""
         return dbc.Modal(
             [
-                dbc.ModalHeader(dbc.ModalTitle("Skjemaversjoner")),
+                dbc.ModalHeader(dbc.ModalTitle("refnrer")),
                 dbc.ModalBody(
                     dag.AgGrid(
                         defaultColDef={
@@ -434,7 +434,7 @@ class AltinnComponents:
                     ),
                 ),
             ],
-            id="skjemadata-skjemaversjonsmodal",
+            id="skjemadata-refnrsmodal",
             is_open=False,
             size="xl",
         )

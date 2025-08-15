@@ -77,7 +77,7 @@ Hver kontrollmetode må returnere en `pandas.DataFrame` med følgende kolonner:
 - `aar` (Flere tidsperioder er mulig)
 - `skjema`
 - `ident`
-- `skjemaversjon`
+- `refnr`
 - `kontrollid`
 - `utslag` (True/False)
 - `verdi` (valgfri tallverdi som kontrollen er basert på)
@@ -106,7 +106,7 @@ Alle kontrollmetoder skal returnere en DataFrame med følgende kolonner:
 - `aar`: årstall (int) (Flere tidsperioder er mulig)
 - `skjema`: skjemanavn (str)
 - `ident`: identifikator (str/int)
-- `skjemaversjon`: versjon (str/int)
+- `refnr`: versjon (str/int)
 - `kontrollid`: ID for kontrollen (str, f.eks. "V001")
 - `utslag`: bool (True/False)
 - `verdi`: int/float – verdien som brukes i kontrollen
