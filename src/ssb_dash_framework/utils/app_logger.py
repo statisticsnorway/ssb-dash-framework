@@ -1,5 +1,6 @@
 import logging
 import sys
+from pathlib import Path
 
 _LOGGING_ENABLED: bool = False
 
@@ -14,6 +15,9 @@ def enable_app_logging(level: str = "info", log_to_file: bool = False) -> None:
             This file should not be saved in the repository, as it will contain sensitive information in the logs.
 
     Raises:
+        TypeError: If level is not a string.
+        TypeError: If log_to_file is not a bool.
+        FileNotFoundError: If cannot find 'work' folder.
         ValueError: If the provided logging level is not valid.
         RuntimeError: If logging is already enabled.
 
@@ -21,6 +25,10 @@ def enable_app_logging(level: str = "info", log_to_file: bool = False) -> None:
         The logging output will be sent to both the console and a file named "app.log".
         Also adds a logging message to indicate that the app was started. This is to make it possible to differentaiate different sessions.
     """
+    if not isinstance(level, str):
+        raise TypeError(f"level must be bool, received: {type(level)}")
+    if not isinstance(log_to_file, bool):
+        raise TypeError(f"log_to_file must be bool, received: {type(log_to_file)}")
     if globals()["_LOGGING_ENABLED"]:
         raise RuntimeError(
             "ssb-dash-framework logger is already enabled, either set 'enable_logging' to False in app_setup or make sure you are not running 'enable_app_logging()' directly."
@@ -44,7 +52,10 @@ def enable_app_logging(level: str = "info", log_to_file: bool = False) -> None:
     console_handler = logging.StreamHandler(sys.stdout)
     handlers.append(console_handler)
     if log_to_file:
-        file_handler = logging.FileHandler("app.log", mode="a")
+        log_path = Path("/home/onyxia/work/app.log")
+        if not log_path.parent.exists():
+            raise FileNotFoundError(f"Directory does not exist: {log_path.parent}")
+        file_handler = logging.FileHandler(log_path, mode="a")
         handlers.append(file_handler)
 
     formatter = logging.Formatter(
