@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from ssb_dash_framework.setup.variableselector import VariableSelector
+from ssb_dash_framework import VariableSelector
 
 
 @pytest.fixture(autouse=True)

@@ -24,9 +24,8 @@ class EditingTable:
     """A component for editing data using a Dash AgGrid table.
 
     This class provides a layout and functionality to:
-    - Select a database table from a dropdown menu.
-    - Load data into an editable Dash AgGrid table.
-    - Update values based on user edits in the table.
+    - Load a dataframe into an editable Dash AgGrid table.
+    - Update data based on user edits in the table with a custom function.
 
     Attributes:
         label (str): The label for the tab or component.
