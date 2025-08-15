@@ -23,6 +23,7 @@ logger.setLevel(logging.DEBUG)
 
 _DEFAULT_COLORSCALE = "YlGn"
 
+
 class MapDisplay:
     """Module used for creating a map visualization.
 
@@ -45,7 +46,7 @@ class MapDisplay:
         clickdata_func: Callable[..., Any] | None = None,
         output_var: str | None = None,
         label: str | None = None,
-        colorscale = _DEFAULT_COLORSCALE,
+        colorscale=_DEFAULT_COLORSCALE,
     ) -> None:
         """Initialize the MapDisplay module.
 
@@ -60,7 +61,7 @@ class MapDisplay:
                 If None, no click data will be processed. Defaults to None.
             output_var (str): Variable selector output for clickdata. Defaults to the same value as map_type.
             label (str): Label for the button / tab for the module. Defaults to 'Kart {map_type}'
-            colorscale (str): Can be used to select another colorscale. See plotly documentation for options. 
+            colorscale (str): Can be used to select another colorscale. See plotly documentation for options.
 
         Raises:
             ValueError: If supplied unsupported map_type.
@@ -243,7 +244,7 @@ class MapDisplayTab(TabImplementation, MapDisplay):
             output_var (str): Variable selector output for clickdata. Defaults to the same value as map_type.
             label (str): Label for the button / tab for the module. Defaults to 'Kart {map_type}'
             colorscale (str): Can be used to select another colorscale. See plotly documentation for options.
-            
+
         Note:
             - The clickdata_func needs to process the click data and return a string value that will be sent to the output variable specified in the output argument.
             - clickdata is a dictionary with the structure:
@@ -297,7 +298,7 @@ class MapDisplayWindow(WindowImplementation, MapDisplay):
         clickdata_func: Callable[..., Any] | None = None,
         output_var: str | None = None,
         label: str | None = None,
-        colorscale = _DEFAULT_COLORSCALE,
+        colorscale=_DEFAULT_COLORSCALE,
     ) -> None:
         """Initialize the MapDisplayWindow module.
 
@@ -348,6 +349,6 @@ class MapDisplayWindow(WindowImplementation, MapDisplay):
             clickdata_func=clickdata_func,
             output_var=output_var,
             label=label,
-            colorscale=_DEFAULT_COLORSCALE
+            colorscale=_DEFAULT_COLORSCALE,
         )
         WindowImplementation.__init__(self)
