@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 logger.setLevel(logging.DEBUG)
 
+_DEFAULT_COLORSCALE = "YlGn"
 
 class MapDisplay:
     """Module used for creating a map visualization.
@@ -44,6 +45,7 @@ class MapDisplay:
         clickdata_func: Callable[..., Any] | None = None,
         output_var: str | None = None,
         label: str | None = None,
+        colorscale = _DEFAULT_COLORSCALE,
     ) -> None:
         """Initialize the MapDisplay module.
 
@@ -58,6 +60,7 @@ class MapDisplay:
                 If None, no click data will be processed. Defaults to None.
             output_var (str): Variable selector output for clickdata. Defaults to the same value as map_type.
             label (str): Label for the button / tab for the module. Defaults to 'Kart {map_type}'
+            colorscale (str): Can be used to select another colorscale. See plotly documentation for options. 
 
         Raises:
             ValueError: If supplied unsupported map_type.
@@ -98,6 +101,7 @@ class MapDisplay:
         if map_type not in MapDisplay.supported_map_types:
             raise ValueError("Unsupported map type.")
         self.map_type = map_type
+        self.colorscale = colorscale
 
         self.get_data_func = get_data_func
         self.clickdata_func = clickdata_func
@@ -139,6 +143,10 @@ class MapDisplay:
             self.geoshape = gpd.read_parquet(
                 f"gs://ssb-areal-data-delt-kart-prod/visualisering_data/klargjorte-data/{year}/parquet/N5000_kommune_flate_p{year}.parquet"
             )
+        if self.map_type == "fylke_nr":
+            self.geoshape = gpd.read_parquet(
+                f"gs://ssb-areal-data-delt-kart-prod/visualisering_data/klargjorte-data/{year}/parquet/N5000_fylke_flate_p{year}_v1.parquet"
+            )
 
     def create_map_figure(self) -> go.Figure:
         """Creates the map figure."""
@@ -149,6 +157,8 @@ class MapDisplay:
             center={"lat": 59.9138, "lon": 10.7387},
             mapbox_style="open-street-map",
             zoom=4,
+            opacity=0.7,
+            color_continuous_scale=self.colorscale,
         ).update_traces(marker_line_width=0)
         fig.write_html("Kart.html")
         logger.debug("Returning map figure")
@@ -232,7 +242,8 @@ class MapDisplayTab(TabImplementation, MapDisplay):
                 If None, no click data will be processed. Defaults to None.
             output_var (str): Variable selector output for clickdata. Defaults to the same value as map_type.
             label (str): Label for the button / tab for the module. Defaults to 'Kart {map_type}'
-
+            colorscale (str): Can be used to select another colorscale. See plotly documentation for options.
+            
         Note:
             - The clickdata_func needs to process the click data and return a string value that will be sent to the output variable specified in the output argument.
             - clickdata is a dictionary with the structure:
@@ -286,6 +297,7 @@ class MapDisplayWindow(WindowImplementation, MapDisplay):
         clickdata_func: Callable[..., Any] | None = None,
         output_var: str | None = None,
         label: str | None = None,
+        colorscale = _DEFAULT_COLORSCALE,
     ) -> None:
         """Initialize the MapDisplayWindow module.
 
@@ -300,6 +312,7 @@ class MapDisplayWindow(WindowImplementation, MapDisplay):
                 If None, no click data will be processed. Defaults to None.
             output_var (str): Variable selector output for clickdata. Defaults to the same value as map_type.
             label (str): Label for the button / tab for the module. Defaults to 'Kart {map_type}'
+            colorscale (str): Can be used to select another colorscale. See plotly documentation for options.
 
         Note:
             - The clickdata_func needs to process the click data and return a string value that will be sent to the output variable specified in the output argument.
@@ -335,5 +348,6 @@ class MapDisplayWindow(WindowImplementation, MapDisplay):
             clickdata_func=clickdata_func,
             output_var=output_var,
             label=label,
+            colorscale=_DEFAULT_COLORSCALE
         )
         WindowImplementation.__init__(self)
