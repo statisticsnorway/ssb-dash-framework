@@ -18,7 +18,8 @@ dependencies = [
     "mpmath>=1.3.0", # Pimemorizer uses this
     "orjson (>=3.10.16,<4.0.0)",
     "ipykernel (>=6.29.5,<7.0.0)",
-    "psycopg2-binary (>=2.9.10,<3.0.0)"
+    "psycopg2-binary (>=2.9.10,<3.0.0)",
+    "geopandas (>=1.1.1,<2.0.0)"
 ]
 
 [project.urls]

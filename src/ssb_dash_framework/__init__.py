@@ -29,6 +29,9 @@ from .modules import FigureDisplayWindow
 from .modules import FreeSearch
 from .modules import FreeSearchTab
 from .modules import FreeSearchWindow
+from .modules import MapDisplay
+from .modules import MapDisplayTab
+from .modules import MapDisplayWindow
 from .modules import MultiModule
 from .modules import MultiModuleTab
 from .modules import MultiModuleWindow
@@ -87,6 +90,9 @@ __all__ = [
     "FreeSearchTab",
     "FreeSearchWindow",
     "HBMethod",
+    "MapDisplay",
+    "MapDisplayTab",
+    "MapDisplayWindow",
     "MultiModule",
     "MultiModule",
     "MultiModuleTab",
