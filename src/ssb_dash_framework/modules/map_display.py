@@ -156,7 +156,13 @@ class MapDisplay:
 
     def _create_layout(self) -> html.Div:
         """Creates the layout for the module."""
-        return html.Div(dcc.Graph(id="map-figure"))
+        return html.Div(
+            dcc.Graph(
+                id="map-figure",
+                className="figuredisplay-graph",
+            ),
+            className="figuredisplay",
+        )
 
     def module_callbacks(self) -> None:
         """Registers module callbacks."""
