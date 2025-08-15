@@ -10,7 +10,6 @@ import logging
 
 import eimerdb as db
 
-
 eimerdb_logger = logging.getLogger(__name__)
 eimerdb_logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
