@@ -93,7 +93,7 @@ class MapDisplay:
         self.label = label if label else f"Kart {map_type}"
         if aar_var in inputs or aar_var in states:
             raise ValueError(
-                "inputs or states cannot contain the same value as aar_var. {aar_var} will be used as input, so you do not need to add it as a separate input or state."
+                f"inputs or states cannot contain the same value as aar_var. {aar_var} will be used as input, so you do not need to add it as a separate input or state."
             )
         if map_type not in MapDisplay.supported_map_types:
             raise ValueError("Unsupported map type.")
