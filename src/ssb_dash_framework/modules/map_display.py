@@ -46,7 +46,7 @@ class MapDisplay:
         clickdata_func: Callable[..., Any] | None = None,
         output_var: str | None = None,
         label: str | None = None,
-        colorscale=_DEFAULT_COLORSCALE,
+        colorscale: str = _DEFAULT_COLORSCALE,
     ) -> None:
         """Initialize the MapDisplay module.
 
@@ -229,6 +229,7 @@ class MapDisplayTab(TabImplementation, MapDisplay):
         clickdata_func: Callable[..., Any] | None = None,
         output_var: str | None = None,
         label: str | None = None,
+        colorscale: str = _DEFAULT_COLORSCALE,
     ) -> None:
         """Initialize the MapDisplayTab module.
 
@@ -279,6 +280,7 @@ class MapDisplayTab(TabImplementation, MapDisplay):
             clickdata_func=clickdata_func,
             output_var=output_var,
             label=label,
+            colorscale=colorscale,
         )
         TabImplementation.__init__(
             self,
@@ -298,7 +300,7 @@ class MapDisplayWindow(WindowImplementation, MapDisplay):
         clickdata_func: Callable[..., Any] | None = None,
         output_var: str | None = None,
         label: str | None = None,
-        colorscale=_DEFAULT_COLORSCALE,
+        colorscale: str = _DEFAULT_COLORSCALE,
     ) -> None:
         """Initialize the MapDisplayWindow module.
 
