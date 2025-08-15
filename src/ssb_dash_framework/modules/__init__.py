@@ -25,6 +25,9 @@ from .building_blocks import MultiModuleWindow
 from .freesearch import FreeSearch
 from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
+from .map_display import MapDisplay
+from .map_display import MapDisplayTab
+from .map_display import MapDisplayWindow
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab
 from .skjemapdfviewer import SkjemapdfViewerWindow
@@ -52,6 +55,9 @@ __all__ = [
     "FreeSearch",
     "FreeSearchTab",
     "FreeSearchWindow",
+    "MapDisplay",
+    "MapDisplayTab",
+    "MapDisplayWindow",
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",
