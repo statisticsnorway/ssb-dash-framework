@@ -143,7 +143,7 @@ class AltinnEditorControl:
                 return None, None, None, "Se kontrollutslag"
             try:
                 partition_args = dict(zip(self.time_units, args, strict=False))
-                skjemaversjon = selected_row[0]["skjemaversjon"]
+                refnr = selected_row[0]["refnr"]
                 df = self.conn.query(
                     f"""SELECT t1.kontrollid, subquery.skildring, t1.utslag
                     FROM kontrollutslag AS t1
@@ -151,7 +151,7 @@ class AltinnEditorControl:
                         SELECT t2.kontrollid, t2.skildring
                         FROM kontroller AS t2
                     ) AS subquery ON t1.kontrollid = subquery.kontrollid
-                    WHERE skjemaversjon = '{skjemaversjon}'
+                    WHERE refnr = '{refnr}'
                     AND utslag = True""",
                     partition_select=create_partition_select(
                         desired_partitions=self.time_units,

@@ -9,7 +9,7 @@ def test_import() -> None:
 
 
 def test_instantiation() -> None:
-    set_variables(["year", "quarter", "skjemaversjon"])
+    set_variables(["year", "quarter", "refnr"])
     AltinnSkjemadataEditor(
         time_units=["year", "quarter"], conn=DummyDatabase(), variable_connection={}
     )

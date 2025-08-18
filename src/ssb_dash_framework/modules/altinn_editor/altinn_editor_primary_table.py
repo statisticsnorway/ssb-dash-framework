@@ -89,17 +89,17 @@ class AltinnEditorPrimaryTable:
         @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemadata", "rowData"),
             Output("altinnedit-table-skjemadata", "columnDefs"),
-            Input("altinnedit-skjemaversjon", "value"),
+            Input("altinnedit-refnr", "value"),
             Input("altinnedit-option1", "value"),
             State("altinnedit-skjemaer", "value"),
             self.variable_selector.get_states(),
         )
         def hovedside_update_altinnskjema(
-            skjemaversjon: str, tabell: str, skjema: str, *args: Any
+            refnr: str, tabell: str, skjema: str, *args: Any
         ) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
             logger.debug(
                 f"Args:\n"
-                f"skjemaversjon: {skjemaversjon}\n"
+                f"refnr: {refnr}\n"
                 f"tabell: {tabell}\n"
                 f"skjema: {skjema}\n"
                 f"args: {args}"
@@ -112,7 +112,7 @@ class AltinnEditorPrimaryTable:
                 long_format = False
 
             if (
-                skjemaversjon is None
+                refnr is None
                 or tabell is None
                 or skjema is None
                 or any(arg is None for arg in args)
@@ -130,7 +130,7 @@ class AltinnEditorPrimaryTable:
                             FROM datatyper
                         ) AS subquery
                         ON subquery.aar = t.aar AND subquery.variabel = t.variabel
-                        WHERE t.skjemaversjon = '{skjemaversjon}'
+                        WHERE t.refnr = '{refnr}'
                         AND subquery.tabell = '{tabell}'
                         ORDER BY subquery.radnr ASC
                         """,
@@ -170,7 +170,7 @@ class AltinnEditorPrimaryTable:
                     df = self.conn.query(
                         f"""
                         SELECT * FROM {tabell}
-                        WHERE skjemaversjon = '{skjemaversjon}'
+                        WHERE refnr = '{refnr}'
                         """,
                         partition_select=create_partition_select(
                             desired_partitions=self.time_units,
