@@ -161,7 +161,6 @@ class MapDisplay:
             opacity=0.7,
             color_continuous_scale=self.colorscale,
         ).update_traces(marker_line_width=0)
-        fig.write_html("Kart.html")
         logger.debug("Returning map figure")
         return fig
 
