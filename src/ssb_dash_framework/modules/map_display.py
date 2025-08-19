@@ -24,10 +24,10 @@ logger.setLevel(logging.DEBUG)
 _DEFAULT_COLORSCALE = "YlGn"
 
 
-def mapdisplay_default_clickdata(clickdata: dict[list[dict[str, Any]]]) -> str:
+def mapdisplay_default_clickdata(clickdata: dict[str, list[dict[str, Any]]]) -> str:
     """Default clickdata function. Returns the number for the clicked kommune / fylke."""
     logger.info(f"Clickdata from map:\n{clickdata}")
-    return clickdata["points"][0]["location"]
+    return str(clickdata["points"][0]["location"])
 
 
 class MapDisplay:
