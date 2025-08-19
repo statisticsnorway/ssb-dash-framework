@@ -24,17 +24,24 @@ logger.setLevel(logging.DEBUG)
 _DEFAULT_COLORSCALE = "YlGn"
 
 
+def mapdisplay_default_clickdata(clickdata: dict[list[dict[str, Any]]]) -> str:
+    """Default clickdata function. Returns the number for the clicked kommune / fylke."""
+    logger.info(f"Clickdata from map:\n{clickdata}")
+    return clickdata["points"][0]["location"]
+
+
 class MapDisplay:
     """Module used for creating a map visualization.
 
     When supplied with a get_data_func that returns data grouped by a valid geography it creates a map figure with coloring showing the column 'value' on different geographical units.
+    Important! If making a map for 'kommune', your variable needs to be named 'komm_nr' and for fylke it needs to be named 'fylke_nr'.
 
     Note:
         You need read access to the bucket "areal-data-delt-kart-prod" in order to use this module as this is where it finds the shapefiles.
     """
 
     _id_number: ClassVar[int] = 0
-    supported_map_types: ClassVar[list[str]] = ["komm_nr", "fylke_nr"]
+    supported_map_types: ClassVar[list[str]] = ["kommune", "fylke"]
 
     def __init__(
         self,
@@ -51,7 +58,7 @@ class MapDisplay:
         """Initialize the MapDisplay module.
 
         Args:
-            map_type(str): The kind of map to be made, currently supports komm_nr and fylke_nr.
+            map_type(str): The kind of map to be made, currently supports kommune and fylke.
             aar_var (str): The name of your year variable in the variable selector.
             inputs (list[str]): List the variables from the variable selector that should trigger an update to the map
             states (list[str]): List the variables from the variable selector that should be used in the get_data_func, but not trigger an update to the map
@@ -101,12 +108,22 @@ class MapDisplay:
             )
         if map_type not in MapDisplay.supported_map_types:
             raise ValueError("Unsupported map type.")
-        self.map_type = map_type
+        if map_type == "kommune":
+            self.map_type = "komm_nr"
+        elif map_type == "fylke":
+            self.map_type = "fylke_nr"
         self.colorscale = colorscale
 
         self.get_data_func = get_data_func
-        self.clickdata_func = clickdata_func
         self.output_var = output_var
+        if self.output_var and clickdata_func is None:
+            logger.debug(
+                f"No clickdata func defined, but output_var is '{self.output_var}', using default clickdata_func"
+            )
+            clickdata_func = (
+                mapdisplay_default_clickdata  # Sets default if not overridden.
+            )
+        self.clickdata_func = clickdata_func
         self.variableselector = VariableSelector(
             selected_inputs=[aar_var, *inputs], selected_states=states
         )
@@ -161,7 +178,6 @@ class MapDisplay:
             opacity=0.7,
             color_continuous_scale=self.colorscale,
         ).update_traces(marker_line_width=0)
-        fig.write_html("Kart.html")
         logger.debug("Returning map figure")
         return fig
 
