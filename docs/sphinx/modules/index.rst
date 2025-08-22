@@ -7,6 +7,8 @@ Modules for use in the application, implmented as a view (tab/window) or directl
    :maxdepth: 1
    :caption: Modules
 
+   Altinn editor <altinn_editor/index>
+   Building blocks <building_blocks/index>
    Aarsregnskap <aarsregnskap>
    Agg_dist_plotter <agg_dist_plotter>
    Altinn_data_capture <altinn_data_capture>
@@ -15,5 +17,3 @@ Modules for use in the application, implmented as a view (tab/window) or directl
    Map_display <map_display>
    Pi_memorizer <pi_memorizer>
    Skjemapdfviewer <skjemapdfviewer>
-   Altinn editor <altinn_editor/index>
-   Building blocks <building_blocks/index>

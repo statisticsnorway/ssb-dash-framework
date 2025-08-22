@@ -6,7 +6,7 @@ SRC_BASE = os.path.abspath(os.path.join(SCRIPT_DIR, "../../src/ssb_dash_framewor
 OUT_BASE = SCRIPT_DIR
 
 
-def extract_docstring(pyfile):
+def extract_docstring(pyfile: str) -> str:
     """Extract the top-level docstring from a Python file."""
     with open(pyfile, encoding="utf-8") as f:
         node = ast.parse(f.read())
@@ -71,7 +71,9 @@ for root, dirs, files in os.walk(SRC_BASE):
 
 """
         )
-        for modname in sorted(module_names):
-            idx.write(f"   {modname.capitalize()} <{modname}>\n")
+        # Write subpackages first
         for subpkg in sorted(subpackage_names):
             idx.write(f"   {subpkg.replace('_', ' ').capitalize()} <{subpkg}/index>\n")
+        # Then write modules
+        for modname in sorted(module_names):
+            idx.write(f"   {modname.capitalize()} <{modname}>\n")
