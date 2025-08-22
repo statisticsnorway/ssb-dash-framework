@@ -1,6 +1,8 @@
 Utils
 =====
 
+Module containing utility and helper functions shared between components in the framework.
+
 .. toctree::
    :maxdepth: 1
    :caption: Utils
