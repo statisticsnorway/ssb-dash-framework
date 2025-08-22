@@ -151,7 +151,14 @@ class FreeSearch(ABC):
                 - The `partition` string is parsed into a dictionary before being used in the query.
                 - Column definitions hide the "row_id" column by default, if present.
             """
+            logger.debug(
+                "Args:\n"
+                f"n_clicks: {n_clicks}\n"
+                f"query: {query}\n"
+                f"partition: {partition}"
+            )
             if not n_clicks:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             if partition is not None:
                 partition = ast.literal_eval(partition)

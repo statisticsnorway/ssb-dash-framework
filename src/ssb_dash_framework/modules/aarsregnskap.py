@@ -149,6 +149,7 @@ class Aarsregnskap(ABC):
             Returns:
                 int: The updated year value.
             """
+            logger.debug(f"Args:\naar: {aar}\n")
             return aar
 
         @callback(  # type: ignore[misc]
@@ -164,6 +165,7 @@ class Aarsregnskap(ABC):
             Returns:
                 str: The updated organization number value.
             """
+            logger.debug(f"Args:\norgnr: {orgnr}\n")
             return orgnr
 
         @callback(  # type: ignore[misc]
@@ -184,6 +186,7 @@ class Aarsregnskap(ABC):
             Raises:
                 PreventUpdate: If the year or organization number is not provided.
             """
+            logger.debug(f"Args:\naar: {aar}\norgnr: {orgnr}\n")
             if not aar or not orgnr:
                 raise PreventUpdate
             path_to_file = f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/aarsregn/g{aar}/{orgnr}_{aar}.pdf"

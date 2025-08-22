@@ -20,6 +20,7 @@ from dash.exceptions import PreventUpdate
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
+from ..utils.eimerdb_helpers import create_partition_select
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -228,20 +229,9 @@ class AggDistPlotter(ABC):
         """
         pass
 
-    def create_partition_select(
-        self, skjema: str | None = None, **kwargs: Any
-    ) -> dict[str, list[int]]:
-        """Creates the partition select argument based on the chosen time units."""
-        partition_select = {
-            unit: [kwargs[unit]] for unit in self.time_units if unit in kwargs
-        }
-        if skjema is not None:
-            partition_select["skjema"] = [skjema]
-        return partition_select
-
     def update_partition_select(
-        self, partition_dict: dict[str, list[int]], key_to_update: str
-    ) -> dict[str, list[int]]:
+        self, partition_dict: dict[str, list[int | str]], key_to_update: str
+    ) -> dict[str, list[int | str]]:
         """Updates the partition select dictionary.
 
         Adds the previous value (N-1) to the list for a single specified key.
@@ -250,9 +240,13 @@ class AggDistPlotter(ABC):
         :param key_to_update: Key to update by appending (N-1)
         :return: Updated dictionary
         """
+        logger.debug(
+            f"Arg values\npartition_dict: {partition_dict}\nkey_to_update: {key_to_update}"
+        )
         if partition_dict.get(key_to_update):
             min_value = min(partition_dict[key_to_update])
             partition_dict[key_to_update].append(int(min_value) - 1)
+        logger.debug(f"Returning: {partition_dict}")
         return partition_dict
 
     def module_callbacks(self) -> None:
@@ -264,12 +258,16 @@ class AggDistPlotter(ABC):
             Input("var-altinnskjema", "value"),
         )
         def oppdater_valgt_skjema(skjema: str) -> list[dict[str, str]]:
+            logger.debug(f"Skjema: {skjema}")
             if skjema:
-                return [
+                radio_item_options = [
                     {"label": "Alle skjemaer", "value": "all"},
                     {"label": f"Bare {skjema}", "value": skjema},
                 ]
+                logger.debug(f"Returning:\n{radio_item_options}")
+                return radio_item_options
             else:
+                logger.debug(f"Returning: {INITIAL_OPTIONS}")
                 return INITIAL_OPTIONS
 
         @callback(  # type: ignore[misc]
@@ -290,15 +288,19 @@ class AggDistPlotter(ABC):
         ) -> tuple[
             list[dict[str, Any]], list[dict[str, str | bool]]
         ]:  # TODO replace Any
+            logger.debug(
+                f"Args:\nrefresh: {refresh}\nradio_value: {radio_value}\nrullerende_var: {rullerende_var}\ntabell: {tabell}\ndynamic_states: {dynamic_states}"
+            )
             skjema = radio_value
             if not refresh:
+                logger.debug("Preventing update")
                 raise PreventUpdate
             else:
                 partition_args = dict(
                     zip(self.time_units, dynamic_states, strict=False)
                 )
-                partition_select_no_skjema = self.create_partition_select(
-                    skjema=None, **partition_args
+                partition_select_no_skjema = create_partition_select(
+                    desired_partitions=self.time_units, skjema=None, **partition_args
                 )
                 updated_partition_select = self.update_partition_select(
                     partition_select_no_skjema, rullerende_var
@@ -426,6 +428,9 @@ class AggDistPlotter(ABC):
             tabell: str,
             *args: Any,
         ) -> go.Figure:  # TODO replace Any
+            logger.debug(
+                f"Args:\ncurrent_row: {current_row}\nskjema: {skjema}\n graph_type: {graph_type}\n tabell: {tabell}\n args: {args}"
+            )
             if (
                 current_row is None
                 or skjema is None
@@ -442,12 +447,12 @@ class AggDistPlotter(ABC):
             logger.debug(f"Partition args: {partition_args}")
 
             if skjema == "all":
-                partition_select = self.create_partition_select(
-                    skjema=None, **partition_args
+                partition_select = create_partition_select(
+                    desired_partitions=self.time_units, skjema=None, **partition_args
                 )
             else:
-                partition_select = self.create_partition_select(
-                    skjema=skjema, **partition_args
+                partition_select = create_partition_select(
+                    desired_partitions=self.time_units, skjema=skjema, **partition_args
                 )
 
             variabel = current_row[0]["variabel"]

@@ -244,15 +244,30 @@ class VariableSelector:
             value: Any, error_log: list[dict[str, Any]]
         ) -> list[dict[str, Any]]:
             """Alert callback connecting variable picker card to the alert handler."""
-            error_log = [
-                create_alert(
-                    f"Oppdatering av variabelvelger: {component_name} til {value}",
-                    "info",
-                    ephemeral=True,
-                ),
-                *error_log,
-            ]
-            return error_log
+            logger.debug(f"Args:\nvalue: {value}\nerror_log: {error_log}")
+            logger.info(
+                f"Attempting to update variable selector: {component_name} to {value}"
+            )
+            if isinstance(value, str):
+                error_log = [
+                    create_alert(
+                        f"Oppdatering av variabelvelger: {component_name} til {value}",
+                        "info",
+                        ephemeral=True,
+                    ),
+                    *error_log,
+                ]
+                return error_log
+            else:
+                error_log = [
+                    create_alert(
+                        f"Problem med oppdatering av {component_name} til {value}. Sjekk datatype, burde være string men mottok {type(value)}",
+                        "warning",
+                        ephemeral=True,
+                    ),
+                    *error_log,
+                ]
+                return error_log
 
         alert_connection.__name__ = f"alert_connection_{component_id}"
         return alert_connection

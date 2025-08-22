@@ -21,8 +21,6 @@ class FigureDisplay:
 
     It simplifies connecting a figure to the variable selector and allows for any figure to be used as long as it works in Dash.
     It also allows for click data to be processed and passed to the variable selector.
-
-
     """
 
     _id_number: int = 0
@@ -129,6 +127,15 @@ class FigureDisplay:
         def display_figure(
             *dynamic_states: list[str],
         ) -> Any:  # Should be a figure, might need a more specific type hint.
+            logger.debug(
+                "Args:\n"
+                + "\n".join(
+                    [
+                        f"dynamic_state_{i}: {state}"
+                        for i, state in enumerate(dynamic_states)
+                    ]
+                )
+            )
             return self.figure_func(*dynamic_states)
 
         if (
@@ -143,7 +150,7 @@ class FigureDisplay:
             def transfer_clickdata(
                 clickdata: dict[str, list[dict[str, str | int | float | bool]]],
             ) -> str:
-                logger.debug(clickdata)
+                logger.debug(f"Args:\nclickdata: {clickdata}")
                 if self.clickdata_func is None:
                     logger.warning(
                         "No clickdata_func provided, click data will not be processed."

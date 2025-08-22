@@ -1,5 +1,5 @@
 {
-  "_commit": "0d33fca0d1c29c79aef9c7053e36d9e7cdd2bd20",
+  "_commit": "9e3c49f6680d4c400567c39d70b768f0a322c95e",
   "_copy_without_render": [
     "*.rst_t"
   ],
@@ -12,6 +12,8 @@
   "code_quality_level": "Medium",
   "copyright_owner": "Statistics Norway",
   "copyright_year": "2025",
+  "department_number": "",
+  "dependency_manager_tool": "poetry",
   "development_status": "Development Status :: 4 - Beta",
   "email": "dor@ssb.no",
   "friendly_name": "SSB Dash Framework",

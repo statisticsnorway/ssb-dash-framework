@@ -135,6 +135,7 @@ class SkjemapdfViewer(ABC):
             Returns:
                 str: The updated organization number value.
             """
+            logger.debug("Args:\n" + f"orgnr: {orgnr}")
             return orgnr
 
         @callback(  # type: ignore[misc]
@@ -153,7 +154,9 @@ class SkjemapdfViewer(ABC):
             Raises:
                 PreventUpdate: If the form identifier is not provided.
             """
+            logger.debug("Args:\n" + f"form_identifier: {form_identifier}")
             if not form_identifier:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
             path_to_file = f"{self.pdf_folder_path}/{form_identifier}.pdf"
             logger.debug(f"Trying to open file: {path_to_file}")
@@ -180,9 +183,7 @@ class SkjemapdfViewer(ABC):
 class SkjemapdfViewerTab(TabImplementation, SkjemapdfViewer):
     """SkjemapdfViewerTab is an implementation of the SkjemapdfViewer module as a tab in a Dash application."""
 
-    def __init__(
-        self, pdf_folder_path: str, form_identifier: str = "refnr"
-    ) -> None:
+    def __init__(self, pdf_folder_path: str, form_identifier: str = "refnr") -> None:
         """Initializes the SkjemapdfViewerTab class.
 
         Args:
@@ -197,9 +198,7 @@ class SkjemapdfViewerTab(TabImplementation, SkjemapdfViewer):
 class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
     """Implementation of the SkjemapdfViewer as a window."""
 
-    def __init__(
-        self, pdf_folder_path: str, form_identifier: str = "refnr"
-    ) -> None:
+    def __init__(self, pdf_folder_path: str, form_identifier: str = "refnr") -> None:
         """Initialize the SkjemapdfViewerWindow class.
 
         This class is a subclass of SkjemapdfViewer and is used to create a window for viewing PDF files.

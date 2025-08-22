@@ -10,7 +10,7 @@ end-before: <!-- github-only -->
 
 ```{toctree}
 ---
-maxdepth: 5
+maxdepth: 8
 ---
 documentation
 reference

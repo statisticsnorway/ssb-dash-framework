@@ -29,6 +29,7 @@ def app_setup(
     stylesheet: str = "darkly",
     enable_logging: bool = True,
     logging_level: str = "info",
+    log_to_file: bool = False,
 ) -> Dash:
     """Set up and configure a Dash application with the specified parameters.
 
@@ -39,6 +40,7 @@ def app_setup(
                           Must be a key in `theme_map`.
         enable_logging (bool): Decides if ssb_dash_framework logging should be used. Defaults to True.
         logging_level (str): The logging level set for the application logging. Valid values are "debug", "info", "warning", "error", or "critical".
+        log_to_file (bool): Decides if log should be written to file 'work/app.log' in addition to the console.
 
     Returns:
         Dash: Configured Dash application instance.
@@ -49,11 +51,16 @@ def app_setup(
           with the ID `main-varvelger` based on the number of clicks on `sidebar-varvelger-button`.
 
     Examples:
-        >>> app = app_setup(port=8050, service_prefix=os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/"), domain="localhost")
+        >>> import os
+        >>> app = app_setup(port=8050, service_prefix=os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/"))
         >>> app.run_server() # doctest: +SKIP
     """
     if enable_logging:
-        enable_app_logging(level=logging_level)
+        enable_app_logging(level=logging_level, log_to_file=log_to_file)
+        if log_to_file:
+            logger.info(
+                "Writing log file to work/app.log. DO NOT ADD 'app.log' FILE TO GIT REPO!"
+            )
     template = theme_map[stylesheet]
     load_figure_template([template])
 

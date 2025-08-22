@@ -385,13 +385,14 @@ class BofInformation(ABC):
             State("bofregistry-modal-ssb_foretak", "is_open"),
         )
         def toggle_bof_modal(n_clicks: int, is_open: bool) -> bool:
-            logger.debug("Toggling bof modal")
+            logger.debug("Args:\n" + f"n_clicks: {n_clicks}\n" + f"is_open: {is_open}")
             if n_clicks > 0:
                 if is_open:
                     return False
                 else:
                     return True
             else:
+                logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
 
         @callback(  # type: ignore[misc]
@@ -400,12 +401,13 @@ class BofInformation(ABC):
             State("bofregistry-modal-ssb_bedrift", "is_open"),
         )
         def toggle_bedrift_modal(n_clicks: int, is_open: bool) -> bool:
-            logger.debug("Toggling bedrift modal")
+            logger.debug("Args:\n" + f"n_clicks: {n_clicks}\n" + f"is_open: {is_open}")
             if n_clicks > 0:
                 if is_open:
                     return False
                 else:
                     return True
+            logger.debug("Raised PreventUpdate")
             raise PreventUpdate
 
         @callback(  # type: ignore[misc]
@@ -417,6 +419,7 @@ class BofInformation(ABC):
         def ssb_bof_foretak(
             n_clicks: int, orgnr: str
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
+            logger.debug("Args:\n" + f"n_clicks: {n_clicks}\n" + f"orgnr: {orgnr}")
             if n_clicks > 0:
                 conn = sqlite3.connect(SSB_FORETAK_PATH)
                 df = pd.read_sql_query(
@@ -431,6 +434,7 @@ class BofInformation(ABC):
                     for col in df.columns
                 ]
                 return df.to_dict("records"), columns
+            logger.debug("Raised PreventUpdate")
             raise PreventUpdate
 
         @callback(  # type: ignore[misc]
@@ -442,6 +446,9 @@ class BofInformation(ABC):
         def ssb_bof_bedrift(
             n_clicks: int, selected_row: list[dict[str, Any]]
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
+            logger.debug(
+                "Args:\n" + f"n_clicks: {n_clicks}\n" + f"selected_row: {selected_row}"
+            )
             orgnr = selected_row[0]["orgnr"]
             if n_clicks > 0:
                 conn = sqlite3.connect(SSB_BEDRIFT_PATH)
@@ -457,6 +464,7 @@ class BofInformation(ABC):
                     for col in df.columns
                 ]
                 return df.to_dict("records"), columns
+            logger.debug("Raised PreventUpdate")
             raise PreventUpdate
 
         @callback(  # type: ignore[misc]
@@ -489,6 +497,7 @@ class BofInformation(ABC):
                 - If `orgf` is None, no data is returned.
                 - The callback queries the DuckDB database for the selected organization number.
             """
+            logger.debug("Args:\n" + f"orgf: {orgf}")
             if orgf is not None:
                 conn = sqlite3.connect(SSB_FORETAK_PATH)
                 df = pd.read_sql_query(
@@ -533,6 +542,7 @@ class BofInformation(ABC):
         def populate_bedrifter(
             foretaksnr: str,
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
+            logger.debug("Args:\n" + f"foretaksnr: {foretaksnr}")
             if foretaksnr is not None:
                 conn = sqlite3.connect(SSB_BEDRIFT_PATH)
                 df = pd.read_sql_query(
@@ -552,7 +562,6 @@ class BofInformation(ABC):
                     ]
                 )
                 return df.to_dict("records"), columns
-            raise PreventUpdate
 
         logger.debug("Generated callbacks")
 

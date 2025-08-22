@@ -56,7 +56,7 @@ def module_validator(module_class: Any) -> None:
     if not hasattr(module_class, "icon"):
         logger.warning(
             f"Class {module_class} does not have an 'icon' attribute. "
-            "This is optional, but recommended for better user experience."
+            "Icon is optional, but recommended for better user experience."
         )
     if not hasattr(module_class, "label"):
         raise AttributeError(f"Class {module_class} must have a 'label' attribute.")

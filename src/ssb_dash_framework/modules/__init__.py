@@ -3,9 +3,13 @@
 from .aarsregnskap import Aarsregnskap
 from .aarsregnskap import AarsregnskapTab
 from .aarsregnskap import AarsregnskapWindow
+from .agg_dist_plotter import AggDistPlotter
+from .agg_dist_plotter import AggDistPlotterTab
+from .agg_dist_plotter import AggDistPlotterWindow
 from .altinn_data_capture import AltinnDataCapture
 from .altinn_data_capture import AltinnDataCaptureTab
 from .altinn_data_capture import AltinnDataCaptureWindow
+from .altinn_editor import AltinnSkjemadataEditor
 from .bofregistry import BofInformation
 from .bofregistry import BofInformationTab
 from .bofregistry import BofInformationWindow
@@ -24,6 +28,10 @@ from .building_blocks import MultiModuleWindow
 from .freesearch import FreeSearch
 from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
+from .map_display import MapDisplay
+from .map_display import MapDisplayTab
+from .map_display import MapDisplayWindow
+from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab
 from .skjemapdfviewer import SkjemapdfViewerWindow
@@ -32,9 +40,13 @@ __all__ = [
     "Aarsregnskap",
     "AarsregnskapTab",
     "AarsregnskapWindow",
+    "AggDistPlotter",
+    "AggDistPlotterTab",
+    "AggDistPlotterWindow",
     "AltinnDataCapture",
     "AltinnDataCaptureTab",
     "AltinnDataCaptureWindow",
+    "AltinnSkjemadataEditor",
     "BofInformation",
     "BofInformationTab",
     "BofInformationWindow",
@@ -50,9 +62,13 @@ __all__ = [
     "FreeSearch",
     "FreeSearchTab",
     "FreeSearchWindow",
+    "MapDisplay",
+    "MapDisplayTab",
+    "MapDisplayWindow",
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",
+    "PimemorizerTab",
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",
