@@ -15,7 +15,7 @@ eimerdb_logger = logging.getLogger(__name__)
 eimerdb_logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 eimerdb_logger.addHandler(handler)
 eimerdb_logger.propagate = False
@@ -64,8 +64,7 @@ class DatabaseBuilderAltinnEimerdb:
 
         self.schemas = self._make_schemas()
 
-    def _is_valid(self) -> None:
-        ...
+    def _is_valid(self) -> None: ...
 
     def _make_schemas(self) -> dict[str, list[Any]]:
         periods_cols = [
@@ -78,17 +77,16 @@ class DatabaseBuilderAltinnEimerdb:
             "label": "Identnummeret.",
         }
 
-        schema_col = {"name": "skjema", "type": "string", "label": "Skjema"}
+        schema_col: dict[str, str] = {
+            "name": "skjema",
+            "type": "string",
+            "label": "skjemanummeret",
+        }
 
         schema_skjemamottak = [
             *periods_cols,
             ident_col,
-            {
-                "name": "skjema",
-                "type": "string",
-                "label": "Skjemaet.",
-                "app_editable": False,
-            },
+            schema_col,
             {
                 "name": "refnr",
                 "type": "string",
@@ -124,7 +122,7 @@ class DatabaseBuilderAltinnEimerdb:
         schema_kontaktinfo = [
             *periods_cols,
             ident_col,
-            {"name": "skjema", "type": "string", "label": "skjemanummeret"},
+            schema_col,
             {"name": "refnr", "type": "string", "label": "Skjemaets versjon."},
             {"name": "kontaktperson", "type": "string", "label": "Kontaktperson."},
             {"name": "epost", "type": "string", "label": "epost."},
@@ -165,7 +163,7 @@ class DatabaseBuilderAltinnEimerdb:
 
         schema_kontroller = [
             *periods_cols,
-            {"name": "skjema", "type": "string", "label": "skjemanummeret"},
+            schema_col,
             {"name": "kontrollid", "type": "string", "label": "kontrollens unike ID."},
             {
                 "name": "type",
@@ -191,7 +189,7 @@ class DatabaseBuilderAltinnEimerdb:
 
         schema_kontrollutslag = [
             *periods_cols,
-            {"name": "skjema", "type": "string", "label": "skjemanummeret"},
+            schema_col,
             ident_col,
             {"name": "refnr", "type": "string", "label": "Skjemaets versjon."},
             {"name": "kontrollid", "type": "string", "label": "kontrollens unike ID."},
@@ -226,12 +224,7 @@ class DatabaseBuilderAltinnEimerdb:
 
         schema_skjemadata_hoved = [
             *periods_cols,
-            {
-                "name": "skjema",
-                "type": "string",
-                "label": "skjemaet tilh\u00f8rende skjemadataene.",
-                "app_editable": False,
-            },
+            schema_col,
             ident_col,
             {
                 "name": "refnr",
@@ -265,6 +258,7 @@ class DatabaseBuilderAltinnEimerdb:
         }
 
     def __str__(self) -> str:
+        """Returns a string representation of the instance. Shows its planned database name, location, period variables and schemas."""
         return f"DataStorageBuilderAltinnEimer.\nDatabase name: {self.database_name}\nStorage location: {self.storage_location}\nPeriods variables: {self.periods}\n\nSchemas: {list(self.schemas.keys())}\nDetailed schemas:\n{json.dumps(self.schemas, indent=2, default=str)}"
 
     def build_storage(self) -> None:
@@ -282,7 +276,7 @@ class DatabaseBuilderAltinnEimerdb:
 
         for table in self.schemas:
             if table in special_tables:
-                partition_columns = self.periods + ["skjema"]
+                partition_columns = [*self.periods, "skjema"]
             else:
                 partition_columns = self.periods
 
