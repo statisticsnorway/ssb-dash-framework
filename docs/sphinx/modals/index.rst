@@ -1,6 +1,8 @@
 Modals
 ======
 
+Modals for use in the application.
+
 .. toctree::
    :maxdepth: 1
    :caption: Modals

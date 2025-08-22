@@ -1,6 +1,8 @@
 Altinn_editor
 =============
 
+A set of modules creating an Altinn editor module with a lot of functionality.
+
 .. toctree::
    :maxdepth: 1
    :caption: Altinn_editor
