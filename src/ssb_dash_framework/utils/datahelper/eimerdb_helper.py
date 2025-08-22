@@ -7,6 +7,7 @@ If you'd rather make your own setup, you are free to do so.
 
 import json
 import logging
+from typing import Any
 
 import eimerdb as db
 
@@ -14,24 +15,23 @@ eimerdb_logger = logging.getLogger(__name__)
 eimerdb_logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setLevel(logging.INFO)
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# handler.setFormatter(formatter)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
 eimerdb_logger.addHandler(handler)
-# eimerdb_logger.propagate = False
+eimerdb_logger.propagate = False
 
 
 class DatabaseBuilderAltinnEimerdb:
     """This class provides help for creating an eimerdb datastorage for Altinn3 surveys.
 
-    It provides the recommended tables and provides some functions that can be passed to modules to make the setup process quicker.
-    If you want to get the functions for your app
+    It provides the recommended tables which makes sure your datastructure is compatible with the framework.
 
     To use this class for building your storage follow these steps:
     1. Create an instance of the class.
         db_builder = DatabaseBuilderAltinnEimerdb(
-            database_name = "my-survey-storage",
+            database_name = "my-database-name",
             storage_location = "path/to/storage",
-            periods = "year"
+            periods = "year" # can be list for more time identifiers
         )
     2. Now that we have our builder ready, check that the schemas are correct.
         print(db_builder.schemas)
@@ -39,22 +39,23 @@ class DatabaseBuilderAltinnEimerdb:
         db_builder.build_storage()
     4. Your database is now done! The only thing that remains is to insert your data into the storage.
 
-    If you are using the suggested schemas without changes, you can use the pre-defined functions for some modules.
-        template_funcs = db_builder.get_dashboard_functions()
+    Note:
+        You can add your own custom 'skjemadata' tables if you so wish, just make sure their names start with 'skjemadata_'.
+        It is possible to use this functionality to create your data storage even if your data are not from Altinn, but you might need to adapt your data.
     """
 
     def __init__(
         self,
         database_name: str,
         storage_location: str,
-        periods: str,
+        periods: str | list[str],
     ) -> None:
         """Initializes the databasebuilder for altinn3 surveys.
 
         Args:
-            database_name:
-            storage_location:
-            periods: str
+            database_name: The name you want for your eimerdb database.
+            storage_location: The path to the bucket for your database.
+            periods: String or list of strings containing your period variables (such as 'year', 'quarter', 'month').
         """
         self.database_name = database_name
         self.storage_location = storage_location
@@ -63,12 +64,10 @@ class DatabaseBuilderAltinnEimerdb:
 
         self.schemas = self._make_schemas()
 
-    def _is_valid(self):
-        if not isinstance(self.periods, list):
-            raise TypeError("")
-        pass
+    def _is_valid(self) -> None:
+        ...
 
-    def _make_schemas(self):
+    def _make_schemas(self) -> dict[str, list[Any]]:
         periods_cols = [
             {"name": period, "type": "int64", "label": period}
             for period in self.periods
@@ -265,10 +264,11 @@ class DatabaseBuilderAltinnEimerdb:
             "skjemadata_hoved": schema_skjemadata_hoved,
         }
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"DataStorageBuilderAltinnEimer.\nDatabase name: {self.database_name}\nStorage location: {self.storage_location}\nPeriods variables: {self.periods}\n\nSchemas: {list(self.schemas.keys())}\nDetailed schemas:\n{json.dumps(self.schemas, indent=2, default=str)}"
 
-    def build_storage(self):
+    def build_storage(self) -> None:
+        """Calling this method builds your eimerdb storage with the supplied name at the specified location and creates partitions for the defined periods."""
         db.create_eimerdb(bucket_name=self.storage_location, db_name=self.database_name)
         conn = db.EimerDBInstance(self.storage_location, self.database_name)
 
