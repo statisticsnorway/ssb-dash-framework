@@ -3,6 +3,7 @@ from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import html
+from dash import dcc
 
 from ..utils.alert_handler import AlertHandler
 from ..utils.functions import sidebar_button
@@ -11,6 +12,17 @@ from ..utils.implementations import WindowModule
 from .variableselector import VariableSelector
 
 logger = logging.getLogger(__name__)
+
+STANDARD_LAYOUT = None
+
+
+def get_standard_layout():
+    if globals()["STANDARD_LAYOUT"]:
+        return globals()["STANDARD_LAYOUT"]
+    else:
+        raise ValueError(
+            "'STANDARD_LAYOUT' not defined, should exist after running 'main_layout()'"
+        )
 
 
 def main_layout(
@@ -67,8 +79,43 @@ def main_layout(
         (tab if isinstance(tab, dbc.Tab) else dbc.Tab(tab.layout(), label=tab.label))
         for tab in tab_list
     ]
+
+    globals()["STANDARD_LAYOUT"] = [
+        html.Div(
+            id="main-layout-sidebar",
+            className="main-layout-sidebar bg-secondary",
+            children=window_modules_list,
+        ),
+        html.Div(
+            children=[
+                html.Div(
+                    id="main-layout-offcanvas",
+                    children=[
+                        dbc.Offcanvas(
+                            html.Div(
+                                children=variable_selector.layout(),
+                            ),
+                            id="variable-selector-offcanvas",
+                            className="main-layout-offcanvas-variable-selector",
+                            title="Variabler",
+                            is_open=False,
+                            placement="end",
+                            backdrop=False,
+                        ),
+                    ],
+                ),
+                html.Div(
+                    id="main-layout-tab-div",
+                    className="main-layout-tab-container",
+                    children=dbc.Tabs(selected_tab_list),
+                ),
+            ],
+        ),
+    ]
+
     layout = dbc.Container(
         [
+            dcc.Location(id="url", refresh=False),
             html.Div(
                 id="notifications-container",
                 className="main-layout-notifications-container",
@@ -80,42 +127,13 @@ def main_layout(
             html.Div(
                 id="main-layout",
                 className="main-layout",
-                children=[
-                    html.Div(
-                        id="main-layout-sidebar",
-                        className="main-layout-sidebar bg-secondary",
-                        children=window_modules_list,
-                    ),
-                    html.Div(
-                        children=[
-                            html.Div(
-                                id="main-layout-offcanvas",
-                                children=[
-                                    dbc.Offcanvas(
-                                        html.Div(
-                                            children=variable_selector.layout(),
-                                        ),
-                                        id="variable-selector-offcanvas",
-                                        className="main-layout-offcanvas-variable-selector",
-                                        title="Variabler",
-                                        is_open=False,
-                                        placement="end",
-                                        backdrop=False,
-                                    ),
-                                ],
-                            ),
-                            html.Div(
-                                id="main-layout-tab-div",
-                                className="main-layout-tab-container",
-                                children=dbc.Tabs(selected_tab_list),
-                            ),
-                        ],
-                    ),
-                ],
+                children=globals()["STANDARD_LAYOUT"],
             ),
         ],
         fluid=True,
         className="dbc dbc-ag-grid",
     )
     logger.debug("Generated layout.")
+    from .urls import add_urls
+    add_urls()
     return layout
