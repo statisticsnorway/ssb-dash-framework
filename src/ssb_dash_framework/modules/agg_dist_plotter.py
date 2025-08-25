@@ -478,7 +478,7 @@ class AggDistPlotter(ABC):
                 partition_select=partition_select,
             )
 
-            df["verdi"] = df["verdi"].astype(int)
+            df["verdi"] = df["verdi"].astype(float).round(0).astype(int)
 
             top5_df = df.nlargest(5, "verdi")
 
