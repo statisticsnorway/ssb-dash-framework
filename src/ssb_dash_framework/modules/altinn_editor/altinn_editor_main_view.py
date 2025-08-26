@@ -245,6 +245,7 @@ class AltinnSkjemadataEditor:
 
         def generate_callback(unit: str) -> Any:
             """Makes connections between in-module time variables and variableselector time variables."""
+
             @callback(  # type: ignore[misc]
                 Output(f"altinnedit-{unit}", "value"),
                 Input(f"var-{unit}", "value"),
