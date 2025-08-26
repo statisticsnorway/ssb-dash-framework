@@ -52,10 +52,10 @@ class AltinnEditorPrimaryTable:
             )
         self.variable_selector = variable_selector_instance
         self.module_layout = self._create_layout()
-        self.is_valid()
+        self._is_valid()
         self.module_callbacks()
 
-    def is_valid(self) -> None:
+    def _is_valid(self) -> None:
         VariableSelector([], []).get_option("statistikkvariabel")
 
     def _create_layout(self) -> html.Div:

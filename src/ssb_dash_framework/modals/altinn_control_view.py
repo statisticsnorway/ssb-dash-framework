@@ -56,10 +56,10 @@ class AltinnControlView:
         self.time_units = time_units
         self.control_dict = control_dict
         self.conn = conn
-        self.is_valid()
+        self._is_valid()
         self.callbacks()
 
-    def is_valid(self) -> None:
+    def _is_valid(self) -> None:
         VariableSelector([], []).get_option("altinnskjema")
         VariableSelector([], []).get_option("ident")
 
