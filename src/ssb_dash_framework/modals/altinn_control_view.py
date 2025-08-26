@@ -11,6 +11,7 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
 from ..utils.eimerdb_helpers import create_partition_select
 from ..utils.functions import sidebar_button
@@ -55,7 +56,13 @@ class AltinnControlView:
         self.time_units = time_units
         self.control_dict = control_dict
         self.conn = conn
+        self.is_valid()
         self.callbacks()
+
+    def is_valid(self) -> None:
+        VariableSelector([], []).get_option("altinnskjema")
+        VariableSelector([], []).get_option("ident")
+        
 
     def layout(self) -> html.Div:
         """Generates the layout for the AltinnControlView module.

@@ -115,8 +115,12 @@ class AltinnSkjemadataEditor:
                     variable_selector_instance=self.variableselector,
                 ),
             ]
-
+        self.is_valid()
         self.module_callbacks()
+
+    def is_valid(self) -> None:
+        """Checks that all VariableSelector options required are defined."""
+        VariableSelector([], []).get_option("ident")
 
     def get_skjemadata_table_names(self) -> list[dict[str, str]]:
         """Retrieves the names of all the skjemadata-tables in the eimerdb."""
@@ -240,6 +244,7 @@ class AltinnSkjemadataEditor:
         """Defines the callbacks for the module."""
 
         def generate_callback(unit: str) -> Any:
+            """Makes connections between in-module time variables and variableselector time variables."""
             @callback(  # type: ignore[misc]
                 Output(f"altinnedit-{unit}", "value"),
                 Input(f"var-{unit}", "value"),

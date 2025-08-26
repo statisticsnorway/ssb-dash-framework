@@ -7,6 +7,7 @@ from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils.alert_handler import create_alert
@@ -51,7 +52,11 @@ class AltinnEditorPrimaryTable:
             )
         self.variable_selector = variable_selector_instance
         self.module_layout = self._create_layout()
+        self.is_valid()
         self.module_callbacks()
+
+    def is_valid(self) -> None:
+        VariableSelector([], []).get_option("statistikkvariabel")
 
     def _create_layout(self) -> html.Div:
         """Creates the module layout."""
@@ -203,6 +208,8 @@ class AltinnEditorPrimaryTable:
             click: dict[str, Any], row_data: list[dict[str, Any]]
         ) -> str:
             logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")
+            if not click:
+                raise PreventUpdate
             return str(row_data[click["rowIndex"]]["variabel"])
 
         @callback(  # type: ignore[misc]
