@@ -133,7 +133,7 @@ class VariableSelector:
             if option.title == variable_name:
                 return option
         raise ValueError(
-            f"ValueError: {variable_name} not in list of options, expected one of {self.selected_variables}\nIf you need to add {variable_name} to the available options, refer to the VariableSelectorOption docstring."
+            f"ValueError: '{variable_name}' not in list of options, expected one of {self.selected_variables}\nIf you need to add {variable_name} to the available options, refer to the VariableSelectorOption docstring."
         )
 
     def get_inputs(self) -> list[Input]:
