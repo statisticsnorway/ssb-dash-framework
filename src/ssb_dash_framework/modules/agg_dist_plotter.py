@@ -295,123 +295,125 @@ class AggDistPlotter(ABC):
             if not refresh:
                 logger.debug("Preventing update")
                 raise PreventUpdate
+            if not isinstance(tabell, str) or tabell != "":
+                raise ValueError(
+                    f"Trying to run query with no value for 'tabell'. Received value: '{tabell}'"
+                )
+
+            partition_args = dict(zip(self.time_units, dynamic_states, strict=False))
+            partition_select_no_skjema = create_partition_select(
+                desired_partitions=self.time_units, skjema=None, **partition_args
+            )
+            updated_partition_select = self.update_partition_select(
+                partition_select_no_skjema, rullerende_var
+            )
+            column_name_expr_s = SQL_COLUMN_CONCAT.join(
+                [f"s.{unit}" for unit in self.time_units]
+            )
+            column_name_expr_t2 = SQL_COLUMN_CONCAT.join(
+                [f"t2.{unit}" for unit in self.time_units]
+            )
+            column_name_expr_d = SQL_COLUMN_CONCAT.join(
+                [f"d.{unit}" for unit in self.time_units]
+            )
+
+            group_by_clause = ", ".join([f"s.{unit}" for unit in self.time_units])
+
+            if skjema != "all":
+                where_query_add = f"AND s.skjema = '{skjema}'"
             else:
-                partition_args = dict(
-                    zip(self.time_units, dynamic_states, strict=False)
-                )
-                partition_select_no_skjema = create_partition_select(
-                    desired_partitions=self.time_units, skjema=None, **partition_args
-                )
-                updated_partition_select = self.update_partition_select(
-                    partition_select_no_skjema, rullerende_var
-                )
-                column_name_expr_s = SQL_COLUMN_CONCAT.join(
-                    [f"s.{unit}" for unit in self.time_units]
-                )
-                column_name_expr_t2 = SQL_COLUMN_CONCAT.join(
-                    [f"t2.{unit}" for unit in self.time_units]
-                )
-                column_name_expr_d = SQL_COLUMN_CONCAT.join(
-                    [f"d.{unit}" for unit in self.time_units]
-                )
+                where_query_add = ""
 
-                group_by_clause = ", ".join([f"s.{unit}" for unit in self.time_units])
-
-                if skjema != "all":
-                    where_query_add = f"AND s.skjema = '{skjema}'"
-                else:
-                    where_query_add = ""
-
-                query = f"""
+            query = f"""
+                SELECT
+                    s.variabel,
+                    {column_name_expr_s} AS time_combination,
+                    SUM(CAST(s.verdi AS NUMERIC)) AS verdi
+                FROM {tabell} AS s
+                JOIN (
                     SELECT
-                        s.variabel,
-                        {column_name_expr_s} AS time_combination,
-                        SUM(CAST(s.verdi AS NUMERIC)) AS verdi
-                    FROM {tabell} AS s
-                    JOIN (
-                        SELECT
-                            {column_name_expr_t2} AS time_combination,
-                            t2.ident,
-                            t2.refnr,
-                            t2.dato_mottatt
-                        FROM
-                            skjemamottak AS t2
-                        WHERE aktiv = True
-                        QUALIFY
-                            ROW_NUMBER() OVER (
-                                PARTITION BY {column_name_expr_t2}, t2.ident
-                                ORDER BY t2.dato_mottatt DESC
-                            ) = 1
-                    ) AS mottak_subquery
-                        ON {column_name_expr_s} = mottak_subquery.time_combination
-                        AND s.ident = mottak_subquery.ident
-                        AND s.refnr = mottak_subquery.refnr
-                    JOIN (
-                        SELECT
-                            d.variabel,
-                            {column_name_expr_d} AS time_combination,
-                            d.radnr,
-                            d.datatype
-                        FROM datatyper AS d
-                    ) AS datatype_subquery
-                        ON s.variabel = datatype_subquery.variabel
-                        AND {column_name_expr_s} = datatype_subquery.time_combination
-                    WHERE datatype_subquery.datatype = 'int' {where_query_add}
-                    GROUP BY
-                        s.variabel,
-                        datatype_subquery.radnr,
-                        {group_by_clause}
-                    ORDER BY datatype_subquery.radnr;
-                """
+                        {column_name_expr_t2} AS time_combination,
+                        t2.ident,
+                        t2.refnr,
+                        t2.dato_mottatt
+                    FROM
+                        skjemamottak AS t2
+                    WHERE aktiv = True
+                    QUALIFY
+                        ROW_NUMBER() OVER (
+                            PARTITION BY {column_name_expr_t2}, t2.ident
+                            ORDER BY t2.dato_mottatt DESC
+                        ) = 1
+                ) AS mottak_subquery
+                    ON {column_name_expr_s} = mottak_subquery.time_combination
+                    AND s.ident = mottak_subquery.ident
+                    AND s.refnr = mottak_subquery.refnr
+                JOIN (
+                    SELECT
+                        d.variabel,
+                        {column_name_expr_d} AS time_combination,
+                        d.radnr,
+                        d.datatype
+                    FROM datatyper AS d
+                ) AS datatype_subquery
+                    ON s.variabel = datatype_subquery.variabel
+                    AND {column_name_expr_s} = datatype_subquery.time_combination
+                WHERE datatype_subquery.datatype = 'int' {where_query_add}
+                GROUP BY
+                    s.variabel,
+                    datatype_subquery.radnr,
+                    {group_by_clause}
+                ORDER BY datatype_subquery.radnr;
+            """
 
-                df = self.conn.query(
-                    query,
-                    partition_select={
-                        tabell: updated_partition_select,
-                        "datatyper": updated_partition_select,
-                    },
-                )
+            df = self.conn.query(
+                query,
+                partition_select={
+                    tabell: updated_partition_select,
+                    "datatyper": updated_partition_select,
+                },
+            )
 
-                df_wide = df.pivot(
-                    index="variabel", columns="time_combination", values="verdi"
-                ).reset_index()
+            df_wide = df.pivot(
+                index="variabel", columns="time_combination", values="verdi"
+            ).reset_index()
 
-                df_wide = df_wide.rename(
-                    columns={
-                        col: f"verdi_{col}" if col != "variabel" else col
-                        for col in df_wide.columns
-                    }
-                )
-
-                df_wide.columns.name = None
-
-                def extract_numeric_sum(
-                    col_name: str,
-                ) -> int:  # TODO should return int | float?
-                    numbers = list(map(int, re.findall(r"\d+", col_name)))
-                    return sum(numbers) if numbers else 0
-
-                time_columns_sorted = sorted(
-                    [col for col in df_wide.columns if col.startswith("verdi_")],
-                    key=extract_numeric_sum,
-                )
-
-                if len(time_columns_sorted) >= 2:
-                    latest_col = max(time_columns_sorted, key=extract_numeric_sum)
-                    prev_col = min(time_columns_sorted, key=extract_numeric_sum)
-                    df_wide["diff"] = df_wide[latest_col] - df_wide[prev_col]
-                    df_wide["pdiff"] = (df_wide["diff"] / df_wide[prev_col]) * 100
-                    df_wide["pdiff"] = df_wide["pdiff"].round(2).astype(str) + " %"
-                columns = [
-                    {
-                        "headerName": col,
-                        "field": col,
-                    }
+            df_wide = df_wide.rename(
+                columns={
+                    col: f"verdi_{col}" if col != "variabel" else col
                     for col in df_wide.columns
-                ]
-                columns[0]["checkboxSelection"] = True
-                columns[0]["headerCheckboxSelection"] = True
-                return df_wide.to_dict("records"), columns
+                }
+            )
+
+            df_wide.columns.name = None
+
+            def extract_numeric_sum(
+                col_name: str,
+            ) -> int:  # TODO should return int | float?
+                numbers = list(map(int, re.findall(r"\d+", col_name)))
+                return sum(numbers) if numbers else 0
+
+            time_columns_sorted = sorted(
+                [col for col in df_wide.columns if col.startswith("verdi_")],
+                key=extract_numeric_sum,
+            )
+
+            if len(time_columns_sorted) >= 2:
+                latest_col = max(time_columns_sorted, key=extract_numeric_sum)
+                prev_col = min(time_columns_sorted, key=extract_numeric_sum)
+                df_wide["diff"] = df_wide[latest_col] - df_wide[prev_col]
+                df_wide["pdiff"] = (df_wide["diff"] / df_wide[prev_col]) * 100
+                df_wide["pdiff"] = df_wide["pdiff"].round(2).astype(str) + " %"
+            columns = [
+                {
+                    "headerName": col,
+                    "field": col,
+                }
+                for col in df_wide.columns
+            ]
+            columns[0]["checkboxSelection"] = True
+            columns[0]["headerCheckboxSelection"] = True
+            return df_wide.to_dict("records"), columns
 
         @callback(  # type: ignore[misc]
             Output("aggdistplotter-graph", "figure"),
