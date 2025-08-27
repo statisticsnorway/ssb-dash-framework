@@ -39,6 +39,13 @@ def main_layout(
         - The function includes an alert handler modal and a toggle button for the variable selector.
         - Each tab in `tab_list` must implement a `layout()` method and have a `label` attribute.
     """
+    # for window in window_list:
+    #     if not hasattr(window, "layout"):
+    #         raise AttributeError("Windows are required to have a '.layout()' method.")
+    # for tab in tab_list:
+    #     if not hasattr(window, "layout"):
+    #         raise AttributeError("Windows are required to have a '.layout()' method.")
+
     if variable_list is None:
         logger.debug(
             "No variable list provided. Using all available VariableSelectorOptions."

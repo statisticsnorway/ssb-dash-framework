@@ -191,6 +191,17 @@ class MapDisplay:
             className="figuredisplay",
         )
 
+    def layout(self) -> html.Div:
+        """Define the layout for the MapDisplay module.
+
+        Because this module can be used as a a component in other modules, it needs to have a layout method that is not abstract.
+        For implementations as tab or window, this method should still be overridden.
+
+        Returns:
+            html.Div: A Dash HTML Div component representing the layout of the module to be displayed directly.
+        """
+        return self._create_layout()
+
     def module_callbacks(self) -> None:
         """Registers module callbacks."""
         dynamic_states = [

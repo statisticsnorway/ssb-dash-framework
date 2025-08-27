@@ -12,6 +12,7 @@ from dash_bootstrap_templates import load_figure_template
 from ..utils.app_logger import enable_app_logging
 
 logger = logging.getLogger(__name__)
+
 theme_map = {
     "sketchy": dbc.themes.SKETCHY,
     "slate": dbc.themes.SLATE,

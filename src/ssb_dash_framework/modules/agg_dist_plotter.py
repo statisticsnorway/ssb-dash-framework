@@ -43,7 +43,12 @@ class AggDistPlotter(ABC):
     """The AggDistPlotter module lets you view macro values for your variables and find the distribution between them and the largest contributors.
 
     This module requires your data to follow the default eimerdb structure and requires som specific variables defined in the variable selector.
+
+    Note:
+        Current implementation is very locked into a specific data structure.
     """
+
+    # TODO: Loosen constraints on datastructure.
 
     _id_number: ClassVar[int] = 0
     _required_variables: ClassVar[list[str]] = (

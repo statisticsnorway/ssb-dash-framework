@@ -84,7 +84,7 @@ class AltinnDataCapture(ABC):
             if not isinstance(self.database_type, str):
                 raise TypeError("database_type must be a string.")
             if self.database_type not in AltinnDataCapture.implemented_database_types:
-                raise ValueError(
+                raise NotImplementedError(
                     f"database_type must be one of {AltinnDataCapture.implemented_database_types}."
                 )
             if not hasattr(self.database, "query"):
@@ -181,10 +181,7 @@ class AltinnDataCapture(ABC):
         pass
 
     def module_callbacks(self) -> None:
-        """Defines the callbacks for the AltinnDataCapture module.
-
-        Importantly this method is told which specific callbacks to use based on the database_type.
-        """
+        """Defines the callbacks for the AltinnDataCapture module."""
         dynamic_states = [
             self.variableselector.get_inputs(),
         ]

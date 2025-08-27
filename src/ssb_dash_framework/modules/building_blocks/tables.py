@@ -58,8 +58,8 @@ class EditingTable:
             label (str): The label for the tab or component, used for display purposes.
             inputs (list[str]): A list of input variable names that will trigger callbacks.
             states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
-            get_data_func (Callable[..., Any]): A function for retrieving data from the database.
-            update_table_func (Callable[..., Any]): A function for updating data in the database.
+            get_data_func (Callable[..., Any]): A function that returns a pandas dataframe.
+            update_table_func (Callable[..., Any]): A function for updating data based on edits in the AgGrid.
                 Note, the update_table_func is provided with the cellValueChanged from the Dash AgGrid in addition the inputs and states values.
             output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
             output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
@@ -71,7 +71,8 @@ class EditingTable:
         Note:
             get_data_func receives the selected inputs as its first arguments and then the selected states. This can be used to subset so you only see the relevant data.
             update_table_func receives the Dash ag grid value for "cellValueChanged" as its first argument, followed by the selected inputs and lastly the selected states. Consider this when writing your update function.
-            kwargs are passed to the AgGrid to allow more customization. An example option would be adding dashGridOptions = {"singleClickEdit": True}
+            kwargs are passed to the AgGrid to allow more customization. An example option would be adding dashGridOptions = {"singleClickEdit": True}.
+            Update functionality is reliant on your backend data storage solution.
         """
         self.kwargs = kwargs
 
