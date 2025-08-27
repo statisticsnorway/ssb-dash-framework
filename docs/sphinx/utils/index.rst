@@ -7,6 +7,7 @@ Module containing utility and helper functions shared between components in the 
    :maxdepth: 1
    :caption: Utils
 
+   Datahelper <datahelper/index>
    Alert_handler <alert_handler>
    App_logger <app_logger>
    Debugger_modal <debugger_modal>
