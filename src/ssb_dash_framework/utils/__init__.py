@@ -3,6 +3,7 @@
 from .alert_handler import AlertHandler
 from .alert_handler import create_alert
 from .app_logger import enable_app_logging
+from .datahelper import DatabaseBuilderAltinnEimerdb
 from .debugger_modal import DebugInspector
 
 # from .r_helpers import _get_kostra_r
@@ -15,6 +16,7 @@ from .module_validation import module_validator
 
 __all__ = [
     "AlertHandler",
+    "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
     "TabImplementation",
     "WindowImplementation",

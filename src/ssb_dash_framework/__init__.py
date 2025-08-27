@@ -45,6 +45,7 @@ from .setup import app_setup
 from .setup import main_layout
 from .setup import set_variables
 from .utils import AlertHandler
+from .utils import DatabaseBuilderAltinnEimerdb
 from .utils import DebugInspector
 from .utils import TabImplementation
 from .utils import WindowImplementation
@@ -52,7 +53,6 @@ from .utils import create_alert
 from .utils import enable_app_logging
 from .utils import module_validator
 from .utils import sidebar_button
-from .utils.datahelper.eimerdb_helper import DatabaseBuilderAltinnEimerdb
 
 # from .modals import HBMethod
 # from .utils import _get_kostra_r
