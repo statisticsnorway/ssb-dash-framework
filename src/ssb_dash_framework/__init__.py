@@ -1,18 +1,19 @@
 """SSB Dash Framework."""
 
 from .control import ControlFrameworkBase
-from .modals import AggDistPlotter
-from .modals import AggDistPlotterTab
-from .modals import AggDistPlotterWindow
 from .modals import AltinnControlView
 from .modals import Control
 from .modals import VisualizationBuilder
 from .modules import Aarsregnskap
 from .modules import AarsregnskapTab
 from .modules import AarsregnskapWindow
+from .modules import AggDistPlotter
+from .modules import AggDistPlotterTab
+from .modules import AggDistPlotterWindow
 from .modules import AltinnDataCapture
 from .modules import AltinnDataCaptureTab
 from .modules import AltinnDataCaptureWindow
+from .modules import AltinnSkjemadataEditor
 from .modules import BofInformation
 from .modules import BofInformationTab
 from .modules import BofInformationWindow
@@ -28,9 +29,13 @@ from .modules import FigureDisplayWindow
 from .modules import FreeSearch
 from .modules import FreeSearchTab
 from .modules import FreeSearchWindow
+from .modules import MapDisplay
+from .modules import MapDisplayTab
+from .modules import MapDisplayWindow
 from .modules import MultiModule
 from .modules import MultiModuleTab
 from .modules import MultiModuleWindow
+from .modules import PimemorizerTab
 from .modules import SkjemapdfViewer
 from .modules import SkjemapdfViewerTab
 from .modules import SkjemapdfViewerWindow
@@ -39,9 +44,8 @@ from .setup import VariableSelectorOption
 from .setup import app_setup
 from .setup import main_layout
 from .setup import set_variables
-from .tabs import AltinnSkjemadataEditor
-from .tabs import Pimemorizer
 from .utils import AlertHandler
+from .utils import DatabaseBuilderAltinnEimerdb
 from .utils import DebugInspector
 from .utils import TabImplementation
 from .utils import WindowImplementation
@@ -76,6 +80,7 @@ __all__ = [
     "CanvasWindow",
     "Control",
     "ControlFrameworkBase",
+    "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
     "EditingTable",
     "EditingTableTab",
@@ -87,6 +92,9 @@ __all__ = [
     "FreeSearchTab",
     "FreeSearchWindow",
     "HBMethod",
+    "MapDisplay",
+    "MapDisplayTab",
+    "MapDisplayWindow",
     "MultiModule",
     "MultiModule",
     "MultiModuleTab",
@@ -94,7 +102,7 @@ __all__ = [
     "MultiModuleWindow",
     "MultiModuleWindow",
     "MultiModuleWindow",
-    "Pimemorizer",
+    "PimemorizerTab",
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",

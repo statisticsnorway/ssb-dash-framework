@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 class MultiModule:
-    """Generic class for switching between modules with a label and module_layout."""
+    """Generic class for switching between modules with a label and module_layout.
+
+    If you have several modules, for an example several tables or figures, and you want them to take up less tabs/window button spaces, you can use this module.
+    They keep the same functionality, but can be contained inside a single module instead of taking up extra space.
+    """
 
     _id_number = 0
 
@@ -31,7 +35,6 @@ class MultiModule:
             - The module requires some attributes to be present in each module in the `module_list`:
                 - `label`: A string representing the label of the module.
                 - `module_layout`: A Dash HTML Div component representing the layout of the module.
-              The module can be validated using the module_validator function.
         """
         self.icon = "📚"
         self.label = label
@@ -114,6 +117,7 @@ class MultiModule:
             Input(f"{self.module_number}-multimodule-dropdown", "value"),
         )
         def show_selected_module(selected_index: int) -> list[dict[str, str]]:
+            logger.debug(f"Args:\nselected_index: {selected_index}\n")
             return [
                 {"display": "block"} if i == selected_index else {"display": "none"}
                 for i in range(len(self.module_list))

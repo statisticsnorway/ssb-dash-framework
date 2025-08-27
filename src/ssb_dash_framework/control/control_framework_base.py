@@ -2,11 +2,18 @@ import pandas as pd
 
 
 class ControlFrameworkBase:
-    """Base class for running control checks on partitioned data and managing inserts and updates
+    """Base class for running control checks.
+
+    Designed to work on partitioned data following the recommended altinn3 data structure. Manages inserts and updates
     to the 'kontrollutslag' table via a connection interface.
     """
 
-    def __init__(self, partitions, partitions_skjema, conn):
+    def __init__(
+        self,
+        partitions: list[int | str],
+        partitions_skjema: dict[str, int | str],
+        conn: object,
+    ) -> None:
         """Initialize the control framework.
 
         Args:
@@ -14,6 +21,10 @@ class ControlFrameworkBase:
             partitions_skjema: Partition specification, including skjema.
             conn: Database connection object with query and insert methods.
         """
+        assert hasattr(conn, "query"), "The database object must have a 'query' method."
+        assert hasattr(
+            conn, "insert"
+        ), "The database object must have a 'insert' method."
         self.partitions = partitions
         self.partitions_skjema = partitions_skjema
         self.conn = conn
@@ -22,11 +33,14 @@ class ControlFrameworkBase:
             partition_select=partitions_skjema,
         )["kontrollid"].tolist()
 
-    def _run_all_controls(self):
+    def _run_all_controls(self) -> pd.DataFrame:
         """Runs control methods named like 'control_<kontrollid>' where <id> is in self.controls.
 
         Returns:
             pd.DataFrame: Combined DataFrame with all control results.
+
+        Raises:
+            TypeError: if 'df' variable to return is not pd.DataFrame.
         """
         dfs_kontrollutslag = [
             getattr(self, method_name)()
@@ -38,9 +52,11 @@ class ControlFrameworkBase:
             )
         ]
         df = pd.concat(dfs_kontrollutslag).reset_index(drop=True)
+        if not isinstance(df, pd.DataFrame):
+            raise TypeError
         return df
 
-    def _control_new_rows(self):
+    def _control_new_rows(self) -> pd.DataFrame:
         """Identifies new rows that are not already present in 'kontrollutslag'.
 
         Returns:
@@ -81,7 +97,7 @@ class ControlFrameworkBase:
 
         return df_lastes
 
-    def insert_new_rows(self):
+    def insert_new_rows(self) -> int:
         """Inserts any new control results that are not already in 'kontrollutslag'.
 
         Returns:
@@ -97,7 +113,7 @@ class ControlFrameworkBase:
             print("Ingen nye rader å inserte")
         return len(df_lastes)
 
-    def _control_updates(self):
+    def _control_updates(self) -> pd.DataFrame:
         """Identifies rows in 'kontrollutslag' where the control output has changed.
 
         Returns:
@@ -121,7 +137,7 @@ class ControlFrameworkBase:
 
         return df_endrede
 
-    def _generate_update_query(self, df_updates):
+    def _generate_update_query(self, df_updates: pd.DataFrame) -> str:
         """Generates a SQL UPDATE query for updating rows in 'kontrollutslag'.
 
         Args:
@@ -152,7 +168,7 @@ class ControlFrameworkBase:
 
         return update_query
 
-    def execute_controls(self):
+    def execute_controls(self) -> int:
         """Executes control checks and updates existing rows in 'kontrollutslag' if needed.
 
         Returns:

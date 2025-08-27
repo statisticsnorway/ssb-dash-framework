@@ -60,13 +60,7 @@ def main_layout(
     window_modules_list = [alerthandler.layout(), *window_modules]
 
     varvelger_toggle = [
-        html.Div(
-            [
-                sidebar_button(
-                    "🛆", "Vis variabler", "sidebar-varvelger-button"
-                )
-            ]
-        )
+        html.Div([sidebar_button("🛆", "Vis variabler", "sidebar-varvelger-button")])
     ]
     window_modules_list = varvelger_toggle + window_modules_list
     selected_tab_list = [
