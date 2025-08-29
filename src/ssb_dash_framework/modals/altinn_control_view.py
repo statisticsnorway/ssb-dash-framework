@@ -397,7 +397,7 @@ class AltinnControlView:
                 except Exception as e:
                     alert_store = [
                         create_alert(
-                            f"Kontrollkjøringa feilet. {str(e)[:60]}",
+                            f"Kontrollkjøringa feilet. {e!s}",
                             "danger",
                             ephemeral=True,
                         ),

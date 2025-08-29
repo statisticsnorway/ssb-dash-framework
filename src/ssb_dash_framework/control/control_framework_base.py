@@ -11,6 +11,16 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
     Designed to work on partitioned data following the recommended altinn3 data structure. Manages inserts and updates
     to the 'kontrollutslag' table via a connection interface.
 
+    To use this class you need to use this setup:
+    class MyControls(ControlFrameworkBase):
+        def __init__(self, partitions: list[int | str], partitions_skjema: dict[str, int | str], conn: object) -> None:
+            super().__init__(partitions, partitions_skjema, conn)
+
+        def a_control_func(self):
+            # Your code here
+            return dataframe
+
+
     The flow of updating the control table works like this:
 
         1. First call 'execute_controls', this begins the entire process.
@@ -45,7 +55,11 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             "SELECT kontrollid FROM kontroller",
             partition_select=partitions_skjema,
         )["kontrollid"].tolist()
-        logger.debug(self.controls)
+        logger.debug(f"Controls found: {self.controls}")
+        if not self.controls:
+            raise ValueError(
+                f"No controls found for partition: {self.partitions_skjema}"
+            )
 
     def execute_controls(self) -> int:
         """Executes control checks and updates existing rows in 'kontrollutslag' if needed.
@@ -55,13 +69,13 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         """
         df_updates = self.control_updates()
         if len(df_updates) > 0:
-            print(f"{len(df_updates)} rader oppdateres...")
+            logger.info(f"{len(df_updates)} rader oppdateres...")
             self.conn.query(
                 self.generate_update_query(df_updates), self.partitions_skjema
             )
-            print("Oppdatering fullført!")
+            logger.info("Oppdatering fullført!")
         else:
-            print("Ingen rader å oppdatere")
+            logger.info("Ingen rader å oppdatere")
         return len(df_updates)
 
     def control_updates(self) -> pd.DataFrame:
