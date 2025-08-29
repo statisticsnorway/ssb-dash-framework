@@ -30,11 +30,6 @@ default_col_def = {
 
 class AltinnControlView:
     """Provides a layout and functionality for a modal that offers a tabular view of the controls.
-
-    Attributes:
-        time_units (list): A list of the time units used.
-        control_dict (dict): A dictionary with one control class per skjema.
-        conn (object): The eimerdb connection.
     """
 
     def __init__(
