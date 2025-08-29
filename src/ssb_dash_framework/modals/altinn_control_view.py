@@ -395,6 +395,7 @@ class AltinnControlView:
                         *alert_store,
                     ]
                 except Exception as e:
+                    logger.debug(f"Executing controls failed!\n{e}")
                     alert_store = [
                         create_alert(
                             f"Kontrollkjøringa feilet. {str(e)}",
@@ -447,6 +448,7 @@ class AltinnControlView:
                         *alert_store,
                     ]
                 except Exception as e:
+                    logger.debug(f"Inserting failed!\n{e}")
                     alert_store = [
                         create_alert(
                             f"Kontrollkjøringa feilet. {str(e)}",
