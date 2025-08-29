@@ -45,6 +45,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             "SELECT kontrollid FROM kontroller",
             partition_select=partitions_skjema,
         )["kontrollid"].tolist()
+        logger.debug(self.controls)
 
     def execute_controls(self) -> int:
         """Executes control checks and updates existing rows in 'kontrollutslag' if needed.
@@ -164,7 +165,8 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 "SELECT aar, skjema, kontrollid, ident, refnr, utslag FROM kontrollutslag",
                 self.partitions_skjema,
             )
-        except Exception:
+        except Exception as e:  # TODO better exception handling.
+            logger.debug(f"Exception happened:\n{e}")
             df_allerede_kontrollert = pd.DataFrame(
                 columns=["aar", "skjema", "kontrollid", "ident", "refnr"]
             )
