@@ -115,7 +115,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         return df
 
     def run_control(self, control) -> pd.DataFrame:
-        results = control()
+        results = getattr(self, control)()
         if not isinstance(results, pd.DataFrame):
             raise TypeError(
                 f"Result from control method is not a pd.dataframe. Received: '{type(results)}'"
