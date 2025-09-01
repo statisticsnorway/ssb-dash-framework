@@ -300,7 +300,7 @@ class AggDistPlotter(ABC):
             if not refresh:
                 logger.debug("Preventing update")
                 raise PreventUpdate
-            if not isinstance(tabell, str) or tabell != "":
+            if not isinstance(tabell, str) or tabell == "":
                 raise ValueError(
                     f"Trying to run query with no value for 'tabell'. Received value: '{tabell}'"
                 )
