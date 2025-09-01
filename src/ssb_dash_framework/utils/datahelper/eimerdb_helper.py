@@ -21,7 +21,7 @@ eimerdb_logger.addHandler(handler)
 eimerdb_logger.propagate = False
 
 
-class DatabaseBuilderAltinnEimerdb:
+class DatabaseBuilderAltinnEimerdb:  # TODO: Should contain functionality to process xml-files into enheter, skjemamottak and kontaktinfo
     """This class provides help for creating an eimerdb datastorage for Altinn3 surveys.
 
     It provides the recommended tables which makes sure your datastructure is compatible with the framework.
@@ -205,7 +205,7 @@ class DatabaseBuilderAltinnEimerdb:
             },
         ]
 
-        schema_datatyper = [
+        schema_datatyper = [  # TODO: Should be simplified.
             *periods_cols,
             {"name": "tabell", "type": "string", "label": "Tabellnavnet"},
             {
