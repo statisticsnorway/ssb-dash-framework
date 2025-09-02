@@ -1,4 +1,6 @@
 import logging
+from collections.abc import Callable
+from typing import Any
 
 import pandas as pd
 
@@ -43,11 +45,15 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             partitions: Partition to execute controls on.
             partitions_skjema: Partition specification, including skjema.
             conn: Database connection object with query and insert methods.
+
+        Raises:
+            AttributeError: If conn lacks 'query' or 'insert' methods.
+            ValueError: if no controls are found for chosen partition.
         """
         if not hasattr(conn, "query"):
             raise AttributeError("The 'conn' object must have a 'query' method.")
         if not hasattr(conn, "insert"):
-            AttributeError("The 'conn' object must have a 'insert' method.")
+            raise AttributeError("The 'conn' object must have a 'insert' method.")
         self.partitions = partitions
         self.partitions_skjema = partitions_skjema
         self.conn = conn
@@ -128,7 +134,8 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             )
         return df
 
-    def run_control(self, control) -> pd.DataFrame:
+    def run_control(self, control: Callable[..., Any]) -> pd.DataFrame:
+        """Runs a single control."""
         results = getattr(self, control)()
         if not isinstance(results, pd.DataFrame):
             raise TypeError(

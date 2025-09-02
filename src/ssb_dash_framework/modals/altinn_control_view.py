@@ -29,8 +29,7 @@ default_col_def = {
 
 
 class AltinnControlView:
-    """Provides a layout and functionality for a modal that offers a tabular view of the controls.
-    """
+    """Provides a layout and functionality for a modal that offers a tabular view of the controls."""
 
     def __init__(
         self, time_units: list[str], control_dict: dict[str, Any], conn: object
@@ -393,7 +392,7 @@ class AltinnControlView:
                     logger.debug(f"Executing controls failed!\n{e}")
                     alert_store = [
                         create_alert(
-                            f"Kontrollkjøringa feilet. {str(e)}",
+                            f"Kontrollkjøringa feilet. {e!s}",
                             "danger",
                             ephemeral=True,
                         ),
@@ -446,7 +445,7 @@ class AltinnControlView:
                     logger.debug(f"Inserting failed!\n{e}")
                     alert_store = [
                         create_alert(
-                            f"Kontrollkjøringa feilet. {str(e)}",
+                            f"Kontrollkjøringa feilet. {e!s}",
                             "danger",
                             ephemeral=True,
                         ),
