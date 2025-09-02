@@ -1,6 +1,4 @@
 import logging
-from collections.abc import Callable
-from typing import Any
 
 import pandas as pd
 
@@ -134,8 +132,18 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             )
         return df
 
-    def run_control(self, control: Callable[..., Any]) -> pd.DataFrame:
-        """Runs a single control."""
+    def run_control(self, control: str) -> pd.DataFrame:
+        """Runs a single control.
+
+        Args:
+            control: Name of a control method to run implemented in the supplied control class built upon ControlFrameworkBase.
+
+        Returns:
+            pd.Dataframe: Dataframe containing results from the control.
+
+        Raises:
+            TypeError: If control method does not return pd.dataframe.
+        """
         results = getattr(self, control)()
         if not isinstance(results, pd.DataFrame):
             raise TypeError(
@@ -222,7 +230,12 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
 
         Returns:
             int: Number of rows inserted.
+
+        Raises:
+            AttributeError: If 'conn' does not have 'insert' method.
         """
+        if not hasattr(self.conn, "insert"):
+            raise AttributeError("'conn' object must have 'insert' method.")
         df_lastes = self.control_new_rows()
         logger.debug(f"Data to insert:\n{df_lastes}")
         if len(df_lastes) > 0:
