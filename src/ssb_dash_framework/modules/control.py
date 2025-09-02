@@ -1,3 +1,5 @@
+# TODO: Rewrite to window/tab implementation model
+
 import logging
 from typing import Any
 from typing import cast
@@ -199,3 +201,6 @@ class Control:
             return str(observation)
 
         logger.debug("Generated callbacks")
+
+
+ControlWindow = Control

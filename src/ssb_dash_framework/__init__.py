@@ -1,15 +1,14 @@
 """SSB Dash Framework."""
 
 from .control import ControlFrameworkBase
-from .modals import AltinnControlView
-from .modals import Control
-from .modals import VisualizationBuilder
 from .modules import Aarsregnskap
 from .modules import AarsregnskapTab
 from .modules import AarsregnskapWindow
 from .modules import AggDistPlotter
 from .modules import AggDistPlotterTab
 from .modules import AggDistPlotterWindow
+from .modules import AltinnControlView
+from .modules import AltinnControlViewWindow
 from .modules import AltinnDataCapture
 from .modules import AltinnDataCaptureTab
 from .modules import AltinnDataCaptureWindow
@@ -20,6 +19,8 @@ from .modules import BofInformationWindow
 from .modules import Canvas
 from .modules import CanvasTab
 from .modules import CanvasWindow
+from .modules import Control
+from .modules import ControlWindow
 from .modules import EditingTable
 from .modules import EditingTableTab
 from .modules import EditingTableWindow
@@ -39,6 +40,8 @@ from .modules import PimemorizerTab
 from .modules import SkjemapdfViewer
 from .modules import SkjemapdfViewerTab
 from .modules import SkjemapdfViewerWindow
+from .modules import VisualizationBuilder
+from .modules import VisualizationBuilderWindow
 from .setup import VariableSelector
 from .setup import VariableSelectorOption
 from .setup import app_setup
@@ -68,6 +71,7 @@ __all__ = [
     "AggDistPlotterWindow",
     "AlertHandler",
     "AltinnControlView",
+    "AltinnControlViewWindow",
     "AltinnDataCapture",
     "AltinnDataCaptureTab",
     "AltinnDataCaptureWindow",
@@ -80,6 +84,7 @@ __all__ = [
     "CanvasWindow",
     "Control",
     "ControlFrameworkBase",
+    "ControlWindow",
     "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
     "EditingTable",
@@ -91,7 +96,8 @@ __all__ = [
     "FreeSearch",
     "FreeSearchTab",
     "FreeSearchWindow",
-    "HBMethod",
+    # "HBMethod",
+    # "HBMethodWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
@@ -110,6 +116,7 @@ __all__ = [
     "VariableSelector",
     "VariableSelectorOption",
     "VisualizationBuilder",
+    "VisualizationBuilderWindow",
     "WindowImplementation",
     "app_setup",
     "create_alert",
