@@ -29,13 +29,7 @@ default_col_def = {
 
 
 class AltinnControlView:
-    """Provides a layout and functionality for a modal that offers a tabular view of the controls.
-
-    Attributes:
-        time_units (list): A list of the time units used.
-        control_dict (dict): A dictionary with one control class per skjema.
-        conn (object): The eimerdb connection.
-    """
+    """Provides a layout and functionality for a modal that offers a tabular view of the controls."""
 
     def __init__(
         self, time_units: list[str], control_dict: dict[str, Any], conn: object
@@ -395,9 +389,10 @@ class AltinnControlView:
                         *alert_store,
                     ]
                 except Exception as e:
+                    logger.debug(f"Executing controls failed!\n{e}")
                     alert_store = [
                         create_alert(
-                            f"Kontrollkjøringa feilet. {str(e)[:60]}",
+                            f"Kontrollkjøringa feilet. {e!s}",
                             "danger",
                             ephemeral=True,
                         ),
@@ -447,9 +442,10 @@ class AltinnControlView:
                         *alert_store,
                     ]
                 except Exception as e:
+                    logger.debug(f"Inserting failed!\n{e}")
                     alert_store = [
                         create_alert(
-                            f"Kontrollkjøringa feilet. {str(e)[:60]}",
+                            f"Kontrollkjøringa feilet. {e!s}",
                             "danger",
                             ephemeral=True,
                         ),
