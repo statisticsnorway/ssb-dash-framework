@@ -8,7 +8,6 @@ SSB Dash Framework.
    :caption: Ssb_dash_framework
 
    Control <control/index>
-   Modals <modals/index>
    Modules <modules/index>
    Setup <setup/index>
    Utils <utils/index>

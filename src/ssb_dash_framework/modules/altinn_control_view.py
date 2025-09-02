@@ -1,3 +1,5 @@
+# TODO: Rewrite to window/tab implementation model
+
 import logging
 from typing import Any
 from typing import Literal
@@ -454,3 +456,6 @@ class AltinnControlView:
                 return alert_store
             logger.debug("PreventUpdate raised")
             raise PreventUpdate
+
+
+AltinnControlViewWindow = AltinnControlView  # For future reference
