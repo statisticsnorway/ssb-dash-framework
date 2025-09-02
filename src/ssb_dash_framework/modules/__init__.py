@@ -6,6 +6,8 @@ from .aarsregnskap import AarsregnskapWindow
 from .agg_dist_plotter import AggDistPlotter
 from .agg_dist_plotter import AggDistPlotterTab
 from .agg_dist_plotter import AggDistPlotterWindow
+from .altinn_control_view import AltinnControlView
+from .altinn_control_view import AltinnControlViewWindow
 from .altinn_data_capture import AltinnDataCapture
 from .altinn_data_capture import AltinnDataCaptureTab
 from .altinn_data_capture import AltinnDataCaptureWindow
@@ -25,9 +27,14 @@ from .building_blocks import FigureDisplayWindow
 from .building_blocks import MultiModule
 from .building_blocks import MultiModuleTab
 from .building_blocks import MultiModuleWindow
+from .control import Control
+from .control import ControlWindow
 from .freesearch import FreeSearch
 from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
+
+# from .hb_method import HBMethod
+# from .hb_method import HBMethodWindow
 from .map_display import MapDisplay
 from .map_display import MapDisplayTab
 from .map_display import MapDisplayWindow
@@ -35,6 +42,8 @@ from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab
 from .skjemapdfviewer import SkjemapdfViewerWindow
+from .visualizationbuilder import VisualizationBuilder
+from .visualizationbuilder import VisualizationBuilderWindow
 
 __all__ = [
     "Aarsregnskap",
@@ -43,6 +52,8 @@ __all__ = [
     "AggDistPlotter",
     "AggDistPlotterTab",
     "AggDistPlotterWindow",
+    "AltinnControlView",
+    "AltinnControlViewWindow",
     "AltinnDataCapture",
     "AltinnDataCaptureTab",
     "AltinnDataCaptureWindow",
