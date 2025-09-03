@@ -88,12 +88,10 @@ class AlertHandler:
         """
         return html.Div(
             [
-                # Stores for alerts and filter
                 dcc.Store(
                     id="alert_store", data=[create_alert("Application started", "info")]
                 ),
                 dcc.Store(id="alert_filter", data="all"),
-                # Container for ephemeral alerts.
                 html.Div(
                     id="alert_ephemeral_container",
                     className="alert-container",
@@ -106,7 +104,6 @@ class AlertHandler:
                         dbc.ModalHeader(dbc.ModalTitle("Varsler")),
                         dbc.ModalBody(
                             [
-                                # Filter buttons
                                 dbc.Row(
                                     [
                                         dbc.Col(
@@ -237,11 +234,9 @@ class AlertHandler:
             if not alerts:
                 return []
 
-            # Filter by color if not "all"
             if current_filter != "all":
                 alerts = [a for a in alerts if a["color"] == current_filter]
 
-            # Build dismissable alerts
             components = []
             for i, alert_data in enumerate(alerts):
                 components.append(
@@ -292,7 +287,6 @@ class AlertHandler:
                         new_list.append(alert_item)
                     display_index += 1
                 else:
-                    # Not displayed (perhaps filtered out?), so keep
                     new_list.append(alert_item)
 
             return new_list

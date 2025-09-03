@@ -58,9 +58,12 @@ class Aarsregnskap(ABC):
             raise ValueError(
                 "var-aar not found in the VariableSelector. Please add it using '''VariableSelectorOption('aar')'''"
             )
-        if "var-foretak" not in [
-            x.id for x in VariableSelector._variableselectoroptions
-        ]:
+        if (
+            "var-foretak"
+            not in [  # TODO: Make it possible to define a separate value for fetching årsregnskap? Or keep it locked to foretak?
+                x.id for x in VariableSelector._variableselectoroptions
+            ]
+        ):
             raise ValueError(
                 "var-foretak not found in the VariableSelector. Please add it using '''VariableSelectorOption('foretak')'''"
             )

@@ -1,3 +1,5 @@
+# TODO: Rewrite to window/tab implementation model
+
 import logging
 from typing import Any
 
@@ -334,3 +336,6 @@ class VisualizationBuilder:
                 return {}
 
         logger.debug("Generated callbacks")
+
+
+VisualizationBuilderWindow = VisualizationBuilder

@@ -34,6 +34,8 @@ class AltinnSkjemadataEditor:
     """A fully functional module for editing Altinn forms.
 
     This module contains submodules with specific functionality.
+
+    It requires a set table structure.
     """
 
     def __init__(
@@ -67,7 +69,7 @@ class AltinnSkjemadataEditor:
             selected_inputs=[], selected_states=self.time_units
         )
 
-        self.primary_table = AltinnEditorPrimaryTable(
+        self.primary_table = AltinnEditorPrimaryTable(  # TODO: Should be turned into an argument in __init__ in order to increase modularity.
             time_units=self.time_units,
             conn=self.conn,
             variable_selector_instance=self.variableselector,

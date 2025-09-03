@@ -1,7 +1,7 @@
 control module
 ==============
 
-.. automodule:: ssb_dash_framework.modals.control
+.. automodule:: ssb_dash_framework.modules.control
    :members:
    :undoc-members:
    :show-inheritance:
