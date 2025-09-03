@@ -29,7 +29,7 @@ port = 8070
 service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
 domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
 theme = "darkly"
-app = app_setup(port, service_prefix, domain, theme)
+app = app_setup(port, service_prefix, theme)
 
 window_list = []
 
@@ -169,7 +169,7 @@ theme = "darkly"
 app = app_setup(port, service_prefix, theme)
 
 set_variables(["orgnr", "aar"]) # Dette gjør at orgnr og aar er tilgjengelig i applikasjonen din.
-start_verdier = { # Valgfritt å ha med, men kan være praktisk for brukervennlighet. Puttes inn i app.layout() funksjonen.
+start_verdier = { # Valgfritt å ha med, men kan være praktisk for brukervennlighet. Puttes inn i main_layout() funksjonen.
     "orgnr": "971526920",
     "aar": "2020"
 }
