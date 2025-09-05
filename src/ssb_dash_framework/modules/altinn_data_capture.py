@@ -263,7 +263,7 @@ class AltinnDataCapture(ABC):
                     data_frame=df,
                     x=df["dato_mottatt"],
                     y=df["antall"],
-                    template="plotly_dark",
+                    template="plotly_white",
                 )
                 return fig
 
@@ -312,7 +312,7 @@ class AltinnDataCapture(ABC):
                         "dato_mottatt": "Dato",
                     },
                     line_shape="linear",
-                    template="plotly_dark",
+                    template="plotly_white",
                     hover_data={"percentage_filled": ":.2f"},
                 )
 

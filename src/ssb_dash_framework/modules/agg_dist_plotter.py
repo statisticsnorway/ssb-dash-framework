@@ -497,7 +497,7 @@ class AggDistPlotter(ABC):
                     hover_data=["ident", "verdi"],
                     points="all",
                     title=f"📦 Boksplott for {variabel}, {partition_select!s}.",
-                    template="plotly_dark",
+                    template="plotly_white",
                 )
             elif graph_type == "fiolin":
                 fig = px.violin(
@@ -508,7 +508,7 @@ class AggDistPlotter(ABC):
                     box=True,
                     points="all",
                     title=f"🎻 Fiolinplott for {variabel}, {partition_select!s}.",
-                    template="plotly_dark",
+                    template="plotly_white",
                 )
             elif graph_type == "bidrag":
                 agg_df = df.groupby("ident", as_index=False)["verdi"].sum()
@@ -523,7 +523,7 @@ class AggDistPlotter(ABC):
                     y="ident",
                     orientation="h",
                     title=f"🥇 Bidragsanalyse - % av total verdi ({variabel})",
-                    template="plotly_dark",
+                    template="plotly_white",
                     labels={"verdi": "%"},
                     custom_data=["ident"],
                 )
