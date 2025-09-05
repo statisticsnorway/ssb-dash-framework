@@ -38,7 +38,7 @@ def ssb_foretak_modal() -> dbc.Modal:
                 [
                     dag.AgGrid(
                         id="bofregistry-ssb_foretak-table",
-                        className="ag-theme-alpine-dark header-style-on-filter bofregistry-modal-aggrid",
+                        className="ag-theme-alpine header-style-on-filter bofregistry-modal-aggrid",
                         defaultColDef={
                             "editable": True,
                             "filter": True,
@@ -72,7 +72,7 @@ def ssb_bedrift_modal() -> dbc.Modal:
                 [
                     dag.AgGrid(
                         id="bofregistry-ssb_bedrift-table",
-                        className="ag-theme-alpine-dark header-style-on-filter bofregistry-modal-aggrid",
+                        className="ag-theme-alpine header-style-on-filter bofregistry-modal-aggrid",
                         defaultColDef={
                             "editable": True,
                             "filter": True,
@@ -335,7 +335,7 @@ class BofInformation(ABC):
                 html.Div(
                     dag.AgGrid(
                         id="tab-bof_foretak-table1",
-                        className="ag-theme-alpine-dark header-style-on-filter bofregistry-table-bedrift-aggrid",
+                        className="ag-theme-alpine header-style-on-filter bofregistry-table-bedrift-aggrid",
                         columnSize="responsiveSizeToFit",
                         defaultColDef={
                             "filter": True,

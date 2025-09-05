@@ -129,7 +129,7 @@ class AltinnControlView:
                                         dag.AgGrid(
                                             id="kontroller-table1",
                                             defaultColDef=default_col_def,
-                                            className="ag-theme-alpine-dark header-style-on-filter",
+                                            className="ag-theme-alpine header-style-on-filter",
                                             style={"height": "35vh", "width": "100%"},
                                             columnSize="responsiveSizeToFit",
                                             dashGridOptions={
@@ -144,7 +144,7 @@ class AltinnControlView:
                                         dag.AgGrid(
                                             id="kontroller-table2",
                                             defaultColDef=default_col_def,
-                                            className="ag-theme-alpine-dark header-style-on-filter",
+                                            className="ag-theme-alpine header-style-on-filter",
                                             style={"height": "35vh", "width": "100%"},
                                             columnSize="responsiveSizeToFit",
                                             dashGridOptions={

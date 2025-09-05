@@ -161,7 +161,7 @@ class AggDistPlotter(ABC):
                             dag.AgGrid(
                                 id="aggdistplotter-table",
                                 defaultColDef=default_col_def,
-                                className="ag-theme-alpine-dark header-style-on-filter",
+                                className="ag-theme-alpine header-style-on-filter",
                                 columnSize="responsiveSizeToFit",
                                 dashGridOptions={
                                     "rowHeight": 38,
