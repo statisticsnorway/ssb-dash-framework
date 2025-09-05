@@ -59,7 +59,7 @@ class AltinnEditorHistory:
                     dag.AgGrid(
                         defaultColDef={"editable": True},
                         id="skjemadata-historikkmodal-table1",
-                        className="ag-theme-alpine-dark header-style-on-filter",
+                        # className="ag-theme-alpine-dark header-style-on-filter",
                     ),
                     className="d-flex flex-column justify-content-center align-items-center",
                 ),

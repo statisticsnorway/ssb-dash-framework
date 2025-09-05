@@ -91,7 +91,7 @@ class VisualizationBuilder:
                                         html.Div(
                                             dag.AgGrid(
                                                 id="sql-output-table",
-                                                className="ag-theme-alpine-dark header-style-on-filter",
+                                                # className="ag-theme-alpine-dark header-style-on-filter",
                                                 columnSize="responsiveSizeToFit",
                                                 style={"pagination": True},
                                             )

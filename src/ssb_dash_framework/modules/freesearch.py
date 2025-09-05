@@ -92,7 +92,7 @@ class FreeSearch(ABC):
                 dag.AgGrid(
                     defaultColDef={"editable": True},
                     id="tab-frisøk-table1",
-                    className="ag-theme-alpine-dark header-style-on-filter",
+                    # className="ag-theme-alpine-dark header-style-on-filter",
                 ),
             ],
         )

@@ -142,8 +142,9 @@ class EditingTable:
                         "defaultColDef", {"editable": True}
                     ),  # This is to make sure the user can override the defaultColDef
                     id=f"{self.module_number}-tabelleditering-table1",
-                    className="ag-theme-alpine-dark header-style-on-filter editingtable-aggrid-style",
-                    **{k: v for k, v in self.kwargs.items() if k != "defaultColDef"},
+                    # className="ag-theme-alpine-dark header-style-on-filter editingtable-aggrid-style",
+                    className="editingtable-aggrid-style"
+                    ** {k: v for k, v in self.kwargs.items() if k != "defaultColDef"},
                 )
             ],
         )

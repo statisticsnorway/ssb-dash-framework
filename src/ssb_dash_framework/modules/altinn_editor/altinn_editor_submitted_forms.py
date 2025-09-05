@@ -107,7 +107,7 @@ class AltinnEditorSubmittedForms:
                         id="altinnedit-table-skjemaer",
                         dashGridOptions={"rowSelection": "single"},
                         columnSize="responsiveSizeToFit",
-                        className="ag-theme-alpine-dark header-style-on-filter",
+                        # className="ag-theme-alpine-dark header-style-on-filter",
                     ),
                 ),
             ],
