@@ -13,13 +13,13 @@ logger = logging.getLogger(__name__)
 class Canvas(ABC):
     """The Canvas module is a base class that simplifies adding your own unique view to the framework.
 
-    It is intended to be used when you want to combine other building blocks into a single view.
+    It is intended to be used when you want to combine building blocks into a single view.
 
     Its limitation is that it does not support any interactivity on its own, and no callbacks are defined.
     It is meant to be used as a container for other components, such as tables, graphs and similar.
 
     It can to a degree replace the need for a completely custom module, but if you need interactivity
-    between the contained modules directly, instead of routing it through the variable selector,
+    between the contained modules instead of routing it through the variable selector,
     you should consider creating a custom module instead.
     """
 

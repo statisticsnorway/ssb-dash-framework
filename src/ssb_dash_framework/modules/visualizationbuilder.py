@@ -1,3 +1,5 @@
+# TODO: Rewrite to window/tab implementation model
+
 import logging
 from typing import Any
 
@@ -89,7 +91,7 @@ class VisualizationBuilder:
                                         html.Div(
                                             dag.AgGrid(
                                                 id="sql-output-table",
-                                                className="ag-theme-alpine-dark header-style-on-filter",
+                                                className="ag-theme-alpine header-style-on-filter",
                                                 columnSize="responsiveSizeToFit",
                                                 style={"pagination": True},
                                             )
@@ -334,3 +336,6 @@ class VisualizationBuilder:
                 return {}
 
         logger.debug("Generated callbacks")
+
+
+VisualizationBuilderWindow = VisualizationBuilder

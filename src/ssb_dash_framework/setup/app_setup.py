@@ -12,14 +12,33 @@ from dash_bootstrap_templates import load_figure_template
 from ..utils.app_logger import enable_app_logging
 
 logger = logging.getLogger(__name__)
+
 theme_map = {
+    "cerulean": dbc.themes.CERULEAN,
+    "cosmo": dbc.themes.COSMO,
+    "cyborg": dbc.themes.CYBORG,
+    "darkly": dbc.themes.DARKLY,
+    "flatly": dbc.themes.FLATLY,
+    "journal": dbc.themes.JOURNAL,
+    "litera": dbc.themes.LITERA,
+    "lumen": dbc.themes.LUMEN,
+    "lux": dbc.themes.LUX,
+    "materia": dbc.themes.MATERIA,
+    "minty": dbc.themes.MINTY,
+    "morph": dbc.themes.MORPH,
+    "pulse": dbc.themes.PULSE,
+    "quartz": dbc.themes.QUARTZ,
+    "sandstone": dbc.themes.SANDSTONE,
+    "simplex": dbc.themes.SIMPLEX,
     "sketchy": dbc.themes.SKETCHY,
     "slate": dbc.themes.SLATE,
-    "cyborg": dbc.themes.CYBORG,
-    "superhero": dbc.themes.SUPERHERO,
-    "darkly": dbc.themes.DARKLY,
     "solar": dbc.themes.SOLAR,
-    "flatly": dbc.themes.FLATLY,
+    "spacelab": dbc.themes.SPACELAB,
+    "superhero": dbc.themes.SUPERHERO,
+    "united": dbc.themes.UNITED,
+    "vapor": dbc.themes.VAPOR,
+    "yeti": dbc.themes.YETI,
+    "zephyr": dbc.themes.ZEPHYR,
 }
 
 

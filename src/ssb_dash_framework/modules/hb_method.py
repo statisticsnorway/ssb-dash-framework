@@ -1,5 +1,7 @@
 """TERMPORARILY DISABLED UNTIL A SERVICE IN DAPLA LAB WITH R AND PYTHON FOR VSCODE EXISTS."""
 
+# TODO: Rewrite to window/tab implementation model
+
 # import logging
 # import time
 # from collections.abc import Callable
@@ -418,3 +420,5 @@
 #             return ident
 
 #         logger.debug("Generated callbacks")
+
+# HBMethodWindow = HBMethod

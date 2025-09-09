@@ -69,7 +69,7 @@ class AltinnEditorPrimaryTable:
             children=[
                 dag.AgGrid(
                     id="altinnedit-table-skjemadata",
-                    className="ag-theme-alpine-dark header-style-on-filter",
+                    className="ag-theme-alpine header-style-on-filter",
                     style={"width": "100%", "height": "90vh"},
                     defaultColDef={
                         "resizable": True,

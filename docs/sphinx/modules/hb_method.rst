@@ -1,7 +1,7 @@
 hb_method module
 ================
 
-.. automodule:: ssb_dash_framework.modals.hb_method
+.. automodule:: ssb_dash_framework.modules.hb_method
    :members:
    :undoc-members:
    :show-inheritance:
