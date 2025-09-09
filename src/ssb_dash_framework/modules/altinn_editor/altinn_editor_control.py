@@ -78,7 +78,7 @@ class AltinnEditorControl:
                         dag.AgGrid(
                             defaultColDef={"editable": False},
                             id="offcanvas-control-table1",
-                            className="ag-theme-alpine-dark header-style-on-filter",
+                            className="ag-theme-alpine header-style-on-filter",
                             columnSize="responsiveSizeToFit",
                         ),
                     ),
