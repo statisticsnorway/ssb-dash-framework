@@ -1,6 +1,8 @@
 # TODO: Rewrite to window/tab implementation model
 
 import logging
+from abc import ABC
+from abc import abstractmethod
 from typing import Any
 from typing import Literal
 
@@ -14,9 +16,11 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
+from ..utils import TabImplementation
+from ..utils import WindowImplementation
 from ..utils.alert_handler import create_alert
 from ..utils.eimerdb_helpers import create_partition_select
-from ..utils.functions import sidebar_button
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +34,10 @@ default_col_def = {
 }
 
 
-class AltinnControlView:
+class AltinnControlView(ABC):
     """Provides a layout and functionality for a modal that offers a tabular view of the controls."""
+
+    _id_number: int = 0
 
     def __init__(
         self, time_units: list[str], control_dict: dict[str, Any], conn: object
@@ -49,11 +55,23 @@ class AltinnControlView:
         assert hasattr(
             conn, "query"
         ), "The database connection object must have a 'query' method."
+        self.module_number = AltinnControlView._id_number
+        self.module_name = self.__class__.__name__
+        AltinnControlView._id_number += 1
+
+        self.icon = "⚠️"
+        self.label = "Kontroll"
+
         self.time_units = time_units
         self.control_dict = control_dict
         self.conn = conn
         self._is_valid()
-        self.callbacks()
+        self.module_layout = self.create_layout()
+        self.variableselector = VariableSelector(
+            selected_inputs=self.time_units, selected_states=[]
+        )
+        self.module_callbacks()
+        module_validator(self)
 
     def _is_valid(self) -> None:
         VariableSelector([], []).get_option("altinnskjema")
@@ -65,114 +83,86 @@ class AltinnControlView:
         for unit in self.time_units:
             VariableSelector([], []).get_option(unit)
 
-    def layout(self) -> html.Div:
+    def create_layout(self) -> html.Div:
         """Generates the layout for the AltinnControlView module.
 
         Returns:
             layout: A Div element containing two tables, kontroller and kontrollutslag.
         """
         layout = html.Div(
-            [
-                dbc.Modal(
+            style={"width": "100%"},
+            children=[
+                dbc.Row(
                     [
-                        dbc.ModalHeader(
-                            dbc.Row(
-                                [
-                                    dbc.Col(
-                                        dbc.ModalTitle("⚠️ Kontroller"),
-                                        width="auto",
-                                    ),
-                                    dbc.Col(
-                                        dbc.Button(
-                                            "🖵",
-                                            id="kontroller-modal-fullscreen",
-                                        ),
-                                        width="auto",
-                                        className="ms-auto",
-                                    ),
-                                ],
-                                className="w-100",
-                                align="center",
-                            )
+                        dbc.Col(
+                            dbc.Button(
+                                "🔄 Refresh",
+                                id="kontrollermodal-refresh",
+                            ),
+                            width="auto",
                         ),
-                        dbc.ModalBody(
-                            html.Div(
-                                style={
-                                    "height": "80vh",
-                                    "display": "flex",
-                                    "flexDirection": "column",
-                                    "gap": "10px",
-                                },
-                                children=[
-                                    dbc.Row(
-                                        [
-                                            dbc.Col(
-                                                dbc.Button(
-                                                    "🔄 Refresh",
-                                                    id="kontrollermodal-refresh",
-                                                ),
-                                                width="auto",
-                                            ),
-                                            dbc.Col(
-                                                dbc.Button(
-                                                    "Kjør alle kontrollene",
-                                                    id="kontrollermodal-kontrollbutton",
-                                                ),
-                                                width="auto",
-                                            ),
-                                            dbc.Col(
-                                                dbc.Button(
-                                                    "Insert nye kontrollutslag",
-                                                    id="kontrollermodal-insertbutton",
-                                                ),
-                                                width="auto",
-                                            ),
-                                            dbc.Col(html.P(id="kontrollermodal-vars")),
-                                        ],
-                                        className="g-2",
-                                    ),
-                                    html.Div(
-                                        dag.AgGrid(
-                                            id="kontroller-table1",
-                                            defaultColDef=default_col_def,
-                                            className="ag-theme-alpine-dark header-style-on-filter",
-                                            style={"height": "35vh", "width": "100%"},
-                                            columnSize="responsiveSizeToFit",
-                                            dashGridOptions={
-                                                "pagination": True,
-                                                "rowSelection": "single",
-                                                "rowHeight": 28,
-                                            },
-                                        ),
-                                        style={"flexShrink": 0},
-                                    ),
-                                    html.Div(
-                                        dag.AgGrid(
-                                            id="kontroller-table2",
-                                            defaultColDef=default_col_def,
-                                            className="ag-theme-alpine-dark header-style-on-filter",
-                                            style={"height": "35vh", "width": "100%"},
-                                            columnSize="responsiveSizeToFit",
-                                            dashGridOptions={
-                                                "pagination": True,
-                                                "rowSelection": "single",
-                                                "rowHeight": 28,
-                                            },
-                                        ),
-                                        style={"flexShrink": 0},
-                                    ),
-                                ],
-                            )
+                        dbc.Col(
+                            dbc.Button(
+                                "Kjør alle kontrollene",
+                                id="kontrollermodal-kontrollbutton",
+                            ),
+                            width="auto",
                         ),
+                        dbc.Col(
+                            dbc.Button(
+                                "Insert nye kontrollutslag",
+                                id="kontrollermodal-insertbutton",
+                            ),
+                            width="auto",
+                        ),
+                        dbc.Col(html.P(id="kontrollermodal-vars")),
                     ],
-                    id="kontroller-modal",
-                    size="xl",
-                    fullscreen="xxl-down",
+                    className="g-2",
                 ),
-                sidebar_button("⚠️", "Kontroller", "sidebar-kontroller-button"),
-            ]
+                dbc.Row(
+                    dag.AgGrid(
+                        id="kontroller-table1",
+                        defaultColDef=default_col_def,
+                        className="ag-theme-alpine header-style-on-filter",
+                        columnSize="responsiveSizeToFit",
+                        dashGridOptions={
+                            "pagination": True,
+                            "rowSelection": "single",
+                            "rowHeight": 28,
+                        },
+                    ),
+                    style={"flexShrink": 0},
+                ),
+                dbc.Row(
+                    dbc.Col(
+                        dag.AgGrid(
+                            id="kontroller-table2",
+                            defaultColDef=default_col_def,
+                            className="ag-theme-alpine header-style-on-filter",
+                            columnSize="responsiveSizeToFit",
+                            dashGridOptions={
+                                "pagination": True,
+                                "rowSelection": "single",
+                                "rowHeight": 28,
+                            },
+                        ),
+                        width=12,
+                    )
+                ),
+            ],
         )
         return layout
+
+    @abstractmethod
+    def layout(self) -> html.Div:
+        """Defines the layout for the AltinnControlView module.
+
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
+
+        Returns:
+            html.Div: A Dash HTML Div component representing the layout of the module.
+        """
+        pass
 
     def create_callback_components(
         self, input_type: Literal["Input", "State"] = "Input"
@@ -181,42 +171,8 @@ class AltinnControlView:
         component = Input if input_type == "Input" else State
         return [component(f"var-{unit}", "value") for unit in self.time_units]
 
-    def callbacks(self) -> None:
+    def module_callbacks(self) -> None:
         """Registers Dash callbacks for the AltinnControlView module."""
-
-        @callback(  # type: ignore[misc]
-            Output("kontroller-modal", "fullscreen"),
-            Input("kontroller-modal-fullscreen", "n_clicks"),
-            State("kontroller-modal", "fullscreen"),
-        )
-        def toggle_fullscreen_modal(
-            n_clicks: int, fullscreen_state: str | bool
-        ) -> str | bool:
-            logger.debug(
-                f"Args:\n"
-                f"n_clicks: {n_clicks}\n"
-                f"fullscreen_state: {fullscreen_state}"
-            )
-            fullscreen: str | bool
-            if n_clicks > 0:
-                if fullscreen_state is True:
-                    fullscreen = "xxl-down"
-                else:
-                    fullscreen = True
-                return fullscreen
-            logger.debug("PreventUpdate raised")
-            raise PreventUpdate
-
-        @callback(  # type: ignore[misc]
-            Output("kontroller-modal", "is_open"),
-            Input("sidebar-kontroller-button", "n_clicks"),
-            State("kontroller-modal", "is_open"),
-        )
-        def kontrollermodal_toggle(n: int, is_open: bool) -> bool:
-            logger.debug(f"Args:\nn: {n}\nis_open: {is_open}")
-            if n:
-                return not is_open
-            return is_open
 
         @callback(  # type: ignore[misc]
             Output("kontroller-table1", "rowData"),
@@ -464,4 +420,33 @@ class AltinnControlView:
             raise PreventUpdate
 
 
-AltinnControlViewWindow = AltinnControlView  # For future reference
+class AltinnControlViewTab(TabImplementation, AltinnControlView):
+    """AltinnControlView implemented as a tab."""
+
+    def __init__(
+        self, time_units: list[str], control_dict: dict[str, Any], conn: object
+    ) -> None:
+        """Initializes the AltinnControlViewTab module."""
+        AltinnControlView.__init__(
+            self,
+            time_units=time_units,
+            control_dict=control_dict,
+            conn=conn,
+        )
+        TabImplementation.__init__(self)
+
+
+class AltinnControlViewWindow(WindowImplementation, AltinnControlView):
+    """AltinnControlView implemented as a window."""
+
+    def __init__(
+        self, time_units: list[str], control_dict: dict[str, Any], conn: object
+    ) -> None:
+        """Initializes the AltinnControlViewWindow module."""
+        AltinnControlView.__init__(
+            self,
+            time_units=time_units,
+            control_dict=control_dict,
+            conn=conn,
+        )
+        WindowImplementation.__init__(self)

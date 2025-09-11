@@ -175,7 +175,7 @@ class WindowImplementation:
             html.Div: The layout containing the modal and the sidebar button.
         """
         layout = html.Div(
-            [
+            children=[
                 dbc.Modal(
                     [
                         dbc.ModalHeader(
@@ -198,7 +198,7 @@ class WindowImplementation:
                         ),
                         dbc.ModalBody(
                             html.Div(
-                                className="window-implementation-modal-body",
+                                className="window-implementation-modal-body dbc dbc-ag-grid",
                                 children=self.get_module_layout(),
                             )
                         ),

@@ -66,7 +66,7 @@ class AltinnEditorComment:
                                 id="altinnedit-kommentarmodal-table1",
                                 dashGridOptions={"rowSelection": "single"},
                                 columnSize="responsiveSizeToFit",
-                                className="ag-theme-alpine-dark header-style-on-filter",
+                                className="ag-theme-alpine header-style-on-filter",
                             )
                         ),
                         dbc.Row(
