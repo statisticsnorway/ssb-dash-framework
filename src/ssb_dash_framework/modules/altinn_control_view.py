@@ -58,6 +58,12 @@ class AltinnControlView:
     def _is_valid(self) -> None:
         VariableSelector([], []).get_option("altinnskjema")
         VariableSelector([], []).get_option("ident")
+        if not isinstance(self.time_units, list):
+            raise TypeError(
+                f"time_units needs to be type 'list'. Received: {type(self.time_units)}"
+            )
+        for unit in self.time_units:
+            VariableSelector([], []).get_option(unit)
 
     def layout(self) -> html.Div:
         """Generates the layout for the AltinnControlView module.
