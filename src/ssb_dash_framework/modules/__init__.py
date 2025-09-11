@@ -24,6 +24,12 @@ from .building_blocks import EditingTableWindow
 from .building_blocks import FigureDisplay
 from .building_blocks import FigureDisplayTab
 from .building_blocks import FigureDisplayWindow
+
+# from .hb_method import HBMethod
+# from .hb_method import HBMethodWindow
+from .building_blocks import MapDisplay
+from .building_blocks import MapDisplayTab
+from .building_blocks import MapDisplayWindow
 from .building_blocks import MultiModule
 from .building_blocks import MultiModuleTab
 from .building_blocks import MultiModuleWindow
@@ -32,12 +38,6 @@ from .control import ControlWindow
 from .freesearch import FreeSearch
 from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
-
-# from .hb_method import HBMethod
-# from .hb_method import HBMethodWindow
-from .map_display import MapDisplay
-from .map_display import MapDisplayTab
-from .map_display import MapDisplayWindow
 from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab
