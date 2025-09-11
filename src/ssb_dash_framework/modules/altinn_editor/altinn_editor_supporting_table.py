@@ -110,7 +110,7 @@ class AltinnEditorSupportTables:
         return dag.AgGrid(
             defaultColDef={"editable": False},
             id=component_id,
-            className="ag-theme-alpine-dark header-style-on-filter",
+            className="ag-theme-alpine header-style-on-filter",
         )
 
     def _create_layout(self) -> html.Div:
