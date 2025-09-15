@@ -83,3 +83,9 @@ def test_options_order() -> None:
         assert (
             actual == expected
         ), f"Options are sorted in the wrong order when creating states for test order {order}. Expected order {expected} but returned actual order {actual}"
+
+
+def test_different_name_and_id() -> None:
+    VariableSelectorOption(variable_title="foretak", variable_id="ident")
+    VariableSelectorOption(variable_title="ident", variable_id="bedrift")
+    VariableSelectorOption(variable_title="identitet", variable_id="enhet")
