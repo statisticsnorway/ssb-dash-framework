@@ -296,23 +296,21 @@ class VariableSelector:
 class VariableSelectorOption:
     """Represents an individual variable selection option."""
 
-    def __init__(
-        self,
-        variable_title: str,
-    ) -> None:
+    def __init__(self, variable_title: str, variable_id: str | None = None) -> None:
         """Initializes a VariableSelectorOption.
 
         After checking its own validity, adds itself as an option for the VariableSelector by appending itself into the VariableSelector._variableselectoroptions class variable.
 
         Args:
             variable_title (str): The name of the variable.
+            variable_id (str | None): Optionally set a custom ID to enable having label and id be different.
 
         Examples:
-            >>> VariableSelectorOption("my numeric option")
             >>> VariableSelectorOption("my text option")
+            >>> VariableSelectorOption(variable_title="orgnr", variable_id="ident")
         """
         self.title = variable_title
-        self.id = f"var-{variable_title}"
+        self.id = variable_id if variable_id else f"var-{variable_title}"
         self.type = "text"
 
         self._is_valid()
