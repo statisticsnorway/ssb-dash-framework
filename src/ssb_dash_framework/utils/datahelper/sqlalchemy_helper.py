@@ -43,6 +43,10 @@ class Skjemamottak(Base):
     ident = Column(String, ForeignKey("enheter.ident"), primary_key=True)
     skjema = Column(String, ForeignKey("enheter.skjema"), primary_key=True)
     refnr = Column(String, primary_key=True)
+    dato_mottatt = Column(String)
+    editert = Column(Boolean)
+    kommentar = Column(String)
+    aktiv = Column(Boolean)
 
 
 class Kontaktinfo(Base):
@@ -99,6 +103,7 @@ class Datatyper(Base):
     tabell = Column(String)
     radnr = Column(String)
 
+
 def create_database(database_type="sqlite"):
     if database_type == "sqlite":
         engine = create_engine("sqlite:///mydb.sqlite", echo=True)
@@ -107,6 +112,7 @@ def create_database(database_type="sqlite"):
 
     Base.metadata.create_all(engine)
     return engine
+
 
 if __name__ == "__main__":
     engine = create_database("sqlite")
