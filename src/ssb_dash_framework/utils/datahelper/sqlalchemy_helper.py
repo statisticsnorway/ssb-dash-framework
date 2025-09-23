@@ -85,7 +85,7 @@ class Kontrollutslag(Base):
     verdi = Column(Integer)  # Maybe other type?
 
 
-class Skjemadata(Base):
+class Skjemadata_hoved(Base):
     __tablename__ = "skjemadata_hoved"
     locals().update(period_columns())
     skjema = Column(String, ForeignKey("enheter.skjema"), primary_key=True)
@@ -103,19 +103,21 @@ class Datatyper(Base):
     tabell = Column(String)
     radnr = Column(String)
 
-
-def create_database(database_type="sqlite"):
+def create_engine(database_type)
     if database_type == "sqlite":
         engine = create_engine("sqlite:///mydb.sqlite", echo=True)
     else:
         raise ValueError(f"Unsupported database type: {database_type}")
-
-    Base.metadata.create_all(engine)
     return engine
 
 
+def create_database(engine):
+    Base.metadata.create_all(engine)
+
+
 if __name__ == "__main__":
-    engine = create_database("sqlite")
+    engine = create_engine("sqlite")
+    create_database(engine)
     conn = engine.connect()
     result = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
     print("Existing tables:")
