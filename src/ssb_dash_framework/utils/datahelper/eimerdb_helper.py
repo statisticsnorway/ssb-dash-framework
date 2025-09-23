@@ -147,11 +147,7 @@ class DatabaseBuilderAltinnEimerdb:  # TODO: Should contain functionality to pro
         schema_enheter = [
             *periods_cols,
             ident_col,
-            {
-                "name": "skjemaer",
-                "type": "string",
-                "label": "En liste over skjemaene enheten har mottatt.",
-            },
+            schema_col,
         ]
 
         schema_enhetsinfo = [
