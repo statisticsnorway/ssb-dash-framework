@@ -103,7 +103,7 @@ class Datatyper(Base):
     tabell = Column(String)
     radnr = Column(String)
 
-def create_engine(database_type):
+def create_database_engine(database_type):
     if database_type == "sqlite":
         engine = create_engine("sqlite:///mydb.sqlite", echo=True)
     else:
