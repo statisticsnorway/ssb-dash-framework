@@ -214,7 +214,7 @@ class EditingTable:
                         "headerName": col,
                         "field": col,
                         "hide": col == "row_id",
-                        "editable": col !="UUID",
+                        "editable": col !="uuid",
                         "valueFormatter": (
                             {"function": self.number_format}
                             if pd.api.types.is_numeric_dtype(df[col])
