@@ -204,13 +204,13 @@ class AltinnDataCapture(ABC):
                 "Args:\n" + "\n".join([f"arg{i}: {arg}" for i, arg in enumerate(args)])
             )
             df = self.database.query(
-                "SELECT DISTINCT skjemaer FROM enheter",
+                "SELECT DISTINCT skjema FROM enheter",
                 partition_select={
                     column: [value]
                     for column, value in zip(self.time_units, args, strict=False)
                 },
             )
-            all_skjemas = df["skjemaer"].dropna().str.split(",").sum()
+            all_skjemas = df["skjema"].dropna().str.split(",").sum()
             distinct_skjemas = list(set(s.strip() for s in all_skjemas))
             default_value = distinct_skjemas[0]
             skjema_options = [
