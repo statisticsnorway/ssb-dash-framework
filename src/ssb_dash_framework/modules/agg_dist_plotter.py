@@ -370,7 +370,7 @@ class AggDistPlotter(ABC):
                     {group_by_clause}
                 ORDER BY datatype_subquery.radnr;
             """
-
+            logger.debug(f"Running query:\n{query}")
             df = self.conn.query(
                 query,
                 partition_select={
