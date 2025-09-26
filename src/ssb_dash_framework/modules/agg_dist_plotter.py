@@ -378,10 +378,13 @@ class AggDistPlotter(ABC):
                     "datatyper": updated_partition_select,
                 },
             )
+            logger.info(f"Result from query:\n{df.head()}")
 
             df_wide = df.pivot(
                 index="variabel", columns="time_combination", values="verdi"
             ).reset_index()
+            logger.info(f"After pivot:\n{df.head()}")
+
 
             df_wide = df_wide.rename(
                 columns={
@@ -389,7 +392,6 @@ class AggDistPlotter(ABC):
                     for col in df_wide.columns
                 }
             )
-
             df_wide.columns.name = None
 
             def extract_numeric_sum(
@@ -418,6 +420,7 @@ class AggDistPlotter(ABC):
             ]
             columns[0]["checkboxSelection"] = True
             columns[0]["headerCheckboxSelection"] = True
+            logger.info(f"Returning:\n{df_wide.head()}")
             return df_wide.to_dict("records"), columns
 
         @callback(  # type: ignore[misc]
