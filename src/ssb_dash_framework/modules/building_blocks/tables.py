@@ -22,7 +22,7 @@ from collections.abc import Callable
 from typing import Any
 import os
 import json
-import datetime
+import time
 
 import dash_ag_grid as dag
 import pandas as pd
@@ -115,10 +115,11 @@ class EditingTable:
         self._is_valid()
     
         # --- Logging setup ---
+        self.timestamp = int(time.time() * 1000)
         os.makedirs("logs", exist_ok=True)
         self.log_filename = os.path.join(
             "logs",
-            f"log_{datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S')}.jsonl"
+            f"log_{self.timestamp}.jsonl"
         )
     
         module_validator(self)
@@ -333,14 +334,14 @@ class EditingTable:
             edit_with_reason = dict(pending_edit)
             edit_with_reason["reason"] = reason
 
-            edit_with_reason["timestamp"] = datetime.utcnow().isoformat()
+            edit_with_reason["timestamp"] = int(time.time() * 1000)
 
             # Write to log file (append mode)
             log_dir = "logs"
             os.makedirs(log_dir, exist_ok=True)
             log_filename = os.path.join(
                 log_dir,
-                f"log_{datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S')}.jsonl"
+                f"log_{self.timestamp}.jsonl"
             )
             
             with open(log_filename, "a", encoding="utf-8") as f:
