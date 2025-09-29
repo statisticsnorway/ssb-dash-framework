@@ -60,7 +60,7 @@ class EditingTable:
     """
 
     _id_number: int = 0
-
+    
     def __init__(
         self,
         label: str,
@@ -74,7 +74,7 @@ class EditingTable:
         **kwargs: Any,
     ) -> None:
         """Initialize the EditingTable component.
-
+    
         Args:
             label: Display label for module.
             inputs: List of input IDs (used by VariableSelector).
@@ -86,7 +86,7 @@ class EditingTable:
             **kwargs: Extra keyword args passed to dag.AgGrid (except defaultColDef which is handled).
         """
         self.kwargs = kwargs
-
+    
         self.module_number = EditingTable._id_number
         self.module_name = self.__class__.__name__
         EditingTable._id_number += 1
@@ -94,12 +94,12 @@ class EditingTable:
         self.label = label
         self.output = output
         self.output_varselector_name = output_varselector_name or output
-
+    
         if number_format is None:
             self.number_format = "d3.format(',.1f')(params.value).replace(/,/g, ' ')"
         else:
             self.number_format = number_format
-
+    
         self.variableselector = VariableSelector(
             selected_inputs=inputs, selected_states=states
         )
@@ -110,8 +110,16 @@ class EditingTable:
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self._is_valid()
-
+    
+        # --- Logging setup ---
+        os.makedirs("logs", exist_ok=True)
+        self.log_filename = os.path.join(
+            "logs",
+            f"log_{datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S')}.jsonl"
+        )
+    
         module_validator(self)
+
 
     def _is_valid(self) -> None:
         """Validate provided arguments and configuration."""
@@ -321,6 +329,19 @@ class EditingTable:
             # Inject reason into a copy of the edit dict
             edit_with_reason = dict(pending_edit)
             edit_with_reason["reason"] = reason
+
+            edit_with_reason["timestamp"] = datetime.utcnow().isoformat()
+
+            # Write to log file (append mode)
+            log_dir = "logs"
+            os.makedirs(log_dir, exist_ok=True)
+            log_filename = os.path.join(
+                log_dir,
+                f"log_{datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S')}.jsonl"
+            )
+            
+            with open(log_filename, "a", encoding="utf-8") as f:
+                f.write(json.dumps(edit_with_reason, ensure_ascii=False) + "\n")
 
             variable = pending_edit.get("colId")
             old_value = pending_edit.get("oldValue")
