@@ -1,8 +1,8 @@
-"""editing_table.py.
-
+"""
+editing_table.py.
 An EditingTable component for Dash using Dash AgGrid that requires a reason
-for every cell edit. Implements Option 1 with strict behavior:
-
+for every cell edit (if justify_edit=True).
+Implements Option 1 with strict behavior:
 - After editing a cell, a modal is shown asking for a required reason.
 - The edit is not persisted until the user confirms with a reason.
 - If the user cancels, the edit is undone (the grid is reverted to the last
@@ -10,23 +10,23 @@ for every cell edit. Implements Option 1 with strict behavior:
 - The reason is inserted into the edit dictionary (key "reason") which is
   passed to update_table_func(edit_with_reason, *dynamic_states).
 
+If justify_edit=False:
+- Edits are persisted immediately, no reason is required and no modal is shown.
+
 Additional features:
 - User can specify log directory.
 - Changes modal textarea auto-focuses.
 - Pressing Enter in the textarea triggers Confirm.
-
 This file preserves the original design and hooks:
 - Loads data via `get_data_func`.
-- Calls `update_table_func(edit_with_reason, *dynamic_states)` on confirm.
+- Calls `update_table_func(edit, *dynamic_states)` on confirm.
 - Uses VariableSelector to construct dynamic inputs/states for callbacks.
 """
-
 import json
 import logging
 import time
 from collections.abc import Callable
 from typing import Any
-
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -37,7 +37,6 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
@@ -48,12 +47,11 @@ logger = logging.getLogger(__name__)
 
 
 class EditingTable:
-    """A reusable Dash component for editing tabular data with enforced reasons.
+    """A reusable Dash component for editing tabular data with optional reason enforcement.
+    This component renders a Dash AgGrid table where each edit can be
+    optionally confirmed with a user-provided reason before being persisted.
 
-    This component renders a Dash AgGrid table where each edit must be
-    confirmed with a user-provided reason before being persisted.
-
-    Workflow:
+    Workflow when justify_edit=True:
         1. Data is loaded into AgGrid via `get_data_func`.
         2. When a cell is edited, a modal opens requesting a reason.
         3. If confirmed:
@@ -63,6 +61,9 @@ class EditingTable:
         4. If cancelled:
             - The modal closes and the table reverts to its last saved state.
 
+    Workflow when justify_edit=False:
+        - Edits are accepted immediately, logged without reason, and persisted.
+
     Attributes:
         label (str): Display label for the component.
         output (str | list[str] | None): Optional identifier(s) for outputs.
@@ -70,6 +71,7 @@ class EditingTable:
         variableselector (VariableSelector): Handles inputs and states for callbacks.
         get_data_func (Callable): Function to fetch data for populating the table.
         update_table_func (Callable | None): Function to apply edits to the backend.
+        justify_edit (bool): Whether a reason is required for edits (default True).
         module_layout (html.Div): Dash layout containing AgGrid, modal, and stores.
         number_format (str): JavaScript d3-format string for numeric formatting.
         log_filepath (str): Path to the JSONL file used for logging edits.
@@ -88,8 +90,9 @@ class EditingTable:
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
         number_format: str | None = None,
+        justify_edit: bool = True,
         **kwargs: Any,
-    ) -> None:
+    ) -> None:        
         """Initialize the EditingTable component.
 
         Args:
@@ -102,17 +105,20 @@ class EditingTable:
             output: Optional callback output identifier(s).
             output_varselector_name: Optional variable selector names for outputs.
             number_format: Optional d3-format string for numeric values.
+            justify_edit: Defaults True. If False reason for editing-window does not pop up.
             **kwargs: Extra keyword arguments passed to AgGrid configuration.
         """
         self.kwargs = kwargs
         self.module_number = EditingTable._id_number
         self.module_name = self.__class__.__name__
         EditingTable._id_number += 1
+
         self.icon = "📒"
         self.label = label
         self.output = output
         self.output_varselector_name = output_varselector_name or output
         self.log_filepath = log_filepath
+        self.justify_edit = justify_edit
 
         if number_format is None:
             self.number_format = "d3.format(',.1f')(params.value).replace(/,/g, ' ')"
@@ -125,12 +131,11 @@ class EditingTable:
         self.get_data = get_data_func
         self.get_data_args = [x for x in self.variableselector.selected_variables]
         self.update_table_func = update_table_func
+
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self._is_valid()
-
         self.timestamp = int(time.time() * 1000)
-
         module_validator(self)
 
     def _is_valid(self) -> None:
@@ -175,17 +180,20 @@ class EditingTable:
         Returns:
             html.Div: The root container for the component.
         """
-        layout = html.Div(
-            className="editingtable",
-            children=[
-                dag.AgGrid(
-                    defaultColDef=self.kwargs.get("defaultColDef", {"editable": True}),
-                    id=f"{self.module_number}-tabelleditering-table1",
-                    className="ag-theme-alpine header-style-on-filter editingtable-aggrid-style",
-                    **{k: v for k, v in self.kwargs.items() if k != "defaultColDef"},
-                ),
+
+        children = [
+            dag.AgGrid(
+                defaultColDef=self.kwargs.get("defaultColDef", {"editable": True}),
+                id=f"{self.module_number}-tabelleditering-table1",
+                className="ag-theme-alpine header-style-on-filter editingtable-aggrid-style",
+                **{k: v for k, v in self.kwargs.items() if k != "defaultColDef"},
+            ),
+            dcc.Store(id=f"{self.module_number}-table-data"),
+        ]
+
+        if self.justify_edit:
+            children += [
                 dcc.Store(id=f"{self.module_number}-pending-edit"),
-                dcc.Store(id=f"{self.module_number}-table-data"),
                 dbc.Modal(
                     [
                         dbc.ModalHeader("Reason for change"),
@@ -197,7 +205,7 @@ class EditingTable:
                                     placeholder="Enter reason for the change...",
                                     style={"width": "100%"},
                                     autoFocus=True,
-                                    n_submit=0,  # <-- allow Enter to trigger callback
+                                    n_submit=0,
                                 ),
                             ]
                         ),
@@ -221,9 +229,9 @@ class EditingTable:
                     backdrop="static",
                     centered=True,
                 ),
-            ],
-        )
-        return layout
+            ]
+
+        return html.Div(className="editingtable", children=children)
 
     def layout(self) -> html.Div:
         """Return the component layout for integration into Dash apps."""
@@ -249,7 +257,7 @@ class EditingTable:
             Output(f"{self.module_number}-table-data", "data"),
             *dynamic_states,
         )
-        def load_to_table(*dynamic_states: Any) -> tuple[list[dict], list[dict], list[dict]]:
+        def load_to_table(*dynamic_states: Any):
             try:
                 df = self.get_data(*dynamic_states)
                 columns = [
@@ -275,118 +283,138 @@ class EditingTable:
                 logger.error("Error loading data", exc_info=True)
                 raise e
 
-        @callback(
-            Output(f"{self.module_number}-pending-edit", "data"),
-            Output(f"{self.module_number}-reason-modal", "is_open"),
-            Output(f"{self.module_number}-edit-details", "children"),
-            Output(f"{self.module_number}-edit-reason", "value"),
-            Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
-            prevent_initial_call=True,
-        )
-        def capture_edit(edited):
-            if not edited:
-                raise PreventUpdate
-            edit = edited[0]
-            details = f"Column: {edit.get('colId')} | Old: {edit.get('oldValue')} | New: {edit.get('value')}"
-            return edit, True, details, ""
+        if self.justify_edit:
+            @callback(
+                Output(f"{self.module_number}-pending-edit", "data"),
+                Output(f"{self.module_number}-reason-modal", "is_open"),
+                Output(f"{self.module_number}-edit-details", "children"),
+                Output(f"{self.module_number}-edit-reason", "value"),
+                Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
+                prevent_initial_call=True,
+            )
+            def capture_edit(edited):
+                if not edited:
+                    raise PreventUpdate
+                edit = edited[0]
+                details = f"Column: {edit.get('colId')} | Old: {edit.get('oldValue')} | New: {edit.get('value')}"
+                return edit, True, details, ""
 
-        @callback(
-            Output(
-                f"{self.module_number}-reason-modal", "is_open", allow_duplicate=True
-            ),
-            Output("alert_store", "data", allow_duplicate=True),
-            Output(f"{self.module_number}-table-data", "data", allow_duplicate=True),
-            Input(f"{self.module_number}-confirm-edit", "n_clicks"),
-            Input(f"{self.module_number}-edit-reason", "n_submit"),
-            State(f"{self.module_number}-pending-edit", "data"),
-            State(f"{self.module_number}-edit-reason", "value"),
-            State("alert_store", "data"),
-            State(f"{self.module_number}-table-data", "data"),
-            *dynamic_states,
-            prevent_initial_call=True,
-        )
-        def confirm_edit(
-            n_clicks: int,
-            n_submit: int,
-            pending_edit: dict,
-            reason: str,
-            error_log: list,
-            table_data: list,
-            *dynamic_states: Any
-        ) -> tuple[bool, list, list]:
-            if not (n_clicks or n_submit):
-                raise PreventUpdate
-            if error_log is None:
-                error_log = []
-            if not pending_edit:
-                error_log.append(
-                    create_alert("Ingen pending edit funnet", "error", ephemeral=True)
-                )
-                return False, error_log, table_data
-            if not reason or str(reason).strip() == "":
-                error_log.append(
-                    create_alert(
-                        "Årsak for endring er påkrevd", "warning", ephemeral=True
+            @callback(
+                Output(f"{self.module_number}-reason-modal", "is_open", allow_duplicate=True),
+                Output("alert_store", "data", allow_duplicate=True),
+                Output(f"{self.module_number}-table-data", "data", allow_duplicate=True),
+                Input(f"{self.module_number}-confirm-edit", "n_clicks"),
+                Input(f"{self.module_number}-edit-reason", "n_submit"),
+                State(f"{self.module_number}-pending-edit", "data"),
+                State(f"{self.module_number}-edit-reason", "value"),
+                State("alert_store", "data"),
+                State(f"{self.module_number}-table-data", "data"),
+                *dynamic_states,
+                prevent_initial_call=True,
+            )
+            def confirm_edit(
+                n_clicks: int,
+                n_submit: int,
+                pending_edit: dict,
+                reason: str,
+                error_log: list,
+                table_data: list,
+                *dynamic_states: Any
+            ):
+                if not (n_clicks or n_submit):
+                    raise PreventUpdate
+                if error_log is None:
+                    error_log = []
+                if not pending_edit:
+                    error_log.append(
+                        create_alert("Ingen pending edit funnet", "error", ephemeral=True)
                     )
-                )
-                return True, error_log, table_data
+                    return False, error_log, table_data
+                if not reason or str(reason).strip() == "":
+                    error_log.append(
+                        create_alert(
+                            "Årsak for endring er påkrevd", "warning", ephemeral=True
+                        )
+                    )
+                    return True, error_log, table_data
 
-            edit_with_reason = dict(pending_edit)
-            edit_with_reason["reason"] = reason
-            edit_with_reason["timestamp"] = int(time.time() * 1000)
+                edit_with_reason = dict(pending_edit)
+                edit_with_reason["reason"] = reason
+                edit_with_reason["timestamp"] = int(time.time() * 1000)
 
-            with open(self.log_filepath, "a", encoding="utf-8") as f:
-                f.write(json.dumps(edit_with_reason, ensure_ascii=False) + "\n")
+                with open(self.log_filepath, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(edit_with_reason, ensure_ascii=False) + "\n")
 
-            if self.update_table_func:
-                self.update_table_func(edit_with_reason, *dynamic_states)
+                if self.update_table_func:
+                    self.update_table_func(edit_with_reason, *dynamic_states)
 
-            new_table_data = list(table_data) if table_data else []
-            row_obj = pending_edit.get("data") or {}
-            updated = False
-            uid = row_obj.get("uuid") if isinstance(row_obj, dict) else None
-            rid = row_obj.get("row_id") if isinstance(row_obj, dict) else None
-            if uid is not None:
-                for i, r in enumerate(new_table_data):
-                    if r.get("uuid") == uid:
-                        new_table_data[i] = row_obj
-                        updated = True
-                        break
-            elif rid is not None:
-                for i, r in enumerate(new_table_data):
-                    if r.get("row_id") == rid:
-                        new_table_data[i] = row_obj
-                        updated = True
-                        break
-            else:
-                row_index = pending_edit.get("rowIndex")
-                if row_index is not None and 0 <= int(row_index) < len(new_table_data):
-                    new_table_data[int(row_index)] = row_obj
+                new_table_data = self._update_row(table_data, pending_edit)
+                return False, error_log, new_table_data
+
+            @callback(
+                Output(f"{self.module_number}-reason-modal", "is_open", allow_duplicate=True),
+                Output(f"{self.module_number}-tabelleditering-table1", "rowData", allow_duplicate=True),
+                Input(f"{self.module_number}-cancel-edit", "n_clicks"),
+                State(f"{self.module_number}-table-data", "data"),
+                prevent_initial_call=True,
+            )
+            def cancel_edit(n_clicks, table_data):
+                if not n_clicks:
+                    raise PreventUpdate
+                if table_data is None:
+                    return False, PreventUpdate
+                return False, table_data
+
+        else:
+            @callback(
+                Output(f"{self.module_number}-table-data", "data", allow_duplicate=True),
+                Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
+                State(f"{self.module_number}-table-data", "data"),
+                *dynamic_states,
+                prevent_initial_call=True,
+            )
+            def immediate_edit(edited, table_data, *dynamic_states):
+                if not edited:
+                    raise PreventUpdate
+                edit = edited[0]
+                edit["timestamp"] = int(time.time() * 1000)
+
+                with open(self.log_filepath, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(edit, ensure_ascii=False) + "\n")
+
+                if self.update_table_func:
+                    self.update_table_func(edit, *dynamic_states)
+
+                new_table_data = self._update_row(table_data, edit)
+                return new_table_data
+
+    def _update_row(self, table_data: list, edit: dict) -> list:
+        """Helper to update table row by uuid, row_id, or rowIndex."""
+        new_data = list(table_data) if table_data else []
+        row_obj = edit.get("data") or {}
+        updated = False
+        uid = row_obj.get("uuid") if isinstance(row_obj, dict) else None
+        rid = row_obj.get("row_id") if isinstance(row_obj, dict) else None
+        if uid is not None:
+            for i, r in enumerate(new_data):
+                if r.get("uuid") == uid:
+                    new_data[i] = row_obj
                     updated = True
-            if not updated:
-                new_table_data.append(row_obj)
-
-            return False, error_log, new_table_data
-
-        @callback(
-            Output(
-                f"{self.module_number}-reason-modal", "is_open", allow_duplicate=True
-            ),
-            Output(
-                f"{self.module_number}-tabelleditering-table1",
-                "rowData",
-                allow_duplicate=True,
-            ),
-            Input(f"{self.module_number}-cancel-edit", "n_clicks"),
-            State(f"{self.module_number}-table-data", "data"),
-            prevent_initial_call=True,
-        )
-        def cancel_edit(n_clicks, table_data):
-            if not n_clicks:
-                raise PreventUpdate
-            if table_data is None:
-                return False, PreventUpdate
-            return False, table_data
+                    break
+        elif rid is not None:
+            for i, r in enumerate(new_data):
+                if r.get("row_id") == rid:
+                    new_data[i] = row_obj
+                    updated = True
+                    break
+        else:
+            row_index = edit.get("rowIndex")
+            if row_index is not None and 0 <= int(row_index) < len(new_data):
+                new_data[int(row_index)] = row_obj
+                updated = True
+        if not updated:
+            new_data.append(row_obj)
+        return new_data
 
 
 class EditingTableTab(TabImplementation, EditingTable):
@@ -407,6 +435,7 @@ class EditingTableTab(TabImplementation, EditingTable):
         output: str | None = None,
         output_varselector_name: str | None = None,
         number_format: str | None = None,
+        justify_edit: bool = True,
         **kwargs: Any,
     ) -> None:
         EditingTable.__init__(
@@ -420,6 +449,7 @@ class EditingTableTab(TabImplementation, EditingTable):
             output=output,
             output_varselector_name=output_varselector_name,
             number_format=number_format,
+            justify_edit=justify_edit,
             **kwargs,
         )
         TabImplementation.__init__(self)
@@ -446,6 +476,7 @@ class EditingTableWindow(WindowImplementation, EditingTable):
         output: str | None = None,
         output_varselector_name: str | None = None,
         number_format: str | None = None,
+        justify_edit: bool = True,
         **kwargs: Any,
     ) -> None:
         EditingTable.__init__(
@@ -459,6 +490,7 @@ class EditingTableWindow(WindowImplementation, EditingTable):
             output=output,
             output_varselector_name=output_varselector_name,
             number_format=number_format,
+            justify_edit=justify_edit,
             **kwargs,
         )
         WindowImplementation.__init__(self)
