@@ -282,6 +282,80 @@ class EditingTable:
             except Exception as e:
                 logger.error("Error loading data", exc_info=True)
                 raise e
+        
+        if self.output and self.output_varselector_name:
+            logger.debug(
+                "Adding callback for returning clicked output to variable selector"
+            )
+            if isinstance(self.output, str) and isinstance(
+                self.output_varselector_name, str
+            ):
+                output_objects = [
+                    self.variableselector.get_output_object(
+                        variable=self.output_varselector_name
+                    )
+                ]
+                output_columns = [self.output]
+            elif isinstance(self.output, list) and isinstance(
+                self.output_varselector_name, list
+            ):
+                output_objects = [
+                    self.variableselector.get_output_object(variable=var)
+                    for var in self.output_varselector_name
+                ]
+                output_columns = self.output
+            else:
+                logger.error(
+                    f"output {self.output} is not a string or list, is type {type(self.output)}"
+                )
+                raise TypeError(
+                    f"output {self.output} is not a string or list, is type {type(self.output)}"
+                )
+            logger.debug(f"Output object: {output_objects}")
+
+            def make_table_to_main_table_callback(
+                output: Output, column: str, output_varselector_name: str
+            ) -> None:
+                @callback(  # type: ignore[misc]
+                    output,
+                    Input(
+                        f"{self.module_number}-tabelleditering-table1", "cellClicked"
+                    ),
+                    prevent_initial_call=True,
+                )
+                def table_to_main_table(clickdata: dict[str, Any]) -> str:
+                    logger.debug(
+                        f"Args:\n"
+                        f"clickdata: {clickdata}\n"
+                        f"column: {column}\n"
+                        f"output_varselector_name: {output_varselector_name}"
+                    )
+                    if not clickdata:
+                        logger.debug("Raised PreventUpdate")
+                        raise PreventUpdate
+                    if clickdata["colId"] != column:
+                        logger.debug("Raised PreventUpdate")
+                        raise PreventUpdate
+                    output = clickdata["value"]
+                    if not isinstance(output, str):
+                        logger.debug(
+                            f"{output} is not a string, is type {type(output)}"
+                        )
+                        logger.debug("Raised PreventUpdate")
+                        raise PreventUpdate
+                    logger.debug(f"Transfering {output} to {output_varselector_name}")
+                    return output
+
+            for i in range(len(output_objects)):
+                make_table_to_main_table_callback(
+                    output_objects[i],
+                    output_columns[i],
+                    (
+                        self.output_varselector_name[i]
+                        if isinstance(self.output_varselector_name, list)
+                        else self.output_varselector_name
+                    ),
+                )
 
         if self.justify_edit:
             @callback(
@@ -295,6 +369,7 @@ class EditingTable:
             def capture_edit(edited):
                 if not edited:
                     raise PreventUpdate
+                logger.info(edited)
                 edit = edited[0]
                 details = f"Column: {edit.get('colId')} | Old: {edit.get('oldValue')} | New: {edit.get('value')}"
                 return edit, True, details, ""
@@ -341,12 +416,34 @@ class EditingTable:
                 edit_with_reason = dict(pending_edit)
                 edit_with_reason["reason"] = reason
                 edit_with_reason["timestamp"] = int(time.time() * 1000)
+                logger.debug(edit_with_reason)
                 if self.log_filepath:
                     with open(self.log_filepath, "a", encoding="utf-8") as f:
                         f.write(json.dumps(edit_with_reason, ensure_ascii=False) + "\n")
 
                 if self.update_table_func:
-                    self.update_table_func(edit_with_reason, *dynamic_states)
+                    variable = edit_with_reason["colId"]
+                    old_value = edit_with_reason["oldValue"]
+                    new_value = edit_with_reason["value"]
+                    logger.info("Running update_table_func")
+                    try:
+                        self.update_table_func(edit_with_reason, *dynamic_states)
+                        error_log.append(
+                            create_alert(
+                                f"{variable} oppdatert fra {old_value} til {new_value}",
+                                "info",
+                                ephemeral=True,
+                            )
+                        )
+                    except Exception:
+                        logger.error("Error updating table", exc_info=True)
+                        error_log.append(
+                            create_alert(
+                                f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
+                                "error",
+                                ephemeral=True,
+                            )
+                        )
 
                 new_table_data = self._update_row(table_data, pending_edit)
                 return False, error_log, new_table_data
@@ -367,13 +464,15 @@ class EditingTable:
 
         else:
             @callback(
-                Output(f"{self.module_number}-table-data", "data", allow_duplicate=True),
+                Output("alert_store", "data", allow_duplicate=True),
+                Output(f"{self.module_number}-table-data", "data", allow_duplicate=True), # Somewhat sure this is not needed
                 Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
+                State("alert_store", "data"),
                 State(f"{self.module_number}-table-data", "data"),
                 *dynamic_states,
                 prevent_initial_call=True,
             )
-            def immediate_edit(edited, table_data, *dynamic_states):
+            def immediate_edit(edited, error_log, table_data, *dynamic_states):
                 if not edited:
                     raise PreventUpdate
                 edit = edited[0]
@@ -383,10 +482,31 @@ class EditingTable:
                         f.write(json.dumps(edit, ensure_ascii=False) + "\n")
 
                 if self.update_table_func:
-                    self.update_table_func(edit, *dynamic_states)
-
+                    variable = edit["colId"]
+                    old_value = edit["oldValue"]
+                    new_value = edit["value"]
+                    logger.info("Running update_table_func")
+                    try:
+                        self.update_table_func(edit, *dynamic_states)
+                        error_log.append(
+                            create_alert(
+                                f"{variable} oppdatert fra {old_value} til {new_value}",
+                                "info",
+                                ephemeral=True,
+                            )
+                        )
+                    except Exception:
+                        logger.error("Error updating table", exc_info=True)
+                        error_log.append(
+                            create_alert(
+                                f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
+                                "error",
+                                ephemeral=True,
+                            )
+                        )
                 new_table_data = self._update_row(table_data, edit)
-                return new_table_data
+                logger.debug("Finished update")
+                return error_log, new_table_data
 
     def _update_row(self, table_data: list, edit: dict) -> list:
         """Helper to update table row by uuid, row_id, or rowIndex."""
