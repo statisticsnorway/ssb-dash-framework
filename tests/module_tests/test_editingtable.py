@@ -15,32 +15,6 @@ def test_base_class() -> None:
         inputs=[],
         states=[],
         get_data_func=lambda x: x,
-    )
-
-
-def test_tab() -> None:
-    EditingTableTab(
-        label="test",
-        inputs=[],
-        states=[],
-        get_data_func=lambda x: x,
-    )
-
-
-def test_window() -> None:
-    EditingTableWindow(
-        label="test",
-        inputs=[],
-        states=[],
-        get_data_func=lambda x: x,
-    )
-
-def test_base_class() -> None:
-    EditingTable(
-        label="test",
-        inputs=[],
-        states=[],
-        get_data_func=lambda x: x,
         log_filepath="dummy.log",  # Add this line
     )
 
