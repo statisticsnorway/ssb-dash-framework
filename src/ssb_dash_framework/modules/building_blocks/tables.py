@@ -70,11 +70,11 @@ class EditingTable:
         output_varselector_name (str | list[str] | None): Names for variable selector outputs.
         variableselector (VariableSelector): Handles inputs and states for callbacks.
         get_data_func (Callable): Function to fetch data for populating the table.
+        log_filepath (str): Optional path to the JSONL file used for logging edits. If none, no logging occurs.
         update_table_func (Callable | None): Function to apply edits to the backend.
         justify_edit (bool): Whether a reason is required for edits (default True).
         module_layout (html.Div): Dash layout containing AgGrid, modal, and stores.
         number_format (str): JavaScript d3-format string for numeric formatting.
-        log_filepath (str): Path to the JSONL file used for logging edits.
     """
 
     _id_number: int = 0
@@ -85,7 +85,7 @@ class EditingTable:
         inputs: list[str],
         states: list[str],
         get_data_func: Callable[..., Any],
-        log_filepath: str,
+        log_filepath: str | None = None,
         update_table_func: Callable[..., Any] | None = None,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
@@ -341,9 +341,9 @@ class EditingTable:
                 edit_with_reason = dict(pending_edit)
                 edit_with_reason["reason"] = reason
                 edit_with_reason["timestamp"] = int(time.time() * 1000)
-
-                with open(self.log_filepath, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(edit_with_reason, ensure_ascii=False) + "\n")
+                if self.log_filepath:
+                    with open(self.log_filepath, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(edit_with_reason, ensure_ascii=False) + "\n")
 
                 if self.update_table_func:
                     self.update_table_func(edit_with_reason, *dynamic_states)
@@ -378,9 +378,9 @@ class EditingTable:
                     raise PreventUpdate
                 edit = edited[0]
                 edit["timestamp"] = int(time.time() * 1000)
-
-                with open(self.log_filepath, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(edit, ensure_ascii=False) + "\n")
+                if self.log_filepath:
+                    with open(self.log_filepath, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(edit, ensure_ascii=False) + "\n")
 
                 if self.update_table_func:
                     self.update_table_func(edit, *dynamic_states)
@@ -430,7 +430,7 @@ class EditingTableTab(TabImplementation, EditingTable):
         inputs: list[str],
         states: list[str],
         get_data_func: Callable[..., Any],
-        log_filepath: str,
+        log_filepath: str | None = None,
         update_table_func: Callable[..., Any] | None = None,
         output: str | None = None,
         output_varselector_name: str | None = None,
@@ -471,7 +471,7 @@ class EditingTableWindow(WindowImplementation, EditingTable):
         inputs: list[str],
         states: list[str],
         get_data_func: Callable[..., Any],
-        log_filepath: str,
+        log_filepath: str | None = None,
         update_table_func: Callable[..., Any] | None = None,
         output: str | None = None,
         output_varselector_name: str | None = None,
