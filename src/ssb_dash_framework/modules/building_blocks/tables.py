@@ -1,5 +1,4 @@
-"""
-editing_table.py
+"""editing_table.py
 
 An EditingTable component for Dash using Dash AgGrid that requires a reason
 for every cell edit. Implements Option 1 with strict behavior:
@@ -22,19 +21,22 @@ This file preserves the original design and hooks:
 - Uses VariableSelector to construct dynamic inputs/states for callbacks.
 """
 
+import json
 import logging
+import time
 from collections.abc import Callable
 from typing import Any
-import os
-import json
-import time
 
 import dash_ag_grid as dag
-import pandas as pd
-from dash import callback, html, dcc
-from dash.dependencies import Input, Output, State
-from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
+import pandas as pd
+from dash import callback
+from dash import dcc
+from dash import html
+from dash.dependencies import Input
+from dash.dependencies import Output
+from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
@@ -76,6 +78,7 @@ class EditingTable:
     _id_number: int = 0
 
     def __init__(
+        self,
         label: str,
         inputs: list[str],
         states: list[str],
@@ -101,7 +104,6 @@ class EditingTable:
             number_format: Optional d3-format string for numeric values.
             **kwargs: Extra keyword arguments passed to AgGrid configuration.
         """
-        self,
         self.kwargs = kwargs
         self.module_number = EditingTable._id_number
         self.module_name = self.__class__.__name__
@@ -144,11 +146,17 @@ class EditingTable:
         if not isinstance(self.label, str):
             raise TypeError(f"label {self.label} is not a string")
         if self.output is not None and self.output_varselector_name is not None:
-            if isinstance(self.output, str) and not isinstance(self.output_varselector_name, str):
+            if isinstance(self.output, str) and not isinstance(
+                self.output_varselector_name, str
+            ):
                 raise TypeError("output_varselector_name type mismatch")
-            elif isinstance(self.output, list) and isinstance(self.output_varselector_name, list):
+            elif isinstance(self.output, list) and isinstance(
+                self.output_varselector_name, list
+            ):
                 if len(self.output) != len(self.output_varselector_name):
-                    raise ValueError("output and output_varselector_name length mismatch")
+                    raise ValueError(
+                        "output and output_varselector_name length mismatch"
+                    )
 
     def _create_layout(self, **kwargs: Any) -> html.Div:
         """Build the component layout.
@@ -228,7 +236,10 @@ class EditingTable:
         - Confirming edits (logging + updating table data) (`confirm_edit`).
         - Cancelling edits (reverting table to saved state) (`cancel_edit`).
         """
-        dynamic_states = [self.variableselector.get_inputs(), self.variableselector.get_states()]
+        dynamic_states = [
+            self.variableselector.get_inputs(),
+            self.variableselector.get_states(),
+        ]
 
         @callback(
             Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
@@ -245,7 +256,11 @@ class EditingTable:
                         "field": col,
                         "hide": col == "row_id",
                         "editable": col != "uuid",
-                        "valueFormatter": {"function": self.number_format} if pd.api.types.is_numeric_dtype(df[col]) else None,
+                        "valueFormatter": (
+                            {"function": self.number_format}
+                            if pd.api.types.is_numeric_dtype(df[col])
+                            else None
+                        ),
                     }
                     for col in df.columns
                 ]
@@ -274,7 +289,9 @@ class EditingTable:
             return edit, True, details, ""
 
         @callback(
-            Output(f"{self.module_number}-reason-modal", "is_open", allow_duplicate=True),
+            Output(
+                f"{self.module_number}-reason-modal", "is_open", allow_duplicate=True
+            ),
             Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_number}-table-data", "data", allow_duplicate=True),
             Input(f"{self.module_number}-confirm-edit", "n_clicks"),
@@ -286,16 +303,30 @@ class EditingTable:
             *dynamic_states,
             prevent_initial_call=True,
         )
-        def confirm_edit(n_clicks, n_submit, pending_edit, reason, error_log, table_data, *dynamic_states):
+        def confirm_edit(
+            n_clicks,
+            n_submit,
+            pending_edit,
+            reason,
+            error_log,
+            table_data,
+            *dynamic_states,
+        ):
             if not (n_clicks or n_submit):
                 raise PreventUpdate
             if error_log is None:
                 error_log = []
             if not pending_edit:
-                error_log.append(create_alert("Ingen pending edit funnet", "error", ephemeral=True))
+                error_log.append(
+                    create_alert("Ingen pending edit funnet", "error", ephemeral=True)
+                )
                 return False, error_log, table_data
             if not reason or str(reason).strip() == "":
-                error_log.append(create_alert("Årsak for endring er påkrevd", "warning", ephemeral=True))
+                error_log.append(
+                    create_alert(
+                        "Årsak for endring er påkrevd", "warning", ephemeral=True
+                    )
+                )
                 return True, error_log, table_data
 
             edit_with_reason = dict(pending_edit)
@@ -336,8 +367,14 @@ class EditingTable:
             return False, error_log, new_table_data
 
         @callback(
-            Output(f"{self.module_number}-reason-modal", "is_open", allow_duplicate=True),
-            Output(f"{self.module_number}-tabelleditering-table1", "rowData", allow_duplicate=True),
+            Output(
+                f"{self.module_number}-reason-modal", "is_open", allow_duplicate=True
+            ),
+            Output(
+                f"{self.module_number}-tabelleditering-table1",
+                "rowData",
+                allow_duplicate=True,
+            ),
             Input(f"{self.module_number}-cancel-edit", "n_clicks"),
             State(f"{self.module_number}-table-data", "data"),
             prevent_initial_call=True,
@@ -376,11 +413,11 @@ class EditingTableTab(TabImplementation, EditingTable):
             inputs=inputs,
             states=states,
             get_data_func=get_data_func,
+            log_filepath=log_filepath,
             update_table_func=update_table_func,
             output=output,
             output_varselector_name=output_varselector_name,
             number_format=number_format,
-            log_filepath=log_filepath,
             **kwargs,
         )
         TabImplementation.__init__(self)
@@ -393,7 +430,7 @@ class EditingTableWindow(WindowImplementation, EditingTable):
     the component can be displayed inside a popup/modal context.
 
     Args:
-        log_dir (str): Directory where logs should be written. Defaults to "logs".
+        log_filepath (str): Filepath for logs. Must be .jsonl.
     """
 
     def __init__(
@@ -402,11 +439,11 @@ class EditingTableWindow(WindowImplementation, EditingTable):
         inputs: list[str],
         states: list[str],
         get_data_func: Callable[..., Any],
+        log_filepath: str,
         update_table_func: Callable[..., Any] | None = None,
         output: str | None = None,
         output_varselector_name: str | None = None,
         number_format: str | None = None,
-        log_dir: str = "logs",
         **kwargs: Any,
     ) -> None:
         EditingTable.__init__(
@@ -415,11 +452,11 @@ class EditingTableWindow(WindowImplementation, EditingTable):
             inputs=inputs,
             states=states,
             get_data_func=get_data_func,
+            log_filepath=log_filepath,
             update_table_func=update_table_func,
             output=output,
             output_varselector_name=output_varselector_name,
             number_format=number_format,
-            log_dir=log_dir,
             **kwargs,
         )
         WindowImplementation.__init__(self)

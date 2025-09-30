@@ -18,6 +18,7 @@ def test_base_class() -> None:
         log_filepath="dummy.log",  # Add this line
     )
 
+
 def test_tab() -> None:
     EditingTableTab(
         label="test",
@@ -26,6 +27,7 @@ def test_tab() -> None:
         get_data_func=lambda x: x,
         log_filepath="dummy.log",  # Add this line
     )
+
 
 def test_window() -> None:
     EditingTableWindow(
