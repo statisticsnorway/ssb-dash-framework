@@ -46,11 +46,50 @@ logger = logging.getLogger(__name__)
 
 
 class EditingTable:
-    """A component for editing data using a Dash AgGrid table that enforces reasons."""
+    """A reusable Dash component for editing tabular data with enforced reasons.
+
+    This component renders a Dash AgGrid table where each edit must be
+    confirmed with a user-provided reason before being persisted.
+
+    Workflow:
+        1. Data is loaded into AgGrid via `get_data_func`.
+        2. When a cell is edited, a modal opens requesting a reason.
+        3. If confirmed:
+            - The edit is logged (with reason and timestamp).
+            - The `update_table_func` is optionally invoked.
+            - The in-memory table data is updated.
+        4. If cancelled:
+            - The modal closes and the table reverts to its last saved state.
+
+    Attributes:
+        label (str): Display label for the component.
+        output (str | list[str] | None): Optional identifier(s) for outputs.
+        output_varselector_name (str | list[str] | None): Names for variable selector outputs.
+        variableselector (VariableSelector): Handles inputs and states for callbacks.
+        get_data_func (Callable): Function to fetch data for populating the table.
+        update_table_func (Callable | None): Function to apply edits to the backend.
+        module_layout (html.Div): Dash layout containing AgGrid, modal, and stores.
+        number_format (str): JavaScript d3-format string for numeric formatting.
+        log_filepath (str): Path to the JSONL file used for logging edits.
+    """
 
     _id_number: int = 0
 
     def __init__(
+        """Initialize the EditingTable component.
+
+        Args:
+            label: Display label for the component.
+            inputs: List of variable names to be used as callback inputs.
+            states: List of variable names to be used as callback states.
+            get_data_func: Function that returns a pandas DataFrame for the table.
+            log_filepath: Path to JSONL changelog file where edits are logged.
+            update_table_func: Optional function to handle edits on confirm.
+            output: Optional callback output identifier(s).
+            output_varselector_name: Optional variable selector names for outputs.
+            number_format: Optional d3-format string for numeric values.
+            **kwargs: Extra keyword arguments passed to AgGrid configuration.
+        """
         self,
         label: str,
         inputs: list[str],
@@ -98,7 +137,15 @@ class EditingTable:
         module_validator(self)
 
     def _is_valid(self) -> None:
-        """Validate provided arguments and configuration."""
+        """Validate the component's configuration.
+
+        Checks that:
+        - `label` is a string.
+        - If both `output` and `output_varselector_name` are provided:
+          - Their types are compatible.
+          - Their lengths match if they are lists.
+        Raises TypeError or ValueError if invalid.
+        """
         if not isinstance(self.label, str):
             raise TypeError(f"label {self.label} is not a string")
         if self.output is not None and self.output_varselector_name is not None:
@@ -109,7 +156,20 @@ class EditingTable:
                     raise ValueError("output and output_varselector_name length mismatch")
 
     def _create_layout(self, **kwargs: Any) -> html.Div:
-        """Create layout (AgGrid + modal + stores)."""
+        """Build the component layout.
+
+        Layout includes:
+        - Dash AgGrid with editable columns.
+        - `dcc.Store` for pending edits.
+        - `dcc.Store` for current table data.
+        - Modal dialog with:
+            - Edit details preview.
+            - Textarea for entering reason.
+            - Cancel/Confirm buttons.
+
+        Returns:
+            html.Div: The root container for the component.
+        """
         layout = html.Div(
             className="editingtable",
             children=[
@@ -161,10 +221,18 @@ class EditingTable:
         return layout
 
     def layout(self) -> html.Div:
+        """Return the component layout for integration into Dash apps."""
         return self._create_layout()
 
     def module_callbacks(self) -> None:
-        """Register callbacks for loading data, capturing edits, confirming and cancelling."""
+        """Register Dash callbacks for the component.
+
+        Defines callback chains for:
+        - Loading data into AgGrid (`load_to_table`).
+        - Capturing edits and opening the modal (`capture_edit`).
+        - Confirming edits (logging + updating table data) (`confirm_edit`).
+        - Cancelling edits (reverting table to saved state) (`cancel_edit`).
+        """
         dynamic_states = [self.variableselector.get_inputs(), self.variableselector.get_states()]
 
         @callback(
@@ -288,7 +356,11 @@ class EditingTable:
 
 
 class EditingTableTab(TabImplementation, EditingTable):
-    """A class to implement an EditingTable module inside a tab."""
+    """EditingTable embedded in a tab container.
+
+    Inherits from both `EditingTable` and `TabImplementation` so that
+    the component can be displayed as a tab in a multi-tab layout.
+    """
 
     def __init__(
         self,
@@ -320,7 +392,14 @@ class EditingTableTab(TabImplementation, EditingTable):
 
 
 class EditingTableWindow(WindowImplementation, EditingTable):
-    """A class to implement an EditingTable module inside a modal window."""
+    """EditingTable embedded in a modal window.
+
+    Inherits from both `EditingTable` and `WindowImplementation` so that
+    the component can be displayed inside a popup/modal context.
+
+    Args:
+        log_dir (str): Directory where logs should be written. Defaults to "logs".
+    """
 
     def __init__(
         self,
