@@ -1,4 +1,4 @@
-"""editing_table.py
+"""editing_table.py.
 
 An EditingTable component for Dash using Dash AgGrid that requires a reason
 for every cell edit. Implements Option 1 with strict behavior:
