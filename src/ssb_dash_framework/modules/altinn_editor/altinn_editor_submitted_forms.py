@@ -155,7 +155,7 @@ class AltinnEditorSubmittedForms:
                         skjema=None,
                         **partition_args,
                     ),
-                )["skjemaer"][0]
+                )["skjema"][0]
 
                 skjemaer = [item.strip() for item in skjemaer.split(",")]
                 skjemaer_dd_options = [
