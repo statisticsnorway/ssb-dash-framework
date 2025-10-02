@@ -435,8 +435,8 @@ class EditingTable:
                                 f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
                                 "error",
                                 ephemeral=True,
-                            )
-                            * error_log,
+                            ),
+                            *error_log,
                         ]
 
                 new_table_data = self._update_row(table_data, pending_edit)
@@ -506,8 +506,8 @@ class EditingTable:
                                 f"{variable} oppdatert fra {old_value} til {new_value}",
                                 "info",
                                 ephemeral=True,
-                            )
-                            * error_log,
+                            ),
+                            *error_log,
                         ]
 
                     except Exception:
@@ -517,8 +517,8 @@ class EditingTable:
                                 f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
                                 "error",
                                 ephemeral=True,
-                            )
-                            * error_log,
+                            ),
+                            *error_log,
                         ]
                 new_table_data = self._update_row(table_data, edit)
                 logger.debug("Finished update")
