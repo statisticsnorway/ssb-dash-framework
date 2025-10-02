@@ -1,32 +1,9 @@
-"""
-editing_table.py.
-An EditingTable component for Dash using Dash AgGrid that requires a reason
-for every cell edit (if justify_edit=True).
-Implements Option 1 with strict behavior:
-- After editing a cell, a modal is shown asking for a required reason.
-- The edit is not persisted until the user confirms with a reason.
-- If the user cancels, the edit is undone (the grid is reverted to the last
-  persisted rowData).
-- The reason is inserted into the edit dictionary (key "reason") which is
-  passed to update_table_func(edit_with_reason, *dynamic_states).
-
-If justify_edit=False:
-- Edits are persisted immediately, no reason is required and no modal is shown.
-
-Additional features:
-- User can specify log directory.
-- Changes modal textarea auto-focuses.
-- Pressing Enter in the textarea triggers Confirm.
-This file preserves the original design and hooks:
-- Loads data via `get_data_func`.
-- Calls `update_table_func(edit, *dynamic_states)` on confirm.
-- Uses VariableSelector to construct dynamic inputs/states for callbacks.
-"""
 import json
 import logging
 import time
 from collections.abc import Callable
 from typing import Any
+
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -37,6 +14,7 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
@@ -47,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 class EditingTable:
-    """A reusable Dash component for editing tabular data with optional reason enforcement.
+    """A reusable and flexible Dash component for editing tabular data.
+
     This component renders a Dash AgGrid table where each edit can be
     optionally confirmed with a user-provided reason before being persisted.
 
@@ -62,19 +41,7 @@ class EditingTable:
             - The modal closes and the table reverts to its last saved state.
 
     Workflow when justify_edit=False:
-        - Edits are accepted immediately, logged without reason, and persisted.
-
-    Attributes:
-        label (str): Display label for the component.
-        output (str | list[str] | None): Optional identifier(s) for outputs.
-        output_varselector_name (str | list[str] | None): Names for variable selector outputs.
-        variableselector (VariableSelector): Handles inputs and states for callbacks.
-        get_data_func (Callable): Function to fetch data for populating the table.
-        log_filepath (str): Optional path to the JSONL file used for logging edits. If none, no logging occurs.
-        update_table_func (Callable | None): Function to apply edits to the backend.
-        justify_edit (bool): Whether a reason is required for edits (default True).
-        module_layout (html.Div): Dash layout containing AgGrid, modal, and stores.
-        number_format (str): JavaScript d3-format string for numeric formatting.
+        - Edits are accepted immediately, logged without reason supplied, and persisted.
     """
 
     _id_number: int = 0
@@ -92,21 +59,24 @@ class EditingTable:
         number_format: str | None = None,
         justify_edit: bool = True,
         **kwargs: Any,
-    ) -> None:        
+    ) -> None:
         """Initialize the EditingTable component.
 
         Args:
-            label: Display label for the component.
-            inputs: List of variable names to be used as callback inputs.
-            states: List of variable names to be used as callback states.
-            get_data_func: Function that returns a pandas DataFrame for the table.
-            log_filepath: Path to JSONL changelog file where edits are logged.
-            update_table_func: Optional function to handle edits on confirm.
-            output: Optional callback output identifier(s).
-            output_varselector_name: Optional variable selector names for outputs.
-            number_format: Optional d3-format string for numeric values.
-            justify_edit: Defaults True. If False reason for editing-window does not pop up.
-            **kwargs: Extra keyword arguments passed to AgGrid configuration.
+            label (str): The label for the tab or component, used for display purposes.
+            inputs (list[str]): A list of input variable names that will trigger callbacks.
+            states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
+            get_data_func (Callable[..., Any]): A function that returns a pandas dataframe.
+            update_table_func (Callable[..., Any]): A function for updating data based on edits in the AgGrid.
+                Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values.
+            output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
+            output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
+                If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
+            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
+                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
+            log_filepath (str): Path to JSONL changelog file where edits are logged.
+            justify_edit (bool): If True a 'reason for editing-window' does pops up before updating data. Defaults to True.
+            **kwargs: Additional keyword arguments for the Dash AgGrid component.
         """
         self.kwargs = kwargs
         self.module_number = EditingTable._id_number
@@ -139,15 +109,11 @@ class EditingTable:
         module_validator(self)
 
     def _is_valid(self) -> None:
-        """Validate the component's configuration.
-
-        Checks that:
-        - `label` is a string.
-        - If both `output` and `output_varselector_name` are provided:
-          - Their types are compatible.
-          - Their lengths match if they are lists.
-        Raises TypeError or ValueError if invalid.
-        """
+        """Validate the component's configuration."""
+        if self.log_filepath and not self.log_filepath.endswith(".jsonl"):
+            raise ValueError(
+                f"log_path needs to end with '.jsonl' in order to function. Received: {self.log_filepath}"
+            )
         if not isinstance(self.label, str):
             raise TypeError(f"label {self.label} is not a string")
         if self.output is not None and self.output_varselector_name is not None:
@@ -163,24 +129,21 @@ class EditingTable:
                         "output and output_varselector_name length mismatch"
                     )
 
-    def _create_layout(self, **kwargs: Any) -> html.Div:
+    def _create_layout(self) -> html.Div:
         """Build the component layout.
 
         Layout includes:
         - Dash AgGrid with editable columns.
         - `dcc.Store` for pending edits.
         - `dcc.Store` for current table data.
-        - Modal dialog with:
+        - optionally a modal dialog with:
             - Edit details preview.
             - Textarea for entering reason.
             - Cancel/Confirm buttons.
-        Args:
-            **kwargs: Additional keyword arguments for AgGrid and layout customization.
 
         Returns:
-            html.Div: The root container for the component.
+            html.Div: The container for the component.
         """
-
         children = [
             dag.AgGrid(
                 defaultColDef=self.kwargs.get("defaultColDef", {"editable": True}),
@@ -234,7 +197,14 @@ class EditingTable:
         return html.Div(className="editingtable", children=children)
 
     def layout(self) -> html.Div:
-        """Return the component layout for integration into Dash apps."""
+        """Returns the layout for the EditingTable module.
+
+        Because this module can be used as a a component in other modules, it needs to have a layout method that is not abstract.
+        For implementations as tab or window, this method should still be overridden.
+
+        Returns:
+            html.Div: A Dash HTML Div component representing the layout of the module to be displayed directly.
+        """
         return self._create_layout()
 
     def module_callbacks(self) -> None:
@@ -251,13 +221,21 @@ class EditingTable:
             self.variableselector.get_states(),
         ]
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
             Output(f"{self.module_number}-tabelleditering-table1", "columnDefs"),
             Output(f"{self.module_number}-table-data", "data"),
             *dynamic_states,
         )
-        def load_to_table(*dynamic_states: Any):
+        def load_to_table(
+            *dynamic_states: Any,
+        ) -> tuple[
+            list[dict[str, Any]], list[dict[str, str | bool]], list[dict[str, Any]]
+        ]:
+            """Loads data to the AgGrid table using supplied get_data_func function.
+
+            Raises exception when it fails.
+            """
             try:
                 df = self.get_data(*dynamic_states)
                 columns = [
@@ -282,7 +260,7 @@ class EditingTable:
             except Exception as e:
                 logger.error("Error loading data", exc_info=True)
                 raise e
-        
+
         if self.output and self.output_varselector_name:
             logger.debug(
                 "Adding callback for returning clicked output to variable selector"
@@ -313,7 +291,7 @@ class EditingTable:
                 )
             logger.debug(f"Output object: {output_objects}")
 
-            def make_table_to_main_table_callback(
+            def make_table_to_varselector_connection(
                 output: Output, column: str, output_varselector_name: str
             ) -> None:
                 @callback(  # type: ignore[misc]
@@ -347,7 +325,7 @@ class EditingTable:
                     return output
 
             for i in range(len(output_objects)):
-                make_table_to_main_table_callback(
+                make_table_to_varselector_connection(
                     output_objects[i],
                     output_columns[i],
                     (
@@ -358,15 +336,21 @@ class EditingTable:
                 )
 
         if self.justify_edit:
-            @callback(
+            logger.debug("Adding functionality for requiring reason for edits.")
+
+            @callback(  # type: ignore[misc]
                 Output(f"{self.module_number}-pending-edit", "data"),
                 Output(f"{self.module_number}-reason-modal", "is_open"),
                 Output(f"{self.module_number}-edit-details", "children"),
                 Output(f"{self.module_number}-edit-reason", "value"),
-                Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
+                Input(
+                    f"{self.module_number}-tabelleditering-table1", "cellValueChanged"
+                ),
                 prevent_initial_call=True,
             )
-            def capture_edit(edited):
+            def capture_edit(
+                edited: list[dict[str, Any]],
+            ) -> tuple[dict[str, Any], bool, str, str]:
                 if not edited:
                     raise PreventUpdate
                 logger.info(edited)
@@ -374,10 +358,16 @@ class EditingTable:
                 details = f"Column: {edit.get('colId')} | Old: {edit.get('oldValue')} | New: {edit.get('value')}"
                 return edit, True, details, ""
 
-            @callback(
-                Output(f"{self.module_number}-reason-modal", "is_open", allow_duplicate=True),
+            @callback(  # type: ignore[misc]
+                Output(
+                    f"{self.module_number}-reason-modal",
+                    "is_open",
+                    allow_duplicate=True,
+                ),
                 Output("alert_store", "data", allow_duplicate=True),
-                Output(f"{self.module_number}-table-data", "data", allow_duplicate=True),
+                Output(
+                    f"{self.module_number}-table-data", "data", allow_duplicate=True
+                ),
                 Input(f"{self.module_number}-confirm-edit", "n_clicks"),
                 Input(f"{self.module_number}-edit-reason", "n_submit"),
                 State(f"{self.module_number}-pending-edit", "data"),
@@ -390,19 +380,19 @@ class EditingTable:
             def confirm_edit(
                 n_clicks: int,
                 n_submit: int,
-                pending_edit: dict,
+                pending_edit: dict[str, Any],
                 reason: str,
-                error_log: list,
-                table_data: list,
-                *dynamic_states: Any
-            ):
+                error_log: list[dict[str, Any]],
+                table_data: list[dict[str, Any]],
+                *dynamic_states: Any,
+            ) -> tuple[bool, list[dict[str, Any]], list[dict[str, Any]]]:
                 if not (n_clicks or n_submit):
                     raise PreventUpdate
-                if error_log is None:
-                    error_log = []
                 if not pending_edit:
                     error_log.append(
-                        create_alert("Ingen pending edit funnet", "error", ephemeral=True)
+                        create_alert(
+                            "Ingen pending edit funnet", "error", ephemeral=True
+                        )
                     )
                     return False, error_log, table_data
                 if not reason or str(reason).strip() == "":
@@ -448,31 +438,50 @@ class EditingTable:
                 new_table_data = self._update_row(table_data, pending_edit)
                 return False, error_log, new_table_data
 
-            @callback(
-                Output(f"{self.module_number}-reason-modal", "is_open", allow_duplicate=True),
-                Output(f"{self.module_number}-tabelleditering-table1", "rowData", allow_duplicate=True),
+            @callback(  # type: ignore[misc]
+                Output(
+                    f"{self.module_number}-reason-modal",
+                    "is_open",
+                    allow_duplicate=True,
+                ),
+                Output(
+                    f"{self.module_number}-tabelleditering-table1",
+                    "rowData",
+                    allow_duplicate=True,
+                ),
                 Input(f"{self.module_number}-cancel-edit", "n_clicks"),
                 State(f"{self.module_number}-table-data", "data"),
                 prevent_initial_call=True,
             )
-            def cancel_edit(n_clicks, table_data):
+            def cancel_edit(
+                n_clicks: int | None, table_data: list[dict[str, Any]]
+            ) -> tuple[bool, list[dict[str, Any]]]:
                 if not n_clicks:
                     raise PreventUpdate
-                if table_data is None:
-                    return False, PreventUpdate
                 return False, table_data
 
         else:
-            @callback(
+            logger.debug("Adding functionality for immediate edits.")
+
+            @callback(  # type: ignore[misc]
                 Output("alert_store", "data", allow_duplicate=True),
-                Output(f"{self.module_number}-table-data", "data", allow_duplicate=True), # Somewhat sure this is not needed
-                Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
+                Output(
+                    f"{self.module_number}-table-data", "data", allow_duplicate=True
+                ),  # Somewhat sure this is not needed
+                Input(
+                    f"{self.module_number}-tabelleditering-table1", "cellValueChanged"
+                ),
                 State("alert_store", "data"),
                 State(f"{self.module_number}-table-data", "data"),
                 *dynamic_states,
                 prevent_initial_call=True,
             )
-            def immediate_edit(edited, error_log, table_data, *dynamic_states):
+            def immediate_edit(
+                edited: list[dict[str, Any]],
+                error_log: list[dict[str, Any]],
+                table_data: list[dict[str, Any]],
+                *dynamic_states: Any,
+            ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
                 if not edited:
                     raise PreventUpdate
                 edit = edited[0]
@@ -508,7 +517,9 @@ class EditingTable:
                 logger.debug("Finished update")
                 return error_log, new_table_data
 
-    def _update_row(self, table_data: list, edit: dict) -> list:
+    def _update_row(
+        self, table_data: list[dict[str, Any]], edit: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Helper to update table row by uuid, row_id, or rowIndex."""
         new_data = list(table_data) if table_data else []
         row_obj = edit.get("data") or {}
@@ -538,11 +549,7 @@ class EditingTable:
 
 
 class EditingTableTab(TabImplementation, EditingTable):
-    """EditingTable embedded in a tab container.
-
-    Inherits from both `EditingTable` and `TabImplementation` so that
-    the component can be displayed as a tab in a multi-tab layout.
-    """
+    """EditingTable embedded in a tab container."""
 
     def __init__(
         self,
@@ -558,6 +565,24 @@ class EditingTableTab(TabImplementation, EditingTable):
         justify_edit: bool = True,
         **kwargs: Any,
     ) -> None:
+        """Initialize the EditingTableTab.
+
+        Args:
+            label (str): The label for the tab or component, used for display purposes.
+            inputs (list[str]): A list of input variable names that will trigger callbacks.
+            states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
+            get_data_func (Callable[..., Any]): A function that returns a pandas dataframe.
+            update_table_func (Callable[..., Any]): A function for updating data based on edits in the AgGrid.
+                Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values.
+            output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
+            output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
+                If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
+            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
+                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
+            log_filepath (str): Path to JSONL changelog file where edits are logged.
+            justify_edit (bool): If True a 'reason for editing-window' does pops up before updating data. Defaults to True.
+            **kwargs: Additional keyword arguments for the Dash AgGrid component.
+        """
         EditingTable.__init__(
             self,
             label=label,
@@ -576,14 +601,7 @@ class EditingTableTab(TabImplementation, EditingTable):
 
 
 class EditingTableWindow(WindowImplementation, EditingTable):
-    """EditingTable embedded in a modal window.
-
-    Inherits from both `EditingTable` and `WindowImplementation` so that
-    the component can be displayed inside a popup/modal context.
-
-    Args:
-        log_filepath (str): Filepath for logs. Must be .jsonl.
-    """
+    """A class to implement an EditingTable module inside a modal."""
 
     def __init__(
         self,
@@ -599,6 +617,24 @@ class EditingTableWindow(WindowImplementation, EditingTable):
         justify_edit: bool = True,
         **kwargs: Any,
     ) -> None:
+        """Initialize the EditingTableWindow.
+
+        Args:
+            label (str): The label for the tab or component, used for display purposes.
+            inputs (list[str]): A list of input variable names that will trigger callbacks.
+            states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
+            get_data_func (Callable[..., Any]): A function that returns a pandas dataframe.
+            update_table_func (Callable[..., Any]): A function for updating data based on edits in the AgGrid.
+                Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values.
+            output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
+            output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
+                If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
+            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
+                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
+            log_filepath (str): Path to JSONL changelog file where edits are logged.
+            justify_edit (bool): If True a 'reason for editing-window' does pops up before updating data. Defaults to True.
+            **kwargs: Additional keyword arguments for the Dash AgGrid component.
+        """
         EditingTable.__init__(
             self,
             label=label,
