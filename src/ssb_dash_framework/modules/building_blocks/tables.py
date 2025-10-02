@@ -389,18 +389,20 @@ class EditingTable:
                 if not (n_clicks or n_submit):
                     raise PreventUpdate
                 if not pending_edit:
-                    error_log.append(
+                    error_log = [
                         create_alert(
                             "Ingen pending edit funnet", "error", ephemeral=True
-                        )
-                    )
+                        ),
+                        *error_log,
+                    ]
                     return False, error_log, table_data
                 if not reason or str(reason).strip() == "":
-                    error_log.append(
+                    error_log = [
                         create_alert(
                             "Årsak for endring er påkrevd", "warning", ephemeral=True
-                        )
-                    )
+                        ),
+                        *error_log,
+                    ]
                     return True, error_log, table_data
 
                 edit_with_reason = dict(pending_edit)
@@ -418,22 +420,24 @@ class EditingTable:
                     logger.info("Running update_table_func")
                     try:
                         self.update_table_func(edit_with_reason, *dynamic_states)
-                        error_log.append(
+                        error_log = [
                             create_alert(
                                 f"{variable} oppdatert fra {old_value} til {new_value}",
                                 "info",
                                 ephemeral=True,
-                            )
-                        )
+                            ),
+                            *error_log,
+                        ]
                     except Exception:
                         logger.error("Error updating table", exc_info=True)
-                        error_log.append(
+                        error_log = [
                             create_alert(
                                 f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
                                 "error",
                                 ephemeral=True,
                             )
-                        )
+                            * error_log,
+                        ]
 
                 new_table_data = self._update_row(table_data, pending_edit)
                 return False, error_log, new_table_data
@@ -497,22 +501,25 @@ class EditingTable:
                     logger.info("Running update_table_func")
                     try:
                         self.update_table_func(edit, *dynamic_states)
-                        error_log.append(
+                        error_log = [
                             create_alert(
                                 f"{variable} oppdatert fra {old_value} til {new_value}",
                                 "info",
                                 ephemeral=True,
                             )
-                        )
+                            * error_log,
+                        ]
+
                     except Exception:
                         logger.error("Error updating table", exc_info=True)
-                        error_log.append(
+                        error_log = [
                             create_alert(
                                 f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
                                 "error",
                                 ephemeral=True,
                             )
-                        )
+                            * error_log,
+                        ]
                 new_table_data = self._update_row(table_data, edit)
                 logger.debug("Finished update")
                 return error_log, new_table_data
