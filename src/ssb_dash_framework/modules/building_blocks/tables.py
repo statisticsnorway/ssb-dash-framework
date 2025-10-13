@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+import os
 from collections.abc import Callable
 from typing import Any
 
@@ -73,7 +74,7 @@ class EditingTable:
             output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
                 If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
             number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
-                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
+                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')". 
             log_filepath (str): Path to JSONL changelog file where edits are logged.
             justify_edit (bool): If True a 'reason for editing-window' does pops up before updating data. Defaults to True.
             **kwargs: Additional keyword arguments for the Dash AgGrid component.
@@ -406,8 +407,15 @@ class EditingTable:
                     return True, error_log, table_data
 
                 edit_with_reason = dict(pending_edit)
-                edit_with_reason["reason"] = reason
+                # Remove row_id from log
+                if "row_id" in edit_with_reason:
+                    edit_with_reason.pop("row_id")
+                # Add user, change_event, and timestamp
+                edit_with_reason["user"] = os.getenv("DAPLA_USER")
+                edit_with_reason["change_event"] = "manual"
+                edit_with_reason["reason"] = str(reason).replace("\n", " ")
                 edit_with_reason["timestamp"] = int(time.time() * 1000)
+
                 logger.debug(edit_with_reason)
                 if self.log_filepath:
                     with open(self.log_filepath, "a", encoding="utf-8") as f:
@@ -484,176 +492,4 @@ class EditingTable:
                 edited: list[dict[str, Any]],
                 error_log: list[dict[str, Any]],
                 table_data: list[dict[str, Any]],
-                *dynamic_states: Any,
-            ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-                if not edited:
-                    raise PreventUpdate
-                edit = edited[0]
-                edit["timestamp"] = int(time.time() * 1000)
-                if self.log_filepath:
-                    with open(self.log_filepath, "a", encoding="utf-8") as f:
-                        f.write(json.dumps(edit, ensure_ascii=False) + "\n")
-
-                if self.update_table_func:
-                    variable = edit["colId"]
-                    old_value = edit["oldValue"]
-                    new_value = edit["value"]
-                    logger.info("Running update_table_func")
-                    try:
-                        self.update_table_func(edit, *dynamic_states)
-                        error_log = [
-                            create_alert(
-                                f"{variable} oppdatert fra {old_value} til {new_value}",
-                                "info",
-                                ephemeral=True,
-                            ),
-                            *error_log,
-                        ]
-
-                    except Exception:
-                        logger.error("Error updating table", exc_info=True)
-                        error_log = [
-                            create_alert(
-                                f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
-                                "error",
-                                ephemeral=True,
-                            ),
-                            *error_log,
-                        ]
-                new_table_data = self._update_row(table_data, edit)
-                logger.debug("Finished update")
-                return error_log, new_table_data
-
-    def _update_row(
-        self, table_data: list[dict[str, Any]], edit: dict[str, Any]
-    ) -> list[dict[str, Any]]:
-        """Helper to update table row by uuid, row_id, or rowIndex."""
-        new_data = list(table_data) if table_data else []
-        row_obj = edit.get("data") or {}
-        updated = False
-        uid = row_obj.get("uuid") if isinstance(row_obj, dict) else None
-        rid = row_obj.get("row_id") if isinstance(row_obj, dict) else None
-        if uid is not None:
-            for i, r in enumerate(new_data):
-                if r.get("uuid") == uid:
-                    new_data[i] = row_obj
-                    updated = True
-                    break
-        elif rid is not None:
-            for i, r in enumerate(new_data):
-                if r.get("row_id") == rid:
-                    new_data[i] = row_obj
-                    updated = True
-                    break
-        else:
-            row_index = edit.get("rowIndex")
-            if row_index is not None and 0 <= int(row_index) < len(new_data):
-                new_data[int(row_index)] = row_obj
-                updated = True
-        if not updated:
-            new_data.append(row_obj)
-        return new_data
-
-
-class EditingTableTab(TabImplementation, EditingTable):
-    """EditingTable embedded in a tab container."""
-
-    def __init__(
-        self,
-        label: str,
-        inputs: list[str],
-        states: list[str],
-        get_data_func: Callable[..., Any],
-        log_filepath: str | None = None,
-        update_table_func: Callable[..., Any] | None = None,
-        output: str | None = None,
-        output_varselector_name: str | None = None,
-        number_format: str | None = None,
-        justify_edit: bool = True,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize the EditingTableTab.
-
-        Args:
-            label (str): The label for the tab or component, used for display purposes.
-            inputs (list[str]): A list of input variable names that will trigger callbacks.
-            states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
-            get_data_func (Callable[..., Any]): A function that returns a pandas dataframe.
-            update_table_func (Callable[..., Any]): A function for updating data based on edits in the AgGrid.
-                Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values.
-            output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
-            output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
-                If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
-            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
-                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
-            log_filepath (str): Path to JSONL changelog file where edits are logged.
-            justify_edit (bool): If True a 'reason for editing-window' does pops up before updating data. Defaults to True.
-            **kwargs: Additional keyword arguments for the Dash AgGrid component.
-        """
-        EditingTable.__init__(
-            self,
-            label=label,
-            inputs=inputs,
-            states=states,
-            get_data_func=get_data_func,
-            log_filepath=log_filepath,
-            update_table_func=update_table_func,
-            output=output,
-            output_varselector_name=output_varselector_name,
-            number_format=number_format,
-            justify_edit=justify_edit,
-            **kwargs,
-        )
-        TabImplementation.__init__(self)
-
-
-class EditingTableWindow(WindowImplementation, EditingTable):
-    """A class to implement an EditingTable module inside a modal."""
-
-    def __init__(
-        self,
-        label: str,
-        inputs: list[str],
-        states: list[str],
-        get_data_func: Callable[..., Any],
-        log_filepath: str | None = None,
-        update_table_func: Callable[..., Any] | None = None,
-        output: str | None = None,
-        output_varselector_name: str | None = None,
-        number_format: str | None = None,
-        justify_edit: bool = True,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize the EditingTableWindow.
-
-        Args:
-            label (str): The label for the tab or component, used for display purposes.
-            inputs (list[str]): A list of input variable names that will trigger callbacks.
-            states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
-            get_data_func (Callable[..., Any]): A function that returns a pandas dataframe.
-            update_table_func (Callable[..., Any]): A function for updating data based on edits in the AgGrid.
-                Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values.
-            output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
-            output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
-                If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
-            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
-                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
-            log_filepath (str): Path to JSONL changelog file where edits are logged.
-            justify_edit (bool): If True a 'reason for editing-window' does pops up before updating data. Defaults to True.
-            **kwargs: Additional keyword arguments for the Dash AgGrid component.
-        """
-        EditingTable.__init__(
-            self,
-            label=label,
-            inputs=inputs,
-            states=states,
-            get_data_func=get_data_func,
-            log_filepath=log_filepath,
-            update_table_func=update_table_func,
-            output=output,
-            output_varselector_name=output_varselector_name,
-            number_format=number_format,
-            justify_edit=justify_edit,
-            **kwargs,
-        )
-        WindowImplementation.__init__(self)
+                *dynamic_states
