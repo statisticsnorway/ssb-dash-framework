@@ -4,6 +4,9 @@ from .alert_handler import AlertHandler
 from .alert_handler import create_alert
 from .app_logger import enable_app_logging
 from .datahelper import DatabaseBuilderAltinnEimerdb
+from .datahelper import DemoDataCreator
+from .datahelper import create_database
+from .datahelper import create_database_engine
 from .debugger_modal import DebugInspector
 
 # from .r_helpers import _get_kostra_r
@@ -18,9 +21,12 @@ __all__ = [
     "AlertHandler",
     "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
+    "DemoDataCreator",
     "TabImplementation",
     "WindowImplementation",
     "create_alert",
+    "create_database",
+    "create_database_engine",
     "enable_app_logging",
     "module_validator",
     "sidebar_button",
