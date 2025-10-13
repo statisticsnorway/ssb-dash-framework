@@ -1,5 +1,5 @@
 {
-    "name": "R-Python Postgres Environment",
+    "name": "R-Python sqlite Environment",
     "dockerComposeFile": "docker-compose.yml",
     "service": "devcontainer",
     "workspaceFolder": "/workspace",
@@ -32,6 +32,6 @@
             }
         }
     },
-    "postCreateCommand": "poetry install",
+    "postCreateCommand": "pip install poetry && poetry install",
     "postStartCommand": "poetry run python .devcontainer/sqlite/create_dev_data.py"
 }

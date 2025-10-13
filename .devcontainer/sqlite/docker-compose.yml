@@ -1,0 +1,7 @@
+services:
+  devcontainer:
+    image: python:3.11
+    volumes:
+      - ../..:/workspace:cached
+    working_dir: /workspace
+    command: sleep infinity
