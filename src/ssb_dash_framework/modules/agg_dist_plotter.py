@@ -5,6 +5,7 @@ from abc import abstractmethod
 from typing import Any
 from typing import ClassVar
 
+from eimerdb import EimerDBInstance
 import ibis
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -306,31 +307,33 @@ class AggDistPlotter(ABC):
                 raise ValueError(
                     f"Trying to run query with no value for 'tabell'. Received value: '{tabell}'"
                 )
+            if isinstance(self.conn, EimerDBInstance):
+                partition_args = dict(zip(self.time_units, dynamic_states, strict=False))
+                partition_select_no_skjema = create_partition_select(
+                    desired_partitions=self.time_units, skjema=None, **partition_args
+                )
+                updated_partition_select = self.update_partition_select(
+                    partition_select_no_skjema, rullerende_var
+                )
+                time_vars = updated_partition_select.get(rullerende_var)
+                _t_0 = str(time_vars[0])
+                _t_1 = str(time_vars[1])
 
-            partition_args = dict(zip(self.time_units, dynamic_states, strict=False))
-            partition_select_no_skjema = create_partition_select(
-                desired_partitions=self.time_units, skjema=None, **partition_args
-            )
-            updated_partition_select = self.update_partition_select(
-                partition_select_no_skjema, rullerende_var
-            )
-            time_vars = updated_partition_select.get(rullerende_var)
-            _t_0 = str(time_vars[0])
-            _t_1 = str(time_vars[1])
+                skjemamottak = self.conn.query(
+                    "SELECT * FROM skjemamottak", partition_select=updated_partition_select
+                )
+                skjemadata = self.conn.query(
+                    "SELECT * FROM skjemadata_hoved", partition_select=updated_partition_select
+                )
+                datatyper = self.conn.query(
+                    "SELECT * FROM datatyper", partition_select=updated_partition_select
+                )
 
-            skjemamottak = self.conn.query(
-                "SELECT * FROM skjemamottak", partition_select=updated_partition_select
-            )
-            skjemadata = self.conn.query(
-                "SELECT * FROM skjemadata_hoved", partition_select=updated_partition_select
-            )
-            datatyper = self.conn.query(
-                "SELECT * FROM datatyper", partition_select=updated_partition_select
-            )
-
-            con.create_table("skjemamottak", skjemamottak)
-            con.create_table("skjemadata_hoved", skjemadata)
-            con.create_table("datatyper", datatyper)
+                con.create_table("skjemamottak", skjemamottak)
+                con.create_table("skjemadata_hoved", skjemadata)
+                con.create_table("datatyper", datatyper)
+            else:
+                raise NotImplementedError(f"Connection type '{type(self.conn)}' is currently not implemented.")
 
             skjemamottak_tbl = con.table("skjemamottak")
             skjemadata_tbl = con.table("skjemadata_hoved")
@@ -350,10 +353,10 @@ class AggDistPlotter(ABC):
                 skjemadata_tbl.filter(skjemadata_tbl.refnr.isin(relevant_refnr))
                 .join(datatyper_tbl.select("variabel", "datatype"), ["variabel"], how="inner")
                 .filter(datatyper_tbl.datatype == "int")
-                .cast({"verdi": "int", "aar": "str"})
+                .cast({"verdi": "int", rullerende_var: "str"})
                 .pivot_wider(
                     id_cols=["variabel"],
-                    names_from="aar",  # TODO: Tidsenhet
+                    names_from=rullerende_var,  # TODO: Tidsenhet
                     values_from="verdi",
                     values_agg="sum",
                 )
@@ -404,44 +407,54 @@ class AggDistPlotter(ABC):
             logger.debug(
                 f"Creating graph for skjema: {skjema}, graph_type: {graph_type}, tabell: {tabell}"
             )
-            partition_args = dict(
-                zip(self.time_units, [int(x) for x in args], strict=False)
-            )
-            logger.debug(f"Partition args: {partition_args}")
-
-            if skjema == "all":
-                partition_select = create_partition_select(
-                    desired_partitions=self.time_units, skjema=None, **partition_args
-                )
-            else:
-                partition_select = create_partition_select(
-                    desired_partitions=self.time_units, skjema=skjema, **partition_args
-                )
-
             variabel = current_row[0]["variabel"]
 
-            df = self.conn.query(
-                f"""SELECT t1.aar, t1.ident, t1.variabel, t1.verdi
-                FROM {tabell} as t1
-                JOIN (
-                    SELECT
-                        t2.ident,
-                        t2.refnr,
-                        MAX(t2.dato_mottatt) AS newest_dato_mottatt
-                    FROM
-                        skjemamottak AS t2
-                    GROUP BY
-                        t2.ident,
-                        t2.refnr
-                ) AS subquery ON
-                    t1.ident = subquery.ident
-                    AND t1.refnr = subquery.refnr
-                WHERE variabel = '{variabel}' AND verdi IS NOT NULL AND verdi != 0
-                """,
-                partition_select=partition_select,
+            if isinstance(self.conn, EimerDBInstance):
+                con = ibis.duckdb.connect()
+                partition_args = dict(
+                    zip(self.time_units, [int(x) for x in args], strict=False)
+                )
+                logger.debug(f"Partition args: {partition_args}")
+                if skjema == "all":
+                    partition_select = create_partition_select(
+                        desired_partitions=self.time_units, skjema=None, **partition_args
+                    )
+                else:
+                    partition_select = create_partition_select(
+                        desired_partitions=self.time_units, skjema=skjema, **partition_args
+                    )
+
+                skjemamottak = self.conn.query(
+                    "SELECT * FROM skjemamottak", partition_select=partition_select
+                )
+                skjemadata = self.conn.query(
+                    "SELECT * FROM skjemadata_hoved", partition_select=partition_select
+                )
+
+                con.create_table("skjemamottak", skjemamottak)
+                con.create_table("skjemadata_hoved", skjemadata)
+                skjemamottak_tbl = con.table("skjemamottak")
+                skjemadata_tbl = con.table("skjemadata_hoved")
+            else:
+                raise NotImplementedError(f"Connection type '{type(self.conn)}' is currently not implemented.")
+
+            skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
+                skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
+                .order_by(ibis.desc(skjemamottak_tbl.dato_mottatt))
+                .distinct(on=[*self.time_units, "ident"], keep="first")
+            )
+            if skjema != "all":
+                skjemamottak_tbl = skjemamottak_tbl.filter(skjemamottak_tbl.skjema == skjema)
+
+            relevant_refnr = skjemamottak_tbl["refnr"].to_list()
+
+            skjemadata_tbl = (
+                skjemadata_tbl
+                .filter([skjemadata_tbl.refnr.isin(relevant_refnr), skjemadata_tbl.variabel == variabel, skjemadata_tbl.verdi.notnull()])
+                .cast({"verdi": "int"})
             )
 
-            df["verdi"] = df["verdi"].astype(float).round(0).astype(int)
+            df = skjemadata_tbl.to_pandas()
 
             top5_df = df.nlargest(5, "verdi")
 
