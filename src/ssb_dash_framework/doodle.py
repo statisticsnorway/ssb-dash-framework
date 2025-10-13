@@ -55,9 +55,9 @@ skjemadata_tbl = (
     )
     .mutate(
         diff=lambda t: t[_t_0] - t[_t_1],
-        pdiff=lambda t: (t[_t_0].fill_null(0) - t[_t_1].fill_null(0))
+        pdiff=lambda t: ((t[_t_0].fill_null(0) - t[_t_1].fill_null(0))
         / t[_t_1].fill_null(1)
-        * 100,
+        * 100).round(2),
     )
 )
 

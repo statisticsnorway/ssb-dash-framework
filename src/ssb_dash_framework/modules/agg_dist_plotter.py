@@ -5,6 +5,7 @@ from abc import abstractmethod
 from typing import Any
 from typing import ClassVar
 
+import ibis
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import plotly.express as px
@@ -296,6 +297,7 @@ class AggDistPlotter(ABC):
             logger.debug(
                 f"Args:\nrefresh: {refresh}\nradio_value: {radio_value}\nrullerende_var: {rullerende_var}\ntabell: {tabell}\ndynamic_states: {dynamic_states}"
             )
+            con = ibis.duckdb.connect()
             skjema = radio_value
             if not refresh:
                 logger.debug("Preventing update")
@@ -312,103 +314,57 @@ class AggDistPlotter(ABC):
             updated_partition_select = self.update_partition_select(
                 partition_select_no_skjema, rullerende_var
             )
-            column_name_expr_s = SQL_COLUMN_CONCAT.join(
-                [f"s.{unit}" for unit in self.time_units]
+            time_vars = updated_partition_select.get(rullerende_var)
+            _t_0 = str(time_vars[0])
+            _t_1 = str(time_vars[1])
+
+            skjemamottak = self.conn.query(
+                "SELECT * FROM skjemamottak", partition_select=updated_partition_select
             )
-            column_name_expr_t2 = SQL_COLUMN_CONCAT.join(
-                [f"t2.{unit}" for unit in self.time_units]
+            skjemadata = self.conn.query(
+                "SELECT * FROM skjemadata_hoved", partition_select=updated_partition_select
             )
-            column_name_expr_d = SQL_COLUMN_CONCAT.join(
-                [f"d.{unit}" for unit in self.time_units]
+            datatyper = self.conn.query(
+                "SELECT * FROM datatyper", partition_select=updated_partition_select
             )
 
-            group_by_clause = ", ".join([f"s.{unit}" for unit in self.time_units])
+            con.create_table("skjemamottak", skjemamottak)
+            con.create_table("skjemadata_hoved", skjemadata)
+            con.create_table("datatyper", datatyper)
 
+            skjemamottak_tbl = con.table("skjemamottak")
+            skjemadata_tbl = con.table("skjemadata_hoved")
+            datatyper_tbl = con.table("datatyper")
+
+            skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
+                skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
+                .order_by(ibis.desc(skjemamottak_tbl.dato_mottatt))
+                .distinct(on=[*self.time_units, "ident"], keep="first")
+            )
             if skjema != "all":
-                where_query_add = f"AND s.skjema = '{skjema}'"
-            else:
-                where_query_add = ""
+                skjemamottak_tbl = skjemamottak_tbl.filter(skjemamottak_tbl.skjema == skjema)
 
-            query = f"""
-                SELECT
-                    s.variabel,
-                    {column_name_expr_s} AS time_combination,
-                    SUM(CAST(s.verdi AS NUMERIC)) AS verdi
-                FROM {tabell} AS s
-                JOIN (
-                    SELECT
-                        {column_name_expr_t2} AS time_combination,
-                        t2.ident,
-                        t2.refnr,
-                        t2.dato_mottatt
-                    FROM
-                        skjemamottak AS t2
-                    WHERE aktiv = True
-                    QUALIFY
-                        ROW_NUMBER() OVER (
-                            PARTITION BY {column_name_expr_t2}, t2.ident
-                            ORDER BY t2.dato_mottatt DESC
-                        ) = 1
-                ) AS mottak_subquery
-                    ON {column_name_expr_s} = mottak_subquery.time_combination
-                    AND s.ident = mottak_subquery.ident
-                    AND s.refnr = mottak_subquery.refnr
-                JOIN (
-                    SELECT
-                        d.variabel,
-                        {column_name_expr_d} AS time_combination,
-                        d.radnr,
-                        d.datatype
-                    FROM datatyper AS d
-                ) AS datatype_subquery
-                    ON s.variabel = datatype_subquery.variabel
-                    AND {column_name_expr_s} = datatype_subquery.time_combination
-                WHERE datatype_subquery.datatype = 'int' {where_query_add}
-                GROUP BY
-                    s.variabel,
-                    datatype_subquery.radnr,
-                    {group_by_clause}
-                ORDER BY datatype_subquery.radnr;
-            """
+            relevant_refnr = skjemamottak_tbl["refnr"].to_list()
 
-            df = self.conn.query(
-                query,
-                partition_select={
-                    tabell: updated_partition_select,
-                    "datatyper": updated_partition_select,
-                },
+            skjemadata_tbl = (
+                skjemadata_tbl.filter(skjemadata_tbl.refnr.isin(relevant_refnr))
+                .join(datatyper_tbl.select("variabel", "datatype"), ["variabel"], how="inner")
+                .filter(datatyper_tbl.datatype == "int")
+                .cast({"verdi": "int", "aar": "str"})
+                .pivot_wider(
+                    id_cols=["variabel"],
+                    names_from="aar",  # TODO: Tidsenhet
+                    values_from="verdi",
+                    values_agg="sum",
+                )
+                .mutate(
+                    diff=lambda t: t[_t_0] - t[_t_1],
+                    pdiff=lambda t: ((t[_t_0].fill_null(0) - t[_t_1].fill_null(0))
+                    / t[_t_1].fill_null(1)
+                    * 100).round(2),
+                )
             )
-
-            df_wide = df.pivot(
-                index="variabel", columns="time_combination", values="verdi"
-            ).reset_index()
-
-            df_wide = df_wide.rename(
-                columns={
-                    col: f"verdi_{col}" if col != "variabel" else col
-                    for col in df_wide.columns
-                }
-            )
-
-            df_wide.columns.name = None
-
-            def extract_numeric_sum(
-                col_name: str,
-            ) -> int:  # TODO should return int | float?
-                numbers = list(map(int, re.findall(r"\d+", col_name)))
-                return sum(numbers) if numbers else 0
-
-            time_columns_sorted = sorted(
-                [col for col in df_wide.columns if col.startswith("verdi_")],
-                key=extract_numeric_sum,
-            )
-
-            if len(time_columns_sorted) >= 2:
-                latest_col = max(time_columns_sorted, key=extract_numeric_sum)
-                prev_col = min(time_columns_sorted, key=extract_numeric_sum)
-                df_wide["diff"] = df_wide[latest_col] - df_wide[prev_col]
-                df_wide["pdiff"] = (df_wide["diff"] / df_wide[prev_col]) * 100
-                df_wide["pdiff"] = df_wide["pdiff"].round(2).astype(str) + " %"
+            df_wide = skjemadata_tbl.to_pandas()
             columns = [
                 {
                     "headerName": col,
