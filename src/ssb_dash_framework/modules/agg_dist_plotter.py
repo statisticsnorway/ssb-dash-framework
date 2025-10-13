@@ -1,14 +1,12 @@
 import logging
-import re
 from abc import ABC
 from abc import abstractmethod
 from typing import Any
 from typing import ClassVar
 
-from eimerdb import EimerDBInstance
-import ibis
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import ibis
 import plotly.express as px
 import plotly.graph_objects as go
 from dash import Input
@@ -18,6 +16,7 @@ from dash import callback
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
+from eimerdb import EimerDBInstance
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
@@ -308,7 +307,9 @@ class AggDistPlotter(ABC):
                     f"Trying to run query with no value for 'tabell'. Received value: '{tabell}'"
                 )
             if isinstance(self.conn, EimerDBInstance):
-                partition_args = dict(zip(self.time_units, dynamic_states, strict=False))
+                partition_args = dict(
+                    zip(self.time_units, dynamic_states, strict=False)
+                )
                 partition_select_no_skjema = create_partition_select(
                     desired_partitions=self.time_units, skjema=None, **partition_args
                 )
@@ -316,14 +317,24 @@ class AggDistPlotter(ABC):
                     partition_select_no_skjema, rullerende_var
                 )
                 time_vars = updated_partition_select.get(rullerende_var)
+                if not isinstance(time_vars, list):
+                    raise ValueError(
+                        f"'time_vars' must be list, not '{type(time_vars)}': {time_vars}"
+                    )
+                if time_vars[0] is None or time_vars[1] is None:
+                    raise ValueError(
+                        "'time_vars' must have two values and they cannot be None."
+                    )
                 _t_0 = str(time_vars[0])
                 _t_1 = str(time_vars[1])
 
                 skjemamottak = self.conn.query(
-                    "SELECT * FROM skjemamottak", partition_select=updated_partition_select
+                    "SELECT * FROM skjemamottak",
+                    partition_select=updated_partition_select,
                 )
                 skjemadata = self.conn.query(
-                    "SELECT * FROM skjemadata_hoved", partition_select=updated_partition_select
+                    "SELECT * FROM skjemadata_hoved",
+                    partition_select=updated_partition_select,
                 )
                 datatyper = self.conn.query(
                     "SELECT * FROM datatyper", partition_select=updated_partition_select
@@ -333,7 +344,9 @@ class AggDistPlotter(ABC):
                 con.create_table("skjemadata_hoved", skjemadata)
                 con.create_table("datatyper", datatyper)
             else:
-                raise NotImplementedError(f"Connection type '{type(self.conn)}' is currently not implemented.")
+                raise NotImplementedError(
+                    f"Connection type '{type(self.conn)}' is currently not implemented."
+                )
 
             skjemamottak_tbl = con.table("skjemamottak")
             skjemadata_tbl = con.table("skjemadata_hoved")
@@ -345,13 +358,19 @@ class AggDistPlotter(ABC):
                 .distinct(on=[*self.time_units, "ident"], keep="first")
             )
             if skjema != "all":
-                skjemamottak_tbl = skjemamottak_tbl.filter(skjemamottak_tbl.skjema == skjema)
+                skjemamottak_tbl = skjemamottak_tbl.filter(
+                    skjemamottak_tbl.skjema == skjema
+                )
 
             relevant_refnr = skjemamottak_tbl["refnr"].to_list()
 
             skjemadata_tbl = (
                 skjemadata_tbl.filter(skjemadata_tbl.refnr.isin(relevant_refnr))
-                .join(datatyper_tbl.select("variabel", "datatype"), ["variabel"], how="inner")
+                .join(
+                    datatyper_tbl.select("variabel", "datatype"),
+                    ["variabel"],
+                    how="inner",
+                )
                 .filter(datatyper_tbl.datatype == "int")
                 .cast({"verdi": "int", rullerende_var: "str"})
                 .pivot_wider(
@@ -362,9 +381,11 @@ class AggDistPlotter(ABC):
                 )
                 .mutate(
                     diff=lambda t: t[_t_0] - t[_t_1],
-                    pdiff=lambda t: ((t[_t_0].fill_null(0) - t[_t_1].fill_null(0))
-                    / t[_t_1].fill_null(1)
-                    * 100).round(2),
+                    pdiff=lambda t: (
+                        (t[_t_0].fill_null(0) - t[_t_1].fill_null(0))
+                        / t[_t_1].fill_null(1)
+                        * 100
+                    ).round(2),
                 )
             )
             df_wide = skjemadata_tbl.to_pandas()
@@ -417,11 +438,15 @@ class AggDistPlotter(ABC):
                 logger.debug(f"Partition args: {partition_args}")
                 if skjema == "all":
                     partition_select = create_partition_select(
-                        desired_partitions=self.time_units, skjema=None, **partition_args
+                        desired_partitions=self.time_units,
+                        skjema=None,
+                        **partition_args,
                     )
                 else:
                     partition_select = create_partition_select(
-                        desired_partitions=self.time_units, skjema=skjema, **partition_args
+                        desired_partitions=self.time_units,
+                        skjema=skjema,
+                        **partition_args,
                     )
 
                 skjemamottak = self.conn.query(
@@ -436,7 +461,9 @@ class AggDistPlotter(ABC):
                 skjemamottak_tbl = con.table("skjemamottak")
                 skjemadata_tbl = con.table("skjemadata_hoved")
             else:
-                raise NotImplementedError(f"Connection type '{type(self.conn)}' is currently not implemented.")
+                raise NotImplementedError(
+                    f"Connection type '{type(self.conn)}' is currently not implemented."
+                )
 
             skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
                 skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
@@ -444,15 +471,19 @@ class AggDistPlotter(ABC):
                 .distinct(on=[*self.time_units, "ident"], keep="first")
             )
             if skjema != "all":
-                skjemamottak_tbl = skjemamottak_tbl.filter(skjemamottak_tbl.skjema == skjema)
+                skjemamottak_tbl = skjemamottak_tbl.filter(
+                    skjemamottak_tbl.skjema == skjema
+                )
 
             relevant_refnr = skjemamottak_tbl["refnr"].to_list()
 
-            skjemadata_tbl = (
-                skjemadata_tbl
-                .filter([skjemadata_tbl.refnr.isin(relevant_refnr), skjemadata_tbl.variabel == variabel, skjemadata_tbl.verdi.notnull()])
-                .cast({"verdi": "int"})
-            )
+            skjemadata_tbl = skjemadata_tbl.filter(
+                [
+                    skjemadata_tbl.refnr.isin(relevant_refnr),
+                    skjemadata_tbl.variabel == variabel,
+                    skjemadata_tbl.verdi.notnull(),
+                ]
+            ).cast({"verdi": "int"})
 
             df = skjemadata_tbl.to_pandas()
 
