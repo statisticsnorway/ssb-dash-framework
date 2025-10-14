@@ -504,7 +504,7 @@ class EditingTable:
                 edit["timestamp"] = int(time.time() * 1000)
                 if self.log_filepath:
                     with open(self.log_filepath, "a", encoding="utf-8") as f:
-                        f.write(json.dumps(edit, ensure_ascii=False) + "\n")
+                        f.write(json.dumps(edit, ensure_ascii=False, default=str) + "\n")
 
                 if self.update_table_func:
                     variable = edit["colId"]
