@@ -124,8 +124,23 @@ class AltinnEditorPrimaryTable:
             ):
                 return None, None
             if long_format:
+                logger.debug("Processing long data")
                 try:
                     partition_args = dict(zip(self.time_units, args, strict=False))
+                    query = f"""
+                        SELECT t.*, subquery.radnr
+                        FROM {tabell} AS t
+                        JOIN (
+                            SELECT aar, radnr, tabell, variabel
+                            FROM datatyper
+                        ) AS subquery
+                        ON subquery.aar = t.aar AND subquery.variabel = t.variabel
+                        WHERE t.refnr = '{refnr}'
+                        AND subquery.tabell = '{tabell}'
+                        ORDER BY subquery.radnr ASC
+                        """
+                    logger.debug(f"query:\n{query}")
+                    logger.debug(f"partition_select:\n{create_partition_select(desired_partitions=self.time_units,skjema=skjema,**partition_args,)}")
                     df = self.conn.query(
                         f"""
                         SELECT t.*, subquery.radnr
@@ -152,7 +167,9 @@ class AltinnEditorPrimaryTable:
                             ),
                         },
                     )
-                    df.drop(columns=["radnr"], inplace=True)
+                    df["skjema"] = "RA-0433"
+                    logger.debug(f"resultat dataframe:\n{df.head(2)}")
+                    df = df.drop(columns=["radnr"])
                     columndefs = [
                         {
                             "headerName": col,
@@ -170,6 +187,7 @@ class AltinnEditorPrimaryTable:
                     )
                     return None, None
             else:
+                logger.debug("Processing wide data")
                 try:
                     partition_args = dict(zip(self.time_units, args, strict=False))
                     df = self.conn.query(

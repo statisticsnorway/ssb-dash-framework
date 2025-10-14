@@ -13,6 +13,7 @@ from .functions import sidebar_button
 from .implementations import TabImplementation
 from .implementations import WindowImplementation
 from .module_validation import module_validator
+from .prosesslogg import apply_edits
 
 __all__ = [
     "AlertHandler",
@@ -20,6 +21,7 @@ __all__ = [
     "DebugInspector",
     "TabImplementation",
     "WindowImplementation",
+    "apply_edits",
     "create_alert",
     "enable_app_logging",
     "module_validator",
