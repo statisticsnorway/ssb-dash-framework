@@ -297,7 +297,6 @@ class AggDistPlotter(ABC):
             logger.debug(
                 f"Args:\nrefresh: {refresh}\nradio_value: {radio_value}\nrullerende_var: {rullerende_var}\ntabell: {tabell}\ndynamic_states: {dynamic_states}"
             )
-            con = ibis.duckdb.connect()
             skjema = radio_value
             if not refresh:
                 logger.debug("Preventing update")
@@ -307,6 +306,7 @@ class AggDistPlotter(ABC):
                     f"Trying to run query with no value for 'tabell'. Received value: '{tabell}'"
                 )
             if isinstance(self.conn, EimerDBInstance):
+                con = ibis.polars.connect()
                 partition_args = dict(
                     zip(self.time_units, dynamic_states, strict=False)
                 )
@@ -362,7 +362,7 @@ class AggDistPlotter(ABC):
                     skjemamottak_tbl.skjema == skjema
                 )
 
-            relevant_refnr = skjemamottak_tbl["refnr"].to_list()
+            relevant_refnr = skjemamottak_tbl.refnr.to_list()
 
             skjemadata_tbl = (
                 skjemadata_tbl.filter(skjemadata_tbl.refnr.isin(relevant_refnr))
@@ -431,7 +431,7 @@ class AggDistPlotter(ABC):
             variabel = current_row[0]["variabel"]
 
             if isinstance(self.conn, EimerDBInstance):
-                con = ibis.duckdb.connect()
+                con = ibis.polars.connect()
                 partition_args = dict(
                     zip(self.time_units, [int(x) for x in args], strict=False)
                 )
