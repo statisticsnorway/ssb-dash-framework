@@ -1,10 +1,11 @@
 import json
 import logging
 import time
+import datetime
+import zoneinfo
 from collections.abc import Callable
 from typing import Any
 import os
-import datetime
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -410,10 +411,15 @@ class EditingTable:
 
                 edit_with_reason = dict(pending_edit)
                 edit_with_reason["reason"] = reason.replace("\n", "")
-                edit_with_reason["timestamp"] = datetime.now()
                 edit_with_reason["user"] = self.user
                 edit_with_reason["change_event"] = "manual"
-                del edit_with_reason["rowId"]
+
+                # Create timestamp that can be compared with datetime.now() running from users IDE
+                tz = zoneinfo.ZoneInfo("Europe/Oslo")
+                aware_timestamp = datetime.now(tz)        # timezone-aware
+                naive_timestamp = aware_dt.replace(tzinfo=None)  # drop tzinfo
+                edit_with_reason["timestamp"] = naive_timestamp
+
                 logger.debug(edit_with_reason)
                 if self.log_filepath:
                     with open(self.log_filepath, "a", encoding="utf-8") as f:
