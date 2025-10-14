@@ -1,3 +1,5 @@
+import datetime
+
 import pandas as pd
 
 def apply_edits(df:pd.DataFrame, filepath_log:str, app_timestamp: datetime) -> pd.DataFrame:
