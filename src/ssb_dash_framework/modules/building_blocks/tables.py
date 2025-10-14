@@ -4,6 +4,7 @@ import time
 from collections.abc import Callable
 from typing import Any
 import os
+import datetime
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -409,7 +410,7 @@ class EditingTable:
 
                 edit_with_reason = dict(pending_edit)
                 edit_with_reason["reason"] = reason.replace("\n", "")
-                edit_with_reason["timestamp"] = int(time.time() * 1000)
+                edit_with_reason["timestamp"] = datetime.now()
                 edit_with_reason["user"] = self.user
                 edit_with_reason["change_event"] = "manual"
                 del edit_with_reason["rowId"]
