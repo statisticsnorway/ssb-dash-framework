@@ -117,12 +117,18 @@ class AltinnSkjemadataEditor:
                     variable_selector_instance=self.variableselector,
                 ),
             ]
-        self.is_valid()
+        self._is_valid()
         self.module_callbacks()
 
-    def is_valid(self) -> None:
+    def _is_valid(self) -> None:
         """Checks that all VariableSelector options required are defined."""
         VariableSelector([], []).get_option("ident")
+        if not isinstance(self.time_units, list):
+            raise TypeError(
+                f"time_units needs to be type 'list'. Received: {type(self.time_units)}"
+            )
+        for unit in self.time_units:
+            VariableSelector([], []).get_option(unit)
 
     def get_skjemadata_table_names(self) -> list[dict[str, str]]:
         """Retrieves the names of all the skjemadata-tables in the eimerdb."""

@@ -24,7 +24,7 @@ class AltinnEditorComment:
         self,
         time_units: list[str],
         conn: object,
-        variable_selector_instance: VariableSelector,
+        variable_selector_instance: VariableSelector,  # Maybe not necessary?
     ) -> None:
         """Initializes the Altinn Editor Comment module.
 
