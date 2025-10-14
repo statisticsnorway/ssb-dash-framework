@@ -423,7 +423,7 @@ class EditingTable:
                 logger.debug(edit_with_reason)
                 if self.log_filepath:
                     with open(self.log_filepath, "a", encoding="utf-8") as f:
-                        f.write(json.dumps(edit_with_reason, ensure_ascii=False) + "\n"), default=str)
+                        f.write(json.dumps(edit_with_reason, ensure_ascii=False) + "\n"), default=str))
 
                 if self.update_table_func:
                     variable = edit_with_reason["colId"]
