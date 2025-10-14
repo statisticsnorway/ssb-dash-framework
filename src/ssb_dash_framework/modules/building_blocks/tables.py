@@ -417,7 +417,7 @@ class EditingTable:
                 # Create timestamp that can be compared with datetime.now() running from users IDE
                 tz = zoneinfo.ZoneInfo("Europe/Oslo")
                 aware_timestamp = datetime.now(tz)        # timezone-aware
-                naive_timestamp = aware_dt.replace(tzinfo=None)  # drop tzinfo
+                naive_timestamp = aware_timestamp.replace(tzinfo=None)  # drop tzinfo
                 edit_with_reason["timestamp"] = naive_timestamp
 
                 logger.debug(edit_with_reason)
