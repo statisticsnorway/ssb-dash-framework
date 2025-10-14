@@ -89,6 +89,7 @@ class EditingTable:
         self.output_varselector_name = output_varselector_name or output
         self.log_filepath = log_filepath
         self.justify_edit = justify_edit
+        self.user = os.getenv("DAPLA_USER")
 
         if number_format is None:
             self.number_format = "d3.format(',.1f')(params.value).replace(/,/g, ' ')"
@@ -406,8 +407,10 @@ class EditingTable:
                     return True, error_log, table_data
 
                 edit_with_reason = dict(pending_edit)
-                edit_with_reason["reason"] = reason
+                edit_with_reason["reason"] = reason.replace("\n", "")
                 edit_with_reason["timestamp"] = int(time.time() * 1000)
+                edit_with_reason["user"] = self.user
+                edit_with_reason["change_event"] = "manual"
                 logger.debug(edit_with_reason)
                 if self.log_filepath:
                     with open(self.log_filepath, "a", encoding="utf-8") as f:
