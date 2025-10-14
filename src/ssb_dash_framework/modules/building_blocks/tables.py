@@ -412,6 +412,7 @@ class EditingTable:
                 edit_with_reason["timestamp"] = int(time.time() * 1000)
                 edit_with_reason["user"] = self.user
                 edit_with_reason["change_event"] = "manual"
+                del edit_with_reason["rowId"]
                 logger.debug(edit_with_reason)
                 if self.log_filepath:
                     with open(self.log_filepath, "a", encoding="utf-8") as f:
