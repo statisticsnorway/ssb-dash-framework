@@ -1,11 +1,11 @@
 import json
 import logging
+import os
 import time
-from datetime import datetime
 import zoneinfo
 from collections.abc import Callable
+from datetime import datetime
 from typing import Any
-import os
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -416,14 +416,19 @@ class EditingTable:
 
                 # Create timestamp that can be compared with datetime.now() running from users IDE
                 tz = zoneinfo.ZoneInfo("Europe/Oslo")
-                aware_timestamp = datetime.now(tz)        # timezone-aware
+                aware_timestamp = datetime.now(tz)  # timezone-aware
                 naive_timestamp = aware_timestamp.replace(tzinfo=None)  # drop tzinfo
                 edit_with_reason["timestamp"] = naive_timestamp
 
                 logger.debug(edit_with_reason)
                 if self.log_filepath:
                     with open(self.log_filepath, "a", encoding="utf-8") as f:
-                        f.write(json.dumps(edit_with_reason, ensure_ascii=False, default=str) + "\n")
+                        f.write(
+                            json.dumps(
+                                edit_with_reason, ensure_ascii=False, default=str
+                            )
+                            + "\n"
+                        )
 
                 if self.update_table_func:
                     variable = edit_with_reason["colId"]
@@ -504,7 +509,9 @@ class EditingTable:
                 edit["timestamp"] = int(time.time() * 1000)
                 if self.log_filepath:
                     with open(self.log_filepath, "a", encoding="utf-8") as f:
-                        f.write(json.dumps(edit, ensure_ascii=False, default=str) + "\n")
+                        f.write(
+                            json.dumps(edit, ensure_ascii=False, default=str) + "\n"
+                        )
 
                 if self.update_table_func:
                     variable = edit["colId"]
