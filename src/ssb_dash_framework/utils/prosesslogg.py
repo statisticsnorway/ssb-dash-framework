@@ -1,4 +1,6 @@
-def apply_edits(df:pd.DataFrame, filepath_log:str, app_timestamp) -> pd.DataFrame:
+import pandas as pd
+
+def apply_edits(df:pd.DataFrame, filepath_log:str, app_timestamp: datetime) -> pd.DataFrame:
     """Apply a set of logged edits to a DataFrame in a vectorized manner.
 
     This function updates rows in `df` based on edit records from a log

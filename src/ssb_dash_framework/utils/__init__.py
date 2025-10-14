@@ -13,6 +13,7 @@ from .functions import sidebar_button
 from .implementations import TabImplementation
 from .implementations import WindowImplementation
 from .module_validation import module_validator
+from .prosesslogg import apply_edits
 
 __all__ = [
     "AlertHandler",
@@ -24,6 +25,7 @@ __all__ = [
     "enable_app_logging",
     "module_validator",
     "sidebar_button",
+    "apply_edits",
     # "_get_kostra_r",
     # "hb_method",
     # "th_error",
