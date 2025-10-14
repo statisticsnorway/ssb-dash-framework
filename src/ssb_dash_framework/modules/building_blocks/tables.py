@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-import datetime
+from datetime import datetime
 import zoneinfo
 from collections.abc import Callable
 from typing import Any
