@@ -56,6 +56,7 @@ from .utils import create_alert
 from .utils import enable_app_logging
 from .utils import module_validator
 from .utils import sidebar_button
+from .utils import apply_edits
 
 # from .modals import HBMethod
 # from .utils import _get_kostra_r
