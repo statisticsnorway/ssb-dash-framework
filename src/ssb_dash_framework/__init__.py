@@ -50,9 +50,12 @@ from .setup import set_variables
 from .utils import AlertHandler
 from .utils import DatabaseBuilderAltinnEimerdb
 from .utils import DebugInspector
+from .utils import DemoDataCreator
 from .utils import TabImplementation
 from .utils import WindowImplementation
 from .utils import create_alert
+from .utils import create_database
+from .utils import create_database_engine
 from .utils import enable_app_logging
 from .utils import module_validator
 from .utils import sidebar_button
@@ -86,6 +89,9 @@ __all__ = [
     "ControlFrameworkBase",
     "ControlWindow",
     "DatabaseBuilderAltinnEimerdb",
+    "create_database",
+    "create_database_engine",
+    "DemoDataCreator",
     "DebugInspector",
     "EditingTable",
     "EditingTableTab",
