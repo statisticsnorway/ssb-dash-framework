@@ -21,12 +21,10 @@ from sqlalchemy import ForeignKeyConstraint
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import DeclarativeBase
 
 logger = logging.getLogger(__name__)
-
-Base = declarative_base()
-
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setLevel(logging.INFO)
@@ -297,20 +295,30 @@ class DatabaseBuilderAltinnEimerdb:  # TODO: Should contain functionality to pro
                 partition_columns=partition_columns,
                 editable=True,
             )
-        eimerdb_logger.info(
+        logger.info(
             f"Created eimerdb at {self.storage_location}.\nAs the next step, insert data into enheter, skjemamottak and skjemadata to get started. \nSchemas: {list(self.schemas.keys())}\nDetailed schemas:\n{json.dumps(self.schemas, indent=2, default=str)}"
         )
 
 
-PERIOD_COLUMNS = ["aar"]
+PERIOD_COLUMNS: list[str] = ["aar"]
 
 
-def period_columns():
-    """Generate Column definitions for period dimensions"""
+def period_columns() -> (
+    dict[str, Column[Any]]
+):  # Is it better to annotate as Column[String]?
+    """Generate Column definitions for period dimensions based on the value of 'PERIOD_COUMNS'."""
     return {name: Column(String, primary_key=True) for name in PERIOD_COLUMNS}
 
 
+class Base(DeclarativeBase):
+    """Sets up the Base class for the SQLAlchemy ORM."""
+
+    pass
+
+
 class Enheter(Base):
+    """SQLAlchemy ORM model for the 'enheter' table."""
+
     __tablename__ = "enheter"
     locals().update(period_columns())
     ident = Column(String, primary_key=True)
@@ -318,6 +326,8 @@ class Enheter(Base):
 
 
 class Enhetsinfo(Base):
+    """SQLAlchemy ORM model for the 'enhetsinfo' table."""
+
     __tablename__ = "enhetsinfo"
     locals().update(period_columns())
     ident = Column(String, primary_key=True)
@@ -326,6 +336,8 @@ class Enhetsinfo(Base):
 
 
 class Skjemamottak(Base):
+    """SQLAlchemy ORM model for the 'skjemamottak' table."""
+
     __tablename__ = "skjemamottak"
     locals().update(period_columns())
     ident = Column(String, primary_key=True)
@@ -345,6 +357,8 @@ class Skjemamottak(Base):
 
 
 class Kontaktinfo(Base):
+    """SQLAlchemy ORM model for the 'kontaktinfo' table."""
+
     __tablename__ = "kontaktinfo"
     locals().update(period_columns())
     ident = Column(String, primary_key=True)
@@ -375,6 +389,8 @@ class Kontaktinfo(Base):
 
 
 class Kontroller(Base):
+    """SQLAlchemy ORM model for the 'kontroller' table."""
+
     __tablename__ = "kontroller"
     locals().update(period_columns())
     skjema = Column(String, primary_key=True)
@@ -386,6 +402,8 @@ class Kontroller(Base):
 
 
 class Kontrollutslag(Base):
+    """SQLAlchemy ORM model for the 'kontrollutslag' table."""
+
     __tablename__ = "kontrollutslag"
     locals().update(period_columns())
     kontrollid = Column(String, primary_key=True)
@@ -416,6 +434,8 @@ class Kontrollutslag(Base):
 
 
 class Skjemadata_hoved(Base):
+    """SQLAlchemy ORM model for the 'skjemadata_hoved' table."""
+
     __tablename__ = "skjemadata_hoved"
     locals().update(period_columns())
     skjema = Column(String, primary_key=True)
@@ -438,6 +458,8 @@ class Skjemadata_hoved(Base):
 
 
 class Datatyper(Base):
+    """SQLAlchemy ORM model for the 'datatyper' table."""
+
     __tablename__ = "datatyper"
     locals().update(period_columns())
     variabel = Column(String)
@@ -446,7 +468,18 @@ class Datatyper(Base):
     radnr = Column(String)
 
 
-def create_database_engine(database_type, *args, **kwargs):
+def create_database_engine(database_type: str, *args: Any, **kwargs: Any) -> Engine:
+    """Wrapper for creating an sqlalchemy engine.
+
+    For sqlite requires the argument 'sqlite_path' to complete the path after 'sqlite:///'
+
+    For postgres requires the environment variables:
+        - DB_USER
+        - DB_PASSWORD
+        - DB_HOST
+        - DB_PORT
+        - DB_NAME
+    """
     if database_type == "sqlite":
         engine = create_engine(
             f"sqlite:///{kwargs.get('sqlite_path', 'mydb.sqlite')}", echo=True
@@ -467,15 +500,32 @@ def create_database_engine(database_type, *args, **kwargs):
     return engine
 
 
-def create_database(engine):
+def create_database(engine: Engine) -> None:
+    """Uses engine to create the database.
+
+    This is only a simple wrapper to make it easier to run 'Base.metadata.create_all(engine)'
+
+    Args:
+        engine (Engine): An SQLAlchemy Engine to be used for creating the database.
+    """
     Base.metadata.create_all(engine)
 
 
 class DemoDataCreator:
-    def __init__(self, engine) -> None:
+    """Class for creating demo data to test the editing framework.
+
+    Assumes your database is set up according to the template with only 'aar' as period columns.
+
+    Args:
+        engine (Engine): An SQLAlchemy Engine to connect to an existing database.
+    """
+
+    def __init__(self, engine: Engine) -> None:
+        """Initializes the DemoDataCreator class by assigning it an engine to use for inserts."""
         self.engine = engine
 
-    def build_demo_database(self):
+    def build_demo_database(self) -> None:
+        """Builds the demo database by inserting data into each table in order using the engine connection."""
         self.get_data()
         self.get_enheter()
         self.get_skjemamottak()
@@ -483,7 +533,8 @@ class DemoDataCreator:
         self.get_kontaktinfo()
         self.get_enhetsinfo()
 
-    def random_date(self):
+    def random_date(self) -> str:
+        """Assigns a random date."""
         month = random.randint(1, 12)
         day = random.randint(1, 28)
         hour = random.randint(0, 23)
@@ -491,10 +542,12 @@ class DemoDataCreator:
         second = random.randint(0, 59)
         return f"{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}"
 
-    def insert_to_db(self, table_name, dataframe):
+    def insert_to_db(self, table_name: str, dataframe: pd.DataFrame) -> None:
+        """Uses self.engine to insert data."""
         dataframe.to_sql(table_name, self.engine, if_exists="replace", index=False)
 
-    def get_data(self):
+    def get_data(self) -> None:
+        """Gathers open data to be used for creating the demo database."""
         df = pd.DataFrame()
         for i in range(2017, 2026):
             df = pd.concat(
@@ -513,14 +566,16 @@ class DemoDataCreator:
         df["refnr"] = df.index.astype(str)
         self.data = df
 
-    def get_enheter(self):
+    def get_enheter(self) -> None:
+        """Builds the content for the 'enheter' table."""
         enheter = self.data.copy()
         enheter = enheter[["ident", "aar"]]
         enheter["skjema"] = "RA-7357"
         enheter = enheter[["ident", "skjema", "aar"]]
         self.insert_to_db("enheter", enheter)
 
-    def get_skjemamottak(self):
+    def get_skjemamottak(self) -> None:
+        """Builds the content for the 'skjemamottak' table."""
         skjemamottak = self.data.copy()
         skjemamottak["dato"] = skjemamottak.apply(
             lambda row: self.random_date(), axis=1
@@ -547,7 +602,8 @@ class DemoDataCreator:
         ]
         self.insert_to_db("skjemamottak", skjemamottak)
 
-    def get_skjemadata_hoved(self):
+    def get_skjemadata_hoved(self) -> None:
+        """Builds the content for the 'skjemadata_hoved' table."""
         skjemadata_lang = self.data.copy()
 
         skjemadata_lang = skjemadata_lang.melt(
@@ -590,7 +646,8 @@ class DemoDataCreator:
         skjemadata_lang["verdi"] = skjemadata_lang["verdi"].astype(str)
         self.insert_to_db("skjemadata_hoved", skjemadata_lang)
 
-    def get_enhetsinfo(self):
+    def get_enhetsinfo(self) -> None:
+        """Builds the content for the 'enhetsinfo' table."""
         enhetsinfo = self.data.melt(
             id_vars=[
                 "aar",
@@ -609,7 +666,8 @@ class DemoDataCreator:
         enhetsinfo["verdi"] = enhetsinfo["verdi"].astype(str)
         self.insert_to_db("enhetsinfo", enhetsinfo)
 
-    def get_kontaktinfo(self):
+    def get_kontaktinfo(self) -> None:
+        """Builds the content for the 'kontaktinfo' table."""
         kontaktinfo = self.data.copy()
         kontaktinfo = kontaktinfo[["aar", "skjema", "ident", "refnr"]]
         kontaktinfo[
