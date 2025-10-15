@@ -1,0 +1,1 @@
+IDENT_VAR = "ident"

@@ -23,6 +23,8 @@ from sqlalchemy import String
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 
+from ssb_dash_framework import IDENT_VAR
+
 logger = logging.getLogger(__name__)
 
 Base = declarative_base()
@@ -87,7 +89,7 @@ class DatabaseBuilderAltinnEimerdb:  # TODO: Should contain functionality to pro
             for period in self.periods
         ]
         ident_col = {
-            "name": "ident",
+            "name": IDENT_VAR,
             "type": "string",
             "label": "Identnummeret.",
         }
@@ -297,7 +299,7 @@ class DatabaseBuilderAltinnEimerdb:  # TODO: Should contain functionality to pro
                 partition_columns=partition_columns,
                 editable=True,
             )
-        eimerdb_logger.info(
+        logger.info(
             f"Created eimerdb at {self.storage_location}.\nAs the next step, insert data into enheter, skjemamottak and skjemadata to get started. \nSchemas: {list(self.schemas.keys())}\nDetailed schemas:\n{json.dumps(self.schemas, indent=2, default=str)}"
         )
 
@@ -305,22 +307,26 @@ class DatabaseBuilderAltinnEimerdb:  # TODO: Should contain functionality to pro
 PERIOD_COLUMNS = ["aar"]
 
 
-def period_columns():
+def period_columns(as_primary_key=True):
     """Generate Column definitions for period dimensions"""
-    return {name: Column(String, primary_key=True) for name in PERIOD_COLUMNS}
+    return {name: Column(String, primary_key=as_primary_key) for name in PERIOD_COLUMNS}
+
+
+def ident_column(as_primary_key=True):
+    return {IDENT_VAR: Column(String, primary_key=as_primary_key)}
 
 
 class Enheter(Base):
     __tablename__ = "enheter"
     locals().update(period_columns())
-    ident = Column(String, primary_key=True)
+    locals().update(ident_column())
     skjema = Column(String, primary_key=True)
 
 
 class Enhetsinfo(Base):
     __tablename__ = "enhetsinfo"
     locals().update(period_columns())
-    ident = Column(String, primary_key=True)
+    locals().update(ident_column())
     variabel = Column(String, primary_key=True)
     verdi = Column(String)
 
@@ -328,7 +334,7 @@ class Enhetsinfo(Base):
 class Skjemamottak(Base):
     __tablename__ = "skjemamottak"
     locals().update(period_columns())
-    ident = Column(String, primary_key=True)
+    locals().update(ident_column())
     skjema = Column(String, primary_key=True)
     refnr = Column(String, primary_key=True)
     dato_mottatt = Column(String)
@@ -338,8 +344,8 @@ class Skjemamottak(Base):
 
     __table_args__ = (
         ForeignKeyConstraint(
-            ["aar", "ident", "skjema"],
-            ["enheter.aar", "enheter.ident", "enheter.skjema"],
+            ["aar", IDENT_VAR, "skjema"],
+            ["enheter.aar", f"enheter.{IDENT_VAR}", "enheter.skjema"],
         ),
     )
 
@@ -347,7 +353,7 @@ class Skjemamottak(Base):
 class Kontaktinfo(Base):
     __tablename__ = "kontaktinfo"
     locals().update(period_columns())
-    ident = Column(String, primary_key=True)
+    locals().update(ident_column())
     skjema = Column(String, primary_key=True)
     refnr = Column(String, primary_key=True)
     kontaktperson = Column(String, nullable=True)
@@ -359,14 +365,14 @@ class Kontaktinfo(Base):
 
     __table_args__ = (
         ForeignKeyConstraint(
-            ["aar", "ident", "skjema"],
-            ["enheter.aar", "enheter.ident", "enheter.skjema"],
+            ["aar", IDENT_VAR, "skjema"],
+            ["enheter.aar", f"enheter.{IDENT_VAR}", "enheter.skjema"],
         ),
         ForeignKeyConstraint(
-            ["aar", "ident", "skjema", "refnr"],
+            ["aar", IDENT_VAR, "skjema", "refnr"],
             [
                 "skjemamottak.aar",
-                "skjemamottak.ident",
+                f"skjemamottak.{IDENT_VAR}",
                 "skjemamottak.skjema",
                 "skjemamottak.refnr",
             ],
@@ -390,7 +396,7 @@ class Kontrollutslag(Base):
     locals().update(period_columns())
     kontrollid = Column(String, primary_key=True)
     skjema = Column(String, primary_key=True)
-    ident = Column(String, primary_key=True)
+    locals().update(ident_column())
     refnr = Column(String, primary_key=True)
     utslag = Column(Boolean)
     verdi = Column(Integer)  # Maybe other type?
@@ -400,14 +406,14 @@ class Kontrollutslag(Base):
             ["skjema", "kontrollid"], ["kontroller.skjema", "kontroller.kontrollid"]
         ),
         ForeignKeyConstraint(
-            ["aar", "ident", "skjema"],
-            ["enheter.aar", "enheter.ident", "enheter.skjema"],
+            ["aar", IDENT_VAR, "skjema"],
+            ["enheter.aar", f"enheter..{IDENT_VAR}", "enheter.skjema"],
         ),
         ForeignKeyConstraint(
-            ["aar", "ident", "skjema", "refnr"],
+            ["aar", IDENT_VAR, "skjema", "refnr"],
             [
                 "skjemamottak.aar",
-                "skjemamottak.ident",
+                f"skjemamottak.{IDENT_VAR}",
                 "skjemamottak.skjema",
                 "skjemamottak.refnr",
             ],
@@ -419,17 +425,17 @@ class Skjemadata_hoved(Base):
     __tablename__ = "skjemadata_hoved"
     locals().update(period_columns())
     skjema = Column(String, primary_key=True)
-    ident = Column(String, primary_key=True)
+    locals().update(ident_column())
     refnr = Column(String, primary_key=True)
     variabel = Column(String, primary_key=True)
     verdi = Column(String)
 
     __table_args__ = (
         ForeignKeyConstraint(
-            ["aar", "ident", "skjema", "refnr"],
+            ["aar", IDENT_VAR, "skjema", "refnr"],
             [
                 "skjemamottak.aar",
-                "skjemamottak.ident",
+                f"skjemamottak.{IDENT_VAR}",
                 "skjemamottak.skjema",
                 "skjemamottak.refnr",
             ],
@@ -496,7 +502,7 @@ class DemoDataCreator:
 
     def get_data(self):
         df = pd.DataFrame()
-        for i in range(2017, 2026):
+        for i in range(2024, 2026):
             df = pd.concat(
                 [
                     df,
@@ -507,17 +513,17 @@ class DemoDataCreator:
                 ]
             )
 
-        df = df.rename({"orgnr": "ident", "soeknads_aar": "aar"}, axis=1)
-        df["ident"] = df["ident"].astype(str)
+        df = df.rename({"orgnr": IDENT_VAR, "soeknads_aar": "aar"}, axis=1)
+        df[IDENT_VAR] = df[IDENT_VAR].astype(str)
         df["skjema"] = "RA-7357"
         df["refnr"] = df.index.astype(str)
         self.data = df
 
     def get_enheter(self):
         enheter = self.data.copy()
-        enheter = enheter[["ident", "aar"]]
+        enheter = enheter[[IDENT_VAR, "aar"]]
         enheter["skjema"] = "RA-7357"
-        enheter = enheter[["ident", "skjema", "aar"]]
+        enheter = enheter[[IDENT_VAR, "skjema", "aar"]]
         self.insert_to_db("enheter", enheter)
 
     def get_skjemamottak(self):
@@ -536,7 +542,7 @@ class DemoDataCreator:
         skjemamottak = skjemamottak[
             [
                 "aar",
-                "ident",
+                IDENT_VAR,
                 "skjema",
                 "refnr",
                 "dato_mottatt",
@@ -551,7 +557,7 @@ class DemoDataCreator:
         skjemadata_lang = self.data.copy()
 
         skjemadata_lang = skjemadata_lang.melt(
-            id_vars=["aar", "skjema", "ident", "refnr"],
+            id_vars=["aar", "skjema", IDENT_VAR, "refnr"],
             value_vars=[
                 "beitetilskudd",
                 "totalareal",
@@ -594,7 +600,7 @@ class DemoDataCreator:
         enhetsinfo = self.data.melt(
             id_vars=[
                 "aar",
-                "ident",
+                IDENT_VAR,
             ],
             value_vars=[
                 "orgnavn",
@@ -611,7 +617,7 @@ class DemoDataCreator:
 
     def get_kontaktinfo(self):
         kontaktinfo = self.data.copy()
-        kontaktinfo = kontaktinfo[["aar", "skjema", "ident", "refnr"]]
+        kontaktinfo = kontaktinfo[["aar", "skjema", IDENT_VAR, "refnr"]]
         kontaktinfo[
             [
                 "kontaktperson",

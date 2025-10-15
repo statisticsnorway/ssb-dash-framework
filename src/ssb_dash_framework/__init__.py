@@ -47,6 +47,7 @@ from .setup import VariableSelectorOption
 from .setup import app_setup
 from .setup import main_layout
 from .setup import set_variables
+from .utils import IDENT_VAR
 from .utils import AlertHandler
 from .utils import DatabaseBuilderAltinnEimerdb
 from .utils import DebugInspector
@@ -102,6 +103,7 @@ __all__ = [
     "FreeSearch",
     "FreeSearchTab",
     "FreeSearchWindow",
+    "IDENT_VAR",
     # "HBMethod",
     # "HBMethodWindow",
     "MapDisplay",

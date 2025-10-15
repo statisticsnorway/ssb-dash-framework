@@ -3,6 +3,7 @@
 from .alert_handler import AlertHandler
 from .alert_handler import create_alert
 from .app_logger import enable_app_logging
+from .config import IDENT_VAR
 from .datahelper import DatabaseBuilderAltinnEimerdb
 from .datahelper import DemoDataCreator
 from .datahelper import create_database
@@ -18,6 +19,7 @@ from .implementations import WindowImplementation
 from .module_validation import module_validator
 
 __all__ = [
+    "IDENT_VAR",
     "AlertHandler",
     "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
