@@ -1,5 +1,4 @@
 import logging
-import re
 from abc import ABC
 from abc import abstractmethod
 from typing import Any
@@ -7,6 +6,7 @@ from typing import ClassVar
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import ibis
 import plotly.express as px
 import plotly.graph_objects as go
 from dash import Input
@@ -16,6 +16,7 @@ from dash import callback
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
+from eimerdb import EimerDBInstance
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
@@ -304,111 +305,92 @@ class AggDistPlotter(ABC):
                 raise ValueError(
                     f"Trying to run query with no value for 'tabell'. Received value: '{tabell}'"
                 )
+            if isinstance(self.conn, EimerDBInstance):
+                con = ibis.polars.connect()
+                partition_args = dict(
+                    zip(self.time_units, dynamic_states, strict=False)
+                )
+                partition_select_no_skjema = create_partition_select(
+                    desired_partitions=self.time_units, skjema=None, **partition_args
+                )
+                updated_partition_select = self.update_partition_select(
+                    partition_select_no_skjema, rullerende_var
+                )
+                time_vars = updated_partition_select.get(rullerende_var)
+                if not isinstance(time_vars, list):
+                    raise ValueError(
+                        f"'time_vars' must be list, not '{type(time_vars)}': {time_vars}"
+                    )
+                if time_vars[0] is None or time_vars[1] is None:
+                    raise ValueError(
+                        "'time_vars' must have two values and they cannot be None."
+                    )
+                _t_0 = str(time_vars[0])
+                _t_1 = str(time_vars[1])
 
-            partition_args = dict(zip(self.time_units, dynamic_states, strict=False))
-            partition_select_no_skjema = create_partition_select(
-                desired_partitions=self.time_units, skjema=None, **partition_args
-            )
-            updated_partition_select = self.update_partition_select(
-                partition_select_no_skjema, rullerende_var
-            )
-            column_name_expr_s = SQL_COLUMN_CONCAT.join(
-                [f"s.{unit}" for unit in self.time_units]
-            )
-            column_name_expr_t2 = SQL_COLUMN_CONCAT.join(
-                [f"t2.{unit}" for unit in self.time_units]
-            )
-            column_name_expr_d = SQL_COLUMN_CONCAT.join(
-                [f"d.{unit}" for unit in self.time_units]
-            )
+                skjemamottak = self.conn.query(
+                    "SELECT * FROM skjemamottak",
+                    partition_select=updated_partition_select,
+                )
+                skjemadata = self.conn.query(
+                    "SELECT * FROM skjemadata_hoved",
+                    partition_select=updated_partition_select,
+                )
+                datatyper = self.conn.query(
+                    "SELECT * FROM datatyper", partition_select=updated_partition_select
+                )
 
-            group_by_clause = ", ".join([f"s.{unit}" for unit in self.time_units])
-
-            if skjema != "all":
-                where_query_add = f"AND s.skjema = '{skjema}'"
+                con.create_table("skjemamottak", skjemamottak)
+                con.create_table("skjemadata_hoved", skjemadata)
+                con.create_table("datatyper", datatyper)
             else:
-                where_query_add = ""
+                raise NotImplementedError(
+                    f"Connection type '{type(self.conn)}' is currently not implemented."
+                )
 
-            query = f"""
-                SELECT
-                    s.variabel,
-                    {column_name_expr_s} AS time_combination,
-                    SUM(CAST(s.verdi AS NUMERIC)) AS verdi
-                FROM {tabell} AS s
-                JOIN (
-                    SELECT
-                        {column_name_expr_t2} AS time_combination,
-                        t2.ident,
-                        t2.refnr,
-                        t2.dato_mottatt
-                    FROM
-                        skjemamottak AS t2
-                    WHERE aktiv = True
-                    QUALIFY
-                        ROW_NUMBER() OVER (
-                            PARTITION BY {column_name_expr_t2}, t2.ident
-                            ORDER BY t2.dato_mottatt DESC
-                        ) = 1
-                ) AS mottak_subquery
-                    ON {column_name_expr_s} = mottak_subquery.time_combination
-                    AND s.ident = mottak_subquery.ident
-                    AND s.refnr = mottak_subquery.refnr
-                JOIN (
-                    SELECT
-                        d.variabel,
-                        {column_name_expr_d} AS time_combination,
-                        d.radnr,
-                        d.datatype
-                    FROM datatyper AS d
-                ) AS datatype_subquery
-                    ON s.variabel = datatype_subquery.variabel
-                    AND {column_name_expr_s} = datatype_subquery.time_combination
-                WHERE datatype_subquery.datatype = 'int' {where_query_add}
-                GROUP BY
-                    s.variabel,
-                    datatype_subquery.radnr,
-                    {group_by_clause}
-                ORDER BY datatype_subquery.radnr;
-            """
+            skjemamottak_tbl = con.table("skjemamottak")
+            skjemadata_tbl = con.table("skjemadata_hoved")
+            datatyper_tbl = con.table("datatyper")
 
-            df = self.conn.query(
-                query,
-                partition_select={
-                    tabell: updated_partition_select,
-                    "datatyper": updated_partition_select,
-                },
+            skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
+                skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
+                .order_by(ibis.desc(skjemamottak_tbl.dato_mottatt))
+                .distinct(on=[*self.time_units, "ident"], keep="first")
             )
+            if skjema != "all":
+                skjemamottak_tbl = skjemamottak_tbl.filter(
+                    skjemamottak_tbl.skjema == skjema
+                )
 
-            df_wide = df.pivot(
-                index="variabel", columns="time_combination", values="verdi"
-            ).reset_index()
+            relevant_refnr = skjemamottak_tbl.refnr.to_list()
 
-            df_wide = df_wide.rename(
-                columns={
-                    col: f"verdi_{col}" if col != "variabel" else col
-                    for col in df_wide.columns
-                }
+            skjemadata_tbl = (
+                skjemadata_tbl.filter(skjemadata_tbl.refnr.isin(relevant_refnr))
+                .join(
+                    datatyper_tbl.select("variabel", "datatype"),
+                    ["variabel"],
+                    how="inner",
+                )
+                .filter(datatyper_tbl.datatype == "int")
+                .cast({"verdi": "float", rullerende_var: "str"})
+                .cast({"verdi": "int"})
+                .mutate(verdi=lambda t: t["verdi"].round(0))
+                .pivot_wider(
+                    id_cols=["variabel"],
+                    names_from=rullerende_var,  # TODO: Tidsenhet
+                    values_from="verdi",
+                    values_agg="sum",
+                )
+                .mutate(
+                    diff=lambda t: t[_t_0] - t[_t_1],
+                    pdiff=lambda t: (
+                        (t[_t_0].fill_null(0) - t[_t_1].fill_null(0))
+                        / t[_t_1].fill_null(1)
+                        * 100
+                    ).round(2),
+                )
             )
-
-            df_wide.columns.name = None
-
-            def extract_numeric_sum(
-                col_name: str,
-            ) -> int:  # TODO should return int | float?
-                numbers = list(map(int, re.findall(r"\d+", col_name)))
-                return sum(numbers) if numbers else 0
-
-            time_columns_sorted = sorted(
-                [col for col in df_wide.columns if col.startswith("verdi_")],
-                key=extract_numeric_sum,
-            )
-
-            if len(time_columns_sorted) >= 2:
-                latest_col = max(time_columns_sorted, key=extract_numeric_sum)
-                prev_col = min(time_columns_sorted, key=extract_numeric_sum)
-                df_wide["diff"] = df_wide[latest_col] - df_wide[prev_col]
-                df_wide["pdiff"] = (df_wide["diff"] / df_wide[prev_col]) * 100
-                df_wide["pdiff"] = df_wide["pdiff"].round(2).astype(str) + " %"
+            df_wide = skjemadata_tbl.to_pandas()
             columns = [
                 {
                     "headerName": col,
@@ -448,44 +430,64 @@ class AggDistPlotter(ABC):
             logger.debug(
                 f"Creating graph for skjema: {skjema}, graph_type: {graph_type}, tabell: {tabell}"
             )
-            partition_args = dict(
-                zip(self.time_units, [int(x) for x in args], strict=False)
-            )
-            logger.debug(f"Partition args: {partition_args}")
-
-            if skjema == "all":
-                partition_select = create_partition_select(
-                    desired_partitions=self.time_units, skjema=None, **partition_args
-                )
-            else:
-                partition_select = create_partition_select(
-                    desired_partitions=self.time_units, skjema=skjema, **partition_args
-                )
-
             variabel = current_row[0]["variabel"]
 
-            df = self.conn.query(
-                f"""SELECT t1.aar, t1.ident, t1.variabel, t1.verdi
-                FROM {tabell} as t1
-                JOIN (
-                    SELECT
-                        t2.ident,
-                        t2.refnr,
-                        MAX(t2.dato_mottatt) AS newest_dato_mottatt
-                    FROM
-                        skjemamottak AS t2
-                    GROUP BY
-                        t2.ident,
-                        t2.refnr
-                ) AS subquery ON
-                    t1.ident = subquery.ident
-                    AND t1.refnr = subquery.refnr
-                WHERE variabel = '{variabel}' AND verdi IS NOT NULL AND verdi != 0
-                """,
-                partition_select=partition_select,
-            )
+            if isinstance(self.conn, EimerDBInstance):
+                con = ibis.polars.connect()
+                partition_args = dict(
+                    zip(self.time_units, [int(x) for x in args], strict=False)
+                )
+                logger.debug(f"Partition args: {partition_args}")
+                if skjema == "all":
+                    partition_select = create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=None,
+                        **partition_args,
+                    )
+                else:
+                    partition_select = create_partition_select(
+                        desired_partitions=self.time_units,
+                        skjema=skjema,
+                        **partition_args,
+                    )
 
-            df["verdi"] = df["verdi"].astype(float).round(0).astype(int)
+                skjemamottak = self.conn.query(
+                    "SELECT * FROM skjemamottak", partition_select=partition_select
+                )
+                skjemadata = self.conn.query(
+                    "SELECT * FROM skjemadata_hoved", partition_select=partition_select
+                )
+
+                con.create_table("skjemamottak", skjemamottak)
+                con.create_table("skjemadata_hoved", skjemadata)
+                skjemamottak_tbl = con.table("skjemamottak")
+                skjemadata_tbl = con.table("skjemadata_hoved")
+            else:
+                raise NotImplementedError(
+                    f"Connection type '{type(self.conn)}' is currently not implemented."
+                )
+
+            skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
+                skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
+                .order_by(ibis.desc(skjemamottak_tbl.dato_mottatt))
+                .distinct(on=[*self.time_units, "ident"], keep="first")
+            )
+            if skjema != "all":
+                skjemamottak_tbl = skjemamottak_tbl.filter(
+                    skjemamottak_tbl.skjema == skjema
+                )
+
+            relevant_refnr = skjemamottak_tbl["refnr"].to_list()
+
+            skjemadata_tbl = skjemadata_tbl.filter(
+                [
+                    skjemadata_tbl.refnr.isin(relevant_refnr),
+                    skjemadata_tbl.variabel == variabel,
+                    skjemadata_tbl.verdi.notnull(),
+                ]
+            ).cast({"verdi": "int"})
+
+            df = skjemadata_tbl.to_pandas()
 
             top5_df = df.nlargest(5, "verdi")
 

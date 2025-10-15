@@ -17,6 +17,7 @@ from .functions import sidebar_button
 from .implementations import TabImplementation
 from .implementations import WindowImplementation
 from .module_validation import module_validator
+from .prosesslogg import apply_edits
 
 __all__ = [
     "IDENT_VAR",
@@ -26,6 +27,7 @@ __all__ = [
     "DemoDataCreator",
     "TabImplementation",
     "WindowImplementation",
+    "apply_edits",
     "create_alert",
     "create_database",
     "create_database_engine",
