@@ -71,11 +71,8 @@ class AggDistPlotter(ABC):
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
         )
-        assert hasattr(
-            conn, "query"
-        ), (  # Necessary because of mypy
-            "The database object must have a 'query' method."
-        )
+        if not isinstance(conn, EimerDBInstance) and conn.__class__.__name__ != "Backend":
+            raise TypeError("Argument 'conn' must be an 'EimerDBInstance' or ")
         self.module_number = AggDistPlotter._id_number
         self.module_name = self.__class__.__name__
         AggDistPlotter._id_number += 1
@@ -306,7 +303,7 @@ class AggDistPlotter(ABC):
                     f"Trying to run query with no value for 'tabell'. Received value: '{tabell}'"
                 )
             if isinstance(self.conn, EimerDBInstance):
-                con = ibis.polars.connect()
+                conn = ibis.polars.connect()
                 partition_args = dict(
                     zip(self.time_units, dynamic_states, strict=False)
                 )
@@ -340,17 +337,20 @@ class AggDistPlotter(ABC):
                     "SELECT * FROM datatyper", partition_select=updated_partition_select
                 )
 
-                con.create_table("skjemamottak", skjemamottak)
-                con.create_table("skjemadata_hoved", skjemadata)
-                con.create_table("datatyper", datatyper)
+                conn.create_table("skjemamottak", skjemamottak)
+                conn.create_table("skjemadata_hoved", skjemadata)
+                conn.create_table("datatyper", datatyper)
+            elif self.conn.__class__.__name__ == "Backend":
+                logger.debug("Assuming 'self.conn' is Ibis connection.")
+                conn = self.conn
             else:
                 raise NotImplementedError(
                     f"Connection type '{type(self.conn)}' is currently not implemented."
                 )
 
-            skjemamottak_tbl = con.table("skjemamottak")
-            skjemadata_tbl = con.table("skjemadata_hoved")
-            datatyper_tbl = con.table("datatyper")
+            skjemamottak_tbl = conn.table("skjemamottak")
+            skjemadata_tbl = conn.table("skjemadata_hoved")
+            datatyper_tbl = conn.table("datatyper")
 
             skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
                 skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
@@ -362,7 +362,7 @@ class AggDistPlotter(ABC):
                     skjemamottak_tbl.skjema == skjema
                 )
 
-            relevant_refnr = skjemamottak_tbl.refnr.to_list()
+            relevant_refnr = skjemamottak_tbl.to_pandas()["refnr"].tolist()
 
             skjemadata_tbl = (
                 skjemadata_tbl.filter(skjemadata_tbl.refnr.isin(relevant_refnr))
@@ -477,7 +477,7 @@ class AggDistPlotter(ABC):
                     skjemamottak_tbl.skjema == skjema
                 )
 
-            relevant_refnr = skjemamottak_tbl["refnr"].to_list()
+            relevant_refnr = skjemamottak_tbl.refnr
 
             skjemadata_tbl = skjemadata_tbl.filter(
                 [

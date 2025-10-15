@@ -22,8 +22,7 @@ dependencies = [
     "geopandas (>=1.1.1,<2.0.0)",
     "ssb-eimerdb (>=0.2.5,<0.3.0)",
     "sqlalchemy (>=2.0.43,<3.0.0)",
-    "ibis (>=3.3.0,<4.0.0)",
-    "ibis-framework[athena] (>=10.8.0,<11.0.0)",
+    "ibis-framework[athena] (>=11.0.0,<12.0.0)",
 ]
 
 [project.urls]
