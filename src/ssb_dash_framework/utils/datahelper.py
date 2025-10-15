@@ -24,7 +24,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase
 
-from ssb_dash_framework import IDENT_VAR
+from ..utils import IDENT_VAR
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -426,7 +426,7 @@ class Kontrollutslag(Base):
         ),
         ForeignKeyConstraint(
             ["aar", IDENT_VAR, "skjema"],
-            ["enheter.aar", f"enheter..{IDENT_VAR}", "enheter.skjema"],
+            ["enheter.aar", f"enheter.{IDENT_VAR}", "enheter.skjema"],
         ),
         ForeignKeyConstraint(
             ["aar", IDENT_VAR, "skjema", "refnr"],

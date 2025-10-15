@@ -18,9 +18,8 @@ from dash import html
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
 
-from ssb_dash_framework import IDENT_VAR
-
 from ..setup.variableselector import VariableSelector
+from ..utils import IDENT_VAR
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils.eimerdb_helpers import create_partition_select
@@ -228,7 +227,7 @@ class AggDistPlotter(ABC):
 
     @abstractmethod
     def layout(self) -> html.Div:
-        """Define the layout for the Aarsregnskap module.
+        """Define the layout for the AggDistPlotter module.
 
         This is an abstract method that must be implemented by subclasses to define the module's layout.
 
@@ -579,7 +578,7 @@ class AggDistPlotterTab(TabImplementation, AggDistPlotter):
 
 
 class AggDistPlotterWindow(WindowImplementation, AggDistPlotter):
-    """AggDistPlotterWindow is an implementation of the AggDistPlotter module as a tab in a Dash application."""
+    """AggDistPlotterWindow is an implementation of the AggDistPlotter module as a window in a Dash application."""
 
     def __init__(self, time_units: list[str], conn: object) -> None:
         """Initializes the AggDistPlotterWindow class."""
