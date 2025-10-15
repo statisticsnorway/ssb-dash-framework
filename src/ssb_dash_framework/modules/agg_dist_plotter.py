@@ -374,7 +374,7 @@ class AggDistPlotter(ABC):
                 .filter(datatyper_tbl.datatype == "int")
                 .cast({"verdi": "float", rullerende_var: "str"})
                 .cast({"verdi": "int"})
-                .mutate(verdi = lambda t: t["verdi"].round(0))
+                .mutate(verdi=lambda t: t["verdi"].round(0))
                 .pivot_wider(
                     id_cols=["variabel"],
                     names_from=rullerende_var,  # TODO: Tidsenhet

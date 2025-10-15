@@ -140,7 +140,9 @@ class AltinnEditorPrimaryTable:
                         ORDER BY subquery.radnr ASC
                         """
                     logger.debug(f"query:\n{query}")
-                    logger.debug(f"partition_select:\n{create_partition_select(desired_partitions=self.time_units,skjema=skjema,**partition_args,)}")
+                    logger.debug(
+                        f"partition_select:\n{create_partition_select(desired_partitions=self.time_units,skjema=skjema,**partition_args,)}"
+                    )
                     df = self.conn.query(
                         f"""
                         SELECT t.*, subquery.radnr
