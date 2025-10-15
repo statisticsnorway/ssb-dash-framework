@@ -18,6 +18,8 @@ from dash import html
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
 
+from ssb_dash_framework import IDENT_VAR
+
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
@@ -54,7 +56,7 @@ class AggDistPlotter(ABC):
     _id_number: ClassVar[int] = 0
     _required_variables: ClassVar[list[str]] = (
         [  # Used for validating that the variable selector has the required variables set. These are hard-coded in the callbacks.
-            "ident",
+            IDENT_VAR,
             "valgt_tabell",
             "altinnskjema",
         ]
@@ -355,7 +357,7 @@ class AggDistPlotter(ABC):
             skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
                 skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
                 .order_by(ibis.desc(skjemamottak_tbl.dato_mottatt))
-                .distinct(on=[*self.time_units, "ident"], keep="first")
+                .distinct(on=[*self.time_units, IDENT_VAR], keep="first")
             )
             if skjema != "all":
                 skjemamottak_tbl = skjemamottak_tbl.filter(
@@ -470,7 +472,7 @@ class AggDistPlotter(ABC):
             skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
                 skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
                 .order_by(ibis.desc(skjemamottak_tbl.dato_mottatt))
-                .distinct(on=[*self.time_units, "ident"], keep="first")
+                .distinct(on=[*self.time_units, IDENT_VAR], keep="first")
             )
             if skjema != "all":
                 skjemamottak_tbl = skjemamottak_tbl.filter(
@@ -496,7 +498,7 @@ class AggDistPlotter(ABC):
                     df,
                     x="variabel",
                     y="verdi",
-                    hover_data=["ident", "verdi"],
+                    hover_data=[IDENT_VAR, "verdi"],
                     points="all",
                     title=f"📦 Boksplott for {variabel}, {partition_select!s}.",
                     template="plotly_dark",
@@ -506,14 +508,14 @@ class AggDistPlotter(ABC):
                     df,
                     x="variabel",
                     y="verdi",
-                    hover_data=["ident", "verdi"],
+                    hover_data=[IDENT_VAR, "verdi"],
                     box=True,
                     points="all",
                     title=f"🎻 Fiolinplott for {variabel}, {partition_select!s}.",
                     template="plotly_dark",
                 )
             elif graph_type == "bidrag":
-                agg_df = df.groupby("ident", as_index=False)["verdi"].sum()
+                agg_df = df.groupby(IDENT_VAR, as_index=False)["verdi"].sum()
                 agg_df["verdi"] = (agg_df["verdi"] / agg_df["verdi"].sum() * 100).round(
                     2
                 )
@@ -522,12 +524,12 @@ class AggDistPlotter(ABC):
                 fig = px.bar(
                     agg_df,
                     x="verdi",
-                    y="ident",
+                    y=IDENT_VAR,
                     orientation="h",
                     title=f"🥇 Bidragsanalyse - % av total verdi ({variabel})",
                     template="plotly_dark",
                     labels={"verdi": "%"},
-                    custom_data=["ident"],
+                    custom_data=[IDENT_VAR],
                 )
 
                 fig.update_layout(yaxis={"categoryorder": "total ascending"})
@@ -547,14 +549,14 @@ class AggDistPlotter(ABC):
                         line=dict(width=1, color="white"),
                     ),
                     name="De fem største",
-                    hovertext=top5_df["ident"],
+                    hovertext=top5_df[IDENT_VAR],
                     hoverinfo="text+y",
-                    customdata=top5_df[["ident"]].values,
+                    customdata=top5_df[[IDENT_VAR]].values,
                 )
             return fig
 
         @callback(  # type: ignore[misc]
-            Output("var-ident", "value", allow_duplicate=True),
+            Output(f"var-{IDENT_VAR}", "value", allow_duplicate=True),
             Input("aggdistplotter-graph", "clickData"),
             prevent_initial_call=True,
         )
