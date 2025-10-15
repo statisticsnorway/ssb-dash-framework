@@ -462,10 +462,10 @@ class Datatyper(Base):
 
     __tablename__ = "datatyper"
     locals().update(period_columns())
-    variabel = Column(String)
+    variabel = Column(String, primary_key=True)
     datatype = Column(String)
-    tabell = Column(String)
-    radnr = Column(String)
+    tabell = Column(String, primary_key=True)
+    radnr = Column(Integer)
 
 
 def create_database_engine(database_type: str, *args: Any, **kwargs: Any) -> Engine:
