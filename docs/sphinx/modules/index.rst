@@ -17,7 +17,6 @@ Modules for use in the application, implmented as a view (tab/window) or directl
    Control <control>
    Freesearch <freesearch>
    Hb_method <hb_method>
-   Map_display <map_display>
    Pi_memorizer <pi_memorizer>
    Skjemapdfviewer <skjemapdfviewer>
    Visualizationbuilder <visualizationbuilder>

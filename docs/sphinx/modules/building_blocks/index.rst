@@ -11,5 +11,6 @@ The purpose of this type of module is to enable the user to create their own cus
 
    Canvas <canvas>
    Figuredisplay <figuredisplay>
+   Map_display <map_display>
    Multimodule <multimodule>
    Tables <tables>
