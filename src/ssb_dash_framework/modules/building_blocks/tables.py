@@ -415,11 +415,6 @@ class EditingTable:
                 edit_with_reason["reason"] = reason.replace("\n", "")
                 edit_with_reason["user"] = self.user
                 edit_with_reason["change_event"] = "manual"
-
-                # Create timestamp that can be compared with datetime.now() running from users IDE
-                tz = zoneinfo.ZoneInfo("Europe/Oslo")
-                aware_timestamp = datetime.now(tz)  # timezone-aware
-                naive_timestamp = aware_timestamp.replace(tzinfo=None)  # drop tzinfo
                 edit_with_reason["timestamp"] = naive_timestamp
 
                 logger.debug(edit_with_reason)
