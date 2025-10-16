@@ -20,32 +20,6 @@ dev = ["pillow", "pkginfo (>=1.10)", "playwright", "pre-commit", "setuptools", "
 tests = ["hypothesis", "pytest"]
 
 [[package]]
-name = "aiobotocore"
-version = "2.25.0"
-description = "Async client for aws services using botocore and aiohttp"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "aiobotocore-2.25.0-py3-none-any.whl", hash = "sha256:0524fd36f6d522ddc9d013df2c19fb56369ffdfbffd129895918fbfe95216dad"},
-    {file = "aiobotocore-2.25.0.tar.gz", hash = "sha256:169d07de312fd51292292f2c8faf8f67d0f466f525cea03855fe065ddc85f79d"},
-]
-
-[package.dependencies]
-aiohttp = ">=3.9.2,<4.0.0"
-aioitertools = ">=0.5.1,<1.0.0"
-botocore = ">=1.40.46,<1.40.50"
-jmespath = ">=0.7.1,<2.0.0"
-multidict = ">=6.0.0,<7.0.0"
-python-dateutil = ">=2.1,<3.0.0"
-wrapt = ">=1.10.10,<2.0.0"
-
-[package.extras]
-awscli = ["awscli (>=1.42.46,<1.42.50)"]
-boto3 = ["boto3 (>=1.40.46,<1.40.50)"]
-httpx = ["httpx (>=0.25.1,<0.29)"]
-
-[[package]]
 name = "aiohappyeyeballs"
 version = "2.6.1"
 description = "Happy Eyeballs for asyncio"
@@ -199,22 +173,6 @@ yarl = ">=1.17.0,<2.0"
 
 [package.extras]
 speedups = ["Brotli ; platform_python_implementation == \"CPython\"", "aiodns (>=3.3.0)", "brotlicffi ; platform_python_implementation != \"CPython\"", "zstandard ; platform_python_implementation == \"CPython\" and python_version < \"3.14\""]
-
-[[package]]
-name = "aioitertools"
-version = "0.12.0"
-description = "itertools and builtins for AsyncIO and mixed iterables"
-optional = false
-python-versions = ">=3.8"
-groups = ["main"]
-files = [
-    {file = "aioitertools-0.12.0-py3-none-any.whl", hash = "sha256:fc1f5fac3d737354de8831cbba3eb04f79dd649d8f3afb4c5b114925e662a796"},
-    {file = "aioitertools-0.12.0.tar.gz", hash = "sha256:c2a9055b4fbb7705f561b9d86053e8af5d10cc845d22c32008c43490b2d8dd6b"},
-]
-
-[package.extras]
-dev = ["attribution (==1.8.0)", "black (==24.8.0)", "build (>=1.2)", "coverage (==7.6.1)", "flake8 (==7.1.1)", "flit (==3.9.0)", "mypy (==1.11.2)", "ufmt (==2.7.1)", "usort (==1.0.8.post1)"]
-docs = ["sphinx (==8.0.2)", "sphinx-mdinclude (==0.6.2)"]
 
 [[package]]
 name = "aiosignal"
@@ -430,46 +388,6 @@ files = [
     {file = "blinker-1.9.0-py3-none-any.whl", hash = "sha256:ba0efaa9080b619ff2f3459d1d500c57bddea4a6b424b60a91141db6fd2f08bc"},
     {file = "blinker-1.9.0.tar.gz", hash = "sha256:b4ce2265a7abece45e7cc896e98dbebe6cead56bcf805a3d23136d145f5445bf"},
 ]
-
-[[package]]
-name = "boto3"
-version = "1.40.49"
-description = "The AWS SDK for Python"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "boto3-1.40.49-py3-none-any.whl", hash = "sha256:64eb7af5f66998b34ad629786ff4a7f81d74c2d4ef9e42f69d99499dbee46d07"},
-    {file = "boto3-1.40.49.tar.gz", hash = "sha256:ea37d133548fbae543092ada61aeb08bced8f9aecd2e96e803dc8237459a80a0"},
-]
-
-[package.dependencies]
-botocore = ">=1.40.49,<1.41.0"
-jmespath = ">=0.7.1,<2.0.0"
-s3transfer = ">=0.14.0,<0.15.0"
-
-[package.extras]
-crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
-
-[[package]]
-name = "botocore"
-version = "1.40.49"
-description = "Low-level, data-driven core of boto 3."
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "botocore-1.40.49-py3-none-any.whl", hash = "sha256:bf1089d0e77e4fc2e195d81c519b194ab62a4d4dd3e7113ee4e2bf903b0b75ab"},
-    {file = "botocore-1.40.49.tar.gz", hash = "sha256:fe8d4cbcc22de84c20190ae728c46b931bafeb40fce247010fb071c31b6532b5"},
-]
-
-[package.dependencies]
-jmespath = ">=0.7.1,<2.0.0"
-python-dateutil = ">=2.1,<3.0.0"
-urllib3 = {version = ">=1.25.4,<2.2.0 || >2.2.0,<3", markers = "python_version >= \"3.10\""}
-
-[package.extras]
-crt = ["awscrt (==0.27.6)"]
 
 [[package]]
 name = "cachetools"
@@ -1510,9 +1428,6 @@ files = [
     {file = "fsspec-2025.9.0.tar.gz", hash = "sha256:19fd429483d25d28b65ec68f9f4adc16c17ea2c7c7bf54ec61360d478fb19c19"},
 ]
 
-[package.dependencies]
-s3fs = {version = "*", optional = true, markers = "extra == \"s3\""}
-
 [package.extras]
 abfs = ["adlfs"]
 adl = ["adlfs"]
@@ -2083,15 +1998,14 @@ files = [
 
 [package.dependencies]
 atpublic = ">=2.3"
-fsspec = {version = "*", extras = ["s3"], optional = true, markers = "extra == \"athena\""}
-numpy = {version = ">=1.23.2,<3", optional = true, markers = "extra == \"athena\""}
-pandas = {version = ">=1.5.3,<3", optional = true, markers = "extra == \"athena\""}
+numpy = {version = ">=1.23.2,<3", optional = true, markers = "extra == \"postgres\""}
+pandas = {version = ">=1.5.3,<3", optional = true, markers = "extra == \"postgres\""}
 parsy = ">=2"
-pyarrow = {version = ">=10.0.1", optional = true, markers = "extra == \"athena\""}
-pyarrow-hotfix = {version = ">=0.4", optional = true, markers = "extra == \"athena\""}
-pyathena = {version = ">=3.11.0", extras = ["arrow", "pandas"], optional = true, markers = "extra == \"athena\""}
+psycopg = {version = ">=3.2.0", optional = true, markers = "extra == \"postgres\""}
+pyarrow = {version = ">=10.0.1", optional = true, markers = "extra == \"postgres\""}
+pyarrow-hotfix = {version = ">=0.4", optional = true, markers = "extra == \"postgres\""}
 python-dateutil = ">=2.8.2"
-rich = {version = ">=12.4.4", optional = true, markers = "extra == \"athena\""}
+rich = {version = ">=12.4.4", optional = true, markers = "extra == \"postgres\""}
 sqlglot = ">=23.4,<26.32.0 || >26.32.0"
 toolz = ">=0.11"
 typing-extensions = ">=4.3.0"
@@ -2375,18 +2289,6 @@ MarkupSafe = ">=2.0"
 
 [package.extras]
 i18n = ["Babel (>=2.7)"]
-
-[[package]]
-name = "jmespath"
-version = "1.0.1"
-description = "JSON Matching Expressions"
-optional = false
-python-versions = ">=3.7"
-groups = ["main"]
-files = [
-    {file = "jmespath-1.0.1-py3-none-any.whl", hash = "sha256:02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980"},
-    {file = "jmespath-1.0.1.tar.gz", hash = "sha256:90261b206d6defd58fdd5e85f478bf633a2901798906be2ad389150c5c60edbe"},
-]
 
 [[package]]
 name = "jupyter-client"
@@ -3960,6 +3862,30 @@ dev = ["abi3audit", "black", "check-manifest", "coverage", "packaging", "pylint"
 test = ["pytest", "pytest-instafail", "pytest-subtests", "pytest-xdist", "pywin32 ; os_name == \"nt\" and platform_python_implementation != \"PyPy\"", "setuptools", "wheel ; os_name == \"nt\" and platform_python_implementation != \"PyPy\"", "wmi ; os_name == \"nt\" and platform_python_implementation != \"PyPy\""]
 
 [[package]]
+name = "psycopg"
+version = "3.2.10"
+description = "PostgreSQL database adapter for Python"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "psycopg-3.2.10-py3-none-any.whl", hash = "sha256:ab5caf09a9ec42e314a21f5216dbcceac528e0e05142e42eea83a3b28b320ac3"},
+    {file = "psycopg-3.2.10.tar.gz", hash = "sha256:0bce99269d16ed18401683a8569b2c5abd94f72f8364856d56c0389bcd50972a"},
+]
+
+[package.dependencies]
+typing-extensions = {version = ">=4.6", markers = "python_version < \"3.13\""}
+tzdata = {version = "*", markers = "sys_platform == \"win32\""}
+
+[package.extras]
+binary = ["psycopg-binary (==3.2.10) ; implementation_name != \"pypy\""]
+c = ["psycopg-c (==3.2.10) ; implementation_name != \"pypy\""]
+dev = ["ast-comments (>=1.1.2)", "black (>=24.1.0)", "codespell (>=2.2)", "dnspython (>=2.1)", "flake8 (>=4.0)", "isort-psycopg", "isort[colors] (>=6.0)", "mypy (>=1.14)", "pre-commit (>=4.0.1)", "types-setuptools (>=57.4)", "types-shapely (>=2.0)", "wheel (>=0.37)"]
+docs = ["Sphinx (>=5.0)", "furo (==2022.6.21)", "sphinx-autobuild (>=2021.3.14)", "sphinx-autodoc-typehints (>=1.12)"]
+pool = ["psycopg-pool"]
+test = ["anyio (>=4.0)", "mypy (>=1.14)", "pproxy (>=2.7)", "pytest (>=6.2.5)", "pytest-cov (>=3.0)", "pytest-randomly (>=3.5)"]
+
+[[package]]
 name = "psycopg2-binary"
 version = "2.9.11"
 description = "psycopg2 - Python-PostgreSQL Database Adapter"
@@ -4146,33 +4072,6 @@ files = [
 
 [package.dependencies]
 pyasn1 = ">=0.6.1,<0.7.0"
-
-[[package]]
-name = "pyathena"
-version = "3.18.0"
-description = "Python DB API 2.0 (PEP 249) client for Amazon Athena"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "pyathena-3.18.0-py3-none-any.whl", hash = "sha256:acf3b975bfb09f854c94ac8a152d34469a4dc27ff4e2f6ce23e1e27838d1ab96"},
-    {file = "pyathena-3.18.0.tar.gz", hash = "sha256:5d6c9c70c1abcc49fdb33c9470d520f470cace1f04e5249c7b92e06ffc328326"},
-]
-
-[package.dependencies]
-boto3 = ">=1.26.4"
-botocore = ">=1.29.4"
-fsspec = "*"
-pandas = {version = ">=1.3.0", optional = true, markers = "extra == \"pandas\""}
-pyarrow = {version = ">=7.0.0", optional = true, markers = "extra == \"arrow\""}
-python-dateutil = "*"
-tenacity = ">=4.1.0"
-
-[package.extras]
-arrow = ["pyarrow (>=7.0.0)"]
-fastparquet = ["fastparquet (>=0.4.0)"]
-pandas = ["pandas (>=1.3.0)"]
-sqlalchemy = ["sqlalchemy (>=1.0.0)"]
 
 [[package]]
 name = "pycparser"
@@ -5044,45 +4943,6 @@ files = [
 ]
 
 [[package]]
-name = "s3fs"
-version = "2025.9.0"
-description = "Convenient Filesystem interface over S3"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "s3fs-2025.9.0-py3-none-any.whl", hash = "sha256:c33c93d48f66ed440dbaf6600be149cdf8beae4b6f8f0201a209c5801aeb7e30"},
-    {file = "s3fs-2025.9.0.tar.gz", hash = "sha256:6d44257ef19ea64968d0720744c4af7a063a05f5c1be0e17ce943bef7302bc30"},
-]
-
-[package.dependencies]
-aiobotocore = ">=2.5.4,<3.0.0"
-aiohttp = "<4.0.0a0 || >4.0.0a0,<4.0.0a1 || >4.0.0a1"
-fsspec = "2025.9.0"
-
-[package.extras]
-awscli = ["aiobotocore[awscli] (>=2.5.4,<3.0.0)"]
-boto3 = ["aiobotocore[boto3] (>=2.5.4,<3.0.0)"]
-
-[[package]]
-name = "s3transfer"
-version = "0.14.0"
-description = "An Amazon S3 Transfer Manager"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "s3transfer-0.14.0-py3-none-any.whl", hash = "sha256:ea3b790c7077558ed1f02a3072fb3cb992bbbd253392f4b6e9e8976941c7d456"},
-    {file = "s3transfer-0.14.0.tar.gz", hash = "sha256:eff12264e7c8b4985074ccce27a3b38a485bb7f7422cc8046fee9be4983e4125"},
-]
-
-[package.dependencies]
-botocore = ">=1.37.4,<2.0a.0"
-
-[package.extras]
-crt = ["botocore[crt] (>=1.37.4,<2.0a.0)"]
-
-[[package]]
 name = "setuptools"
 version = "80.9.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
@@ -5697,22 +5557,6 @@ typing-extensions = {version = ">=4.10.0", markers = "python_version < \"3.13\""
 
 [package.extras]
 full = ["httpx (>=0.27.0,<0.29.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.18)", "pyyaml"]
-
-[[package]]
-name = "tenacity"
-version = "9.1.2"
-description = "Retry code until it succeeds"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "tenacity-9.1.2-py3-none-any.whl", hash = "sha256:f77bf36710d8b73a50b2dd155c97b870017ad21afe6ab300326b0371b3b05138"},
-    {file = "tenacity-9.1.2.tar.gz", hash = "sha256:1169d376c297e7de388d18b4481760d478b0e99a777cad3a9c86e556f4b697cb"},
-]
-
-[package.extras]
-doc = ["reno", "sphinx"]
-test = ["pytest", "tornado (>=4.5)", "typeguard"]
 
 [[package]]
 name = "tokenize-rt"
@@ -6506,4 +6350,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "ccc5c0656d1d567fa7470ba75e1c1e87353f36cf44d38c2145c5950a8a381c8f"
+content-hash = "73d33fc1fcbca7b222bfa6729d74b43f4d80417c57122e51e9d2a0c076468fbb"

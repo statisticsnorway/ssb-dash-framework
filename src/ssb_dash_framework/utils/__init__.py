@@ -17,9 +17,13 @@ from .implementations import TabImplementation
 from .implementations import WindowImplementation
 from .module_validation import module_validator
 from .prosesslogg import apply_edits
+from .core_query_functions import active_no_duplicates_refnr_list
+from .core_query_functions import conn_is_ibis
 
 __all__ = [
     "AlertHandler",
+    "conn_is_ibis",
+    "active_no_duplicates_refnr_list",
     "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
     "DemoDataCreator",

@@ -23,6 +23,8 @@ from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils.eimerdb_helpers import create_partition_select
 from ..utils.module_validation import module_validator
+from ..utils import active_no_duplicates_refnr_list
+from ..utils import conn_is_ibis
 
 logger = logging.getLogger(__name__)
 
@@ -302,28 +304,29 @@ class AggDistPlotter(ABC):
                 raise ValueError(
                     f"Trying to run query with no value for 'tabell'. Received value: '{tabell}'"
                 )
+
+            partition_args = dict(
+                zip(self.time_units, dynamic_states, strict=False)
+            )
+            partition_select_no_skjema = create_partition_select(
+                desired_partitions=self.time_units, skjema=None, **partition_args
+            )
+            updated_partition_select = self.update_partition_select(
+                partition_select_no_skjema, rullerende_var
+            )
+            time_vars = updated_partition_select.get(rullerende_var)
+            if not isinstance(time_vars, list):
+                raise ValueError(
+                    f"'time_vars' must be list, not '{type(time_vars)}': {time_vars}"
+                )
+            if time_vars[0] is None or time_vars[1] is None:
+                raise ValueError(
+                    "'time_vars' must have two values and they cannot be None."
+                )
+            _t_0 = str(time_vars[0])
+            _t_1 = str(time_vars[1])
             if isinstance(self.conn, EimerDBInstance):
                 conn = ibis.polars.connect()
-                partition_args = dict(
-                    zip(self.time_units, dynamic_states, strict=False)
-                )
-                partition_select_no_skjema = create_partition_select(
-                    desired_partitions=self.time_units, skjema=None, **partition_args
-                )
-                updated_partition_select = self.update_partition_select(
-                    partition_select_no_skjema, rullerende_var
-                )
-                time_vars = updated_partition_select.get(rullerende_var)
-                if not isinstance(time_vars, list):
-                    raise ValueError(
-                        f"'time_vars' must be list, not '{type(time_vars)}': {time_vars}"
-                    )
-                if time_vars[0] is None or time_vars[1] is None:
-                    raise ValueError(
-                        "'time_vars' must have two values and they cannot be None."
-                    )
-                _t_0 = str(time_vars[0])
-                _t_1 = str(time_vars[1])
 
                 skjemamottak = self.conn.query(
                     "SELECT * FROM skjemamottak",
@@ -340,29 +343,17 @@ class AggDistPlotter(ABC):
                 conn.create_table("skjemamottak", skjemamottak)
                 conn.create_table("skjemadata_hoved", skjemadata)
                 conn.create_table("datatyper", datatyper)
-            elif self.conn.__class__.__name__ == "Backend":
-                logger.debug("Assuming 'self.conn' is Ibis connection.")
+            elif conn_is_ibis(self.conn):
                 conn = self.conn
             else:
                 raise NotImplementedError(
                     f"Connection type '{type(self.conn)}' is currently not implemented."
                 )
 
-            skjemamottak_tbl = conn.table("skjemamottak")
             skjemadata_tbl = conn.table("skjemadata_hoved")
             datatyper_tbl = conn.table("datatyper")
 
-            skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
-                skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
-                .order_by(ibis.desc(skjemamottak_tbl.dato_mottatt))
-                .distinct(on=[*self.time_units, "ident"], keep="first")
-            )
-            if skjema != "all":
-                skjemamottak_tbl = skjemamottak_tbl.filter(
-                    skjemamottak_tbl.skjema == skjema
-                )
-
-            relevant_refnr = skjemamottak_tbl.to_pandas()["refnr"].tolist()
+            relevant_refnr = active_no_duplicates_refnr_list(self.conn)
 
             skjemadata_tbl = (
                 skjemadata_tbl.filter(skjemadata_tbl.refnr.isin(relevant_refnr))
@@ -371,7 +362,7 @@ class AggDistPlotter(ABC):
                     ["variabel"],
                     how="inner",
                 )
-                .filter(datatyper_tbl.datatype == "int")
+                .filter(datatyper_tbl.datatype == "number")
                 .cast({"verdi": "float", rullerende_var: "str"})
                 .cast({"verdi": "int"})
                 .mutate(verdi=lambda t: t["verdi"].round(0))
@@ -381,15 +372,17 @@ class AggDistPlotter(ABC):
                     values_from="verdi",
                     values_agg="sum",
                 )
-                .mutate(
-                    diff=lambda t: t[_t_0] - t[_t_1],
-                    pdiff=lambda t: (
-                        (t[_t_0].fill_null(0) - t[_t_1].fill_null(0))
-                        / t[_t_1].fill_null(1)
-                        * 100
-                    ).round(2),
-                )
             )
+            
+            skjemadata_tbl.mutate(
+                diff=lambda t: t[_t_0] - t[_t_1],
+                pdiff=lambda t: (
+                    (t[_t_0].fill_null(0) - t[_t_1].fill_null(0))
+                    / t[_t_1].fill_null(1)
+                    * 100
+                ).round(2),
+            )
+
             df_wide = skjemadata_tbl.to_pandas()
             columns = [
                 {
@@ -477,7 +470,7 @@ class AggDistPlotter(ABC):
                     skjemamottak_tbl.skjema == skjema
                 )
 
-            relevant_refnr = skjemamottak_tbl.refnr
+            relevant_refnr = active_no_duplicates_refnr_list(self.conn)
 
             skjemadata_tbl = (
                 skjemadata_tbl.filter(
