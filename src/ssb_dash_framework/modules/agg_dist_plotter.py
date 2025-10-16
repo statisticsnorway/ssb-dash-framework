@@ -73,8 +73,8 @@ class AggDistPlotter(ABC):
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
         )
-        if not isinstance(conn, EimerDBInstance) and conn.__class__.__name__ != "Backend":
-            raise TypeError("Argument 'conn' must be an 'EimerDBInstance' or ")
+#        if not isinstance(conn, EimerDBInstance) and conn.__class__.__name__ != "Backend":
+#            raise TypeError("Argument 'conn' must be an 'EimerDBInstance' or Ibis backend. Received: {type(conn)}")
         self.module_number = AggDistPlotter._id_number
         self.module_name = self.__class__.__name__
         AggDistPlotter._id_number += 1
@@ -353,7 +353,7 @@ class AggDistPlotter(ABC):
             skjemadata_tbl = conn.table("skjemadata_hoved")
             datatyper_tbl = conn.table("datatyper")
 
-            relevant_refnr = active_no_duplicates_refnr_list(self.conn)
+            relevant_refnr = active_no_duplicates_refnr_list(conn)
 
             skjemadata_tbl = (
                 skjemadata_tbl.filter(skjemadata_tbl.refnr.isin(relevant_refnr))
@@ -362,7 +362,7 @@ class AggDistPlotter(ABC):
                     ["variabel"],
                     how="inner",
                 )
-                .filter(datatyper_tbl.datatype == "number")
+                .filter(datatyper_tbl.datatype.isin(["number", "int", "float"]))
                 .cast({"verdi": "float", rullerende_var: "str"})
                 .cast({"verdi": "int"})
                 .mutate(verdi=lambda t: t["verdi"].round(0))
@@ -426,7 +426,7 @@ class AggDistPlotter(ABC):
             variabel = current_row[0]["variabel"]
 
             if isinstance(self.conn, EimerDBInstance):
-                con = ibis.polars.connect()
+                conn = ibis.polars.connect()
                 partition_args = dict(
                     zip(self.time_units, [int(x) for x in args], strict=False)
                 )
@@ -451,10 +451,12 @@ class AggDistPlotter(ABC):
                     "SELECT * FROM skjemadata_hoved", partition_select=partition_select
                 )
 
-                con.create_table("skjemamottak", skjemamottak)
-                con.create_table("skjemadata_hoved", skjemadata)
-                skjemamottak_tbl = con.table("skjemamottak")
-                skjemadata_tbl = con.table("skjemadata_hoved")
+                conn.create_table("skjemamottak", skjemamottak)
+                conn.create_table("skjemadata_hoved", skjemadata)
+                skjemamottak_tbl = conn.table("skjemamottak")
+                skjemadata_tbl = conn.table("skjemadata_hoved")
+            elif conn_is_ibis(self.conn):
+                conn = self.conn
             else:
                 raise NotImplementedError(
                     f"Connection type '{type(self.conn)}' is currently not implemented."
@@ -470,7 +472,7 @@ class AggDistPlotter(ABC):
                     skjemamottak_tbl.skjema == skjema
                 )
 
-            relevant_refnr = active_no_duplicates_refnr_list(self.conn)
+            relevant_refnr = active_no_duplicates_refnr_list(conn)
 
             skjemadata_tbl = (
                 skjemadata_tbl.filter(
