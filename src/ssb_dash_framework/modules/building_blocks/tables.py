@@ -338,7 +338,9 @@ class EditingTable:
                         else self.output_varselector_name
                     ),
                 )
-
+        tz = zoneinfo.ZoneInfo("Europe/Oslo")
+        aware_timestamp = datetime.now(tz)  # timezone-aware
+        naive_timestamp = aware_timestamp.replace(tzinfo=None)  # drop tzinfo
         if self.justify_edit:
             logger.debug("Adding functionality for requiring reason for edits.")
 
