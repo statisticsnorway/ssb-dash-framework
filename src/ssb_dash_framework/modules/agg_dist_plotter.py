@@ -374,7 +374,7 @@ class AggDistPlotter(ABC):
                 .filter(datatyper_tbl.datatype == "int")
                 .cast({"verdi": "float", rullerende_var: "str"})
                 .cast({"verdi": "int"})
-                .mutate(verdi = lambda t: t["verdi"].round(0))
+                .mutate(verdi=lambda t: t["verdi"].round(0))
                 .pivot_wider(
                     id_cols=["variabel"],
                     names_from=rullerende_var,  # TODO: Tidsenhet
@@ -479,13 +479,17 @@ class AggDistPlotter(ABC):
 
             relevant_refnr = skjemamottak_tbl["refnr"].to_list()
 
-            skjemadata_tbl = skjemadata_tbl.filter(
-                [
-                    skjemadata_tbl.refnr.isin(relevant_refnr),
-                    skjemadata_tbl.variabel == variabel,
-                    skjemadata_tbl.verdi.notnull(),
-                ]
-            ).cast({"verdi": "int"})
+            skjemadata_tbl = (
+                skjemadata_tbl.filter(
+                    [
+                        skjemadata_tbl.refnr.isin(relevant_refnr),
+                        skjemadata_tbl.variabel == variabel,
+                        skjemadata_tbl.verdi.notnull(),
+                    ]
+                )
+                .cast({"verdi": "float"})
+                .cast({"verdi": "int"})
+            )
 
             df = skjemadata_tbl.to_pandas()
 
