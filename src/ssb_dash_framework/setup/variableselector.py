@@ -136,7 +136,7 @@ class VariableSelector:
             f"ValueError: '{variable_name}' not in list of options, expected one of {self.selected_variables}\nIf you need to add {variable_name} to the available options, refer to the VariableSelectorOption docstring."
         )
 
-    def get_inputs(self) -> list[Input]:
+    def get_all_inputs(self) -> list[Input]:
         """Retrieves a list of Dash Input objects for selected inputs."""
         to_be_returned = [
             Input(option.id, "value")
@@ -147,7 +147,7 @@ class VariableSelector:
         logger.debug(f"Gettings inputs: {to_be_returned}")
         return to_be_returned
 
-    def get_states(self) -> list[State]:
+    def get_all_states(self) -> list[State]:
         """Retrieves a list of Dash State objects for selected states."""
         to_be_returned = [
             State(option.id, "value")
@@ -158,9 +158,9 @@ class VariableSelector:
         logger.debug(f"Gettings inputs: {to_be_returned}")
         return to_be_returned
 
-    def get_callback_objects(self) -> list[Input | State]:
+    def get_all_callback_objects(self) -> list[Input | State]:
         """Retrieves a list of Dash Input and State objects for all selected variables."""
-        to_be_returned = self.get_inputs() + self.get_states()
+        to_be_returned = self.get_all_inputs() + self.get_all_states()
         logger.debug(f"Getting callback objects: {to_be_returned}")
         return to_be_returned
 
