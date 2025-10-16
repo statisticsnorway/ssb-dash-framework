@@ -1,6 +1,6 @@
 [project]
 name = "ssb-dash-framework"
-version = "0.1.2"
+version = "0.1.4a1"
 description = "SSB Dash Framework"
 authors = [{ name = "Magnus Theodor Engh", email = "dor@ssb.no" }]
 license = "GPL-3.0"
@@ -20,7 +20,10 @@ dependencies = [
     "ipykernel (>=6.29.5,<7.0.0)",
     "psycopg2-binary (>=2.9.10,<3.0.0)",
     "geopandas (>=1.1.1,<2.0.0)",
-    "ssb-eimerdb (>=0.2.5,<0.3.0)"
+    "ssb-eimerdb (>=0.2.5,<0.3.0)",
+    "sqlalchemy (>=2.0.43,<3.0.0)",
+    "ibis (>=3.3.0,<4.0.0)",
+    "ibis-framework[athena] (>=10.8.0,<11.0.0)",
 ]
 
 [project.urls]
