@@ -427,7 +427,7 @@ class EditingTable:
                             )
                             + "\n"
                         )
-e
+
                 if self.update_table_func:
                     variable = edit_with_reason["colId"]
                     old_value = edit_with_reason["oldValue"]
