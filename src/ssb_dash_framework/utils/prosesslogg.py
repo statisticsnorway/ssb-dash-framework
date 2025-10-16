@@ -1,6 +1,6 @@
 import datetime
-
 import pandas as pd
+import warnings
 
 
 def apply_edits(
@@ -39,6 +39,7 @@ def apply_edits(
     - Rows in `df` without matching uuids remain unchanged.
     - This function does not modify `df` in place; it returns an edited copy.
     """
+    
     df_edited = df.copy()
     log = pd.read_json(filepath_log, lines=True)
     log = log.loc[log["timestamp"] > app_timestamp].copy()
@@ -63,9 +64,10 @@ def apply_edits(
         ]
 
         mapping = mapping[~mapping.index.duplicated(keep="last")]
-
-        df_edited.loc[df_edited["uuid"].isin(mapping.index), col] = (
-            df_edited["uuid"].map(mapping).fillna(df_edited[col])
-        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=FutureWarning)
+            df_edited.loc[df_edited["uuid"].isin(mapping.index), col] = (
+                df_edited["uuid"].map(mapping).fillna(df_edited[col])
+            )
 
     return df_edited
