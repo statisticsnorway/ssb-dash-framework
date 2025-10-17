@@ -38,14 +38,14 @@ class AltinnEditorSubmittedForms:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
             AssertionError: If the connection object does not have a 'query' method.
         """
-        self.time_units = time_units
         assert hasattr(conn, "query"), "The database object must have a 'query' method."
         self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
             )
-        self.variable_selector = variable_selector_instance
+        self.variableselector = variable_selector_instance
+        self.time_units = [self.variableselector.get_option(x).id for x in time_units]
         self._is_valid()
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -137,7 +137,7 @@ class AltinnEditorSubmittedForms:
             Output("altinnedit-skjemaer", "options"),
             Output("altinnedit-skjemaer", "value"),
             Input("altinnedit-ident", "value"),
-            self.variable_selector.get_all_inputs(),
+            self.variableselector.get_all_inputs(),
         )
         def update_skjemaer(
             ident: str, *args: Any
@@ -173,7 +173,7 @@ class AltinnEditorSubmittedForms:
             Input("altinnedit-table-skjemaer", "cellValueChanged"),
             State("altinnedit-skjemaer", "value"),
             State("alert_store", "data"),
-            self.variable_selector.get_all_states(),
+            self.variableselector.get_all_states(),
             prevent_initial_call=True,
         )
         def set_skjema_to_edited(
@@ -269,7 +269,7 @@ class AltinnEditorSubmittedForms:
             Output("altinnedit-table-skjemaer", "columnDefs"),
             Input("altinnedit-skjemaer", "value"),
             State("altinnedit-ident", "value"),
-            self.variable_selector.get_all_states(),
+            self.variableselector.get_all_states(),
         )
         def update_sidebar_table(
             skjema: str, ident: str, *args: Any

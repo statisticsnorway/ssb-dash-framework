@@ -83,10 +83,11 @@ class AggDistPlotter(ABC):
         self.icon = "🌌"
         self.label = "Aggregering"
 
-        self.time_units = time_units
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
         )
+        self.time_units = [self.variableselector.get_option(x).id for x in time_units]
+
         self.conn = conn
 
         self.module_layout = self._create_layout()

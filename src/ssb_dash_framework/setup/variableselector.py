@@ -336,7 +336,7 @@ class VariableSelector:
         return layout
 
 
-class VariableSelectorOption:
+class VariableSelectorOption:  # TODO: Should maybe reverse the logic and have title mirror id instead of id mirror title.
     """Represents an individual variable selection option."""
 
     def __init__(
@@ -349,15 +349,22 @@ class VariableSelectorOption:
         After checking its own validity, adds itself as an option for the VariableSelector by appending itself into the VariableSelector._variableselectoroptions class variable.
 
         Args:
-            variable_title (str): The name of the variable.
-            variable_id (str): The id of the variable.
+            variable_title (str): The name of the variable. This is the label you want to see in the app.
+            variable_id (str): The id of the variable. This should be the name of the variable in your dataset.
+
+        Raises:
+            ValueError: If the variable_id supplied starts with '-var'. This is added automatically during intialization.
 
         Examples:
             >>> VariableSelectorOption("my numeric option")
             >>> VariableSelectorOption("my text option")
         """
+        if variable_id and variable_id.startswith("var-"):
+            raise ValueError(
+                "'var-' is automatically added to the id of this variable, remove it from the input."
+            )
         self.title = variable_title
-        self.id = variable_id if variable_id else f"var-{variable_title}"
+        self.id = f"var-{variable_id}" if variable_id else f"var-{variable_title}"
         self.type = "text"
 
         self._is_valid()

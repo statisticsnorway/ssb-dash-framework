@@ -62,14 +62,14 @@ class AltinnControlView(ABC):
         self.icon = "⚠️"
         self.label = "Kontroll"
 
-        self.time_units = time_units
         self.control_dict = control_dict
         self.conn = conn
         self._is_valid()
         self.module_layout = self.create_layout()
         self.variableselector = VariableSelector(
-            selected_inputs=self.time_units, selected_states=[]
+            selected_inputs=time_units, selected_states=[]
         )
+        self.time_units = [self.variableselector.get_option(x).id for x in time_units]
         self.module_callbacks()
         module_validator(self)
 
@@ -163,6 +163,9 @@ class AltinnControlView(ABC):
     ) -> list[str]:
         """Generates a list of dynamic Dash Input or State components."""
         component = Input if input_type == "Input" else State
+        logger.warning(
+            f'{[component(f"var-{unit}", "value") for unit in self.time_units]}'
+        )
         return [component(f"var-{unit}", "value") for unit in self.time_units]
 
     def module_callbacks(self) -> None:
@@ -173,7 +176,8 @@ class AltinnControlView(ABC):
             Output("kontroller-table1", "columnDefs"),
             Input("var-altinnskjema", "value"),
             Input("kontrollermodal-refresh", "n_clicks"),
-            *self.create_callback_components("Input"),
+            self.variableselector.get_all_inputs(),
+            # *self.create_callback_components("Input"),
         )
         def kontrollutslag_antall(
             skjema: str, n_clicks: int, *args: Any
@@ -237,7 +241,8 @@ class AltinnControlView(ABC):
             Output("kontroller-table2", "rowData"),
             Output("kontroller-table2", "columnDefs"),
             Input("kontroller-table1", "selectedRows"),
-            *self.create_callback_components("State"),
+            self.variableselector.get_all_states(),
+            #            *self.create_callback_components("State"),
         )
         def kontrollutslag_mikro(
             current_row: list[dict[str, Any]], *args: Any
@@ -296,7 +301,8 @@ class AltinnControlView(ABC):
         @callback(  # type: ignore[misc]
             Output("kontrollermodal-vars", "children"),
             Input("var-altinnskjema", "value"),
-            *self.create_callback_components("Input"),
+            self.variableselector.get_all_inputs(),
+            #            *self.create_callback_components("Input"),
         )
         def altinnskjema(skjema: str, *args: Any) -> str:
             logger.debug(f"Args:\nskjema: {skjema}\nargs: {args}")
@@ -312,7 +318,8 @@ class AltinnControlView(ABC):
             Input("kontrollermodal-kontrollbutton", "n_clicks"),
             State("var-altinnskjema", "value"),
             State("alert_store", "data"),
-            *self.create_callback_components("State"),
+            self.variableselector.get_all_states(),
+            #            *self.create_callback_components("State"),
             prevent_initial_call=True,
         )
         def kontrollkjøring(
@@ -365,7 +372,8 @@ class AltinnControlView(ABC):
             Input("kontrollermodal-insertbutton", "n_clicks"),
             State("var-altinnskjema", "value"),
             State("alert_store", "data"),
-            *self.create_callback_components("State"),
+            self.variableselector.get_all_states(),
+            #            *self.create_callback_components("State"),
             prevent_initial_call=True,
         )
         def kontrollkjøring_insert(

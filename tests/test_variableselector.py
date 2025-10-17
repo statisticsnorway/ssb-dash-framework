@@ -110,3 +110,25 @@ def test_get_input_state() -> None:
         assert varselector.get_state(f"var-{variable}", "id") == State(
             f"var-{variable}", "value"
         )
+
+
+def test_custom_title() -> None:
+    """With a custom title, the varselector should still work with the .id attribute."""
+    VariableSelectorOption(variable_title="Organisasjonsnummer", variable_id="ident")
+
+    expected = [Input("var-ident", "value")]
+
+    actual = VariableSelector(
+        selected_inputs=["Organisasjonsnummer"], selected_states=[]
+    ).get_all_inputs()
+    assert type(actual[0]) == type(expected[0])
+    assert actual == expected, f"Expected: {expected}. Actual: {actual}"
+
+    expected = [State("var-ident", "value")]
+
+    actual = VariableSelector(
+        selected_inputs=[], selected_states=["Organisasjonsnummer"]
+    ).get_all_states()
+
+    assert type(actual[0]) == type(expected[0])
+    assert actual == expected, f"Expected: {expected}. Actual: {actual}"

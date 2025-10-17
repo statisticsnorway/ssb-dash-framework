@@ -40,7 +40,6 @@ class AltinnEditorPrimaryTable:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
             AssertionError: If the connection object does not have a 'query' method.
         """
-        self.time_units = time_units
         assert hasattr(conn, "query"), "The database object must have a 'query' method."
         assert hasattr(
             conn, "tables"
@@ -50,7 +49,8 @@ class AltinnEditorPrimaryTable:
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
             )
-        self.variable_selector = variable_selector_instance
+        self.variableselector = variable_selector_instance
+        self.time_units = [self.variableselector.get_option(x).id for x in time_units]
         self.module_layout = self._create_layout()
         self._is_valid()
         self.module_callbacks()
@@ -97,7 +97,7 @@ class AltinnEditorPrimaryTable:
             Input("altinnedit-refnr", "value"),
             Input("altinnedit-option1", "value"),
             State("altinnedit-skjemaer", "value"),
-            self.variable_selector.get_all_states(),
+            self.variableselector.get_all_states(),
         )
         def hovedside_update_altinnskjema(
             refnr: str, tabell: str, skjema: str, *args: Any
@@ -238,7 +238,7 @@ class AltinnEditorPrimaryTable:
             State("altinnedit-option1", "value"),
             State("altinnedit-skjemaer", "value"),
             State("alert_store", "data"),
-            self.variable_selector.get_all_states(),
+            self.variableselector.get_all_states(),
             prevent_initial_call=True,
         )
         def update_table(
