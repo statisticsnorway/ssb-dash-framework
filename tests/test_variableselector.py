@@ -1,3 +1,6 @@
+from dash import Input
+from dash import State
+
 from ssb_dash_framework import set_variables
 from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.setup.variableselector import VariableSelectorOption
@@ -44,7 +47,7 @@ def test_no_codes_again() -> None:
     assert len(variableselector.options) == 0
 
 
-def test_options_order() -> None:
+def test_get_all_inputs_states_options_order() -> None:
     """Tests that the order inputs and states are requested in is the order they are returned."""
     set_variables(["orgnr", "aar", "kvartal"])
 
@@ -57,14 +60,14 @@ def test_options_order() -> None:
     for order in test_orders:
         test_order = test_orders[order]
         expected = [
-            VariableSelector(selected_inputs=[value], selected_states=[]).get_inputs()[
-                0
-            ]
+            VariableSelector(
+                selected_inputs=[value], selected_states=[]
+            ).get_all_inputs()[0]
             for value in test_order
         ]
         actual = VariableSelector(
             selected_inputs=test_order, selected_states=[]
-        ).get_inputs()
+        ).get_all_inputs()
         assert (
             actual == expected
         ), f"Options are sorted in the wrong order when creating inputs for test order {order}. Expected order {expected} but returned actual order {actual}"
@@ -72,14 +75,74 @@ def test_options_order() -> None:
     for order in test_orders:
         test_order = test_orders[order]
         expected = [
-            VariableSelector(selected_inputs=[], selected_states=[value]).get_states()[
-                0
-            ]
+            VariableSelector(
+                selected_inputs=[], selected_states=[value]
+            ).get_all_states()[0]
             for value in test_order
         ]
         actual = VariableSelector(
             selected_inputs=[], selected_states=test_order
-        ).get_states()
+        ).get_all_states()
         assert (
             actual == expected
         ), f"Options are sorted in the wrong order when creating states for test order {order}. Expected order {expected} but returned actual order {actual}"
+
+
+def test_get_input_state() -> None:
+    """Tests that retrieval of specific variableselectoroptions work as intended.
+
+    Ensures that you can pick out a value by either title or id.
+    """
+    variables = ["orgnr", "aar", "kvartal"]
+    set_variables(variables)
+
+    varselector = VariableSelector([], [])
+    for variable in variables:
+        assert varselector.get_input(variable, "title") == Input(
+            f"var-{variable}", "value"
+        )
+        assert varselector.get_input(f"var-{variable}", "id") == Input(
+            f"var-{variable}", "value"
+        )
+        assert varselector.get_state(variable, "title") == State(
+            f"var-{variable}", "value"
+        )
+        assert varselector.get_state(f"var-{variable}", "id") == State(
+            f"var-{variable}", "value"
+        )
+
+
+def test_custom_title() -> None:
+    """With a custom title, the varselector should still work with the .id attribute."""
+    VariableSelectorOption(variable_title="Organisasjonsnummer", variable_id="ident")
+
+    expected = [Input("var-ident", "value")]
+
+    actual = VariableSelector(
+        selected_inputs=["Organisasjonsnummer"], selected_states=[]
+    ).get_all_inputs()
+    assert isinstance(actual[0], Input)
+    assert actual == expected, f"Expected: {expected}. Actual: {actual}"
+
+    expected = [State("var-ident", "value")]
+
+    actual = VariableSelector(
+        selected_inputs=[], selected_states=["Organisasjonsnummer"]
+    ).get_all_states()
+
+    assert isinstance(actual[0], State)
+    assert actual == expected, f"Expected: {expected}. Actual: {actual}"
+
+
+def test_time_units_implementation() -> None:
+    VariableSelectorOption(
+        variable_title="År",
+        variable_id="aar",
+    )
+
+    time_units = ["År"]
+    variableselector = VariableSelector(selected_inputs=time_units, selected_states=[])
+
+    assert [
+        variableselector.get_option(x).id.removeprefix("var-") for x in time_units
+    ] == ["aar"], "Congratulations, you might have broken a couple of modules! "

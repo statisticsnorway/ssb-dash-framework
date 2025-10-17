@@ -310,7 +310,7 @@
 #         """
 #         time.time()
 
-#         dynamic_states = self.variableselector.get_states()
+#         dynamic_states = self.variableselector.get_all_states()
 #         output_object = self.variableselector.get_output_object(
 #             variable=self.selected_ident
 #         )

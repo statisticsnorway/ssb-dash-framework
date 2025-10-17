@@ -83,10 +83,15 @@ class AggDistPlotter(ABC):
         self.icon = "🌌"
         self.label = "Aggregering"
 
-        self.time_units = time_units
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
         )
+        self.time_units = [
+            self.variableselector.get_option(x).id.removeprefix("var-")
+            for x in time_units
+        ]
+        print("TIME UNITS ", self.time_units)
+
         self.conn = conn
 
         self.module_layout = self._create_layout()
@@ -257,7 +262,7 @@ class AggDistPlotter(ABC):
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the AggDistPlotter module."""
-        dynamic_states = self.variableselector.get_inputs()
+        dynamic_states = self.variableselector.get_all_inputs()
 
         @callback(  # type: ignore[misc]
             Output("aggdistplotter-radioitems", "options"),

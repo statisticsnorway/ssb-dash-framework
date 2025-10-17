@@ -117,8 +117,8 @@ class FigureDisplay:
     def module_callbacks(self) -> None:
         """Define the callbacks for the module."""
         dynamic_states = [
-            self.variableselector.get_inputs(),
-            self.variableselector.get_states(),
+            self.variableselector.get_all_inputs(),
+            self.variableselector.get_all_states(),
         ]
 
         @callback(  # type: ignore[misc]

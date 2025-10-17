@@ -43,8 +43,11 @@ class AltinnEditorComment:
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
             )
-        self.variable_selector = variable_selector_instance
-        self.time_units = time_units
+        self.variableselector = variable_selector_instance
+        self.time_units = [
+            self.variableselector.get_option(x).id.removeprefix("var-")
+            for x in time_units
+        ]
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
