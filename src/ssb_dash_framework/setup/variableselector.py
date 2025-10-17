@@ -141,6 +141,7 @@ class VariableSelector:
 
         Raises:
             ValueError: If 'search_target' is not a searchable property.
+            Exception: If something goes wrong in a weird way.
         """
         if search_target not in ["title", "id"]:
             raise ValueError(
@@ -158,6 +159,10 @@ class VariableSelector:
         elif search_target == "id":
             raise ValueError(
                 f"ValueError: '{search_term}' not in list of options, expected one of {[x.id for x in self._variableselectoroptions]}\nIf you need to add {search_term} to the available options, refer to the VariableSelectorOption docstring."
+            )
+        else:
+            raise Exception(
+                "No idea how you ended up here, please raise an issue on our GitHub repository."
             )
 
     def get_input(self, requested: str, search_target: str = "title") -> Input:
