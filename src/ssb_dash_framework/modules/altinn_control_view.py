@@ -69,7 +69,10 @@ class AltinnControlView(ABC):
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
         )
-        self.time_units = [self.variableselector.get_option(x).id for x in time_units]
+        self.time_units = [
+            self.variableselector.get_option(x).id.removeprefix("var-")
+            for x in time_units
+        ]
         self.module_callbacks()
         module_validator(self)
 

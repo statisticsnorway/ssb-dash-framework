@@ -43,7 +43,10 @@ class AltinnEditorControl:
                 "variable_selector_instance must be an instance of VariableSelector"
             )
         self.variableselector = variable_selector_instance
-        self.time_units = [self.variableselector.get_option(x).id for x in time_units]
+        self.time_units = [
+            self.variableselector.get_option(x).id.removeprefix("var-")
+            for x in time_units
+        ]
         self.module_layout = self._create_layout()
         self.module_callbacks()
 

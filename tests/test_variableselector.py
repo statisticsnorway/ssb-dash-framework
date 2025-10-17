@@ -121,7 +121,7 @@ def test_custom_title() -> None:
     actual = VariableSelector(
         selected_inputs=["Organisasjonsnummer"], selected_states=[]
     ).get_all_inputs()
-    assert type(actual[0]) == type(expected[0])
+    assert isinstance(actual[0], Input)
     assert actual == expected, f"Expected: {expected}. Actual: {actual}"
 
     expected = [State("var-ident", "value")]
@@ -130,5 +130,19 @@ def test_custom_title() -> None:
         selected_inputs=[], selected_states=["Organisasjonsnummer"]
     ).get_all_states()
 
-    assert type(actual[0]) == type(expected[0])
+    assert isinstance(actual[0], State)
     assert actual == expected, f"Expected: {expected}. Actual: {actual}"
+
+
+def test_time_units_implementation() -> None:
+    VariableSelectorOption(
+        variable_title="År",
+        variable_id="aar",
+    )
+
+    time_units = ["År"]
+    variableselector = VariableSelector(selected_inputs=time_units, selected_states=[])
+
+    assert [
+        variableselector.get_option(x).id.removeprefix("var-") for x in time_units
+    ] == ["aar"], "Congratulations, you might have broken a couple of modules! "

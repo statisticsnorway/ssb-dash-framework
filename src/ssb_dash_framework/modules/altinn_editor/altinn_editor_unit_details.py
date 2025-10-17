@@ -46,7 +46,10 @@ class AltinnEditorUnitDetails:
             )
         self.variableselector = variable_selector_instance
         self.variable_connection = variable_connection
-        self.time_units = [self.variableselector.get_option(x).id for x in time_units]
+        self.time_units = [
+            self.variableselector.get_option(x).id.removeprefix("var-")
+            for x in time_units
+        ]
         self.module_layout = self._create_layout()
         self.module_callbacks()
 

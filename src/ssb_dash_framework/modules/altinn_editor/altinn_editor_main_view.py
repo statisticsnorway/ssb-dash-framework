@@ -68,7 +68,10 @@ class AltinnSkjemadataEditor:
             selected_inputs=[], selected_states=time_units
         )
         self.time_units_unaltered = time_units
-        self.time_units = [self.variableselector.get_option(x).id for x in time_units]
+        self.time_units = [
+            self.variableselector.get_option(x).id.removeprefix("var-")
+            for x in time_units
+        ]
 
         self.primary_table = AltinnEditorPrimaryTable(  # TODO: Should be turned into an argument in __init__ in order to increase modularity.
             time_units=time_units,
@@ -255,7 +258,7 @@ class AltinnSkjemadataEditor:
 
             @callback(  # type: ignore[misc]
                 Output(f"altinnedit-{unit}", "value"),
-                Input(f"{unit}", "value"),
+                Input(f"var-{unit}", "value"),
             )
             def callback_function(value: str) -> str:
                 logger.debug(f"Args:\nvalue: {value}")
