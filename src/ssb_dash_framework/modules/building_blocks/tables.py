@@ -109,7 +109,7 @@ class EditingTable:
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self._is_valid()
-        self.timestamp = int(time.time() * 1000)
+        self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
         module_validator(self)
 
     def _is_valid(self) -> None:
@@ -414,8 +414,6 @@ class EditingTable:
                 edit_with_reason["user"] = self.user
                 edit_with_reason["change_event"] = "manual"
 
-                # Create timestamp that can be compared with datetime.now() running from users IDE
-                tz = zoneinfo.ZoneInfo("Europe/Oslo")
                 aware_timestamp = datetime.now(tz)  # timezone-aware
                 naive_timestamp = aware_timestamp.replace(tzinfo=None)  # drop tzinfo
                 edit_with_reason["timestamp"] = naive_timestamp
@@ -506,7 +504,10 @@ class EditingTable:
                 if not edited:
                     raise PreventUpdate
                 edit = edited[0]
-                edit["timestamp"] = int(time.time() * 1000)
+
+                aware_timestamp = datetime.now(self.tz)  # timezone-aware
+                naive_timestamp = aware_timestamp.replace(tzinfo=None)  # drop tzinfo
+                edit["timestamp"] = naive_timestamp
                 if self.log_filepath:
                     with open(self.log_filepath, "a", encoding="utf-8") as f:
                         f.write(
