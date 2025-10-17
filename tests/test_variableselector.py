@@ -88,7 +88,7 @@ def test_get_all_inputs_states_options_order() -> None:
         ), f"Options are sorted in the wrong order when creating states for test order {order}. Expected order {expected} but returned actual order {actual}"
 
 
-def test_get_input_state():
+def test_get_input_state() -> None:
     """Tests that retrieval of specific variableselectoroptions work as intended.
 
     Ensures that you can pick out a value by either title or id.
