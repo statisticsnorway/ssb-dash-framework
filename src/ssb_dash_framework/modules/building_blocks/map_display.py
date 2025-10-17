@@ -205,8 +205,8 @@ class MapDisplay:
     def module_callbacks(self) -> None:
         """Registers module callbacks."""
         dynamic_states = [
-            self.variableselector.get_inputs(),
-            self.variableselector.get_states(),
+            self.variableselector.get_all_inputs(),
+            self.variableselector.get_all_states(),
         ]
 
         @callback(Output("map-figure", "figure"), *dynamic_states)  # type: ignore[misc]

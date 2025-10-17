@@ -67,7 +67,7 @@ class VariableSelector:
             >>> VariableSelector(selected_inputs = ["foretak"], selected_states = ["aar"], default_values = {"aar": "2024"})
 
         Notes:
-            - Usage in a module involves using the callback objects returned by either `get_inputs` and `get_states` or `get_callback_objects` to register callbacks.
+            - Usage in a module involves using the callback objects returned by either `get_all_inputs` and `get_all_states` or `get_callback_objects` to register callbacks.
             - The `get_output_object` method can be used to create an Output object updating the main VariableSelector in the app through a callback.
         """
         self.options = [option.title for option in self._variableselectoroptions]
@@ -127,14 +127,39 @@ class VariableSelector:
                         f"Invalid type for {key} in default_value. Received type {type(self.default_values[key])} Expected int or float."
                     )
 
-    def get_option(self, variable_name: str) -> "VariableSelectorOption":
-        """Retrieves a VariableSelectorOption by variable name."""
+    def get_option(
+        self, search_term: str, search_target: str = "title"
+    ) -> "VariableSelectorOption":
+        """Retrieves a VariableSelectorOption by variable name.
+
+        Args:
+            search_term (str): Word to search for, needs to be an exact match.
+            search_target (str): Element of
+        """
+        if search_target not in ["title", "id"]:
+            raise ValueError(
+                f"'search_target' must be 'title' or 'id'. Received: {search_target}"
+            )
         for option in self._variableselectoroptions:
-            if option.title == variable_name:
+            if search_target == "title" and option.title == search_term:
                 return option
-        raise ValueError(
-            f"ValueError: '{variable_name}' not in list of options, expected one of {self.selected_variables}\nIf you need to add {variable_name} to the available options, refer to the VariableSelectorOption docstring."
+            elif search_target == "id" and option.id == search_term:
+                return option
+        if search_target == "title":
+            raise ValueError(
+                f"ValueError: '{search_term}' not in list of options, expected one of {[x.title for x in self._variableselectoroptions]}\nIf you need to add {search_term} to the available options, refer to the VariableSelectorOption docstring."
+            )
+        elif search_target == "id":
+            raise ValueError(
+                f"ValueError: '{search_term}' not in list of options, expected one of {[x.id for x in self._variableselectoroptions]}\nIf you need to add {search_term} to the available options, refer to the VariableSelectorOption docstring."
+            )
+
+    def get_input(self, requested: str, search_target: str = "title") -> Input:
+        """Retrieves a Input object for the selected variable."""
+        retrieved_option = self.get_option(
+            search_term=requested, search_target=search_target
         )
+        return Input(retrieved_option.id, "value")
 
     def get_all_inputs(self) -> list[Input]:
         """Retrieves a list of Dash Input objects for selected inputs."""
@@ -146,6 +171,13 @@ class VariableSelector:
         ]
         logger.debug(f"Gettings inputs: {to_be_returned}")
         return to_be_returned
+
+    def get_state(self, requested: str, search_target: str = "title") -> State:
+        """Retrieves a State object for the selected variable."""
+        retrieved_option = self.get_option(
+            search_term=requested, search_target=search_target
+        )
+        return State(retrieved_option.id, "value")
 
     def get_all_states(self) -> list[State]:
         """Retrieves a list of Dash State objects for selected states."""
@@ -299,6 +331,7 @@ class VariableSelectorOption:
     def __init__(
         self,
         variable_title: str,
+        variable_id: str | None = None,
     ) -> None:
         """Initializes a VariableSelectorOption.
 
@@ -306,13 +339,14 @@ class VariableSelectorOption:
 
         Args:
             variable_title (str): The name of the variable.
+            variable_id (str): The id of the variable.
 
         Examples:
             >>> VariableSelectorOption("my numeric option")
             >>> VariableSelectorOption("my text option")
         """
         self.title = variable_title
-        self.id = f"var-{variable_title}"
+        self.id = variable_id if variable_id else f"var-{variable_title}"
         self.type = "text"
 
         self._is_valid()

@@ -118,7 +118,7 @@ class AltinnEditorControl:
             Output("altinnedit-option5", "children"),
             Input("altinnedit-table-skjemaer", "selectedRows"),
             State("altinnedit-skjemaer", "value"),
-            self.variable_selector.get_states(),
+            self.variable_selector.get_all_states(),
         )
         def kontrollutslagstabell(
             selected_row: list[dict[str, int | float | str]], skjema: str, *args: Any

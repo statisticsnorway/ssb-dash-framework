@@ -118,7 +118,7 @@ class AltinnEditorHistory:
             State("altinnedit-option1", "value"),
             State("altinnedit-table-skjemaer", "selectedRows"),
             State("altinnedit-skjemaer", "value"),
-            self.variable_selector.get_states(),
+            self.variable_selector.get_all_states(),
         )
         def historikktabell(
             is_open: bool,

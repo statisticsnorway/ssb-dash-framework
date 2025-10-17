@@ -257,7 +257,7 @@ class AggDistPlotter(ABC):
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the AggDistPlotter module."""
-        dynamic_states = self.variableselector.get_inputs()
+        dynamic_states = self.variableselector.get_all_inputs()
 
         @callback(  # type: ignore[misc]
             Output("aggdistplotter-radioitems", "options"),

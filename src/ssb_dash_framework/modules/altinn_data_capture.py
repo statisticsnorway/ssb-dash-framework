@@ -183,7 +183,7 @@ class AltinnDataCapture(ABC):
     def module_callbacks(self) -> None:
         """Defines the callbacks for the AltinnDataCapture module."""
         dynamic_states = [
-            self.variableselector.get_inputs(),
+            self.variableselector.get_all_inputs(),
         ]
         if self.database_type == "altinn_default":
             self.callbacks_eimerdb_default(dynamic_states)

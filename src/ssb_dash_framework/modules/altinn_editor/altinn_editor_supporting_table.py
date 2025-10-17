@@ -179,7 +179,7 @@ class AltinnEditorSupportTables:
             State("altinnedit-option1", "value"),
             State("altinnedit-ident", "value"),
             State("altinnedit-skjemaer", "value"),
-            self.variable_selector.get_states(),
+            self.variable_selector.get_all_states(),
             prevent_initial_call=True,
         )
         def hjelpetabeller(

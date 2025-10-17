@@ -137,7 +137,7 @@ class AltinnEditorSubmittedForms:
             Output("altinnedit-skjemaer", "options"),
             Output("altinnedit-skjemaer", "value"),
             Input("altinnedit-ident", "value"),
-            self.variable_selector.get_inputs(),
+            self.variable_selector.get_all_inputs(),
         )
         def update_skjemaer(
             ident: str, *args: Any
@@ -173,7 +173,7 @@ class AltinnEditorSubmittedForms:
             Input("altinnedit-table-skjemaer", "cellValueChanged"),
             State("altinnedit-skjemaer", "value"),
             State("alert_store", "data"),
-            self.variable_selector.get_states(),
+            self.variable_selector.get_all_states(),
             prevent_initial_call=True,
         )
         def set_skjema_to_edited(
@@ -269,7 +269,7 @@ class AltinnEditorSubmittedForms:
             Output("altinnedit-table-skjemaer", "columnDefs"),
             Input("altinnedit-skjemaer", "value"),
             State("altinnedit-ident", "value"),
-            self.variable_selector.get_states(),
+            self.variable_selector.get_all_states(),
         )
         def update_sidebar_table(
             skjema: str, ident: str, *args: Any

@@ -102,7 +102,7 @@ class AltinnEditorUnitDetails:
             Output("skjemadata-enhetsinfomodal-table1", "rowData"),
             Output("skjemadata-enhetsinfomodal-table1", "columnDefs"),
             Input("altinnedit-ident", "value"),
-            self.variable_selector.get_inputs(),
+            self.variable_selector.get_all_inputs(),
         )
         def update_enhetsinfotabell(
             ident: str, *args: Any

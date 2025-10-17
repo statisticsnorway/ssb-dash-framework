@@ -173,7 +173,7 @@ class AltinnEditorContact:
             Input("altinnedit-contact-button", "n_clicks"),
             State("altinnedit-refnr", "value"),
             State("altinnedit-skjemaer", "value"),
-            self.variable_selector.get_states(),
+            self.variable_selector.get_all_states(),
             prevent_initial_call=True,
         )
         def kontaktinfocanvas(

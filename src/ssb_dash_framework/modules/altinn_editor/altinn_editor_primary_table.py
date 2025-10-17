@@ -97,7 +97,7 @@ class AltinnEditorPrimaryTable:
             Input("altinnedit-refnr", "value"),
             Input("altinnedit-option1", "value"),
             State("altinnedit-skjemaer", "value"),
-            self.variable_selector.get_states(),
+            self.variable_selector.get_all_states(),
         )
         def hovedside_update_altinnskjema(
             refnr: str, tabell: str, skjema: str, *args: Any
@@ -238,7 +238,7 @@ class AltinnEditorPrimaryTable:
             State("altinnedit-option1", "value"),
             State("altinnedit-skjemaer", "value"),
             State("alert_store", "data"),
-            self.variable_selector.get_states(),
+            self.variable_selector.get_all_states(),
             prevent_initial_call=True,
         )
         def update_table(
