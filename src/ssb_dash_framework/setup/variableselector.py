@@ -134,7 +134,13 @@ class VariableSelector:
 
         Args:
             search_term (str): Word to search for, needs to be an exact match.
-            search_target (str): Element of
+            search_target (str): Element of VariableSelectorOption to search.
+
+        Returns:
+            VariableSelectorOption object matching description.
+
+        Raises:
+            ValueError: If 'search_target' is not a searchable property.
         """
         if search_target not in ["title", "id"]:
             raise ValueError(
