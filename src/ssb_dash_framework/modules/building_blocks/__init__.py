@@ -9,6 +9,9 @@ from .canvas import CanvasWindow
 from .figuredisplay import FigureDisplay
 from .figuredisplay import FigureDisplayTab
 from .figuredisplay import FigureDisplayWindow
+from .map_display import MapDisplay
+from .map_display import MapDisplayTab
+from .map_display import MapDisplayWindow
 from .multimodule import MultiModule
 from .multimodule import MultiModuleTab
 from .multimodule import MultiModuleWindow
@@ -26,6 +29,9 @@ __all__ = [
     "FigureDisplay",
     "FigureDisplayTab",
     "FigureDisplayWindow",
+    "MapDisplay",
+    "MapDisplayTab",
+    "MapDisplayWindow",
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",

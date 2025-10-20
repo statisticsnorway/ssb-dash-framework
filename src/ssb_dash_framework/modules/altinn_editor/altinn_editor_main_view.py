@@ -42,7 +42,7 @@ class AltinnSkjemadataEditor:
         self,
         time_units: list[str],
         conn: object,
-        variable_connection: dict[str, str],
+        variable_connection: dict[str, str] | None = None,
         sidepanels: None = None,
         top_panels: None = None,
     ) -> None:
@@ -63,7 +63,7 @@ class AltinnSkjemadataEditor:
 
         self.time_units = time_units
         self.conn = conn
-        self.variable_connection = variable_connection
+        self.variable_connection = variable_connection if variable_connection else {}
 
         self.variableselector = VariableSelector(
             selected_inputs=[], selected_states=self.time_units
