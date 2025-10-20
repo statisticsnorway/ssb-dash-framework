@@ -24,26 +24,18 @@ class AltinnEditorComment:
         self,
         time_units: list[str],
         conn: object,
-        variable_selector_instance: VariableSelector,
     ) -> None:
         """Initializes the Altinn Editor Comment module.
 
         Args:
             time_units (list[str]): List of time units to be used in the module.
             conn (object): Database connection object that must have a 'query' method.
-            variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
 
         Raises:
-            TypeError: If variable_selector_instance is not an instance of VariableSelector.
             AssertionError: If the connection object does not have a 'query' method.
         """
         assert hasattr(conn, "query"), "The database object must have a 'query' method."
         self.conn = conn
-        if not isinstance(variable_selector_instance, VariableSelector):
-            raise TypeError(
-                "variable_selector_instance must be an instance of VariableSelector"
-            )
-        self.variable_selector = variable_selector_instance
         self.time_units = time_units
         self.module_layout = self._create_layout()
         self.module_callbacks()
