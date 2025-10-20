@@ -3,6 +3,8 @@
 from .alert_handler import AlertHandler
 from .alert_handler import create_alert
 from .app_logger import enable_app_logging
+from .core_query_functions import active_no_duplicates_refnr_list
+from .core_query_functions import conn_is_ibis
 from .datahelper import DatabaseBuilderAltinnEimerdb
 from .datahelper import DemoDataCreator
 from .datahelper import create_database
@@ -17,19 +19,17 @@ from .implementations import TabImplementation
 from .implementations import WindowImplementation
 from .module_validation import module_validator
 from .prosesslogg import apply_edits
-from .core_query_functions import active_no_duplicates_refnr_list
-from .core_query_functions import conn_is_ibis
 
 __all__ = [
     "AlertHandler",
-    "conn_is_ibis",
-    "active_no_duplicates_refnr_list",
     "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
     "DemoDataCreator",
     "TabImplementation",
     "WindowImplementation",
+    "active_no_duplicates_refnr_list",
     "apply_edits",
+    "conn_is_ibis",
     "create_alert",
     "create_database",
     "create_database_engine",
