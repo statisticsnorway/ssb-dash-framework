@@ -413,7 +413,7 @@ class EditingTable:
                 edit_with_reason["user"] = self.user
                 edit_with_reason["change_event"] = "manual"
 
-                aware_timestamp = datetime.now(tz)  # timezone-aware
+                aware_timestamp = datetime.now(self.tz)  # timezone-aware
                 naive_timestamp = aware_timestamp.replace(tzinfo=None)  # drop tzinfo
                 edit_with_reason["timestamp"] = naive_timestamp
 
