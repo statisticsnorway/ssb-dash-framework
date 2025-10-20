@@ -34,3 +34,31 @@ def test_window() -> None:
         states=[],
         get_data_func=lambda x: x,
     )
+
+
+def test_get_update_data_calls():
+    def get_data():
+        return "Success"
+
+    def update_data():
+        return "Successfull update"
+
+    table = EditingTable(  # Test without defining update function.
+        label="test",
+        inputs=[],
+        states=[],
+        get_data_func=get_data,
+    )
+
+    assert table.get_data() == "Success", "Error when getting data from function."
+
+    table = EditingTable(
+        label="test",
+        inputs=[],
+        states=[],
+        get_data_func=get_data,
+        update_table_func=update_data,
+    )
+
+    assert table.get_data() == "Success", "Error when getting data from function."
+    assert table.update_table_func() == "Successfull update"
