@@ -11,7 +11,6 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
-from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
 
 logger = logging.getLogger(__name__)
@@ -22,32 +21,18 @@ class AltinnEditorComment:
 
     def __init__(
         self,
-        time_units: list[str],
         conn: object,
-        variable_selector_instance: VariableSelector,
     ) -> None:
         """Initializes the Altinn Editor Comment module.
 
         Args:
-            time_units (list[str]): List of time units to be used in the module.
             conn (object): Database connection object that must have a 'query' method.
-            variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
 
         Raises:
-            TypeError: If variable_selector_instance is not an instance of VariableSelector.
             AssertionError: If the connection object does not have a 'query' method.
         """
         assert hasattr(conn, "query"), "The database object must have a 'query' method."
         self.conn = conn
-        if not isinstance(variable_selector_instance, VariableSelector):
-            raise TypeError(
-                "variable_selector_instance must be an instance of VariableSelector"
-            )
-        self.variableselector = variable_selector_instance
-        self.time_units = [
-            self.variableselector.get_option(x).id.removeprefix("var-")
-            for x in time_units
-        ]
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
