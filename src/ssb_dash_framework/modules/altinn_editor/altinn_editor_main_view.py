@@ -61,16 +61,20 @@ class AltinnSkjemadataEditor:
         self.icon = "🗊"
         self.label = "Data editor"
 
-        self.time_units = time_units
         self.conn = conn
         self.variable_connection = variable_connection if variable_connection else {}
 
         self.variableselector = VariableSelector(
-            selected_inputs=[], selected_states=self.time_units
+            selected_inputs=[], selected_states=time_units
         )
+        self.time_units_unaltered = time_units
+        self.time_units = [
+            self.variableselector.get_option(x).id.removeprefix("var-")
+            for x in time_units
+        ]
 
         self.primary_table = AltinnEditorPrimaryTable(  # TODO: Should be turned into an argument in __init__ in order to increase modularity.
-            time_units=self.time_units,
+            time_units=time_units,
             conn=self.conn,
             variable_selector_instance=self.variableselector,
         )
@@ -78,12 +82,12 @@ class AltinnSkjemadataEditor:
         if sidepanels is None:
             self.sidepanels: list[AltinnEditorModule] = [
                 AltinnEditorSubmittedForms(
-                    time_units=self.time_units,
+                    time_units=time_units,
                     conn=self.conn,
                     variable_selector_instance=self.variableselector,
                 ),
                 AltinnEditorUnitDetails(
-                    time_units=self.time_units,
+                    time_units=time_units,
                     conn=self.conn,
                     variable_connection=self.variable_connection,
                     variable_selector_instance=self.variableselector,
@@ -92,27 +96,27 @@ class AltinnSkjemadataEditor:
         if top_panels is None:
             self.top_panels: list[AltinnEditorModule] = [
                 AltinnEditorSupportTables(
-                    time_units=self.time_units,
+                    time_units=time_units,
                     conn=self.conn,
                     variable_selector_instance=self.variableselector,
                 ),
                 AltinnEditorContact(
-                    time_units=self.time_units,
+                    time_units=time_units,
                     conn=self.conn,
                     variable_selector_instance=self.variableselector,
                 ),
                 AltinnEditorHistory(
-                    time_units=self.time_units,
+                    time_units=time_units,
                     conn=self.conn,
                     variable_selector_instance=self.variableselector,
                 ),
                 AltinnEditorControl(
-                    time_units=self.time_units,
+                    time_units=time_units,
                     conn=self.conn,
                     variable_selector_instance=self.variableselector,
                 ),
                 AltinnEditorComment(
-                    time_units=self.time_units,
+                    time_units=time_units,
                     conn=self.conn,
                     variable_selector_instance=self.variableselector,
                 ),
@@ -122,7 +126,7 @@ class AltinnSkjemadataEditor:
 
     def is_valid(self) -> None:
         """Checks that all VariableSelector options required are defined."""
-        VariableSelector([], []).get_option("ident")
+        VariableSelector([], []).get_option("var-ident", search_target="id")
 
     def get_skjemadata_table_names(self) -> list[dict[str, str]]:
         """Retrieves the names of all the skjemadata-tables in the eimerdb."""
@@ -172,7 +176,7 @@ class AltinnSkjemadataEditor:
                                             dbc.CardBody(
                                                 [
                                                     html.H5(
-                                                        unit, className="card-title"
+                                                        title, className="card-title"
                                                     ),
                                                     html.Div(
                                                         style={
@@ -181,7 +185,7 @@ class AltinnSkjemadataEditor:
                                                         },
                                                         children=[
                                                             dbc.Input(
-                                                                id=f"altinnedit-{unit}",
+                                                                id=f"altinnedit-{_id}",
                                                                 type="number",
                                                             ),
                                                         ],
@@ -191,13 +195,17 @@ class AltinnSkjemadataEditor:
                                             ),
                                             style={"max-height": "100%"},
                                         )
-                                        for unit in self.time_units
+                                        for title, _id in zip(
+                                            self.time_units_unaltered,
+                                            self.time_units,
+                                            strict=False,
+                                        )
                                     ],
                                     dbc.Card(
                                         dbc.CardBody(
                                             [
                                                 html.H5(
-                                                    "ident", className="card-title"
+                                                    "Ident", className="card-title"
                                                 ),
                                                 dbc.Input(
                                                     id="altinnedit-ident", type="text"

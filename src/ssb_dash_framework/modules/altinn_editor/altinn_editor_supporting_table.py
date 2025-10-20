@@ -51,8 +51,11 @@ class AltinnEditorSupportTables:
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
             )
-        self.variable_selector = variable_selector_instance
-        self.time_units = time_units
+        self.variableselector = variable_selector_instance
+        self.time_units = [
+            self.variableselector.get_option(x).id.removeprefix("var-")
+            for x in time_units
+        ]
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
@@ -179,7 +182,7 @@ class AltinnEditorSupportTables:
             State("altinnedit-option1", "value"),
             State("altinnedit-ident", "value"),
             State("altinnedit-skjemaer", "value"),
-            self.variable_selector.get_states(),
+            self.variableselector.get_all_states(),
             prevent_initial_call=True,
         )
         def hjelpetabeller(

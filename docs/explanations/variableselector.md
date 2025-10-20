@@ -48,7 +48,7 @@ class MyModule(ABC):
         self.module_callbacks()
 ```
 
-Secondly, it needs to be included in callbacks. There are many ways to connect your variable selector to the callbacks. The simplest is to use the built in methods `get_inputs()`, `get_states()`, `get_callback_objects()` and `get_output_object()`.
+Secondly, it needs to be included in callbacks. There are many ways to connect your variable selector to the callbacks. The simplest is to use the built in methods `get_all_inputs()`, `get_all_states()`, `get_callback_objects()` and `get_output_object()`.
 
 In order to simplify usage of inputs and states we recommend creating a dict called dynamic_states.
 
@@ -57,8 +57,8 @@ Lets assume you have the input 'identifier' and the states 'year' and 'quarter',
 ```python
     def module_callbacks(self):
         dynamic_states = [
-            self.variableselector.get_inputs(),
-            self.variableselector.get_states(),
+            self.variableselector.get_all_inputs(),
+            self.variableselector.get_all_states(),
         ]
         @callback(
             Output("my-ag-grid", "rowData"),
