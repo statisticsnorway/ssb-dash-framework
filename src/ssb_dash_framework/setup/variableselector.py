@@ -162,7 +162,7 @@ class VariableSelector:
             )
         else:
             raise Exception(
-                "No idea how you ended up here, please raise an issue on our GitHub repository."
+                "No idea how you ended up here, please create an issue on our GitHub repository."
             )
 
     def get_input(self, requested: str, search_target: str = "title") -> Input:
@@ -350,16 +350,19 @@ class VariableSelectorOption:  # TODO: Should maybe reverse the logic and have t
 
         Args:
             variable_title (str): The name of the variable. This is the label you want to see in the app.
-            variable_id (str): The id of the variable. This should be the name of the variable in your dataset.
+            variable_id (str): The id of the variable. This should be the name of the variable in your data. Defaults to be the supplied variable_title with a 'var-' prefix.
 
         Raises:
             ValueError: If the variable_id supplied starts with '-var'. This is added automatically during intialization.
 
         Examples:
-            >>> VariableSelectorOption("my numeric option")
-            >>> VariableSelectorOption("my text option")
+            >>> VariableSelectorOption("fylke_nr")
+            >>> VariableSelectorOption(variable_title="komm_nr")
+            >>> VariableSelectorOption(variable_title="Organisasjonsnummer", variable_id="ident")
         """
-        logger.debug(f"initializing VariableSelectorOption.\nvariable_title: {variable_title}\nvariable_id: {variable_id}")
+        logger.debug(
+            f"initializing VariableSelectorOption.\nvariable_title: {variable_title}\nvariable_id: {variable_id}"
+        )
         if variable_id and variable_id.startswith("var-"):
             raise ValueError(
                 "'var-' is automatically added to the id of this variable, remove it from the input."

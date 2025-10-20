@@ -59,7 +59,9 @@ class AltinnEditorPrimaryTable:
         self.module_callbacks()
 
     def _is_valid(self) -> None:
-        VariableSelector([], []).get_option("var-statistikkvariabel", search_target="id")
+        VariableSelector([], []).get_option(
+            "var-statistikkvariabel", search_target="id"
+        )
 
     def _create_layout(self) -> html.Div:
         """Creates the module layout."""
