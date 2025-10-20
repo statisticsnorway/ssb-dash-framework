@@ -59,16 +59,19 @@ class AltinnDataCapture(ABC):
         self.label = label
         self.database_type = database_type
         self.database = database
-        self.time_units = time_units
         self.get_amount_func = (None,)
         self.get_cumulative_func = None
-        self.is_valid()
 
         self.module_layout = self._create_layout()
 
         self.variableselector = VariableSelector(
-            selected_inputs=self.time_units, selected_states=[]
+            selected_inputs=time_units, selected_states=[]
         )
+        self.time_units = [
+            self.variableselector.get_option(x).id.removeprefix("var-")
+            for x in time_units
+        ]
+        self.is_valid()
         self.module_callbacks()
         module_validator(self)
 
@@ -99,9 +102,9 @@ class AltinnDataCapture(ABC):
                 raise NotImplementedError(
                     "Currently this behavior is not implemented"
                 )  # TODO implement this functionality.
-        if not isinstance(self.time_units, list) or not all(
-            isinstance(unit, str) for unit in self.time_units
-        ):
+        if not isinstance(self.time_units, list):
+            raise TypeError("time_units must be a list of strings.")
+        if not all(isinstance(unit, str) for unit in self.time_units):
             raise TypeError("time_units must be a list of strings.")
 
     def _create_layout(self) -> html.Div:
@@ -183,7 +186,7 @@ class AltinnDataCapture(ABC):
     def module_callbacks(self) -> None:
         """Defines the callbacks for the AltinnDataCapture module."""
         dynamic_states = [
-            self.variableselector.get_inputs(),
+            self.variableselector.get_all_inputs(),
         ]
         if self.database_type == "altinn_default":
             self.callbacks_eimerdb_default(dynamic_states)

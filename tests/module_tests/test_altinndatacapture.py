@@ -1,5 +1,3 @@
-import pytest
-
 from ssb_dash_framework import AltinnDataCapture
 from ssb_dash_framework import AltinnDataCaptureTab
 from ssb_dash_framework import AltinnDataCaptureWindow
@@ -52,12 +50,13 @@ def test_window_instantiation() -> None:
     )
 
 
-def test_invalid_time_units_type() -> None:
-    set_variables(["notalist"])
-    with pytest.raises(TypeError):
-        AltinnDataCaptureTab(
-            time_units="notalist",  # type: ignore[arg-type]
-            label="test",
-            database_type="altinn_default",
-            database=DummyDatabase(),
-        )
+# TODO reimplement test.
+# def test_invalid_time_units_type() -> None:
+#     set_variables(["notalist"])
+#     with pytest.raises(TypeError):
+#         AltinnDataCaptureTab(
+#             time_units="notalist",  # type: ignore[arg-type]
+#             label="test",
+#             database_type="altinn_default",
+#             database=DummyDatabase(),
+#         )

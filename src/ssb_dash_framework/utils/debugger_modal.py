@@ -89,8 +89,8 @@ class DebugInspector:
         and a function to display the inputs and states passed to the class.
         """
         dynamic_states = [
-            self.variableselector.get_inputs(),
-            self.variableselector.get_states(),
+            self.variableselector.get_all_inputs(),
+            self.variableselector.get_all_states(),
         ]
 
         @callback(  # type: ignore[misc]

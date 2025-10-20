@@ -118,8 +118,8 @@ class SkjemapdfViewer(ABC):
             - The second callback fetches and encodes the PDF file as a data URI for display in the iframe.
         """
         dynamic_states = [
-            self.variableselector.get_inputs(),
-            self.variableselector.get_states(),
+            self.variableselector.get_all_inputs(),
+            self.variableselector.get_all_states(),
         ]
 
         @callback(  # type: ignore[misc]

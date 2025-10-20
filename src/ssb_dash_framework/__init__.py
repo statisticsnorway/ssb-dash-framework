@@ -53,6 +53,7 @@ from .utils import DebugInspector
 from .utils import DemoDataCreator
 from .utils import TabImplementation
 from .utils import WindowImplementation
+from .utils import apply_edits
 from .utils import create_alert
 from .utils import create_database
 from .utils import create_database_engine
