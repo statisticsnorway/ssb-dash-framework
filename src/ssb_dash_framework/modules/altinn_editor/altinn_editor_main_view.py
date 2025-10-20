@@ -116,7 +116,6 @@ class AltinnSkjemadataEditor:
                     variable_selector_instance=self.variableselector,
                 ),
                 AltinnEditorComment(
-                    time_units=time_units,
                     conn=self.conn,
                 ),
             ]
