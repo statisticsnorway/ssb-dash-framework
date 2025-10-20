@@ -26,7 +26,6 @@ class AltinnEditorComment:
         """Initializes the Altinn Editor Comment module.
 
         Args:
-            time_units (list[str]): List of time units to be used in the module.
             conn (object): Database connection object that must have a 'query' method.
 
         Raises:
