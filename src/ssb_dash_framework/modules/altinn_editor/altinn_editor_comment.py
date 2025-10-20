@@ -21,7 +21,6 @@ class AltinnEditorComment:
 
     def __init__(
         self,
-        time_units: list[str],
         conn: object,
     ) -> None:
         """Initializes the Altinn Editor Comment module.
@@ -35,7 +34,6 @@ class AltinnEditorComment:
         """
         assert hasattr(conn, "query"), "The database object must have a 'query' method."
         self.conn = conn
-        self.time_units = time_units
         self.module_layout = self._create_layout()
         self.module_callbacks()
 

@@ -220,8 +220,8 @@ class EditingTable:
         - Cancelling edits (reverting table to saved state) (`cancel_edit`).
         """
         dynamic_states = [
-            self.variableselector.get_inputs(),
-            self.variableselector.get_states(),
+            self.variableselector.get_all_inputs(),
+            self.variableselector.get_all_states(),
         ]
 
         @callback(  # type: ignore[misc]
