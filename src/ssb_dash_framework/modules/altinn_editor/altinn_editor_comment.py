@@ -11,7 +11,6 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
-from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
 
 logger = logging.getLogger(__name__)

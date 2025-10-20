@@ -53,13 +53,13 @@ from .utils import DebugInspector
 from .utils import DemoDataCreator
 from .utils import TabImplementation
 from .utils import WindowImplementation
+from .utils import apply_edits
 from .utils import create_alert
 from .utils import create_database
 from .utils import create_database_engine
 from .utils import enable_app_logging
 from .utils import module_validator
 from .utils import sidebar_button
-from .utils import apply_edits
 
 # from .modals import HBMethod
 # from .utils import _get_kostra_r
@@ -90,10 +90,8 @@ __all__ = [
     "ControlFrameworkBase",
     "ControlWindow",
     "DatabaseBuilderAltinnEimerdb",
-    "create_database",
-    "create_database_engine",
-    "DemoDataCreator",
     "DebugInspector",
+    "DemoDataCreator",
     "EditingTable",
     "EditingTableTab",
     "EditingTableWindow",
@@ -127,6 +125,8 @@ __all__ = [
     "WindowImplementation",
     "app_setup",
     "create_alert",
+    "create_database",
+    "create_database_engine",
     "enable_app_logging",
     "main_layout",
     "module_validator",
