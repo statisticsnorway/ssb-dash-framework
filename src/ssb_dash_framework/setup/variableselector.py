@@ -36,7 +36,7 @@ def set_variables(variable_list: str | list[str]) -> None:
         )
     logger.debug(f"Sets up variable options for {variable_list}")
     for variable in variable_list:
-        VariableSelectorOption(variable)
+        VariableSelectorOption(variable_title=variable)
 
 
 class VariableSelector:
@@ -359,6 +359,7 @@ class VariableSelectorOption:  # TODO: Should maybe reverse the logic and have t
             >>> VariableSelectorOption("my numeric option")
             >>> VariableSelectorOption("my text option")
         """
+        logger.debug(f"initializing VariableSelectorOption.\nvariable_title: {variable_title}\nvariable_id: {variable_id}")
         if variable_id and variable_id.startswith("var-"):
             raise ValueError(
                 "'var-' is automatically added to the id of this variable, remove it from the input."
@@ -368,6 +369,8 @@ class VariableSelectorOption:  # TODO: Should maybe reverse the logic and have t
         self.type = "text"
 
         self._is_valid()
+
+        logger.debug(f"Adding option to options list:\n{self}")
 
         VariableSelector._variableselectoroptions.append(self)
 

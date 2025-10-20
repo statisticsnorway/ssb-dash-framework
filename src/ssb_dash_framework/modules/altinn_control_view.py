@@ -77,8 +77,8 @@ class AltinnControlView(ABC):
         module_validator(self)
 
     def _is_valid(self) -> None:
-        VariableSelector([], []).get_option("altinnskjema")
-        VariableSelector([], []).get_option("ident")
+        VariableSelector([], []).get_option("var-altinnskjema", search_target="id")
+        VariableSelector([], []).get_option("var-ident", search_target="id")
 
     def create_layout(self) -> html.Div:
         """Generates the layout for the AltinnControlView module.

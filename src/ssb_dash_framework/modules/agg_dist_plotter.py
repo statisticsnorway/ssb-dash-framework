@@ -102,7 +102,7 @@ class AggDistPlotter(ABC):
     def _is_valid(self) -> None:
         for var in AggDistPlotter._required_variables:
             try:
-                self.variableselector.get_option(var)
+                self.variableselector.get_option(f"var-{var}", search_target="id")
             except ValueError as e:
                 raise ValueError(
                     f"AggDistPlotter requires the variable selector option '{var}' to be set."

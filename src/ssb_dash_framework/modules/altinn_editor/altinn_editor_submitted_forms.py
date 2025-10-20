@@ -54,7 +54,7 @@ class AltinnEditorSubmittedForms:
         self.module_callbacks()
 
     def _is_valid(self) -> None:
-        VariableSelector([], []).get_option("refnr")
+        VariableSelector([], []).get_option("var-refnr", search_target="id")
 
     def _create_layout(self) -> html.Div:
         """Creates the module layout."""

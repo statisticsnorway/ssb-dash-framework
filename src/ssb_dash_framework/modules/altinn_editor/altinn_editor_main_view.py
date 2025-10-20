@@ -126,7 +126,7 @@ class AltinnSkjemadataEditor:
 
     def is_valid(self) -> None:
         """Checks that all VariableSelector options required are defined."""
-        VariableSelector([], []).get_option("ident")
+        VariableSelector([], []).get_option("var-ident", search_target="id")
 
     def get_skjemadata_table_names(self) -> list[dict[str, str]]:
         """Retrieves the names of all the skjemadata-tables in the eimerdb."""
