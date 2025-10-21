@@ -53,7 +53,9 @@ from .utils import DebugInspector
 from .utils import DemoDataCreator
 from .utils import TabImplementation
 from .utils import WindowImplementation
+from .utils import active_no_duplicates_refnr_list
 from .utils import apply_edits
+from .utils import conn_is_ibis
 from .utils import create_alert
 from .utils import create_database
 from .utils import create_database_engine
@@ -123,7 +125,9 @@ __all__ = [
     "VisualizationBuilder",
     "VisualizationBuilderWindow",
     "WindowImplementation",
+    "active_no_duplicates_refnr_list",
     "app_setup",
+    "conn_is_ibis",
     "create_alert",
     "create_database",
     "create_database_engine",
