@@ -10,7 +10,8 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-
+from eimerdb import EimerDBInstance
+from ssb_dash_framework.utils import conn_is_ibis
 from ...utils import create_alert
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,8 @@ class AltinnEditorComment:
         Raises:
             AssertionError: If the connection object does not have a 'query' method.
         """
-        assert hasattr(conn, "query"), "The database object must have a 'query' method."
+        if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
+            raise TypeError(f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}")
         self.conn = conn
         self.module_layout = self._create_layout()
         self.module_callbacks()

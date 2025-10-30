@@ -11,7 +11,8 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-
+from eimerdb import EimerDBInstance
+from ssb_dash_framework.utils import conn_is_ibis
 from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import SQL_COLUMN_CONCAT
 from ...utils.eimerdb_helpers import create_partition_select
@@ -45,7 +46,8 @@ class AltinnEditorSupportTables:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
             AssertionError: If the connection object does not have a 'query' method.
         """
-        assert hasattr(conn, "query"), "The database object must have a 'query' method."
+        if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
+            raise TypeError(f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}")
         self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(

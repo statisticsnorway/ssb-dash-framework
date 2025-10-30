@@ -5,6 +5,7 @@ from .alert_handler import create_alert
 from .app_logger import enable_app_logging
 from .core_query_functions import active_no_duplicates_refnr_list
 from .core_query_functions import conn_is_ibis
+from .core_query_functions import ibis_filter_with_dict
 from .datahelper import DatabaseBuilderAltinnEimerdb
 from .datahelper import DemoDataCreator
 from .datahelper import create_database
@@ -28,6 +29,7 @@ __all__ = [
     "TabImplementation",
     "WindowImplementation",
     "active_no_duplicates_refnr_list",
+    "ibis_filter_with_dict",
     "apply_edits",
     "conn_is_ibis",
     "create_alert",

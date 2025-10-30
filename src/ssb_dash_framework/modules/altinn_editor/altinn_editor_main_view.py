@@ -8,8 +8,10 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
+from eimerdb import EimerDBInstance
 
 from ...setup.variableselector import VariableSelector
+from ...utils.core_query_functions import conn_is_ibis
 from .altinn_editor_comment import AltinnEditorComment
 from .altinn_editor_contact import AltinnEditorContact
 from .altinn_editor_control import AltinnEditorControl
@@ -55,9 +57,9 @@ class AltinnSkjemadataEditor:
             sidepanels (None): Later might be used for customizing sidepanel modules.
             top_panels (None): Later might be used for customizing top-panel modules.
         """
-        assert hasattr(
-            conn, "tables"
-        ), "The database object must have a 'tables' attribute."
+        # assert hasattr(
+        #     conn, "tables"
+        # ), "The database object must have a 'tables' attribute."
         self.icon = "🗊"
         self.label = "Data editor"
 
@@ -128,10 +130,15 @@ class AltinnSkjemadataEditor:
 
     def get_skjemadata_table_names(self) -> list[dict[str, str]]:
         """Retrieves the names of all the skjemadata-tables in the eimerdb."""
-        all_tables = list(self.conn.tables.keys())
-        skjemadata_tables = [
-            element for element in all_tables if element.startswith("skjemadata")
-        ]
+        if isinstance(self.conn, EimerDBInstance):
+            all_tables = list(self.conn.tables.keys())
+            skjemadata_tables = [
+                element for element in all_tables if element.startswith("skjemadata")
+            ]
+        elif conn_is_ibis(self.conn):
+            skjemadata_tables = [table for table in self.conn.list_tables() if table.startswith("skjemadata_")]
+        else:
+            raise TypeError(f"Connection object conn supplied to 'AltinnSkjemadataEditor' is not supported. Received: {type(self.conn)}")
         return [{"label": item, "value": item} for item in skjemadata_tables]
 
     def skjemadata_table_selector(self) -> dbc.Col:

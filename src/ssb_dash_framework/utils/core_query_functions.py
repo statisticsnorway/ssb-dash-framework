@@ -26,6 +26,19 @@ def conn_is_ibis(conn: Any) -> bool:
     else:
         return False
 
+def ibis_filter_with_dict(periods_dict):
+    """
+    
+    Example:
+        filter_dict = {"year": "2025", "quarter": "3"}
+        t.filter(ibis_filter_with_dict(filter_dict))
+    """
+    filters = []
+    for key, value in periods_dict.items():
+        col = getattr(_, key)
+        expr = col == value
+        filters.append(expr)
+    return filters
 
 def active_no_duplicates_refnr_list(
     conn: ibis.BaseBackend, skjema: str | None = None
