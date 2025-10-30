@@ -1,9 +1,8 @@
 import logging
 from typing import Any
-import ibis
-from ibis import _
 
 import dash_ag_grid as dag
+import ibis
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -11,7 +10,10 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
-from ssb_dash_framework.utils import conn_is_ibis, ibis_filter_with_dict
+from ibis import _
+
+from ssb_dash_framework.utils import conn_is_ibis
+from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
 from ...utils.alert_handler import create_alert
@@ -46,7 +48,9 @@ class AltinnEditorPrimaryTable:
         """
         print("Test: ", conn_is_ibis(conn))
         if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
-            raise TypeError(f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}")
+            raise TypeError(
+                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
+            )
         self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
@@ -150,18 +154,18 @@ class AltinnEditorPrimaryTable:
                     logger.debug(
                         f"partition_select:\n{create_partition_select(desired_partitions=self.time_units,skjema=skjema,**partition_args,)}"
                     )
-                    filter_dict = {
-                        "aar": "2024"
-                    }
+                    filter_dict = {"aar": "2024"}
 
                     t = (
-                        t
-                        .filter(_.refnr == refnr)
+                        t.filter(_.refnr == refnr)
                         .join(d, "variabel", how="left")
                         .order_by(_.radnr)
                     )
                     t = t.filter(ibis_filter_with_dict(filter_dict))
-                    df = t.drop([col for col in t.columns if col.endswith("_right")]+["datatype", "radnr", "tabell"]).to_pandas()
+                    df = t.drop(
+                        [col for col in t.columns if col.endswith("_right")]
+                        + ["datatype", "radnr", "tabell"]
+                    ).to_pandas()
                     logger.debug(f"resultat dataframe:\n{df.head(2)}")
                     columndefs = [
                         {

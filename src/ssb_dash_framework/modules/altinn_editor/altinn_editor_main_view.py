@@ -136,9 +136,15 @@ class AltinnSkjemadataEditor:
                 element for element in all_tables if element.startswith("skjemadata")
             ]
         elif conn_is_ibis(self.conn):
-            skjemadata_tables = [table for table in self.conn.list_tables() if table.startswith("skjemadata_")]
+            skjemadata_tables = [
+                table
+                for table in self.conn.list_tables()
+                if table.startswith("skjemadata_")
+            ]
         else:
-            raise TypeError(f"Connection object conn supplied to 'AltinnSkjemadataEditor' is not supported. Received: {type(self.conn)}")
+            raise TypeError(
+                f"Connection object conn supplied to 'AltinnSkjemadataEditor' is not supported. Received: {type(self.conn)}"
+            )
         return [{"label": item, "value": item} for item in skjemadata_tables]
 
     def skjemadata_table_selector(self) -> dbc.Col:
