@@ -244,23 +244,53 @@ class AltinnEditorPrimaryTable:
                 f"args: {args}"
             )
             if conn_is_ibis(self.conn):
-                try:
-                    period_where = [f"{x} = '{edited[0]['data'][x]}'" for x in self.time_units]
-                    ident = edited[0]['data']["ident"]
-                    refnr = edited[0]['data']["refnr"]
-                    variable = edited[0]['data']["variabel"]
-                    
-                    value = edited[0]['data']["verdi"]
-                    print(period_where)
-                    condition_str = " AND ".join(period_where)
-                    query = f"""
-                        UPDATE {tabell}
-                        SET verdi = '{value}'
-                        WHERE variabel = '{variable}' AND ident = '{ident}' AND refnr = '{refnr}' AND {condition_str}
-                    """
-                    self.conn.raw_sql(query)
-                except Exception as e:
-                    raise e
+                period_where = [f"{x} = '{edited[0]['data'][x]}'" for x in self.time_units]
+                ident = edited[0]['data']["ident"]
+                refnr = edited[0]['data']["refnr"]
+                value = edited[0]["value"]
+                old_value = edited[0]["oldValue"]
+                condition_str = " AND ".join(period_where)
+                columns = self.conn.table(tabell).columns
+                if "variabel" in columns and "verdi" in columns:
+                    try:
+                        variable = edited[0]['data']["variabel"]
+                        query = f"""
+                            UPDATE {tabell}
+                            SET verdi = '{value}'
+                            WHERE variabel = '{variable}' AND ident = '{ident}' AND refnr = '{refnr}' AND {condition_str}
+                        """
+                        self.conn.raw_sql(query)
+                        alert_store = [
+                            create_alert(
+                                f"ident: {ident}, variabel: {variable} er oppdatert fra {old_value} til {value}!",
+                                "success",
+                                ephemeral=True,
+                            ),
+                            *alert_store,
+                        ]
+                    except Exception as e:
+                        raise e
+                else:
+                    try:
+                        variable = edited[0]["colId"]
+                        query = f"""
+                            UPDATE {tabell}
+                            SET {variable} = '{value}'
+                            WHERE ident = '{ident}' AND refnr = '{refnr}' AND {condition_str}
+                        """
+                        self.conn.raw_sql(query)
+                        alert_store = [
+                            create_alert(
+                                f"ident: {ident}, {variable} er oppdatert fra {old_value} til {value}!",
+                                "success",
+                                ephemeral=True,
+                            ),
+                            *alert_store,
+                        ]
+                    except Exception as e:
+                        raise e
+                return alert_store
+                
             elif isinstance(self.conn, EimerDBInstance):
                 partition_args = dict(zip(self.time_units, args, strict=False))
                 tables_editable_dict = {}
