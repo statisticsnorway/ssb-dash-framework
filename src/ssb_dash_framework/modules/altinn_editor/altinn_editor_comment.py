@@ -1,9 +1,10 @@
 import logging
-from typing import Any
 import time
+from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import ibis
 from dash import callback
 from dash import dcc
 from dash import html
@@ -13,7 +14,6 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
 from ibis import _
-import ibis
 
 from ssb_dash_framework.utils import conn_is_ibis
 
@@ -157,7 +157,7 @@ class AltinnEditorComment:
                 raise PreventUpdate
             if isinstance(self.conn, EimerDBInstance):
                 conn = ibis.polars.connect()
-                data = self.conn.query(f"SELECT * FROM skjemamottak")
+                data = self.conn.query("SELECT * FROM skjemamottak")
                 conn.create_table("skjemamottak", data)
             elif conn_is_ibis(self.conn):
                 conn = self.conn
@@ -209,7 +209,7 @@ class AltinnEditorComment:
                 f"alert_store: {alert_store}"
             )
             if n_clicks and n_clicks > 0 and selected_row:
-                if conn_is_ibis(self.conn): # TODO make update logic
+                if conn_is_ibis(self.conn):  # TODO make update logic
                     ...
                 elif isinstance(self.conn, EimerDBInstance):
                     try:

@@ -152,7 +152,7 @@ class AltinnEditorControl:
                 return None, None, None, "Se kontrollutslag"
             if isinstance(self.conn, EimerDBInstance):
                 conn = ibis.polars.connect()
-                data = self.conn.query(f"SELECT * FROM kontroller")
+                data = self.conn.query("SELECT * FROM kontroller")
                 conn.create_table("kontroller", data)
                 kontrollutslag = self.conn.query("SELECT * FROM kontrollutslag")
                 conn.create_table("kontrollutslag", kontrollutslag)

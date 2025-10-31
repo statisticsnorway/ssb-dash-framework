@@ -11,10 +11,10 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
-import ibis
 from ibis import _
+
 from ssb_dash_framework.utils import conn_is_ibis
-from ssb_dash_framework.utils import ibis_filter_with_dict
+
 from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import create_partition_select
 
@@ -150,12 +150,12 @@ class AltinnEditorHistory:
                     t = conn.table("skjemadataendringshistorikk")
                     df = t.filter(_.refnr == refnr).order_by(_.endret_tid).to_pandas()
                     columns = [
-                            {
-                                "headerName": col,
-                                "field": col,
-                            }
-                            for col in df.columns
-                        ]
+                        {
+                            "headerName": col,
+                            "field": col,
+                        }
+                        for col in df.columns
+                    ]
                     return df.to_dict("records"), columns
                 elif isinstance(self.conn, EimerDBInstance):
                     try:

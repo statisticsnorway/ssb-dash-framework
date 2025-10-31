@@ -1,8 +1,10 @@
 import logging
-from typing import Any
 import time
+from typing import Any
+
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import ibis
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -10,13 +12,12 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
-import ibis
 from ibis import _
+
 from ssb_dash_framework.utils import conn_is_ibis
 from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
-from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +126,9 @@ class AltinnEditorUnitDetails:
                     args,
                 )
                 return None, None
-            time.sleep(1) # TODO: Fix some kind of multithreading to let it query more than one thing at a time.
+            time.sleep(
+                1
+            )  # TODO: Fix some kind of multithreading to let it query more than one thing at a time.
             try:
                 if isinstance(self.conn, EimerDBInstance):
                     conn = ibis.polars.connect()
@@ -137,7 +140,11 @@ class AltinnEditorUnitDetails:
                     raise TypeError("Connection object is invalid type.")
                 filter_dict = {"aar": "2024"}
                 t = conn.table("enhetsinfo")
-                df = t.filter(_.ident == ident).filter(ibis_filter_with_dict(filter_dict)).to_pandas()
+                df = (
+                    t.filter(_.ident == ident)
+                    .filter(ibis_filter_with_dict(filter_dict))
+                    .to_pandas()
+                )
                 if "row_id" in df.columns:
                     df = df.drop(columns=["row_id"])
                 columns = [{"headerName": col, "field": col} for col in df.columns]

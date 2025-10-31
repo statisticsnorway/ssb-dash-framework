@@ -190,8 +190,12 @@ class AltinnEditorPrimaryTable:
                 try:
                     partition_args = dict(zip(self.time_units, args, strict=False))
                     t = conn.table(tabell)
-                    
-                    df = t.filter(ibis_filter_with_dict(filter_dict)).filter(_.refnr == refnr).to_pandas()
+
+                    df = (
+                        t.filter(ibis_filter_with_dict(filter_dict))
+                        .filter(_.refnr == refnr)
+                        .to_pandas()
+                    )
                     columndefs = [
                         {
                             "headerName": col,
@@ -246,16 +250,18 @@ class AltinnEditorPrimaryTable:
                 f"args: {args}"
             )
             if conn_is_ibis(self.conn):
-                period_where = [f"{x} = '{edited[0]['data'][x]}'" for x in self.time_units]
-                ident = edited[0]['data']["ident"]
-                refnr = edited[0]['data']["refnr"]
+                period_where = [
+                    f"{x} = '{edited[0]['data'][x]}'" for x in self.time_units
+                ]
+                ident = edited[0]["data"]["ident"]
+                refnr = edited[0]["data"]["refnr"]
                 value = edited[0]["value"]
                 old_value = edited[0]["oldValue"]
                 condition_str = " AND ".join(period_where)
                 columns = self.conn.table(tabell).columns
                 if "variabel" in columns and "verdi" in columns:
                     try:
-                        variable = edited[0]['data']["variabel"]
+                        variable = edited[0]["data"]["variabel"]
                         query = f"""
                             UPDATE {tabell}
                             SET verdi = '{value}'
@@ -292,7 +298,7 @@ class AltinnEditorPrimaryTable:
                     except Exception as e:
                         raise e
                 return alert_store
-                
+
             elif isinstance(self.conn, EimerDBInstance):
                 partition_args = dict(zip(self.time_units, args, strict=False))
                 tables_editable_dict = {}
@@ -374,4 +380,6 @@ class AltinnEditorPrimaryTable:
                     ]
                     return alert_store
             else:
-                raise TypeError(f"Conection 'self.conn' is not a valid connection object. Is type: {type(self.conn)}")
+                raise TypeError(
+                    f"Conection 'self.conn' is not a valid connection object. Is type: {type(self.conn)}"
+                )
