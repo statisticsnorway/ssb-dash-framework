@@ -121,6 +121,15 @@ class AltinnEditorPrimaryTable:
                 f"skjema: {skjema}\n"
                 f"args: {args}"
             )
+
+            if (
+                refnr is None
+                or tabell is None
+                or skjema is None
+                or any(arg is None for arg in args)
+            ):
+                logger.debug("Returning nothing.")
+                return None, None
             if isinstance(self.conn, EimerDBInstance):
                 conn = ibis.polars.connect()
                 data = self.conn.query(f"SELECT * FROM {tabell}")
@@ -137,14 +146,6 @@ class AltinnEditorPrimaryTable:
             else:
                 long_format = False
 
-            if (
-                refnr is None
-                or tabell is None
-                or skjema is None
-                or any(arg is None for arg in args)
-            ):
-                logger.debug("Returning nothing.")
-                return None, None
             filter_dict = {"aar": "2024"}
             if long_format:
                 logger.debug("Processing long data")

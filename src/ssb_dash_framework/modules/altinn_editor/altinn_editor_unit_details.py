@@ -1,6 +1,6 @@
 import logging
 from typing import Any
-
+import time
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import callback
@@ -10,8 +10,10 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
-
+import ibis
+from ibis import _
 from ssb_dash_framework.utils import conn_is_ibis
+from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import create_partition_select
@@ -123,17 +125,21 @@ class AltinnEditorUnitDetails:
                     args,
                 )
                 return None, None
+            time.sleep(0.1) # TODO: Fix some kind of multithreading to let it query more than one thing at a time.
             try:
-                partition_args = dict(zip(self.time_units, args, strict=False))
-                df = self.conn.query(
-                    f"SELECT * FROM enhetsinfo WHERE ident = '{ident}'",
-                    create_partition_select(
-                        desired_partitions=self.time_units,
-                        skjema=None,
-                        **partition_args,
-                    ),
-                )
-                df.drop(columns=["row_id"], inplace=True)
+                if isinstance(self.conn, EimerDBInstance):
+                    conn = ibis.polars.connect()
+                    data = self.conn.query("SELECT * FROM enhetsinfo")
+                    conn.create_table("enhetsinfo", data)
+                elif conn_is_ibis(self.conn):
+                    conn = self.conn
+                else:
+                    raise TypeError("Connection object is invalid type.")
+                filter_dict = {"aar": "2024"}
+                t = conn.table("enhetsinfo")
+                df = t.filter(_.ident == ident).filter(ibis_filter_with_dict(filter_dict)).to_pandas()
+                if "row_id" in df.columns:
+                    df = df.drop(columns=["row_id"])
                 columns = [{"headerName": col, "field": col} for col in df.columns]
                 return df.to_dict("records"), columns
             except Exception as e:
