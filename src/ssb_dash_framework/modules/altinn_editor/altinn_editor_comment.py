@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+import time
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -11,6 +12,8 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
+from ibis import _
+import ibis
 
 from ssb_dash_framework.utils import conn_is_ibis
 
@@ -152,10 +155,17 @@ class AltinnEditorComment:
             if n_clicks is None:
                 logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
-            df = self.conn.query(
-                f"SELECT * FROM skjemamottak WHERE ident = '{ident}'",
-                partition_select={"skjema": [skjema]},
-            )
+            if isinstance(self.conn, EimerDBInstance):
+                conn = ibis.polars.connect()
+                data = self.conn.query(f"SELECT * FROM skjemamottak")
+                conn.create_table("skjemamottak", data)
+            elif conn_is_ibis(self.conn):
+                conn = self.conn
+            else:
+                raise TypeError("Connection object is invalid type.")
+            time.sleep(2)
+            t = conn.table("skjemamottak")
+            df = t.filter(_.ident == ident).filter(_.skjema == skjema).to_pandas()
             columns = [
                 {
                     "headerName": col,
@@ -199,33 +209,38 @@ class AltinnEditorComment:
                 f"alert_store: {alert_store}"
             )
             if n_clicks and n_clicks > 0 and selected_row:
-                try:
-                    row_id = selected_row[0]["row_id"]
-                    self.conn.query(
-                        f"""
-                        UPDATE skjemamottak
-                        SET kommentar = '{kommentar}'
-                        WHERE row_id = '{row_id}'
-                        """,
-                        partition_select={"skjema": [skjema]},
-                    )
-                    alert_store = [
-                        create_alert(
-                            "Kommentarfeltet er oppdatert!",
-                            "success",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-                except Exception as e:
-                    alert_store = [
-                        create_alert(
-                            f"Oppdatering av kommentarfeltet feilet. {str(e)[:60]}",
-                            "danger",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-                return alert_store
+                if conn_is_ibis(self.conn): # TODO make update logic
+                    ...
+                elif isinstance(self.conn, EimerDBInstance):
+                    try:
+                        row_id = selected_row[0]["row_id"]
+                        self.conn.query(
+                            f"""
+                            UPDATE skjemamottak
+                            SET kommentar = '{kommentar}'
+                            WHERE row_id = '{row_id}'
+                            """,
+                            partition_select={"skjema": [skjema]},
+                        )
+                        alert_store = [
+                            create_alert(
+                                "Kommentarfeltet er oppdatert!",
+                                "success",
+                                ephemeral=True,
+                            ),
+                            *alert_store,
+                        ]
+                    except Exception as e:
+                        alert_store = [
+                            create_alert(
+                                f"Oppdatering av kommentarfeltet feilet. {str(e)[:60]}",
+                                "danger",
+                                ephemeral=True,
+                            ),
+                            *alert_store,
+                        ]
+                    return alert_store
+                else:
+                    raise TypeError("Connection object is invalid type.")
             logger.debug("Raised PreventUpdate")
             raise PreventUpdate

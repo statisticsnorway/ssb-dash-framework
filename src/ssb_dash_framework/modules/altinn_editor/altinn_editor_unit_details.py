@@ -125,7 +125,7 @@ class AltinnEditorUnitDetails:
                     args,
                 )
                 return None, None
-            time.sleep(0.1) # TODO: Fix some kind of multithreading to let it query more than one thing at a time.
+            time.sleep(1) # TODO: Fix some kind of multithreading to let it query more than one thing at a time.
             try:
                 if isinstance(self.conn, EimerDBInstance):
                     conn = ibis.polars.connect()
