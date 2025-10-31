@@ -3,6 +3,7 @@ from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import ibis
 from dash import callback
 from dash import dcc
 from dash import html
@@ -10,6 +11,11 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from eimerdb import EimerDBInstance
+from ibis import _
+
+from ssb_dash_framework.utils import conn_is_ibis
+from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
@@ -38,7 +44,10 @@ class AltinnEditorSubmittedForms:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
             AssertionError: If the connection object does not have a 'query' method.
         """
-        assert hasattr(conn, "query"), "The database object must have a 'query' method."
+        if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
+            raise TypeError(
+                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
+            )
         self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
@@ -148,24 +157,28 @@ class AltinnEditorSubmittedForms:
             logger.debug(f"Args:\nident: {ident}\nargs: {args}")
             if ident is None or any(arg is None for arg in args):
                 return [], None
-
+            if isinstance(self.conn, EimerDBInstance):
+                conn = ibis.polars.connect()
+                data = self.conn.query("SELECT * FROM enheter")
+                conn.create_table("enheter", data)
+            elif conn_is_ibis(self.conn):
+                conn = self.conn
+            else:
+                raise TypeError("Connection object is invalid type.")
             try:
-                partition_args = dict(zip(self.time_units, args, strict=False))
-                skjemaer = self.conn.query(
-                    f"SELECT * FROM enheter WHERE ident = '{ident}'",
-                    create_partition_select(
-                        desired_partitions=self.time_units,
-                        skjema=None,
-                        **partition_args,
-                    ),
-                )["skjema"][0]
+                t = conn.table("enheter")
+                filter_dict = {"aar": "2024"}
+                skjemaer = (
+                    t.filter(ibis_filter_with_dict(filter_dict))
+                    .filter(_.ident == ident)
+                    .select("skjema")
+                    .distinct(on="skjema")
+                    .to_pandas()["skjema"]
+                    .to_list()
+                )
 
-                skjemaer = [item.strip() for item in skjemaer.split(",")]
-                skjemaer_dd_options = [
-                    {"label": item, "value": item} for item in skjemaer
-                ]
-                options = skjemaer_dd_options
-                value = skjemaer_dd_options[0]["value"]
+                options = [{"label": item, "value": item} for item in skjemaer]
+                value = options[0]["value"]
                 return options, value
             except Exception as e:
                 logger.error(f"Error in update_skjemaer: {e}", exc_info=True)
@@ -280,18 +293,21 @@ class AltinnEditorSubmittedForms:
             logger.debug(f"Args:\nskjema: {skjema}\nident: {ident}\nargs: {args}")
             if skjema is None or ident is None or any(arg is None for arg in args):
                 return None, None
-
+            if isinstance(self.conn, EimerDBInstance):
+                conn = ibis.polars.connect()
+                data = self.conn.query("SELECT * FROM skjemamottak")
+                conn.create_table("skjemamottak", data)
+            elif conn_is_ibis(self.conn):
+                conn = self.conn
             try:
-                partition_args = dict(zip(self.time_units, args, strict=False))
-                df = self.conn.query(
-                    f"""SELECT refnr, dato_mottatt, editert, aktiv
-                    FROM skjemamottak WHERE ident = '{ident}' AND aktiv = True
-                    ORDER BY dato_mottatt DESC""",
-                    create_partition_select(
-                        desired_partitions=self.time_units,
-                        skjema=skjema,
-                        **partition_args,
-                    ),
+                filter_dict = {"aar": "2024"}  # TODO fix
+                t = conn.table("skjemamottak")
+                df = (
+                    t.filter(ibis_filter_with_dict(filter_dict))
+                    .filter(_.ident == ident)
+                    .order_by(_.dato_mottatt)
+                    .select("dato_mottatt", "refnr", "editert", "aktiv")
+                    .to_pandas()
                 )
                 columns = [
                     (
@@ -301,6 +317,7 @@ class AltinnEditorSubmittedForms:
                     )
                     for col in df.columns
                 ]
+                print("Test: ", df)
                 return df.to_dict("records"), columns
             except Exception as e:
                 logger.error(f"Error in update_sidebar_table: {e}", exc_info=True)

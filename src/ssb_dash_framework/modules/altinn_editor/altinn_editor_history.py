@@ -10,6 +10,10 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from eimerdb import EimerDBInstance
+from ibis import _
+
+from ssb_dash_framework.utils import conn_is_ibis
 
 from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import create_partition_select
@@ -37,9 +41,9 @@ class AltinnEditorHistory:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
             AssertionError: If the connection object does not have a 'query_changes' method.
         """
-        assert hasattr(
-            conn, "query_changes"
-        ), "The database object must have a 'query_changes' method."
+        # assert hasattr(
+        #     conn, "query_changes"
+        # ), "The database object must have a 'query_changes' method."
         self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
@@ -139,22 +143,12 @@ class AltinnEditorHistory:
                 f"args: {args}"
             )
             if is_open:
-                try:
-                    partition_args = dict(zip(self.time_units, args, strict=False))
-                    refnr = selected_row[0]["refnr"]
-                    df = self.conn.query_changes(
-                        f"""SELECT * FROM {tabell}
-                        WHERE refnr = '{refnr}'
-                        ORDER BY datetime DESC
-                        """,
-                        partition_select=create_partition_select(
-                            desired_partitions=self.time_units,
-                            skjema=skjema,
-                            **partition_args,
-                        ),
-                    )
-                    if df is None:
-                        df = pd.DataFrame(columns=["ingen", "data"])
+                refnr = selected_row[0]["refnr"]
+
+                if conn_is_ibis(self.conn):
+                    conn = self.conn
+                    t = conn.table("skjemadataendringshistorikk")
+                    df = t.filter(_.refnr == refnr).order_by(_.endret_tid).to_pandas()
                     columns = [
                         {
                             "headerName": col,
@@ -163,9 +157,33 @@ class AltinnEditorHistory:
                         for col in df.columns
                     ]
                     return df.to_dict("records"), columns
-                except Exception as e:
-                    logger.error(f"Error in historikktabell: {e}", exc_info=True)
-                    return None, None
+                elif isinstance(self.conn, EimerDBInstance):
+                    try:
+                        partition_args = dict(zip(self.time_units, args, strict=False))
+                        df = self.conn.query_changes(
+                            f"""SELECT * FROM {tabell}
+                            WHERE refnr = '{refnr}'
+                            ORDER BY datetime DESC
+                            """,
+                            partition_select=create_partition_select(
+                                desired_partitions=self.time_units,
+                                skjema=skjema,
+                                **partition_args,
+                            ),
+                        )
+                        if df is None:
+                            df = pd.DataFrame(columns=["ingen", "data"])
+                        columns = [
+                            {
+                                "headerName": col,
+                                "field": col,
+                            }
+                            for col in df.columns
+                        ]
+                        return df.to_dict("records"), columns
+                    except Exception as e:
+                        logger.error(f"Error in historikktabell: {e}", exc_info=True)
+                        return None, None
             else:
                 logger.debug("Raised PreventUpdate")
                 raise PreventUpdate

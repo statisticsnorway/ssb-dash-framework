@@ -5,6 +5,7 @@ from .alert_handler import create_alert
 from .app_logger import enable_app_logging
 from .core_query_functions import active_no_duplicates_refnr_list
 from .core_query_functions import conn_is_ibis
+from .core_query_functions import ibis_filter_with_dict
 from .datahelper import DatabaseBuilderAltinnEimerdb
 from .datahelper import DemoDataCreator
 from .datahelper import create_database
@@ -34,6 +35,7 @@ __all__ = [
     "create_database",
     "create_database_engine",
     "enable_app_logging",
+    "ibis_filter_with_dict",
     "module_validator",
     "sidebar_button",
     # "_get_kostra_r",
