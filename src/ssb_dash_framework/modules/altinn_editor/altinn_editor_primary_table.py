@@ -245,20 +245,20 @@ class AltinnEditorPrimaryTable:
             )
             if conn_is_ibis(self.conn):
                 try:
-                    periods = 
-                    period_where = 
-                    ident = edited[0]["ident"]
-                    refnr = edited[0]["refnr"]
-                    variable = edited[0]["variabel"]
-                    value = edited[0]["verdi"]
-                    self.conn.raw_sql(f"""
-                    UPDATE {tabell}
-                    SET {variable} = {value}
-                    WHERE
-                        ident = ? AND
-                        refnr = ? AND
-                        {period_where}
-                    """, [tabell, variable, value, ident, refnr, ...])
+                    period_where = [f"{x} = '{edited[0]['data'][x]}'" for x in self.time_units]
+                    ident = edited[0]['data']["ident"]
+                    refnr = edited[0]['data']["refnr"]
+                    variable = edited[0]['data']["variabel"]
+                    
+                    value = edited[0]['data']["verdi"]
+                    print(period_where)
+                    condition_str = " AND ".join(period_where)
+                    query = f"""
+                        UPDATE {tabell}
+                        SET verdi = '{value}'
+                        WHERE variabel = '{variable}' AND ident = '{ident}' AND refnr = '{refnr}' AND {condition_str}
+                    """
+                    self.conn.raw_sql(query)
                 except Exception as e:
                     raise e
             elif isinstance(self.conn, EimerDBInstance):
