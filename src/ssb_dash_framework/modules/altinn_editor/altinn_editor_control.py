@@ -150,7 +150,20 @@ class AltinnEditorControl:
                 or any(arg is None for arg in args)
             ):
                 return None, None, None, "Se kontrollutslag"
+            if isinstance(self.conn, EimerDBInstance):
+                conn = ibis.polars.connect()
+                data = self.conn.query(f"SELECT * FROM kontroller")
+                conn.create_table("kontroller", data)
+                kontrollutslag = self.conn.query("SELECT * FROM kontrollutslag")
+                conn.create_table("kontrollutslag", kontrollutslag)
+            elif conn_is_ibis(self.conn):
+                conn = self.conn
+            else:
+                raise TypeError("Connection object is invalid type.")
             try:
+                filter_dict = {"aar": "2024"}
+                conn.table("kontroller")
+                conn.table("kontrollutslag")
                 partition_args = dict(zip(self.time_units, args, strict=False))
                 refnr = selected_row[0]["refnr"]
                 df = self.conn.query(

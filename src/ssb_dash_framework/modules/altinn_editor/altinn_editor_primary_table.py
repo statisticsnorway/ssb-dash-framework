@@ -128,7 +128,8 @@ class AltinnEditorPrimaryTable:
                 or skjema is None
                 or any(arg is None for arg in args)
             ):
-                logger.debug("Returning nothing.")
+                logger.info("Returning nothing.")
+                logger.debug(f"Args length: {len(args)}")
                 return None, None
             if isinstance(self.conn, EimerDBInstance):
                 conn = ibis.polars.connect()
