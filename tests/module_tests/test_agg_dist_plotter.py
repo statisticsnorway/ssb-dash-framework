@@ -3,8 +3,6 @@ from ssb_dash_framework import AggDistPlotterTab
 from ssb_dash_framework import AggDistPlotterWindow
 from ssb_dash_framework import set_variables
 
-from ..conftest import DummyDatabase
-
 
 def test_import() -> None:
     assert AggDistPlotter is not None
@@ -12,7 +10,7 @@ def test_import() -> None:
     assert AggDistPlotterWindow is not None
 
 
-def test_instantiation() -> None:
+def test_instantiation(ibis_polars_conn) -> None:
     set_variables(
         [
             "aar",
@@ -22,5 +20,5 @@ def test_instantiation() -> None:
             "altinnskjema",  # Required by the module itself
         ]
     )
-    AggDistPlotterTab(time_units=["aar", "maaned"], conn=DummyDatabase())
-    AggDistPlotterWindow(time_units=["aar", "maaned"], conn=DummyDatabase())
+    AggDistPlotterTab(time_units=["aar", "maaned"], conn=ibis_polars_conn)
+    AggDistPlotterWindow(time_units=["aar", "maaned"], conn=ibis_polars_conn)
