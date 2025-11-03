@@ -1,8 +1,10 @@
 import logging
+import time
 from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import ibis
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -10,14 +12,12 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
-import ibis
 from ibis import _
-from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ssb_dash_framework.utils import conn_is_ibis
+from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
-from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
 
@@ -168,8 +168,15 @@ class AltinnEditorControl:
                 k = conn.table("kontroller")
                 u = conn.table("kontrollutslag")
                 refnr = selected_row[0]["refnr"]
-
-                df = u.filter(_.refnr == refnr).filter(_.utslag==True).filter(ibis_filter_with_dict(filter_dict)).join(k, "kontrollid", how="left").select("kontrollid", "skildring", "utslag").to_pandas()
+                time.sleep(1.5)
+                df = (
+                    u.filter(_.refnr == refnr)
+                    .filter(_.utslag == True)
+                    .filter(ibis_filter_with_dict(filter_dict))
+                    .join(k, "kontrollid", how="left")
+                    .select("kontrollid", "skildring", "utslag")
+                    .to_pandas()
+                )
 
                 # partition_args = dict(zip(self.time_units, args, strict=False))
                 # df = self.conn.query(
