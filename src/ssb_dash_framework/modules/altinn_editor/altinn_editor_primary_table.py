@@ -13,6 +13,7 @@ from eimerdb import EimerDBInstance
 from ibis import _
 
 from ssb_dash_framework.utils import conn_is_ibis
+from ssb_dash_framework.utils import create_filter_dict
 from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
@@ -137,8 +138,12 @@ class AltinnEditorPrimaryTable:
                 conn.create_table(tabell, data)
                 datatyper = self.conn.query("SELECT * FROM datatyper")
                 conn.create_table("datatyper", datatyper)
+                filter_dict = create_filter_dict(
+                    self.time_units, [int(x) for x in args]
+                )
             elif conn_is_ibis(self.conn):
                 conn = self.conn
+                filter_dict = create_filter_dict(self.time_units, args)
             else:
                 raise TypeError("Connection object is invalid type.")
             columns = conn.table(tabell).columns
@@ -147,7 +152,6 @@ class AltinnEditorPrimaryTable:
             else:
                 long_format = False
 
-            filter_dict = {"aar": "2024"}
             if long_format:
                 logger.debug("Processing long data")
                 try:

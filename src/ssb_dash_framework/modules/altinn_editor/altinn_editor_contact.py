@@ -13,6 +13,7 @@ from eimerdb import EimerDBInstance
 from ibis import _
 
 from ssb_dash_framework.utils import conn_is_ibis
+from ssb_dash_framework.utils import create_filter_dict
 from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
@@ -202,12 +203,14 @@ class AltinnEditorContact:
                 conn = ibis.polars.connect()
                 data = self.conn.query("SELECT * FROM kontaktinfo")
                 conn.create_table("kontaktinfo", data)
+                filter_dict = create_filter_dict(
+                    self.time_units, [int(x) for x in args]
+                )
             elif conn_is_ibis(self.conn):
                 conn = self.conn
+                filter_dict = create_filter_dict(self.time_units, args)
             else:
                 raise TypeError("Connection object is invalid type.")
-            partition_args = dict(zip(self.time_units, args, strict=False))
-            filter_dict = {"aar": "2024"}
             t = conn.table("kontaktinfo")
             df_skjemainfo = (
                 t.filter(_.refnr == refnr)

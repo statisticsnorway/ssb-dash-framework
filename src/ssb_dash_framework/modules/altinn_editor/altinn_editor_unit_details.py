@@ -15,6 +15,7 @@ from eimerdb import EimerDBInstance
 from ibis import _
 
 from ssb_dash_framework.utils import conn_is_ibis
+from ssb_dash_framework.utils import create_filter_dict
 from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
@@ -114,7 +115,7 @@ class AltinnEditorUnitDetails:
             Output("skjemadata-enhetsinfomodal-table1", "rowData"),
             Output("skjemadata-enhetsinfomodal-table1", "columnDefs"),
             Input("altinnedit-ident", "value"),
-            self.variableselector.get_all_inputs(),
+            self.variableselector.get_all_states(),
         )
         def update_enhetsinfotabell(
             ident: str, *args: Any
@@ -134,11 +135,15 @@ class AltinnEditorUnitDetails:
                     conn = ibis.polars.connect()
                     data = self.conn.query("SELECT * FROM enhetsinfo")
                     conn.create_table("enhetsinfo", data)
+                    filter_dict = create_filter_dict(
+                        self.time_units, [int(x) for x in args]
+                    )
                 elif conn_is_ibis(self.conn):
                     conn = self.conn
+                    filter_dict = create_filter_dict(self.time_units, args)
                 else:
                     raise TypeError("Connection object is invalid type.")
-                filter_dict = {"aar": "2024"}
+                print(filter_dict)
                 t = conn.table("enhetsinfo")
                 df = (
                     t.filter(_.ident == ident)

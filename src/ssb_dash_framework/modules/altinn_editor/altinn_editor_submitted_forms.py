@@ -15,6 +15,7 @@ from eimerdb import EimerDBInstance
 from ibis import _
 
 from ssb_dash_framework.utils import conn_is_ibis
+from ssb_dash_framework.utils import create_filter_dict
 from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
@@ -149,7 +150,7 @@ class AltinnEditorSubmittedForms:
             Output("altinnedit-skjemaer", "options"),
             Output("altinnedit-skjemaer", "value"),
             Input("altinnedit-ident", "value"),
-            self.variableselector.get_all_inputs(),
+            self.variableselector.get_all_states(),
         )
         def update_skjemaer(
             ident: str, *args: Any
@@ -161,13 +162,17 @@ class AltinnEditorSubmittedForms:
                 conn = ibis.polars.connect()
                 data = self.conn.query("SELECT * FROM enheter")
                 conn.create_table("enheter", data)
+                filter_dict = create_filter_dict(
+                    self.time_units, [int(x) for x in args]
+                )
             elif conn_is_ibis(self.conn):
                 conn = self.conn
+                filter_dict = create_filter_dict(self.time_units, args)
             else:
                 raise TypeError("Connection object is invalid type.")
+            print(filter_dict)
             try:
                 t = conn.table("enheter")
-                filter_dict = {"aar": "2024"}
                 skjemaer = (
                     t.filter(ibis_filter_with_dict(filter_dict))
                     .filter(_.ident == ident)
@@ -291,16 +296,20 @@ class AltinnEditorSubmittedForms:
             skjema: str, ident: str, *args: Any
         ) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
             logger.debug(f"Args:\nskjema: {skjema}\nident: {ident}\nargs: {args}")
+            print("Varselector: ", self.variableselector.states)
             if skjema is None or ident is None or any(arg is None for arg in args):
                 return None, None
             if isinstance(self.conn, EimerDBInstance):
                 conn = ibis.polars.connect()
                 data = self.conn.query("SELECT * FROM skjemamottak")
                 conn.create_table("skjemamottak", data)
+                filter_dict = create_filter_dict(
+                    self.variableselector.states, [int(x) for x in args]
+                )
             elif conn_is_ibis(self.conn):
                 conn = self.conn
+                filter_dict = create_filter_dict(self.variableselector.states, args)
             try:
-                filter_dict = {"aar": "2024"}  # TODO fix
                 t = conn.table("skjemamottak")
                 df = (
                     t.filter(ibis_filter_with_dict(filter_dict))
@@ -335,7 +344,6 @@ class AltinnEditorSubmittedForms:
             if not rows:
                 logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
-
             selected_row = rows[0]
             return [selected_row]
 
