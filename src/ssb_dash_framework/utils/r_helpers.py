@@ -27,7 +27,7 @@ def _get_kostra_r() -> InstalledSTPackage:
     :return: Kostra R package
     """
     globals()["_attempts_kostra_r"] +=1
-    if globals()["_attempts_kostra_r"] > 3:
+    if globals()["_attempts_kostra_r"] > 10:
         raise Exception("Something is wrong.")
     if _kostra_r is not None:
         return _kostra_r
@@ -45,13 +45,13 @@ def _get_kostra_r() -> InstalledSTPackage:
         )
         import subprocess
         commands = [
-            "renv::init()",
-            "renv::install('statisticsnorway/ssb-kostra')"
+            "R -e 'renv::init()'",
+            "R -e 'renv::install(\"statisticsnorway/ssb-kostra\")'"
         ]
 
         for command in commands:
             subprocess.run(
-                'R -e \' '+command,
+                command,
                 shell=True,
                 check=True
             )
