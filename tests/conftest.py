@@ -1,6 +1,6 @@
 from collections.abc import Generator
-from typing import Any
 
+import ibis
 import pytest
 
 from ssb_dash_framework import VariableSelector
@@ -22,15 +22,9 @@ def clear_VariableSelector_variableselectoroptions() -> Generator[None, None, No
     VariableSelector._variableselectoroptions.clear()
 
 
-class DummyDatabase:
-    """Dummy class for mocking a database connection during initialization."""
-
-    def __init__(self) -> None:
-        """Initializes the dummy class."""
-        self.tables: dict[str, Any] = {}
-
-    def query(self, *args: Any, **kwargs: Any) -> Any:
-        return []
-
-    def query_changes(self, *args: Any, **kwargs: Any) -> Any:
-        return []
+@pytest.fixture(autouse=True, scope="session")
+def ibis_polars_conn():
+    print("Setting up connection...")
+    # Example: create a DB connection, API client, etc.
+    ibis_polars_conn = ibis.polars.connect()
+    yield ibis_polars_conn

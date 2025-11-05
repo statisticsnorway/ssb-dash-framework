@@ -329,6 +329,8 @@ class AggDistPlotter(ABC):
             _t_0 = str(time_vars[0])
             _t_1 = str(time_vars[1])
             if isinstance(self.conn, EimerDBInstance):
+                _t_0 = int(_t_0)
+                _t_1 = int(_t_1)
                 conn = ibis.polars.connect()
 
                 skjemamottak = self.conn.query(
