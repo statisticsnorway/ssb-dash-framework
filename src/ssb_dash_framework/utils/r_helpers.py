@@ -47,6 +47,7 @@ def _get_kostra_r() -> InstalledSTPackage:
         commands = [
             "R -e 'renv::init()'",
             "R -e 'renv::install(\"statisticsnorway/ssb-kostra\")'"
+            "R -e 'quit()'",
         ]
 
         for command in commands:

@@ -63,9 +63,10 @@ from .utils import enable_app_logging
 from .utils import module_validator
 from .utils import sidebar_button
 
-# from .modals import HBMethod
-# from .utils import _get_kostra_r
-# from .utils import hb_method
+from .modules import HBMethod
+from .modules import HBMethodWindow
+from .utils import _get_kostra_r
+from .utils import hb_method
 # from .utils import th_error
 
 __all__ = [
@@ -103,8 +104,8 @@ __all__ = [
     "FreeSearch",
     "FreeSearchTab",
     "FreeSearchWindow",
-    # "HBMethod",
-    # "HBMethodWindow",
+    "HBMethod",
+    "HBMethodWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",

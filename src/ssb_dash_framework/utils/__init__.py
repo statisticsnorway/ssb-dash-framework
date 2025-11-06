@@ -13,8 +13,8 @@ from .datahelper import create_database
 from .datahelper import create_database_engine
 from .debugger_modal import DebugInspector
 
-# from .r_helpers import _get_kostra_r
-# from .r_helpers import hb_method
+from .r_helpers import _get_kostra_r
+from .r_helpers import hb_method
 # from .r_helpers import th_error
 from .functions import sidebar_button
 from .implementations import TabImplementation
@@ -40,7 +40,7 @@ __all__ = [
     "ibis_filter_with_dict",
     "module_validator",
     "sidebar_button",
-    # "_get_kostra_r",
-    # "hb_method",
+    "_get_kostra_r",
+    "hb_method",
     # "th_error",
 ]

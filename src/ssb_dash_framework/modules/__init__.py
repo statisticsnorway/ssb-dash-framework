@@ -25,8 +25,8 @@ from .building_blocks import FigureDisplay
 from .building_blocks import FigureDisplayTab
 from .building_blocks import FigureDisplayWindow
 
-# from .hb_method import HBMethod
-# from .hb_method import HBMethodWindow
+from .hb_method import HBMethod
+from .hb_method import HBMethodWindow
 from .building_blocks import MapDisplay
 from .building_blocks import MapDisplayTab
 from .building_blocks import MapDisplayWindow
@@ -75,8 +75,8 @@ __all__ = [
     "FreeSearch",
     "FreeSearchTab",
     "FreeSearchWindow",
-    # "HBMethod",
-    # "HBMethodWindow",
+    "HBMethod",
+    "HBMethodWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
