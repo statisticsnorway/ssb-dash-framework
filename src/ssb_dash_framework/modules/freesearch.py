@@ -12,6 +12,9 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from eimerdb import EimerDBInstance
+
+from ssb_dash_framework.utils import conn_is_ibis
 
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
@@ -42,9 +45,10 @@ class FreeSearch(ABC):
 
     def __init__(self, database: Any, label: str = "Frisøk") -> None:
         """Initialize the FreeSearch module with a database connection and optional label."""
-        assert hasattr(
-            database, "query"
-        ), "The database object must have a 'query' method."
+        if not isinstance(database, EimerDBInstance) and not conn_is_ibis(database):
+            raise TypeError(
+                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(database)}"
+            )
         self.module_number = FreeSearch._id_number
         self.module_name = self.__class__.__name__
         FreeSearch._id_number += 1
