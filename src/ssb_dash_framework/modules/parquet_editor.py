@@ -23,8 +23,10 @@ from ..utils.alert_handler import create_alert
 
 logger = logging.getLogger(__name__)
 
+
 class ParquetEditor:
     _id_number: int = 0
+
     def __init__(self, id_vars, file_path) -> None:
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
@@ -33,75 +35,80 @@ class ParquetEditor:
         self.user = os.getenv("DAPLA_USER")
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
         self.id_vars = id_vars
-        self.variable_selector = VariableSelector(selected_inputs=id_vars, selected_states=[])
+        self.variable_selector = VariableSelector(
+            selected_inputs=id_vars, selected_states=[]
+        )
         self.file_path = file_path
         path = Path(file_path)
 
-        self.log_filepath = path.parent.parent / "logg" / "prosessdata" / path.with_suffix(".jsonl").name
+        self.log_filepath = (
+            path.parent.parent
+            / "logg"
+            / "prosessdata"
+            / path.with_suffix(".jsonl").name
+        )
         self.label = path.stem
 
         self.module_layout = self._create_layout()
         module_validator(self)
         self.module_callbacks()
-    
+
     def get_data(self):
         return pd.read_parquet(self.file_path)
-    
+
     def _create_layout(self):
-        reason_modal = [dcc.Store(id=f"{self.module_number}-pending-edit"),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader("Reason for change"),
-                        dbc.ModalBody(
-                            [
-                                html.Div(id=f"{self.module_number}-edit-details"),
-                                dbc.Textarea(
-                                    id=f"{self.module_number}-edit-reason",
-                                    placeholder="Enter reason for the change...",
-                                    style={"width": "100%"},
-                                    autoFocus=True,
-                                    n_submit=0,
-                                ),
-                            ]
-                        ),
-                        dbc.ModalFooter(
-                            [
-                                dbc.Button(
-                                    "Cancel",
-                                    id=f"{self.module_number}-cancel-edit",
-                                    color="secondary",
-                                ),
-                                dbc.Button(
-                                    "Confirm",
-                                    id=f"{self.module_number}-confirm-edit",
-                                    color="primary",
-                                ),
-                            ]
-                        ),
-                    ],
-                    id=f"{self.module_number}-reason-modal",
-                    is_open=False,
-                    backdrop="static",
-                    centered=True,
-                ),
-                dcc.Store(id=f"{self.module_number}-simple-table-data-store")]
-        return html.Div([
-            *reason_modal,
-            dag.AgGrid(
-                id = f"{self.module_number}-simple-table"
-            )]
+        reason_modal = [
+            dcc.Store(id=f"{self.module_number}-pending-edit"),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader("Reason for change"),
+                    dbc.ModalBody(
+                        [
+                            html.Div(id=f"{self.module_number}-edit-details"),
+                            dbc.Textarea(
+                                id=f"{self.module_number}-edit-reason",
+                                placeholder="Enter reason for the change...",
+                                style={"width": "100%"},
+                                autoFocus=True,
+                                n_submit=0,
+                            ),
+                        ]
+                    ),
+                    dbc.ModalFooter(
+                        [
+                            dbc.Button(
+                                "Cancel",
+                                id=f"{self.module_number}-cancel-edit",
+                                color="secondary",
+                            ),
+                            dbc.Button(
+                                "Confirm",
+                                id=f"{self.module_number}-confirm-edit",
+                                color="primary",
+                            ),
+                        ]
+                    ),
+                ],
+                id=f"{self.module_number}-reason-modal",
+                is_open=False,
+                backdrop="static",
+                centered=True,
+            ),
+            dcc.Store(id=f"{self.module_number}-simple-table-data-store"),
+        ]
+        return html.Div(
+            [*reason_modal, dag.AgGrid(id=f"{self.module_number}-simple-table")]
         )
 
     def layout(self):
         return html.Div(self.module_layout)
-    
+
     def module_callbacks(self):
         @callback(
             Output(f"{self.module_number}-simple-table", "rowData"),
             Output(f"{self.module_number}-simple-table", "columnDefs"),
             Output(f"{self.module_number}-simple-table-data-store", "data"),
-
-            *self.variable_selector.get_all_inputs()
+            *self.variable_selector.get_all_inputs(),
         )
         def load_data_to_table(*args):
             data = self.get_data()
@@ -109,20 +116,22 @@ class ParquetEditor:
                 {
                     "headerName": col,
                     "field": col,
-                    "editable":True if col not in self.id_vars else False,
+                    "editable": True if col not in self.id_vars else False,
                 }
                 for col in data.columns
             ]
-            return data.to_dict(orient="records"), columns, data.to_dict(orient="records")
+            return (
+                data.to_dict(orient="records"),
+                columns,
+                data.to_dict(orient="records"),
+            )
 
         @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-pending-edit", "data"),
             Output(f"{self.module_number}-reason-modal", "is_open"),
             Output(f"{self.module_number}-edit-details", "children"),
             Output(f"{self.module_number}-edit-reason", "value"),
-            Input(
-                f"{self.module_number}-simple-table", "cellValueChanged"
-            ),
+            Input(f"{self.module_number}-simple-table", "cellValueChanged"),
             prevent_initial_call=True,
         )
         def capture_edit(
@@ -143,7 +152,9 @@ class ParquetEditor:
             ),
             Output("alert_store", "data", allow_duplicate=True),
             Output(
-                f"{self.module_number}-simple-table-data-store", "data", allow_duplicate=True
+                f"{self.module_number}-simple-table-data-store",
+                "data",
+                allow_duplicate=True,
             ),
             Input(f"{self.module_number}-confirm-edit", "n_clicks"),
             Input(f"{self.module_number}-edit-reason", "n_submit"),
@@ -167,9 +178,7 @@ class ParquetEditor:
                 raise PreventUpdate
             if not pending_edit:
                 error_log = [
-                    create_alert(
-                        "Ingen pending edit funnet", "error", ephemeral=True
-                    ),
+                    create_alert("Ingen pending edit funnet", "error", ephemeral=True),
                     *error_log,
                 ]
                 return False, error_log, table_data
@@ -194,20 +203,19 @@ class ParquetEditor:
             logger.debug(edit_with_reason)
             with open(self.log_filepath, "a", encoding="utf-8") as f:
                 f.write(
-                    json.dumps(
-                        edit_with_reason, ensure_ascii=False, default=str
-                    )
-                    + "\n"
+                    json.dumps(edit_with_reason, ensure_ascii=False, default=str) + "\n"
                 )
-            new_table_data = self._update_row(table_data, pending_edit) # Might be possible to replace with something simpler.
+            new_table_data = self._update_row(
+                table_data, pending_edit
+            )  # Might be possible to replace with something simpler.
             error_log = [
-                            create_alert(
-                                "Prosesslogg oppdatert!",
-                                "info",
-                                ephemeral=True,
-                            ),
-                            *error_log,
-                        ]
+                create_alert(
+                    "Prosesslogg oppdatert!",
+                    "info",
+                    ephemeral=True,
+                ),
+                *error_log,
+            ]
             return False, error_log, new_table_data
 
     def _update_row(
