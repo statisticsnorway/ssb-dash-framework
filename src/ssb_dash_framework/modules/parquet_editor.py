@@ -52,6 +52,12 @@ class ParquetEditor:
         self.module_layout = self._create_layout()
         module_validator(self)
         self.module_callbacks()
+    
+    def is_valid(self):
+        data = self.get_data()
+        duplicates = data.duplicated(subset=self.id_vars, keep=False)
+        if duplicates.any():
+            raise ValueError(f"The dataframe seems to have duplicates on the columns '{self.id_vars}'. For the processlog to be useable the combination of id_vars needs to be unique for a each row.\n Duplicated rows:\n{duplicates}")
 
     def get_data(self):
         return pd.read_parquet(self.file_path)
