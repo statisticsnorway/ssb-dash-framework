@@ -1,6 +1,6 @@
 [project]
 name = "ssb-dash-framework"
-version = "0.1.4a2"
+version = "0.2.0a1"
 description = "SSB Dash Framework"
 authors = [{ name = "Magnus Theodor Engh", email = "dor@ssb.no" }]
 license = "GPL-3.0"
