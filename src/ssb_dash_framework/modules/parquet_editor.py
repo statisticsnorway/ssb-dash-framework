@@ -197,23 +197,24 @@ class ParquetEditor:
                 ]
                 return True, error_log, table_data
 
-            edit_with_reason = dict(pending_edit)
-            edit_with_reason["reason"] = reason.replace("\n", "")
-            edit_with_reason["user"] = self.user
-            edit_with_reason["change_event"] = "manual"
-
+            change_to_log = {}
+            change_to_log["row_identifier"] = {str(x):pending_edit["data"][x] for x in self.id_vars}
+            change_to_log["colId"] = pending_edit["colId"]
+            change_to_log["oldValue"] = pending_edit["oldValue"]
+            change_to_log["value"] = pending_edit["value"]
+            change_to_log["reason"] = reason.replace("\n", "")
+            change_to_log["user"] = self.user
+            change_to_log["change_event"] = "manual"
             aware_timestamp = datetime.now(self.tz)  # timezone-aware
             naive_timestamp = aware_timestamp.replace(tzinfo=None)  # drop tzinfo
-            edit_with_reason["timestamp"] = naive_timestamp
-
-            logger.debug(edit_with_reason)
+            change_to_log["timestamp"] = naive_timestamp
+            logger.debug(f"Changedict received: {pending_edit}")
+            logger.debug(f"Record for changelog: {change_to_log}")
             with open(self.log_filepath, "a", encoding="utf-8") as f:
                 f.write(
-                    json.dumps(edit_with_reason, ensure_ascii=False, default=str) + "\n"
+                    json.dumps(change_to_log, ensure_ascii=False, default=str) + "\n"
                 )
-            new_table_data = self._update_row(
-                table_data, pending_edit
-            )  # Might be possible to replace with something simpler.
+
             error_log = [
                 create_alert(
                     "Prosesslogg oppdatert!",
@@ -222,34 +223,4 @@ class ParquetEditor:
                 ),
                 *error_log,
             ]
-            return False, error_log, new_table_data
-
-    def _update_row(
-        self, table_data: list[dict[str, Any]], edit: dict[str, Any]
-    ) -> list[dict[str, Any]]:
-        """Helper to update table row by uuid, row_id, or rowIndex."""
-        new_data = list(table_data) if table_data else []
-        row_obj = edit.get("data") or {}
-        updated = False
-        uid = row_obj.get("uuid") if isinstance(row_obj, dict) else None
-        rid = row_obj.get("row_id") if isinstance(row_obj, dict) else None
-        if uid is not None:
-            for i, r in enumerate(new_data):
-                if r.get("uuid") == uid:
-                    new_data[i] = row_obj
-                    updated = True
-                    break
-        elif rid is not None:
-            for i, r in enumerate(new_data):
-                if r.get("row_id") == rid:
-                    new_data[i] = row_obj
-                    updated = True
-                    break
-        else:
-            row_index = edit.get("rowIndex")
-            if row_index is not None and 0 <= int(row_index) < len(new_data):
-                new_data[int(row_index)] = row_obj
-                updated = True
-        if not updated:
-            new_data.append(row_obj)
-        return new_data
+            return False, error_log, table_data
