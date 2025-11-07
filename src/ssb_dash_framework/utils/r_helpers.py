@@ -21,12 +21,13 @@ _kostra_r: InstalledSTPackage | None = None
 
 _attempts_kostra_r = 0
 
+
 def _get_kostra_r() -> InstalledSTPackage:
     """Loads the R package Kostra.
 
     :return: Kostra R package
     """
-    globals()["_attempts_kostra_r"] +=1
+    globals()["_attempts_kostra_r"] += 1
     if globals()["_attempts_kostra_r"] > 10:
         raise Exception("Something is wrong.")
     if _kostra_r is not None:
@@ -44,20 +45,18 @@ def _get_kostra_r() -> InstalledSTPackage:
             "R - Kostra not installed, trying to install and re-running _get_kostra_r. This might take a little time."
         )
         import subprocess
+
         commands = [
             "R -e 'renv::init()'",
-            "R -e 'renv::install(\"statisticsnorway/ssb-kostra\")'"
+            "R -e 'renv::install(\"statisticsnorway/ssb-kostra\")'",
             "R -e 'quit()'",
         ]
 
         for command in commands:
-            subprocess.run(
-                command,
-                shell=True,
-                check=True
-            )
+            subprocess.run(command, shell=True, check=True)
 
         return _get_kostra_r()
+
 
 def hb_method(
     data: pd.DataFrame,
