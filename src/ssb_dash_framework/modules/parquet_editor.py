@@ -1,33 +1,46 @@
+import json
+import logging
 import os
+import zoneinfo
+from datetime import datetime
 from pathlib import Path
 from typing import Any
-import logging
-from datetime import datetime
-import zoneinfo
-import json
-
-import pandas as pd
-from dash import html, dcc
-from dash.dependencies import Input
-from dash.dependencies import State
-from dash.dependencies import Output
-from dash.exceptions import PreventUpdate
-from dash import callback
-import dash_bootstrap_components as dbc
-
 
 import dash_ag_grid as dag
+import dash_bootstrap_components as dbc
+import pandas as pd
+from dash import callback
+from dash import dcc
+from dash import html
+from dash.dependencies import Input
+from dash.dependencies import Output
+from dash.dependencies import State
+from dash.exceptions import PreventUpdate
+
 from ..setup.variableselector import VariableSelector
-from ..utils.module_validation import module_validator
 from ..utils.alert_handler import create_alert
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
 
 class ParquetEditor:
+    """Simple module with the sole purpose of editing a parquet file.
+
+    Accomplishes this functionality by writing a processlog in a json lines file and recording any edits in this jsonl file.
+
+    Args:
+        id_vars: A list of columns that together form a unique identifier for a single row in your data.
+        file_path: The path to the parquet file you want to edit.
+
+    Notes:
+        The process log is automatically created in the correct folder structure and is named after your parquet file.
+    """
+
     _id_number: int = 0
 
-    def __init__(self, id_vars, file_path) -> None:
+    def __init__(self, id_vars: list[str], file_path: str) -> None:
+        """Initializes the module and makes a few validation checks before moving on."""
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
@@ -50,19 +63,36 @@ class ParquetEditor:
         self.label = path.stem
 
         self.module_layout = self._create_layout()
+        self._is_valid()
         module_validator(self)
         self.module_callbacks()
-    
-    def is_valid(self):
+
+    def _is_valid(self) -> None:
+        if not isinstance(self.id_vars, list):
+            raise TypeError(
+                f"Argument 'id_vars' must be a list. Received: {type(self.id_vars)}"
+            )
+        for element in self.id_vars:
+            if not isinstance(element, str):
+                raise TypeError(
+                    f"Argument 'id_vars' must be a list containing only strings. Received: {element} which is a {type(element)}"
+                )
+        if not isinstance(self.file_path, str):
+            raise TypeError(
+                f"Argument 'file_path' must be a string. Received: {type(self.file_path)}"
+            )
         data = self.get_data()
         duplicates = data.duplicated(subset=self.id_vars, keep=False)
         if duplicates.any():
-            raise ValueError(f"The dataframe seems to have duplicates on the columns '{self.id_vars}'. For the processlog to be useable the combination of id_vars needs to be unique for a each row.\n Duplicated rows:\n{duplicates}")
+            raise ValueError(
+                f"The dataframe seems to have duplicates on the columns '{self.id_vars}'. For the processlog to be useable the combination of id_vars needs to be unique for a each row.\n Duplicated rows:\n{duplicates}"
+            )
 
-    def get_data(self):
+    def get_data(self) -> pd.DataFrame:
+        """Reads the parquet file at the supplied file path."""
         return pd.read_parquet(self.file_path)
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
         reason_modal = [
             dcc.Store(id=f"{self.module_number}-pending-edit"),
             dbc.Modal(
@@ -106,17 +136,22 @@ class ParquetEditor:
             [*reason_modal, dag.AgGrid(id=f"{self.module_number}-simple-table")]
         )
 
-    def layout(self):
+    def layout(self) -> html.Div:
+        """Creates the layout for the module."""
         return html.Div(self.module_layout)
 
-    def module_callbacks(self):
-        @callback(
+    def module_callbacks(self) -> None:
+        """Sets up the callbacks for the module."""
+
+        @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-simple-table", "rowData"),
             Output(f"{self.module_number}-simple-table", "columnDefs"),
             Output(f"{self.module_number}-simple-table-data-store", "data"),
             *self.variable_selector.get_all_inputs(),
         )
-        def load_data_to_table(*args):
+        def load_data_to_table(
+            *args: Any,
+        ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
             data = self.get_data()
             columns = [
                 {
@@ -197,8 +232,10 @@ class ParquetEditor:
                 ]
                 return True, error_log, table_data
 
-            change_to_log = {}
-            change_to_log["row_identifier"] = {str(x):pending_edit["data"][x] for x in self.id_vars}
+            change_to_log: dict[str, Any] = {}
+            change_to_log["row_identifier"] = {
+                str(x): pending_edit["data"][x] for x in self.id_vars
+            }
             change_to_log["colId"] = pending_edit["colId"]
             change_to_log["oldValue"] = pending_edit["oldValue"]
             change_to_log["value"] = pending_edit["value"]
