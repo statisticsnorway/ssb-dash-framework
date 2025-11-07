@@ -33,6 +33,7 @@ from .modules import FreeSearchWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
+from .modules import ParquetEditor
 from .modules import MultiModule
 from .modules import MultiModuleTab
 from .modules import MultiModuleWindow
@@ -69,6 +70,7 @@ from .utils import sidebar_button
 # from .utils import th_error
 
 __all__ = [
+    "ParquetEditor",
     "Aarsregnskap",
     "AarsregnskapTab",
     "AarsregnskapWindow",
