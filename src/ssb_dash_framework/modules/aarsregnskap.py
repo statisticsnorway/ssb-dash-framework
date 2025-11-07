@@ -192,7 +192,7 @@ class Aarsregnskap(ABC):
             logger.debug(f"Args:\naar: {aar}\norgnr: {orgnr}\n")
             if not aar or not orgnr:
                 raise PreventUpdate
-            path_to_file = f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/aarsregn/g{aar}/{orgnr}_{aar}.pdf"
+            path_to_file = f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/bildefil/g{aar}/{orgnr}_{aar}.pdf"
             logger.debug(f"Trying to open file: {path_to_file}")
             try:
                 fs = FileClient.get_gcs_file_system()
