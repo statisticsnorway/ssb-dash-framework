@@ -2,6 +2,10 @@
 
 As the name implies, here you can find a non exhaustive collection of tips, tricks and workarounds to increase functionality. 
 
+> Arcane: known or knowable only to a few people. Arcane technical details.
+
+> Compendium: a brief summary of a larger work or of a field of knowledge. A list of a number of items, a collection or compilation.
+
 ## Variable selector fields that react to other fields / update based on logic
 
 While it is not supposed to work like this, it is possible to connect a callback between different variable selector fields and have them react to each other.
