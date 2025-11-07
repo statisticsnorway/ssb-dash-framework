@@ -70,8 +70,7 @@ class HBMethod:
     def make_hb_figure(self, time_unit, *args):
 
         data = self.get_data_func(time_unit)
-        _t_0 = "2023"
-        _t_1 = "2024"
+
         data: pd.DataFrame = hb_method(
             data=data,
             p_c=self.pc,
