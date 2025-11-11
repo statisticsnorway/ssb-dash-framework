@@ -1,6 +1,7 @@
 # TODO: Rewrite to window/tab implementation model
 
 import logging
+from collections.abc import Callable
 from typing import Any
 
 import dash_bootstrap_components as dbc
@@ -31,21 +32,28 @@ class HBMethod:
 
     def __init__(
         self,
-        get_data_func,
+        get_data_func: Callable[..., Any],
         time_units: list[str],
-        varselector_variable="statistikkvariabel",
-        output="ident",
+        varselector_variable: str = "statistikkvariabel",
+        output: str = "ident",
     ):
+        """Initializes the HB method module.
+
+        Args:
+            get_data_func (): A function that takes a time_variable as input and returns a dataframe. The dataframe MUST have the columns 'ident', 'variabel' and two columns containing the values from different times to compare.
+            varselector_variable (str): The name of the variableselector field used for determining which variable to analyze.
+            output (str): Which variableselector field to update based on clicks in the graph.
+        """
         self.module_number = HBMethod._id_number
         self.module_name = self.__class__.__name__
         HBMethod._id_number += 1
 
         self.icon = ""
         self.label = "HB metoden"
-        self.variable = None
+        self.variable: str | None = None
 
         self.variableselector = VariableSelector(
-            selected_inputs=[*time_units, varselector_variable], selected_states=[]
+            selected_inputs=[], selected_states=[*time_units, varselector_variable]
         )
         logger.warning("Currently this module only supports year as time unit.")
 
@@ -54,7 +62,7 @@ class HBMethod:
         self.get_data_func = get_data_func
         self.get_default_parameter_values()
         self.ident = "ident"
-        self.output = "ident"
+        self.output = output
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -69,7 +77,15 @@ class HBMethod:
 
     def make_hb_figure(self, time_unit, *args):
 
-        data = self.get_data_func(time_unit)
+        data = self.get_data_func(self.variable, time_unit)
+
+        time_cols = sorted([x for x in data.columns if x not in ["ident", "variabel"]])
+        if len(time_cols) > 2:
+            raise ValueError(
+                f"Too many columns in dataframe from get_data_func. Should be only 'ident', 'variabel' and two periods as separate columns. Received: {data.columns}"
+            )
+        _t_0 = time_cols[0]
+        _t_1 = time_cols[1]
 
         data: pd.DataFrame = hb_method(
             data=data,
@@ -113,10 +129,6 @@ class HBMethod:
         fig.update_yaxes(title="Forholdstallet")
         logger.debug("Done, returning fig")
         return fig
-
-    def validate_hb_data(self):
-        """Checks that the dataframe follows the correct structure for further processing."""
-        ...
 
     def _create_layout(self):
         infobox = html.Div(
@@ -210,11 +222,17 @@ class HBMethod:
             ),
         ]
 
-        layout = html.Div(
-            [
-                dbc.Row(infobox),
+        layout = dbc.Container(
+            children=[
+                infobox,
                 dbc.Row(
                     [
+                        dbc.Col(
+                            id=f"{self.module_number}-hb-selectedvariable",
+                            children=html.P(
+                                f"No selected variable. Check your {self.varselector_variable} field."
+                            ),
+                        ),
                         dbc.Col(
                             dcc.Dropdown(
                                 id=f"{self.module_number}-hb-dropdown",
@@ -236,22 +254,26 @@ class HBMethod:
                 ),
                 dbc.Row(
                     [*inputs],
-                    style={"margin": "20px"},
                 ),
+                html.Hr(),
                 dbc.Row(
                     dcc.Loading(dcc.Graph(id=f"{self.module_number}-hb_figure")),
-                    style={"margin": "20px"},
                 ),
-            ]
+            ],
+            fluid=True,
         )
 
         logger.debug("Generated layout")
         return layout
 
     def module_callbacks(self):
-        @callback(self.variableselector.get_input(self.varselector_variable))
+        @callback(
+            Output(f"{self.module_number}-hb-selectedvariable", "children"),
+            self.variableselector.get_input(self.varselector_variable),
+        )
         def set_variable(varselector_variable_value):
             self.variable = varselector_variable_value
+            return html.P(f"Selected variable: {varselector_variable_value}")
 
         @callback(
             Input(f"{self.module_number}-hb_pc", "value"),
@@ -275,9 +297,14 @@ class HBMethod:
             Output(f"{self.module_number}-hb_figure", "figure"),
             Input(f"{self.module_number}-hb_button", "n_clicks"),
             State(f"{self.module_number}-hb-dropdown", "value"),
-            self.variableselector.get_all_inputs(),
+            self.variableselector.get_all_states(),
         )
         def calculate_hb(n_click, time_unit, *args):
+            if not n_click:
+                raise PreventUpdate
+            if self.variable is None:
+                logger.info("Preventing update due to self.variable being 'None'.")
+                raise PreventUpdate
             return self.make_hb_figure(time_unit, *args)
 
         @callback(  # type: ignore[misc]
@@ -317,7 +344,12 @@ class HBMethod:
 
 class HBMethodTab(TabImplementation, HBMethod):
 
-    def __init__(self, get_data_func, time_units: list[str], output="ident") -> None:
+    def __init__(
+        self,
+        get_data_func: Callable[..., Any],
+        time_units: list[str],
+        output: str = "ident",
+    ) -> None:
 
         HBMethod.__init__(
             self, get_data_func=get_data_func, time_units=time_units, output=output
@@ -327,7 +359,12 @@ class HBMethodTab(TabImplementation, HBMethod):
 
 class HBMethodWindow(WindowImplementation, HBMethod):
 
-    def __init__(self, get_data_func, time_units: list[str], output="ident") -> None:
+    def __init__(
+        self,
+        get_data_func: Callable[..., Any],
+        time_units: list[str],
+        output: str = "ident",
+    ) -> None:
 
         HBMethod.__init__(
             self, get_data_func=get_data_func, time_units=time_units, output=output
