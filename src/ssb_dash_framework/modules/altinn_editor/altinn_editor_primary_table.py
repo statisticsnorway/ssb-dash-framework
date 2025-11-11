@@ -157,6 +157,7 @@ class AltinnEditorPrimaryTable:
                 try:
                     t = conn.table(tabell)
                     d = conn.table("datatyper")
+                    d = d.filter(ibis_filter_with_dict(filter_dict))
                     partition_args = dict(zip(self.time_units, args, strict=False))
                     logger.debug(
                         f"partition_select:\n{create_partition_select(desired_partitions=self.time_units,skjema=skjema,**partition_args,)}"
