@@ -24,7 +24,7 @@ from .building_blocks import EditingTableWindow
 from .building_blocks import FigureDisplay
 from .building_blocks import FigureDisplayTab
 from .building_blocks import FigureDisplayWindow
-
+from .parquet_editor import ParquetEditor
 # from .hb_method import HBMethod
 # from .hb_method import HBMethodWindow
 from .building_blocks import MapDisplay
@@ -46,6 +46,7 @@ from .visualizationbuilder import VisualizationBuilder
 from .visualizationbuilder import VisualizationBuilderWindow
 
 __all__ = [
+    "ParquetEditor",
     "Aarsregnskap",
     "AarsregnskapTab",
     "AarsregnskapWindow",
