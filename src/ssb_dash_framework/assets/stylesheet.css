@@ -217,6 +217,98 @@ Bofregistry
 }
 
 /*
+MacroModule
+*/
+
+.macromodule{
+    padding: 20px;
+}
+
+.macromodule-heatmap-grid-container {
+    flex: 1;
+    height: 800px;
+    min-width: 600px;
+    overflow-x: auto;
+}
+
+.macromodule-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    gap: 20px;
+}
+
+.macromodule-detail-grid-container {
+    margin-top: 20px;
+    width: 100%;
+}
+
+.macromodule-detail-grid-container h3 {
+    margin-top: 40px;
+}
+
+.macromodule-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 300px;
+    padding-right: 20px;
+}
+
+.macromodule-sidebar h1 {
+    text-align: left;
+    margin-bottom: 30px;
+}
+
+.macromodule-label {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.macromodule-dropdown,
+.macromodule-naring-dropdown,
+.macromodule-radio-buttons {
+    margin-bottom: 20px;
+}
+
+.macromodule-radio-buttons label {
+    display: inline-block;
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    margin-right: 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: normal;
+}
+
+.macromodule-radio-buttons input[type="radio"] {
+    display: none; /* hide radio dot */
+    margin-right: 8px;
+}
+
+.macromodule-radio-buttons label:has(input[type="radio"]:checked) {
+    background-color: #d4d4d4;
+    color: rgb(44, 44, 44);
+    font-weight: bold;
+    border-color: #000000;
+}
+
+.macromodule-naring-dropdown .Select-value {
+    background-color: #eeeeee !important;
+    color: white !important;
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+.macromodule-naring-dropdown .Select-value-label {
+    color: rgb(49, 49, 49) !important;
+}
+
+.macromodule-naring-dropdown .Select-value-icon {
+    color: rgb(0, 0, 0) !important;
+}
+
+/*
 canvas
 */
 .canvas {

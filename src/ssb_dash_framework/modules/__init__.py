@@ -37,6 +37,9 @@ from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
 from .hb_method import HBMethod
 from .hb_method import HBMethodWindow
+from .macro_module import MacroModule
+from .macro_module import MacroModuleTab
+from .macro_module import MacroModuleWindow
 from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab
@@ -76,6 +79,9 @@ __all__ = [
     "FreeSearchWindow",
     "HBMethod",
     "HBMethodWindow",
+    "MacroModule",
+    "MacroModuleTab",
+    "MacroModuleWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
