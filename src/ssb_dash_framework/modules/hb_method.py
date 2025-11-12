@@ -1,11 +1,12 @@
 # TODO: Rewrite to window/tab implementation model
 
 import logging
+from abc import abstractmethod
 from collections.abc import Callable
 from typing import Any
+from typing import ClassVar
 
 import dash_bootstrap_components as dbc
-import pandas as pd
 import plotly.graph_objects as go
 from dash import Input
 from dash import Output
@@ -16,7 +17,6 @@ from dash import html
 from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
-from ..utils import hb_method
 from ..utils.implementations import TabImplementation
 from ..utils.implementations import WindowImplementation
 from ..utils.module_validation import module_validator
@@ -27,8 +27,10 @@ logger = logging.getLogger(__name__)
 
 
 class HBMethod:
-    _id_number = 0
-    _required_variables = ["ident"]
+    """Module for implementing the HB method for finding outliers."""
+
+    _id_number: ClassVar[int] = 0
+    _required_variables: ClassVar[list[str]] = ["ident"]
 
     def __init__(
         self,
@@ -36,11 +38,12 @@ class HBMethod:
         time_units: list[str],
         varselector_variable: str = "statistikkvariabel",
         output: str = "ident",
-    ):
+    ) -> None:
         """Initializes the HB method module.
 
         Args:
-            get_data_func (): A function that takes a time_variable as input and returns a dataframe. The dataframe MUST have the columns 'ident', 'variabel' and two columns containing the values from different times to compare.
+            get_data_func (Callable[..., Any]): A function that takes a time_variable as input and returns a dataframe. The dataframe MUST have the columns 'ident', 'variabel' and two columns containing the values from different times to compare.
+            time_units (list[str]): A list of time units for the dataset. Example: ['year']
             varselector_variable (str): The name of the variableselector field used for determining which variable to analyze.
             output (str): Which variableselector field to update based on clicks in the graph.
         """
@@ -48,7 +51,7 @@ class HBMethod:
         self.module_name = self.__class__.__name__
         HBMethod._id_number += 1
 
-        self.icon = ""
+        self.icon = "🥼"
         self.label = "HB metoden"
         self.variable: str | None = None
 
@@ -69,14 +72,15 @@ class HBMethod:
         module_validator(self)
         _get_kostra_r()
 
-    def get_default_parameter_values(self):
+    def get_default_parameter_values(self) -> None:
+        """Gets the default parameter values."""
         # TODO make it possible to save params in a config somewhere
         self.pc = 20
         self.pu = 0.5
         self.pa = 0.05
 
-    def make_hb_figure(self, time_unit, *args):
-
+    def make_hb_figure(self, time_unit: str, *args: Any) -> go.Figure:
+        """Runs the HB method and creates the plot showing the results."""
         data = self.get_data_func(self.variable, time_unit)
 
         time_cols = sorted([x for x in data.columns if x not in ["ident", "variabel"]])
@@ -87,7 +91,7 @@ class HBMethod:
         _t_0 = time_cols[0]
         _t_1 = time_cols[1]
 
-        data: pd.DataFrame = hb_method(
+        data = hb_method(
             data=data,
             p_c=self.pc,
             p_u=self.pu,
@@ -130,7 +134,7 @@ class HBMethod:
         logger.debug("Done, returning fig")
         return fig
 
-    def _create_layout(self):
+    def _create_layout(self) -> dbc.Container:
         infobox = html.Div(
             [
                 dbc.Modal(
@@ -266,31 +270,33 @@ class HBMethod:
         logger.debug("Generated layout")
         return layout
 
-    def module_callbacks(self):
-        @callback(
+    def module_callbacks(self) -> None:
+        """Registers the callbacks for the module."""
+
+        @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-hb-selectedvariable", "children"),
             self.variableselector.get_input(self.varselector_variable),
         )
-        def set_variable(varselector_variable_value):
+        def set_variable(varselector_variable_value: str) -> html.P:
             self.variable = varselector_variable_value
             return html.P(f"Selected variable: {varselector_variable_value}")
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Input(f"{self.module_number}-hb_pc", "value"),
         )
-        def update_pc(pc):
+        def update_pc(pc: int) -> None:
             self.pc = pc
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Input(f"{self.module_number}-hb_pu", "value"),
         )
-        def update_pc(pu):
+        def update_pu(pu: int) -> None:
             self.pu = pu
 
-        @callback(
+        @callback(  # type: ignore[misc]
             Input(f"{self.module_number}-hb_pa", "value"),
         )
-        def update_pc(pa):
+        def update_pa(pa: int) -> None:
             self.pa = pa
 
         @callback(  # type: ignore[misc]
@@ -299,7 +305,7 @@ class HBMethod:
             State(f"{self.module_number}-hb-dropdown", "value"),
             self.variableselector.get_all_states(),
         )
-        def calculate_hb(n_click, time_unit, *args):
+        def calculate_hb(n_click: int | None, time_unit: str, *args: Any) -> go.Figure:
             if not n_click:
                 raise PreventUpdate
             if self.variable is None:
@@ -330,7 +336,7 @@ class HBMethod:
             logger.info(f"Transfering {ident} to {self.ident}")
             return ident
 
-    # @abstractmethod
+    @abstractmethod
     def layout(self) -> html.Div:
         """Define the layout for the HBMethod module.
 
@@ -343,31 +349,57 @@ class HBMethod:
 
 
 class HBMethodTab(TabImplementation, HBMethod):
+    """Module for implementing the HB method for finding outliers, in a tab format."""
 
     def __init__(
         self,
         get_data_func: Callable[..., Any],
         time_units: list[str],
+        varselector_variable: str = "statistikkvariabel",
         output: str = "ident",
     ) -> None:
+        """Initializes the HB method module.
 
+        Args:
+            get_data_func (Callable[..., Any]): A function that takes a time_variable as input and returns a dataframe. The dataframe MUST have the columns 'ident', 'variabel' and two columns containing the values from different times to compare.
+            time_units (list[str]): A list of time units for the dataset. Example: ['year']
+            varselector_variable (str): The name of the variableselector field used for determining which variable to analyze.
+            output (str): Which variableselector field to update based on clicks in the graph.
+        """
         HBMethod.__init__(
-            self, get_data_func=get_data_func, time_units=time_units, output=output
+            self,
+            get_data_func=get_data_func,
+            time_units=time_units,
+            varselector_variable=varselector_variable,
+            output=output,
         )
         TabImplementation.__init__(self)
 
 
 class HBMethodWindow(WindowImplementation, HBMethod):
+    """Module for implementing the HB method for finding outliers, in a window format."""
 
     def __init__(
         self,
         get_data_func: Callable[..., Any],
         time_units: list[str],
+        varselector_variable: str = "statistikkvariabel",
         output: str = "ident",
     ) -> None:
+        """Initializes the HB method module.
 
+        Args:
+            get_data_func (Callable[..., Any]): A function that takes a time_variable as input and returns a dataframe. The dataframe MUST have the columns 'ident', 'variabel' and two columns containing the values from different times to compare.
+            time_units (list[str]): A list of time units for the dataset. Example: ['year']
+            varselector_variable (str): The name of the variableselector field used for determining which variable to analyze.
+            output (str): Which variableselector field to update based on clicks in the graph.
+        """
         HBMethod.__init__(
-            self, get_data_func=get_data_func, time_units=time_units, output=output
+            self,
+            get_data_func=get_data_func,
+            time_units=time_units,
+            varselector_variable=varselector_variable,
+            output=output,
         )
         WindowImplementation.__init__(
             self,
