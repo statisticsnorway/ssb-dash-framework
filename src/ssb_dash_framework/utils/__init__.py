@@ -13,14 +13,14 @@ from .datahelper import create_database
 from .datahelper import create_database_engine
 from .debugger_modal import DebugInspector
 
-from .r_helpers import _get_kostra_r
-from .r_helpers import hb_method
 # from .r_helpers import th_error
 from .functions import sidebar_button
 from .implementations import TabImplementation
 from .implementations import WindowImplementation
 from .module_validation import module_validator
 from .prosesslogg import apply_edits
+from .r_helpers import _get_kostra_r
+from .r_helpers import hb_method
 
 __all__ = [
     "AlertHandler",
@@ -29,6 +29,7 @@ __all__ = [
     "DemoDataCreator",
     "TabImplementation",
     "WindowImplementation",
+    "_get_kostra_r",
     "active_no_duplicates_refnr_list",
     "apply_edits",
     "conn_is_ibis",
@@ -37,10 +38,9 @@ __all__ = [
     "create_database_engine",
     "create_filter_dict",
     "enable_app_logging",
+    "hb_method",
     "ibis_filter_with_dict",
     "module_validator",
     "sidebar_button",
-    "_get_kostra_r",
-    "hb_method",
     # "th_error",
 ]
