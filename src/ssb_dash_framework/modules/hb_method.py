@@ -47,6 +47,9 @@ class HBMethod:
             varselector_variable (str): The name of the variableselector field used for determining which variable to analyze.
             output (str): Which variableselector field to update based on clicks in the graph.
         """
+        logger.warning(
+            "This module is still in development and most likely has issues. If you notice something strange, please add it to Issues on the github repo."
+        )
         self.module_number = HBMethod._id_number
         self.module_name = self.__class__.__name__
         HBMethod._id_number += 1
