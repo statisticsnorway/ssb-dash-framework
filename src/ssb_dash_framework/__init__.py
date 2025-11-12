@@ -30,6 +30,8 @@ from .modules import FigureDisplayWindow
 from .modules import FreeSearch
 from .modules import FreeSearchTab
 from .modules import FreeSearchWindow
+from .modules import HBMethod
+from .modules import HBMethodWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
@@ -53,6 +55,7 @@ from .utils import DebugInspector
 from .utils import DemoDataCreator
 from .utils import TabImplementation
 from .utils import WindowImplementation
+from .utils import _get_kostra_r
 from .utils import active_no_duplicates_refnr_list
 from .utils import apply_edits
 from .utils import conn_is_ibis
@@ -60,12 +63,10 @@ from .utils import create_alert
 from .utils import create_database
 from .utils import create_database_engine
 from .utils import enable_app_logging
+from .utils import hb_method
 from .utils import module_validator
 from .utils import sidebar_button
 
-# from .modals import HBMethod
-# from .utils import _get_kostra_r
-# from .utils import hb_method
 # from .utils import th_error
 
 __all__ = [
@@ -103,8 +104,8 @@ __all__ = [
     "FreeSearch",
     "FreeSearchTab",
     "FreeSearchWindow",
-    # "HBMethod",
-    # "HBMethodWindow",
+    "HBMethod",
+    "HBMethodWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
