@@ -141,7 +141,7 @@ window_list = [
 
 Nå kan du kjøre hele notebooken din og se at du har fått opp en applikasjon med en tab og et vindu.
 
-Koden din burde nå se omtrent slik ut:
+### Omtrent slik burde koden din se ut
 
 ```python
 import os
@@ -182,7 +182,6 @@ enhetstabell = EditingTableTab(
     inputs=["orgnr"],
     states=[],
     get_data_func=get_data_orgnr,
-    update_table_func=lambda x:x,
     output="aar"
 )
 
@@ -198,7 +197,6 @@ aars_tabell = EditingTableWindow(
     inputs=["aar"],
     states=[],
     get_data_func=get_data_aar,
-    update_table_func=lambda x:x,
     output="orgnr"
 )
 
@@ -215,3 +213,12 @@ if __name__ == "__main__":
         jupyter_mode="tab"
     )
 ```
+## Steg 6 og videre
+
+Nå som du har en fungerende app å jobbe utifra er det flere retninger du kan gå. En av de første tingene å endre er å koble rammeverket til dine egne data, om du ikke allerede har gjort det.
+
+Deretter er det noen forslag nedenfor men det blir veldig individuelt og behovsstyrt hva som er viktig, oppnåelig og 
+
+### Legge på editeringsfunksjonalitet
+
+Du kan utvide en 
