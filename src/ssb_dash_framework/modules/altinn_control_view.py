@@ -244,7 +244,7 @@ class AltinnControlView(ABC):
             Output("kontroller-table2", "rowData"),
             Output("kontroller-table2", "columnDefs"),
             Input("kontroller-table1", "selectedRows"),
-            self.variableselector.get_all_states(),
+            self.variableselector.get_all_inputs(),
             #            *self.create_callback_components("State"),
         )
         def kontrollutslag_mikro(
@@ -321,7 +321,7 @@ class AltinnControlView(ABC):
             Input("kontrollermodal-kontrollbutton", "n_clicks"),
             State("var-altinnskjema", "value"),
             State("alert_store", "data"),
-            self.variableselector.get_all_states(),
+            self.variableselector.get_all_inputs(),
             #            *self.create_callback_components("State"),
             prevent_initial_call=True,
         )
@@ -375,7 +375,7 @@ class AltinnControlView(ABC):
             Input("kontrollermodal-insertbutton", "n_clicks"),
             State("var-altinnskjema", "value"),
             State("alert_store", "data"),
-            self.variableselector.get_all_states(),
+            self.variableselector.get_all_inputs(),
             #            *self.create_callback_components("State"),
             prevent_initial_call=True,
         )
@@ -411,7 +411,7 @@ class AltinnControlView(ABC):
                         *alert_store,
                     ]
                 except Exception as e:
-                    logger.debug(f"Inserting failed!\n{e}")
+                    logger.debug(f"Inserting failed!\n{e}", exc_info=True)
                     alert_store = [
                         create_alert(
                             f"Kontrollkjøringa feilet. {e!s}",

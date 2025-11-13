@@ -181,6 +181,10 @@ class VariableSelector:
             if option.title == input_title
         ]
         logger.debug(f"Gettings inputs: {to_be_returned}")
+        if len(to_be_returned) == 0:
+            logger.debug(
+                "Returning empty list of inputs. This is fine if intentional, but could cause weird bugs if not. Check this if something is missing from callbacks."
+            )
         return to_be_returned
 
     def get_state(self, requested: str, search_target: str = "title") -> State:
@@ -199,12 +203,20 @@ class VariableSelector:
             if option.title == state_title
         ]
         logger.debug(f"Gettings inputs: {to_be_returned}")
+        if len(to_be_returned) == 0:
+            logger.debug(
+                "Returning empty list of states. This is fine if intentional, but could cause weird bugs if not. Check this if something is missing from callbacks."
+            )
         return to_be_returned
 
     def get_all_callback_objects(self) -> list[Input | State]:
         """Retrieves a list of Dash Input and State objects for all selected variables."""
         to_be_returned = self.get_all_inputs() + self.get_all_states()
         logger.debug(f"Getting callback objects: {to_be_returned}")
+        if len(to_be_returned) == 0:
+            logger.debug(
+                "Returning empty list of inputs and states. This is fine if intentional, but could cause weird bugs if not. Check this if something is missing from callbacks."
+            )
         return to_be_returned
 
     def get_output_object(self, variable: str) -> Output:
