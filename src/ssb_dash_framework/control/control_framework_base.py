@@ -190,14 +190,18 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             pd.DataFrame: DataFrame of new rows to insert.
         """
         try:
+            query = f"SELECT {', '.join(self.partitions_skjema.keys())}, kontrollid, ident, refnr, utslag FROM kontrollutslag"
+            logger.debug(
+                f"trying to read existing kontrollutslag using this query: {query}."
+            )
             df_allerede_kontrollert = self.conn.query(
-                "SELECT aar, skjema, kontrollid, ident, refnr, utslag FROM kontrollutslag",
+                query,
                 self.partitions_skjema,
             )
         except Exception as e:  # TODO better exception handling.
             logger.debug(f"Exception happened:\n{e}")
             df_allerede_kontrollert = pd.DataFrame(
-                columns=["aar", "skjema", "kontrollid", "ident", "refnr"]
+                columns=[*self.partitions_skjema.keys(), "kontrollid", "ident", "refnr"]
             )
         control_results = self.run_all_controls()
 
@@ -206,15 +210,14 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         if len(df_allerede_kontrollert) != 0:  # TODO: Separate into its own method?
             total_merge = control_results.merge(
                 df_allerede_kontrollert,
-                on=["aar", "skjema", "kontrollid", "ident", "refnr"],
+                on=[*self.partitions_skjema.keys(), "kontrollid", "ident", "refnr"],
                 how="outer",
                 indicator=True,
             )
 
             control_results = total_merge[total_merge["_merge"] == "left_only"][
                 [
-                    "aar",
-                    "skjema",
+                    *self.partitions_skjema.keys(),
                     "kontrollid",
                     "ident",
                     "refnr",

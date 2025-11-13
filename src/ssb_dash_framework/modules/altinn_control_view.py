@@ -67,7 +67,7 @@ class AltinnControlView(ABC):
         self._is_valid()
         self.module_layout = self.create_layout()
         self.variableselector = VariableSelector(
-            selected_inputs=[], selected_states=time_units
+            selected_inputs=time_units, selected_states=[]
         )
         self.time_units = [
             self.variableselector.get_option(x).id.removeprefix("var-")
@@ -244,7 +244,7 @@ class AltinnControlView(ABC):
             Output("kontroller-table2", "rowData"),
             Output("kontroller-table2", "columnDefs"),
             Input("kontroller-table1", "selectedRows"),
-            self.variableselector.get_all_states(),
+            self.variableselector.get_all_inputs(),
             #            *self.create_callback_components("State"),
         )
         def kontrollutslag_mikro(
@@ -321,7 +321,7 @@ class AltinnControlView(ABC):
             Input("kontrollermodal-kontrollbutton", "n_clicks"),
             State("var-altinnskjema", "value"),
             State("alert_store", "data"),
-            self.variableselector.get_all_states(),
+            self.variableselector.get_all_inputs(),
             #            *self.create_callback_components("State"),
             prevent_initial_call=True,
         )
@@ -375,7 +375,7 @@ class AltinnControlView(ABC):
             Input("kontrollermodal-insertbutton", "n_clicks"),
             State("var-altinnskjema", "value"),
             State("alert_store", "data"),
-            self.variableselector.get_all_states(),
+            self.variableselector.get_all_inputs(),
             #            *self.create_callback_components("State"),
             prevent_initial_call=True,
         )
@@ -396,7 +396,6 @@ class AltinnControlView(ABC):
             partitions_skjema = create_partition_select(
                 desired_partitions=self.time_units, skjema=skjema, **partition_args
             )
-            logger.debug(f"a: {partition_args}\nb: {partitions}\nc:{partitions_skjema}")
             if n_clicks > 0:
                 try:
                     control_class = self.control_dict[skjema](
@@ -412,7 +411,7 @@ class AltinnControlView(ABC):
                         *alert_store,
                     ]
                 except Exception as e:
-                    logger.debug(f"Inserting failed!\n{e}")
+                    logger.debug(f"Inserting failed!\n{e}", exc_info=True)
                     alert_store = [
                         create_alert(
                             f"Kontrollkjøringa feilet. {e!s}",
