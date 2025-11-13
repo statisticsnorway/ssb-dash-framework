@@ -67,7 +67,7 @@ class AltinnControlView(ABC):
         self._is_valid()
         self.module_layout = self.create_layout()
         self.variableselector = VariableSelector(
-            selected_inputs=time_units, selected_states=[]
+            selected_inputs=[], selected_states=time_units
         )
         self.time_units = [
             self.variableselector.get_option(x).id.removeprefix("var-")
@@ -396,6 +396,7 @@ class AltinnControlView(ABC):
             partitions_skjema = create_partition_select(
                 desired_partitions=self.time_units, skjema=skjema, **partition_args
             )
+            logger.debug(f"a: {partition_args}\nb: {partitions}\nc:{partitions_skjema}")
             if n_clicks > 0:
                 try:
                     control_class = self.control_dict[skjema](
