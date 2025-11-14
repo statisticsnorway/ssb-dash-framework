@@ -255,6 +255,7 @@ MacroModule
 }
 
 .macromodule-sidebar h1 {
+    font-size: 35px;
     text-align: left;
     margin-bottom: 30px;
 }

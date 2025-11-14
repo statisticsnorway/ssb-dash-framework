@@ -8,7 +8,7 @@ import os
 import pandas as pd
 import duckdb
 
-import dash_ag_grid as dag
+from dash_ag_grid import AgGrid
 import dash_bootstrap_components as dbc
 import ibis
 import plotly.express as px
@@ -62,20 +62,7 @@ MACRO_FILTER_OPTIONS = {"fylke": 2, "kommune": 4, "sammensatte variabler": HEATM
 NACE_LEVEL_OPTIONS = {"2-siffer": 2, "3-siffer": 4, "4-siffer": 5, "5-siffer": 6}
 HEATMAP_NUMBER_FORMAT = {"Prosentendring": True, "Totalsum": False}
 
-# Hent mulige naringskoder
-# with sqlite3.connect(sqlite_file) as conn:
-#     df_naring = pd.read_sql(
-#         f"""
-#     SELECT DISTINCT substr(naring, 1, 2) AS naring_kode
-#     FROM bedrifter
-#     WHERE
-#         aar = {aar}
-#         """,
-#         conn,
-#     )
-# NACE_OPTIONS = sorted(df_naring["naring_kode"].dropna().astype(str).unique())
-
-class ParquetReader:
+class MacroModule_ParquetReader:
     """Helper class for reading and querying Parquet files with DuckDB."""
     
     def __init__(self):
@@ -101,25 +88,51 @@ class ParquetReader:
         Returns:
             Combined DataFrame with aar column added
         """
-        # Build UNION ALL query for multiple years
-        union_parts = []
+        # # Build UNION ALL query for multiple years
+        # union_parts = []
+        # for year in years:
+        #     file_path = f"{base_path}/aar={year}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+        #     union_parts.append(f"""
+        #         SELECT *, {year} as aar 
+        #         FROM read_parquet('{file_path}', hive_partitioning = False)
+        #     """)
+        
+        # union_query = " UNION ALL ".join(union_parts)
+        
+        # # Wrap the union in a CTE and apply the user's query
+        # full_query = f"""
+        # WITH data AS (
+        #     {union_query}
+        # )
+        # {query_template}
+        # """
+        # logger.debug(full_query)
+        # logger.debug(self.conn.execute(full_query).df().head(5))
+
+        # return self.conn.execute(full_query).df()
+
+        # 1. Determine all columns across years
+        all_cols = set()
         for year in years:
             file_path = f"{base_path}/aar={year}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-            union_parts.append(f"""
-                SELECT *, {year} as aar 
-                FROM read_parquet('{file_path}')
-            """)
+            cols = [row[0] for row in self.conn.execute(f"DESCRIBE SELECT * FROM read_parquet('{file_path}', hive_partitioning=False)").fetchall()]
+            all_cols.update(cols)
         
-        union_query = " UNION ALL ".join(union_parts)
+        # 2. Build per-year SELECTs with missing columns as NULL
+        selects = []
+        for year in years:
+            file_path = f"{base_path}/aar={year}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+            cols_in_file = [row[0] for row in self.conn.execute(f"DESCRIBE SELECT * FROM read_parquet('{file_path}', hive_partitioning=False)").fetchall()]
+            missing_cols = all_cols - set(cols_in_file)
+            missing_expr = ", ".join(f"NULL AS {col}" for col in missing_cols)
+            select_expr = f"SELECT *, {missing_expr}, {year} AS aar FROM read_parquet('{file_path}', hive_partitioning=False)"
+            selects.append(f"({select_expr})")
         
-        # Wrap the union in a CTE and apply the user's query
-        full_query = f"""
-        WITH data AS (
-            {union_query}
-        )
-        {query_template}
-        """
+        # 3. UNION ALL per-year
+        union_query = " UNION ALL ".join(selects)
+        full_query = query_template.replace("FROM data", f"FROM ({union_query}) AS data")
         
+        # 4. Execute
         return self.conn.execute(full_query).df()
     
     def query_single_year(self, base_path: str, foretak_or_bedrift: str, 
@@ -159,13 +172,14 @@ class MacroModule(ABC):
         ]
     )
 
-    def __init__(self, time_units: list[str], conn: object) -> None:
+    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
         """Initializes the MacroModule.
 
         Args:
             time_units (list[str]): Your time variables used in the variable selector. Example year, quarter, month, etc.
-            conn (object): A connection object to a database. It must have a .query method that can handle SQL queries.
+            conn (object): A connection object to a database (kept for compatibility, but DuckDB is used internally).
                 Currently designed with parquet files in GC in mind.
+            base_path (str): Base path to parquet files (e.g., "/buckets/produkt/naringer/klargjorte-data/statistikkfiler")
         """
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
@@ -186,11 +200,11 @@ class MacroModule(ABC):
             self.variableselector.get_option(x).id.removeprefix("var-")
             for x in time_units
         ]
-        print("TIME UNITS ", self.time_units)
+        logger.debug("TIME UNITS ", self.time_units)
 
         self.conn = conn
         self.base_path = base_path
-        self.parquet_reader = ParquetReader()
+        self.parquet_reader = MacroModule_ParquetReader()
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -221,6 +235,7 @@ class MacroModule(ABC):
             year=aar,
             query=query
         )
+
         return sorted(df["naring_kode"].dropna().astype(str).unique())
 
     def _create_layout(self) -> html.Div:
@@ -243,17 +258,27 @@ class MacroModule(ABC):
                             ], 
                             ),
                                 html.Label(
-                                    "Velg kategori-inndeling",
+                                    "Velg foretak eller bedrift",
                                     className="macromodule-label",
                                 ),
-                                dcc.Dropdown(
-                                    className="macromodule-dropdown",
-                                    options=[
-                                        {"label": k, "value": k} for k in FORETAK_OR_BEDRIFT.keys()
-                                    ],
-                                    value="Bedrifter",
+                                # dcc.Dropdown(
+                                #     className="macromodule-dropdown",
+                                #     options=[
+                                #         {"label": k, "value": k} for k in FORETAK_OR_BEDRIFT.keys()
+                                #     ],
+                                #     value="Bedrifter",
+                                #     id="macromodule-foretak-or-bedrift",
+                                # ),
+                                dcc.RadioItems(
                                     id="macromodule-foretak-or-bedrift",
+                                    className="macromodule-radio-buttons",
+                                    options=[
+                                        {"label": k, "value": v}
+                                        for k, v in FORETAK_OR_BEDRIFT.items()
+                                    ],
+                                    value=FORETAK_OR_BEDRIFT["Bedrifter"],
                                 ),
+
                                 html.Label(
                                     "Velg kategori-inndeling",
                                     className="macromodule-label",
@@ -266,6 +291,7 @@ class MacroModule(ABC):
                                     value="fylke",
                                     id="macromodule-filter-velger",
                                 ),
+
                                 html.Label(
                                     "Velg variabel",
                                     className="macromodule-label",
@@ -278,6 +304,7 @@ class MacroModule(ABC):
                                     value="produksjonsverdi",
                                     id="macromodule-macro-variable",
                                 ),
+
                                 html.Label(
                                     "Velg næring(er)",
                                     className="macromodule-label",
@@ -285,11 +312,9 @@ class MacroModule(ABC):
                                 dcc.Dropdown(
                                     id="macromodule-naring-velger",
                                     className="macromodule-naring-dropdown",
-                                    options=[
-                                        {"label": n, "value": n} for n in NACE_OPTIONS
-                                    ],
+                                    options=[],
                                     multi=True,
-                                    value=["45"], 
+                                    value=[], 
                                     placeholder="Velg næring(er) ...",
                                     maxHeight=300,
                                 ),
@@ -462,15 +487,18 @@ class MacroModule(ABC):
             if not nace or not variabel or not macro_level or not aar:
                 return [], []
 
+            aar = int(aar)
+            logger.debug(f"Datatype for aar: {type(aar)}, aar: {aar}")
             years = [aar, aar-1]
+            
             naring_filter = ", ".join(f"'{n}'" for n in nace)
 
             if macro_level == "sammensatte variabler":
-                var_selects = ",\n".join([f"SUM({db_col}) AS {alias}" for db_col, alias in HEATMAP_VARIABLES.items()])
+                var_selects = ",\n".join([f"SUM(CAST({db_col} AS DOUBLE)) AS {alias}" for db_col, alias in HEATMAP_VARIABLES.items()])
                 group_by = "nace"
                 select_extra = ""
             else:
-                var_selects = f"SUM({variabel}) AS sum_{variabel}"
+                var_selects = f"SUM(CAST({variabel} AS DOUBLE)) AS sum_{variabel}"
                 group_by = f"{macro_level}, nace"
                 select_extra = f"substr(kommune, 1, {MACRO_FILTER_OPTIONS[macro_level]}) AS {macro_level},"
 
@@ -493,10 +521,12 @@ class MacroModule(ABC):
                 """
             df = self.parquet_reader.query_multi_year(
                     base_path=self.base_path,
-                    foretak_or_bedrift=FORETAK_OR_BEDRIFT[foretak_or_bedrift],
+                    foretak_or_bedrift=foretak_or_bedrift,
                     years=years,
                     query_template=query
                 )
+            
+            logger.debug(df.head(2))
             
             if macro_level == "sammensatte variabler":
                 df = df.pivot_table(
@@ -637,6 +667,7 @@ class MacroModule(ABC):
             if not cell_data or not aar:
                 return [], [], ""
 
+            aar = int(aar)
             years = [aar, aar - 1]
             valgt_variabel = HEATMAP_VARIABLES.get(valgt_variabel)
 
@@ -691,10 +722,12 @@ class MacroModule(ABC):
 
             df = self.parquet_reader.query_multi_year(
                     base_path=self.base_path,
-                    foretak_or_bedrift=FORETAK_OR_BEDRIFT[foretak_or_bedrift],
+                    foretak_or_bedrift=foretak_or_bedrift,
                     years=years,
                     query_template=query
                 )
+
+            logger.debug(df.head(2))
 
             df_current = df[df['aar'] == aar].copy()
             df_previous = df[df['aar'] == aar - 1].copy()
@@ -805,7 +838,7 @@ class MacroModule(ABC):
         # def output_to_variabelvelger(clickdata: dict[str, list[dict[str, Any]]]) -> str:
         #     logger.debug(clickdata)
         #     if clickdata:
-        #         print(clickdata)
+        #         logger.debug(clickdata)
         #         # do it so it returns the ident, of foretak as var-foretak and var-bedrift if bedrift is clicked. if foretak is clicked then set var-foretak == ident.
         #         ident = clickdata["points"][0]["customdata"][0]
         #         return str(ident)
@@ -820,16 +853,16 @@ class MacroModule(ABC):
 class MacroModuleTab(TabImplementation, MacroModule):
     """MacroModuleTab is an implementation of the MacroModule module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], conn: object) -> None:
+    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
         """Initializes the MacroModuleTab class."""
-        MacroModule.__init__(self, time_units=time_units, conn=conn)
+        MacroModule.__init__(self, time_units=time_units, conn=conn, base_path=base_path)
         TabImplementation.__init__(self)
 
 
 class MacroModuleWindow(WindowImplementation, MacroModule):
     """MacroModuleWindow is an implementation of the MacroModule module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], conn: object) -> None:
+    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
         """Initializes the MacroModuleWindow class."""
-        MacroModule.__init__(self, time_units=time_units, conn=conn)
+        MacroModule.__init__(self, time_units=time_units, conn=conn, base_path=base_path)
         WindowImplementation.__init__(self)
