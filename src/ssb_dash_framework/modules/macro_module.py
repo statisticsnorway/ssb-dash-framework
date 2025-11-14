@@ -4,8 +4,9 @@ from abc import abstractmethod
 from typing import Any
 from typing import ClassVar
 import os
-import sqlite3
+# import sqlite3
 import pandas as pd
+import duckdb
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -30,11 +31,6 @@ from ..utils.eimerdb_helpers import create_partition_select
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
-
-# Hent data
-# TODO: Change to get year from VariableSelector
-sqlite_file = "/home/onyxia/db/naringer_db.sqlite"
-aar = 2024
 
 # Variables used in the heatmap-grid
 HEATMAP_VARIABLES = {
@@ -61,22 +57,87 @@ HEATMAP_VARIABLES = {
     "bruttoinvestering_kvgr": "brut_inv_kvgr",
 }
 
-FILTER_OPTIONS = {"fylke": 2, "kommune": 4, "sammensatte variabler": HEATMAP_VARIABLES}
+FORETAK_OR_BEDRIFT = {"Foretak": "foretak", "Bedrifter": "bedrifter"}
+MACRO_FILTER_OPTIONS = {"fylke": 2, "kommune": 4, "sammensatte variabler": HEATMAP_VARIABLES}
 NACE_LEVEL_OPTIONS = {"2-siffer": 2, "3-siffer": 4, "4-siffer": 5, "5-siffer": 6}
-NUMBER_FORMAT = {"Prosentendring": True, "Totalsum": False}
+HEATMAP_NUMBER_FORMAT = {"Prosentendring": True, "Totalsum": False}
 
 # Hent mulige naringskoder
-with sqlite3.connect(sqlite_file) as conn:
-    df_naring = pd.read_sql(
-        f"""
-    SELECT DISTINCT substr(naring, 1, 2) AS naring_kode
-    FROM bedrifter
-    WHERE
-        aar = {aar}
-        """,
-        conn,
-    )
-NACE_OPTIONS = sorted(df_naring["naring_kode"].dropna().astype(str).unique())
+# with sqlite3.connect(sqlite_file) as conn:
+#     df_naring = pd.read_sql(
+#         f"""
+#     SELECT DISTINCT substr(naring, 1, 2) AS naring_kode
+#     FROM bedrifter
+#     WHERE
+#         aar = {aar}
+#         """,
+#         conn,
+#     )
+# NACE_OPTIONS = sorted(df_naring["naring_kode"].dropna().astype(str).unique())
+
+class ParquetReader:
+    """Helper class for reading and querying Parquet files with DuckDB."""
+    
+    def __init__(self):
+        """Initialize a persistent DuckDB connection."""
+        self.conn = duckdb.connect()
+    
+    def query_multi_year(
+        self, 
+        base_path: str, 
+        foretak_or_bedrift: str,
+        years: list[int],
+        query_template: str
+    ) -> pd.DataFrame:
+        """
+        Query multiple years of Parquet files and combine them.
+        
+        Args:
+            base_path: Base path template
+            foretak_or_bedrift: Either "foretak" or "bedrifter"
+            years: List of years to query
+            query_template: SQL query with 'data' as table name
+            
+        Returns:
+            Combined DataFrame with aar column added
+        """
+        # Build UNION ALL query for multiple years
+        union_parts = []
+        for year in years:
+            file_path = f"{base_path}/aar={year}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+            union_parts.append(f"""
+                SELECT *, {year} as aar 
+                FROM read_parquet('{file_path}')
+            """)
+        
+        union_query = " UNION ALL ".join(union_parts)
+        
+        # Wrap the union in a CTE and apply the user's query
+        full_query = f"""
+        WITH data AS (
+            {union_query}
+        )
+        {query_template}
+        """
+        
+        return self.conn.execute(full_query).df()
+    
+    def query_single_year(self, base_path: str, foretak_or_bedrift: str, 
+                          year: int, query: str) -> pd.DataFrame:
+        """Query a single year's Parquet file."""
+        file_path = f"{base_path}/aar={year}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+        
+        full_query = f"""
+        WITH data AS (
+            SELECT * FROM read_parquet('{file_path}')
+        )
+        {query}
+        """
+        return self.conn.execute(full_query).df()
+    
+    def close(self):
+        """Close the DuckDB connection."""
+        self.conn.close()
 
 class MacroModule(ABC):
     """The MacroModule module lets you view macro values for your variables and directly get a micro view for selected macro field.
@@ -128,6 +189,8 @@ class MacroModule(ABC):
         print("TIME UNITS ", self.time_units)
 
         self.conn = conn
+        self.base_path = base_path
+        self.parquet_reader = ParquetReader()
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -142,6 +205,23 @@ class MacroModule(ABC):
                 raise ValueError(
                     f"MacroModule requires the variable selector option '{var}' to be set."
                 ) from e
+
+    def get_nace_options(self, aar: int) -> list[str]:
+        """Get distinct NACE codes for a given year."""
+        query = """
+        SELECT DISTINCT substr(naring, 1, 2) AS naring_kode
+        FROM data
+        WHERE naring IS NOT NULL
+        ORDER BY naring_kode
+        """
+        
+        df = self.parquet_reader.query_single_year(
+            base_path=self.base_path,
+            foretak_or_bedrift="bedrifter",
+            year=aar,
+            query=query
+        )
+        return sorted(df["naring_kode"].dropna().astype(str).unique())
 
     def _create_layout(self) -> html.Div:
         """Generates the layout for the MacroModule."""
@@ -169,7 +249,19 @@ class MacroModule(ABC):
                                 dcc.Dropdown(
                                     className="macromodule-dropdown",
                                     options=[
-                                        {"label": k, "value": k} for k in FILTER_OPTIONS.keys()
+                                        {"label": k, "value": k} for k in FORETAK_OR_BEDRIFT.keys()
+                                    ],
+                                    value="Bedrifter",
+                                    id="macromodule-foretak-or-bedrift",
+                                ),
+                                html.Label(
+                                    "Velg kategori-inndeling",
+                                    className="macromodule-label",
+                                ),
+                                dcc.Dropdown(
+                                    className="macromodule-dropdown",
+                                    options=[
+                                        {"label": k, "value": k} for k in MACRO_FILTER_OPTIONS.keys()
                                     ],
                                     value="fylke",
                                     id="macromodule-filter-velger",
@@ -225,9 +317,9 @@ class MacroModule(ABC):
                                     className="macromodule-radio-buttons",
                                     options=[
                                         {"label": k, "value": v}
-                                        for k, v in NUMBER_FORMAT.items()
+                                        for k, v in HEATMAP_NUMBER_FORMAT.items()
                                     ],
-                                    value=NUMBER_FORMAT["Prosentendring"],
+                                    value=HEATMAP_NUMBER_FORMAT["Prosentendring"],
                                 ),
                             ],
                         ),
@@ -329,11 +421,28 @@ class MacroModule(ABC):
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the MacroModule module."""
-        dynamic_states = self.variableselector.get_all_inputs()
+        # dynamic_states = self.variableselector.get_all_inputs()
+
+        @callback(
+            Output("macromodule-naring-velger", "options"),
+            Input("var-aar", "value"),
+        )
+        def update_nace_options(aar):
+            """Populate NACE dropdown with options from selected year."""
+            if not aar:
+                return []
+            try:
+                nace_options = self.get_nace_options(aar)
+                return [{"label": n, "value": n} for n in nace_options]
+            except Exception as e:
+                logger.error(f"Error loading NACE options: {e}")
+                return []
 
         @callback(
             Output("macromodule-heatmap-grid", "rowData"),
             Output("macromodule-heatmap-grid", "columnDefs"),
+            Input("var-aar", "value"),
+            Input("macromodule-foretak-or-bedrift", "value"),
             Input("macromodule-macro-variable", "value"),
             Input("macromodule-filter-velger", "value"),
             Input("macromodule-nace-siffer-velger", "value"),
@@ -344,48 +453,52 @@ class MacroModule(ABC):
         
         # TODO: Set up a way to get aar from variabelvelger. Can read variabelvelgeren.md or hurtigstart.md for instance.
         
-        def update_graph(variabel, filter_valg_label, nace_siffer, naring, tallvisning_valg):
+        def update_graph(aar, foretak_or_bedrift, variabel, macro_level, nace_siffer_level, nace, tallvisning_valg):
             """
             Creates a colour-coordinated matrix heatmap of aggregated values 
             based on their %-change from the previous year
             """
 
-            if not naring or not variabel or not filter_valg_label:
+            if not nace or not variabel or not macro_level or not aar:
                 return [], []
 
-            with sqlite3.connect(sqlite_file) as conn:
-                naring_filter = ", ".join(f"'{n}'" for n in naring)
+            years = [aar, aar-1]
+            naring_filter = ", ".join(f"'{n}'" for n in nace)
 
-                if filter_valg_label == "sammensatte variabler":
-                    var_selects = ",\n".join([f"SUM({db_col}) AS {alias}" for db_col, alias in HEATMAP_VARIABLES.items()])
-                    group_by = "nace"
-                    select_extra = ""
-                else:
-                    var_selects = f"SUM({variabel}) AS sum_{variabel}"
-                    group_by = f"{filter_valg_label}, nace"
-                    select_extra = f"substr(kommune, 1, {FILTER_OPTIONS[filter_valg_label]}) AS {filter_valg_label},"
+            if macro_level == "sammensatte variabler":
+                var_selects = ",\n".join([f"SUM({db_col}) AS {alias}" for db_col, alias in HEATMAP_VARIABLES.items()])
+                group_by = "nace"
+                select_extra = ""
+            else:
+                var_selects = f"SUM({variabel}) AS sum_{variabel}"
+                group_by = f"{macro_level}, nace"
+                select_extra = f"substr(kommune, 1, {MACRO_FILTER_OPTIONS[macro_level]}) AS {macro_level},"
 
-                # TODO: Add eimerdb as an option
-
-                df = pd.read_sql(
-                    f"""
-                    SELECT
-                        substr(naring, 1, {nace_siffer}) AS nace,
-                        {select_extra}
-                        {var_selects},
-                        aar
-                    FROM bedrifter
-                    WHERE
-                        aar IN ({aar}, {aar-1}) AND
-                        substr(naring, 1, 2) IN ({naring_filter})
-                    GROUP BY
-                        aar,
-                        {group_by};
-                    """,
-                    conn,
+            # TODO: Add eimerdb as an option
+            
+            # Query has to read both years?
+            query = f"""
+                SELECT
+                    substr(naring, 1, {nace_siffer_level}) AS nace,
+                    {select_extra}
+                    {var_selects},
+                    aar
+                FROM data
+                WHERE
+                    aar IN ({years[0]}, {years[1]}) AND
+                    substr(naring, 1, 2) IN ({naring_filter})
+                GROUP BY
+                    aar,
+                    {group_by};
+                """
+            df = self.parquet_reader.query_multi_year(
+                    base_path=self.base_path,
+                    foretak_or_bedrift=FORETAK_OR_BEDRIFT[foretak_or_bedrift],
+                    years=years,
+                    query_template=query
                 )
             
-            if filter_valg_label == "sammensatte variabler":
+            if macro_level == "sammensatte variabler":
                 df = df.pivot_table(
                     index=["nace", "aar"],
                     values=HEATMAP_VARIABLES.values(),
@@ -397,11 +510,11 @@ class MacroModule(ABC):
 
             else:
                 df = df.pivot_table(
-                    index=[f"{filter_valg_label}", "nace"],
+                    index=[f"{macro_level}", "nace"],
                     columns="aar",
                     values=f"sum_{variabel}"
                 ).reset_index()
-                category_column = filter_valg_label
+                category_column = macro_level
 
             df.columns = df.columns.map(str) # Set to str in case aar loaded as int
 
@@ -415,7 +528,11 @@ class MacroModule(ABC):
             else: # = False, showing total value instead of %-diff
                 tallvisning = f"{aar}"
 
-            matrix = df.pivot(index=category_column, columns="nace", values=tallvisning).reset_index().fillna(0)
+            matrix = df.pivot(
+                index=category_column, 
+                columns="nace", 
+                values=tallvisning
+            ).reset_index().fillna(0)
 
             # Keep specified order instead of alphabetical ordering
             if category_column == "variabel":
@@ -430,6 +547,7 @@ class MacroModule(ABC):
             matrix["id"] = matrix.index.astype(str)
             row_data = matrix.to_dict("records")
 
+            ############################################ Kan endre aar til years[0] osv.
             def generate_tooltips(row_data, df, category_column, safe_cols):
                 """
                 Create tooltips showing the raw data from each year and the diff,
@@ -501,6 +619,8 @@ class MacroModule(ABC):
             Output("macromodule-detail-grid", "rowData"),
             Output("macromodule-detail-grid", "columnDefs"),
             Output("macromodule-detail-grid-title", "children"),
+            Input("var-aar", "value"),
+            Input("macromodule-foretak-or-bedrift", "value"),
             Input("macromodule-heatmap-grid", "cellClicked"),
             State("macromodule-heatmap-grid", "rowData"),
             State("macromodule-filter-velger", "value"),
@@ -509,66 +629,72 @@ class MacroModule(ABC):
             allow_duplicate=True,
         )
 
-        def update_detail_table(cell_data, row_data, filter_valg_label, nace_siffer, valgt_variabel):
+        def update_detail_table(aar, foretak_or_bedrift, cell_data, row_data, macro_level, nace_siffer_level, valgt_variabel):
             """
             Table with foretak & bedrift-level details which updates 
             when user selects a cell in heatmap-grid
             """
-            if not cell_data:
+            if not cell_data or not aar:
                 return [], [], ""
 
+            years = [aar, aar - 1]
             valgt_variabel = HEATMAP_VARIABLES.get(valgt_variabel)
 
             col = cell_data.get("colId")
-            if col in ["variabel", filter_valg_label]:
+            if col in ["variabel", macro_level]:
                 return [], [], ""
+
             selected_nace = col.replace("_", ".")
-            row_idx = cell_data.get("rowId")
-            row_idx = int(row_idx)
+            row_idx = int(cell_data.get("rowId"))
             
-            if filter_valg_label == "sammensatte variabler":
+            if macro_level == "sammensatte variabler":
                 selected_filter_val = row_data[row_idx].get("variabel")
                 valgt_variabel = selected_filter_val
             else:
-                selected_filter_val = row_data[row_idx].get(filter_valg_label)
+                selected_filter_val = row_data[row_idx].get(macro_level)
 
             if not selected_filter_val or not selected_nace:
                 return [], [], ""
 
-            if filter_valg_label not in ("sammensatte variabler"):
-                where_filter = f"substr(kommune, 1, {FILTER_OPTIONS[filter_valg_label]}) = '{selected_filter_val}' AND"
+            if macro_level not in ("sammensatte variabler"):
+                where_filter = f"substr(kommune, 1, {MACRO_FILTER_OPTIONS[macro_level]}) = '{selected_filter_val}' AND"
             else:
                 where_filter = ""
 
-            variabel_selects = ",\n".join(
-            [f"{db_col} AS {alias}" for db_col, alias in HEATMAP_VARIABLES.items()]
+            variabel_selects = ",\n".join([
+                f"{db_col} AS {alias}" 
+                for db_col, alias in HEATMAP_VARIABLES.items()]
             )
 
             # TODO: Add eimerdb as an option
+            
+            # Change to duckdb and read for both years
+            query = f"""
+                SELECT 
+                    navn,
+                    orgnr_foretak as orgnr_f,
+                    orgnr_bedrift as orgnr_b, 
+                    naring_f as naring_f,
+                    naring as naring_b,
+                    reg_type as reg_type,
+                    type as type,
+                    {variabel_selects},
+                    giver_fnr as giver_fnr,
+                    giver_bnr as giver_bnr,
+                    aar
+                FROM data
+                WHERE
+                    {where_filter}
+                    aar IN ({aar}, {aar-1}) AND
+                    substr(naring, 1, {nace_siffer_level}) = '{selected_nace}'
+                """
 
-            with sqlite3.connect(sqlite_file) as conn:
-                df = pd.read_sql(
-                    f"""
-                    SELECT 
-                        navn,
-                        orgnr_foretak as orgnr_f,
-                        orgnr_bedrift as orgnr_b, 
-                        naring_f as naring_f,
-                        naring as naring_b,
-                        reg_type as reg_type,
-                        type as type,
-                        {variabel_selects},
-                        giver_fnr as giver_fnr,
-                        giver_bnr as giver_bnr,
-                        aar
-                    FROM bedrifter
-                    WHERE
-                        {where_filter}
-                        aar IN ({aar}, {aar-1}) AND
-                        substr(naring, 1, {nace_siffer}) = '{selected_nace}'
-                    """,
-                    conn
-                    )
+            df = self.parquet_reader.query_multi_year(
+                    base_path=self.base_path,
+                    foretak_or_bedrift=FORETAK_OR_BEDRIFT[foretak_or_bedrift],
+                    years=years,
+                    query_template=query
+                )
 
             df_current = df[df['aar'] == aar].copy()
             df_previous = df[df['aar'] == aar - 1].copy()
@@ -641,7 +767,7 @@ class MacroModule(ABC):
                             "backgroundColor": "#e8e9eb"  # light grey for previous year
                         }
                 
-                if col in ["naring_f", "naring_b", "type"]:
+                if col in ["orgnr_f", "naring_f", "naring_b", "type"]: # slik at orgnr_f vil vise farge i bedriftstabellen om ei bedrift har skifta foretak
                     col_def.update({
                         "cellStyle": {"function": "MacroModule.displayDiffHighlight(params)"}
                     })
@@ -652,8 +778,8 @@ class MacroModule(ABC):
                 column_defs[0]["pinned"] = "left" # pin first column when scrolling horizontally
                 column_defs[0]["width"] = 240
 
-            title = f"Bedrifter i næring {selected_nace} i {filter_valg_label} {selected_filter_val}"
-            if filter_valg_label == "sammensatte variabler":
+            title = f"Bedrifter i næring {selected_nace} i {macro_level} {selected_filter_val}"
+            if macro_level == "sammensatte variabler":
                 title = f"Bedrifter i næring {selected_nace}"
 
             return row_data, column_defs, title
@@ -663,26 +789,32 @@ class MacroModule(ABC):
             Input("macromodule-filter-velger", "value"),
         )
 
-        def toggle_variabel_dropdown(filter_valg_label):
+        def toggle_variabel_dropdown(macro_level):
             """
             Disables macro-variable if sammensatte variabler is selected by user
             """
-            return filter_valg_label == "sammensatte variabler"
+            return macro_level == "sammensatte variabler"
 
-        @callback(  # type: ignore[misc]
-            Output("var-ident", "value", allow_duplicate=True),
-            Input("macromodule-detail-grid", "clickData"),
-            prevent_initial_call=True,
-        )
-        def output_to_variabelvelger(clickdata: dict[str, list[dict[str, Any]]]) -> str:
-            logger.debug(clickdata)
-            if clickdata:
-                print(clickdata)
-                # do it so it returns the ident, of foretak as var-foretak and var-bedrift if bedrift is clicked. if foretak is clicked then set var-foretak == ident.
-                ident = clickdata["points"][0]["customdata"][0]
-                return str(ident)
-            else:
-                raise PreventUpdate
+        # @callback(  # type: ignore[misc]
+        #     Output("var-ident", "value", allow_duplicate=True),
+        #     Output("var-foretak", "value"),
+        #     Output("var-bedrift", "value"),
+        #     Input("macromodule-detail-grid", "clickData"),
+        #     prevent_initial_call=True,
+        # )
+        # def output_to_variabelvelger(clickdata: dict[str, list[dict[str, Any]]]) -> str:
+        #     logger.debug(clickdata)
+        #     if clickdata:
+        #         print(clickdata)
+        #         # do it so it returns the ident, of foretak as var-foretak and var-bedrift if bedrift is clicked. if foretak is clicked then set var-foretak == ident.
+        #         ident = clickdata["points"][0]["customdata"][0]
+        #         return str(ident)
+        #         if col == "orgnr_f":
+        #             return ident, foretak, ""
+        #         elif col == "orgnr_b":
+        #             return ident, orgnr_f["verdi"], bedrift
+        #     else:
+        #         raise PreventUpdate
 
 
 class MacroModuleTab(TabImplementation, MacroModule):

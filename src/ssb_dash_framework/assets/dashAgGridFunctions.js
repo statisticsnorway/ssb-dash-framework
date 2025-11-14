@@ -14,35 +14,35 @@ window.dashAgGridFunctions.MacroModule = {
         const threshold = 0.3;
         const normalized = val / threshold;
 
-        // Define your base colors
+        // base colors
         const red = [252, 195, 174];     // normal red
         const blue = [180, 213, 250];    // normal blue
         const white = [255, 255, 255];   // white background
         
-        // Darker shades for beyond 30% threshold
+        // darker shades for beyond 30% threshold
         const darkRed = [252, 142, 104];
         const darkBlue = [126, 165, 252];
 
         let r, g, b;
 
         if (normalized >= 1) {
-            // Beyond positive threshold — use dark blue
+            // beyond positive threshold — dark blue
             r = darkBlue[0];
             g = darkBlue[1];
             b = darkBlue[2];
         } else if (normalized <= -1) {
-            // Beyond negative threshold — use dark red
+            // below negative threshold — use dark red
             r = darkRed[0];
             g = darkRed[1];
             b = darkRed[2];
         } else if (normalized >= 0) {
-            // Normal range: interpolate white to blue
+            // normal range: interpolate white to blue
             let clamped = Math.min(normalized, 1);
             r = white[0] * (1 - clamped) + blue[0] * clamped;
             g = white[1] * (1 - clamped) + blue[1] * clamped;
             b = white[2] * (1 - clamped) + blue[2] * clamped;
         } else {
-            // Normal range: interpolate white to red
+            // normal range: interpolate white to red
             let clamped = Math.max(normalized, -1);
             r = white[0] * (1 + clamped) + red[0] * -clamped;
             g = white[1] * (1 + clamped) + red[1] * -clamped;
@@ -63,10 +63,10 @@ window.dashAgGridFunctions.MacroModule = {
             return {};
         }
 
-        // Clamp value to [-1, 1] for interpolation
+        // clamp value to [-1, 1] for interpolation
         const clamped = Math.max(-1, Math.min(1, val));
 
-        // Define base colors
+        // base colors
         const red = [252, 195, 174];
         const blue = [180, 213, 250];
         const white = [255, 255, 255];
@@ -74,12 +74,12 @@ window.dashAgGridFunctions.MacroModule = {
         let r, g, b;
 
         if (clamped >= 0) {
-            // Interpolate from white to blue
+            // interpolate from white to blue
             r = white[0] * (1 - clamped) + blue[0] * clamped;
             g = white[1] * (1 - clamped) + blue[1] * clamped;
             b = white[2] * (1 - clamped) + blue[2] * clamped;
         } else {
-            // Interpolate from white to red
+            // interpolate from white to red
             r = white[0] * (1 + clamped) + red[0] * -clamped;
             g = white[1] * (1 + clamped) + red[1] * -clamped;
             b = white[2] * (1 + clamped) + red[2] * -clamped;
@@ -98,11 +98,11 @@ window.dashAgGridFunctions.MacroModule = {
 
         if (!props.data) return {};
 
-        // Always convert to string for comparison
+        // convert to string for comparison
         const normalize = (v) => v !== null && v !== undefined ? String(v).trim() : "";
 
         if (field.endsWith('_x')) {
-            // Previous year column
+            // prev year
             const currentField = field.replace('_x', '');
             const currentValue = normalize(props.data[currentField]);
             const prevValue = normalize(value);
@@ -113,7 +113,7 @@ window.dashAgGridFunctions.MacroModule = {
             };
         }
 
-        // Current year column
+        // current year
         const prevField = field + '_x';
         const prevValue = normalize(props.data[prevField]);
         const currentValue = normalize(value);
