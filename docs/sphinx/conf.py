@@ -66,3 +66,8 @@ autodoc_typehints = "description"
 
 # Do not prepend module names to object names
 add_module_names = False
+
+# Render "Attributes" sections from Google/Napoleon as ivar fields rather than
+# creating indexed attribute objects. This prevents duplicate object descriptions
+# when properties are also documented by autodoc.
+napoleon_use_ivar = True
