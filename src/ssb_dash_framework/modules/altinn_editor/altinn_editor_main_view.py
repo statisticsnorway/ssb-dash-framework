@@ -44,6 +44,7 @@ class AltinnSkjemadataEditor:
         self,
         time_units: list[str],
         conn: object,
+        starting_table: str | None = None,
         variable_connection: dict[str, str] | None = None,
         sidepanels: None = None,
         top_panels: None = None,
@@ -53,6 +54,7 @@ class AltinnSkjemadataEditor:
         Args:
             time_units (list[str]): List of time units to be used in the module.
             conn (object): Database connection object that must have a 'query' method.
+            starting_table (str | None): Table to be selected by default in module. If None, defaults to first table it finds.
             variable_connection (dict[str, str]): Dict containing the name of characteristics from the dataset as keys and the variable selector name associated with it as value.
             sidepanels (None): Later might be used for customizing sidepanel modules.
             top_panels (None): Later might be used for customizing top-panel modules.
@@ -74,6 +76,7 @@ class AltinnSkjemadataEditor:
             self.variableselector.get_option(x).id.removeprefix("var-")
             for x in time_units
         ]
+        self.starting_table = starting_table
 
         self.primary_table = AltinnEditorPrimaryTable(  # TODO: Should be turned into an argument in __init__ in order to increase modularity.
             time_units=time_units,
@@ -157,7 +160,11 @@ class AltinnSkjemadataEditor:
                     dcc.Dropdown(
                         id="altinnedit-option1",
                         options=skjemadata_table_names,
-                        value=skjemadata_table_names[0]["value"],
+                        value=(
+                            self.starting_table
+                            if self.starting_table
+                            else skjemadata_table_names[0]["value"]
+                        ),
                     ),
                 ]
             ),
