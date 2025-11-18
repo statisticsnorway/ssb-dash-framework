@@ -46,6 +46,8 @@ from .modules import SkjemapdfViewerTab
 from .modules import SkjemapdfViewerWindow
 from .modules import VisualizationBuilder
 from .modules import VisualizationBuilderWindow
+from .modules import apply_edits
+from .modules import get_log_path
 from .setup import VariableSelector
 from .setup import VariableSelectorOption
 from .setup import app_setup
@@ -59,7 +61,6 @@ from .utils import TabImplementation
 from .utils import WindowImplementation
 from .utils import _get_kostra_r
 from .utils import active_no_duplicates_refnr_list
-from .utils import apply_edits
 from .utils import conn_is_ibis
 from .utils import create_alert
 from .utils import create_database
@@ -132,11 +133,13 @@ __all__ = [
     "WindowImplementation",
     "active_no_duplicates_refnr_list",
     "app_setup",
+    "apply_edits",
     "conn_is_ibis",
     "create_alert",
     "create_database",
     "create_database_engine",
     "enable_app_logging",
+    "get_log_path",
     "main_layout",
     "module_validator",
     "set_variables",
