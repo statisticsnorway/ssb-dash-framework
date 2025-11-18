@@ -24,7 +24,7 @@ from .building_blocks import EditingTableWindow
 from .building_blocks import FigureDisplay
 from .building_blocks import FigureDisplayTab
 from .building_blocks import FigureDisplayWindow
-from .parquet_editor import ParquetEditor
+
 # from .hb_method import HBMethod
 # from .hb_method import HBMethodWindow
 from .building_blocks import MapDisplay
@@ -38,6 +38,7 @@ from .control import ControlWindow
 from .freesearch import FreeSearch
 from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
+from .parquet_editor import ParquetEditor
 from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab

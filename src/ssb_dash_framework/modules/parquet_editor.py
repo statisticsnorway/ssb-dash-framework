@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import zoneinfo
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -81,7 +82,9 @@ class ParquetEditor:
             raise TypeError(
                 f"Argument 'file_path' must be a string. Received: {type(self.file_path)}"
             )
+
         data = self.get_data()
+        _validate_keys_in_df(data, key_cols=self.id_vars)
         duplicates = data.duplicated(subset=self.id_vars, keep=False)
         if duplicates.any():
             raise ValueError(
@@ -90,6 +93,8 @@ class ParquetEditor:
 
     def get_data(self) -> pd.DataFrame:
         """Reads the parquet file at the supplied file path."""
+        if self.log_filepath.exists():
+            return apply_edits(self.file_path, self.id_vars)
         return pd.read_parquet(self.file_path)
 
     def _create_layout(self) -> html.Div:
@@ -261,3 +266,169 @@ class ParquetEditor:
                 *error_log,
             ]
             return False, error_log, table_data
+
+
+def get_log_path(parquet_path: str | Path) -> Path:
+    """Return the expected log file path (.jsonl) for a given parquet file.
+
+    The function searches for known data-state subfolders in the parquet path
+    (/inndata/, /klargjorte-data/, /statistikk/, /utdata/) and rewrites the path
+    to the corresponding log folder under /logg/prosessdata/<state>/.
+    If none match, the log file is assumed to be in the same directory as the parquet file.
+    """
+    data_states = ["inndata", "klargjorte-data", "statistikk", "utdata"]
+    log_subpath = "logg/prosessdata"
+
+    p = Path(parquet_path)
+    posix = p.as_posix()
+
+    for state in data_states:
+        token = f"/{state}/"
+        if token in posix:
+            replaced = posix.replace(token, f"/{log_subpath}/{state}/")
+            return Path(replaced).with_suffix(".jsonl")
+
+    print(f"Expecting subfolder {data_states}. Log file path set to parquet path.")
+    return p.with_suffix(".jsonl")
+
+
+def _get_key_columns_from_log(log: pd.DataFrame) -> list[str]:
+    """Extract and validate the key columns from the 'row_identifier' field in the log.
+
+    The log must contain a 'row_identifier' column where each row is a dict of key-value pairs.
+    All rows must use the same set of key columns; otherwise, a ValueError is raised.
+    """
+    if "row_identifier" not in log.columns:
+        raise KeyError("Log file must contain a 'row_identifier' column.")
+
+    key_sets = log["row_identifier"].apply(lambda d: tuple(sorted(d.keys())))
+
+    if key_sets.nunique() != 1:
+        raise ValueError(
+            "Log file contains multiple incompatible key definitions.",
+            list(key_sets.unique()),
+        )
+
+    return list(key_sets.iloc[0])
+
+
+def _validate_keys_in_df(df: pd.DataFrame, key_cols: Sequence[str]) -> None:
+    """Verify that all key columns found in the log are present in the parquet dataframe.
+
+    Raises KeyError if any expected key column is missing.
+    """
+    missing = [c for c in key_cols if c not in df.columns]
+    if missing:
+        raise KeyError(
+            "The specified row identifiers in log file do not exist in parquet columns: "
+            f"{missing}"
+        )
+
+
+def apply_edits(
+    parquet_path: str | Path,
+    expected_keys: Sequence[str] | None = None,
+) -> pd.DataFrame:
+    """Apply edits from a log file to a parquet dataset using a wide pivot-strategy.
+
+    Steps performed:
+        1. Read parquet file and locate its associated log file.
+        2. Extract and validate key columns from the log.
+        3. Optionally validate that the key columns in the log match expected_keys.
+        4. Expand the row_identifier field into explicit key columns.
+        5. Sort edits chronologically and remove duplicate edits
+           (same key combination + column, keep latest).
+        6. Pivot edits into wide format:
+               one row per key combination
+               one column per edited variable (colId)
+        7. Align pivoted edits with the dataframe via index merge.
+        8. Overwrite values in the dataframe where the log specifies non-null edits.
+        9. Return the updated dataframe.
+
+    Args:
+        parquet_path:
+            Path to the parquet file to be edited.
+        expected_keys:
+            Optional sequence of key column names that are expected to identify rows
+            (e.g. ["aar", "orgnr"]). If provided, the key columns inferred from the log
+            must match this set, otherwise a ValueError is raised.
+
+    Returns:
+        A new pandas DataFrame where the edits have been applied.
+    """
+    parquet_path = Path(parquet_path)
+    log_path = get_log_path(parquet_path)
+
+    df = pd.read_parquet(parquet_path)
+
+    if not log_path.exists():
+        print(
+            f"No log file for edits found at: {log_path}. Returning original dataframe."
+        )
+        return df
+
+    log = pd.read_json(log_path, lines=True)
+    if log.empty:
+        print("Log file is empty. No edits applied.")
+        return df
+
+    key_cols = _get_key_columns_from_log(log)
+    _validate_keys_in_df(df, key_cols)
+
+    if expected_keys is not None and set(expected_keys) != set(key_cols):
+        raise ValueError(
+            "Key columns from log do not match expected_keys.",
+            {"from_log": key_cols, "expected": list(expected_keys)},
+        )
+
+    log_expanded = log.join(pd.json_normalize(log["row_identifier"])).copy()
+
+    if "timestamp" in log_expanded.columns:
+        log_expanded = log_expanded.sort_values("timestamp")
+
+    subset = key_cols + ["colId"]
+    num_duplicated_edits = log_expanded.duplicated(subset=subset, keep="last").sum()
+
+    if num_duplicated_edits > 0:
+        print(
+            f"{num_duplicated_edits} duplicated edits found. "
+            "Keeping the latest edit for each key+colId pair."
+        )
+
+    log_unique = log_expanded.drop_duplicates(subset=subset, keep="last").copy()
+
+    if log_unique.empty:
+        print("No unique edits found. Returning original dataframe.")
+        return df
+
+    wide = log_unique.pivot(
+        index=key_cols,
+        columns="colId",
+        values="value",
+    )
+    wide.columns.name = None
+
+    df_indexed = df.set_index(key_cols)
+
+    missing_keys = wide.index.difference(df_indexed.index)
+    if len(missing_keys) > 0:
+        print(
+            f"{len(missing_keys)} key combinations from the log do not exist in the parquet data. "
+            "These edits are ignored."
+        )
+
+    wide_aligned = wide.reindex(df_indexed.index)
+
+    df_edited = df_indexed.copy()
+
+    for col in wide_aligned.columns:
+        if col not in df_edited.columns:
+            print(f"Column '{col}' from the log does not exist in df. Creating column.")
+            df_edited[col] = wide_aligned[col]
+        else:
+            df_edited[col] = wide_aligned[col].combine_first(df_edited[col])
+
+    edits_applied = int(wide_aligned.count().sum())
+    print(f"{edits_applied} edits applied to parquet file (via pivot).")
+
+    return df_edited.reset_index()

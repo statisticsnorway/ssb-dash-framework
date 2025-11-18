@@ -33,10 +33,10 @@ from .modules import FreeSearchWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
-from .modules import ParquetEditor
 from .modules import MultiModule
 from .modules import MultiModuleTab
 from .modules import MultiModuleWindow
+from .modules import ParquetEditor
 from .modules import PimemorizerTab
 from .modules import SkjemapdfViewer
 from .modules import SkjemapdfViewerTab
