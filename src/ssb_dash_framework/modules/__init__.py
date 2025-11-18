@@ -39,6 +39,7 @@ from .freesearch import FreeSearch
 from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
 from .parquet_editor import ParquetEditor
+from .parquet_editor import ParquetEditorChangelog
 from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab

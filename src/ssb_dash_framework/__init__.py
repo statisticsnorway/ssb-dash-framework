@@ -37,6 +37,7 @@ from .modules import MultiModule
 from .modules import MultiModuleTab
 from .modules import MultiModuleWindow
 from .modules import ParquetEditor
+from .modules import ParquetEditorChangelog
 from .modules import PimemorizerTab
 from .modules import SkjemapdfViewer
 from .modules import SkjemapdfViewerTab

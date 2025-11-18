@@ -130,10 +130,10 @@ class ParquetEditor:
                 backdrop="static",
                 centered=True,
             ),
-            dcc.Store(id=f"{self.module_number}-simple-table-data-store"),
+            dcc.Store(id=f"{self.module_number}-parqueteditor-table-data-store"),
         ]
         return html.Div(
-            [*reason_modal, dag.AgGrid(id=f"{self.module_number}-simple-table")]
+            [*reason_modal, dag.AgGrid(id=f"{self.module_number}-parqueteditor-table")]
         )
 
     def layout(self) -> html.Div:
@@ -144,9 +144,9 @@ class ParquetEditor:
         """Sets up the callbacks for the module."""
 
         @callback(  # type: ignore[misc]
-            Output(f"{self.module_number}-simple-table", "rowData"),
-            Output(f"{self.module_number}-simple-table", "columnDefs"),
-            Output(f"{self.module_number}-simple-table-data-store", "data"),
+            Output(f"{self.module_number}-parqueteditor-table", "rowData"),
+            Output(f"{self.module_number}-parqueteditor-table", "columnDefs"),
+            Output(f"{self.module_number}-parqueteditor-table-data-store", "data"),
             *self.variable_selector.get_all_inputs(),
         )
         def load_data_to_table(
@@ -172,7 +172,7 @@ class ParquetEditor:
             Output(f"{self.module_number}-reason-modal", "is_open"),
             Output(f"{self.module_number}-edit-details", "children"),
             Output(f"{self.module_number}-edit-reason", "value"),
-            Input(f"{self.module_number}-simple-table", "cellValueChanged"),
+            Input(f"{self.module_number}-parqueteditor-table", "cellValueChanged"),
             prevent_initial_call=True,
         )
         def capture_edit(
@@ -193,7 +193,7 @@ class ParquetEditor:
             ),
             Output("alert_store", "data", allow_duplicate=True),
             Output(
-                f"{self.module_number}-simple-table-data-store",
+                f"{self.module_number}-parqueteditor-table-data-store",
                 "data",
                 allow_duplicate=True,
             ),
@@ -202,7 +202,7 @@ class ParquetEditor:
             State(f"{self.module_number}-pending-edit", "data"),
             State(f"{self.module_number}-edit-reason", "value"),
             State("alert_store", "data"),
-            State(f"{self.module_number}-simple-table-data-store", "data"),
+            State(f"{self.module_number}-parqueteditor-table-data-store", "data"),
             *self.variable_selector.get_all_inputs(),
             prevent_initial_call=True,
         )
@@ -261,6 +261,62 @@ class ParquetEditor:
                 *error_log,
             ]
             return False, error_log, table_data
+
+
+class ParquetEditorChangelog:
+    _id_number: int = 0
+
+    def __init__(self, id_vars: list[str], file_path: str) -> None:
+        """Initializes the module and makes a few validation checks before moving on."""
+        self.module_number = ParquetEditor._id_number
+        self.module_name = self.__class__.__name__
+        ParquetEditor._id_number += 1
+
+        self.variable_selector = VariableSelector(
+            selected_inputs=id_vars, selected_states=[]
+        )
+        self.user = os.getenv("DAPLA_USER")
+        self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
+        self.id_vars = id_vars
+        path = Path(file_path)
+        self.log_filepath = get_log_path(file_path)
+        self.label = "Changes - " + path.stem
+
+        self.module_layout = self._create_layout()
+        module_validator(self)
+        self.module_callbacks()
+
+    def get_log(self):
+        log = pd.read_json(self.log_filepath, lines=True)
+        return log.join(pd.json_normalize(log["row_identifier"])).copy()
+
+    def _create_layout(self):
+        return dag.AgGrid(id=f"{self.module_number}-parqueteditor-changes-table")
+
+    def module_callbacks(self):
+        @callback(  # type: ignore[misc]
+            Output(f"{self.module_number}-parqueteditor-changes-table", "rowData"),
+            Output(f"{self.module_number}-parqueteditor-changes-table", "columnDefs"),
+            *self.variable_selector.get_all_inputs(),
+        )
+        def load_data_to_table(
+            *args: Any,
+        ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+            data = self.get_log()
+
+            columns = [
+                {
+                    "headerName": col,
+                    "field": col,
+                    "editable": True if col not in self.id_vars else False,
+                }
+                for col in data.columns
+            ]
+            return (data.to_dict(orient="records"), columns)
+
+    def layout(self) -> html.Div:
+        """Creates the layout for the module."""
+        return html.Div(self.module_layout)
 
 
 def get_log_path(parquet_path: str | Path) -> Path:
