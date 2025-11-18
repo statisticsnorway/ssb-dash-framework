@@ -55,12 +55,7 @@ class ParquetEditor:
         self.file_path = file_path
         path = Path(file_path)
 
-        self.log_filepath = (
-            path.parent.parent
-            / "logg"
-            / "prosessdata"
-            / path.with_suffix(".jsonl").name
-        )
+        self.log_filepath = get_log_path(file_path)
         self.label = path.stem
 
         self.module_layout = self._create_layout()
@@ -362,14 +357,15 @@ def apply_edits(
     df = pd.read_parquet(parquet_path)
 
     if not log_path.exists():
-        print(
+        logger.info(
             f"No log file for edits found at: {log_path}. Returning original dataframe."
         )
         return df
 
     log = pd.read_json(log_path, lines=True)
+    logger.debug(f"Log:\n{log}")
     if log.empty:
-        print("Log file is empty. No edits applied.")
+        logger.info("Log file is empty. No edits applied.")
         return df
 
     key_cols = _get_key_columns_from_log(log)
@@ -382,15 +378,13 @@ def apply_edits(
         )
 
     log_expanded = log.join(pd.json_normalize(log["row_identifier"])).copy()
-
     if "timestamp" in log_expanded.columns:
         log_expanded = log_expanded.sort_values("timestamp")
 
-    subset = key_cols + ["colId"]
+    subset = [*key_cols, "colId"]
     num_duplicated_edits = log_expanded.duplicated(subset=subset, keep="last").sum()
-
     if num_duplicated_edits > 0:
-        print(
+        logger.info(
             f"{num_duplicated_edits} duplicated edits found. "
             "Keeping the latest edit for each key+colId pair."
         )
@@ -398,7 +392,7 @@ def apply_edits(
     log_unique = log_expanded.drop_duplicates(subset=subset, keep="last").copy()
 
     if log_unique.empty:
-        print("No unique edits found. Returning original dataframe.")
+        logger.info("No unique edits found. Returning original dataframe.")
         return df
 
     wide = log_unique.pivot(
@@ -412,7 +406,7 @@ def apply_edits(
 
     missing_keys = wide.index.difference(df_indexed.index)
     if len(missing_keys) > 0:
-        print(
+        logger.info(
             f"{len(missing_keys)} key combinations from the log do not exist in the parquet data. "
             "These edits are ignored."
         )
@@ -423,12 +417,14 @@ def apply_edits(
 
     for col in wide_aligned.columns:
         if col not in df_edited.columns:
-            print(f"Column '{col}' from the log does not exist in df. Creating column.")
+            logger.info(
+                f"Column '{col}' from the log does not exist in df. Creating column."
+            )
             df_edited[col] = wide_aligned[col]
         else:
             df_edited[col] = wide_aligned[col].combine_first(df_edited[col])
 
     edits_applied = int(wide_aligned.count().sum())
-    print(f"{edits_applied} edits applied to parquet file (via pivot).")
+    logger.info(f"{edits_applied} edits applied to parquet file (via pivot).")
 
     return df_edited.reset_index()
