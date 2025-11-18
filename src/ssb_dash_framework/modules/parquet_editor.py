@@ -264,6 +264,16 @@ class ParquetEditor:
 
 
 class ParquetEditorChangelog:
+    """Simple module with the sole purpose of showing the changes made using ParquetEditor.
+
+    Args:
+        id_vars: A list of columns that together form a unique identifier for a single row in your data.
+        file_path: The path to the parquet file you want to find the changelog for.
+
+    Notes:
+        The process log is automatically created in the correct folder structure and is named after your parquet file.
+    """
+
     _id_number: int = 0
 
     def __init__(self, id_vars: list[str], file_path: str) -> None:
@@ -286,14 +296,17 @@ class ParquetEditorChangelog:
         module_validator(self)
         self.module_callbacks()
 
-    def get_log(self):
+    def get_log(self) -> pd.DataFrame:
+        """Reads the log file at the supplied file path."""
         log = pd.read_json(self.log_filepath, lines=True)
         return log.join(pd.json_normalize(log["row_identifier"])).copy()
 
-    def _create_layout(self):
+    def _create_layout(self) -> dag.AgGrid:
         return dag.AgGrid(id=f"{self.module_number}-parqueteditor-changes-table")
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
+        """Sets up the callbacks for the module."""
+
         @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-parqueteditor-changes-table", "rowData"),
             Output(f"{self.module_number}-parqueteditor-changes-table", "columnDefs"),
@@ -406,6 +419,9 @@ def apply_edits(
 
     Returns:
         A new pandas DataFrame where the edits have been applied.
+
+    Raises:
+        ValueError: if key columns from log does not match expected_keys.
     """
     parquet_path = Path(parquet_path)
     log_path = get_log_path(parquet_path)
