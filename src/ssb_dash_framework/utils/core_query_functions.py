@@ -47,7 +47,9 @@ def ibis_filter_with_dict(periods_dict):
 
 def active_no_duplicates_refnr_list(
     conn: ibis.BaseBackend, skjema: str | None = None
-) -> list[str]:  # TODO: Ensure that the selecting works as intended.
+) -> list[
+    str
+]:  # TODO: Ensure that the selecting works as intended. Refactor to use table object instead of conn???
     """Takes an Ibis connection and optionally a skjema-ra-number and returns the latest refnr for each unit that is still marked as active.
 
     If there are more than one active refnr the latest one is returned.
