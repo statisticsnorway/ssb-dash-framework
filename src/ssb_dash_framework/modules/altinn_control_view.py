@@ -248,8 +248,10 @@ class AltinnControlView(ABC):
             #            *self.create_callback_components("State"),
         )
         def kontrollutslag_mikro(
-            current_row: list[dict[str, Any]], *args: Any
+            current_row: list[dict[str, Any]] | None, *args: Any
         ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
+            if current_row is None:
+                raise PreventUpdate
             logger.debug(f"Args:\ncurrent_row: {current_row}\nargs: {args}")
             partition_args = dict(zip(self.time_units, args, strict=False))
             kontrollid = current_row[0]["kontrollid"]
