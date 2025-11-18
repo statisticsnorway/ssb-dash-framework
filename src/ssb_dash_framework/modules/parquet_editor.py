@@ -40,16 +40,24 @@ class ParquetEditor:
 
     _id_number: int = 0
 
-    def __init__(self, id_vars: list[str], file_path: str) -> None:
+    def __init__(
+        self,
+        id_vars: list[str],
+        file_path: str,
+        output: str | list[str] | None = None,
+        output_varselector_name: str | list[str] | None = None,
+    ) -> None:
         """Initializes the module and makes a few validation checks before moving on."""
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
 
+        self.output = output
+        self.output_varselector_name = output_varselector_name or output
         self.user = os.getenv("DAPLA_USER")
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
         self.id_vars = id_vars
-        self.variable_selector = VariableSelector(
+        self.variableselector = VariableSelector(
             selected_inputs=id_vars, selected_states=[]
         )
         self.file_path = file_path
@@ -147,7 +155,7 @@ class ParquetEditor:
             Output(f"{self.module_number}-parqueteditor-table", "rowData"),
             Output(f"{self.module_number}-parqueteditor-table", "columnDefs"),
             Output(f"{self.module_number}-parqueteditor-table-data-store", "data"),
-            *self.variable_selector.get_all_inputs(),
+            *self.variableselector.get_all_inputs(),
         )
         def load_data_to_table(
             *args: Any,
@@ -203,7 +211,7 @@ class ParquetEditor:
             State(f"{self.module_number}-edit-reason", "value"),
             State("alert_store", "data"),
             State(f"{self.module_number}-parqueteditor-table-data-store", "data"),
-            *self.variable_selector.get_all_inputs(),
+            *self.variableselector.get_all_inputs(),
             prevent_initial_call=True,
         )
         def confirm_edit(
@@ -261,6 +269,82 @@ class ParquetEditor:
                 *error_log,
             ]
             return False, error_log, table_data
+
+        if self.output and self.output_varselector_name:
+            logger.debug(
+                "Adding callback for returning clicked output to variable selector"
+            )
+            if isinstance(self.output, str) and isinstance(
+                self.output_varselector_name, str
+            ):
+                output_objects = [
+                    self.variableselector.get_output_object(
+                        variable=self.output_varselector_name
+                    )
+                ]
+                output_columns = [self.output]
+            elif isinstance(self.output, list) and isinstance(
+                self.output_varselector_name, list
+            ):
+                output_objects = [
+                    self.variableselector.get_output_object(variable=var)
+                    for var in self.output_varselector_name
+                ]
+                output_columns = self.output
+            else:
+                logger.error(
+                    f"output {self.output} is not a string or list, is type {type(self.output)}"
+                )
+                raise TypeError(
+                    f"output {self.output} is not a string or list, is type {type(self.output)}"
+                )
+            logger.debug(f"Output object: {output_objects}")
+
+            def make_table_to_varselector_connection(
+                output: Output, column: str, output_varselector_name: str
+            ) -> None:
+                @callback(  # type: ignore[misc]
+                    output,
+                    Input(f"{self.module_number}-parqueteditor-table", "cellClicked"),
+                    prevent_initial_call=True,
+                )
+                def table_to_main_table(clickdata: dict[str, Any]) -> str:
+                    logger.debug(
+                        f"Args:\n"
+                        f"clickdata: {clickdata}\n"
+                        f"column: {column}\n"
+                        f"output_varselector_name: {output_varselector_name}"
+                    )
+                    if not clickdata:
+                        logger.debug("Raised PreventUpdate")
+                        raise PreventUpdate
+                    if clickdata["colId"] != column:
+                        logger.debug("Raised PreventUpdate")
+                        raise PreventUpdate
+                    output = clickdata["value"]
+                    if not isinstance(output, str):
+                        logger.debug(
+                            f"{output} is not a string, is type {type(output)}. Trying to convert to string."
+                        )
+                        try:
+                            output = str(output)
+                        except Exception as e:
+                            logger.debug(f"Failed to convert to string: {e}")
+                            logger.debug("Raised PreventUpdate")
+                            raise PreventUpdate
+                    logger.debug(f"Transfering {output} to {output_varselector_name}")
+                    return output
+
+            for i in range(len(output_objects)):
+                make_table_to_varselector_connection(
+                    output_objects[i],
+                    output_columns[i],
+                    (
+                        self.output_varselector_name[i]
+                        if isinstance(self.output_varselector_name, list)
+                        else self.output_varselector_name
+                    ),
+                )
 
 
 class ParquetEditorChangelog:
