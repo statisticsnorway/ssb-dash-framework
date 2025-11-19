@@ -13,6 +13,7 @@ import pandas as pd
 from dash import callback
 from dash import dcc
 from dash import html
+from dash import ctx
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
@@ -97,7 +98,9 @@ class ParquetEditor:
     def get_data(self) -> pd.DataFrame:
         """Reads the parquet file at the supplied file path."""
         if self.log_filepath.exists():
+            logger.debug("Reading file and applying edits.")
             return apply_edits(self.file_path, self.id_vars)
+        logger.debug("Reading file, no edits to apply.")
         return pd.read_parquet(self.file_path)
 
     def _create_layout(self) -> html.Div:
@@ -160,6 +163,7 @@ class ParquetEditor:
         def load_data_to_table(
             *args: Any,
         ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+            logger.debug("Getting data for module.")
             data = self.get_data()
             columns = [
                 {
@@ -187,8 +191,9 @@ class ParquetEditor:
             edited: list[dict[str, Any]],
         ) -> tuple[dict[str, Any], bool, str, str]:
             if not edited:
+                logger.debug("Raising PreventUpdate")
                 raise PreventUpdate
-            logger.info(edited)
+            logger.info(f"Edited: {edited}")
             edit = edited[0]
             details = f"Column: {edit.get('colId')} | Old: {edit.get('oldValue')} | New: {edit.get('value')}"
             return edit, True, details, ""
@@ -224,7 +229,17 @@ class ParquetEditor:
             *dynamic_states: Any,
         ) -> tuple[bool, list[dict[str, Any]], list[dict[str, Any]]]:
             if not (n_clicks or n_submit):
+                logger.debug("Raising PreventUpdate")
                 raise PreventUpdate
+
+            trigger_id = ctx.triggered_id
+            if trigger_id not in { # This check is necessary to make sure it doesn't randomly log the same change a second time.
+                f"{self.module_number}-confirm-edit",
+                f"{self.module_number}-edit-reason",
+            }:
+                logger.debug(f"Ignoring callback from {trigger_id}")
+                raise PreventUpdate
+
             if not pending_edit:
                 error_log = [
                     create_alert("Ingen pending edit funnet", "error", ephemeral=True),
@@ -239,7 +254,7 @@ class ParquetEditor:
                     *error_log,
                 ]
                 return True, error_log, table_data
-
+            logger.debug("Trying to log change.")
             change_to_log: dict[str, Any] = {}
             change_to_log["row_identifier"] = {
                 str(x): pending_edit["data"][x] for x in self.id_vars
@@ -256,10 +271,11 @@ class ParquetEditor:
             logger.debug(f"Changedict received: {pending_edit}")
             logger.debug(f"Record for changelog: {change_to_log}")
             with open(self.log_filepath, "a", encoding="utf-8") as f:
+                logger.debug("Writing change")
                 f.write(
                     json.dumps(change_to_log, ensure_ascii=False, default=str) + "\n"
                 )
-
+                logger.debug("Change written.")
             error_log = [
                 create_alert(
                     "Prosesslogg oppdatert!",
