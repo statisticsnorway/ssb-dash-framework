@@ -31,6 +31,7 @@ from .modules import FreeSearch
 from .modules import FreeSearchTab
 from .modules import FreeSearchWindow
 from .modules import HBMethod
+from .modules import HBMethodTab
 from .modules import HBMethodWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
@@ -105,6 +106,7 @@ __all__ = [
     "FreeSearchTab",
     "FreeSearchWindow",
     "HBMethod",
+    "HBMethodTab",
     "HBMethodWindow",
     "MapDisplay",
     "MapDisplayTab",

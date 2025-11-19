@@ -35,8 +35,9 @@ from .control import ControlWindow
 from .freesearch import FreeSearch
 from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
-from .hb_method import HBMethod
-from .hb_method import HBMethodWindow
+from .methods import HBMethod
+from .methods import HBMethodTab
+from .methods import HBMethodWindow
 from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab
@@ -75,6 +76,7 @@ __all__ = [
     "FreeSearchTab",
     "FreeSearchWindow",
     "HBMethod",
+    "HBMethodTab",
     "HBMethodWindow",
     "MapDisplay",
     "MapDisplayTab",
