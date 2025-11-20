@@ -244,12 +244,14 @@ class AltinnControlView(ABC):
             Output("kontroller-table2", "rowData"),
             Output("kontroller-table2", "columnDefs"),
             Input("kontroller-table1", "selectedRows"),
-            self.variableselector.get_all_states(),
+            self.variableselector.get_all_inputs(),
             #            *self.create_callback_components("State"),
         )
         def kontrollutslag_mikro(
-            current_row: list[dict[str, Any]], *args: Any
+            current_row: list[dict[str, Any]] | None, *args: Any
         ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
+            if current_row is None:
+                raise PreventUpdate
             logger.debug(f"Args:\ncurrent_row: {current_row}\nargs: {args}")
             partition_args = dict(zip(self.time_units, args, strict=False))
             kontrollid = current_row[0]["kontrollid"]
@@ -321,7 +323,7 @@ class AltinnControlView(ABC):
             Input("kontrollermodal-kontrollbutton", "n_clicks"),
             State("var-altinnskjema", "value"),
             State("alert_store", "data"),
-            self.variableselector.get_all_states(),
+            self.variableselector.get_all_inputs(),
             #            *self.create_callback_components("State"),
             prevent_initial_call=True,
         )
@@ -375,7 +377,7 @@ class AltinnControlView(ABC):
             Input("kontrollermodal-insertbutton", "n_clicks"),
             State("var-altinnskjema", "value"),
             State("alert_store", "data"),
-            self.variableselector.get_all_states(),
+            self.variableselector.get_all_inputs(),
             #            *self.create_callback_components("State"),
             prevent_initial_call=True,
         )
@@ -411,7 +413,7 @@ class AltinnControlView(ABC):
                         *alert_store,
                     ]
                 except Exception as e:
-                    logger.debug(f"Inserting failed!\n{e}")
+                    logger.debug(f"Inserting failed!\n{e}", exc_info=True)
                     alert_store = [
                         create_alert(
                             f"Kontrollkjøringa feilet. {e!s}",
