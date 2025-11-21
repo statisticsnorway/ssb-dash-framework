@@ -10,10 +10,6 @@ dynamic = ["classifiers"]
 dependencies = [
     "click>=8.0.1",
     "pandas (>=2.3.1,<3.0.0)",
-    "dash (==2.18.2)",
-    "dash-bootstrap-components (==1.7.1)",
-    "dash-ag-grid (>=32.3.1,<33.0.0)",
-    "dash-bootstrap-templates (>=1.2.4)",
     "dapla-toolbelt (>=2.0.8, <5.0.0)",  # Used for reading pdf's
     "mpmath>=1.3.0", # Pimemorizer uses this
     "orjson (>=3.10.16,<4.0.0)",
@@ -23,7 +19,12 @@ dependencies = [
     "ssb-eimerdb (>=0.2.5,<0.3.0)",
     "sqlalchemy (>=2.0.43,<3.0.0)",
     "ibis-framework[postgres] (>=11.0.0,<12.0.0)",
-    "rwrapr (>=0.9.1,<0.10.0)",
+    "dash-ag-grid (>=32.3.2,<33.0.0)",
+    "dash (>=3.3.0,<4.0.0)",
+    "dash-bootstrap-components (>=2.0.4,<3.0.0)",
+    "rpy2 (>=3.6.4,<4.0.0)",
+    "dash-bootstrap-templates (>=2.1.0,<3.0.0)",
+    "duckdb (==1.3.2)",
 ]
 
 [project.urls]
