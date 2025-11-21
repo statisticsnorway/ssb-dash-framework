@@ -94,10 +94,6 @@ class EditingTable:
 
     def _is_valid(self) -> None:
         """Validate the component's configuration."""
-        if self.log_filepath and not self.log_filepath.endswith(".jsonl"):
-            raise ValueError(
-                f"log_path needs to end with '.jsonl' in order to function. Received: {self.log_filepath}"
-            )
         if not isinstance(self.label, str):
             raise TypeError(f"label {self.label} is not a string")
         if self.output is not None and self.output_varselector_name is not None:
@@ -372,12 +368,10 @@ class EditingTableTab(TabImplementation, EditingTable):
             inputs=inputs,
             states=states,
             get_data_func=get_data_func,
-            log_filepath=log_filepath,
             update_table_func=update_table_func,
             output=output,
             output_varselector_name=output_varselector_name,
             number_format=number_format,
-            justify_edit=justify_edit,
             **kwargs,
         )
         TabImplementation.__init__(self)
