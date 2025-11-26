@@ -3,7 +3,7 @@ import logging
 import os
 import zoneinfo
 from collections.abc import Sequence
-from datetime import datetime
+import datetime
 from pathlib import Path
 from typing import Any
 
@@ -26,7 +26,7 @@ from ..utils.module_validation import module_validator
 logger = logging.getLogger(__name__)
 
 
-class ParquetEditor:
+class ParquetEditor: # TODO add validation of dataframe
     """Simple module with the sole purpose of editing a parquet file.
 
     Accomplishes this functionality by writing a processlog in a json lines file and recording any edits in this jsonl file.
@@ -43,8 +43,11 @@ class ParquetEditor:
 
     def __init__(
         self,
+        statistics_name: str,
         id_vars: list[str],
-        file_path: str,
+        data_source: str,
+        data_target: str, # Optional?
+        follow_ssb_requirements_for_changelogging=True,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
     ) -> None:
@@ -53,6 +56,7 @@ class ParquetEditor:
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
 
+        self.statistics_name = statistics_name
         self.output = output
         self.output_varselector_name = output_varselector_name or output
         self.user = os.getenv("DAPLA_USER")
@@ -61,10 +65,10 @@ class ParquetEditor:
         self.variableselector = VariableSelector(
             selected_inputs=id_vars, selected_states=[]
         )
-        self.file_path = file_path
-        path = Path(file_path)
-
-        self.log_filepath = get_log_path(file_path)
+        self.file_path = data_source
+        self.data_target = data_target
+        path = Path(data_source)
+        self.log_filepath = get_log_path(data_source)
         self.label = path.stem
 
         self.module_layout = self._create_layout()
@@ -87,14 +91,6 @@ class ParquetEditor:
                 f"Argument 'file_path' must be a string. Received: {type(self.file_path)}"
             )
 
-        data = self.get_data()
-        _validate_keys_in_df(data, key_cols=self.id_vars)
-        duplicates = data.duplicated(subset=self.id_vars, keep=False)
-        if duplicates.any():
-            raise ValueError(
-                f"The dataframe seems to have duplicates on the columns '{self.id_vars}'. For the processlog to be useable the combination of id_vars needs to be unique for a each row.\n Duplicated rows:\n{duplicates}"
-            )
-
     def get_data(self) -> pd.DataFrame:
         """Reads the parquet file at the supplied file path."""
         if self.log_filepath.exists():
@@ -111,13 +107,50 @@ class ParquetEditor:
                     dbc.ModalHeader("Reason for change"),
                     dbc.ModalBody(
                         [
-                            html.Div(id=f"{self.module_number}-edit-details"),
-                            dbc.Textarea(
-                                id=f"{self.module_number}-edit-reason",
-                                placeholder="Enter reason for the change...",
-                                style={"width": "100%"},
-                                autoFocus=True,
-                                n_submit=0,
+                            dbc.Row(html.Div(id=f"{self.module_number}-edit-details")),
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dcc.RadioItems(
+                                            id=f"{self.module_number}-edit-reason",
+                                            options=[
+                                                {
+                                                    "label": "Statistisk gjennomgang",
+                                                    "value": "REVIEW",
+                                                },
+                                                {
+                                                    "label": "Kontakt med dataleverandør",
+                                                    "value": "OWNER",
+                                                },
+                                                {
+                                                    "label": "Kontroll mot annen kilde",
+                                                    "value": "OTHER_SOURCE",
+                                                },
+                                                {
+                                                    "label": "Marginal enhet",
+                                                    "value": "MARGINAL_UNIT",
+                                                },  # Hva er egentlig dette?
+                                                {
+                                                    "label": "Dublett",
+                                                    "value": "DUPLICATE",
+                                                },  # Dette burde løses maskinelt, ikke være en kategori her?
+                                                {
+                                                    "label": "Annen grunn",
+                                                    "value": "OTHER",
+                                                },
+                                            ],
+                                            value="REVIEW"
+                                        )
+                                    ),
+                                    dbc.Col(
+                                        dbc.Textarea(
+                                            id=f"{self.module_number}-edit-comment",
+                                            placeholder="Enter a comment for the change...",
+                                            autoFocus=True,
+                                            n_submit=0,
+                                        )
+                                    ),
+                                ]
                             ),
                         ]
                     ),
@@ -183,7 +216,7 @@ class ParquetEditor:
             Output(f"{self.module_number}-pending-edit", "data"),
             Output(f"{self.module_number}-reason-modal", "is_open"),
             Output(f"{self.module_number}-edit-details", "children"),
-            Output(f"{self.module_number}-edit-reason", "value"),
+            Output(f"{self.module_number}-edit-comment", "value"),
             Input(f"{self.module_number}-parqueteditor-table", "cellValueChanged"),
             prevent_initial_call=True,
         )
@@ -211,9 +244,10 @@ class ParquetEditor:
                 allow_duplicate=True,
             ),
             Input(f"{self.module_number}-confirm-edit", "n_clicks"),
-            Input(f"{self.module_number}-edit-reason", "n_submit"),
+            Input(f"{self.module_number}-edit-comment", "n_submit"),
             State(f"{self.module_number}-pending-edit", "data"),
             State(f"{self.module_number}-edit-reason", "value"),
+            State(f"{self.module_number}-edit-comment", "value"),
             State("alert_store", "data"),
             State(f"{self.module_number}-parqueteditor-table-data-store", "data"),
             *self.variableselector.get_all_inputs(),
@@ -224,6 +258,7 @@ class ParquetEditor:
             n_submit: int,
             pending_edit: dict[str, Any],
             reason: str,
+            comment: str,
             error_log: list[dict[str, Any]],
             table_data: list[dict[str, Any]],
             *dynamic_states: Any,
@@ -233,10 +268,13 @@ class ParquetEditor:
                 raise PreventUpdate
 
             trigger_id = ctx.triggered_id
-            if trigger_id not in { # This check is necessary to make sure it doesn't randomly log the same change a second time.
-                f"{self.module_number}-confirm-edit",
-                f"{self.module_number}-edit-reason",
-            }:
+            if (
+                trigger_id
+                not in {  # This check is necessary to make sure it doesn't randomly log the same change a second time.
+                    f"{self.module_number}-confirm-edit",
+                    f"{self.module_number}-edit-comment",
+                }
+            ):
                 logger.debug(f"Ignoring callback from {trigger_id}")
                 raise PreventUpdate
 
@@ -246,7 +284,7 @@ class ParquetEditor:
                     *error_log,
                 ]
                 return False, error_log, table_data
-            if not reason or str(reason).strip() == "":
+            if not comment or str(comment).strip() == "":
                 error_log = [
                     create_alert(
                         "Årsak for endring er påkrevd", "warning", ephemeral=True
@@ -254,21 +292,13 @@ class ParquetEditor:
                     *error_log,
                 ]
                 return True, error_log, table_data
-            logger.debug("Trying to log change.")
-            change_to_log: dict[str, Any] = {}
-            change_to_log["row_identifier"] = {
-                str(x): pending_edit["data"][x] for x in self.id_vars
-            }
-            change_to_log["colId"] = pending_edit["colId"]
-            change_to_log["oldValue"] = pending_edit["oldValue"]
-            change_to_log["value"] = pending_edit["value"]
-            change_to_log["reason"] = reason.replace("\n", "")
-            change_to_log["user"] = self.user
-            change_to_log["change_event"] = "manual"
-            aware_timestamp = datetime.now(self.tz)  # timezone-aware
-            naive_timestamp = aware_timestamp.replace(tzinfo=None)  # drop tzinfo
-            change_to_log["timestamp"] = naive_timestamp
-            logger.debug(f"Changedict received: {pending_edit}")
+
+            pending_edit["reason"] = reason
+            pending_edit["comment"] = comment
+            logger.debug(f"Trying to log change.\nChangedict received: {pending_edit}")
+
+            change_to_log = self._build_process_log_entry(pending_edit)
+
             logger.debug(f"Record for changelog: {change_to_log}")
             with open(self.log_filepath, "a", encoding="utf-8") as f:
                 logger.debug("Writing change")
@@ -361,6 +391,42 @@ class ParquetEditor:
                         else self.output_varselector_name
                     ),
                 )
+
+    def _build_process_log_entry(self, edit_dict):
+        reason_category =edit_dict["reason"]
+        comment = edit_dict["comment"]
+        change_datetime = datetime.datetime.fromtimestamp(edit_dict["timestamp"] / 1000, tz=datetime.timezone.utc)
+
+        unit_id = [
+            {
+                "unit_id_variable": var,
+                "unit_id_value": str(edit_dict["data"][var])
+            }
+            for var in self.id_vars
+        ]
+        changed_variable = edit_dict["colId"]
+        old_value = edit_dict["oldValue"]
+        new_value = edit_dict["value"]
+        return {
+            "statistics_name": self.statistics_name,
+            "data_source": [self.file_path],
+            "data_target": self.data_target,
+            "data_period":"",
+            "variable_name": changed_variable,
+            "change_event": "M",
+            "change_event_reason": reason_category,
+            "change_datetime": change_datetime,
+            "change_by": self.user,
+            "data_change_type": "UPD",
+            "change_comment": comment.replace("\n", ""), # Not sure what replace does but it was there before.
+            "change_details": {
+                "kind": "unit",
+                "unit_id": unit_id
+                ,
+                "old_value": {"variable_name": changed_variable, "value": old_value},
+                "new_value": {"variable_name": changed_variable, "value": new_value},
+            }
+        }
 
 
 class ParquetEditorChangelog:
