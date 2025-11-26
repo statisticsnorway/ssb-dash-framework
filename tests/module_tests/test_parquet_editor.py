@@ -10,19 +10,18 @@ def test_changelog_creation() -> None:
         "rowIndex": 0,
         "rowId": "0",
         "data": {
-            "aar": 2024,
             "orgnr": "971526920",
-            "ansatte": 100,
-            "inntekter": 230,
-            "utgifter": 99,
+            "aar": 2024,
+            "ansatte": 150,
+            "inntekter": None,
+            "utgifter": 200,
         },
-        "oldValue": 90,
-        "value": 100,
+        "oldValue": 140,
+        "value": 150,
         "colId": "ansatte",
-        "timestamp": 1764140468399,
-    } | {
+        "timestamp": 1764168184878,
         "reason": "REVIEW",
-        "comment": "",
+        "comment": "Tester",
     }  # reason and comment are user generated, the rest come directly from AgGrid
 
     test = ParquetEditor(
