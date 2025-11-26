@@ -1,8 +1,9 @@
-import datetime
 import json
 import logging
 import os
 import zoneinfo
+from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 from typing import Any
 
@@ -398,8 +399,8 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
     def _build_process_log_entry(self, edit_dict: dict[str, Any]) -> dict[str, Any]:
         reason_category = edit_dict["reason"]
         comment = edit_dict["comment"]
-        change_datetime = datetime.datetime.fromtimestamp(
-            edit_dict["timestamp"] / 1000, tz=datetime.UTC
+        change_datetime = datetime.fromtimestamp(
+            edit_dict["timestamp"] / 1000, tz=timezone.UTC
         )
 
         unit_id = [
