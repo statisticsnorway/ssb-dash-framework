@@ -601,7 +601,7 @@ def apply_edits(
     df = pd.read_parquet(parquet_path)
 
     if not log_path.exists():
-        logger.info(
+        logger.warning(
             f"No log file for edits found at: {log_path}. Returning original dataframe."
         )
         return df
