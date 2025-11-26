@@ -1,12 +1,16 @@
+from ibis.expr.types.relations import Table
+
+
 import logging
 from abc import ABC
 from abc import abstractmethod
 from typing import Any
 from typing import ClassVar
 import os
-# import sqlite3
 import pandas as pd
+from ibis.expr.types.relations import Table
 import duckdb
+import ibis
 
 from dash_ag_grid import AgGrid
 import dash_bootstrap_components as dbc
@@ -30,6 +34,7 @@ from ..utils import conn_is_ibis
 from ..utils.eimerdb_helpers import create_partition_select
 from ..utils.module_validation import module_validator
 
+ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
 # Variables used in the heatmap-grid
@@ -63,93 +68,26 @@ NACE_LEVEL_OPTIONS = {"2-siffer": 2, "3-siffer": 4, "4-siffer": 5, "5-siffer": 6
 HEATMAP_NUMBER_FORMAT = {"Prosentendring": True, "Totalsum": False}
 
 class MacroModule_ParquetReader:
-    """Helper class for reading and querying Parquet files with DuckDB."""
+    """Helper class for reading and querying Parquet files with ibis."""
     
     def __init__(self):
         """Initialize a persistent DuckDB connection."""
-        self.conn = duckdb.connect()
-    
-    def query_multi_year(
-        self, 
-        base_path: str, 
-        foretak_or_bedrift: str,
-        years: list[int],
-        query_template: str
-    ) -> pd.DataFrame:
-        """
-        Query multiple years of Parquet files and combine them.
-        
-        Args:
-            base_path: Base path template
-            foretak_or_bedrift: Either "foretak" or "bedrifter"
-            years: List of years to query
-            query_template: SQL query with 'data' as table name
-            
-        Returns:
-            Combined DataFrame with aar column added
-        """
-        # # Build UNION ALL query for multiple years
-        # union_parts = []
-        # for year in years:
-        #     file_path = f"{base_path}/aar={year}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-        #     union_parts.append(f"""
-        #         SELECT *, {year} as aar 
-        #         FROM read_parquet('{file_path}', hive_partitioning = False)
-        #     """)
-        
-        # union_query = " UNION ALL ".join(union_parts)
-        
-        # # Wrap the union in a CTE and apply the user's query
-        # full_query = f"""
-        # WITH data AS (
-        #     {union_query}
-        # )
-        # {query_template}
-        # """
-        # logger.debug(full_query)
-        # logger.debug(self.conn.execute(full_query).df().head(5))
+        self.conn = ibis.connect("duckdb://")
 
-        # return self.conn.execute(full_query).df()
-
-        # 1. Determine all columns across years
-        all_cols = set()
-        for year in years:
-            file_path = f"{base_path}/aar={year}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-            cols = [row[0] for row in self.conn.execute(f"DESCRIBE SELECT * FROM read_parquet('{file_path}', hive_partitioning=False)").fetchall()]
-            all_cols.update(cols)
-        
-        # 2. Build per-year SELECTs with missing columns as NULL
-        selects = []
-        for year in years:
-            file_path = f"{base_path}/aar={year}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-            cols_in_file = [row[0] for row in self.conn.execute(f"DESCRIBE SELECT * FROM read_parquet('{file_path}', hive_partitioning=False)").fetchall()]
-            missing_cols = all_cols - set(cols_in_file)
-            missing_expr = ", ".join(f"NULL AS {col}" for col in missing_cols)
-            select_expr = f"SELECT *, {missing_expr}, {year} AS aar FROM read_parquet('{file_path}', hive_partitioning=False)"
-            selects.append(f"({select_expr})")
-        
-        # 3. UNION ALL per-year
-        union_query = " UNION ALL ".join(selects)
-        full_query = query_template.replace("FROM data", f"FROM ({union_query}) AS data")
-        
-        # 4. Execute
-        return self.conn.execute(full_query).df()
-    
-    def query_single_year(self, base_path: str, foretak_or_bedrift: str, 
-                          year: int, query: str) -> pd.DataFrame:
-        """Query a single year's Parquet file."""
-        file_path = f"{base_path}/aar={year}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-        
-        full_query = f"""
-        WITH data AS (
-            SELECT * FROM read_parquet('{file_path}')
+    def load_year(self, aar, base_path, foretak_or_bedrift, nace_list, nace_siffer_level):
+        t: Table = self.conn.read_parquet(
+            f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
         )
-        {query}
-        """
-        return self.conn.execute(full_query).df()
+        t = t.filter(t.naring.substr(0, length=2).isin(nace_list))
+        t = t.mutate(
+            aar=ibis.literal(aar).cast('string'), 
+            selected_nace = t.naring.substr(0, length=nace_siffer_level)
+        )
+        return t
+    
     
     def close(self):
-        """Close the DuckDB connection."""
+        """Close the ibis connection."""
         self.conn.close()
 
 class MacroModule(ABC):
@@ -220,23 +158,14 @@ class MacroModule(ABC):
                     f"MacroModule requires the variable selector option '{var}' to be set."
                 ) from e
 
-    def get_nace_options(self, aar: int) -> list[str]:
+    def get_nace_options(self, base_path, aar: int) -> list[str]:
         """Get distinct NACE codes for a given year."""
-        query = """
-        SELECT DISTINCT substr(naring, 1, 2) AS naring_kode
-        FROM data
-        WHERE naring IS NOT NULL
-        ORDER BY naring_kode
-        """
-        
-        df = self.parquet_reader.query_single_year(
-            base_path=self.base_path,
-            foretak_or_bedrift="bedrifter",
-            year=aar,
-            query=query
+        df = self.parquet_reader.conn.read_parquet(
+            f"{base_path}/p{aar}/statistikkfil_bedrifter_nr.parquet"
         )
-
-        return sorted(df["naring_kode"].dropna().astype(str).unique())
+        naring_filter = df.naring.substr(0, length=2).name("nace2")
+        df = df.select(naring_filter).distinct()
+        return sorted(df.to_pandas()["nace2"])
 
     def _create_layout(self) -> html.Div:
         """Generates the layout for the MacroModule."""
@@ -457,7 +386,7 @@ class MacroModule(ABC):
             if not aar:
                 return []
             try:
-                nace_options = self.get_nace_options(aar)
+                nace_options = self.get_nace_options(self.base_path, aar)
                 return [{"label": n, "value": n} for n in nace_options]
             except Exception as e:
                 logger.error(f"Error loading NACE options: {e}")
@@ -478,74 +407,124 @@ class MacroModule(ABC):
         
         # TODO: Set up a way to get aar from variabelvelger. Can read variabelvelgeren.md or hurtigstart.md for instance.
         
-        def update_graph(aar, foretak_or_bedrift, variabel, macro_level, nace_siffer_level, nace, tallvisning_valg):
+        def update_graph(aar, foretak_or_bedrift, variabel, macro_level, nace_siffer_level, nace_list, tallvisning_valg):
             """
             Creates a colour-coordinated matrix heatmap of aggregated values 
             based on their %-change from the previous year
             """
 
-            if not nace or not variabel or not macro_level or not aar:
+            if not nace_list or not variabel or not macro_level or not aar:
                 return [], []
 
             aar = int(aar)
-            logger.debug(f"Datatype for aar: {type(aar)}, aar: {aar}")
-            years = [aar, aar-1]
             
-            naring_filter = ", ".join(f"'{n}'" for n in nace)
+            # naring_filter = ", ".join(f"'{n}'" for n in nace)
+
+            # if macro_level == "sammensatte variabler":
+            #     var_selects = ",\n".join([f"SUM(CAST({db_col} AS DOUBLE)) AS {alias}" for db_col, alias in HEATMAP_VARIABLES.items()])
+            #     group_by = "nace"
+            #     select_extra = ""
+            # else:
+            #     var_selects = f"SUM(CAST({variabel} AS DOUBLE)) AS sum_{variabel}"
+            #     group_by = f"{macro_level}, nace"
+            #     select_extra = f"substr(kommune, 1, {MACRO_FILTER_OPTIONS[macro_level]}) AS {macro_level},"
+
+            # # TODO: Add eimerdb as an option
+            
+            # # Query has to read both years?
+            # query = f"""
+            #     SELECT
+            #         substr(naring, 1, {nace_siffer_level}) AS nace,
+            #         {select_extra}
+            #         {var_selects},
+            #         aar
+            #     FROM data
+            #     WHERE
+            #         aar IN ({years[0]}, {years[1]}) AND
+            #         substr(naring, 1, 2) IN ({naring_filter})
+            #     GROUP BY
+            #         aar,
+            #         {group_by};
+            #     """
+            # df = self.parquet_reader.query_multi_year(
+            #         base_path=self.base_path,
+            #         foretak_or_bedrift=foretak_or_bedrift,
+            #         years=years,
+            #         query_template=query
+            #     )
+            
+            # logger.debug(df.head(2))
+            
+            # if macro_level == "sammensatte variabler":
+            #     df = df.pivot_table(
+            #         index=["nace", "aar"],
+            #         values=HEATMAP_VARIABLES.values(),
+            #         aggfunc="sum"
+            #     ).reset_index()
+            #     df = df.melt(id_vars=["nace", "aar"], var_name="variabel", value_name="value")
+            #     df = df.pivot(index=["variabel", "nace"], columns="aar", values="value").reset_index()
+            #     category_column = "variabel"
+
+            # else:
+            #     df = df.pivot_table(
+            #         index=[f"{macro_level}", "nace"],
+            #         columns="aar",
+            #         values=f"sum_{variabel}"
+            #     ).reset_index()
+            #     category_column = macro_level
+
+            t = self.parquet_reader.load_year(aar, self.base_path, foretak_or_bedrift, nace_list, nace_siffer_level) # t, current aar
+            t_1 = self.parquet_reader.load_year(aar-1, self.base_path, foretak_or_bedrift, nace_list, nace_siffer_level) # t-1, previous aar
 
             if macro_level == "sammensatte variabler":
-                var_selects = ",\n".join([f"SUM(CAST({db_col} AS DOUBLE)) AS {alias}" for db_col, alias in HEATMAP_VARIABLES.items()])
-                group_by = "nace"
-                select_extra = ""
-            else:
-                var_selects = f"SUM(CAST({variabel} AS DOUBLE)) AS sum_{variabel}"
-                group_by = f"{macro_level}, nace"
-                select_extra = f"substr(kommune, 1, {MACRO_FILTER_OPTIONS[macro_level]}) AS {macro_level},"
+                cols = list(HEATMAP_VARIABLES.keys()) + ["naring", "aar"]
+                group_by_filter = ["selected_nace"]
 
-            # TODO: Add eimerdb as an option
-            
-            # Query has to read both years?
-            query = f"""
-                SELECT
-                    substr(naring, 1, {nace_siffer_level}) AS nace,
-                    {select_extra}
-                    {var_selects},
-                    aar
-                FROM data
-                WHERE
-                    aar IN ({years[0]}, {years[1]}) AND
-                    substr(naring, 1, 2) IN ({naring_filter})
-                GROUP BY
-                    aar,
-                    {group_by};
-                """
-            df = self.parquet_reader.query_multi_year(
-                    base_path=self.base_path,
-                    foretak_or_bedrift=foretak_or_bedrift,
-                    years=years,
-                    query_template=query
+            else: 
+                cols = [variabel, macro_level, "naring", "aar"] # select kommune as 4 digits eller substr kommune as fylke
+                group_by_filter = ["selected_nace", macro_level] # kommune, fylke eller sammensatte_variabler
+                col_length = MACRO_FILTER_OPTIONS[macro_level]
+
+                t = t.mutate({macro_level: t.kommune.substr(0, length=col_length)})
+                t_1 = t_1.mutate({macro_level: t_1.kommune.substr(0, length=col_length)})
+
+            t = (
+                t
+                .select(cols + ["selected_nace"])
+            )
+            t_1: Table = (
+                t_1
+                .select(cols + ["selected_nace"])
+            )
+            combined = t.union(t_1)
+
+            if macro_level == "sammensatte variabler":
+                agg_dict = {
+                    alias: combined[db_col].sum()
+                    for db_col, alias in HEATMAP_VARIABLES.items()
+                }
+                df = combined.group_by(["aar"] + group_by_filter).aggregate(**agg_dict)
+
+                df = df.pivot_longer(
+                    HEATMAP_VARIABLES.values(), 
+                    names_to="variabel", 
+                    values_to="value"
                 )
-            
-            logger.debug(df.head(2))
-            
-            if macro_level == "sammensatte variabler":
-                df = df.pivot_table(
-                    index=["nace", "aar"],
-                    values=HEATMAP_VARIABLES.values(),
-                    aggfunc="sum"
-                ).reset_index()
-                df = df.melt(id_vars=["nace", "aar"], var_name="variabel", value_name="value")
-                df = df.pivot(index=["variabel", "nace"], columns="aar", values="value").reset_index()
+                df = df.pivot_wider(
+                    names_from="aar", 
+                    values_from="value"
+                )
                 category_column = "variabel"
 
             else:
-                df = df.pivot_table(
-                    index=[f"{macro_level}", "nace"],
-                    columns="aar",
-                    values=f"sum_{variabel}"
-                ).reset_index()
+                df = combined.group_by(["aar"] + group_by_filter).aggregate(variabel=combined[f"{variabel}"].sum())
+                df = df.pivot_wider(
+                    names_from="aar", 
+                    values_from="variabel"
+                )
                 category_column = macro_level
-
+                
+            df = df.rename(nace="selected_nace").execute()
             df.columns = df.columns.map(str) # Set to str in case aar loaded as int
 
             # Percentage change from previous year
@@ -577,7 +556,6 @@ class MacroModule(ABC):
             matrix["id"] = matrix.index.astype(str)
             row_data = matrix.to_dict("records")
 
-            ############################################ Kan endre aar til years[0] osv.
             def generate_tooltips(row_data, df, category_column, safe_cols):
                 """
                 Create tooltips showing the raw data from each year and the diff,
@@ -687,45 +665,96 @@ class MacroModule(ABC):
             if not selected_filter_val or not selected_nace:
                 return [], [], ""
 
-            if macro_level not in ("sammensatte variabler"):
-                where_filter = f"substr(kommune, 1, {MACRO_FILTER_OPTIONS[macro_level]}) = '{selected_filter_val}' AND"
-            else:
-                where_filter = ""
+            print(selected_nace) ####################################### PROBLEMET ER EIN MISMATCH MELLOM NACE OG DET SOM BRUKAREN VELG
+            t = self.parquet_reader.load_year(aar, self.base_path, foretak_or_bedrift, [selected_nace], nace_siffer_level)
+            t_1 = self.parquet_reader.load_year(aar - 1, self.base_path, foretak_or_bedrift, [selected_nace], nace_siffer_level)
 
-            variabel_selects = ",\n".join([
-                f"{db_col} AS {alias}" 
-                for db_col, alias in HEATMAP_VARIABLES.items()]
-            )
+            print(t.head())
+            print(macro_level)
+            print(selected_filter_val)
+            # Apply macro-level truncation if needed
+            if macro_level not in ("sammensatte variabler",):
+                col_length = MACRO_FILTER_OPTIONS[macro_level]
+                t = t.mutate({macro_level: t.kommune.substr(0, length=col_length)})
+                t = t.filter(t[macro_level] == selected_filter_val)
+                t_1 = t_1.mutate({macro_level: t_1.kommune.substr(0, length=col_length)})
+                t_1 = t_1.filter(t_1[macro_level] == selected_filter_val)
 
-            # TODO: Add eimerdb as an option
-            
-            # Change to duckdb and read for both years
-            query = f"""
-                SELECT 
-                    navn,
-                    orgnr_foretak as orgnr_f,
-                    orgnr_bedrift as orgnr_b, 
-                    naring_f as naring_f,
-                    naring as naring_b,
-                    reg_type as reg_type,
-                    type as type,
-                    {variabel_selects},
-                    giver_fnr as giver_fnr,
-                    giver_bnr as giver_bnr,
-                    aar
-                FROM data
-                WHERE
-                    {where_filter}
-                    aar IN ({aar}, {aar-1}) AND
-                    substr(naring, 1, {nace_siffer_level}) = '{selected_nace}'
-                """
+            # Select columns exactly like previous SQL join select-list # må sette opp slik at den velg spesifikke for foretak og bedrift
+            select_cols = [
+                "navn",
+                "orgnr_foretak",
+                "orgnr_bedrift",
+                "naring_f",
+                "naring", # denne må endrast på i tilfelle det er snakk om foretak, og ikkje berre få namnet naring_b
+                "reg_type",
+                "type",
+            ] + list(HEATMAP_VARIABLES.keys()) + [
+                "giver_fnr",
+                "giver_bnr",
+                "aar",
+            ]
 
-            df = self.parquet_reader.query_multi_year(
-                    base_path=self.base_path,
-                    foretak_or_bedrift=foretak_or_bedrift,
-                    years=years,
-                    query_template=query
+            t = t.select([c for c in select_cols if c in t.columns])
+            t = t.rename(
+                orgnr_f="orgnr_foretak",
+                orgnr_b="orgnr_bedrift",
+                naring_b="naring",
                 )
+            t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
+            t_1 = t_1.rename(
+                orgnr_f="orgnr_foretak",
+                orgnr_b="orgnr_bedrift",
+                naring_b="naring",
+                )
+
+            # STACK them just like the old sql
+            combined = t.union(t_1)
+
+            # Back to pandas (same structure as old df)
+            df = combined.execute()
+
+            print(df.head())
+
+            # if macro_level not in ("sammensatte variabler"):
+            #     where_filter = f"substr(kommune, 1, {MACRO_FILTER_OPTIONS[macro_level]}) = '{selected_filter_val}' AND"
+            # else:
+            #     where_filter = ""
+
+            # variabel_selects = ",\n".join([
+            #     f"{db_col} AS {alias}" 
+            #     for db_col, alias in HEATMAP_VARIABLES.items()]
+            # )
+
+            # # TODO: Add eimerdb as an option
+            
+            # # Change to duckdb and read for both years
+            # query = f"""
+            #     SELECT 
+            #         navn,
+            #         orgnr_foretak as orgnr_f,
+            #         orgnr_bedrift as orgnr_b, 
+            #         naring_f as naring_f,
+            #         naring as naring_b,
+            #         reg_type as reg_type,
+            #         type as type,
+            #         {variabel_selects},
+            #         giver_fnr as giver_fnr,
+            #         giver_bnr as giver_bnr,
+            #         aar
+            #     FROM data
+            #     WHERE
+            #         {where_filter}
+            #         aar IN ({aar}, {aar-1}) AND
+            #         substr(naring, 1, {nace_siffer_level}) = '{selected_nace}'
+            #     """
+
+            # df = self.parquet_reader.query_multi_year(
+            #         base_path=self.base_path,
+            #         foretak_or_bedrift=foretak_or_bedrift,
+            #         years=years,
+            #         query_template=query
+            #     )
 
             logger.debug(df.head(2))
 
