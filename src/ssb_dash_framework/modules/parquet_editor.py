@@ -400,7 +400,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         reason_category = edit_dict["reason"]
         comment = edit_dict["comment"]
         change_datetime = datetime.fromtimestamp(
-            edit_dict["timestamp"] / 1000, tz=timezone.UTC
+            edit_dict["timestamp"] / 1000, tz=timezone.utc
         )
 
         unit_id = [
