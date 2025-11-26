@@ -1,9 +1,9 @@
+import datetime
 import json
 import logging
 import os
 import zoneinfo
 from collections.abc import Sequence
-import datetime
 from pathlib import Path
 from typing import Any
 
@@ -11,13 +11,14 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import callback
+from dash import ctx
 from dash import dcc
 from dash import html
-from dash import ctx
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 
 from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
@@ -26,14 +27,18 @@ from ..utils.module_validation import module_validator
 logger = logging.getLogger(__name__)
 
 
-class ParquetEditor: # TODO add validation of dataframe
+class ParquetEditor:  # TODO add validation of dataframe, workshop argument names
     """Simple module with the sole purpose of editing a parquet file.
 
     Accomplishes this functionality by writing a processlog in a json lines file and recording any edits in this jsonl file.
 
     Args:
+        statistics_name: The name of the statistic being edited.
         id_vars: A list of columns that together form a unique identifier for a single row in your data.
-        file_path: The path to the parquet file you want to edit.
+        data_source: The path to the parquet file you want to edit.
+        data_target: The path your completed file will be created at.
+        output: Columns in your dataframe that should be clickable to output to the variable selector panel.
+        output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
 
     Notes:
         The process log is automatically created in the correct folder structure and is named after your parquet file.
@@ -46,8 +51,7 @@ class ParquetEditor: # TODO add validation of dataframe
         statistics_name: str,
         id_vars: list[str],
         data_source: str,
-        data_target: str, # Optional?
-        follow_ssb_requirements_for_changelogging=True,
+        data_target: str,  # Optional?
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
     ) -> None:
@@ -139,7 +143,7 @@ class ParquetEditor: # TODO add validation of dataframe
                                                     "value": "OTHER",
                                                 },
                                             ],
-                                            value="REVIEW"
+                                            value="REVIEW",
                                         )
                                     ),
                                     dbc.Col(
@@ -392,41 +396,43 @@ class ParquetEditor: # TODO add validation of dataframe
                     ),
                 )
 
-    def _build_process_log_entry(self, edit_dict):
-        reason_category =edit_dict["reason"]
+    def _build_process_log_entry(self, edit_dict: dict[str, Any]) -> dict[str, Any]:
+        reason_category = edit_dict["reason"]
         comment = edit_dict["comment"]
-        change_datetime = datetime.datetime.fromtimestamp(edit_dict["timestamp"] / 1000, tz=datetime.timezone.utc)
+        change_datetime = datetime.datetime.fromtimestamp(
+            edit_dict["timestamp"] / 1000, tz=datetime.UTC
+        )
 
         unit_id = [
-            {
-                "unit_id_variable": var,
-                "unit_id_value": str(edit_dict["data"][var])
-            }
+            {"unit_id_variable": var, "unit_id_value": str(edit_dict["data"][var])}
             for var in self.id_vars
         ]
         changed_variable = edit_dict["colId"]
         old_value = edit_dict["oldValue"]
         new_value = edit_dict["value"]
-        return {
+        changelog_entry = {
             "statistics_name": self.statistics_name,
             "data_source": [self.file_path],
             "data_target": self.data_target,
-            "data_period":"",
+            "data_period": "",
             "variable_name": changed_variable,
             "change_event": "M",
             "change_event_reason": reason_category,
             "change_datetime": change_datetime,
             "change_by": self.user,
             "data_change_type": "UPD",
-            "change_comment": comment.replace("\n", ""), # Not sure what replace does but it was there before.
+            "change_comment": comment.replace(
+                "\n", ""
+            ),  # Not sure what replace does but it was there before.
             "change_details": {
                 "kind": "unit",
-                "unit_id": unit_id
-                ,
+                "unit_id": unit_id,
                 "old_value": {"variable_name": changed_variable, "value": old_value},
                 "new_value": {"variable_name": changed_variable, "value": new_value},
-            }
+            },
         }
+        ChangeDataLog.model_validate(changelog_entry)
+        return changelog_entry
 
 
 class ParquetEditorChangelog:
