@@ -66,6 +66,7 @@ FORETAK_OR_BEDRIFT = {"Foretak": "foretak", "Bedrifter": "bedrifter"}
 MACRO_FILTER_OPTIONS = {"fylke": 2, "kommune": 4, "sammensatte variabler": HEATMAP_VARIABLES}
 NACE_LEVEL_OPTIONS = {"2-siffer": 2, "3-siffer": 4, "4-siffer": 5, "5-siffer": 6}
 HEATMAP_NUMBER_FORMAT = {"Prosentendring": True, "Totalsum": False}
+STATUS_CHANGE_DETAIL_GRID = ["orgnr_f", "naring_f", "naring_b", "type", "reg_type"] # gets tooltip + colour change per year if changed (should be categorical col)
 
 class MacroModule_ParquetReader:
     """Helper class for reading and querying Parquet files with ibis."""
@@ -757,26 +758,39 @@ class MacroModule(ABC):
             #     )
 
             logger.debug(df.head(2))
+            logger.debug(df["aar"].dtypes)
 
-            df_current = df[df['aar'] == aar].copy()
-            df_previous = df[df['aar'] == aar - 1].copy()
+            df_current = df[df['aar'] == str(aar)].copy()
+            df_previous = df[df['aar'] == str(aar-1)].copy()
 
             df_previous.drop(columns='aar', inplace=True)
             df_current.drop(columns='aar', inplace=True)
 
+            logger.debug(df_current.head(2))
+
+            merge_keys = [c for c in ['orgnr_f', 'orgnr_b'] if c in df_current.columns and c in df_previous.columns]
             df_merged = df_current.merge(
                 df_previous,
-                on=['orgnr_f', 'orgnr_b'],
+                on=merge_keys,
                 how='left',
-                suffixes=('', '_x'))
+                suffixes=('', '_x')
+            )
+            # df_merged = df_current.merge(
+            #     df_previous,
+            #     on=['orgnr_f', 'orgnr_b'], # må legge inn slik at den berre mergar på orgnr_foretak om foretak er valgt
+            #     how='left',
+            #     suffixes=('', '_x'))
 
             df = df_merged.copy()
 
-            df["giver_fnr_tooltip"] = "Giverforetak: " + df["giver_fnr"].astype(str)
-            df["giver_bnr_tooltip"] = "Giverbedrift: " + df["giver_bnr"].astype(str)
-            for col in ["naring_f", "naring_b", "type"]:
-                if f"{col}_x" in df.columns:
-                    df[f"{col}_tooltip"] = "Fjorårets verdi: " + df[f"{col}_x"].astype(str)
+            logger.debug(df.head(3))
+
+            if "giver_bnr" in df.columns and "giver_fnr" in df.columns: # unngå foretakstabellar som ikkje har giver
+                df["giver_fnr_tooltip"] = "Giverforetak: " + df["giver_fnr"].astype(str)
+                df["giver_bnr_tooltip"] = "Giverbedrift: " + df["giver_bnr"].astype(str)
+                for col in STATUS_CHANGE_DETAIL_GRID:
+                    if f"{col}_x" in df.columns:
+                        df[f"{col}_tooltip"] = "Fjorårets verdi: " + df[f"{col}_x"].astype(str)
 
             id_cols = ['navn', 'orgnr_f', 'orgnr_b', 'naring_f', 'naring_b', "reg_type", "type"]
 
@@ -805,7 +819,11 @@ class MacroModule(ABC):
 
             row_data = df.to_dict("records")
 
-            visible_cols = id_cols + ordered_value_cols
+            print(df.head())
+            print(id_cols) # printar ['navn', 'orgnr_f', 'orgnr_b', 'naring_f', 'naring_b', 'reg_type', 'type']
+            print(ordered_value_cols) # printar berre ['omsetning', 'omsetning_x'] <-------------------------- HER ER FEILEN
+            visible_cols = [c for c in id_cols + ordered_value_cols if c in df.columns]
+            print(visible_cols)
 
             column_defs = [] 
             for col in visible_cols:
@@ -829,7 +847,7 @@ class MacroModule(ABC):
                             "backgroundColor": "#e8e9eb"  # light grey for previous year
                         }
                 
-                if col in ["orgnr_f", "naring_f", "naring_b", "type"]: # slik at orgnr_f vil vise farge i bedriftstabellen om ei bedrift har skifta foretak
+                if col in STATUS_CHANGE_DETAIL_GRID: # slik at orgnr_f vil vise farge i bedriftstabellen om ei bedrift har skifta foretak
                     col_def.update({
                         "cellStyle": {"function": "MacroModule.displayDiffHighlight(params)"}
                     })
