@@ -647,7 +647,6 @@ class MacroModule(ABC):
                 return [], [], ""
 
             aar = int(aar)
-            years = [aar, aar - 1]
             valgt_variabel = HEATMAP_VARIABLES.get(valgt_variabel)
 
             col = cell_data.get("colId")
@@ -670,9 +669,6 @@ class MacroModule(ABC):
             t = self.parquet_reader.load_year(aar, self.base_path, foretak_or_bedrift, [selected_nace], nace_siffer_level)
             t_1 = self.parquet_reader.load_year(aar - 1, self.base_path, foretak_or_bedrift, [selected_nace], nace_siffer_level)
 
-            print(t.head())
-            print(macro_level)
-            print(selected_filter_val)
             # Apply macro-level truncation if needed
             if macro_level not in ("sammensatte variabler",):
                 col_length = MACRO_FILTER_OPTIONS[macro_level]
@@ -709,13 +705,13 @@ class MacroModule(ABC):
                 naring_b="naring",
                 )
 
-            # STACK them just like the old sql
             combined = t.union(t_1)
 
-            # Back to pandas (same structure as old df)
-            df = combined.execute()
+            # rename cols to chosen variable names
+            rename_map = {v: k for k, v in HEATMAP_VARIABLES.items() if k in combined.columns}
+            combined = combined.rename(**rename_map)
 
-            print(df.head())
+            df = combined.execute()
 
             # if macro_level not in ("sammensatte variabler"):
             #     where_filter = f"substr(kommune, 1, {MACRO_FILTER_OPTIONS[macro_level]}) = '{selected_filter_val}' AND"
@@ -775,11 +771,6 @@ class MacroModule(ABC):
                 how='left',
                 suffixes=('', '_x')
             )
-            # df_merged = df_current.merge(
-            #     df_previous,
-            #     on=['orgnr_f', 'orgnr_b'], # må legge inn slik at den berre mergar på orgnr_foretak om foretak er valgt
-            #     how='left',
-            #     suffixes=('', '_x'))
 
             df = df_merged.copy()
 
@@ -819,11 +810,7 @@ class MacroModule(ABC):
 
             row_data = df.to_dict("records")
 
-            print(df.head())
-            print(id_cols) # printar ['navn', 'orgnr_f', 'orgnr_b', 'naring_f', 'naring_b', 'reg_type', 'type']
-            print(ordered_value_cols) # printar berre ['omsetning', 'omsetning_x'] <-------------------------- HER ER FEILEN
             visible_cols = [c for c in id_cols + ordered_value_cols if c in df.columns]
-            print(visible_cols)
 
             column_defs = [] 
             for col in visible_cols:
