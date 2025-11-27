@@ -1,6 +1,7 @@
 from typing import Any
 import logging
 import warnings
+import itertools
 
 import pandas as pd
 import ibis
@@ -47,30 +48,30 @@ def ibis_filter_with_dict(periods_dict):
         filters.append(expr)
     return filters
 
-def control(kontroll_id, kontrolltype, skildring,kontrollvariabel,sorteringsvariabel, **kwargs):
+def control(kontrollid, kontrolltype, skildring,kontrollvariabel,sorteringsvariabel, **kwargs):
     """
     Decorator used to attach REQUIRED metadata to control_<id> methods.
 
     Required fields:
-        - kontroll_id
-        - kontrolltype
+        - kontrollid
+        - type
         - skildring
-        - kontrollvariabel
-        - sorteringsvariabel
+        - kontrollvar
+        - varsort
     """
     required_keys = {
-        "kontroll_id",
-        "kontrolltype",
+        "kontrollid",
+        "type",
         "skildring",
-        "kontrollvariabel",# Optional?
-        "sorteringsvariabel", # Optional?
+        "kontrollvar",# Optional?
+        "varsort", # Optional?
     }
     meta_dict = {
-        "kontroll_id": kontroll_id,
-        "kontrolltype": kontrolltype,
+        "kontrollid": kontrollid,
+        "type": kontrolltype,
         "skildring": skildring,
-        "kontrollvariabel": kontrollvariabel,
-        "sorteringsvariabel": sorteringsvariabel,
+        "kontrollvar": kontrollvariabel,
+        "varsort": sorteringsvariabel,
     }
 
     # Check for missing required keys
@@ -172,9 +173,31 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         print(self.controls)
 
     def register_control(self, control):
+        registered_controls = self.get_current_kontroller()
         control_meta = getattr(self, control)._control_meta
-        print(control_meta)
-        
+        row_to_register = pd.DataFrame([control_meta])
+
+        combinations = list(itertools.product(*self.applies_to_subset.values()))
+
+        df_expanded = pd.DataFrame(combinations, columns=self.applies_to_subset.keys())
+
+        rows_to_register = row_to_register.merge(df_expanded, how='cross')
+        rows_to_register = rows_to_register.merge(registered_controls, how="outer", on=[*self.applies_to_subset.keys(), *control_meta.keys()],indicator=True)
+        rows_to_register = rows_to_register[rows_to_register["_merge"] == "left_only"].drop(columns=["_merge"])
+        if rows_to_register.empty:
+            logger.debug("No new control to register, ending here.")
+            return None
+        if isinstance(self.conn, EimerDBInstance):
+            self.conn.insert("kontroller", rows_to_register)
+        elif conn_is_ibis(self.conn):
+            conn = self.conn
+            k = conn.table("kontroller")
+            k.insert(rows_to_register)
+        else:
+            raise NotImplementedError(
+                f"Connection type '{type(self.conn)}' is currently not implemented."
+            )
+
 
     def register_all_controls(self):
         self.find_control_methods()
@@ -183,7 +206,25 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
 
 
     def get_current_kontroller(self):
-        ...
+        if isinstance(self.conn, EimerDBInstance):
+            conn = ibis.polars.connect()
+            kontroller = self.conn.query("SELECT * FROM kontroller") # maybe add something like this?partition_select=self.applies_to_subset
+            conn.create_table("kontroller", kontroller)
+        elif conn_is_ibis(self.conn):
+            conn = self.conn
+        else:
+            raise NotImplementedError(
+                f"Connection type '{type(self.conn)}' is currently not implemented."
+            )
+        kontroller = conn.table("kontroller")
+        kontroller = (
+            kontroller
+            .filter(ibis_filter_with_dict(self.applies_to_subset))
+            .to_pandas()
+        )
+        logger.debug(f"Kontroller\n{kontroller}")
+        print(f"Kontroller\n{kontroller}")
+        return kontroller
         
 
     def execute_controls(self) -> None:
@@ -362,7 +403,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
 
 
     @control(
-        kontroll_id="diff",
+        kontrollid="diff",
         kontrolltype="endring",
         skildring="Stor differanse mot fjoråret",
         kontrollvariabel="fulldyrket",
@@ -399,7 +440,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         ]
 
     @control(
-        kontroll_id="bunnfradrag",
+        kontrollid="bunnfradrag",
         kontrolltype="mulig_feil",
         skildring="Ikke 6000",
         kontrollvariabel="bunnfradrag",
@@ -430,18 +471,19 @@ if __name__ == "__main__":
         "produksjonstilskudd_altinn3",
     )
 
+    res = conn.query("SELECT * FROM kontroller")
+
     res = conn.query("SELECT * FROM kontrollutslag")
-    print(res["kontrollid"].unique())
 
     test = ControlFrameworkBase(
         time_units=["aar"],
         applies_to_subset={
-            "aar": [2023],
+            "aar": [2020],
             "skjema":["RA-7357"]
         },
         conn=conn
     )
 
-    test.register_all_controls()
+    # test.register_all_controls()
 
-    test.execute_controls()
+    # test.execute_controls()
