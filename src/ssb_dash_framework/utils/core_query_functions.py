@@ -34,13 +34,16 @@ def create_filter_dict(variables: list[str], values: list[Any] | tuple[Any]):
 
 def ibis_filter_with_dict(periods_dict):
     """Example:
-    filter_dict = {"year": "2025", "quarter": "3"}
+    filter_dict = {"year": "2025", "quarter": ["3", "4"]}
     t.filter(ibis_filter_with_dict(filter_dict))
     """
     filters = []
     for key, value in periods_dict.items():
         col = getattr(_, key)
-        expr = col == value
+        if isinstance(value, list):
+            expr = col.isin(value)
+        else:
+            expr = col == value
         filters.append(expr)
     return filters
 

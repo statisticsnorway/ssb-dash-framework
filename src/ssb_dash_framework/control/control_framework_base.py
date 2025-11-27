@@ -1,11 +1,51 @@
+from typing import Any
 import logging
 import warnings
 
 import pandas as pd
+import ibis
+from ibis import _
+from eimerdb import EimerDBInstance
+#from .utils.core_query_functions import conn_is_ibis, ibis_filter_with_dict
+
 
 logger = logging.getLogger(__name__)
 
+def conn_is_ibis(conn: Any) -> bool:
+    """Function to check if a supplied object is an Ibis connection.
 
+    Used to select which 'path' to take for preparing data in modules.
+
+    Args:
+        conn (Any): Object to check.
+
+    Returns:
+        A bool that is True if the supplied object is an Ibis connection.
+    """
+    if conn.__class__.__name__ == "Backend":
+        logger.debug("Assuming 'self.conn' is Ibis connection.")
+        return True
+    else:
+        return False
+
+def create_filter_dict(variables: list[str], values: list[Any] | tuple[Any]):
+    """Creates a filter dict for use in ibis_filter_with_dict."""
+    return dict(zip(variables, values, strict=False))
+
+def ibis_filter_with_dict(periods_dict):
+    """Example:
+    filter_dict = {"year": "2025", "quarter": ["3", "4"]}
+    t.filter(ibis_filter_with_dict(filter_dict))
+    """
+    filters = []
+    for key, value in periods_dict.items():
+        col = getattr(_, key)
+        if isinstance(value, list):
+            expr = col.isin(value)
+        else:
+            expr = col == value
+        filters.append(expr)
+    return filters
 
 def control(kontroll_id, kontrolltype, skildring,kontrollvariabel,sorteringsvariabel, **kwargs):
     """
@@ -85,8 +125,8 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
 
     def __init__(
         self,
-        time_units: list[int | str],
-        applies_to_forms: list[str],
+        time_units: list[str],
+        applies_to_subset: dict[str, Any],
         conn: object,
         partitions: list[int | str] | None = None, # Deprecated name
         partitions_skjema: dict[str, int | str] | None= None, # Deprecated name
@@ -109,14 +149,14 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 DeprecationWarning,
                 stacklevel=2
             )
-            # Map old to new
             if time_units is None:
                 time_units = partitions
-            if applies_to_forms is None:
+            if applies_to_subset is None:
                 # Needs transformation here
-                applies_to_forms = partitions_skjema
+                applies_to_subset = partitions_skjema
         self.time_units = time_units
-        self.applies_to_forms = applies_to_forms
+        self.applies_to_subset = applies_to_subset
+        self.conn = conn
 
         self._required_kontroller_columns = [*self.time_units, *ControlFrameworkBase._required_kontroller_columns]
         self._required_kontrollutslag_columns = [*self.time_units, *ControlFrameworkBase._required_kontrollutslag_columns]
@@ -131,15 +171,26 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             raise ValueError("No control methods found.")
         print(self.controls)
 
-    def register_controls(self):
+    def register_control(self, control):
+        control_meta = getattr(self, control)._control_meta
+        print(control_meta)
+        
+
+    def register_all_controls(self):
         self.find_control_methods()
+        for control in self.controls:
+            self.register_control(control)
 
 
+    def get_current_kontroller(self):
+        ...
         
 
     def execute_controls(self) -> None:
         control_results = self.run_all_controls()
-        print(control_results)
+        self.update_existing_records(control_results)
+        self.insert_new_records(control_results)
+
 
 
     def run_all_controls(self):
@@ -148,6 +199,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         df_all_results: list[pd.DataFrame] = []
         for method_name in self.controls:
             logger.debug(f"Running method: {method_name}")
+            print(f"Running method: {method_name}")
             if not callable(getattr(self, method_name)):
                 raise TypeError(
                     f"Attribute in class '{method_name}' is not callable. Either make it a method or change its name to not start with 'control_'."
@@ -184,30 +236,190 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 raise ValueError(f"Missing required column '{column}' for result from '{control}'.")
         return results
 
-    
-    def insert_new_records(self):
-        ...
-    
-    def update_existing_records(self):
-        ...
+
+    def get_current_kontrollutslag(self):
+        if isinstance(self.conn, EimerDBInstance):
+            conn = ibis.polars.connect()
+            kontrollutslag = self.conn.query("SELECT * FROM kontrollutslag") # maybe add something like this?partition_select=self.applies_to_subset
+            conn.create_table("kontrollutslag", kontrollutslag)
+        elif conn_is_ibis(self.conn):
+            conn = self.conn
+        else:
+            raise NotImplementedError(
+                f"Connection type '{type(self.conn)}' is currently not implemented."
+            )
+        kontrollutslag = conn.table("kontrollutslag")
+        kontrollutslag = (
+            kontrollutslag
+            .filter(ibis_filter_with_dict(self.applies_to_subset))
+            .to_pandas()
+        )
+        logger.debug(f"Kontrollutslag\n{kontrollutslag}")
+        return kontrollutslag
+
+
+    def insert_new_records(self, control_results):
+        existing_kontrollutslag = self.get_current_kontrollutslag()
+        if existing_kontrollutslag.empty:
+            logger.debug("No existing rows found.")
+        merged = control_results.merge(
+            existing_kontrollutslag,
+            on=[*self.applies_to_subset.keys(), "kontrollid", "ident", "refnr"],
+            how="outer",
+            indicator=True
+        )
+        merged = merged[merged["_merge"] == "left_only"][
+                [
+                    *self.applies_to_subset.keys(),
+                    "kontrollid",
+                    "ident",
+                    "refnr",
+                    "verdi_x",
+                    "utslag_x",
+                ]
+            ].rename(columns={"utslag_x": "utslag", "verdi_x": "verdi"}).dropna()
+        if merged.empty:
+            logger.debug("No new rows found, ending here.")
+            return None        
+        # Now to insert new rows into the table.
+        if isinstance(self.conn, EimerDBInstance):
+            self.conn.insert("kontrollutslag", merged)
+        elif conn_is_ibis(self.conn):
+            conn = self.conn
+            k = conn.table("kontrollutslag")
+            k.insert(merged)
+        else:
+            raise NotImplementedError(
+                f"Connection type '{type(self.conn)}' is currently not implemented."
+            )
+        logger.debug(f"Inserted {merged.shape[0]} new rows to kontrollutslag.")
+
+
+    def update_existing_records(self, control_results):
+        existing_kontrollutslag = self.get_current_kontrollutslag()
+        if existing_kontrollutslag.empty:
+            logger.debug("No existing rows found, ending here.")
+            return None
+        merged = control_results.merge(
+            existing_kontrollutslag,
+            on=["kontrollid", "ident", "refnr"],
+            how="outer",
+            indicator=True,
+        ).dropna()
+        changed = merged[merged["utslag_x"] != merged["utslag_y"]][
+            ["kontrollid", "ident", "refnr", "verdi_x", "utslag_x"]
+        ].rename(columns={"utslag_x": "utslag", "verdi_x": "verdi"})
+        if changed.empty:
+            logger.debug("No changed rows, ending here.")
+            return None
+        update_query = self.generate_update_query(changed)
+        if isinstance(self.conn, EimerDBInstance):
+            self.conn.query(update_query)
+        elif conn_is_ibis(self.conn):
+            conn = self.conn
+            conn.raw_sql(update_query)
+        else:
+            raise NotImplementedError(
+                f"Connection type '{type(self.conn)}' is currently not implemented."
+            )
+        print(f"UPDATING {changed.shape[0]}")
+
+
+
+
+    def generate_update_query(self, df_updates: pd.DataFrame) -> str:
+        """Generates a SQL UPDATE query for updating rows in 'kontrollutslag'.
+
+        Args:
+            df_updates (pd.DataFrame): DataFrame with updates to apply.
+
+        Returns:
+            str: SQL query string.
+        """
+        update_query = "UPDATE kontrollutslag SET utslag = CASE"
+
+        for _, row in df_updates.iterrows():
+            update_query += (
+                f" WHEN kontrollid = '{row['kontrollid']}' AND "
+                f"refnr = '{row['refnr']}' THEN {row['utslag']}"
+            )
+
+        update_query += " ELSE utslag END"
+        update_query += (
+            " WHERE "
+            + " OR ".join(
+                [
+                    f"(kontrollid = '{row['kontrollid']}' AND refnr = '{row['refnr']}')"
+                    for _, row in df_updates.iterrows()
+                ]
+            )
+            + ";"
+        )
+        logger.debug(f"Update query:\n{update_query}")
+
+        return update_query
 
 
 
     @control(
-        kontroll_id="standard_1",
-        kontrolltype="info",
-        skildring="Skjemaet har en kommentar",
-        kontrollvariabel=None,
+        kontroll_id="diff",
+        kontrolltype="endring",
+        skildring="Stor differanse mot fjoråret",
+        kontrollvariabel="fulldyrket",
         sorteringsvariabel=None
     )
-    def control_comment_exists(self):
-        conn = db.EimerDBInstance(
-        "ssb-dapla-felles-data-produkt-prod",
-        "produksjonstilskudd_altinn3",
-        )
-        res = conn.query("SELECT * FROM kontaktinfo WHERE aar = '2018'")
-        return res
+    def control_diff(self):
+        aar = int(self.applies_to_subset["aar"][0])
+        df = self.conn.query("SELECT * FROM skjemadata_hoved")
+        df = df.loc[df["variabel"] == "fulldyrket"]
+        diff_df = df.loc[(df["aar"].isin([aar, aar - 1]))]
+        diff_df = diff_df.pivot(
+            index=["ident", "variabel"], columns="aar", values="verdi"
+        ).reset_index()
+        diff_df[aar - 1] = diff_df[aar - 1].astype(float)
+        diff_df[aar] = diff_df[aar].astype(float)
+        diff_df = diff_df.loc[(diff_df[aar - 1] > 0) & (diff_df[aar] > 0)]
 
+        diff_df["differanse"] = diff_df[aar] - diff_df[aar - 1]
+        diff_df["prosent_endring"] = (diff_df["differanse"] / diff_df[aar - 1]) * 100
+
+        diff_df["utslag"] = False
+        diff_df.loc[(abs(diff_df["prosent_endring"]) > 100), "utslag"] = True
+
+        diff_df["aar"] = aar
+        diff_df["skjema"] = "RA-7357"
+        diff_df["kontrollid"] = "diff"
+        diff_df["verdi"] = diff_df["prosent_endring"].astype(int)
+
+        diff_df = diff_df.merge(
+            df.loc[df["aar"] == aar][["ident", "refnr"]], on="ident"
+        )
+        return diff_df[
+            ["aar", "skjema", "ident", "refnr", "kontrollid", "utslag", "verdi"]
+        ]
+
+    @control(
+        kontroll_id="bunnfradrag",
+        kontrolltype="mulig_feil",
+        skildring="Ikke 6000",
+        kontrollvariabel="bunnfradrag",
+        sorteringsvariabel=None
+    )
+    def control_bunnfradrag(self):
+        aar = int(self.applies_to_subset["aar"][0])
+        df = self.conn.query(f"SELECT * FROM skjemadata_hoved WHERE variabel = 'bunnfradrag' AND aar = {aar}")
+        
+        df["utslag"] = False
+        df["verdi"] = df["verdi"].astype(float).astype(int)
+        df.loc[((df["verdi"]) != 6000), "utslag"] = True
+
+        df["aar"] = aar
+        df["skjema"] = "RA-7357"
+        df["kontrollid"] = "bunnfradrag"
+
+        return df[
+            ["aar", "skjema", "ident", "refnr", "kontrollid", "utslag", "verdi"]
+        ]
 
 
 if __name__ == "__main__":
@@ -217,15 +429,19 @@ if __name__ == "__main__":
         "ssb-dapla-felles-data-produkt-prod",
         "produksjonstilskudd_altinn3",
     )
-    res = conn.query("SELECT * FROM kontaktinfo WHERE aar = '2018'")
-    print(res)
+
+    res = conn.query("SELECT * FROM kontrollutslag")
+    print(res["kontrollid"].unique())
 
     test = ControlFrameworkBase(
         time_units=["aar"],
-        applies_to_forms=["RA-7357"],
-        conn=None
+        applies_to_subset={
+            "aar": [2023],
+            "skjema":["RA-7357"]
+        },
+        conn=conn
     )
 
-    test.register_controls()
+    test.register_all_controls()
 
     test.execute_controls()
