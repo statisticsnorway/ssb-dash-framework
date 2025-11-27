@@ -18,7 +18,6 @@ from .functions import sidebar_button
 from .implementations import TabImplementation
 from .implementations import WindowImplementation
 from .module_validation import module_validator
-from .prosesslogg import apply_edits
 from .r_helpers import _get_kostra_r
 from .r_helpers import hb_method
 
@@ -31,7 +30,6 @@ __all__ = [
     "WindowImplementation",
     "_get_kostra_r",
     "active_no_duplicates_refnr_list",
-    "apply_edits",
     "conn_is_ibis",
     "create_alert",
     "create_database",
