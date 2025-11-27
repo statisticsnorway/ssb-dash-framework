@@ -5,45 +5,6 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-def control(kontroll_id, kontrolltype, skildring, **meta):
-    """
-    Decorator used to attach REQUIRED metadata to control_<id> methods.
-
-    Required fields:
-        - kontroll_id
-        - kontrolltype
-        - skildring
-        - kontrollvariabel
-        - sorteringsvariabel
-    """
-    required_keys = {
-        "kontroll_id",
-        "kontrolltype",
-        "skildring",
-        "kontrollvariabel",# Optional?
-        "sorteringsvariabel", # Optional?
-    }
-
-    # Check for missing required keys
-    missing = required_keys - meta.keys()
-    if missing:
-        raise ValueError(
-            f"Missing required control metadata fields: {', '.join(missing)}"
-        )
-
-    # Warn or block extra keys
-    extra = meta.keys() - required_keys
-    if extra:
-        raise ValueError(
-            f"Unknown metadata keys for control decorator: {', '.join(extra)}"
-        )
-
-    def wrapper(func):
-        func._control_meta = meta
-        return func
-
-    return wrapper
-
 class ControlFrameworkBase:  # TODO: Add some common control methods here for easier reuse.
     """Base class for running control checks.
 
