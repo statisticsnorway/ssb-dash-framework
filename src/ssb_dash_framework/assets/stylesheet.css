@@ -243,8 +243,8 @@ MacroModule
     width: 100%;
 }
 
-.macromodule-detail-grid-container h3 {
-    margin-top: 40px;
+.macromodule-detail-grid-container h5 {
+    margin-top: 10px;
 }
 
 .macromodule-sidebar {

@@ -66,7 +66,7 @@ FORETAK_OR_BEDRIFT = {"Foretak": "foretak", "Bedrifter": "bedrifter"}
 MACRO_FILTER_OPTIONS = {"fylke": 2, "kommune": 4, "sammensatte variabler": HEATMAP_VARIABLES}
 NACE_LEVEL_OPTIONS = {"2-siffer": 2, "3-siffer": 4, "4-siffer": 5, "5-siffer": 6}
 HEATMAP_NUMBER_FORMAT = {"Prosentendring": True, "Totalsum": False}
-STATUS_CHANGE_DETAIL_GRID = ["orgnr_f", "naring_f", "naring_b", "type", "reg_type"] # gets tooltip + colour change per year if changed (should be categorical col)
+STATUS_CHANGE_DETAIL_GRID = ["orgnr_f", "navn", "naring_f", "naring_b", "type", "reg_type"] # gets tooltip + colour change per year if changed (should be categorical col)
 
 class MacroModule_ParquetReader:
     """Helper class for reading and querying Parquet files with ibis."""
@@ -79,9 +79,13 @@ class MacroModule_ParquetReader:
         t: Table = self.conn.read_parquet(
             f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
         )
-        print(nace_list)
-        print(nace_siffer_level)
-        t = t.filter(t.naring.substr(0, length=2).isin(nace_list))
+        
+        ############################################################################### MÅ FINNE EIN FIKS HER SLIK AT DEN KAN LOADE TIL BÅDE
+        # HEATMAP GRID MEN OGSÅ DETAIL-GRID. Kanskje ein true/false funksjon som gjer at den filtrerar på enten første 2 (length=2) for hm, men 
+        # nace_siffer_level om det er detail-grid?
+        nace_2digit_list = [n.split('.')[0][:2] for n in nace_list]
+
+        t = t.filter(t.naring.substr(0, length=2).isin(nace_2digit_list))
         t = t.mutate(
             aar=ibis.literal(aar).cast('string'), 
             selected_nace = t.naring.substr(0, length=nace_siffer_level)
@@ -309,11 +313,11 @@ class MacroModule(ABC):
                     ],
                 ),
 
-                # Full-width detail grid
+                # Full-width "micro" detail grid
                 html.Div(
                     className="macromodule-detail-grid-container",
                     children=[
-                        html.H3(id="macromodule-detail-grid-title"),
+                        html.H5(id="macromodule-detail-grid-title"),
                         dcc.Loading(
                             type="circle",
                             color="#454545",
@@ -680,7 +684,6 @@ class MacroModule(ABC):
                 t_1 = t_1.mutate({macro_level: t_1.kommune.substr(0, length=col_length)})
                 t_1 = t_1.filter(t_1[macro_level] == selected_filter_val)
 
-            # Select columns exactly like previous SQL join select-list # må sette opp slik at den velg spesifikke for foretak og bedrift
             select_cols = [
                 "navn",
                 "orgnr_foretak",
@@ -695,7 +698,7 @@ class MacroModule(ABC):
                 "aar",
             ]
 
-            if foretak_or_bedrift == "foretak" and "naring":
+            if foretak_or_bedrift == "foretak":
                 naring_renaming = {"naring_f": "naring"}
                 orgnr_renaming = {"orgnr_f": "orgnr_foretak"}
             elif foretak_or_bedrift == "bedrifter":
@@ -717,16 +720,11 @@ class MacroModule(ABC):
 
             df = combined.execute()
 
-            # logger.debug(df.head(2))
-            logger.debug(df["aar"].dtypes)
-
             df_current = df[df['aar'] == str(aar)].copy()
             df_previous = df[df['aar'] == str(aar-1)].copy()
 
             df_previous.drop(columns='aar', inplace=True)
             df_current.drop(columns='aar', inplace=True)
-
-            logger.debug(df_current.head(2))
 
             merge_keys = [c for c in ['orgnr_f', 'orgnr_b'] if c in df_current.columns and c in df_previous.columns]
             df_merged = df_current.merge(
@@ -738,14 +736,12 @@ class MacroModule(ABC):
 
             df = df_merged.copy()
 
-            logger.debug(df.head(3))
-
             if "giver_bnr" in df.columns and "giver_fnr" in df.columns: # unngå foretakstabellar som ikkje har giver
                 df["giver_fnr_tooltip"] = "Giverforetak: " + df["giver_fnr"].astype(str)
                 df["giver_bnr_tooltip"] = "Giverbedrift: " + df["giver_bnr"].astype(str)
-                for col in STATUS_CHANGE_DETAIL_GRID:
-                    if f"{col}_x" in df.columns:
-                        df[f"{col}_tooltip"] = "Fjorårets verdi: " + df[f"{col}_x"].astype(str)
+            for col in STATUS_CHANGE_DETAIL_GRID:
+                if f"{col}_x" in df.columns:
+                    df[f"{col}_tooltip"] = "Fjorårets verdi: " + df[f"{col}_x"].astype(str)
 
             id_cols = ['navn', 'orgnr_f', 'orgnr_b', 'naring_f', 'naring_b', "reg_type", "type"]
 
