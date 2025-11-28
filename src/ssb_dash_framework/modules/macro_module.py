@@ -686,7 +686,7 @@ class MacroModule(ABC):
                 "orgnr_foretak",
                 "orgnr_bedrift",
                 "naring_f",
-                "naring", # denne må endrast på i tilfelle det er snakk om foretak, og ikkje berre få namnet naring_b
+                "naring",
                 "reg_type",
                 "type",
             ] + list(HEATMAP_VARIABLES.keys()) + [
@@ -695,18 +695,19 @@ class MacroModule(ABC):
                 "aar",
             ]
 
+            if foretak_or_bedrift == "foretak" and "naring":
+                naring_renaming = {"naring_f": "naring"}
+                orgnr_renaming = {"orgnr_f": "orgnr_foretak"}
+            elif foretak_or_bedrift == "bedrifter":
+                naring_renaming = {"naring_b": "naring"}
+                orgnr_renaming = {
+                    "orgnr_f": "orgnr_foretak", 
+                    "orgnr_b": "orgnr_bedrift"
+                    }
             t = t.select([c for c in select_cols if c in t.columns])
-            t = t.rename(
-                orgnr_f="orgnr_foretak",
-                orgnr_b="orgnr_bedrift",
-                naring_b="naring",
-                )
+            t = t.rename(**orgnr_renaming, **naring_renaming)
             t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
-            t_1 = t_1.rename(
-                orgnr_f="orgnr_foretak",
-                orgnr_b="orgnr_bedrift",
-                naring_b="naring",
-                )
+            t_1 = t_1.rename(**orgnr_renaming, **naring_renaming)
 
             combined = t.union(t_1)
 
@@ -716,7 +717,7 @@ class MacroModule(ABC):
 
             df = combined.execute()
 
-            logger.debug(df.head(2))
+            # logger.debug(df.head(2))
             logger.debug(df["aar"].dtypes)
 
             df_current = df[df['aar'] == str(aar)].copy()
@@ -808,9 +809,9 @@ class MacroModule(ABC):
                 column_defs[0]["pinned"] = "left" # pin first column when scrolling horizontally
                 column_defs[0]["width"] = 240
 
-            title = f"Bedrifter i næring {selected_nace} i {macro_level} {selected_filter_val}"
+            title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace} i {macro_level} {selected_filter_val}"
             if macro_level == "sammensatte variabler":
-                title = f"Bedrifter i næring {selected_nace}"
+                title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace}"
 
             return row_data, column_defs, title
 
