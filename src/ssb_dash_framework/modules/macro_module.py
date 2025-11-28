@@ -79,6 +79,8 @@ class MacroModule_ParquetReader:
         t: Table = self.conn.read_parquet(
             f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
         )
+        print(nace_list)
+        print(nace_siffer_level)
         t = t.filter(t.naring.substr(0, length=2).isin(nace_list))
         t = t.mutate(
             aar=ibis.literal(aar).cast('string'), 
@@ -482,10 +484,11 @@ class MacroModule(ABC):
                 group_by_filter = ["selected_nace"]
 
             else: 
-                cols = [variabel, macro_level, "naring", "aar"] # select kommune as 4 digits eller substr kommune as fylke
+                cols = [variabel, macro_level, "naring", "aar"]
                 group_by_filter = ["selected_nace", macro_level] # kommune, fylke eller sammensatte_variabler
                 col_length = MACRO_FILTER_OPTIONS[macro_level]
 
+                # select kommune as 4 digits or substr kommune as fylke
                 t = t.mutate({macro_level: t.kommune.substr(0, length=col_length)})
                 t_1 = t_1.mutate({macro_level: t_1.kommune.substr(0, length=col_length)})
 
@@ -526,16 +529,15 @@ class MacroModule(ABC):
                 category_column = macro_level
                 
             df = df.rename(nace="selected_nace").execute()
-            df.columns = df.columns.map(str) # Set to str in case aar loaded as int
+            df.columns = df.columns.map(str) # set to str in case aar loaded as int
 
-            # Percentage change from previous year
             df[[f"{aar}", f"{aar-1}"]] = df[[f"{aar}", f"{aar-1}"]]
             df["diff"] = df[f"{aar}"] - df[f"{aar-1}"]
             df["percent_diff"] = df["diff"] / df[f"{aar-1}"]
 
             if tallvisning_valg: # = True, showing %-diff
                 tallvisning = "percent_diff"
-            else: # = False, showing total value instead of %-diff
+            else:
                 tallvisning = f"{aar}"
 
             matrix = df.pivot(
@@ -544,12 +546,12 @@ class MacroModule(ABC):
                 values=tallvisning
             ).reset_index().fillna(0)
 
-            # Keep specified order instead of alphabetical ordering
+            # decide order of variables
             if category_column == "variabel":
                 custom_order = list(HEATMAP_VARIABLES.values())
                 matrix = matrix.set_index("variabel").loc[custom_order].reset_index()
 
-            # For nice UI: safe column names for field keys by replacing '.' with '_'
+            # safe column names for NACE keys by replacing '.' with '_'
             original_cols = matrix.columns.astype(str).tolist()
             safe_cols = [c.replace(".", "_") for c in original_cols]
             matrix.columns = safe_cols
@@ -664,7 +666,8 @@ class MacroModule(ABC):
 
             if not selected_filter_val or not selected_nace:
                 return [], [], ""
-
+            
+            print(nace_siffer_level)
             print(selected_nace) ####################################### PROBLEMET ER EIN MISMATCH MELLOM NACE OG DET SOM BRUKAREN VELG
             t = self.parquet_reader.load_year(aar, self.base_path, foretak_or_bedrift, [selected_nace], nace_siffer_level)
             t_1 = self.parquet_reader.load_year(aar - 1, self.base_path, foretak_or_bedrift, [selected_nace], nace_siffer_level)
@@ -712,46 +715,6 @@ class MacroModule(ABC):
             combined = combined.rename(**rename_map)
 
             df = combined.execute()
-
-            # if macro_level not in ("sammensatte variabler"):
-            #     where_filter = f"substr(kommune, 1, {MACRO_FILTER_OPTIONS[macro_level]}) = '{selected_filter_val}' AND"
-            # else:
-            #     where_filter = ""
-
-            # variabel_selects = ",\n".join([
-            #     f"{db_col} AS {alias}" 
-            #     for db_col, alias in HEATMAP_VARIABLES.items()]
-            # )
-
-            # # TODO: Add eimerdb as an option
-            
-            # # Change to duckdb and read for both years
-            # query = f"""
-            #     SELECT 
-            #         navn,
-            #         orgnr_foretak as orgnr_f,
-            #         orgnr_bedrift as orgnr_b, 
-            #         naring_f as naring_f,
-            #         naring as naring_b,
-            #         reg_type as reg_type,
-            #         type as type,
-            #         {variabel_selects},
-            #         giver_fnr as giver_fnr,
-            #         giver_bnr as giver_bnr,
-            #         aar
-            #     FROM data
-            #     WHERE
-            #         {where_filter}
-            #         aar IN ({aar}, {aar-1}) AND
-            #         substr(naring, 1, {nace_siffer_level}) = '{selected_nace}'
-            #     """
-
-            # df = self.parquet_reader.query_multi_year(
-            #         base_path=self.base_path,
-            #         foretak_or_bedrift=foretak_or_bedrift,
-            #         years=years,
-            #         query_template=query
-            #     )
 
             logger.debug(df.head(2))
             logger.debug(df["aar"].dtypes)
