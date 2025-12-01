@@ -220,15 +220,16 @@ Bofregistry
 MacroModule
 */
 
-.macromodule{
-    padding: 20px;
-}
 
-.macromodule-heatmap-grid-container {
-    flex: 1;
-    height: 800px;
-    min-width: 600px;
-    overflow-x: auto;
+.macromodule {
+    padding: 20px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow-y: auto; /* Change from hidden to auto */
+    overflow-x: hidden;
 }
 
 .macromodule-container {
@@ -236,11 +237,34 @@ MacroModule
     flex-direction: row;
     width: 100%;
     gap: 20px;
+    flex: 0 0 auto;
+    min-height: 0; /* Critical for flex children */
+    overflow: visible;
+}
+
+.macromodule-heatmap-grid-container {
+    flex: 1;
+    height: 850px; /* Critical for flex children */
+    min-width: 0; /* Allow shrinking */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.macromodule-heatmap-grid {
+    flex: 1;
+    height: 100% !important;
+    width: 100% !important;
 }
 
 .macromodule-detail-grid-container {
     margin-top: 20px;
-    width: 100%;
+    flex: 1;
+    height: 750px; /* Critical for flex children */
+    min-width: 0; /* Allow shrinking */
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
 }
 
 .macromodule-detail-grid-container h5 {

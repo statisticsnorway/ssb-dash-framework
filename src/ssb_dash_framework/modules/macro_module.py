@@ -61,12 +61,14 @@ HEATMAP_VARIABLES = {
     "bruttoinvestering_oslo": "brut_inv_oslo",
     "bruttoinvestering_kvgr": "brut_inv_kvgr",
 }
+# skriv om til å bruke dict som i heatmap_variables og rename til detail_grid_id_cols
+ID_COLS = ['navn', 'orgnr_f', 'orgnr_b', 'naring_f', 'naring_b', "reg_type_f", "reg_type_b", "type"]
 
 FORETAK_OR_BEDRIFT = {"Foretak": "foretak", "Bedrifter": "bedrifter"}
 MACRO_FILTER_OPTIONS = {"fylke": 2, "kommune": 4, "sammensatte variabler": HEATMAP_VARIABLES}
 NACE_LEVEL_OPTIONS = {"2-siffer": 2, "3-siffer": 4, "4-siffer": 5, "5-siffer": 6}
 HEATMAP_NUMBER_FORMAT = {"Prosentendring": True, "Totalsum": False}
-STATUS_CHANGE_DETAIL_GRID = ["orgnr_f", "navn", "naring_f", "naring_b", "type", "reg_type"] # gets tooltip + colour change per year if changed (should be categorical col)
+STATUS_CHANGE_DETAIL_GRID = ["orgnr_f", "navn", "naring_f", "naring_b", "type", "reg_type_f", "reg_type_b"] # gets tooltip + colour change per year if changed (should be categorical col)
 
 class MacroModule_ParquetReader:
     """Helper class for reading and querying Parquet files with ibis."""
@@ -75,22 +77,37 @@ class MacroModule_ParquetReader:
         """Initialize a persistent DuckDB connection."""
         self.conn = ibis.connect("duckdb://")
 
-    def load_year(self, aar, base_path, foretak_or_bedrift, nace_list, nace_siffer_level):
-        t: Table = self.conn.read_parquet(
-            f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-        )
-        
-        ############################################################################### MÅ FINNE EIN FIKS HER SLIK AT DEN KAN LOADE TIL BÅDE
-        # HEATMAP GRID MEN OGSÅ DETAIL-GRID. Kanskje ein true/false funksjon som gjer at den filtrerar på enten første 2 (length=2) for hm, men 
-        # nace_siffer_level om det er detail-grid?
-        nace_2digit_list = [n.split('.')[0][:2] for n in nace_list]
+    def load_year(self, aar, base_path, foretak_or_bedrift, nace_list, nace_siffer_level, detail_grid=False):
+        """
+        Used to read parquet files, picking between foretak or bedrift level. Then filtering on chosen naring,
+        and setting "aar" to a str column.
 
-        t = t.filter(t.naring.substr(0, length=2).isin(nace_2digit_list))
-        t = t.mutate(
-            aar=ibis.literal(aar).cast('string'), 
-            selected_nace = t.naring.substr(0, length=nace_siffer_level)
-        )
-        return t
+        Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on 
+        the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
+        """
+        # if aar == 2024: # pga nytt nedtrekk i Dapla med eigen filsti
+        #     t: Table = self.conn.read_parquet(
+        #         f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+        #     )
+        # else:
+        #     t: Table = self.conn.read_parquet(
+        #         f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+        #     )
+        t: Table = self.conn.read_parquet(
+                f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+            )
+
+        if detail_grid == True:
+            t = t.filter(t.naring.substr(0, length=nace_siffer_level).isin(nace_list))
+        else:
+            # for å loade fleire næringar ved innlasting
+            nace_2_siffer_liste = [n.split('.')[0][:2] for n in nace_list]
+            t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
+            t = t.mutate( 
+                selected_nace = t.naring.substr(0, length=nace_siffer_level)
+            )
+
+        return t.mutate(aar=ibis.literal(aar).cast('string'))
     
     
     def close(self):
@@ -117,7 +134,12 @@ class MacroModule(ABC):
         ]
     )
 
-    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
+    def __init__(
+        self, 
+        time_units: list[str], 
+        conn: object, 
+        base_path: str
+    ) -> None:
         """Initializes the MacroModule.
 
         Args:
@@ -136,7 +158,7 @@ class MacroModule(ABC):
         MacroModule._id_number += 1
 
         self.icon = "🌍"
-        self.label = "Macromodule"
+        self.label = "Makromodul"
 
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
@@ -296,7 +318,7 @@ class MacroModule(ABC):
                                         "sortable": True,
                                         "filter": True,
                                         "resizable": True,
-                                        "width": 120,
+                                        # "width": 120,
                                     },
                                     columnSize=None,
                                     rowData=[],
@@ -424,65 +446,10 @@ class MacroModule(ABC):
                 return [], []
 
             aar = int(aar)
-            
-            # naring_filter = ", ".join(f"'{n}'" for n in nace)
 
-            # if macro_level == "sammensatte variabler":
-            #     var_selects = ",\n".join([f"SUM(CAST({db_col} AS DOUBLE)) AS {alias}" for db_col, alias in HEATMAP_VARIABLES.items()])
-            #     group_by = "nace"
-            #     select_extra = ""
-            # else:
-            #     var_selects = f"SUM(CAST({variabel} AS DOUBLE)) AS sum_{variabel}"
-            #     group_by = f"{macro_level}, nace"
-            #     select_extra = f"substr(kommune, 1, {MACRO_FILTER_OPTIONS[macro_level]}) AS {macro_level},"
-
-            # # TODO: Add eimerdb as an option
-            
-            # # Query has to read both years?
-            # query = f"""
-            #     SELECT
-            #         substr(naring, 1, {nace_siffer_level}) AS nace,
-            #         {select_extra}
-            #         {var_selects},
-            #         aar
-            #     FROM data
-            #     WHERE
-            #         aar IN ({years[0]}, {years[1]}) AND
-            #         substr(naring, 1, 2) IN ({naring_filter})
-            #     GROUP BY
-            #         aar,
-            #         {group_by};
-            #     """
-            # df = self.parquet_reader.query_multi_year(
-            #         base_path=self.base_path,
-            #         foretak_or_bedrift=foretak_or_bedrift,
-            #         years=years,
-            #         query_template=query
-            #     )
-            
-            # logger.debug(df.head(2))
-            
-            # if macro_level == "sammensatte variabler":
-            #     df = df.pivot_table(
-            #         index=["nace", "aar"],
-            #         values=HEATMAP_VARIABLES.values(),
-            #         aggfunc="sum"
-            #     ).reset_index()
-            #     df = df.melt(id_vars=["nace", "aar"], var_name="variabel", value_name="value")
-            #     df = df.pivot(index=["variabel", "nace"], columns="aar", values="value").reset_index()
-            #     category_column = "variabel"
-
-            # else:
-            #     df = df.pivot_table(
-            #         index=[f"{macro_level}", "nace"],
-            #         columns="aar",
-            #         values=f"sum_{variabel}"
-            #     ).reset_index()
-            #     category_column = macro_level
-
-            t = self.parquet_reader.load_year(aar, self.base_path, foretak_or_bedrift, nace_list, nace_siffer_level) # t, current aar
-            t_1 = self.parquet_reader.load_year(aar-1, self.base_path, foretak_or_bedrift, nace_list, nace_siffer_level) # t-1, previous aar
-
+            t = self.parquet_reader.load_year(aar, self.base_path, foretak_or_bedrift, nace_list, nace_siffer_level, detail_grid=False) # t, current aar
+            t_1 = self.parquet_reader.load_year(aar-1, self.base_path, foretak_or_bedrift, nace_list, nace_siffer_level, detail_grid=False) # t-1, previous aar
+            print(t.head())
             if macro_level == "sammensatte variabler":
                 cols = list(HEATMAP_VARIABLES.keys()) + ["naring", "aar"]
                 group_by_filter = ["selected_nace"]
@@ -671,10 +638,8 @@ class MacroModule(ABC):
             if not selected_filter_val or not selected_nace:
                 return [], [], ""
             
-            print(nace_siffer_level)
-            print(selected_nace) ####################################### PROBLEMET ER EIN MISMATCH MELLOM NACE OG DET SOM BRUKAREN VELG
-            t = self.parquet_reader.load_year(aar, self.base_path, foretak_or_bedrift, [selected_nace], nace_siffer_level)
-            t_1 = self.parquet_reader.load_year(aar - 1, self.base_path, foretak_or_bedrift, [selected_nace], nace_siffer_level)
+            t = self.parquet_reader.load_year(aar, self.base_path, foretak_or_bedrift, [selected_nace], nace_siffer_level, detail_grid=True)
+            t_1 = self.parquet_reader.load_year(aar - 1, self.base_path, foretak_or_bedrift, [selected_nace], nace_siffer_level, detail_grid=True)
 
             # Apply macro-level truncation if needed
             if macro_level not in ("sammensatte variabler",):
@@ -688,9 +653,10 @@ class MacroModule(ABC):
                 "navn",
                 "orgnr_foretak",
                 "orgnr_bedrift",
-                "naring_f",
                 "naring",
+                "naring_f",
                 "reg_type",
+                "reg_type_f",
                 "type",
             ] + list(HEATMAP_VARIABLES.keys()) + [
                 "giver_fnr",
@@ -700,17 +666,19 @@ class MacroModule(ABC):
 
             if foretak_or_bedrift == "foretak":
                 naring_renaming = {"naring_f": "naring"}
+                reg_type_renaming = {"reg_type_f": "reg_type"}
                 orgnr_renaming = {"orgnr_f": "orgnr_foretak"}
             elif foretak_or_bedrift == "bedrifter":
                 naring_renaming = {"naring_b": "naring"}
+                reg_type_renaming = {"reg_type_b": "reg_type"}
                 orgnr_renaming = {
                     "orgnr_f": "orgnr_foretak", 
                     "orgnr_b": "orgnr_bedrift"
                     }
             t = t.select([c for c in select_cols if c in t.columns])
-            t = t.rename(**orgnr_renaming, **naring_renaming)
+            t = t.rename(**orgnr_renaming, **naring_renaming, **reg_type_renaming)
             t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
-            t_1 = t_1.rename(**orgnr_renaming, **naring_renaming)
+            t_1 = t_1.rename(**orgnr_renaming, **naring_renaming, **reg_type_renaming)
 
             combined = t.union(t_1)
 
@@ -743,8 +711,6 @@ class MacroModule(ABC):
                 if f"{col}_x" in df.columns:
                     df[f"{col}_tooltip"] = "Fjorårets verdi: " + df[f"{col}_x"].astype(str)
 
-            id_cols = ['navn', 'orgnr_f', 'orgnr_b', 'naring_f', 'naring_b', "reg_type", "type"]
-
             # Desired order for columns in dash view
             if valgt_variabel in df.columns:
                 metrics_order = [valgt_variabel]
@@ -770,7 +736,7 @@ class MacroModule(ABC):
 
             row_data = df.to_dict("records")
 
-            visible_cols = [c for c in id_cols + ordered_value_cols if c in df.columns]
+            visible_cols = [c for c in ID_COLS + ordered_value_cols if c in df.columns]
 
             column_defs = [] 
             for col in visible_cols:
@@ -787,7 +753,7 @@ class MacroModule(ABC):
                 elif f"{col}_tooltip" in df.columns:
                     col_def["tooltipField"] = f"{col}_tooltip"
 
-                if col not in id_cols:
+                if col not in ID_COLS:
                     col_def["valueFormatter"] = {"function": "params.value == null ? '' : d3.format(',')(params.value)"} # Thousand sep.
                     if col.endswith("_x"):
                         col_def["cellStyle"] = {
