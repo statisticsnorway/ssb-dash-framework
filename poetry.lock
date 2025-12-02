@@ -5971,14 +5971,14 @@ uuid = ">=1.30"
 
 [[package]]
 name = "ssb-poc-statlog-model"
-version = "0.9.0"
+version = "1.0.0"
 description = "SSB POC Statlog Model"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "ssb_poc_statlog_model-0.9.0-py3-none-any.whl", hash = "sha256:7a599cd42897b76cc5b0846a2bc37f8d6255e412b087aaebd34260760c01462f"},
-    {file = "ssb_poc_statlog_model-0.9.0.tar.gz", hash = "sha256:5f4ce81ec40bb5213ff86016376354b4d295c5b1a0f6b315fd7c7761762a5939"},
+    {file = "ssb_poc_statlog_model-1.0.0-py3-none-any.whl", hash = "sha256:f14c48c65d8c693799063249a2da24c594f61d1f1612bc42e6a76e4e3fb47aac"},
+    {file = "ssb_poc_statlog_model-1.0.0.tar.gz", hash = "sha256:d663892670049a3810f6e98e98c2e7147ca211b1a30fd0b89649b5f70015454c"},
 ]
 
 [package.dependencies]
@@ -6904,4 +6904,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "abb89dce3a6e037d4912e9f75492212ac3f30b6f4d3203f1493557adbcee5221"
+content-hash = "36210e4f083ba2e6f102d07765fb1c99e82cbb1a8a0e54f8d02cda68892a7144"
