@@ -19,6 +19,7 @@ from eimerdb import EimerDBInstance
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
+from ..utils.core_query_functions import conn_is_ibis
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,11 @@ class AltinnControlView(ABC):
     _id_number: int = 0
 
     def __init__(
-        self, time_units: list[str], control_dict: dict[str, Any], conn: object
+        self,
+        time_units: list[str],
+        control_dict: dict[str, Any],
+        conn: object,
+        outputs: list[str] | None = None,
     ) -> None:  # TODO add proper annotation for control_dict value
         """Initializes the AltinnControlView with time units, control dictionary, and database connection.
 
@@ -47,10 +52,13 @@ class AltinnControlView(ABC):
             time_units (list): A list of the time units used.
             control_dict (dict): A dictionary with one control class per skjema.
             conn (object): The eimerdb connection.
+            outputs (list[str] | None): Variable selector fields to output to. Defaults to ['ident']
         """
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
         )
+        if outputs is None:
+            outputs = ["ident"]
         assert hasattr(
             conn, "query"
         ), "The database connection object must have a 'query' method."
@@ -63,6 +71,7 @@ class AltinnControlView(ABC):
 
         self.control_dict = control_dict
         self.conn = conn
+        self.outputs = outputs
         self._is_valid()
         self.module_layout = self.create_layout()
         self.variableselector = VariableSelector(
@@ -162,7 +171,7 @@ class AltinnControlView(ABC):
             Input("var-altinnskjema", "value"),
             self.variableselector.get_all_inputs(),
         )
-        def kontroller_show_selected_controls(skjema, *args):
+        def kontroller_show_selected_controls(skjema: str, *args: Any):
             logger.debug(f"Args:\nskjema: {skjema}\nargs: {args}")
             partition_args = dict(zip(self.time_units, args, strict=False))
             if partition_args is not None and skjema is not None:
@@ -179,7 +188,7 @@ class AltinnControlView(ABC):
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
             *self.variableselector.get_all_inputs(),
         )
-        def get_kontroller_overview(skjema, refresh, rerun, *args):
+        def get_kontroller_overview(skjema: str, refresh: int | None, rerun: int | None, *args: Any):
             logger.debug(
                 f"Args:\n"
                 f"skjema: {skjema}\n"
@@ -296,7 +305,7 @@ class AltinnControlView(ABC):
             self.variableselector.get_all_inputs(),
             #            *self.create_callback_components("State"),
         )
-        def get_kontrollutslag(current_row, *args):
+        def get_kontrollutslag(current_row: list[dict[Any, Any]], *args: Any):
             logger.debug(f"Args:\ncurrent_row: {current_row}\nargs: {args}")
             if current_row is None or len(current_row) == 0:
                 logger.debug("No current_row, raising PreventUpdate.")
@@ -322,6 +331,11 @@ class AltinnControlView(ABC):
             skjema = current_row[0]["skjema"]
             varsort = current_row[0]["varsort"]
 
+            logger.debug(
+                f"Variables from current_row:\nkontrollid: {kontrollid}\nkontrollvar: {kontrollvar}\nskjema: {skjema}\nvarsort: {varsort}"
+            )
+            if varsort is None:
+                varsort = "DESC"
             skjemamottak = conn.table("skjemamottak")
             kontrollutslag = conn.table("kontrollutslag")
             # Subquery: filter active rows in skjemamottak
@@ -350,18 +364,41 @@ class AltinnControlView(ABC):
                     s.editert,
                     kontrollutslag.verdi,
                 )
-                .order_by(
-                    s.editert,
-                    getattr(
-                        kontrollutslag.verdi, varsort
-                    )(),  # varsort = "asc" / "desc"
-                )
+                .order_by(s.editert, kontrollutslag.verdi)
             )
             result = result.to_pandas()
             columns = [{"headerName": col, "field": col} for col in result.columns]
             columns[0]["checkboxSelection"] = True
             columns[0]["headerCheckboxSelection"] = True
             return result.to_dict("records"), columns
+
+        @callback(
+            *[
+                self.variableselector.get_output_object(output)
+                for output in self.outputs
+            ],
+            Input(f"{self.module_number}-kontrollutslag", "selectedRows"),
+            prevent_initial_call="initial_duplicate",
+        )
+        def output_to_varselector(
+            selected_row: list[dict[Any, Any]],
+        ) -> Any | tuple[Any]:
+            logger.debug(f"Selected row:\n{selected_row}")
+            if selected_row is None:
+                logger.debug("Raising PreventUpdate due to selected_row being None")
+                raise PreventUpdate
+            if len(selected_row) > 1:
+                raise ValueError(
+                    "Too many rows selected, logic won't work with more than one row."
+                )
+            if len(self.outputs) == 1:
+                return selected_row[0][self.outputs[0]]
+            elif len(self.outputs) > 1:
+                return tuple(selected_row[0][output] for output in self.outputs)
+            else:
+                raise ValueError(
+                    f"Something is wrong with 'self.outputs'. Should be a list with at least one string inside of it. Is currently: {self.outputs}"
+                )
 
 
 class AltinnControlViewTab(TabImplementation, AltinnControlView):
