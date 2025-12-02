@@ -188,7 +188,9 @@ class AltinnControlView(ABC):
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
             *self.variableselector.get_all_inputs(),
         )
-        def get_kontroller_overview(skjema: str, refresh: int | None, rerun: int | None, *args: Any):
+        def get_kontroller_overview(
+            skjema: str, refresh: int | None, rerun: int | None, *args: Any
+        ):
             logger.debug(
                 f"Args:\n"
                 f"skjema: {skjema}\n"
