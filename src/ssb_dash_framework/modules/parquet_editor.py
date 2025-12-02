@@ -41,6 +41,15 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         output: Columns in your dataframe that should be clickable to output to the variable selector panel.
         output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
 
+    Example:
+        >>> id_variabler = ["orgnr", "aar", "kvartal"]
+        >>> my_parquet_editor = ParquetEditor(
+            statistics_name="Demo",
+            id_vars=id_variabler,
+            data_source="/buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet",
+            data_target="/buckets/produkt/editering-eksempel/klargjorte-data/test_p2024_v1.parquet",
+        )
+
     Notes:
         The process log is automatically created in the correct folder structure and is named after your parquet file.
     """
