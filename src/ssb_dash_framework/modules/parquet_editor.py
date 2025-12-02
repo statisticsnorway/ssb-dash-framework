@@ -417,18 +417,23 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             "change_event": "M",
             "change_event_reason": reason_category,
             "change_datetime": change_datetime,
-            "change_by": self.user,
+            "changed_by": self.user,
             "data_change_type": "UPD",
             "change_comment": comment.replace(
                 "\n", ""
             ),  # Not sure what replace does but it was there before.
             "change_details": {
-                "kind": "unit",
+                "detail_type": "unit",
                 "unit_id": unit_id,
-                "old_value": {"variable_name": changed_variable, "value": old_value},
-                "new_value": {"variable_name": changed_variable, "value": new_value},
+                "old_value": [
+                    {"variable_name": changed_variable, "value": str(old_value)}
+                ],
+                "new_value": [
+                    {"variable_name": changed_variable, "value": str(new_value)}
+                ],
             },
         }
+        logger.debug(f"Changelog to validate:\n{changelog_entry}")
         ChangeDataLog.model_validate(changelog_entry)
         return changelog_entry
 
@@ -571,7 +576,11 @@ def apply_change_detail(data_to_change, change):
 
     check_mask = mask & (data_to_change[old_var] == old_val)
 
+    # Change the dtype to match the column dtype
     new_val = change["new_value"]["value"]
+    col_dtype = data_to_change[old_var].dtype
+    new_val = col_dtype.type(new_val)
+
     data_to_change.loc[check_mask, old_var] = new_val
     return data_to_change
 
