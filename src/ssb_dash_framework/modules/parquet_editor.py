@@ -192,7 +192,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
     def module_callbacks(self) -> None:
         """Sets up the callbacks for the module."""
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output(f"{self.module_number}-parqueteditor-table", "rowData"),
             Output(f"{self.module_number}-parqueteditor-table", "columnDefs"),
             Output(f"{self.module_number}-parqueteditor-table-data-store", "data"),
@@ -217,7 +217,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
                 data.to_dict(orient="records"),
             )
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output(f"{self.module_number}-pending-edit", "data"),
             Output(f"{self.module_number}-reason-modal", "is_open"),
             Output(f"{self.module_number}-edit-details", "children"),
@@ -236,7 +236,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             details = f"Column: {edit.get('colId')} | Old: {edit.get('oldValue')} | New: {edit.get('value')}"
             return edit, True, details, ""
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output(
                 f"{self.module_number}-reason-modal",
                 "is_open",
@@ -354,7 +354,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             def make_table_to_varselector_connection(
                 output: Output, column: str, output_varselector_name: str
             ) -> None:
-                @callback(  # type: ignore[misc]
+                @callback(
                     output,
                     Input(f"{self.module_number}-parqueteditor-table", "cellClicked"),
                     prevent_initial_call=True,
@@ -382,7 +382,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
                         except Exception as e:
                             logger.debug(f"Failed to convert to string: {e}")
                             logger.debug("Raised PreventUpdate")
-                            raise PreventUpdate
+                            raise PreventUpdate from e
                     logger.debug(f"Transfering {output} to {output_varselector_name}")
                     return output
 
@@ -481,13 +481,13 @@ class ParquetEditorChangelog:
     def module_callbacks(self) -> None:
         """Sets up the callbacks for the module."""
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output(f"{self.module_number}-parqueteditor-changelog", "value"),
             *self.variable_selector.get_all_inputs(),
         )
         def load_data_to_table(
             *args: Any,
-        ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        ) -> str:
             data = log_as_text(self.log_filepath)
 
             return str(data)
@@ -521,7 +521,15 @@ def get_log_path(parquet_path: str | Path) -> Path:
     return p.with_suffix(".jsonl")
 
 
-def read_jsonl_log(path):
+def read_jsonl_log(path: str | Path) -> list[Any]:
+    """Reads the jsonl log.
+
+    Args:
+        path (str | Path): The path that leads to the jsonl log.
+
+    Returns:
+        A list where each instance is a line in the jsonl file.
+    """
     all_data = []
     try:
         with open(path, encoding="utf-8") as file:
@@ -539,7 +547,9 @@ def read_jsonl_log(path):
     return all_data
 
 
-def _match_dtype(data_to_change, column, value_to_change):
+def _match_dtype(
+    data_to_change: pd.DataFrame, column: str, value_to_change: Any
+) -> Any | None:
     # Change the dtype to match the column dtype
     if value_to_change == "None":
         return None
@@ -547,7 +557,10 @@ def _match_dtype(data_to_change, column, value_to_change):
     return col_dtype.type(value_to_change)
 
 
-def apply_change_detail(data_to_change, change):
+def _apply_change_detail(
+    data_to_change: pd.DataFrame, change: dict[str, Any]
+) -> pd.DataFrame:
+    """Apply a single jsonl row change to the dataframe."""
     mask = pd.Series([True] * len(data_to_change))
     for cond in change["unit_id"]:
         col = cond["unit_id_variable"]
@@ -591,7 +604,7 @@ def read_jsonl_file_to_string(file_path: str | Path) -> str:
         return f.read()
 
 
-def log_as_text(file_path: str) -> str:
+def log_as_text(file_path: str | Path) -> str:
     """Convert a JSONL string of change logs into a human-readable text format.
 
     Returns a single string.
@@ -620,13 +633,21 @@ def log_as_text(file_path: str) -> str:
     return "\n".join(lines)
 
 
-def apply_edits(parquet_path: str):
+def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
+    """Applies edits from the jsonl log to a parquet file.
+
+    Args:
+        parquet_path (str): The file path for the parquet file.
+
+    Returns:
+        A pd.DataFrame with updated data.
+    """
     log_path = get_log_path(parquet_path)
     logger.debug(f"log_path: {log_path}")
     processlog = read_jsonl_log(log_path)
     data = pd.read_parquet(processlog[0]["data_source"][0])
 
     for line in processlog:
-        data = apply_change_detail(data, line["change_details"])
+        data = _apply_change_detail(data, line["change_details"])
 
     return data
