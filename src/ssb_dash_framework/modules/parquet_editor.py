@@ -474,6 +474,7 @@ class ParquetEditorChangelog:
     def get_log(self) -> pd.DataFrame:
         """Reads the log file at the supplied file path."""
         log = pd.read_json(self.log_filepath, lines=True)
+        print(log)
         return log.join(pd.json_normalize(log["row_identifier"])).copy()
 
     def _create_layout(self) -> dag.AgGrid:
@@ -549,6 +550,14 @@ def read_jsonl_log(path):
     return all_data
 
 
+def _match_dtype(data_to_change, column, value_to_change):
+    # Change the dtype to match the column dtype
+    if value_to_change == "None":
+        return None
+    col_dtype = data_to_change[column].dtype
+    return col_dtype.type(value_to_change)
+
+
 def apply_change_detail(data_to_change, change):
     mask = pd.Series([True] * len(data_to_change))
     for cond in change["unit_id"]:
@@ -565,21 +574,22 @@ def apply_change_detail(data_to_change, change):
             f"Unit_id is not unique: expected 1 row, found {num_matches} rows."
         )
 
-    old_var = change["old_value"]["variable_name"]
-    old_val = change["old_value"]["value"]
+    # The below might need to be a loop to account for bulk edits.
+    old_var = change["old_value"][0]["variable_name"]
+    old_val = _match_dtype(data_to_change, old_var, change["old_value"][0]["value"])
+    new_val = _match_dtype(data_to_change, old_var, change["new_value"][0]["value"])
 
     if not (data_to_change.loc[mask, old_var] == old_val).all():
         found_val = data_to_change.loc[mask, old_var].iloc[0]
-        raise ValueError(
-            f"Old value mismatch: expected {old_val}, but found {found_val}."
-        )
+        if old_val is not None:
+            raise ValueError(
+                f"Old value mismatch: expected {old_val}, but found {found_val}."
+            )
 
-    check_mask = mask & (data_to_change[old_var] == old_val)
-
-    # Change the dtype to match the column dtype
-    new_val = change["new_value"]["value"]
-    col_dtype = data_to_change[old_var].dtype
-    new_val = col_dtype.type(new_val)
+    if old_val is None:
+        check_mask = mask & (data_to_change[old_var].isna())
+    else:
+        check_mask = mask & (data_to_change[old_var] == old_val)
 
     data_to_change.loc[check_mask, old_var] = new_val
     return data_to_change
