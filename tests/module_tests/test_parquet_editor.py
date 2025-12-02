@@ -1,3 +1,5 @@
+import os
+
 from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 
 from ssb_dash_framework import ParquetEditor
@@ -5,6 +7,7 @@ from ssb_dash_framework import set_variables
 
 
 def test_changelog_creation() -> None:
+    os.environ["DAPLA_USER"] = "TEST"
     set_variables(["aar", "orgnr"])
     example_change = {
         "rowIndex": 0,
