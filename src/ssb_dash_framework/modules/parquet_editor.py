@@ -70,6 +70,11 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
 
+        if "/inndata/" not in data_source:
+            logger.warning(
+                "Editing is supposed to happen between inndata and klargjort, you might not be following 'Datatilstander'."
+            )
+
         self.statistics_name = statistics_name
         self.output = output
         self.output_varselector_name = output_varselector_name or output
