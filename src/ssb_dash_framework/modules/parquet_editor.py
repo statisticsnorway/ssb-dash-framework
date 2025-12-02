@@ -4,6 +4,7 @@ import os
 import zoneinfo
 from datetime import UTC
 from datetime import datetime
+from io import StringIO
 from pathlib import Path
 from typing import Any
 
@@ -462,7 +463,6 @@ class ParquetEditorChangelog:
         )
         self.user = os.getenv("DAPLA_USER")
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
-        self.id_vars = id_vars
         path = Path(file_path)
         self.log_filepath = get_log_path(file_path)
         self.label = "Changes - " + path.stem
@@ -471,37 +471,26 @@ class ParquetEditorChangelog:
         module_validator(self)
         self.module_callbacks()
 
-    def get_log(self) -> pd.DataFrame:
-        """Reads the log file at the supplied file path."""
-        log = pd.read_json(self.log_filepath, lines=True)
-        print(log)
-        return log.join(pd.json_normalize(log["row_identifier"])).copy()
-
-    def _create_layout(self) -> dag.AgGrid:
-        return dag.AgGrid(id=f"{self.module_number}-parqueteditor-changes-table")
+    def _create_layout(self) -> dcc.Textarea:
+        return dcc.Textarea(
+            id=f"{self.module_number}-parqueteditor-changelog",
+            style={"width": "100%", "height": "80vh"},
+            readOnly=True,
+        )
 
     def module_callbacks(self) -> None:
         """Sets up the callbacks for the module."""
 
         @callback(  # type: ignore[misc]
-            Output(f"{self.module_number}-parqueteditor-changes-table", "rowData"),
-            Output(f"{self.module_number}-parqueteditor-changes-table", "columnDefs"),
+            Output(f"{self.module_number}-parqueteditor-changelog", "value"),
             *self.variable_selector.get_all_inputs(),
         )
         def load_data_to_table(
             *args: Any,
         ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-            data = self.get_log()
+            data = log_as_text(self.log_filepath)
 
-            columns = [
-                {
-                    "headerName": col,
-                    "field": col,
-                    "editable": True if col not in self.id_vars else False,
-                }
-                for col in data.columns
-            ]
-            return (data.to_dict(orient="records"), columns)
+            return str(data)
 
     def layout(self) -> html.Div:
         """Creates the layout for the module."""
@@ -593,6 +582,42 @@ def apply_change_detail(data_to_change, change):
 
     data_to_change.loc[check_mask, old_var] = new_val
     return data_to_change
+
+
+def read_jsonl_file_to_string(file_path: str | Path) -> str:
+    """Reads a JSONL file and returns its contents as a single string."""
+    file_path = Path(file_path)
+    with file_path.open("r", encoding="utf-8") as f:
+        return f.read()
+
+
+def log_as_text(file_path: str) -> str:
+    """Convert a JSONL string of change logs into a human-readable text format.
+
+    Returns a single string.
+    """
+    jsonl_string = read_jsonl_file_to_string(file_path)
+    records = [json.loads(line) for line in StringIO(jsonl_string)]
+    lines = []
+
+    for rec in records:
+        detail = rec["change_details"]
+        unit_id_text = ", ".join(
+            f"{u['unit_id_variable']}={u['unit_id_value']}" for u in detail["unit_id"]
+        )
+        old_val = detail["old_value"][0]["value"] if detail["old_value"] else None
+        new_val = detail["new_value"][0]["value"] if detail["new_value"] else None
+
+        lines.append(f"Variable: {rec['variable_name']}")
+        lines.append(f"  Data source: {rec['data_source'][0]}")
+        lines.append(f"  Data target: {rec['data_target']}")
+        lines.append(f"  Changed by: {rec['changed_by']} at {rec['change_datetime']}")
+        lines.append(f"  Unit IDs: {unit_id_text}")
+        lines.append(f"  Old value: {old_val} -> New value: {new_val}")
+        lines.append(f"  Comment: {rec['change_comment']}")
+        lines.append("-" * 60)
+
+    return "\n".join(lines)
 
 
 def apply_edits(parquet_path: str):
