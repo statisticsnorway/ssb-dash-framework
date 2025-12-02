@@ -4,22 +4,21 @@ import logging
 from abc import ABC
 from abc import abstractmethod
 from typing import Any
-from typing import Literal
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import ibis
 from dash import callback
+from dash import callback_context as ctx
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
-from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from eimerdb import EimerDBInstance
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
-from ..utils.alert_handler import create_alert
-from ..utils.eimerdb_helpers import create_partition_select
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -93,32 +92,25 @@ class AltinnControlView(ABC):
                     [
                         dbc.Col(
                             dbc.Button(
-                                "🔄 Refresh",
-                                id="kontrollermodal-refresh",
+                                "🔄 Oppdater visning",
+                                id=f"{self.module_number}-kontroll-refresh",
                             ),
                             width="auto",
                         ),
                         dbc.Col(
                             dbc.Button(
-                                "Kjør alle kontrollene",
-                                id="kontrollermodal-kontrollbutton",
+                                "Kjør kontroller (kan ta tid)",
+                                id=f"{self.module_number}-kontroll-run-button",
                             ),
                             width="auto",
                         ),
-                        dbc.Col(
-                            dbc.Button(
-                                "Insert nye kontrollutslag",
-                                id="kontrollermodal-insertbutton",
-                            ),
-                            width="auto",
-                        ),
-                        dbc.Col(html.P(id="kontrollermodal-vars")),
+                        dbc.Col(html.P(id=f"{self.module_number}-kontroll-var")),
                     ],
                     className="g-2",
                 ),
                 dbc.Row(
                     dag.AgGrid(
-                        id="kontroller-table1",
+                        id=f"{self.module_number}-kontroller",
                         defaultColDef=default_col_def,
                         className="ag-theme-alpine header-style-on-filter",
                         columnSize="responsiveSizeToFit",
@@ -130,10 +122,11 @@ class AltinnControlView(ABC):
                     ),
                     style={"flexShrink": 0},
                 ),
+                html.Hr(),
                 dbc.Row(
                     dbc.Col(
                         dag.AgGrid(
-                            id="kontroller-table2",
+                            id=f"{self.module_number}-kontrollutslag",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine header-style-on-filter",
                             columnSize="responsiveSizeToFit",
@@ -161,155 +154,15 @@ class AltinnControlView(ABC):
         """
         pass
 
-    def create_callback_components(
-        self, input_type: Literal["Input", "State"] = "Input"
-    ) -> list[str]:
-        """Generates a list of dynamic Dash Input or State components."""
-        component = Input if input_type == "Input" else State
-        logger.warning(
-            f'{[component(f"var-{unit}", "value") for unit in self.time_units]}'
-        )
-        return [component(f"var-{unit}", "value") for unit in self.time_units]
-
     def module_callbacks(self) -> None:
         """Registers Dash callbacks for the AltinnControlView module."""
 
-        @callback(  # type: ignore[misc]
-            Output("kontroller-table1", "rowData"),
-            Output("kontroller-table1", "columnDefs"),
-            Input("var-altinnskjema", "value"),
-            Input("kontrollermodal-refresh", "n_clicks"),
-            self.variableselector.get_all_inputs(),
-            # *self.create_callback_components("Input"),
-        )
-        def kontrollutslag_antall(
-            skjema: str, n_clicks: int, *args: Any
-        ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
-            logger.debug(
-                f"Args:\n"
-                f"skjema: {skjema}\n"
-                f"n_clicks: {n_clicks}\n"
-                f"args: {args}"
-            )
-            partition_args = dict(zip(self.time_units, args, strict=False))
-            df1 = self.conn.query(
-                """SELECT
-                    kontroller.skjema,
-                    kontroller.kontrollid,
-                    kontroller.type,
-                    kontroller.skildring,
-                    kontroller.kontrollvar,
-                    kontroller.varsort,
-                    utslag.ant_utslag
-                FROM kontroller AS kontroller
-                JOIN (
-                    SELECT kontrollid, COUNT(row_id) AS ant_utslag
-                    FROM kontrollutslag
-                    WHERE utslag = True
-                    GROUP BY kontrollid
-                    ) AS utslag ON kontroller.kontrollid = utslag.kontrollid
-                """,
-                create_partition_select(
-                    desired_partitions=self.time_units, skjema=skjema, **partition_args
-                ),
-            )
-            df2 = self.conn.query(
-                """SELECT k.kontrollid, COUNT(row_id) AS uediterte FROM kontrollutslag AS k
-                JOIN (
-                    SELECT ident, refnr FROM skjemamottak
-                    WHERE editert = False
-                ) AS subq ON subq.ident = k.ident AND subq.refnr = k.refnr
-                WHERE utslag = True
-                GROUP BY k.kontrollid""",
-                create_partition_select(
-                    desired_partitions=self.time_units, skjema=skjema, **partition_args
-                ),
-            )
-            df = df1.merge(df2, on="kontrollid", how="left")
-            columns = [
-                {
-                    "headerName": col,
-                    "field": col,
-                    "hide": col == "varsort",
-                    "flex": 2 if col == "skildring" else 1,
-                    "tooltipField": col if col == "skildring" else None,
-                }
-                for col in df.columns
-            ]
-            columns[0]["checkboxSelection"] = True
-            columns[0]["headerCheckboxSelection"] = True
-            return df.to_dict("records"), columns
-
-        @callback(  # type: ignore[misc]
-            Output("kontroller-table2", "rowData"),
-            Output("kontroller-table2", "columnDefs"),
-            Input("kontroller-table1", "selectedRows"),
-            self.variableselector.get_all_inputs(),
-            #            *self.create_callback_components("State"),
-        )
-        def kontrollutslag_mikro(
-            current_row: list[dict[str, Any]] | None, *args: Any
-        ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
-            if current_row is None:
-                raise PreventUpdate
-            logger.debug(f"Args:\ncurrent_row: {current_row}\nargs: {args}")
-            partition_args = dict(zip(self.time_units, args, strict=False))
-            kontrollid = current_row[0]["kontrollid"]
-            kontrollvar = current_row[0]["kontrollvar"]
-            skjema = current_row[0]["skjema"]
-            varsort = current_row[0]["varsort"]
-            df = self.conn.query(
-                f"""
-                    SELECT utslag.ident, utslag.refnr, utslag.kontrollid, utslag.utslag, s.editert, utslag.verdi
-                    FROM kontrollutslag AS utslag
-                    JOIN (
-                        SELECT refnr AS s_refnr, editert, ident
-                        FROM skjemamottak
-                        WHERE aktiv = True
-                    ) AS s ON utslag.refnr = s.s_refnr AND utslag.ident = s.ident
-                    WHERE utslag.kontrollid = '{kontrollid}' AND utslag.utslag = True
-                    ORDER BY editert, utslag.verdi {varsort}
-                """,
-                partition_select={
-                    "kontrollutslag": create_partition_select(
-                        desired_partitions=self.time_units,
-                        skjema=skjema,
-                        **partition_args,
-                    ),
-                    "enhetsinfo": create_partition_select(
-                        desired_partitions=self.time_units,
-                        skjema=None,
-                        **partition_args,
-                    ),
-                    "skjemamottak": create_partition_select(
-                        desired_partitions=self.time_units,
-                        skjema=skjema,
-                        **partition_args,
-                    ),
-                },
-            ).rename(columns={"verdi": kontrollvar})
-            columns = [{"headerName": col, "field": col} for col in df.columns]
-            columns[0]["checkboxSelection"] = True
-            columns[0]["headerCheckboxSelection"] = True
-            return df.to_dict("records"), columns
-
-        @callback(  # type: ignore[misc]
-            Output("var-ident", "value", allow_duplicate=True),
-            Input("kontroller-table2", "selectedRows"),
-            prevent_initial_call=True,
-        )
-        def kontroll_detail_click(input1: list[dict[str, Any]]) -> str:
-            logger.debug(f"Args:\ninput1: {input1}")
-            selected = str(input1[0]["ident"])
-            return selected
-
-        @callback(  # type: ignore[misc]
-            Output("kontrollermodal-vars", "children"),
+        @callback(
+            Output(f"{self.module_number}-kontroll-var", "children"),
             Input("var-altinnskjema", "value"),
             self.variableselector.get_all_inputs(),
-            #            *self.create_callback_components("Input"),
         )
-        def altinnskjema(skjema: str, *args: Any) -> str:
+        def kontroller_show_selected_controls(skjema, *args):
             logger.debug(f"Args:\nskjema: {skjema}\nargs: {args}")
             partition_args = dict(zip(self.time_units, args, strict=False))
             if partition_args is not None and skjema is not None:
@@ -318,113 +171,197 @@ class AltinnControlView(ABC):
                 )
                 return valgte_vars
 
-        @callback(  # type: ignore[misc]
-            Output("alert_store", "data", allow_duplicate=True),
-            Input("kontrollermodal-kontrollbutton", "n_clicks"),
-            State("var-altinnskjema", "value"),
-            State("alert_store", "data"),
-            self.variableselector.get_all_inputs(),
-            #            *self.create_callback_components("State"),
-            prevent_initial_call=True,
+        @callback(
+            Output(f"{self.module_number}-kontroller", "rowData"),
+            Output(f"{self.module_number}-kontroller", "columnDefs"),
+            Input("var-altinnskjema", "value"),
+            Input(f"{self.module_number}-kontroll-refresh", "n_clicks"),
+            Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
+            *self.variableselector.get_all_inputs(),
         )
-        def kontrollkjøring(
-            n_clicks: int, skjema: str, alert_store: list[dict[str, Any]], *args: Any
-        ) -> list[dict[str, Any]]:
+        def get_kontroller_overview(skjema, refresh, rerun, *args):
             logger.debug(
                 f"Args:\n"
-                f"n_clicks: {n_clicks}\n"
                 f"skjema: {skjema}\n"
-                f"alert_store: {alert_store}\n"
+                f"refresh: {refresh}\n"
+                f"rerun: {rerun}\n"
                 f"args: {args}"
             )
-            partition_args = dict(zip(self.time_units, args, strict=False))
-            partitions = create_partition_select(
-                desired_partitions=self.time_units, skjema=None, **partition_args
+            if isinstance(self.conn, EimerDBInstance):
+                args = [int(arg) for arg in args]
+            logger.debug(dict(zip(self.time_units, args, strict=False)))
+            control_class_instance = self.control_dict[skjema](
+                time_units=self.time_units,
+                applies_to_subset=dict(zip(self.time_units, args, strict=False))
+                | {"skjema": [skjema]},
+                conn=self.conn,
             )
-            partitions_skjema = create_partition_select(
-                desired_partitions=self.time_units, skjema=skjema, **partition_args
-            )
-            if n_clicks > 0:
+            if (
+                ctx.triggered_id == f"{self.module_number}-kontroll-run-button"
+            ):  # TODO: Possibly better to replace with background callback.
+                logger.info("Running controls")
                 try:
-                    control_class = self.control_dict[skjema](
-                        partitions, partitions_skjema, self.conn
-                    )
-                    n_updates = control_class.execute_controls()
-                    alert_store = [
-                        create_alert(
-                            f"Kontrollkjøringa er ferdig. {n_updates} rader oppdatert.",
-                            "info",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-                except Exception as e:
-                    logger.debug(f"Executing controls failed!\n{e}")
-                    alert_store = [
-                        create_alert(
-                            f"Kontrollkjøringa feilet. {e!s}",
-                            "danger",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-                return alert_store
-            logger.debug("kontrollkjøring: PreventUpdate raised")
-            raise PreventUpdate
+                    control_class_instance.register_all_controls()
+                    control_class_instance.execute_controls()
+                except ValueError as e:
+                    if str(e) == "No control methods found.":
+                        logger.info("No control methods found.")
+                        # Return alert handler stuff
+                    else:
+                        raise
+            else:
+                logger.info("Refreshing view without re-running controls.")
+
+            if isinstance(self.conn, EimerDBInstance):
+                conn = ibis.polars.connect()
+                skjemamottak = self.conn.query(
+                    "SELECT * FROM skjemamottak"
+                )  # maybe add something like this?partition_select=self.applies_to_subset
+                conn.create_table("skjemamottak", skjemamottak)
+                kontroller = self.conn.query(
+                    "SELECT * FROM kontroller"
+                )  # maybe add something like this?partition_select=self.applies_to_subset
+                conn.create_table("kontroller", kontroller)
+                kontrollutslag = self.conn.query(
+                    "SELECT * FROM kontrollutslag"
+                )  # maybe add something like this?partition_select=self.applies_to_subset
+                conn.create_table("kontrollutslag", kontrollutslag)
+            elif conn_is_ibis(self.conn):
+                conn = self.conn
+            else:
+                raise NotImplementedError(
+                    f"Connection type '{type(self.conn)}' is currently not implemented."
+                )
+            skjemamottak = conn.table("skjemamottak")
+            kontroller = conn.table("kontroller")
+            kontrollutslag = conn.table("kontrollutslag")
+
+            utslag = (
+                kontrollutslag.filter(kontrollutslag.utslag == True)
+                .group_by(kontrollutslag.kontrollid)
+                .aggregate(ant_utslag=kontrollutslag.row_id.count())
+            )
+
+            subq = (
+                skjemamottak.filter(skjemamottak.aktiv == True)
+                .filter(skjemamottak.editert == False)
+                .select("ident", "refnr")
+            )
+
+            uediterte = (
+                kontrollutslag.join(
+                    subq,
+                    (kontrollutslag.ident == subq.ident)
+                    & (kontrollutslag.refnr == subq.refnr),
+                )
+                .filter(kontrollutslag.utslag == True)
+                .group_by(kontrollutslag.kontrollid)
+                .aggregate(uediterte=kontrollutslag.row_id.count())
+                .select("kontrollid", "uediterte")
+            )
+
+            result = (
+                kontroller.join(utslag, kontroller.kontrollid == utslag.kontrollid)
+                .join(uediterte, kontroller.kontrollid == uediterte.kontrollid)
+                .select(
+                    kontroller.skjema,
+                    kontroller.kontrollid,
+                    kontroller.type,
+                    kontroller.skildring,
+                    kontroller.kontrollvar,
+                    kontroller.varsort,
+                    utslag.ant_utslag,
+                    uediterte.uediterte,
+                )
+            )
+            result = result.to_pandas()
+            columns = [
+                {
+                    "headerName": col,
+                    "field": col,
+                    "hide": col == "varsort",
+                    "flex": 2 if col == "skildring" else 1,
+                    "tooltipField": col if col == "skildring" else None,
+                }
+                for col in result.columns
+            ]
+            columns[0]["checkboxSelection"] = True
+            columns[0]["headerCheckboxSelection"] = True
+            return result.to_dict("records"), columns
 
         @callback(  # type: ignore[misc]
-            Output("alert_store", "data", allow_duplicate=True),
-            Input("kontrollermodal-insertbutton", "n_clicks"),
-            State("var-altinnskjema", "value"),
-            State("alert_store", "data"),
+            Output(f"{self.module_number}-kontrollutslag", "rowData"),
+            Output(f"{self.module_number}-kontrollutslag", "columnDefs"),
+            Input(f"{self.module_number}-kontroller", "selectedRows"),
             self.variableselector.get_all_inputs(),
             #            *self.create_callback_components("State"),
-            prevent_initial_call=True,
         )
-        def kontrollkjøring_insert(
-            n_clicks: int, skjema: str, alert_store: list[dict[str, Any]], *args: Any
-        ) -> list[dict[str, Any]]:
-            logger.debug(
-                f"Args:\n"
-                f"n_clicks: {n_clicks}\n"
-                f"skjema: {skjema}\n"
-                f"alert_store: {alert_store}\n"
-                f"args: {args}"
+        def get_kontrollutslag(current_row, *args):
+            logger.debug(f"Args:\ncurrent_row: {current_row}\nargs: {args}")
+            if current_row is None or len(current_row) == 0:
+                logger.debug("No current_row, raising PreventUpdate.")
+                raise PreventUpdate
+            if isinstance(self.conn, EimerDBInstance):
+                conn = ibis.polars.connect()
+                skjemamottak = self.conn.query(
+                    "SELECT * FROM skjemamottak"
+                )  # maybe add something like this?partition_select=self.applies_to_subset
+                conn.create_table("skjemamottak", skjemamottak)
+                kontrollutslag = self.conn.query(
+                    "SELECT * FROM kontrollutslag"
+                )  # maybe add something like this?partition_select=self.applies_to_subset
+                conn.create_table("kontrollutslag", kontrollutslag)
+            elif conn_is_ibis(self.conn):
+                conn = self.conn
+            else:
+                raise NotImplementedError(
+                    f"Connection type '{type(self.conn)}' is currently not implemented."
+                )
+            kontrollid = current_row[0]["kontrollid"]
+            kontrollvar = current_row[0]["kontrollvar"]
+            skjema = current_row[0]["skjema"]
+            varsort = current_row[0]["varsort"]
+
+            skjemamottak = conn.table("skjemamottak")
+            kontrollutslag = conn.table("kontrollutslag")
+            # Subquery: filter active rows in skjemamottak
+            s = skjemamottak.filter(skjemamottak.aktiv == True).select(
+                skjemamottak.refnr,
+                skjemamottak.editert,
+                skjemamottak.ident,
             )
-            partition_args = dict(zip(self.time_units, args, strict=False))
-            partitions = create_partition_select(
-                desired_partitions=self.time_units, skjema=None, **partition_args
+
+            # Main query
+            result = (
+                kontrollutslag.join(
+                    s,
+                    (kontrollutslag.refnr == s.refnr)
+                    & (kontrollutslag.ident == s.ident),
+                )
+                .filter(
+                    (kontrollutslag.kontrollid == kontrollid)
+                    & (kontrollutslag.utslag == True)
+                )
+                .select(
+                    kontrollutslag.ident,
+                    kontrollutslag.refnr,
+                    kontrollutslag.kontrollid,
+                    kontrollutslag.utslag,
+                    s.editert,
+                    kontrollutslag.verdi,
+                )
+                .order_by(
+                    s.editert,
+                    getattr(
+                        kontrollutslag.verdi, varsort
+                    )(),  # varsort = "asc" / "desc"
+                )
             )
-            partitions_skjema = create_partition_select(
-                desired_partitions=self.time_units, skjema=skjema, **partition_args
-            )
-            if n_clicks > 0:
-                try:
-                    control_class = self.control_dict[skjema](
-                        partitions, partitions_skjema, self.conn
-                    )
-                    n_inserts = control_class.insert_new_rows()
-                    alert_store = [
-                        create_alert(
-                            f"Kontrollkjøringa er ferdig. {n_inserts} nye rader er lastet inn.",
-                            "info",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-                except Exception as e:
-                    logger.debug(f"Inserting failed!\n{e}", exc_info=True)
-                    alert_store = [
-                        create_alert(
-                            f"Kontrollkjøringa feilet. {e!s}",
-                            "danger",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-                return alert_store
-            logger.debug("PreventUpdate raised")
-            raise PreventUpdate
+            result = result.to_pandas()
+            columns = [{"headerName": col, "field": col} for col in result.columns]
+            columns[0]["checkboxSelection"] = True
+            columns[0]["headerCheckboxSelection"] = True
+            return result.to_dict("records"), columns
 
 
 class AltinnControlViewTab(TabImplementation, AltinnControlView):

@@ -53,7 +53,7 @@ def ibis_filter_with_dict(periods_dict):
     return filters
 
 
-def control(
+def register_control(
     kontrollid, kontrolltype, skildring, kontrollvariabel, sorteringsvariabel, **kwargs
 ):
     """Decorator used to attach REQUIRED metadata to control_<id> methods.
@@ -164,6 +164,9 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 applies_to_subset = partitions_skjema
         self.time_units = time_units
         self.applies_to_subset = applies_to_subset
+        for key, value in self.applies_to_subset.items():
+            if not isinstance(value, list):
+                self.applies_to_subset[key] = [value]
         self.conn = conn
 
         self._required_kontroller_columns = [
@@ -178,17 +181,24 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
     def find_control_methods(self):
         self.controls = []
         for method_name in dir(self):
-            if hasattr(getattr(test, method_name), "_control_meta"):
+            if hasattr(getattr(self, method_name), "_control_meta"):
                 self.controls.append(method_name)
         if len(self.controls) == 0:
-            raise ValueError("No control methods found.")
-        print(self.controls)
+            raise ValueError(
+                "No control methods found. Remember to use the 'register_control' decorator function."
+            )
+        logger.debug(f"Found controls: {self.controls}")
 
     def register_control(self, control):
+        logger.debug(f"Registering control: {control}")
         registered_controls = self.get_current_kontroller()
         control_meta = getattr(self, control)._control_meta
         row_to_register = pd.DataFrame([control_meta])
-
+        # to_combine = copy.deepcopy(self.applies_to_subset)
+        # for key, value in to_combine.items():
+        #     if not isinstance(value, list):
+        #         logger.debug(f"Value for {key} is not list. Attempting to convert {value} to list.")
+        #         to_combine[key] = [value]
         combinations = list(itertools.product(*self.applies_to_subset.values()))
 
         df_expanded = pd.DataFrame(combinations, columns=self.applies_to_subset.keys())
@@ -206,6 +216,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         if rows_to_register.empty:
             logger.debug("No new control to register, ending here.")
             return None
+        logger.debug(f"Rows to register:\n{rows_to_register}")
         if isinstance(self.conn, EimerDBInstance):
             self.conn.insert("kontroller", rows_to_register)
         elif conn_is_ibis(self.conn):
@@ -218,11 +229,13 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             )
 
     def register_all_controls(self):
+        logger.info("Registering all controls.")
         self.find_control_methods()
         for control in self.controls:
             self.register_control(control)
 
     def get_current_kontroller(self):
+        logger.debug("Getting current contents of table 'kontroller'")
         if isinstance(self.conn, EimerDBInstance):
             conn = ibis.polars.connect()
             kontroller = self.conn.query(
@@ -244,9 +257,13 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         return kontroller
 
     def execute_controls(self) -> None:
+        logger.info("Executing all controls")
         control_results = self.run_all_controls()
+        logger.info("Updating existing results.")
         self.update_existing_records(control_results)
+        logger.info("Inserting new results.")
         self.insert_new_records(control_results)
+        logger.info("Finished executing controls.")
 
     def run_all_controls(self):
         self.find_control_methods()
@@ -266,6 +283,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             raise TypeError(
                 f"Control results is not a pandas dataframe, is type: {type(df)}"
             )
+        logger.debug(f"Amount of control results: {df.shape[0]}")
         return df
 
     def run_control(self, control: str) -> pd.DataFrame:
@@ -280,6 +298,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         Raises:
             TypeError: If control method does not return pd.dataframe.
         """
+        logger.info(f"Running control: {control}")
         results = getattr(self, control)()
         if not isinstance(results, pd.DataFrame):
             raise TypeError(
@@ -290,6 +309,9 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 raise ValueError(
                     f"Missing required column '{column}' for result from '{control}'."
                 )
+        logger.info(
+            f"Finished running {control}. Results:\n{results['utslag'].value_counts()}"
+        )
         return results
 
     def get_current_kontrollutslag(self):
@@ -340,6 +362,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             logger.debug("No new rows found, ending here.")
             return None
         # Now to insert new rows into the table.
+        logger.debug(f"Inserting {merged.shape[0]} new rows.")
         if isinstance(self.conn, EimerDBInstance):
             self.conn.insert("kontrollutslag", merged)
         elif conn_is_ibis(self.conn):
@@ -350,7 +373,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             raise NotImplementedError(
                 f"Connection type '{type(self.conn)}' is currently not implemented."
             )
-        logger.debug(f"Inserted {merged.shape[0]} new rows to kontrollutslag.")
+        logger.debug("Finished inserting new rows.")
 
     def update_existing_records(self, control_results):
         existing_kontrollutslag = self.get_current_kontrollutslag()
@@ -379,7 +402,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             raise NotImplementedError(
                 f"Connection type '{type(self.conn)}' is currently not implemented."
             )
-        print(f"UPDATING {changed.shape[0]}")
+        logger.info(f"Updating {changed.shape[0]} rows.")
 
     def generate_update_query(self, df_updates: pd.DataFrame) -> str:
         """Generates a SQL UPDATE query for updating rows in 'kontrollutslag'.
@@ -413,66 +436,6 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
 
         return update_query
 
-    @control(
-        kontrollid="diff",
-        kontrolltype="endring",
-        skildring="Stor differanse mot fjoråret",
-        kontrollvariabel="fulldyrket",
-        sorteringsvariabel=None,
-    )
-    def control_diff(self):
-        aar = int(self.applies_to_subset["aar"][0])
-        df = self.conn.query("SELECT * FROM skjemadata_hoved")
-        df = df.loc[df["variabel"] == "fulldyrket"]
-        diff_df = df.loc[(df["aar"].isin([aar, aar - 1]))]
-        diff_df = diff_df.pivot(
-            index=["ident", "variabel"], columns="aar", values="verdi"
-        ).reset_index()
-        diff_df[aar - 1] = diff_df[aar - 1].astype(float)
-        diff_df[aar] = diff_df[aar].astype(float)
-        diff_df = diff_df.loc[(diff_df[aar - 1] > 0) & (diff_df[aar] > 0)]
-
-        diff_df["differanse"] = diff_df[aar] - diff_df[aar - 1]
-        diff_df["prosent_endring"] = (diff_df["differanse"] / diff_df[aar - 1]) * 100
-
-        diff_df["utslag"] = False
-        diff_df.loc[(abs(diff_df["prosent_endring"]) > 100), "utslag"] = True
-
-        diff_df["aar"] = aar
-        diff_df["skjema"] = "RA-7357"
-        diff_df["kontrollid"] = "diff"
-        diff_df["verdi"] = diff_df["prosent_endring"].astype(int)
-
-        diff_df = diff_df.merge(
-            df.loc[df["aar"] == aar][["ident", "refnr"]], on="ident"
-        )
-        return diff_df[
-            ["aar", "skjema", "ident", "refnr", "kontrollid", "utslag", "verdi"]
-        ]
-
-    @control(
-        kontrollid="bunnfradrag",
-        kontrolltype="mulig_feil",
-        skildring="Ikke 6000",
-        kontrollvariabel="bunnfradrag",
-        sorteringsvariabel=None,
-    )
-    def control_bunnfradrag(self):
-        aar = int(self.applies_to_subset["aar"][0])
-        df = self.conn.query(
-            f"SELECT * FROM skjemadata_hoved WHERE variabel = 'bunnfradrag' AND aar = {aar}"
-        )
-
-        df["utslag"] = False
-        df["verdi"] = df["verdi"].astype(float).astype(int)
-        df.loc[((df["verdi"]) != 6000), "utslag"] = True
-
-        df["aar"] = aar
-        df["skjema"] = "RA-7357"
-        df["kontrollid"] = "bunnfradrag"
-
-        return df[["aar", "skjema", "ident", "refnr", "kontrollid", "utslag", "verdi"]]
-
 
 if __name__ == "__main__":
     import eimerdb as db
@@ -488,7 +451,7 @@ if __name__ == "__main__":
 
     test = ControlFrameworkBase(
         time_units=["aar"],
-        applies_to_subset={"aar": [2020], "skjema": ["RA-7357"]},
+        applies_to_subset={"aar": ["2020"], "skjema": ["RA-7357"]},
         conn=conn,
     )
 
