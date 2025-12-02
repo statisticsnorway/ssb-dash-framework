@@ -788,26 +788,54 @@ class MacroModule(ABC):
             """
             return macro_level == "sammensatte variabler"
 
-        # @callback(  # type: ignore[misc]
-        #     Output("var-ident", "value", allow_duplicate=True),
-        #     Output("var-foretak", "value"),
-        #     Output("var-bedrift", "value"),
-        #     Input("macromodule-detail-grid", "clickData"),
-        #     prevent_initial_call=True,
-        # )
-        # def output_to_variabelvelger(clickdata: dict[str, list[dict[str, Any]]]) -> str:
-        #     logger.debug(clickdata)
-        #     if clickdata:
-        #         logger.debug(clickdata)
-        #         # do it so it returns the ident, of foretak as var-foretak and var-bedrift if bedrift is clicked. if foretak is clicked then set var-foretak == ident.
-        #         ident = clickdata["points"][0]["customdata"][0]
-        #         return str(ident)
-        #         if col == "orgnr_f":
-        #             return ident, foretak, ""
-        #         elif col == "orgnr_b":
-        #             return ident, orgnr_f["verdi"], bedrift
-        #     else:
-        #         raise PreventUpdate
+        @callback(  # type: ignore[misc]
+            Output("var-ident", "value", allow_duplicate=True),
+            Output("var-foretak", "value"),
+            Output("var-bedrift", "value"),
+            Output("altinnedit-option1", "value"),
+            Input("macromodule-detail-grid", "cellClicked"),
+            State("macromodule-detail-grid", "rowData"),
+            prevent_initial_call=True,
+        )
+        def output_to_variabelvelger(clickdata, rowdata) -> str:
+            """Handle cell clicks in detail grid and update variable selector."""
+            if not clickdata:
+                raise PreventUpdate
+            
+            row_id = clickdata.get("rowId")
+            col_id = clickdata.get("colId")
+            
+            if row_id is None:
+                raise PreventUpdate
+            
+            row_idx = int(row_id)
+            if row_idx >= len(rowdata):
+                raise PreventUpdate
+                
+            clicked_row = rowdata[row_idx]
+            
+            if col_id == "orgnr_f":
+                ident = clicked_row.get("orgnr_f", "")
+                foretak = ident
+                bedrift = ""
+                tabell = "skjemadata_foretak"
+            elif col_id == "orgnr_b":
+                ident = clicked_row.get("orgnr_b", "")
+                foretak = clicked_row.get("orgnr_f", "")
+                bedrift = ident
+                tabell = "skjemadata_bedrifter"
+            else:
+                raise PreventUpdate
+            
+            ident = str(ident) if ident else ""
+            foretak = str(foretak) if foretak else ""
+            bedrift = str(bedrift) if bedrift else ""
+            tabell = str(tabell) if tabell else ""
+            
+            print(f"Clicked: {col_id}, ident={ident}, foretak={foretak}, bedrift={bedrift}, tabell={tabell}")
+            
+            return ident, foretak, bedrift, tabell
+  
 
 
 class MacroModuleTab(TabImplementation, MacroModule):
