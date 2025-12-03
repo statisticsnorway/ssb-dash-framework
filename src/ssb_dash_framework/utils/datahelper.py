@@ -185,14 +185,14 @@ class DatabaseBuilderAltinnEimerdb:  # TODO: Should contain functionality to pro
                 "label": "En beskrivelse av kontrollen.",
             },
             {
-                "name": "kontrollvar",
+                "name": "kontrollvars",
                 "type": "string",
                 "label": "Navnet på variabelen som ligger i hvert kontrollutslag.",
             },
             {
-                "name": "varsort",
+                "name": "sorting_order",
                 "type": "string",
-                "label": "Sorteringslogikken til kontrollvariabelen. ASC eller DESC.",
+                "label": "Sorteringslogikken til kontrollvarsiabelen. ASC eller DESC.",
             },
         ]
 
@@ -397,7 +397,7 @@ class Kontroller(Base):
     kontrollid = Column(String, primary_key=True)
     kontrolltype = Column(String)
     beskrivelse = Column(String)
-    kontrollvariabel = Column(String)
+    kontrollvarsiabel = Column(String)
     sorteringsvariabel = Column(String)
 
 

@@ -54,33 +54,42 @@ def ibis_filter_with_dict(periods_dict):
 
 
 def register_control(
-    kontrollid, kontrolltype, beskrivelse, kontrollvariabel, sorteringsvariabel, **kwargs
+    kontrollid: str, kontrolltype: str, beskrivelse: str, kontrollerte_variabler: list[str], sorteringsvariabel: str | None = None, sortering: str | None = None, **kwargs: Any
 ):
-    """Decorator used to attach REQUIRED metadata to control_<id> methods.
-
-    Required fields:
-        - kontrollid
-        - type
-        - beskrivelse
-        - kontrollvar
-        - varsort
+    """Decorator used to attach required metadata to control_<id> methods.
+    
+    Some fields are for future use with statlog-model:
+    - kontrollid
+    - type
+    - beskrivelse
+    - kontrollerte_variabler
     """
+    if not isinstance(kontrollerte_variabler, list):
+        raise TypeError(f"'kontrollerte_variabler' must be list of strings. Received type {type(kontrollerte_variabler)}")
+    if kontrolltype not in ["H", "S", "I"]:
+        raise ValueError("'kontrolltype' must be one of 'H', 'S' or 'I'.\nH - Hard control\nS - Soft control\nI - Informative")
+    if sorteringsvariabel is None:
+        sorteringsvariabel = "" # TODO Maybe must be something else.
+    if sortering is None:
+        sortering = "ASC"
+    elif sortering not in ["ASC", "DESC"]:
+        raise ValueError(f"'sortering' must be one of 'ASC' or 'DESC'. Received '{sortering}.")
+
     required_keys = {
         "kontrollid",
         "type",
         "beskrivelse",
-        "kontrollvar",  # Optional?
-        "varsort",  # Optional?
+        "kontrollvars",
     }
     meta_dict = {
         "kontrollid": kontrollid,
         "type": kontrolltype,
         "beskrivelse": beskrivelse,
-        "kontrollvar": kontrollvariabel,
-        "varsort": sorteringsvariabel,
+        "kontrollvars": kontrollerte_variabler,
+        "sorting_var": sorteringsvariabel,
+        "sorting_order": sortering,
     }
 
-    # Check for missing required keys
     for required in required_keys:
         if required not in meta_dict.keys():
             raise ValueError(f"This definition is missing required field '{required}'.")
@@ -94,28 +103,6 @@ def register_control(
 
 class ControlFrameworkBase:  # TODO: Add some common control methods here for easier reuse.
     """Base class for running control checks.
-
-    Designed to work on partitioned data following the recommended altinn3 data structure. Manages inserts and updates
-    to the 'kontrollutslag' table via a connection interface.
-
-    To use this class you need to use this setup:
-    class MyControls(ControlFrameworkBase):
-        def __init__(self, partitions: list[int | str], partitions_skjema: dict[str, int | str], conn: object) -> None:
-            super().__init__(partitions, partitions_skjema, conn)
-
-        def a_control_func(self):
-            # Your code here
-            return dataframe
-
-
-    The flow of updating the control table works like this:
-
-        1. First call 'execute_controls', this begins the entire process.
-        2. 'control_updates' is run, during which the code checks existing controls, runs all controls and creates a dataframe with all results.
-            'run_all_controls' is run, which in turn calls 'run_control' for each individual control.
-            The results from control_updates is used to check if there has been any changes since last executing controls. If there are no changes, the process stops here.
-        3. Based on the results from 'control_updates' it generates an update query where each change in the results, where the result of a control has changed for an observation, is updated in the 'kontrollutslag' table.
-        4. The update query is run, and the process is complete.
     """
 
     _required_kontroller_columns = [

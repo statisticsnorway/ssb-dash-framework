@@ -279,8 +279,8 @@ class AltinnControlView(ABC):
                     kontroller.kontrollid,
                     kontroller.type,
                     kontroller.beskrivelse,
-                    kontroller.kontrollvar,
-                    kontroller.varsort,
+                    kontroller.kontrollvars,
+                    kontroller.sorting_order,
                     utslag.ant_utslag,
                     uediterte.uediterte,
                 )
@@ -290,7 +290,7 @@ class AltinnControlView(ABC):
                 {
                     "headerName": col,
                     "field": col,
-                    "hide": col == "varsort",
+                    "hide": col == "sorting_order",
                     "flex": 2 if col == "beskrivelse" else 1,
                     "tooltipField": col if col == "beskrivelse" else None,
                 }
@@ -329,15 +329,15 @@ class AltinnControlView(ABC):
                     f"Connection type '{type(self.conn)}' is currently not implemented."
                 )
             kontrollid = current_row[0]["kontrollid"]
-            kontrollvar = current_row[0]["kontrollvar"]
+            kontrollvars = current_row[0]["kontrollvars"]
             skjema = current_row[0]["skjema"]
-            varsort = current_row[0]["varsort"]
+            sorting_order = current_row[0]["sorting_order"]
 
             logger.debug(
-                f"Variables from current_row:\nkontrollid: {kontrollid}\nkontrollvar: {kontrollvar}\nskjema: {skjema}\nvarsort: {varsort}"
+                f"Variables from current_row:\nkontrollid: {kontrollid}\nkontrollvars: {kontrollvars}\nskjema: {skjema}\nsorting_order: {sorting_order}"
             )
-            if varsort is None:
-                varsort = "DESC"
+            if sorting_order is None:
+                sorting_order = "DESC"
             skjemamottak = conn.table("skjemamottak")
             kontrollutslag = conn.table("kontrollutslag")
             # Subquery: filter active rows in skjemamottak
