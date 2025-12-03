@@ -244,17 +244,11 @@ MacroModule
 
 .macromodule-heatmap-grid-container {
     flex: 1;
-    height: 850px; /* Critical for flex children */
+    height: 900px; /* Critical for flex children */
     min-width: 0; /* Allow shrinking */
     display: flex;
     flex-direction: column;
     overflow: hidden;
-}
-
-.macromodule-heatmap-grid {
-    flex: 1;
-    height: 100% !important;
-    width: 100% !important;
 }
 
 .macromodule-detail-grid-container {

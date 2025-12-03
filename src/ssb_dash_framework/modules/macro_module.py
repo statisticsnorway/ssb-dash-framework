@@ -6,10 +6,8 @@ from abc import ABC
 from abc import abstractmethod
 from typing import Any
 from typing import ClassVar
-import os
 import pandas as pd
 from ibis.expr.types.relations import Table
-import duckdb
 import ibis
 
 from dash_ag_grid import AgGrid
@@ -219,14 +217,6 @@ class MacroModule(ABC):
                                     "Velg foretak eller bedrift",
                                     className="macromodule-label",
                                 ),
-                                # dcc.Dropdown(
-                                #     className="macromodule-dropdown",
-                                #     options=[
-                                #         {"label": k, "value": k} for k in FORETAK_OR_BEDRIFT.keys()
-                                #     ],
-                                #     value="Bedrifter",
-                                #     id="macromodule-foretak-or-bedrift",
-                                # ),
                                 dcc.RadioItems(
                                     id="macromodule-foretak-or-bedrift",
                                     className="macromodule-radio-buttons",
@@ -312,13 +302,11 @@ class MacroModule(ABC):
                             children=[
                                 AgGrid(
                                     id="macromodule-heatmap-grid",
-                                    className="macromodule-heatmap-grid",
                                     getRowId="params.data.id",  # Add id to each row
                                     defaultColDef={
                                         "sortable": True,
                                         "filter": True,
                                         "resizable": True,
-                                        # "width": 120,
                                     },
                                     columnSize=None,
                                     rowData=[],
@@ -434,8 +422,6 @@ class MacroModule(ABC):
             allow_duplicate=True,
         )
         
-        # TODO: Set up a way to get aar from variabelvelger. Can read variabelvelgeren.md or hurtigstart.md for instance.
-        
         def update_graph(aar, foretak_or_bedrift, variabel, macro_level, nace_siffer_level, nace_list, tallvisning_valg):
             """
             Creates a colour-coordinated matrix heatmap of aggregated values 
@@ -449,7 +435,7 @@ class MacroModule(ABC):
 
             t = self.parquet_reader.load_year(aar, self.base_path, foretak_or_bedrift, nace_list, nace_siffer_level, detail_grid=False) # t, current aar
             t_1 = self.parquet_reader.load_year(aar-1, self.base_path, foretak_or_bedrift, nace_list, nace_siffer_level, detail_grid=False) # t-1, previous aar
-            print(t.head())
+
             if macro_level == "sammensatte variabler":
                 cols = list(HEATMAP_VARIABLES.keys()) + ["naring", "aar"]
                 group_by_filter = ["selected_nace"]
@@ -601,30 +587,31 @@ class MacroModule(ABC):
             Output("macromodule-detail-grid", "rowData"),
             Output("macromodule-detail-grid", "columnDefs"),
             Output("macromodule-detail-grid-title", "children"),
-            Input("var-aar", "value"),
-            Input("macromodule-foretak-or-bedrift", "value"),
+            Output("macromodule-detail-grid", "columnState"),
             Input("macromodule-heatmap-grid", "cellClicked"),
+            State("var-aar", "value"),
+            State("macromodule-foretak-or-bedrift", "value"),
             State("macromodule-heatmap-grid", "rowData"),
             State("macromodule-filter-velger", "value"),
             State("macromodule-nace-siffer-velger", "value"),
             State("macromodule-macro-variable", "value"),
-            allow_duplicate=True,
+            prevent_initial_call=True,
         )
 
-        def update_detail_table(aar, foretak_or_bedrift, cell_data, row_data, macro_level, nace_siffer_level, valgt_variabel):
+        def update_detail_table(cell_data, aar, foretak_or_bedrift, row_data, macro_level, nace_siffer_level, valgt_variabel):
             """
             Table with foretak & bedrift-level details which updates 
             when user selects a cell in heatmap-grid
             """
             if not cell_data or not aar:
-                return [], [], ""
+                raise PreventUpdate
 
             aar = int(aar)
             valgt_variabel = HEATMAP_VARIABLES.get(valgt_variabel)
 
             col = cell_data.get("colId")
             if col in ["variabel", macro_level]:
-                return [], [], ""
+                raise PreventUpdate
 
             selected_nace = col.replace("_", ".")
             row_idx = int(cell_data.get("rowId"))
@@ -636,7 +623,7 @@ class MacroModule(ABC):
                 selected_filter_val = row_data[row_idx].get(macro_level)
 
             if not selected_filter_val or not selected_nace:
-                return [], [], ""
+                raise PreventUpdate
             
             t = self.parquet_reader.load_year(aar, self.base_path, foretak_or_bedrift, [selected_nace], nace_siffer_level, detail_grid=True)
             t_1 = self.parquet_reader.load_year(aar - 1, self.base_path, foretak_or_bedrift, [selected_nace], nace_siffer_level, detail_grid=True)
@@ -665,20 +652,14 @@ class MacroModule(ABC):
             ]
 
             if foretak_or_bedrift == "foretak":
-                naring_renaming = {"naring_f": "naring"}
-                reg_type_renaming = {"reg_type_f": "reg_type"}
-                orgnr_renaming = {"orgnr_f": "orgnr_foretak"}
+                rename_mapping = {"naring_f": "naring", "reg_type_f": "reg_type", "orgnr_f": "orgnr_foretak"}
             elif foretak_or_bedrift == "bedrifter":
-                naring_renaming = {"naring_b": "naring"}
-                reg_type_renaming = {"reg_type_b": "reg_type"}
-                orgnr_renaming = {
-                    "orgnr_f": "orgnr_foretak", 
-                    "orgnr_b": "orgnr_bedrift"
-                    }
+                rename_mapping = {"naring_b": "naring", "reg_type_b": "reg_type", "orgnr_f": "orgnr_foretak", "orgnr_b": "orgnr_bedrift"}
+
             t = t.select([c for c in select_cols if c in t.columns])
-            t = t.rename(**orgnr_renaming, **naring_renaming, **reg_type_renaming)
             t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
-            t_1 = t_1.rename(**orgnr_renaming, **naring_renaming, **reg_type_renaming)
+            t = t.rename(**rename_mapping)
+            t_1 = t_1.rename(**rename_mapping)
 
             combined = t.union(t_1)
 
@@ -701,7 +682,6 @@ class MacroModule(ABC):
                 how='left',
                 suffixes=('', '_x')
             )
-
             df = df_merged.copy()
 
             if "giver_bnr" in df.columns and "giver_fnr" in df.columns: # unngå foretakstabellar som ikkje har giver
@@ -711,7 +691,7 @@ class MacroModule(ABC):
                 if f"{col}_x" in df.columns:
                     df[f"{col}_tooltip"] = "Fjorårets verdi: " + df[f"{col}_x"].astype(str)
 
-            # Desired order for columns in dash view
+            # order for columns
             if valgt_variabel in df.columns:
                 metrics_order = [valgt_variabel]
             else:
@@ -728,15 +708,13 @@ class MacroModule(ABC):
                 if previous_year_col in df.columns:
                     ordered_value_cols.append(previous_year_col)
 
-            # Column order
             if valgt_variabel in df.columns and f"{valgt_variabel}_x" in df.columns:
                 df["diff"] = (df[valgt_variabel] - df[f"{valgt_variabel}_x"]).abs() # Sort by absolute diff
                 df = df.sort_values("diff", ascending=False)
                 df = df.drop(columns=["diff"])
 
-            row_data = df.to_dict("records")
-
             visible_cols = [c for c in ID_COLS + ordered_value_cols if c in df.columns]
+            row_data = df.to_dict("records")
 
             column_defs = [] 
             for col in visible_cols:
@@ -760,7 +738,7 @@ class MacroModule(ABC):
                             "backgroundColor": "#e8e9eb"  # light grey for previous year
                         }
                 
-                if col in STATUS_CHANGE_DETAIL_GRID: # slik at orgnr_f vil vise farge i bedriftstabellen om ei bedrift har skifta foretak
+                if col in STATUS_CHANGE_DETAIL_GRID:
                     col_def.update({
                         "cellStyle": {"function": "MacroModule.displayDiffHighlight(params)"}
                     })
@@ -768,14 +746,31 @@ class MacroModule(ABC):
                 column_defs.append(col_def)
 
             if column_defs:
-                column_defs[0]["pinned"] = "left" # pin first column when scrolling horizontally
+                column_defs[0]["pinned"] = "left"
                 column_defs[0]["width"] = 240
 
             title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace} i {macro_level} {selected_filter_val}"
             if macro_level == "sammensatte variabler":
                 title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace}"
 
-            return row_data, column_defs, title
+            return row_data, column_defs, title, []
+        
+        @callback(
+            Output("macromodule-detail-grid", "rowData", allow_duplicate=True),
+            Output("macromodule-detail-grid", "columnDefs", allow_duplicate=True),
+            Output("macromodule-detail-grid-title", "children", allow_duplicate=True),
+            Input("var-aar", "value"),
+            Input("macromodule-foretak-or-bedrift", "value"),
+            Input("macromodule-filter-velger", "value"),
+            Input("macromodule-nace-siffer-velger", "value"),
+            Input("macromodule-naring-velger", "value"),
+            Input("macromodule-macro-variable", "value"),
+            Input("macromodule-tall-visning-velger", "value"),
+            prevent_initial_call=True,
+        )
+        def reset_detail_grid_on_filter_change(*args):
+            """Reset detail grid when any filter changes."""
+            return [], [], ""
 
         @callback(
             Output("macromodule-macro-variable", "disabled"),
@@ -832,12 +827,8 @@ class MacroModule(ABC):
             bedrift = str(bedrift) if bedrift else ""
             tabell = str(tabell) if tabell else ""
             
-            print(f"Clicked: {col_id}, ident={ident}, foretak={foretak}, bedrift={bedrift}, tabell={tabell}")
-            
             return ident, foretak, bedrift, tabell
   
-
-
 class MacroModuleTab(TabImplementation, MacroModule):
     """MacroModuleTab is an implementation of the MacroModule module as a tab in a Dash application."""
 
