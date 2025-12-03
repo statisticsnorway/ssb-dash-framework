@@ -54,10 +54,16 @@ def ibis_filter_with_dict(periods_dict):
 
 
 def register_control(
-    kontrollid: str, kontrolltype: str, beskrivelse: str, kontrollerte_variabler: list[str], sorteringsvariabel: str | None = None, sortering: str | None = None, **kwargs: Any
+    kontrollid: str,
+    kontrolltype: str,
+    beskrivelse: str,
+    kontrollerte_variabler: list[str],
+    sorteringsvariabel: str | None = None,
+    sortering: str | None = None,
+    **kwargs: Any,
 ):
     """Decorator used to attach required metadata to control_<id> methods.
-    
+
     Some fields are for future use with statlog-model:
     - kontrollid
     - type
@@ -65,15 +71,21 @@ def register_control(
     - kontrollerte_variabler
     """
     if not isinstance(kontrollerte_variabler, list):
-        raise TypeError(f"'kontrollerte_variabler' must be list of strings. Received type {type(kontrollerte_variabler)}")
+        raise TypeError(
+            f"'kontrollerte_variabler' must be list of strings. Received type {type(kontrollerte_variabler)}"
+        )
     if kontrolltype not in ["H", "S", "I"]:
-        raise ValueError("'kontrolltype' must be one of 'H', 'S' or 'I'.\nH - Hard control\nS - Soft control\nI - Informative")
+        raise ValueError(
+            "'kontrolltype' must be one of 'H', 'S' or 'I'.\nH - Hard control\nS - Soft control\nI - Informative"
+        )
     if sorteringsvariabel is None:
-        sorteringsvariabel = "" # TODO Maybe must be something else.
+        sorteringsvariabel = ""  # TODO Maybe must be something else.
     if sortering is None:
         sortering = "ASC"
     elif sortering not in ["ASC", "DESC"]:
-        raise ValueError(f"'sortering' must be one of 'ASC' or 'DESC'. Received '{sortering}.")
+        raise ValueError(
+            f"'sortering' must be one of 'ASC' or 'DESC'. Received '{sortering}."
+        )
 
     required_keys = {
         "kontrollid",
@@ -102,8 +114,7 @@ def register_control(
 
 
 class ControlFrameworkBase:  # TODO: Add some common control methods here for easier reuse.
-    """Base class for running control checks.
-    """
+    """Base class for running control checks."""
 
     _required_kontroller_columns = [
         "kontrollid",
@@ -177,24 +188,28 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         logger.debug(f"Found controls: {self.controls}")
 
     def register_control(self, control):
+        print(control)
         logger.debug(f"Registering control: {control}")
         registered_controls = self.get_current_kontroller()
         control_meta = getattr(self, control)._control_meta
-        row_to_register = pd.DataFrame([control_meta])
-        # to_combine = copy.deepcopy(self.applies_to_subset)
-        # for key, value in to_combine.items():
-        #     if not isinstance(value, list):
-        #         logger.debug(f"Value for {key} is not list. Attempting to convert {value} to list.")
-        #         to_combine[key] = [value]
+        row_to_register = pd.DataFrame([control_meta]).drop(
+            columns=["kontrollvars"]
+        )  # TODO: Fix better Dropping kontrollvars as it is included in control_meta but only clutter in the database.
+        print(row_to_register)
         combinations = list(itertools.product(*self.applies_to_subset.values()))
 
         df_expanded = pd.DataFrame(combinations, columns=self.applies_to_subset.keys())
-
+        print(df_expanded)
         rows_to_register = row_to_register.merge(df_expanded, how="cross")
+        print(rows_to_register)
+        print(registered_controls)
         rows_to_register = rows_to_register.merge(
             registered_controls,
             how="outer",
-            on=[*self.applies_to_subset.keys(), *control_meta.keys()],
+            on=[
+                *self.applies_to_subset.keys(),
+                *[k for k in control_meta.keys() if k != "kontrollvars"],
+            ],  # TODO: Fix better Dropping kontrollvars as it is included in control_meta but only clutter in the database.
             indicator=True,
         )
         rows_to_register = rows_to_register[
@@ -214,6 +229,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             raise NotImplementedError(
                 f"Connection type '{type(self.conn)}' is currently not implemented."
             )
+        print(control, " done!")
 
     def register_all_controls(self):
         logger.info("Registering all controls.")

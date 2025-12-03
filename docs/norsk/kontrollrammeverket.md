@@ -52,8 +52,8 @@ kontrollinfo = {
     "kontrollid": "T001",
     "type": "test",
     "beskrivelse": "Totale kostnader større enn total omsetning!",
-    "kontrollvar": "diff",
-    "varsort": "DESC"
+    "kontrollvars": "diff",
+    "sorting_order": "DESC"
 }
 
 # Opprett DataFrame og sett inn i tabellen
@@ -61,8 +61,8 @@ conn.insert("kontroller", pd.DataFrame(kontrollinfo, index=[0]))
 
 ```
 
-Variabelen kontrollvar angir hvilken variabel som skal kunne brukes til sortering og visning i kontrollappen – for eksempel et avvik eller en differanseverdi.
-Feltet varsort bestemmer rekkefølgen på sorteringen: enten "DESC" for synkende eller "ASC" for stigende.
+Variabelen kontrollvars angir hvilken variabel som skal kunne brukes til sortering og visning i kontrollappen – for eksempel et avvik eller en differanseverdi.
+Feltet sorting_order bestemmer rekkefølgen på sorteringen: enten "DESC" for synkende eller "ASC" for stigende.
 
 Når raden er lagt inn i tabellen kontroller, vil kontrollen automatisk bli fanget opp av kontrollrammeverket.
 

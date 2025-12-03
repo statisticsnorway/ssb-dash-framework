@@ -185,14 +185,14 @@ class DatabaseBuilderAltinnEimerdb:  # TODO: Should contain functionality to pro
                 "label": "En beskrivelse av kontrollen.",
             },
             {
-                "name": "kontrollvars",
+                "name": "sorting_var",
                 "type": "string",
-                "label": "Navnet på variabelen som ligger i hvert kontrollutslag.",
+                "label": "Variabelen utslag skal sorteres etter.",
             },
             {
                 "name": "sorting_order",
                 "type": "string",
-                "label": "Sorteringslogikken til kontrollvarsiabelen. ASC eller DESC.",
+                "label": "Sorteringslogikken til sorting_var. ASC eller DESC.",
             },
         ]
 
