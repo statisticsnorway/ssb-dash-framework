@@ -51,7 +51,7 @@ kontrollinfo = {
     "skjema": "RA-0657",
     "kontrollid": "T001",
     "type": "test",
-    "skildring": "Totale kostnader større enn total omsetning!",
+    "beskrivelse": "Totale kostnader større enn total omsetning!",
     "kontrollvar": "diff",
     "varsort": "DESC"
 }

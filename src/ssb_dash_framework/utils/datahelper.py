@@ -180,9 +180,9 @@ class DatabaseBuilderAltinnEimerdb:  # TODO: Should contain functionality to pro
                 "label": "Kontrolltypen. Sum eller tall.",
             },
             {
-                "name": "skildring",
+                "name": "beskrivelse",
                 "type": "string",
-                "label": "En skildring av kontrollen.",
+                "label": "En beskrivelse av kontrollen.",
             },
             {
                 "name": "kontrollvar",
@@ -225,9 +225,9 @@ class DatabaseBuilderAltinnEimerdb:  # TODO: Should contain functionality to pro
             {"name": "variabel", "type": "string", "label": "Variabelen."},
             {"name": "datatype", "type": "string", "label": "Datatypen til variabelen"},
             {
-                "name": "skildring",
+                "name": "beskrivelse",
                 "type": "string",
-                "label": "En skildring av variabelen",
+                "label": "En beskrivelse av variabelen",
             },
         ]
 
@@ -396,7 +396,7 @@ class Kontroller(Base):
     skjema = Column(String, primary_key=True)
     kontrollid = Column(String, primary_key=True)
     kontrolltype = Column(String)
-    skildring = Column(String)
+    beskrivelse = Column(String)
     kontrollvariabel = Column(String)
     sorteringsvariabel = Column(String)
 

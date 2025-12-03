@@ -54,28 +54,28 @@ def ibis_filter_with_dict(periods_dict):
 
 
 def register_control(
-    kontrollid, kontrolltype, skildring, kontrollvariabel, sorteringsvariabel, **kwargs
+    kontrollid, kontrolltype, beskrivelse, kontrollvariabel, sorteringsvariabel, **kwargs
 ):
     """Decorator used to attach REQUIRED metadata to control_<id> methods.
 
     Required fields:
         - kontrollid
         - type
-        - skildring
+        - beskrivelse
         - kontrollvar
         - varsort
     """
     required_keys = {
         "kontrollid",
         "type",
-        "skildring",
+        "beskrivelse",
         "kontrollvar",  # Optional?
         "varsort",  # Optional?
     }
     meta_dict = {
         "kontrollid": kontrollid,
         "type": kontrolltype,
-        "skildring": skildring,
+        "beskrivelse": beskrivelse,
         "kontrollvar": kontrollvariabel,
         "varsort": sorteringsvariabel,
     }
@@ -121,7 +121,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
     _required_kontroller_columns = [
         "kontrollid",
         "kontrolltype",
-        "skildring",
+        "beskrivelse",
     ]
 
     _required_kontrollutslag_columns = [

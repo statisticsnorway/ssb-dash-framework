@@ -278,7 +278,7 @@ class AltinnControlView(ABC):
                     kontroller.skjema,
                     kontroller.kontrollid,
                     kontroller.type,
-                    kontroller.skildring,
+                    kontroller.beskrivelse,
                     kontroller.kontrollvar,
                     kontroller.varsort,
                     utslag.ant_utslag,
@@ -291,8 +291,8 @@ class AltinnControlView(ABC):
                     "headerName": col,
                     "field": col,
                     "hide": col == "varsort",
-                    "flex": 2 if col == "skildring" else 1,
-                    "tooltipField": col if col == "skildring" else None,
+                    "flex": 2 if col == "beskrivelse" else 1,
+                    "tooltipField": col if col == "beskrivelse" else None,
                 }
                 for col in result.columns
             ]
