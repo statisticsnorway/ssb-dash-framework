@@ -31,7 +31,6 @@ def test_changelog_creation() -> None:
         statistics_name="Test",
         id_vars=["aar", "orgnr"],
         data_source="/inndata/dummypath.parquet",
-        data_target="/klargjorte-data/dummypath.parquet",
     )
     changelog = test._build_process_log_entry(example_change)
 
