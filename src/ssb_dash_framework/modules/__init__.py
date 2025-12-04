@@ -40,6 +40,7 @@ from .hb_method import HBMethodWindow
 from .parquet_editor import ParquetEditor
 from .parquet_editor import ParquetEditorChangelog
 from .parquet_editor import apply_edits
+from .parquet_editor import export_from_parqueteditor
 from .parquet_editor import get_log_path
 from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
@@ -95,5 +96,6 @@ __all__ = [
     "VisualizationBuilder",
     "VisualizationBuilderWindow",
     "apply_edits",
+    "export_from_parqueteditor",
     "get_log_path",
 ]

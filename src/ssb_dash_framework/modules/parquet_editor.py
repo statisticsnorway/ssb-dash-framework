@@ -37,7 +37,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         statistics_name: The name of the statistic being edited.
         id_vars: A list of columns that together form a unique identifier for a single row in your data.
         data_source: The path to the parquet file you want to edit.
-        data_target: The path your completed file will be created at.
         output: Columns in your dataframe that should be clickable to output to the variable selector panel.
         output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
 
@@ -47,7 +46,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             statistics_name="Demo",
             id_vars=id_variabler,
             data_source="/buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet",
-            data_target="/buckets/produkt/editering-eksempel/klargjorte-data/test_p2024_v1.parquet",
         )
 
     Notes:
@@ -61,7 +59,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         statistics_name: str,
         id_vars: list[str],
         data_source: str,
-        data_target: str,  # Optional?
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
     ) -> None:
@@ -85,10 +82,12 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             selected_inputs=id_vars, selected_states=[]
         )
         self.file_path = data_source
-        self.data_target = data_target
         path = Path(data_source)
         self.log_filepath = get_log_path(data_source)
         self.label = path.stem
+
+        # Create parent directories for log file if they don't exist
+        self.log_filepath.parent.mkdir(parents=True, exist_ok=True)
 
         self.module_layout = self._create_layout()
         self._is_valid()
@@ -426,7 +425,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         changelog_entry = {
             "statistics_name": self.statistics_name,
             "data_source": [self.file_path],
-            "data_target": self.data_target,
+            "data_target": "data_target_placeholder",
             "data_period": "",
             "variable_name": changed_variable,
             "change_event": "M",
@@ -516,11 +515,11 @@ def get_log_path(parquet_path: str | Path) -> Path:
 
     The function searches for known data-state subfolders in the parquet path
     (/inndata/, /klargjorte-data/, /statistikk/, /utdata/) and rewrites the path
-    to the corresponding log folder under /logg/prosessdata/<state>/.
+    to the corresponding temp folder under /<state>/temp/parqueteditor/.
     If none match, the log file is assumed to be in the same directory as the parquet file.
     """
     data_states = ["inndata", "klargjorte-data", "statistikk", "utdata"]
-    log_subpath = "logg/prosessdata"
+    log_subpath = "temp/parqueteditor"
 
     p = Path(parquet_path)
     posix = p.as_posix()
@@ -528,7 +527,7 @@ def get_log_path(parquet_path: str | Path) -> Path:
     for state in data_states:
         token = f"/{state}/"
         if token in posix:
-            replaced = posix.replace(token, f"/{log_subpath}/{state}/")
+            replaced = posix.replace(token, f"/{state}/{log_subpath}/")
             return Path(replaced).with_suffix(".jsonl")
 
     print(f"Expecting subfolder {data_states}. Log file path set to parquet path.")
@@ -665,3 +664,43 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
         data = _apply_change_detail(data, line["change_details"])
 
     return data
+
+
+def export_from_parqueteditor(data_source: str, data_target: str) -> None:
+    """Export edited data from parquet editor.
+
+    Reads the jsonl log, updates data_target from placeholder to the supplied value,
+    and saves the updated log next to the exported parquet file.
+    Also applies edits and exports the data.
+
+    Args:
+        data_source: Path to the source parquet file
+        data_target: Path where the exported file will be written
+
+    Raises:
+        FileNotFoundError: if no log file is found.
+    """
+    log_path = get_log_path(data_source)
+
+    # Read and update the jsonl log with actual data_target value
+    if log_path.exists():
+        processlog = read_jsonl_log(log_path)
+        for entry in processlog:
+            if entry.get("data_target") == "data_target_placeholder":
+                entry["data_target"] = data_target
+
+        # Save updated log next to the exported parquet file
+        export_log_path = Path(data_target).with_suffix(".jsonl")
+        with open(export_log_path, "w", encoding="utf-8") as f:
+            for entry in processlog:
+                f.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
+    else:
+        raise FileNotFoundError(
+            f"Process log not found at '{log_path}'. No edits have been recorded for '{data_source}'."
+        )
+
+    updated_data = apply_edits(data_source)
+    updated_data.to_parquet(data_target)
+    print(
+        f"Export completed! File now exists at '{data_target}' with processlog at '{export_log_path}'"
+    )
