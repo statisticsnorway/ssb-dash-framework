@@ -661,3 +661,33 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
         data = _apply_change_detail(data, line["change_details"])
 
     return data
+
+
+def export_from_parqueteditor(data_source, data_target):
+    """Export edited data from parquet editor.
+
+    Reads the jsonl log, updates data_target from placeholder to the supplied value,
+    and saves the updated log next to the exported parquet file.
+    Also applies edits and exports the data.
+
+    Args:
+        data_source: Path to the source parquet file
+        data_target: Path where the exported file will be written
+    """
+    log_path = get_log_path(data_source)
+
+    # Read and update the jsonl log with actual data_target value
+    if log_path.exists():
+        processlog = read_jsonl_log(log_path)
+        for entry in processlog:
+            if entry.get("data_target") == "data_target_placeholder":
+                entry["data_target"] = data_target
+
+        # Save updated log next to the exported parquet file
+        export_log_path = Path(data_target).with_suffix(".jsonl")
+        with open(export_log_path, "w", encoding="utf-8") as f:
+            for entry in processlog:
+                f.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
+
+    updated_data = apply_edits(data_source)
+    updated_data.to_parquet(data_target)
