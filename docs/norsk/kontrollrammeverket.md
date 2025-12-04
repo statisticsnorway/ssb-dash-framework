@@ -1,123 +1,108 @@
 
 # Hurtigstart: Kontrollrammeverk
 
-Dette dokumentet viser hvordan du bruker og utvider kontrollrammeverket for SSB sine datasett.
-Ikke endelig. Jeg skal kvalitetssikre og finpusse etter feriedagene mine.
+Dette dokumentet viser hvordan du bruker kontroller i Editeringsrammeverket.
 
-## Struktur og bruk
+OBS! Dette rammeverket forutsetter at du har ident og refnr i datasettene dine,. MÅ FORKLARES BEDRE
 
-Kontrollrammeverket består av en baseklasse `ControlFrameworkBase` og én eller flere kontrollklasser som arver fra denne. Du må lage en egen klasse som arver fra baseklassen, og i denne klassen lager du kontrollmetoder. Alle kontrollmetoder må starte med `control_`.
+## Bruk
 
-### 1. Kontrollrammeverket og baseklassen
+### 1. Importere de nødvendige bitene
 
-Kontrollrammeverket er bygd opp rundt en baseklasse `ControlFrameworkBase`, som inneholder funksjonalitet for å:
-- kjøre alle kontroller du har definert i klassen din,
-- finne nye eller endrede kontrollutslag,
-- laste inn disse i databasen.
+Kontrollrammeverket består av to biter, `ControlFrameworkBase` og `register_control`. Det første steget er å hente dette inn i koden din så du kan bruke det videre.
 
-**Du skal ikke opprette en instans av `ControlFrameworkBase` direkte.** Du lager din egen kontrollklasse som arver fra baseklassen. Kontrollklassen er stedet der du definerer selve kontrollene.
-
-Eksempel:
 ```python
-class RA0657Controls(ControlFrameworkBase):
-    def __init__(self, partitions, partitions_skjema, conn):
-        super().__init__(partitions, partitions_skjema, conn)
+from ssb_dash_framework import ControlFrameworkBase
+from ssb_dash_framework import register_control
 ```
 
-I kontrollklassen definerer du kontrollmetoder som starter med `control_`. Rammeverket vil automatisk oppdage og kjøre disse metodene når du bruker `insert_new_rows()` eller `execute_controls()`.
+### 2. Sett opp rammen for kontrollene
 
-#### Viktige metoder i baseklassen:
+For å gjøre det enklest mulig å lage et kontrollopplegg som håndterer det aller meste for deg så har vi brukt noen konsepter som er avanserte. Det er ikke nødvendig å forstå for å bruke det, men du kan finne mer tekniske detaljer lenger nede om det er interessant.
 
-- `_run_all_controls()`: Kjører alle metoder i klassen som begynner med `control_`
-- `_control_new_rows()`: Sammenligner nye kontrollutslag med det som allerede ligger i databasen, og returnerer kun nye rader
-- `insert_new_rows()`: Detekterer nyinnlastede skjemaer. Laster inn nye kontrollutslag tilhørende de nye skjemaene.
-- `_control_updates()`: Ser etter oppdateringer i eksisterende rader
-- `execute_controls()`: Oppdaterer databasen med nye utslag dersom utslagsbetingelsen har endret seg
-
-### 2. Registrering av kontroller i databasen
-
-Før en kontroll kan brukes i rammeverket, må den også registreres som en rad i kontroller-tabellen i databasen.
-Eksempel på registrering:
+Det første steget for å få satt opp rammen er å sette opp det nedenfor, men skift ut "MineEgneKontroller" til noe som passer bedre.
 
 ```python
-import eimerdb as db
-import pandas as pd
-
-conn = db.EimerDBInstance("ssb-strukt-naering-data-europe-west4-prod", "svalbardbasen")
-
-# Kontrollmetadata
-kontrollinfo = {
-    "aar": 2023,
-    "skjema": "RA-0657",
-    "kontrollid": "T001",
-    "type": "test",
-    "beskrivelse": "Totale kostnader større enn total omsetning!",
-    "kontrollvars": "diff",
-    "sorting_order": "DESC"
-}
-
-# Opprett DataFrame og sett inn i tabellen
-conn.insert("kontroller", pd.DataFrame(kontrollinfo, index=[0]))
-
+class MineEgneKontroller(ControlFrameworkBase):
+    def __init__(
+        self,
+        time_units,
+        applies_to_subset,
+        conn,
+    ) -> None:
+        super().__init__(time_units, applies_to_subset, conn)
 ```
 
-Variabelen kontrollvars angir hvilken variabel som skal kunne brukes til sortering og visning i kontrollappen – for eksempel et avvik eller en differanseverdi.
-Feltet sorting_order bestemmer rekkefølgen på sorteringen: enten "DESC" for synkende eller "ASC" for stigende.
+### 3. Lag kontrollene dine
 
-Når raden er lagt inn i tabellen kontroller, vil kontrollen automatisk bli fanget opp av kontrollrammeverket.
+For å lage kontrollene må vi lage kode som kan plukke ut alle observasjonene i undersøkelsen, om du har en Altinn3 undersøkelse vil det innebære at alle innsendte skjemaer skal sjekkes.
 
-### 3. Slik lager du en kontrollklasse
+Nedenfor er et eksempel på en kontroll som sjekker etter dublettinnsendinger.
 
-Du må lage en egen klasse for hvert skjema du ønsker å kontrollere. Denne klassen skal:
-- arve fra `ControlFrameworkBase`,
-- kalle `super().__init__()` i `__init__`-metoden,
-- inneholde én eller flere metoder som starter med `control_`.
-
-Hver kontrollmetode må returnere en `pandas.DataFrame` med følgende kolonner:
-- `aar` (Flere tidsperioder er mulig)
-- `skjema`
-- `ident`
-- `refnr`
-- `kontrollid`
-- `utslag` (True/False)
-- `verdi` (valgfri tallverdi som kontrollen er basert på)
-
-Eksempel på kontrollmetode:
 ```python
-def control_V001(self):
-    ...
-    return df_output
+class MineEgneKontroller(ControlFrameworkBase):
+    def __init__(
+        self,
+        time_units,
+        applies_to_subset,
+        conn,
+    ) -> None:
+        super().__init__(time_units, applies_to_subset, conn)
+
+    @register_control(
+        kontrollid="000_dublett",
+        kontrolltype="I",
+        beskrivelse="Virksomheten har levert flere skjema",
+        kontrollerte_variabler=["ident"],
+        sorteringsvariabel="",
+        sortering="ASC",
+    )
+    def control_skjema_dublett(self):
+        df = self.conn.query("SELECT * FROM skjemamottak")
+        df["utslag"] = df["ident"].isin(
+            df["ident"].value_counts()[lambda x: x > 1].index
+        )
+        df = df.sort_values("ident")
+        df["kontrollid"] = "skjema_dublett"
+        df["verdi"] = 0
+        return df[
+            ["aar", "kvartal", "skjema", "ident", "refnr", "kontrollid", "utslag", "verdi"]
+        ].drop_duplicates()
 ```
 
+For at kontrollen din skal fungere er det viktig at det som returneres av koden din er en pandas dataframe med kolonnene "aar", "kvartal", "skjema", "ident", "refnr", "kontrollid", "utslag" og "verdi". Det skal være 1 rad per observasjon (refnr for Altinn3). Utslag kolonnen skal utelukkende inneholde verdier som True eller False, hvor True markerer at enheten har slått ut på kontrollen.
+
+Om du studerer koden over kan du et par ting. For eksempel ser du kanskje at at `@register_control` brukes for å legge på litt informasjon (metadata) om kontrollen. Dette brukes i bakgrunnen for å lage en oversikt over kontrollene og legge det inn i databasen din.
+
+Du ser kanskje at det er innrykk på koden for kontrollen. Det er for å fortelle python at `control_skjema_dublett` skal ses på som en del av `MineEgneKontroller` classen, som gjør at vi i bakgrunnen kan automatisere en del prosesser.
+
+
+
+### 4. Legg inn modulen i applikasjonen din
+
+Da er det et siste steg igjen før det burde fungere, og det er å legge det inn i selve applikasjonen.
+
 ```python
-kontrollerclass = RA0657Controls(
-    partitions={"aar": ["2024"]},
-    partitions_skjema={"aar": ["2024"], "skjema": ["RA-0657"]},
-    conn=conn
+from ssb_dash_framework import AltinnControlViewWindow
+
+kontrollvindu = AltinnControlViewWindow(
+    time_units=["aar", "kvartal"],
+    control_dict={"RA-XXXX": MineEgneKontroller}, # Sett inn ditt skjemanummer og kontrollklassen som gjelder for skjemaet her.
+    conn=conn,
 )
-
-kontrollerclass.insert_new_rows()     # Laster inn nye rader
-kontrollerclass.execute_controls()    # Oppdaterer eksisterende rader
 ```
 
-## Format for kontrollutslag
+### 5. Noen anbefalinger
 
-Alle kontrollmetoder skal returnere en DataFrame med følgende kolonner:
-- `aar`: årstall (int) (Flere tidsperioder er mulig)
-- `skjema`: skjemanavn (str)
-- `ident`: identifikator (str/int)
-- `refnr`: versjon (str/int)
-- `kontrollid`: ID for kontrollen (str, f.eks. "V001")
-- `utslag`: bool (True/False)
-- `verdi`: int/float – verdien som brukes i kontrollen
+- Lag en egen .py fil som inneholder kontrollene dine, det blir mer oversiktlig. Se https://github.com/statisticsnorway/demo-ssb-dash-framework/tree/parquet-editor-demo/demos/altinn3 for eksempel.
 
-## Bruk i app-modulen
+## Teknisk forklaring - valgfri lesning
 
-Lag et dictionary med en entry for hvert skjema, der key = RA-nummeret og value = klassen.
+Her går vi gjennom noe mer av logikken bak, gjerne se i selve koden om du vil se hvordan opplegget helt konkret fungerer.
 
-```python
-control_dict = {"RA-0657": RA0657Controls}
-kontrollvindu = AltinnControlModal(time_units=["aar"], control_dict, conn)
-```
+### Prosessen som settes igang når kontroller kjøres
 
-Deretter legger du inn kontrollmodalen i lista med vinduer som går inn i main_layout
+
+
+### Inheritance (arv)
+
