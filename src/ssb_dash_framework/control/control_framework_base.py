@@ -352,7 +352,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 raise ValueError(
                     f"Error when running {control}. Value for column {key} '{value[0]}' does not match period control is run for: {self.applies_to_subset}"
                 )
-
+        if results.duplicated(subset=[*self.time_units, "ident", "refnr"])
         logger.info(
             f"Finished running {control}. Results:\n{results['utslag'].value_counts()}"
         )
