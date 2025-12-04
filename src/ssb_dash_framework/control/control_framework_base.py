@@ -177,6 +177,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         ]
 
     def find_control_methods(self):
+        logger.debug("Looking for control methods.")
         self.controls = []
         for method_name in dir(self):
             if hasattr(getattr(self, method_name), "_control_meta"):
@@ -185,17 +186,16 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             raise ValueError(
                 "No control methods found. Remember to use the 'register_control' decorator function."
             )
-        logger.debug(f"Found controls: {self.controls}")
+        logger.info(f"Found controls: {self.controls}")
 
     def register_control(self, control):
-        print(control)
-        logger.debug(f"Registering control: {control}")
+        logger.info(f"Registering control: {control}")
         registered_controls = self.get_current_kontroller()
         control_meta = getattr(self, control)._control_meta
         row_to_register = pd.DataFrame([control_meta]).drop(
             columns=["kontrollvars"]
         )  # TODO: Fix better Dropping kontrollvars as it is included in control_meta but only clutter in the database.
-        print(row_to_register)
+        logger.debug(f"row_to_register: {row_to_register}")
         combinations = list(itertools.product(*self.applies_to_subset.values()))
 
         df_expanded = pd.DataFrame(combinations, columns=self.applies_to_subset.keys())
@@ -229,16 +229,17 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             raise NotImplementedError(
                 f"Connection type '{type(self.conn)}' is currently not implemented."
             )
-        print(control, " done!")
+        logger.info(f"Done inserting {control}")
 
     def register_all_controls(self):
         logger.info("Registering all controls.")
         self.find_control_methods()
         for control in self.controls:
             self.register_control(control)
+        logger.info("All controls registered.")
 
     def get_current_kontroller(self):
-        logger.debug("Getting current contents of table 'kontroller'")
+        logger.info("Getting current contents of table 'kontroller'")
         if isinstance(self.conn, EimerDBInstance):
             conn = ibis.polars.connect()
             kontroller = self.conn.query(
@@ -255,8 +256,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         kontroller = kontroller.filter(
             ibis_filter_with_dict(self.applies_to_subset)
         ).to_pandas()
-        logger.debug(f"Kontroller\n{kontroller}")
-        print(f"Kontroller\n{kontroller}")
+        logger.debug(f"Kontroller data to return:\n{kontroller}")
         return kontroller
 
     def execute_controls(self) -> None:
@@ -274,12 +274,12 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         df_all_results: list[pd.DataFrame] = []
         for method_name in self.controls:
             logger.debug(f"Running method: {method_name}")
-            print(f"Running method: {method_name}")
             if not callable(getattr(self, method_name)):
                 raise TypeError(
                     f"Attribute in class '{method_name}' is not callable. Either make it a method or change its name to not start with 'control_'."
                 )
-            df_all_results.append(self.run_control(method_name))
+            result = self.run_control(method_name)
+            df_all_results.append(result)
         df = pd.concat(df_all_results).reset_index(drop=True)
 
         if not isinstance(df, pd.DataFrame):
@@ -318,6 +318,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         return results
 
     def get_current_kontrollutslag(self):
+        logger.info("Getting current kontrollutslag.")
         if isinstance(self.conn, EimerDBInstance):
             conn = ibis.polars.connect()
             kontrollutslag = self.conn.query(
@@ -334,7 +335,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         kontrollutslag = kontrollutslag.filter(
             ibis_filter_with_dict(self.applies_to_subset)
         ).to_pandas()
-        logger.debug(f"Kontrollutslag\n{kontrollutslag}")
+        logger.debug(f"Existing kontrollutslag data:\n{kontrollutslag}")
         return kontrollutslag
 
     def insert_new_records(self, control_results):
@@ -379,6 +380,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         logger.debug("Finished inserting new rows.")
 
     def update_existing_records(self, control_results):
+        logger.debug("Starting process.")
         existing_kontrollutslag = self.get_current_kontrollutslag()
         if existing_kontrollutslag.empty:
             logger.debug("No existing rows found, ending here.")
@@ -392,6 +394,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         changed = merged[merged["utslag_x"] != merged["utslag_y"]][
             ["kontrollid", "ident", "refnr", "verdi_x", "utslag_x"]
         ].rename(columns={"utslag_x": "utslag", "verdi_x": "verdi"})
+        logger.info(f"Updating {changed.shape[0]} rows.")
         if changed.empty:
             logger.debug("No changed rows, ending here.")
             return None
@@ -405,7 +408,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             raise NotImplementedError(
                 f"Connection type '{type(self.conn)}' is currently not implemented."
             )
-        logger.info(f"Updating {changed.shape[0]} rows.")
+        logger.debug("Finished updating kontrollutslag.")
 
     def generate_update_query(self, df_updates: pd.DataFrame) -> str:
         """Generates a SQL UPDATE query for updating rows in 'kontrollutslag'.
@@ -438,26 +441,3 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         logger.debug(f"Update query:\n{update_query}")
 
         return update_query
-
-
-if __name__ == "__main__":
-    import eimerdb as db
-
-    conn = db.EimerDBInstance(
-        "ssb-dapla-felles-data-produkt-prod",
-        "produksjonstilskudd_altinn3",
-    )
-
-    res = conn.query("SELECT * FROM kontroller")
-
-    res = conn.query("SELECT * FROM kontrollutslag")
-
-    test = ControlFrameworkBase(
-        time_units=["aar"],
-        applies_to_subset={"aar": ["2020"], "skjema": ["RA-7357"]},
-        conn=conn,
-    )
-
-    test.register_all_controls()
-
-    test.execute_controls()

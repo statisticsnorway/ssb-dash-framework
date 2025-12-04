@@ -279,7 +279,7 @@ class AltinnControlView(ABC):
                     kontroller.kontrollid,
                     kontroller.type,
                     kontroller.beskrivelse,
-                    kontroller.kontrollvars,
+                    kontroller.sorting_var,
                     kontroller.sorting_order,
                     utslag.ant_utslag,
                     uediterte.uediterte,
@@ -329,12 +329,12 @@ class AltinnControlView(ABC):
                     f"Connection type '{type(self.conn)}' is currently not implemented."
                 )
             kontrollid = current_row[0]["kontrollid"]
-            kontrollvars = current_row[0]["kontrollvars"]
+            sorting_var = current_row[0]["sorting_var"]
             skjema = current_row[0]["skjema"]
             sorting_order = current_row[0]["sorting_order"]
 
             logger.debug(
-                f"Variables from current_row:\nkontrollid: {kontrollid}\nkontrollvars: {kontrollvars}\nskjema: {skjema}\nsorting_order: {sorting_order}"
+                f"Variables from current_row:\nkontrollid: {kontrollid}\nsorting_var: {sorting_var}\nskjema: {skjema}\nsorting_order: {sorting_order}"
             )
             if sorting_order is None:
                 sorting_order = "DESC"
