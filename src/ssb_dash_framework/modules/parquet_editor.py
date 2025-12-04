@@ -516,11 +516,11 @@ def get_log_path(parquet_path: str | Path) -> Path:
 
     The function searches for known data-state subfolders in the parquet path
     (/inndata/, /klargjorte-data/, /statistikk/, /utdata/) and rewrites the path
-    to the corresponding log folder under /logg/prosessdata/<state>/.
+    to the corresponding temp folder under /<state>/temp/parqueteditor/.
     If none match, the log file is assumed to be in the same directory as the parquet file.
     """
     data_states = ["inndata", "klargjorte-data", "statistikk", "utdata"]
-    log_subpath = "logg/prosessdata"
+    log_subpath = "temp/parqueteditor"
 
     p = Path(parquet_path)
     posix = p.as_posix()
@@ -528,7 +528,7 @@ def get_log_path(parquet_path: str | Path) -> Path:
     for state in data_states:
         token = f"/{state}/"
         if token in posix:
-            replaced = posix.replace(token, f"/{log_subpath}/{state}/")
+            replaced = posix.replace(token, f"/{state}/{log_subpath}/")
             return Path(replaced).with_suffix(".jsonl")
 
     print(f"Expecting subfolder {data_states}. Log file path set to parquet path.")
