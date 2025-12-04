@@ -114,7 +114,11 @@ def register_control(
 
 
 class ControlFrameworkBase:  # TODO: Add some common control methods here for easier reuse.
-    """Base class for running control checks."""
+    """Base class for running control checks.
+    
+    Example:
+        
+    """
 
     _required_kontroller_columns = [
         "kontrollid",
@@ -312,6 +316,20 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 raise ValueError(
                     f"Missing required column '{column}' for result from '{control}'."
                 )
+        if control not in self.controls:
+            raise ValueError(
+                f"Error when running {control}. Could not find {results['kontrollid'].unique()} among registered controls. Valid options retrieved from the 'kontrollutslag' table: {self.controls}"
+            )
+        for key, value in self.applies_to_subset.items():
+            if len(results[key].unique()) != 1:
+                raise ValueError(
+                    f"Results from control {control} has too many unique values for '{key}'. Expected '{value[0]}'. Received: '{results[key].unique()}'"
+                )
+            if not value[0] == results[key].unique()[0]:
+                raise ValueError(
+                    f"Error when running {control}. Value for column {key} '{value[0]}' does not match period control is run for: {self.applies_to_subset}"
+                )
+
         logger.info(
             f"Finished running {control}. Results:\n{results['utslag'].value_counts()}"
         )

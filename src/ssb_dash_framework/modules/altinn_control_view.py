@@ -243,6 +243,8 @@ class AltinnControlView(ABC):
                 raise NotImplementedError(
                     f"Connection type '{type(self.conn)}' is currently not implemented."
                 )
+            # TODO make sure conn is defined for mypy.
+
             skjemamottak = conn.table("skjemamottak")
             kontroller = conn.table("kontroller")
             kontrollutslag = conn.table("kontrollutslag")
@@ -285,7 +287,7 @@ class AltinnControlView(ABC):
                     uediterte.uediterte,
                 )
             )
-            result = result.to_pandas()
+            result = result.to_pandas().sort_values(by="kontrollid", ascending=True)
             columns = [
                 {
                     "headerName": col,
