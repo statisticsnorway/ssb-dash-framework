@@ -86,6 +86,9 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         self.log_filepath = get_log_path(data_source)
         self.label = path.stem
 
+        # Create parent directories for log file if they don't exist
+        self.log_filepath.parent.mkdir(parents=True, exist_ok=True)
+
         self.module_layout = self._create_layout()
         self._is_valid()
         module_validator(self)
@@ -663,7 +666,7 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     return data
 
 
-def export_from_parqueteditor(data_source, data_target):
+def export_from_parqueteditor(data_source: str, data_target: str) -> None:
     """Export edited data from parquet editor.
 
     Reads the jsonl log, updates data_target from placeholder to the supplied value,
@@ -673,6 +676,9 @@ def export_from_parqueteditor(data_source, data_target):
     Args:
         data_source: Path to the source parquet file
         data_target: Path where the exported file will be written
+
+    Raises:
+        FileNotFoundError: if no log file is found.
     """
     log_path = get_log_path(data_source)
 
@@ -688,6 +694,13 @@ def export_from_parqueteditor(data_source, data_target):
         with open(export_log_path, "w", encoding="utf-8") as f:
             for entry in processlog:
                 f.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
+    else:
+        raise FileNotFoundError(
+            f"Process log not found at '{log_path}'. No edits have been recorded for '{data_source}'."
+        )
 
     updated_data = apply_edits(data_source)
     updated_data.to_parquet(data_target)
+    print(
+        f"Export completed! File now exists at '{data_target}' with processlog at '{export_log_path}'"
+    )
