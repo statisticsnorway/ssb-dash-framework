@@ -72,7 +72,7 @@ def register_control(
         sorteringsvariabel (str | None): Variable to sort the values on.
         sortering (str | None): Controls if the sorting is ascending (ASC) or descending (DESC). Defaults to DESC
         kwargs (Any): These will be added to the _control_meta dict attached to the method as additional key and value pairs.
-    
+
     Example:
         @register_control(
             kontrollid="001_error",
