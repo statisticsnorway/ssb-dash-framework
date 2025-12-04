@@ -174,16 +174,16 @@ class AltinnEditorControl:
                     .filter(_.utslag == True)
                     .filter(ibis_filter_with_dict(filter_dict))
                     .join(k, "kontrollid", how="left")
-                    .select("kontrollid", "skildring", "utslag")
+                    .select("kontrollid", "beskrivelse", "utslag")
                     .to_pandas()
                 )
 
                 # partition_args = dict(zip(self.time_units, args, strict=False))
                 # df = self.conn.query(
-                #     f"""SELECT t1.kontrollid, subquery.skildring, t1.utslag
+                #     f"""SELECT t1.kontrollid, subquery.beskrivelse, t1.utslag
                 #     FROM kontrollutslag AS t1
                 #     JOIN (
-                #         SELECT t2.kontrollid, t2.skildring
+                #         SELECT t2.kontrollid, t2.beskrivelse
                 #         FROM kontroller AS t2
                 #     ) AS subquery ON t1.kontrollid = subquery.kontrollid
                 #     WHERE refnr = '{refnr}'

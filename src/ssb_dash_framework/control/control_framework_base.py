@@ -1,135 +1,319 @@
+import itertools
 import logging
+import warnings
+from typing import Any
 
+import ibis
 import pandas as pd
+from eimerdb import EimerDBInstance
+from ibis import _
+
+# from .utils.core_query_functions import conn_is_ibis, ibis_filter_with_dict
+
 
 logger = logging.getLogger(__name__)
+
+
+def conn_is_ibis(conn: Any) -> bool:
+    """Function to check if a supplied object is an Ibis connection.
+
+    Used to select which 'path' to take for preparing data in modules.
+
+    Args:
+        conn (Any): Object to check.
+
+    Returns:
+        A bool that is True if the supplied object is an Ibis connection.
+    """
+    if conn.__class__.__name__ == "Backend":
+        logger.debug("Assuming 'self.conn' is Ibis connection.")
+        return True
+    else:
+        return False
+
+
+def create_filter_dict(variables: list[str], values: list[Any] | tuple[Any]):
+    """Creates a filter dict for use in ibis_filter_with_dict."""
+    return dict(zip(variables, values, strict=False))
+
+
+def ibis_filter_with_dict(periods_dict):
+    """Example:
+    filter_dict = {"year": "2025", "quarter": ["3", "4"]}
+    t.filter(ibis_filter_with_dict(filter_dict))
+    """
+    filters = []
+    for key, value in periods_dict.items():
+        col = getattr(_, key)
+        if isinstance(value, list):
+            expr = col.isin(value)
+        else:
+            expr = col == value
+        filters.append(expr)
+    return filters
+
+
+def register_control(
+    kontrollid: str,
+    kontrolltype: str,
+    beskrivelse: str,
+    kontrollerte_variabler: list[str],
+    sorteringsvariabel: str | None = None,
+    sortering: str | None = None,
+    **kwargs: Any,
+):
+    """Decorator used to attach required metadata to control methods.
+
+    Args:
+        kontrollid (str): The id of the control, preferably a code or shortened name. Must be unique. Note that in the control module controls are sorted alphabetically based on kontrollid, meaning you can add numbers as prefix to control the sorting order in the app.
+        kontrolltype (str): The type of control. Must be 'H' (Hard control), 'S' (Soft control) or 'I' (Informative)
+        beskrivelse (str): A description of the control.
+        kontrollerte_variabler (list[str]): A list of variables that are covered / relevant to the control.
+        sorteringsvariabel (str | None): Variable to sort the values on.
+        sortering (str | None): Controls if the sorting is ascending (ASC) or descending (DESC). Defaults to DESC
+        kwargs (Any): These will be added to the _control_meta dict attached to the method as additional key and value pairs.
+
+    Example:
+        @register_control(
+            kontrollid="001_error",
+            kontrolltype="H",
+            beskrivelse="Finds erroronous data.",
+            kontrollerte_variabler=["revenue"],
+            sorteringsvariabel="revenue",
+            sortering="ASC",
+        )
+        def control_an_important_check(self):
+            ...
+
+    Notes:
+        Some fields are required for future use with statlog-model:
+        - kontrollid
+        - kontrolltype
+        - beskrivelse
+        - kontrollerte_variabler
+    """
+    if not isinstance(kontrollerte_variabler, list):
+        raise TypeError(
+            f"'kontrollerte_variabler' must be list of strings. Received type {type(kontrollerte_variabler)}"
+        )
+    if kontrolltype not in ["H", "S", "I"]:
+        raise ValueError(
+            "'kontrolltype' must be one of 'H', 'S' or 'I'.\nH - Hard control\nS - Soft control\nI - Informative"
+        )
+    if sorteringsvariabel is None:
+        sorteringsvariabel = ""  # TODO Maybe must be something else.
+    if sortering is None:
+        sortering = "DESC"
+    elif sortering not in ["ASC", "DESC"]:
+        raise ValueError(
+            f"'sortering' must be one of 'ASC' or 'DESC'. Received '{sortering}."
+        )
+
+    required_keys = {
+        "kontrollid",
+        "type",
+        "beskrivelse",
+        "kontrollvars",
+    }
+    meta_dict = {
+        "kontrollid": kontrollid,
+        "type": kontrolltype,
+        "beskrivelse": beskrivelse,
+        "kontrollvars": kontrollerte_variabler,
+        "sorting_var": sorteringsvariabel,
+        "sorting_order": sortering,
+    }
+    if kwargs:
+        meta_dict = meta_dict | kwargs
+    for required in required_keys:
+        if required not in meta_dict.keys():
+            raise ValueError(f"This definition is missing required field '{required}'.")
+
+    def wrapper(func):
+        func._control_meta = meta_dict
+        return func
+
+    return wrapper
 
 
 class ControlFrameworkBase:  # TODO: Add some common control methods here for easier reuse.
     """Base class for running control checks.
 
-    Designed to work on partitioned data following the recommended altinn3 data structure. Manages inserts and updates
-    to the 'kontrollutslag' table via a connection interface.
+    Example:
 
-    To use this class you need to use this setup:
-    class MyControls(ControlFrameworkBase):
-        def __init__(self, partitions: list[int | str], partitions_skjema: dict[str, int | str], conn: object) -> None:
-            super().__init__(partitions, partitions_skjema, conn)
-
-        def a_control_func(self):
-            # Your code here
-            return dataframe
-
-
-    The flow of updating the control table works like this:
-
-        1. First call 'execute_controls', this begins the entire process.
-        2. 'control_updates' is run, during which the code checks existing controls, runs all controls and creates a dataframe with all results.
-            'run_all_controls' is run, which in turn calls 'run_control' for each individual control.
-            The results from control_updates is used to check if there has been any changes since last executing controls. If there are no changes, the process stops here.
-        3. Based on the results from 'control_updates' it generates an update query where each change in the results, where the result of a control has changed for an observation, is updated in the 'kontrollutslag' table.
-        4. The update query is run, and the process is complete.
     """
+
+    _required_kontroller_columns = [
+        "kontrollid",
+        "kontrolltype",
+        "beskrivelse",
+    ]
+
+    _required_kontrollutslag_columns = [
+        "kontrollid",
+        "ident",
+        "refnr",
+        "utslag",
+    ]
 
     def __init__(
         self,
-        partitions: list[int | str],
-        partitions_skjema: dict[str, int | str],
+        time_units: list[str],
+        applies_to_subset: dict[str, Any],
         conn: object,
+        partitions: list[int | str] | None = None,  # Deprecated name
+        partitions_skjema: dict[str, int | str] | None = None,  # Deprecated name
     ) -> None:
         """Initialize the control framework.
 
         Args:
             partitions: Partition to execute controls on.
             partitions_skjema: Partition specification, including skjema.
-            conn: Database connection object with query and insert methods.
+            conn: Database connection object.
 
         Raises:
             AttributeError: If conn lacks 'query' or 'insert' methods.
             ValueError: if no controls are found for chosen partition.
         """
-        if not hasattr(conn, "query"):
-            raise AttributeError("The 'conn' object must have a 'query' method.")
-        if not hasattr(conn, "insert"):
-            raise AttributeError("The 'conn' object must have a 'insert' method.")
-        self.partitions = partitions
-        self.partitions_skjema = partitions_skjema
+        if partitions is not None or partitions_skjema is not None:
+            warnings.warn(
+                "The 'partitions' and 'partitions_skjema' parameters are deprecated. "
+                "Use 'time_units' and 'valid_for' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            if time_units is None:
+                time_units = partitions
+            if applies_to_subset is None:
+                # Needs transformation here
+                applies_to_subset = partitions_skjema
+        self.time_units = time_units
+        self.applies_to_subset = applies_to_subset
+        for key, value in self.applies_to_subset.items():
+            if not isinstance(value, list):
+                self.applies_to_subset[key] = [value]
         self.conn = conn
-        self.controls = self.conn.query(
-            "SELECT kontrollid FROM kontroller",
-            partition_select=partitions_skjema,
-        )["kontrollid"].tolist()
-        logger.debug(f"Controls found: {self.controls}")
-        if not self.controls:
-            raise ValueError(
-                f"No controls found for partition: {self.partitions_skjema}"
-            )
 
-    def execute_controls(self) -> int:
-        """Executes control checks and updates existing rows in 'kontrollutslag' if needed.
+        self._required_kontroller_columns = [
+            *self.time_units,
+            *ControlFrameworkBase._required_kontroller_columns,
+        ]
+        self._required_kontrollutslag_columns = [
+            *self.time_units,
+            *ControlFrameworkBase._required_kontrollutslag_columns,
+        ]
 
-        Returns:
-            int: Number of rows updated.
-        """
-        df_updates = self.control_updates()
-        if len(df_updates) > 0:
-            logger.info(f"{len(df_updates)} rader oppdateres...")
-            self.conn.query(
-                self.generate_update_query(df_updates), self.partitions_skjema
-            )
-            logger.info("Oppdatering fullført!")
-        else:
-            logger.info("Ingen rader å oppdatere")
-        return len(df_updates)
-
-    def control_updates(self) -> pd.DataFrame:
-        """Identifies rows in 'kontrollutslag' where the control output has changed.
-
-        Returns:
-            pd.DataFrame: DataFrame of rows that need to be updated.
-        """
-        df_allerede_kontrollert = self.conn.query(
-            "SELECT kontrollid, ident, refnr, utslag FROM kontrollutslag",
-            self.partitions_skjema,
-        )
-        df = self.run_all_controls()
-        total_merge = df.merge(
-            df_allerede_kontrollert,
-            on=["kontrollid", "ident", "refnr"],
-            how="outer",
-            indicator=True,
-        ).dropna()
-
-        df_endrede = total_merge[total_merge["utslag_x"] != total_merge["utslag_y"]][
-            ["kontrollid", "ident", "refnr", "verdi", "utslag_x"]
-        ].rename(columns={"utslag_x": "utslag"})
-
-        return df_endrede
-
-    def run_all_controls(self) -> pd.DataFrame:
-        """Runs control methods named like 'control_<kontrollid>' where <id> is in self.controls.
-
-        Returns:
-            pd.DataFrame: Combined DataFrame with all control results.
-
-        Raises:
-            TypeError: if 'df' variable to return is not pd.DataFrame.
-        """
-        df_all_results: list[pd.DataFrame] = []
+    def find_control_methods(self):
+        logger.debug("Looking for control methods.")
+        self.controls = []
         for method_name in dir(self):
-            if method_name[8:] in self.controls and method_name.startswith("control_"):
-                if not callable(getattr(self, method_name)):
-                    raise TypeError(
-                        f"Attribute in class '{method_name}' is not callable. Either make it a method or change its name to not start with 'control_'."
-                    )
-                df_all_results.append(self.run_control(method_name))
-            else:
-                logger.debug(f"{method_name} was not called as it failed the if check.")
+            if hasattr(getattr(self, method_name), "_control_meta"):
+                self.controls.append(method_name)
+        if len(self.controls) == 0:
+            raise ValueError(
+                "No control methods found. Remember to use the 'register_control' decorator function."
+            )
+        logger.info(f"Found controls: {self.controls}")
+
+    def register_control(self, control):
+        logger.info(f"Registering control: {control}")
+        registered_controls = self.get_current_kontroller()
+        control_meta = getattr(self, control)._control_meta
+        row_to_register = pd.DataFrame([control_meta]).drop(
+            columns=["kontrollvars"]
+        )  # TODO: Fix better Dropping kontrollvars as it is included in control_meta but only clutter in the database.
+        logger.debug(f"row_to_register: {row_to_register}")
+        combinations = list(itertools.product(*self.applies_to_subset.values()))
+
+        df_expanded = pd.DataFrame(combinations, columns=self.applies_to_subset.keys())
+        print(df_expanded)
+        rows_to_register = row_to_register.merge(df_expanded, how="cross")
+        print(rows_to_register)
+        print(registered_controls)
+        rows_to_register = rows_to_register.merge(
+            registered_controls,
+            how="outer",
+            on=[
+                *self.applies_to_subset.keys(),
+                *[k for k in control_meta.keys() if k != "kontrollvars"],
+            ],  # TODO: Fix better Dropping kontrollvars as it is included in control_meta but only clutter in the database.
+            indicator=True,
+        )
+        rows_to_register = rows_to_register[
+            rows_to_register["_merge"] == "left_only"
+        ].drop(columns=["_merge"])
+        if rows_to_register.empty:
+            logger.debug("No new control to register, ending here.")
+            return None
+        logger.debug(f"Rows to register:\n{rows_to_register}")
+        if isinstance(self.conn, EimerDBInstance):
+            self.conn.insert("kontroller", rows_to_register)
+        elif conn_is_ibis(self.conn):
+            conn = self.conn
+            k = conn.table("kontroller")
+            k.insert(rows_to_register)
+        else:
+            raise NotImplementedError(
+                f"Connection type '{type(self.conn)}' is currently not implemented."
+            )
+        logger.info(f"Done inserting {control}")
+
+    def register_all_controls(self):
+        logger.info("Registering all controls.")
+        self.find_control_methods()
+        for control in self.controls:
+            self.register_control(control)
+        logger.info("All controls registered.")
+
+    def get_current_kontroller(self):
+        logger.info("Getting current contents of table 'kontroller'")
+        if isinstance(self.conn, EimerDBInstance):
+            conn = ibis.polars.connect()
+            kontroller = self.conn.query(
+                "SELECT * FROM kontroller"
+            )  # maybe add something like this?partition_select=self.applies_to_subset
+            conn.create_table("kontroller", kontroller)
+        elif conn_is_ibis(self.conn):
+            conn = self.conn
+        else:
+            raise NotImplementedError(
+                f"Connection type '{type(self.conn)}' is currently not implemented."
+            )
+        kontroller = conn.table("kontroller")
+        kontroller = kontroller.filter(
+            ibis_filter_with_dict(self.applies_to_subset)
+        ).to_pandas()
+        logger.debug(f"Kontroller data to return:\n{kontroller}")
+        return kontroller
+
+    def execute_controls(self) -> None:
+        logger.info("Executing all controls")
+        control_results = self.run_all_controls()
+        logger.info("Updating existing results.")
+        self.update_existing_records(control_results)
+        logger.info("Inserting new results.")
+        self.insert_new_records(control_results)
+        logger.info("Finished executing controls.")
+
+    def run_all_controls(self):
+        self.find_control_methods()
+
+        df_all_results: list[pd.DataFrame] = []
+        for method_name in self.controls:
+            logger.debug(f"Running method: {method_name}")
+            if not callable(getattr(self, method_name)):
+                raise TypeError(
+                    f"Attribute in class '{method_name}' is not callable. Either make it a method or change its name to not start with 'control_'."
+                )
+            result = self.run_control(method_name)
+            df_all_results.append(result)
         df = pd.concat(df_all_results).reset_index(drop=True)
+
         if not isinstance(df, pd.DataFrame):
             raise TypeError(
                 f"Control results is not a pandas dataframe, is type: {type(df)}"
             )
+        logger.debug(f"Amount of control results: {df.shape[0]}")
         return df
 
     def run_control(self, control: str) -> pd.DataFrame:
@@ -144,13 +328,128 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         Raises:
             TypeError: If control method does not return pd.dataframe.
         """
+        logger.info(f"Running control: {control}")
         results = getattr(self, control)()
         if not isinstance(results, pd.DataFrame):
             raise TypeError(
                 f"Result from control method is not a pd.dataframe. Received: '{type(results)}'"
             )
-        # Check if any required columns are missing
+        for column in self._required_kontrollutslag_columns:
+            if column not in results.columns:
+                raise ValueError(
+                    f"Missing required column '{column}' for result from '{control}'."
+                )
+        if control not in self.controls:
+            raise ValueError(
+                f"Error when running {control}. Could not find {results['kontrollid'].unique()} among registered controls. Valid options retrieved from the 'kontrollutslag' table: {self.controls}"
+            )
+        for key, value in self.applies_to_subset.items():
+            if len(results[key].unique()) != 1:
+                raise ValueError(
+                    f"Results from control {control} has too many unique values for '{key}'. Expected '{value[0]}'. Received: '{results[key].unique()}'"
+                )
+            if not value[0] == results[key].unique()[0]:
+                raise ValueError(
+                    f"Error when running {control}. Value for column {key} '{value[0]}' does not match period control is run for: {self.applies_to_subset}"
+                )
+        if results.duplicated(subset=[*self.time_units, "ident", "refnr"])
+        logger.info(
+            f"Finished running {control}. Results:\n{results['utslag'].value_counts()}"
+        )
         return results
+
+    def get_current_kontrollutslag(self):
+        logger.info("Getting current kontrollutslag.")
+        if isinstance(self.conn, EimerDBInstance):
+            conn = ibis.polars.connect()
+            kontrollutslag = self.conn.query(
+                "SELECT * FROM kontrollutslag"
+            )  # maybe add something like this?partition_select=self.applies_to_subset
+            conn.create_table("kontrollutslag", kontrollutslag)
+        elif conn_is_ibis(self.conn):
+            conn = self.conn
+        else:
+            raise NotImplementedError(
+                f"Connection type '{type(self.conn)}' is currently not implemented."
+            )
+        kontrollutslag = conn.table("kontrollutslag")
+        kontrollutslag = kontrollutslag.filter(
+            ibis_filter_with_dict(self.applies_to_subset)
+        ).to_pandas()
+        logger.debug(f"Existing kontrollutslag data:\n{kontrollutslag}")
+        return kontrollutslag
+
+    def insert_new_records(self, control_results):
+        existing_kontrollutslag = self.get_current_kontrollutslag()
+        if existing_kontrollutslag.empty:
+            logger.debug("No existing rows found.")
+        merged = control_results.merge(
+            existing_kontrollutslag,
+            on=[*self.applies_to_subset.keys(), "kontrollid", "ident", "refnr"],
+            how="outer",
+            indicator=True,
+        )
+        merged = (
+            merged[merged["_merge"] == "left_only"][
+                [
+                    *self.applies_to_subset.keys(),
+                    "kontrollid",
+                    "ident",
+                    "refnr",
+                    "verdi_x",
+                    "utslag_x",
+                ]
+            ]
+            .rename(columns={"utslag_x": "utslag", "verdi_x": "verdi"})
+            .dropna()
+        )
+        if merged.empty:
+            logger.debug("No new rows found, ending here.")
+            return None
+        # Now to insert new rows into the table.
+        logger.debug(f"Inserting {merged.shape[0]} new rows.")
+        if isinstance(self.conn, EimerDBInstance):
+            self.conn.insert("kontrollutslag", merged)
+        elif conn_is_ibis(self.conn):
+            conn = self.conn
+            k = conn.table("kontrollutslag")
+            k.insert(merged)
+        else:
+            raise NotImplementedError(
+                f"Connection type '{type(self.conn)}' is currently not implemented."
+            )
+        logger.debug("Finished inserting new rows.")
+
+    def update_existing_records(self, control_results):
+        logger.debug("Starting process.")
+        existing_kontrollutslag = self.get_current_kontrollutslag()
+        if existing_kontrollutslag.empty:
+            logger.debug("No existing rows found, ending here.")
+            return None
+        merged = control_results.merge(
+            existing_kontrollutslag,
+            on=["kontrollid", "ident", "refnr"],
+            how="outer",
+            indicator=True,
+        ).dropna()
+        changed = merged[merged["utslag_x"] != merged["utslag_y"]][
+            ["kontrollid", "ident", "refnr", "verdi_x", "utslag_x"]
+        ].rename(columns={"utslag_x": "utslag", "verdi_x": "verdi"})
+        logger.info(f"Updating {changed.shape[0]} rows.")
+        if changed.empty:
+            logger.debug("No changed rows, ending here.")
+            return None
+        update_query = self.generate_update_query(changed)
+        if isinstance(self.conn, EimerDBInstance):
+            self.conn.query(update_query)
+        elif conn_is_ibis(self.conn):
+            conn = self.conn
+            conn.raw_sql(update_query)
+        else:
+            raise NotImplementedError(
+                f"Connection type '{type(self.conn)}' is currently not implemented."
+            )
+        logger.debug("Finished updating kontrollutslag.")
 
     def generate_update_query(self, df_updates: pd.DataFrame) -> str:
         """Generates a SQL UPDATE query for updating rows in 'kontrollutslag'.
@@ -180,71 +479,6 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             )
             + ";"
         )
+        logger.debug(f"Update query:\n{update_query}")
 
         return update_query
-
-    def control_new_rows(self) -> pd.DataFrame:
-        """Identifies new rows that are not already present in 'kontrollutslag'.
-
-        Returns:
-            pd.DataFrame: DataFrame of new rows to insert.
-        """
-        try:
-            query = f"SELECT {', '.join(self.partitions_skjema.keys())}, kontrollid, ident, refnr, utslag FROM kontrollutslag"
-            logger.debug(
-                f"trying to read existing kontrollutslag using this query: {query}."
-            )
-            df_allerede_kontrollert = self.conn.query(
-                query,
-                self.partitions_skjema,
-            )
-        except Exception as e:  # TODO better exception handling.
-            logger.debug(f"Exception happened:\n{e}")
-            df_allerede_kontrollert = pd.DataFrame(
-                columns=[*self.partitions_skjema.keys(), "kontrollid", "ident", "refnr"]
-            )
-        control_results = self.run_all_controls()
-
-        # Change below condition to 'if df_allerede_kontrollert.empty'?
-        # The below part of logic should only run if there are already rows in the 'kontrollutslag' table.
-        if len(df_allerede_kontrollert) != 0:  # TODO: Separate into its own method?
-            total_merge = control_results.merge(
-                df_allerede_kontrollert,
-                on=[*self.partitions_skjema.keys(), "kontrollid", "ident", "refnr"],
-                how="outer",
-                indicator=True,
-            )
-
-            control_results = total_merge[total_merge["_merge"] == "left_only"][
-                [
-                    *self.partitions_skjema.keys(),
-                    "kontrollid",
-                    "ident",
-                    "refnr",
-                    "verdi",
-                    "utslag_x",
-                ]
-            ].rename(columns={"utslag_x": "utslag"})
-
-        return control_results
-
-    def insert_new_rows(self) -> int:
-        """Inserts any new control results that are not already in 'kontrollutslag'.
-
-        Returns:
-            int: Number of rows inserted.
-
-        Raises:
-            AttributeError: If 'conn' does not have 'insert' method.
-        """
-        if not hasattr(self.conn, "insert"):
-            raise AttributeError("'conn' object must have 'insert' method.")
-        df_lastes = self.control_new_rows()
-        logger.debug(f"Data to insert:\n{df_lastes}")
-        if len(df_lastes) > 0:
-            logger.info(f"{len(df_lastes)} nye rader lastes inn...")
-            self.conn.insert("kontrollutslag", df_lastes)
-            logger.info("Innlasting fullført!")
-        else:
-            logger.info("Ingen nye rader å inserte")
-        return len(df_lastes)
