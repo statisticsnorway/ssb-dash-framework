@@ -18,7 +18,7 @@ window.dashAgGridFunctions.MacroModule = {
         const red = [252, 195, 174];     // normal red
         const blue = [180, 213, 250];    // normal blue
         const white = [255, 255, 255];   // white background
-        
+
         // darker shades for beyond 30% threshold
         const darkRed = [252, 142, 104];
         const darkBlue = [126, 165, 252];
@@ -126,6 +126,23 @@ window.dashAgGridFunctions.MacroModule = {
         }
 
         return {};
+    },
+
+     // === Function displayNaringRowMismatch (Grey out row if first 2 digits of naring_b and naring_f differ) ===
+    displayNaringRowMismatch(props) {
+        if (!props.data) return false;
+
+        const naringB = props.data.naring_b;
+        const naringF = props.data.naring_f;
+
+        // if either value is missing, no styling
+        if (!naringB || !naringF) return false;
+
+        // compare first 2 digits
+        const prefixB = String(naringB).substring(0, 2);
+        const prefixF = String(naringF).substring(0, 2);
+
+        return prefixB !== prefixF;
     }
 
 };

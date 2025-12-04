@@ -327,6 +327,10 @@ MacroModule
     color: rgb(0, 0, 0) !important;
 }
 
+.macromodule-naring-mismatch {
+    opacity: 0.5 !important;
+}
+
 /*
 canvas
 */
