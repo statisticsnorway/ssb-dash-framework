@@ -62,13 +62,35 @@ def register_control(
     sortering: str | None = None,
     **kwargs: Any,
 ):
-    """Decorator used to attach required metadata to control_<id> methods.
+    """Decorator used to attach required metadata to control methods.
 
-    Some fields are for future use with statlog-model:
-    - kontrollid
-    - type
-    - beskrivelse
-    - kontrollerte_variabler
+    Args:
+        kontrollid (str): The id of the control, preferably a code or shortened name. Must be unique. Note that in the control module controls are sorted alphabetically based on kontrollid, meaning you can add numbers as prefix to control the sorting order in the app.
+        kontrolltype (str): The type of control. Must be 'H' (Hard control), 'S' (Soft control) or 'I' (Informative)
+        beskrivelse (str): A description of the control.
+        kontrollerte_variabler (list[str]): A list of variables that are covered / relevant to the control.
+        sorteringsvariabel (str | None): Variable to sort the values on.
+        sortering (str | None): Controls if the sorting is ascending (ASC) or descending (DESC). Defaults to DESC
+        kwargs (Any): These will be added to the _control_meta dict attached to the method as additional key and value pairs.
+    
+    Example:
+        @register_control(
+            kontrollid="001_error",
+            kontrolltype="H",
+            beskrivelse="Finds erroronous data.",
+            kontrollerte_variabler=["revenue"],
+            sorteringsvariabel="revenue",
+            sortering="ASC",
+        )
+        def control_an_important_check(self):
+            ...
+
+    Notes:
+        Some fields are required for future use with statlog-model:
+        - kontrollid
+        - kontrolltype
+        - beskrivelse
+        - kontrollerte_variabler
     """
     if not isinstance(kontrollerte_variabler, list):
         raise TypeError(
@@ -81,7 +103,7 @@ def register_control(
     if sorteringsvariabel is None:
         sorteringsvariabel = ""  # TODO Maybe must be something else.
     if sortering is None:
-        sortering = "ASC"
+        sortering = "DESC"
     elif sortering not in ["ASC", "DESC"]:
         raise ValueError(
             f"'sortering' must be one of 'ASC' or 'DESC'. Received '{sortering}."
@@ -101,7 +123,8 @@ def register_control(
         "sorting_var": sorteringsvariabel,
         "sorting_order": sortering,
     }
-
+    if kwargs:
+        meta_dict = meta_dict | kwargs
     for required in required_keys:
         if required not in meta_dict.keys():
             raise ValueError(f"This definition is missing required field '{required}'.")
@@ -115,9 +138,9 @@ def register_control(
 
 class ControlFrameworkBase:  # TODO: Add some common control methods here for easier reuse.
     """Base class for running control checks.
-    
+
     Example:
-        
+
     """
 
     _required_kontroller_columns = [
