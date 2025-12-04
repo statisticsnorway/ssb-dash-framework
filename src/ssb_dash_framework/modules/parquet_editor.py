@@ -37,7 +37,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         statistics_name: The name of the statistic being edited.
         id_vars: A list of columns that together form a unique identifier for a single row in your data.
         data_source: The path to the parquet file you want to edit.
-        data_target: The path your completed file will be created at.
         output: Columns in your dataframe that should be clickable to output to the variable selector panel.
         output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
 
@@ -47,7 +46,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             statistics_name="Demo",
             id_vars=id_variabler,
             data_source="/buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet",
-            data_target="/buckets/produkt/editering-eksempel/klargjorte-data/test_p2024_v1.parquet",
         )
 
     Notes:
@@ -61,7 +59,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         statistics_name: str,
         id_vars: list[str],
         data_source: str,
-        data_target: str,  # Optional?
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
     ) -> None:
@@ -85,7 +82,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             selected_inputs=id_vars, selected_states=[]
         )
         self.file_path = data_source
-        self.data_target = data_target
         path = Path(data_source)
         self.log_filepath = get_log_path(data_source)
         self.label = path.stem
@@ -426,7 +422,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         changelog_entry = {
             "statistics_name": self.statistics_name,
             "data_source": [self.file_path],
-            "data_target": self.data_target,
+            "data_target": "data_target_placeholder",
             "data_period": "",
             "variable_name": changed_variable,
             "change_event": "M",
