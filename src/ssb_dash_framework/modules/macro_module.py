@@ -3,6 +3,7 @@ from abc import ABC
 from collections.abc import Hashable
 from typing import Any
 from typing import ClassVar
+from typing import Literal
 
 import ibis
 import pandas as pd
@@ -50,8 +51,8 @@ HEATMAP_VARIABLES: dict[str, str] = {
     "bruttoinvestering_oslo": "brut_inv_oslo",
     "bruttoinvestering_kvgr": "brut_inv_kvgr",
 }
-# skriv om til å bruke dict som i heatmap_variables og rename til detail_grid_id_cols
-ID_COLS = [
+# skriv om til å bruke dict som i heatmap_variables og rename til detail_grid_DETAIL_GRID_ID_COLS
+DETAIL_GRID_ID_COLS = [
     "navn",
     "orgnr_f",
     "orgnr_b",
@@ -102,13 +103,11 @@ class MacroModule_ParquetReader:
         nace_siffer_level: int,
         detail_grid: bool = False,
     ) -> Table:
-        """Used to read parquet files, picking between foretak or bedrift level. Then filtering on chosen naring,
-        and setting "aar" to a str column.
+        """Used to read parquet files, picking between foretak or bedrift level. Then filtering on chosen naring, and setting "aar" to a str column.
 
-        Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on
-        the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
+        Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
         """
-        # if aar == 2024: # pga nytt nedtrekk i Dapla med eigen filsti
+        # if aar == 2024:  # pga nytt nedtrekk i Dapla med eigen filsti
         #     t: Table = self.conn.read_parquet(
         #         f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
         #     )
@@ -120,7 +119,7 @@ class MacroModule_ParquetReader:
             f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
         )
 
-        if detail_grid == True:
+        if detail_grid:
             t = t.filter(t.naring.substr(0, length=nace_siffer_level).isin(nace_list))
         else:
             # for å loade fleire næringar ved innlasting
@@ -163,6 +162,7 @@ class MacroModule(ABC):
             conn (object): A connection object to a database (kept for compatibility, but DuckDB is used internally).
                 Currently designed with parquet files in GC in mind.
             base_path (str): Base path to parquet files (e.g., "/buckets/produkt/naringer/klargjorte-data/statistikkfiler")
+            The rest of the file path is defined in the function _load_year.
         """
         # if not isinstance(base_path, str):
         #     raise TypeError(
@@ -212,16 +212,6 @@ class MacroModule(ABC):
                     f"MacroModule requires the variable selector option '{var}' to be set."
                 ) from e
 
-    def _get_nace_options(self, base_path: str, aar: str) -> list[str]:
-        """Get distinct NACE codes for a given year."""
-        t: Table = self.parquet_reader.conn.read_parquet(
-            f"{base_path}/p{aar}/statistikkfil_bedrifter_nr.parquet"
-        )
-        naring_filter = t.naring.substr(0, length=2).name("nace2")
-        t = t.select(naring_filter).distinct()
-        df: DataFrame = t.to_pandas()
-        return sorted(df["nace2"].astype(str))
-
     def _create_layout(self) -> html.Div:
         """Generates the layout for the MacroModule."""
         layout = html.Div(
@@ -260,7 +250,7 @@ class MacroModule(ABC):
                                         {"label": k, "value": k}
                                         for k in MACRO_FILTER_OPTIONS.keys()
                                     ],
-                                    value="fylke",
+                                    value="sammensatte variabler",
                                     id="macromodule-filter-velger",
                                 ),
                                 html.Label(
@@ -407,6 +397,16 @@ class MacroModule(ABC):
         logger.debug(f"Returning: {partition_dict}")
         return partition_dict
 
+    def _get_nace_options(self, base_path: str, aar: str) -> list[str]:
+        """Get distinct NACE codes for a given year."""
+        t: Table = self.parquet_reader.conn.read_parquet(
+            f"{base_path}/p{aar}/statistikkfil_bedrifter_nr.parquet"
+        )
+        naring_filter = t.naring.substr(0, length=2).name("nace2")
+        t = t.select(naring_filter).distinct()
+        df: DataFrame = t.to_pandas()
+        return sorted(df["nace2"].astype(str))
+
     def module_callbacks(self) -> None:
         """Defines the callbacks for the MacroModule module."""
         # dynamic_states = self.variableselector.get_all_inputs()
@@ -429,6 +429,7 @@ class MacroModule(ABC):
         @callback(
             Output("macromodule-heatmap-grid", "rowData"),
             Output("macromodule-heatmap-grid", "columnDefs"),
+            Output("macromodule-heatmap-grid", "pinnedTopRowData"),
             Input("var-aar", "value"),
             Input("macromodule-foretak-or-bedrift", "value"),
             Input("macromodule-macro-variable", "value"),
@@ -446,17 +447,15 @@ class MacroModule(ABC):
             nace_siffer_level: int,
             nace_list: list[str],
             tallvisning_valg: str,
-        ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-            """Creates a colour-coordinated matrix heatmap of aggregated values
-            based on their %-change from the previous year
-            """
+        ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+            """Creates a colour-coordinated matrix heatmap of aggregated values based on their %-change from the previous year."""
             if (
                 not nace_list
                 or not variabel
                 or not macro_level
                 or not variabelvelger_aar
             ):
-                return [], []
+                return [], [], []
 
             if not isinstance(variabelvelger_aar, str):
                 raise TypeError(
@@ -482,8 +481,29 @@ class MacroModule(ABC):
                 detail_grid=False,
             )  # t-1, previous aar
 
+            # count units
+            unit_type: Literal["orgnr_foretak", "orgnr_bedrift"] = (
+                "orgnr_foretak" if foretak_or_bedrift == "foretak" else "orgnr_bedrift"
+            )
+            count_distinct: Table = t.filter(t.aar == f"{aar}").select(
+                unit_type, "selected_nace"
+            )
+            distinct_counts = (
+                count_distinct.group_by("selected_nace")
+                .aggregate(unique_units=count_distinct[unit_type].nunique())
+                .order_by("selected_nace")
+            )
+            distinct_df = distinct_counts.execute()
+
+            # safe column names
+            count_row: dict[str, Any] = {
+                col.replace(".", "_"): int(row["unique_units"])
+                for _, row in distinct_df.iterrows()
+                for col in [row["selected_nace"]]
+            }
+
             if macro_level == "sammensatte variabler":
-                cols = list(HEATMAP_VARIABLES.keys()) + ["naring", "aar"]
+                cols = [*list(HEATMAP_VARIABLES.keys()), "naring", "aar"]
                 group_by_filter = ["selected_nace"]
 
             else:
@@ -500,8 +520,8 @@ class MacroModule(ABC):
                     **{macro_level: t_1.kommune.substr(0, length=col_length)}
                 )
 
-            t = t.select(cols + ["selected_nace"])
-            t_1 = t_1.select(cols + ["selected_nace"])
+            t = t.select([*cols, "selected_nace"])
+            t_1 = t_1.select([*cols, "selected_nace"])
             combined = t.union(t_1)
 
             if macro_level == "sammensatte variabler":
@@ -509,14 +529,14 @@ class MacroModule(ABC):
                     alias: combined[db_col].sum()
                     for db_col, alias in HEATMAP_VARIABLES.items()
                 }
-                df = combined.group_by(["aar"] + group_by_filter).aggregate(**agg_dict)
+                df = combined.group_by(["aar", *group_by_filter]).aggregate(**agg_dict)
                 df = df.pivot_longer(
                     HEATMAP_VARIABLES.values(), names_to="variabel", values_to="value"
                 )
                 values_col = "value"
                 category_column = "variabel"
             else:
-                df = combined.group_by(["aar"] + group_by_filter).aggregate(
+                df = combined.group_by(["aar", *group_by_filter]).aggregate(
                     variabel=combined[variabel].sum()
                 )
                 values_col = "variabel"
@@ -527,8 +547,6 @@ class MacroModule(ABC):
             df = df.rename(nace="selected_nace").execute()
             df.columns = df.columns.astype(str)  # set to str in case aar loaded as int
 
-            # df[[f"{aar}", f"{aar-1}"]] = df[[f"{aar}", f"{aar-1}"]]
-            # df["diff"] = df[f"{aar}"] - df[f"{aar-1}"]
             df["diff"] = df[f"{aar}"] - df[f"{aar-1}"]
             df["percent_diff"] = df["diff"] / df[f"{aar-1}"]
             tallvisning = "percent_diff" if tallvisning_valg else f"{aar}"
@@ -548,7 +566,11 @@ class MacroModule(ABC):
             original_cols: list[str] = matrix.columns.astype(str).tolist()
             safe_cols: list[str] = [c.replace(".", "_") for c in original_cols]
             matrix.columns = safe_cols
-            # ID column
+
+            # add count units & ID columns
+            count_row[category_column] = "antall enheter"
+            count_row["id"] = "count_row"
+
             matrix["id"] = matrix.index.astype(dtype=str)
             row_data: list[dict[str, Any]] | Any = matrix.to_dict("records")
 
@@ -559,10 +581,11 @@ class MacroModule(ABC):
                 safe_cols: list[str],
                 aar: int,
             ) -> None:
-                """Create tooltips showing the raw data from each year and the diff,
-                so the user can see both the %-diff in the cell and also the raw data when hovering.
-                """
+                """Create tooltips showing the raw data from each year and the diff, so the user can see both the %-diff in the cell and also the raw data when hovering."""
                 for row in row_data:
+                    if row.get("id") == "count_row":
+                        continue
+
                     for col in safe_cols:
                         if col not in ["id", category_column]:
                             prev_year = df.loc[
@@ -586,9 +609,7 @@ class MacroModule(ABC):
             def _create_column_defs(
                 original_cols: list[str], safe_cols: list[str], category_column: str
             ) -> list[Any]:
-                """Create column definitions to include styling, tooltips and cell coloring
-                to create the heatmap.
-                """
+                """Create column definitions to include styling, tooltips and cell coloring to create the heatmap."""
                 col_defs = []
                 for orig_col, safe_col in zip(original_cols, safe_cols):
                     col_def = {
@@ -600,11 +621,13 @@ class MacroModule(ABC):
                     }
 
                     if safe_col != category_column:
+
                         formatter_func = (
                             "d3.format(',.1%')(params.value)"
                             if tallvisning_valg
                             else "d3.format(',')(params.value)"
-                        )
+                        )  ########## fiks formatering av øvste kolonne på mandag---------------------------------------------------------------
+
                         style_func = (
                             "MacroModule.displayDiffHeatMap(params)"
                             if tallvisning_valg
@@ -631,7 +654,7 @@ class MacroModule(ABC):
             _generate_tooltips(row_data, df, category_column, safe_cols, aar)
             column_defs = _create_column_defs(original_cols, safe_cols, category_column)
 
-            return row_data, column_defs
+            return row_data, column_defs, [count_row]
 
         @callback(
             Output("macromodule-detail-grid", "rowData"),
@@ -648,10 +671,10 @@ class MacroModule(ABC):
             prevent_initial_call=True,
         )
         def update_detail_table(
-            cell_data,
+            cell_data: dict[str, Any],
             variabelvelger_aar: str,
             foretak_or_bedrift: str,
-            row_data,
+            row_data: list[dict[str, Any]],
             macro_level: str | None,
             nace_siffer_level: int,
             valgt_variabel: str,
@@ -661,9 +684,7 @@ class MacroModule(ABC):
             str,
             list[dict[str, Any]],
         ]:
-            """Table with foretak & bedrift-level details which updates
-            when user selects a cell in heatmap-grid
-            """
+            """Table with foretak & bedrift-level details which updates when user selects a cell in heatmap-grid."""
             if not cell_data or not variabelvelger_aar:
                 raise PreventUpdate
 
@@ -790,14 +811,14 @@ class MacroModule(ABC):
                     )
 
             if valgt_variabel in df.columns and f"{valgt_variabel}_x" in df.columns:
-                df[f"{valgt_variabel}_diff"] = (
-                    df[valgt_variabel] - df[f"{valgt_variabel}_x"]
+                df[f"{valgt_variabel}_diff"] = df[valgt_variabel].fillna(0) - df[
+                    f"{valgt_variabel}_x"
+                ].fillna(0)
+                heatmap_value_change = cell_data.get("value")
+                ascending_sorting_param = heatmap_value_change < 0
+                df = df.sort_values(
+                    f"{valgt_variabel}_diff", ascending=ascending_sorting_param
                 )
-                df["diff_abs"] = (
-                    df[valgt_variabel] - df[f"{valgt_variabel}_x"]
-                ).abs()  # Sort by absolute diff
-                df = df.sort_values("diff_abs", ascending=False)
-                df = df.drop(columns=["diff_abs"])
 
             # order for columns
             if valgt_variabel in df.columns:
@@ -824,7 +845,9 @@ class MacroModule(ABC):
                 if metric == valgt_variabel and diff_col in df.columns:
                     ordered_value_cols.append(diff_col)
 
-            visible_cols = [c for c in ID_COLS + ordered_value_cols if c in df.columns]
+            visible_cols = [
+                c for c in DETAIL_GRID_ID_COLS + ordered_value_cols if c in df.columns
+            ]
             row_data: list[dict[Hashable, Any]] | Any = df.to_dict("records")
 
             column_defs = []
@@ -838,7 +861,7 @@ class MacroModule(ABC):
                 elif f"{col}_tooltip" in df.columns:
                     col_def["tooltipField"] = f"{col}_tooltip"
 
-                if col not in ID_COLS:
+                if col not in DETAIL_GRID_ID_COLS:
                     col_def["valueFormatter"] = {
                         "function": "params.value == null ? '' : d3.format(',')(params.value)"
                     }  # thousand sep.
@@ -888,8 +911,8 @@ class MacroModule(ABC):
             Output("macromodule-macro-variable", "disabled"),
             Input("macromodule-filter-velger", "value"),
         )
-        def toggle_variabel_dropdown(macro_level) -> str:
-            """Disables macro-variable if sammensatte variabler is selected by user"""
+        def toggle_variabel_dropdown(macro_level: str) -> bool:
+            """Disables macro-variable if sammensatte variabler is selected by user."""
             return macro_level == "sammensatte variabler"
 
         @callback(  # type: ignore[misc]
@@ -901,8 +924,10 @@ class MacroModule(ABC):
             State("macromodule-detail-grid", "rowData"),
             prevent_initial_call=True,
         )
-        def output_to_variabelvelger(clickdata, rowdata) -> tuple[str, str, str, str]:
-            """Handle cell clicks in detail grid and update variable selector."""
+        def output_to_variabelvelger(
+            clickdata: dict | None, rowdata: list[dict[str, Any]]
+        ) -> tuple[str, str, str, str]:
+            """Handle cell clicks in detail grid and update variable selector in the Dash app."""
             if not clickdata:
                 raise PreventUpdate
 
