@@ -3,6 +3,52 @@ window.dashAgGridFunctions = window.dashAgGridFunctions || {};
 // MacroModule
 window.dashAgGridFunctions.MacroModule = {
 
+    // === Function formatHeatmapValue (Format values based on row type) ===
+    formatHeatmapValue(params, isPercentage) {
+        const value = params.value;
+
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        // Special handling for count row - just show number with thousand separator
+        if (params.data && params.data.id === 'count_row') {
+            return value.toLocaleString('nb-NO', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        }
+
+        // Regular cells - format as percentage or number
+        if (isPercentage) {
+            return value.toLocaleString('nb-NO', {
+                style: 'percent',
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1
+            });
+        } else {
+            return value.toLocaleString('nb-NO', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        }
+    },
+
+    // === Function formatDetailGridValue (Format numeric values in detail grid) ===
+    formatDetailGridValue(params) {
+        const value = params.value;
+
+        if (value === null || value === undefined || value === '') {
+            return '';
+        }
+
+        // Format as number with thousand separator
+        return value.toLocaleString('nb-NO', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+    },
+
     // === Function displayDiffHeatMap (Heatmap colouring for a matrix-table with +/- 30% diff threshold) ===
     displayDiffHeatMap(props) {
 

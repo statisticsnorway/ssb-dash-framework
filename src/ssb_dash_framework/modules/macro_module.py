@@ -1,5 +1,4 @@
 import logging
-from abc import ABC
 from collections.abc import Hashable
 from typing import Any
 from typing import ClassVar
@@ -107,17 +106,17 @@ class MacroModule_ParquetReader:
 
         Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
         """
-        # if aar == 2024:  # pga nytt nedtrekk i Dapla med eigen filsti
-        #     t: Table = self.conn.read_parquet(
-        #         f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-        #     )
-        # else:
-        #     t: Table = self.conn.read_parquet(
-        #         f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-        #     )
-        t: Table = self.conn.read_parquet(
-            f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-        )
+        if aar == 2024:  # pga nytt nedtrekk i Dapla med eigen filsti
+            t: ibis.TableExpr = self.conn.read_parquet(
+                f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+            )
+        else:
+            t = self.conn.read_parquet(
+                f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+            )
+        # t: Table = self.conn.read_parquet(
+        #     f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+        # )
 
         if detail_grid:
             t = t.filter(t.naring.substr(0, length=nace_siffer_level).isin(nace_list))
@@ -129,12 +128,12 @@ class MacroModule_ParquetReader:
 
         return t.mutate(aar=ibis.literal(aar).cast("string"))
 
-    def __exit__(self, exc_type, exc, tb) -> None:
-        """Close the ibis connection."""
-        self.conn.disconnect()
+    # def __exit__(self, exc_type, exc, tb) -> None:
+    #     """Close the ibis connection."""
+    #     self.conn.disconnect()
 
 
-class MacroModule(ABC):
+class MacroModule:
     """The MacroModule module lets you view macro values for your variables and directly get a micro view for selected macro field.
 
     This module requires some adjustment to fit your data structure and requires specific variables defined in the variable selector.
@@ -157,12 +156,15 @@ class MacroModule(ABC):
     def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
         """Initializes the MacroModule.
 
+        The MacroModule allows viewing macro values and getting micro-level views for selected fields.
+        The base_path is used by _load_year to locate parquet files.
+
         Args:
             time_units (list[str]): Your time variables used in the variable selector. Example year, quarter, month, etc.
             conn (object): A connection object to a database (kept for compatibility, but DuckDB is used internally).
                 Currently designed with parquet files in GC in mind.
-            base_path (str): Base path to parquet files (e.g., "/buckets/produkt/naringer/klargjorte-data/statistikkfiler")
-            The rest of the file path is defined in the function _load_year.
+            base_path (str): Base path to parquet files
+                (e.g., "/buckets/produkt/naringer/klargjorte-data/statistikkfiler").
         """
         # if not isinstance(base_path, str):
         #     raise TypeError(
@@ -399,7 +401,7 @@ class MacroModule(ABC):
 
     def _get_nace_options(self, base_path: str, aar: str) -> list[str]:
         """Get distinct NACE codes for a given year."""
-        t: Table = self.parquet_reader.conn.read_parquet(
+        t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(
             f"{base_path}/p{aar}/statistikkfil_bedrifter_nr.parquet"
         )
         naring_filter = t.naring.substr(0, length=2).name("nace2")
@@ -464,7 +466,7 @@ class MacroModule(ABC):
 
             aar: int = int(variabelvelger_aar)
 
-            t: Table = self.parquet_reader._load_year(
+            t: ibis.TableExpr = self.parquet_reader._load_year(
                 aar,
                 self.base_path,
                 foretak_or_bedrift,
@@ -472,7 +474,7 @@ class MacroModule(ABC):
                 nace_siffer_level,
                 detail_grid=False,
             )  # t, current aar
-            t_1: Table = self.parquet_reader._load_year(
+            t_1: ibis.TableExpr = self.parquet_reader._load_year(
                 aar - 1,
                 self.base_path,
                 foretak_or_bedrift,
@@ -588,22 +590,26 @@ class MacroModule(ABC):
 
                     for col in safe_cols:
                         if col not in ["id", category_column]:
-                            prev_year = df.loc[
+                            prev_year: pd.Series | Any = df.loc[
                                 (df[category_column] == row[category_column])
                                 & (df["nace"] == col.replace("_", ".")),
                                 f"{aar-1}",
                             ]
-                            current_year = df.loc[
+                            current_year: pd.Series | Any = df.loc[
                                 (df[category_column] == row[category_column])
                                 & (df["nace"] == col.replace("_", ".")),
                                 f"{aar}",
                             ]
-                            val1 = prev_year.values[0] if not prev_year.empty else 0
-                            val2 = (
+                            val1: float = (
+                                prev_year.values[0] if not prev_year.empty else 0
+                            )
+                            val2: float = (
                                 current_year.values[0] if not current_year.empty else 0
                             )
-                            diff = val2 - val1
-                            tooltip = f"{aar}: {val2:,.0f}\n{aar-1}: {val1:,.0f}\nDiff: {diff:+,.0f}"
+                            diff: float | int = val2 - val1
+                            tooltip: str = (
+                                f"{aar}: {val2:,.0f}\n{aar-1}: {val1:,.0f}\nDiff: {diff:+,.0f}"
+                            )
                             row[f"{col}_tooltip"] = tooltip
 
             def _create_column_defs(
@@ -611,7 +617,7 @@ class MacroModule(ABC):
             ) -> list[Any]:
                 """Create column definitions to include styling, tooltips and cell coloring to create the heatmap."""
                 col_defs = []
-                for orig_col, safe_col in zip(original_cols, safe_cols):
+                for orig_col, safe_col in zip(original_cols, safe_cols, strict=True):
                     col_def = {
                         "headerName": orig_col,
                         "field": safe_col,
@@ -622,11 +628,7 @@ class MacroModule(ABC):
 
                     if safe_col != category_column:
 
-                        formatter_func = (
-                            "d3.format(',.1%')(params.value)"
-                            if tallvisning_valg
-                            else "d3.format(',')(params.value)"
-                        )  ########## fiks formatering av øvste kolonne på mandag---------------------------------------------------------------
+                        formatter_func = f"MacroModule.formatHeatmapValue(params, {str(tallvisning_valg).lower()})"
 
                         style_func = (
                             "MacroModule.displayDiffHeatMap(params)"
@@ -671,13 +673,13 @@ class MacroModule(ABC):
             prevent_initial_call=True,
         )
         def update_detail_table(
-            cell_data: dict[str, Any],
+            cell_data: dict[str, Any] | None,
             variabelvelger_aar: str,
             foretak_or_bedrift: str,
-            row_data: list[dict[str, Any]],
+            heatmap_row_data: list[dict[str, Any]],
             macro_level: str | None,
             nace_siffer_level: int,
-            valgt_variabel: str,
+            heatmap_valgt_variabel: str,
         ) -> tuple[
             list[dict[Hashable, Any]],
             list[dict[str, Any]],
@@ -688,26 +690,34 @@ class MacroModule(ABC):
             if not cell_data or not variabelvelger_aar:
                 raise PreventUpdate
 
+            row_id = cell_data.get("rowId", "")
+            if row_id == "count_row":
+                raise PreventUpdate
+
             aar: int = int(variabelvelger_aar)
-            valgt_variabel = HEATMAP_VARIABLES.get(valgt_variabel)
+            valgt_variabel = HEATMAP_VARIABLES.get(heatmap_valgt_variabel, "")
 
             col = cell_data.get("colId")
             if col in ["variabel", macro_level]:
                 raise PreventUpdate
 
+            assert isinstance(col, str)
             selected_nace = col.replace("_", ".")
-            row_idx = int(cell_data.get("rowId"))
+            row_idx = int(row_id)
 
             if macro_level == "sammensatte variabler":
-                selected_filter_val = row_data[row_idx].get("variabel")
-                valgt_variabel = selected_filter_val
+                selected_filter_val: Any | None = heatmap_row_data[row_idx].get(
+                    "variabel"
+                )
+                valgt_variabel: str | None = selected_filter_val
             else:
-                selected_filter_val = row_data[row_idx].get(macro_level)
+                assert macro_level is not None
+                selected_filter_val = heatmap_row_data[row_idx].get(macro_level)
 
             if not selected_filter_val or not selected_nace:
                 raise PreventUpdate
 
-            t: Table = self.parquet_reader._load_year(
+            t: ibis.TableExpr = self.parquet_reader._load_year(
                 aar,
                 self.base_path,
                 foretak_or_bedrift,
@@ -715,7 +725,7 @@ class MacroModule(ABC):
                 nace_siffer_level,
                 detail_grid=True,
             )
-            t_1: Table = self.parquet_reader._load_year(
+            t_1: ibis.TableExpr = self.parquet_reader._load_year(
                 aar - 1,
                 self.base_path,
                 foretak_or_bedrift,
@@ -735,24 +745,20 @@ class MacroModule(ABC):
                 )
                 t_1 = t_1.filter(t_1[macro_level] == selected_filter_val)
 
-            select_cols = (
-                [
-                    "navn",
-                    "orgnr_foretak",
-                    "orgnr_bedrift",
-                    "naring",
-                    "naring_f",
-                    "reg_type",
-                    "reg_type_f",
-                    "type",
-                ]
-                + list(HEATMAP_VARIABLES.keys())
-                + [
-                    "giver_fnr",
-                    "giver_bnr",
-                    "aar",
-                ]
-            )
+            select_cols = [
+                "navn",
+                "orgnr_foretak",
+                "orgnr_bedrift",
+                "naring",
+                "naring_f",
+                "reg_type",
+                "reg_type_f",
+                "type",
+                *HEATMAP_VARIABLES.keys(),
+                "giver_fnr",
+                "giver_bnr",
+                "aar",
+            ]
 
             if foretak_or_bedrift == "foretak":
                 rename_mapping = {
@@ -803,7 +809,9 @@ class MacroModule(ABC):
                 "giver_bnr" in df.columns and "giver_fnr" in df.columns
             ):  # unngå foretakstabellar som ikkje har giver
                 df["giver_fnr_tooltip"] = "Giverforetak: " + df["giver_fnr"].astype(str)
-                df["giver_bnr_tooltip"] = "Giverbedrift: " + df["giver_bnr"].astype(str)
+                df["giver_bnr_tooltip"] = "Giverbedrifter: " + df["giver_bnr"].astype(
+                    str
+                )
             for col in STATUS_CHANGE_DETAIL_GRID:
                 if f"{col}_x" in df.columns:
                     df[f"{col}_tooltip"] = "Fjorårets verdi: " + df[f"{col}_x"].astype(
@@ -814,8 +822,9 @@ class MacroModule(ABC):
                 df[f"{valgt_variabel}_diff"] = df[valgt_variabel].fillna(0) - df[
                     f"{valgt_variabel}_x"
                 ].fillna(0)
-                heatmap_value_change = cell_data.get("value")
-                ascending_sorting_param = heatmap_value_change < 0
+                heatmap_value_change = cell_data.get("value", 0)
+                heatmap_value_change = float(heatmap_value_change)
+                ascending_sorting_param: bool = heatmap_value_change < 0
                 df = df.sort_values(
                     f"{valgt_variabel}_diff", ascending=ascending_sorting_param
                 )
@@ -863,8 +872,8 @@ class MacroModule(ABC):
 
                 if col not in DETAIL_GRID_ID_COLS:
                     col_def["valueFormatter"] = {
-                        "function": "params.value == null ? '' : d3.format(',')(params.value)"
-                    }  # thousand sep.
+                        "function": "MacroModule.formatDetailGridValue(params)"
+                    }
                     if col.endswith("_x"):
                         col_def["cellStyle"] = {
                             "backgroundColor": "#e8e9eb"  # light grey for previous year
