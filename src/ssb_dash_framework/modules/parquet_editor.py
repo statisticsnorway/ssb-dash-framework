@@ -691,9 +691,18 @@ def export_from_parqueteditor(data_source: str, data_target: str) -> None:
         for entry in processlog:
             if entry.get("data_target") == "data_target_placeholder":
                 entry["data_target"] = data_target
-
-        # Save updated log next to the exported parquet file
-        export_log_path = Path(data_target).with_suffix(".jsonl")
+        # Alternative 1
+        stem = Path(data_target).stem
+        export_log_path = (
+            Path(data_target).parent.parent
+            / "logg"
+            / "produksjonslogg"
+            / f"{stem}.jsonl"
+        )
+        # Alternative 2
+        # export_log_path = Path(data_target).with_suffix(".jsonl") # Save updated log next to the exported parquet file
+        Path(data_target).parent.mkdir(parents=True, exist_ok=True)
+        export_log_path.parent.mkdir(parents=True, exist_ok=True)
         with open(export_log_path, "w", encoding="utf-8") as f:
             for entry in processlog:
                 f.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
