@@ -133,7 +133,8 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
                                     dbc.Col(
                                         dcc.RadioItems(
                                             id=f"{self.module_number}-edit-reason",
-                                            options=[
+                                            # This format for options is recommended by the official Dash documentation, mypy is ignored for this reason.
+                                            options=[   # type: ignore[arg-type]
                                                 {
                                                     "label": "Statistisk gjennomgang",
                                                     "value": "REVIEW",
