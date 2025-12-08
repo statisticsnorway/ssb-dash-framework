@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import zoneinfo
-from datetime import UTC
 from datetime import datetime
 from io import StringIO
 from pathlib import Path
@@ -24,6 +23,9 @@ from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
 from ..utils.module_validation import module_validator
+
+from datetime import timezone
+UTC = timezone.utc
 
 logger = logging.getLogger(__name__)
 
