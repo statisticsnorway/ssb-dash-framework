@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import zoneinfo
+from datetime import UTC
 from datetime import datetime
 from io import StringIO
 from pathlib import Path
@@ -24,8 +25,7 @@ from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
 from ..utils.module_validation import module_validator
 
-from datetime import timezone
-UTC = timezone.utc
+UTC = UTC
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +134,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
                                         dcc.RadioItems(
                                             id=f"{self.module_number}-edit-reason",
                                             # This format for options is recommended by the official Dash documentation, mypy is ignored for this reason.
-                                            options=[   # type: ignore[arg-type]
+                                            options=[  # type: ignore[arg-type]
                                                 {
                                                     "label": "Statistisk gjennomgang",
                                                     "value": "REVIEW",
