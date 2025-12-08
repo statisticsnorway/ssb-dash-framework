@@ -55,7 +55,6 @@ window.dashAgGridFunctions.MacroModule = {
         // Special handling for count row
         if (props.data && props.data.id === 'count_row') {
             return {
-                backgroundColor: '#f0f0f0',
                 color: 'black',
             };
         }
@@ -116,7 +115,6 @@ window.dashAgGridFunctions.MacroModule = {
         // Special handling for count row
         if (props.data && props.data.id === 'count_row') {
             return {
-                backgroundColor: '#f0f0f0',
                 color: 'black',
             };
         }

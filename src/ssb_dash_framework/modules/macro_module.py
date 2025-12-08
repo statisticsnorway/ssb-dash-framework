@@ -106,17 +106,21 @@ class MacroModule_ParquetReader:
 
         Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
         """
-        if aar == 2024:  # pga nytt nedtrekk i Dapla med eigen filsti
-            t: ibis.TableExpr = self.conn.read_parquet(
-                f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-            )
+        if aar == 2024:  # new nedtrekk in Dapla has a specific file path
+            file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
         else:
-            t = self.conn.read_parquet(
+            file_path = (
                 f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
             )
-        # t: Table = self.conn.read_parquet(
-        #     f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-        # )
+
+        try:
+            t: ibis.TableExpr = self.conn.read_parquet(file_path)
+        except Exception as e:
+            print(
+                f"Failed to read parquet file at {file_path}: {e}. "
+                "Did you put in a valid year into the variabelvelger?"
+            )
+            raise PreventUpdate from None
 
         if detail_grid:
             t = t.filter(t.naring.substr(0, length=nace_siffer_level).isin(nace_list))
