@@ -4,7 +4,7 @@ import logging
 from abc import ABC
 from abc import abstractmethod
 from typing import Any
-
+import pandas as pd
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import ibis
@@ -12,6 +12,7 @@ from dash import callback
 from dash import callback_context as ctx
 from dash import html
 from dash.dependencies import Input
+from dash.dependencies import State
 from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
@@ -19,6 +20,7 @@ from eimerdb import EimerDBInstance
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
+from ..utils.alert_handler import create_alert
 from ..utils.core_query_functions import conn_is_ibis
 from ..utils.module_validation import module_validator
 
@@ -179,17 +181,37 @@ class AltinnControlView(ABC):
                     f"valgt partisjon: {partition_args}\nvalgt skjema: {skjema}"
                 )
                 return valgte_vars
+        
+        @callback(
+            Output("alert_store", "data", allow_duplicate=True),
+            Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
+            State("alert_store", "data"),
+            prevent_initial_call=True
+        )
+        def alert_user_of_controls(click, alert_store):
+            return [
+                            create_alert(
+                                "Kjører kontroller, dette kan ta litt tid, du får beskjed når den er ferdig. Ikke klikk på knappen igjen.",
+                                "info",
+                                ephemeral=True,
+                            ),
+                            *alert_store,
+                        ]
+
 
         @callback(
             Output(f"{self.module_number}-kontroller", "rowData"),
             Output(f"{self.module_number}-kontroller", "columnDefs"),
+            Output("alert_store", "data", allow_duplicate=True),
             Input("var-altinnskjema", "value"),
             Input(f"{self.module_number}-kontroll-refresh", "n_clicks"),
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
+            State("alert_store", "data"),
             *self.variableselector.get_all_inputs(),
+            prevent_initial_call=True
         )
         def get_kontroller_overview(
-            skjema: str, refresh: int | None, rerun: int | None, *args: Any
+            skjema: str, refresh: int | None, rerun: int | None, alert_store, *args: Any
         ):
             logger.debug(
                 f"Args:\n"
@@ -215,11 +237,19 @@ class AltinnControlView(ABC):
                     control_class_instance.register_all_controls()
                     control_class_instance.execute_controls()
                 except ValueError as e:
-                    if str(e) == "No control methods found.":
+                    if str(e) == "No control methods found. Remember to use the 'register_control' decorator function.":
                         logger.info("No control methods found.")
-                        # Return alert handler stuff
+                        alert_store = [
+                            create_alert(
+                                f"Ingen kontroller funnet i {control_class_instance.__class__.__name__}",
+                                "danger",
+                                ephemeral=True,
+                            ),
+                            *alert_store,
+                        ]
+                        return [], [], alert_store
                     else:
-                        raise
+                        raise e
             else:
                 logger.info("Refreshing view without re-running controls.")
 
@@ -300,7 +330,27 @@ class AltinnControlView(ABC):
             ]
             columns[0]["checkboxSelection"] = True
             columns[0]["headerCheckboxSelection"] = True
-            return result.to_dict("records"), columns
+            if (
+                ctx.triggered_id == f"{self.module_number}-kontroll-run-button"
+            ):
+                alert_store = [
+                    create_alert(
+                        f"Kontrollkjøring ferdig for kontroller i {control_class_instance.__class__.__name__}",
+                        "info",
+                        ephemeral=True,
+                    ),
+                    *alert_store,
+                ]
+            else:
+                alert_store = [
+                    create_alert(
+                        "Kontrollvisning oppdatert.",
+                        "info",
+                        ephemeral=True,
+                    ),
+                    *alert_store,
+                ]
+            return result.to_dict("records"), columns, alert_store
 
         @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-kontrollutslag", "rowData"),
