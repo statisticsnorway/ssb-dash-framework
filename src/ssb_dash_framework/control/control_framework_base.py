@@ -352,7 +352,9 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 raise ValueError(
                     f"Error when running {control}. Value for column {key} '{value[0]}' does not match period control is run for: {self.applies_to_subset}"
                 )
-        if results.duplicated(subset=[*self.time_units, "ident", "refnr"])
+        if results.duplicated(subset=[*self.time_units, "ident", "refnr"]).any():
+            logger.debug(f"Duplicates found in results from {control}:\n{results[results.duplicated(subset=[*self.time_units, 'ident', 'refnr'], keep=False)]}")
+            raise ValueError(f"There are duplicated rows in the results for {control}.")
         logger.info(
             f"Finished running {control}. Results:\n{results['utslag'].value_counts()}"
         )
@@ -424,8 +426,10 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         logger.debug("Starting process.")
         existing_kontrollutslag = self.get_current_kontrollutslag()
         if existing_kontrollutslag.empty:
-            logger.debug("No existing rows found, ending here.")
+            logger.info("No existing rows found, ending here.")
             return None
+            
+        logger.debug(f"Kontrollutslag:\n{control_results.head()}\n\nExisting kontrollutslag:\n{existing_kontrollutslag.head()}")
         merged = control_results.merge(
             existing_kontrollutslag,
             on=["kontrollid", "ident", "refnr"],
@@ -435,10 +439,11 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         changed = merged[merged["utslag_x"] != merged["utslag_y"]][
             ["kontrollid", "ident", "refnr", "verdi_x", "utslag_x"]
         ].rename(columns={"utslag_x": "utslag", "verdi_x": "verdi"})
-        logger.info(f"Updating {changed.shape[0]} rows.")
         if changed.empty:
-            logger.debug("No changed rows, ending here.")
+            logger.info("No changed rows, ending here.")
             return None
+        logger.info(f"Updating {changed.shape[0]} rows.")
+        logger.debug(f"Rows to update:\n{changed}")
         update_query = self.generate_update_query(changed)
         if isinstance(self.conn, EimerDBInstance):
             self.conn.query(update_query)
