@@ -25,8 +25,6 @@ from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
 from ..utils.module_validation import module_validator
 
-UTC = UTC
-
 logger = logging.getLogger(__name__)
 
 
