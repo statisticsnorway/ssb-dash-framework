@@ -50,6 +50,7 @@ from .modules import SkjemapdfViewerWindow
 from .modules import VisualizationBuilder
 from .modules import VisualizationBuilderWindow
 from .modules import apply_edits
+from .modules import export_from_parqueteditor
 from .modules import get_log_path
 from .setup import VariableSelector
 from .setup import VariableSelectorOption
@@ -145,6 +146,7 @@ __all__ = [
     "create_database",
     "create_database_engine",
     "enable_app_logging",
+    "export_from_parqueteditor",
     "get_log_path",
     "main_layout",
     "module_validator",
