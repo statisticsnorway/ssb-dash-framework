@@ -27,15 +27,19 @@ def conn_is_ibis(conn: Any) -> bool:
         return False
 
 
-def create_filter_dict(variables: list[str], values: list[Any] | tuple[Any]):
+def create_filter_dict(
+    variables: list[str], values: list[Any] | tuple[Any]
+) -> dict[str, Any]:
     """Creates a filter dict for use in ibis_filter_with_dict."""
     return dict(zip(variables, values, strict=False))
 
 
-def ibis_filter_with_dict(periods_dict):
-    """Example:
-    filter_dict = {"year": "2025", "quarter": ["3", "4"]}
-    t.filter(ibis_filter_with_dict(filter_dict))
+def ibis_filter_with_dict(periods_dict: dict[str, Any]) -> list[Any]:
+    """Creates a filter expression for Ibis.
+
+    Example:
+        filter_dict = {"year": "2025", "quarter": ["3", "4"]}
+        t.filter(ibis_filter_with_dict(filter_dict))
     """
     filters = []
     for key, value in periods_dict.items():

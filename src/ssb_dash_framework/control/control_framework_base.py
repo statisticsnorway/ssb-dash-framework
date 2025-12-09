@@ -1,56 +1,18 @@
 import itertools
 import logging
-import warnings
+from collections.abc import Callable
 from typing import Any
+from typing import ClassVar
 
 import ibis
 import pandas as pd
 from eimerdb import EimerDBInstance
 from ibis import _
 
-# from .utils.core_query_functions import conn_is_ibis, ibis_filter_with_dict
-
+from ..utils.core_query_functions import conn_is_ibis
+from ..utils.core_query_functions import ibis_filter_with_dict
 
 logger = logging.getLogger(__name__)
-
-
-def conn_is_ibis(conn: Any) -> bool:
-    """Function to check if a supplied object is an Ibis connection.
-
-    Used to select which 'path' to take for preparing data in modules.
-
-    Args:
-        conn (Any): Object to check.
-
-    Returns:
-        A bool that is True if the supplied object is an Ibis connection.
-    """
-    if conn.__class__.__name__ == "Backend":
-        logger.debug("Assuming 'self.conn' is Ibis connection.")
-        return True
-    else:
-        return False
-
-
-def create_filter_dict(variables: list[str], values: list[Any] | tuple[Any]):
-    """Creates a filter dict for use in ibis_filter_with_dict."""
-    return dict(zip(variables, values, strict=False))
-
-
-def ibis_filter_with_dict(periods_dict):
-    """Example:
-    filter_dict = {"year": "2025", "quarter": ["3", "4"]}
-    t.filter(ibis_filter_with_dict(filter_dict))
-    """
-    filters = []
-    for key, value in periods_dict.items():
-        col = getattr(_, key)
-        if isinstance(value, list):
-            expr = col.isin(value)
-        else:
-            expr = col == value
-        filters.append(expr)
-    return filters
 
 
 def register_control(
@@ -61,7 +23,7 @@ def register_control(
     sorteringsvariabel: str | None = None,
     sortering: str | None = None,
     **kwargs: Any,
-):
+) -> Callable[..., Any]:
     """Decorator used to attach required metadata to control methods.
 
     Args:
@@ -72,6 +34,15 @@ def register_control(
         sorteringsvariabel (str | None): Variable to sort the values on.
         sortering (str | None): Controls if the sorting is ascending (ASC) or descending (DESC). Defaults to DESC
         kwargs (Any): These will be added to the _control_meta dict attached to the method as additional key and value pairs.
+
+    Raises:
+        TypeError: If `kontrollerte_variabler` is not a list of strings.
+        ValueError: If `kontrolltype` is not one of 'H', 'S', or 'I'.
+        ValueError: If `sortering` is not one of 'ASC' or 'DESC'.
+        ValueError: If required keys are missing from the metadata dictionary.
+
+    Returns:
+        Callable[..., Any]: The decorated function with added attribute '_control_meta' containing a dictionary with metadata.
 
     Example:
         @register_control(
@@ -129,8 +100,8 @@ def register_control(
         if required not in meta_dict.keys():
             raise ValueError(f"This definition is missing required field '{required}'.")
 
-    def wrapper(func):
-        func._control_meta = meta_dict
+    def wrapper(func: Callable[..., Any]) -> Any:
+        func._control_meta = meta_dict  # type: ignore[attr-defined]
         return func
 
     return wrapper
@@ -139,17 +110,26 @@ def register_control(
 class ControlFrameworkBase:  # TODO: Add some common control methods here for easier reuse.
     """Base class for running control checks.
 
-    Example:
+    Used for setting up controls with minimal boilerplate code required by the user. See Example for how to inherit from it.
 
+    Example:
+        class MyOwnControls(ControlFrameworkBase):
+            def __init__(
+                self,
+                time_units,
+                applies_to_subset,
+                conn,
+            ) -> None:
+                super().__init__(time_units, applies_to_subset, conn)
     """
 
-    _required_kontroller_columns = [
+    _required_kontroller_columns: ClassVar[list[str]] = [
         "kontrollid",
         "kontrolltype",
         "beskrivelse",
     ]
 
-    _required_kontrollutslag_columns = [
+    _required_kontrollutslag_columns: ClassVar[list[str]] = [
         "kontrollid",
         "ident",
         "refnr",
@@ -161,32 +141,14 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         time_units: list[str],
         applies_to_subset: dict[str, Any],
         conn: object,
-        partitions: list[int | str] | None = None,  # Deprecated name
-        partitions_skjema: dict[str, int | str] | None = None,  # Deprecated name
     ) -> None:
         """Initialize the control framework.
 
         Args:
-            partitions: Partition to execute controls on.
-            partitions_skjema: Partition specification, including skjema.
+            time_units: Time units that exists in the dataset.
+            applies_to_subset: Subset to execute controls on.
             conn: Database connection object.
-
-        Raises:
-            AttributeError: If conn lacks 'query' or 'insert' methods.
-            ValueError: if no controls are found for chosen partition.
         """
-        if partitions is not None or partitions_skjema is not None:
-            warnings.warn(
-                "The 'partitions' and 'partitions_skjema' parameters are deprecated. "
-                "Use 'time_units' and 'valid_for' instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            if time_units is None:
-                time_units = partitions
-            if applies_to_subset is None:
-                # Needs transformation here
-                applies_to_subset = partitions_skjema
         self.time_units = time_units
         self.applies_to_subset = applies_to_subset
         for key, value in self.applies_to_subset.items():
@@ -203,7 +165,11 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             *ControlFrameworkBase._required_kontrollutslag_columns,
         ]
 
-    def find_control_methods(self):
+    def find_control_methods(self) -> None:
+        """Method for finding all control methods defined in the class.
+
+        Be aware that it loops through all attributes in the class and adds any that has the '_control_meta' attribute to the list of controls.
+        """
         logger.debug("Looking for control methods.")
         self.controls = []
         for method_name in dir(self):
@@ -215,7 +181,18 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             )
         logger.info(f"Found controls: {self.controls}")
 
-    def register_control(self, control):
+    def register_control(self, control: str) -> None:
+        """This method registers a given control in the 'kontroller' table.
+
+        Args:
+            control: The name of the control method to register.
+
+        Returns:
+            None
+
+        Raises:
+            NotImplementedError: If connection is not EimerDBInstance or Ibis connection.
+        """
         logger.info(f"Registering control: {control}")
         registered_controls = self.get_current_kontroller()
         control_meta = getattr(self, control)._control_meta
@@ -247,7 +224,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             self.conn.insert("kontroller", rows_to_register)
         elif conn_is_ibis(self.conn):
             conn = self.conn
-            k = conn.table("kontroller")
+            k = conn.table("kontroller")  # type: ignore[attr-defined]
             k.insert(rows_to_register)
         else:
             raise NotImplementedError(
@@ -255,14 +232,16 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             )
         logger.info(f"Done inserting {control}")
 
-    def register_all_controls(self):
+    def register_all_controls(self) -> None:
+        """Registers all controls found to the 'kontroller' table."""
         logger.info("Registering all controls.")
         self.find_control_methods()
         for control in self.controls:
             self.register_control(control)
         logger.info("All controls registered.")
 
-    def get_current_kontroller(self):
+    def get_current_kontroller(self) -> pd.DataFrame:
+        """Gets the current contents of the 'kontroller' table."""
         logger.info("Getting current contents of table 'kontroller'")
         if isinstance(self.conn, EimerDBInstance):
             conn = ibis.polars.connect()
@@ -284,11 +263,13 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         return kontroller
 
     def execute_controls(self) -> None:
+        """Executes all control methods found in the class."""
         logger.info("Executing all controls")
         self.run_all_controls()
         logger.info("Finished executing controls.")
 
-    def run_all_controls(self):
+    def run_all_controls(self) -> pd.DataFrame:
+        """Runs all controls found in the class."""
         self.find_control_methods()
 
         df_all_results: list[pd.DataFrame] = []
@@ -319,7 +300,15 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             pd.Dataframe: Dataframe containing results from the control.
 
         Raises:
-            TypeError: If control method does not return pd.dataframe.
+            TypeError: If the control method does not return a `pd.DataFrame`.
+            ValueError: If a required column from `_required_kontrollutslag_columns` is missing.
+            ValueError: If the result contains extra columns that are not allowed.
+            ValueError: If the control is not registered in `self.controls`.
+            ValueError: If any key in `applies_to_subset` has too many unique values.
+            ValueError: If any value in `applies_to_subset` does not match the expected period.
+            ValueError: If the results contain more than one unique `kontrollid`.
+            ValueError: If the `kontrollid` in the results does not match the registered `_control_meta`.
+            ValueError: If there are duplicated rows in the results based on `time_units`, `ident`, and `refnr`.
         """
         logger.info(f"Running control: {control}")
         results = getattr(self, control)()
@@ -329,19 +318,14 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             raise TypeError(
                 f"Result from control method is not a pd.dataframe. Received: '{type(results)}'"
             )
+        if "kontrollid" not in results.columns:
+            results["kontrollid"] = getattr(self, control)._control_meta["kontrollid"]
         for column in self._required_kontrollutslag_columns:
             if column not in results.columns:
-                if (
-                    column == "kontrollid"
-                ):  # This is required to be identical anyways so this just simplifies the process a bit.
-                    results["kontrollid"] = getattr(self, control)._control_meta[
-                        "kontrollid"
-                    ]
-                else:
-                    raise ValueError(
-                        f"Missing required column '{column}' for result from '{control}'."
-                    )
-        allowed = set(self._required_kontrollutslag_columns + ["skjema", "verdi"])
+                raise ValueError(
+                    f"Missing required column '{column}' for result from '{control}'."
+                )
+        allowed = set([*self._required_kontrollutslag_columns, "skjema", "verdi"])
         current = set(results.columns)
         extra_columns = current - allowed
         if extra_columns:
@@ -383,7 +367,20 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         logger.info(f"Updated kontrollutslag based on new run of '{control}'")
         return results
 
-    def get_current_kontrollutslag(self, specific_control=None):
+    def get_current_kontrollutslag(
+        self, specific_control: str | None = None
+    ) -> pd.DataFrame:
+        """Method to get current content of the kontrollutslag table.
+
+        Args:
+            specific_control: Gets the current content of kontrollutslag table for this control. Defaults to None, which returns the data for all controls.
+
+        Returns:
+            pd.DataFrame containing the current kontrollutslag table for all controls or just the specified one.
+
+        Raises:
+            NotImplementedError: If connection is not EimerDBInstance or Ibis connection.
+        """
         logger.info("Getting current kontrollutslag.")
         if isinstance(self.conn, EimerDBInstance):
             conn = ibis.polars.connect()
@@ -409,9 +406,10 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         )
         return kontrollutslag
 
-    def insert_new_records(self, control_results):
+    def insert_new_records(self, control_results: pd.DataFrame) -> None:
+        """Inserts new records that are not found in the current contents of the 'kontrollutslag' table."""
         if control_results["kontrollid"].nunique() == 1:
-            specific_control = list(control_results["kontrollid"].unique())[0]
+            specific_control = next(iter(control_results["kontrollid"].unique()))
         else:
             specific_control = None
         existing_kontrollutslag = self.get_current_kontrollutslag(specific_control)
@@ -446,7 +444,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             self.conn.insert("kontrollutslag", merged)
         elif conn_is_ibis(self.conn):
             conn = self.conn
-            k = conn.table("kontrollutslag")
+            k = conn.table("kontrollutslag")  # type: ignore[attr-defined]
             k.insert(merged)
         else:
             raise NotImplementedError(
@@ -454,10 +452,11 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             )
         logger.debug("Finished inserting new rows.")
 
-    def update_existing_records(self, control_results):
+    def update_existing_records(self, control_results: pd.DataFrame) -> None:
+        """Updates the 'kontrollutslag' table based on results from new run of the method."""
         logger.debug("Starting process.")
         if control_results["kontrollid"].nunique() == 1:
-            specific_control = list(control_results["kontrollid"].unique())[0]
+            specific_control = next(iter(control_results["kontrollid"].unique()))
         else:
             specific_control = None
         existing_kontrollutslag = self.get_current_kontrollutslag(specific_control)
@@ -495,7 +494,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             self.conn.query(update_query)
         elif conn_is_ibis(self.conn):
             conn = self.conn
-            conn.raw_sql(update_query)
+            conn.raw_sql(update_query)  # type: ignore[attr-defined]
         else:
             raise NotImplementedError(
                 f"Connection type '{type(self.conn)}' is currently not implemented."
@@ -513,7 +512,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         """
         update_query = "UPDATE kontrollutslag SET utslag = CASE"
 
-        for _, row in df_updates.iterrows():
+        for _index, row in df_updates.iterrows():
             update_query += (
                 f" WHEN kontrollid = '{row['kontrollid']}' AND "
                 f"refnr = '{row['refnr']}' THEN {row['utslag']}"
