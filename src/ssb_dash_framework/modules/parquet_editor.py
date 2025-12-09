@@ -37,7 +37,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         statistics_name: The name of the statistic being edited.
         id_vars: A list of columns that together form a unique identifier for a single row in your data.
         data_source: The path to the parquet file you want to edit.
-        data_target: The path your completed file will be created at.
         output: Columns in your dataframe that should be clickable to output to the variable selector panel.
         output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
 
@@ -47,7 +46,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             statistics_name="Demo",
             id_vars=id_variabler,
             data_source="/buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet",
-            data_target="/buckets/produkt/editering-eksempel/klargjorte-data/test_p2024_v1.parquet",
         )
 
     Notes:
@@ -61,7 +59,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         statistics_name: str,
         id_vars: list[str],
         data_source: str,
-        data_target: str,  # Optional?
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
     ) -> None:
@@ -69,6 +66,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
+        self.icon = "✏️"  # TODO: Make visible
 
         if "/inndata/" not in data_source:
             logger.warning(
@@ -85,10 +83,11 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             selected_inputs=id_vars, selected_states=[]
         )
         self.file_path = data_source
-        self.data_target = data_target
         path = Path(data_source)
         self.log_filepath = get_log_path(data_source)
         self.label = path.stem
+
+        self.log_filepath.parent.mkdir(parents=True, exist_ok=True)
 
         self.module_layout = self._create_layout()
         self._is_valid()
@@ -112,11 +111,15 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
 
     def get_data(self) -> pd.DataFrame:
         """Reads the parquet file at the supplied file path."""
+        logger.info("Getting data for the module.")
         if self.log_filepath.exists():
             logger.debug("Reading file and applying edits.")
-            return apply_edits(self.file_path)
-        logger.debug("Reading file, no edits to apply.")
-        return pd.read_parquet(self.file_path)
+            df = apply_edits(self.file_path)
+        else:
+            logger.debug("Reading file, no edits to apply.")
+            df = pd.read_parquet(self.file_path)
+        _raise_if_duplicates(df, self.id_vars)
+        return df
 
     def _create_layout(self) -> html.Div:
         reason_modal = [
@@ -132,7 +135,8 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
                                     dbc.Col(
                                         dcc.RadioItems(
                                             id=f"{self.module_number}-edit-reason",
-                                            options=[
+                                            # This format for options is recommended by the official Dash documentation, mypy is ignored for this reason.
+                                            options=[  # type: ignore[arg-type]
                                                 {
                                                     "label": "Statistisk gjennomgang",
                                                     "value": "REVIEW",
@@ -426,7 +430,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         changelog_entry = {
             "statistics_name": self.statistics_name,
             "data_source": [self.file_path],
-            "data_target": self.data_target,
+            "data_target": "data_target_placeholder",
             "data_period": "",
             "variable_name": changed_variable,
             "change_event": "M",
@@ -516,11 +520,11 @@ def get_log_path(parquet_path: str | Path) -> Path:
 
     The function searches for known data-state subfolders in the parquet path
     (/inndata/, /klargjorte-data/, /statistikk/, /utdata/) and rewrites the path
-    to the corresponding log folder under /logg/prosessdata/<state>/.
+    to the corresponding temp folder under /<state>/temp/parqueteditor/.
     If none match, the log file is assumed to be in the same directory as the parquet file.
     """
     data_states = ["inndata", "klargjorte-data", "statistikk", "utdata"]
-    log_subpath = "logg/prosessdata"
+    log_subpath = "temp/parqueteditor"
 
     p = Path(parquet_path)
     posix = p.as_posix()
@@ -528,7 +532,7 @@ def get_log_path(parquet_path: str | Path) -> Path:
     for state in data_states:
         token = f"/{state}/"
         if token in posix:
-            replaced = posix.replace(token, f"/{log_subpath}/{state}/")
+            replaced = posix.replace(token, f"/{state}/{log_subpath}/")
             return Path(replaced).with_suffix(".jsonl")
 
     print(f"Expecting subfolder {data_states}. Log file path set to parquet path.")
@@ -647,6 +651,25 @@ def log_as_text(file_path: str | Path) -> str:
     return "\n".join(lines)
 
 
+def _raise_if_duplicates(df: pd.DataFrame, subset: set[str] | list[str]) -> None:
+    """Raises a ValueError if duplicates exist on the given subset of columns.
+
+    Args:
+        df (pd.DataFrame): The dataframe to check.
+        subset (list or str): Column(s) to consider for duplicate detection.
+
+    Raises:
+        ValueError: If there are duplicates based on the id_vars specified in the jsonl log.
+    """
+    dupes = df.duplicated(subset=subset, keep=False)
+
+    if dupes.any():
+        duplicate_rows = df[dupes]
+        raise ValueError(
+            f"Duplicate rows found based on subset {subset}:\n{duplicate_rows}"
+        )
+
+
 def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     """Applies edits from the jsonl log to a parquet file.
 
@@ -660,8 +683,73 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     logger.debug(f"log_path: {log_path}")
     processlog = read_jsonl_log(log_path)
     data = pd.read_parquet(processlog[0]["data_source"][0])
-
+    id_vars = set()
     for line in processlog:
+        for id_var in [
+            unit_id_var["unit_id_variable"]
+            for unit_id_var in line["change_details"]["unit_id"]
+        ]:
+            id_vars.add(id_var)
         data = _apply_change_detail(data, line["change_details"])
-
+    logger.debug(f"id_vars deduced from processlog: {id_vars}")
+    _raise_if_duplicates(data, id_vars)
     return data
+
+
+def export_from_parqueteditor(
+    data_source: str, data_target: str, force_overwrite: bool = False
+) -> None:
+    """Export edited data from parquet editor.
+
+    Reads the jsonl log, updates data_target from placeholder to the supplied value,
+    and saves the updated log next to the exported parquet file.
+    Also applies edits and exports the data.
+
+    Args:
+        data_source: Path to the source parquet file
+        data_target: Path where the exported file will be written
+        force_overwrite: If True, overwrites existing parquet and jsonl files when exporting. Defaults to False.
+
+    Raises:
+        FileNotFoundError: if no log file is found.
+        FileExistsError: If any of the files to export already exists and force_overwrite is False.
+    """
+    log_path = get_log_path(data_source)
+
+    # Read and update the jsonl log with actual data_target value
+    if log_path.exists():
+        processlog = read_jsonl_log(log_path)
+        for entry in processlog:
+            if entry.get("data_target") == "data_target_placeholder":
+                entry["data_target"] = data_target
+        data_path = Path(data_target)
+        bucket_root = data_path.parents[1]
+        relative = data_path.relative_to(bucket_root).with_suffix(".jsonl")
+        export_log_path = bucket_root / "logg" / "prosessdata" / relative
+        export_log_path.parent.mkdir(parents=True, exist_ok=True)
+        logger.debug(f"export_log_path:\n{export_log_path}")
+        Path(data_target).parent.mkdir(parents=True, exist_ok=True)
+        export_log_path.parent.mkdir(parents=True, exist_ok=True)
+        if export_log_path.exists() and not force_overwrite:
+            raise FileExistsError(
+                f"Process log '{export_log_path}' already exists. "
+                f"Use force_overwrite=True to overwrite."
+            )
+        with open(export_log_path, "w", encoding="utf-8") as f:
+            for entry in processlog:
+                f.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
+    else:
+        raise FileNotFoundError(
+            f"Process log not found at '{log_path}'. No edits have been recorded for '{data_source}'."
+        )
+    data_target_path = Path(data_target)
+    if data_target_path.exists() and not force_overwrite:
+        raise FileExistsError(
+            f"Target parquet file '{data_target}' already exists. "
+            "Use force_overwrite=True to overwrite."
+        )
+    updated_data = apply_edits(data_source)
+    updated_data.to_parquet(data_target)
+    print(
+        f"Export completed! File now exists at '{data_target}' with processlog at '{export_log_path}'"
+    )

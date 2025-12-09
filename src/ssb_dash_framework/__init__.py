@@ -33,6 +33,9 @@ from .modules import FreeSearchTab
 from .modules import FreeSearchWindow
 from .modules import HBMethod
 from .modules import HBMethodWindow
+from .modules import MacroModule
+from .modules import MacroModuleTab
+from .modules import MacroModuleWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
@@ -48,6 +51,7 @@ from .modules import SkjemapdfViewerWindow
 from .modules import VisualizationBuilder
 from .modules import VisualizationBuilderWindow
 from .modules import apply_edits
+from .modules import export_from_parqueteditor
 from .modules import get_log_path
 from .setup import VariableSelector
 from .setup import VariableSelectorOption
@@ -110,6 +114,9 @@ __all__ = [
     "FreeSearchWindow",
     "HBMethod",
     "HBMethodWindow",
+    "MacroModule",
+    "MacroModuleTab",
+    "MacroModuleWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
@@ -140,6 +147,7 @@ __all__ = [
     "create_database",
     "create_database_engine",
     "enable_app_logging",
+    "export_from_parqueteditor",
     "get_log_path",
     "main_layout",
     "module_validator",
