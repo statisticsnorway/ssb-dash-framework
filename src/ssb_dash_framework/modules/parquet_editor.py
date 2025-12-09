@@ -667,7 +667,9 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     return data
 
 
-def export_from_parqueteditor(data_source: str, data_target: str) -> None:
+def export_from_parqueteditor(
+    data_source: str, data_target: str, force_overwrite: bool = False
+) -> None:
     """Export edited data from parquet editor.
 
     Reads the jsonl log, updates data_target from placeholder to the supplied value,
@@ -677,9 +679,11 @@ def export_from_parqueteditor(data_source: str, data_target: str) -> None:
     Args:
         data_source: Path to the source parquet file
         data_target: Path where the exported file will be written
+        force_overwrite: If True, overwrites existing parquet and jsonl files when exporting. Defaults to False.
 
     Raises:
         FileNotFoundError: if no log file is found.
+        FileExistsError: If any of the files to export already exists and force_overwrite is False.
     """
     log_path = get_log_path(data_source)
 
@@ -697,6 +701,11 @@ def export_from_parqueteditor(data_source: str, data_target: str) -> None:
         logger.debug(f"export_log_path:\n{export_log_path}")
         Path(data_target).parent.mkdir(parents=True, exist_ok=True)
         export_log_path.parent.mkdir(parents=True, exist_ok=True)
+        if export_log_path.exists() and not force_overwrite:
+            raise FileExistsError(
+                f"Process log '{export_log_path}' already exists. "
+                f"Use force_overwrite=True to overwrite."
+            )
         with open(export_log_path, "w", encoding="utf-8") as f:
             for entry in processlog:
                 f.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
@@ -704,7 +713,12 @@ def export_from_parqueteditor(data_source: str, data_target: str) -> None:
         raise FileNotFoundError(
             f"Process log not found at '{log_path}'. No edits have been recorded for '{data_source}'."
         )
-
+    data_target_path = Path(data_target)
+    if data_target_path.exists() and not force_overwrite:
+        raise FileExistsError(
+            f"Target parquet file '{data_target}' already exists. "
+            "Use force_overwrite=True to overwrite."
+        )
     updated_data = apply_edits(data_source)
     updated_data.to_parquet(data_target)
     print(
