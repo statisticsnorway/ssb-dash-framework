@@ -2,7 +2,7 @@
 
 I denne veiledning er målet at du skal få satt opp en enkel app for å editere en parquet fil, og få se hvordan du eksporterer den editerte filen når du er ferdig.
 
-## Appen
+## Sette opp app med editor
 
 Nedenfor er kode du kan kopiere til din egen .py fil eller notebook, det eneste du trenger å endre er listen over 'id_variabler' og 'filstien' til parquet filen din.
 
@@ -20,7 +20,6 @@ from ssb_dash_framework import ParquetEditorChangelog
 from ssb_dash_framework import app_setup
 from ssb_dash_framework import main_layout
 from ssb_dash_framework import set_variables
-import plotly.express as px
 
 port = 8070
 service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
