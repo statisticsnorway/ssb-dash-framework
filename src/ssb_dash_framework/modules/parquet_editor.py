@@ -66,6 +66,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
+        self.icon = "✏️"  # TODO: Make visible
 
         if "/inndata/" not in data_source:
             logger.warning(
@@ -86,7 +87,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         self.log_filepath = get_log_path(data_source)
         self.label = path.stem
 
-        # Create parent directories for log file if they don't exist
         self.log_filepath.parent.mkdir(parents=True, exist_ok=True)
 
         self.module_layout = self._create_layout()
@@ -111,11 +111,15 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
 
     def get_data(self) -> pd.DataFrame:
         """Reads the parquet file at the supplied file path."""
+        logger.info("Getting data for the module.")
         if self.log_filepath.exists():
             logger.debug("Reading file and applying edits.")
-            return apply_edits(self.file_path)
-        logger.debug("Reading file, no edits to apply.")
-        return pd.read_parquet(self.file_path)
+            df = apply_edits(self.file_path)
+        else:
+            logger.debug("Reading file, no edits to apply.")
+            df = pd.read_parquet(self.file_path)
+        _raise_if_duplicates(df, self.id_vars)
+        return df
 
     def _create_layout(self) -> html.Div:
         reason_modal = [
@@ -647,6 +651,25 @@ def log_as_text(file_path: str | Path) -> str:
     return "\n".join(lines)
 
 
+def _raise_if_duplicates(df: pd.DataFrame, subset: set[str] | list[str]) -> None:
+    """Raises a ValueError if duplicates exist on the given subset of columns.
+
+    Args:
+        df (pd.DataFrame): The dataframe to check.
+        subset (list or str): Column(s) to consider for duplicate detection.
+
+    Raises:
+        ValueError: If there are duplicates based on the id_vars specified in the jsonl log.
+    """
+    dupes = df.duplicated(subset=subset, keep=False)
+
+    if dupes.any():
+        duplicate_rows = df[dupes]
+        raise ValueError(
+            f"Duplicate rows found based on subset {subset}:\n{duplicate_rows}"
+        )
+
+
 def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     """Applies edits from the jsonl log to a parquet file.
 
@@ -660,10 +683,16 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     logger.debug(f"log_path: {log_path}")
     processlog = read_jsonl_log(log_path)
     data = pd.read_parquet(processlog[0]["data_source"][0])
-
+    id_vars = set()
     for line in processlog:
+        for id_var in [
+            unit_id_var["unit_id_variable"]
+            for unit_id_var in line["change_details"]["unit_id"]
+        ]:
+            id_vars.add(id_var)
         data = _apply_change_detail(data, line["change_details"])
-
+    logger.debug(f"id_vars deduced from processlog: {id_vars}")
+    _raise_if_duplicates(data, id_vars)
     return data
 
 
