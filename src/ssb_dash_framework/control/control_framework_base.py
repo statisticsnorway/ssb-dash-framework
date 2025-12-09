@@ -323,6 +323,8 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         """
         logger.info(f"Running control: {control}")
         results = getattr(self, control)()
+        
+        logger.debug("Starting validation of results.")
         if not isinstance(results, pd.DataFrame):
             raise TypeError(
                 f"Result from control method is not a pd.dataframe. Received: '{type(results)}'"
@@ -350,6 +352,11 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 raise ValueError(
                     f"Error when running {control}. Value for column {key} '{value[0]}' does not match period control is run for: {self.applies_to_subset}"
                 )
+        unique_controlids = results["kontrollid"].unique()
+        if len(unique_controlids) != 1:
+            raise ValueError(f"The results contains to many unique values for the column 'kontrollid': {unique_controlids}")
+        if unique_controlids[0] != getattr(self, control)._control_meta["kontrollid"]:
+            raise ValueError(f"The registered kontrollid for this control is '{getattr(self, control)._control_meta['kontrollid']}', but your results contain '{unique_controlids[0]}'. These must be identical.")
         if results.duplicated(subset=[*self.time_units, "ident", "refnr"]).any():
             logger.debug(f"Duplicates found in results from {control}:\n{results[results.duplicated(subset=[*self.time_units, 'ident', 'refnr'], keep=False)]}")
             raise ValueError(f"There are duplicated rows in the results for {control}.")
