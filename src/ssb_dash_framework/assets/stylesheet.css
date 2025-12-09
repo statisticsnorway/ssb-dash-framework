@@ -217,6 +217,115 @@ Bofregistry
 }
 
 /*
+MacroModule
+*/
+
+.macromodule {
+    padding: 20px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.macromodule-container {
+    display: flex;
+    gap: 20px;
+    flex: 0 0 auto;
+}
+
+.macromodule-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 300px;
+    padding-right: 20px;
+}
+
+.macromodule-sidebar h1 {
+    font-size: 35px;
+    margin-bottom: 30px;
+}
+
+.macromodule-label {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.macromodule-dropdown,
+.macromodule-naring-dropdown,
+.macromodule-radio-buttons {
+    margin-bottom: 20px;
+}
+
+/* Radio button styling */
+.macromodule-radio-buttons label {
+    display: inline-block;
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    margin-right: 10px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.macromodule-radio-buttons input[type="radio"] {
+    display: none;
+}
+
+.macromodule-radio-buttons label:has(input[type="radio"]:checked) {
+    background-color: #d4d4d4;
+    color: #2c2c2c;
+    font-weight: bold;
+    border-color: #000;
+}
+
+/* Multi-select dropdown styling */
+.macromodule-naring-dropdown .Select-value {
+    background-color: #eee !important;
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+.macromodule-naring-dropdown .Select-value-label {
+    color: #313131 !important;
+}
+
+.macromodule-naring-dropdown .Select-value-icon {
+    color: #000 !important;
+}
+
+/* Grid containers */
+.macromodule-heatmap-grid-container,
+.macromodule-detail-grid-container {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.macromodule-heatmap-grid-container {
+    height: 900px;
+    overflow: hidden;
+}
+
+.macromodule-detail-grid-container {
+    margin-top: 20px;
+    height: 750px;
+}
+
+.macromodule-detail-grid-container h5 {
+    margin-top: 10px;
+}
+
+/* Row styling */
+.macromodule-naring-mismatch {
+    opacity: 0.5 !important;
+}
+
+/*
 canvas
 */
 .canvas {
