@@ -323,7 +323,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         """
         logger.info(f"Running control: {control}")
         results = getattr(self, control)()
-        
+
         logger.debug("Starting validation of results.")
         if not isinstance(results, pd.DataFrame):
             raise TypeError(
@@ -331,14 +331,23 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             )
         for column in self._required_kontrollutslag_columns:
             if column not in results.columns:
-                raise ValueError(
-                    f"Missing required column '{column}' for result from '{control}'."
-                )
-        allowed = set(self._required_kontrollutslag_columns+["skjema", "verdi"])
+                if (
+                    column == "kontrollid"
+                ):  # This is required to be identical anyways so this just simplifies the process a bit.
+                    results["kontrollid"] = getattr(self, control)._control_meta[
+                        "kontrollid"
+                    ]
+                else:
+                    raise ValueError(
+                        f"Missing required column '{column}' for result from '{control}'."
+                    )
+        allowed = set(self._required_kontrollutslag_columns + ["skjema", "verdi"])
         current = set(results.columns)
         extra_columns = current - allowed
         if extra_columns:
-            raise ValueError(f"In order to prevent errors, unnecessary columns needs to be removed from result of {control}: {extra_columns}\n\nOne possible solution is ending your control code with this 'return df[['aar', 'kvartal', 'skjema', 'ident', 'refnr', 'kontrollid', 'utslag', 'verdi']]'")
+            raise ValueError(
+                f"In order to prevent errors, unnecessary columns needs to be removed from result of {control}: {extra_columns}\n\nOne possible solution is ending your control code with this 'return df[['aar', 'kvartal', 'skjema', 'ident', 'refnr', 'kontrollid', 'utslag', 'verdi']]'"
+            )
         if control not in self.controls:
             raise ValueError(
                 f"Error when running {control}. Could not find {results['kontrollid'].unique()} among registered controls. Valid options retrieved from the 'kontrollutslag' table: {self.controls}"
@@ -354,11 +363,17 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 )
         unique_controlids = results["kontrollid"].unique()
         if len(unique_controlids) != 1:
-            raise ValueError(f"The results contains to many unique values for the column 'kontrollid': {unique_controlids}")
+            raise ValueError(
+                f"The results contains to many unique values for the column 'kontrollid': {unique_controlids}"
+            )
         if unique_controlids[0] != getattr(self, control)._control_meta["kontrollid"]:
-            raise ValueError(f"The registered kontrollid for this control is '{getattr(self, control)._control_meta['kontrollid']}', but your results contain '{unique_controlids[0]}'. These must be identical.")
+            raise ValueError(
+                f"The registered kontrollid for this control is '{getattr(self, control)._control_meta['kontrollid']}', but your results contain '{unique_controlids[0]}'. These must be identical."
+            )
         if results.duplicated(subset=[*self.time_units, "ident", "refnr"]).any():
-            logger.debug(f"Duplicates found in results from {control}:\n{results[results.duplicated(subset=[*self.time_units, 'ident', 'refnr'], keep=False)]}")
+            logger.debug(
+                f"Duplicates found in results from {control}:\n{results[results.duplicated(subset=[*self.time_units, 'ident', 'refnr'], keep=False)]}"
+            )
             raise ValueError(f"There are duplicated rows in the results for {control}.")
         logger.info(
             f"Finished running {control}, proceeding with updating data. Results from control:\n{results['utslag'].value_counts()}"
@@ -368,7 +383,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         logger.info(f"Updated kontrollutslag based on new run of '{control}'")
         return results
 
-    def get_current_kontrollutslag(self, specific_control = None):
+    def get_current_kontrollutslag(self, specific_control=None):
         logger.info("Getting current kontrollutslag.")
         if isinstance(self.conn, EimerDBInstance):
             conn = ibis.polars.connect()
@@ -389,7 +404,9 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         if specific_control:
             kontrollutslag = kontrollutslag.filter(_.kontrollid == specific_control)
         kontrollutslag = kontrollutslag.to_pandas()
-        logger.debug(f"Existing kontrollutslag\nAmount:{kontrollutslag['utslag'].value_counts()}\nData:\n{kontrollutslag}")
+        logger.debug(
+            f"Existing kontrollutslag\nAmount:{kontrollutslag['utslag'].value_counts()}\nData:\n{kontrollutslag}"
+        )
         return kontrollutslag
 
     def insert_new_records(self, control_results):
@@ -447,8 +464,10 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         if existing_kontrollutslag.empty:
             logger.info("No existing rows found, ending here.")
             return None
-        logger.debug(f"control_results:\n{control_results}\nexisting_kontrollutslag:\n{existing_kontrollutslag}")
-            
+        logger.debug(
+            f"control_results:\n{control_results}\nexisting_kontrollutslag:\n{existing_kontrollutslag}"
+        )
+
         merged = control_results.merge(
             existing_kontrollutslag,
             on=["kontrollid", "ident", "refnr"],
@@ -456,9 +475,13 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             indicator=True,
         ).dropna()
         if merged.empty:
-            raise ValueError(f"Combined results from 'control_results' and 'existing_kontrollutslag' is empty.")
+            raise ValueError(
+                "Combined results from 'control_results' and 'existing_kontrollutslag' is empty."
+            )
         logger.debug(merged)
-        logger.debug(f"Utslag left:\n{merged['utslag_x'].value_counts()}\nUtslag right:\n{merged['utslag_y'].value_counts()}")
+        logger.debug(
+            f"Utslag left:\n{merged['utslag_x'].value_counts()}\nUtslag right:\n{merged['utslag_y'].value_counts()}"
+        )
         changed = merged[merged["utslag_x"] != merged["utslag_y"]][
             ["kontrollid", "ident", "refnr", "verdi_x", "utslag_x"]
         ].rename(columns={"utslag_x": "utslag", "verdi_x": "verdi"})
