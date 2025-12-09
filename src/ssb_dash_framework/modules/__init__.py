@@ -42,6 +42,9 @@ from .parquet_editor import ParquetEditorChangelog
 from .parquet_editor import apply_edits
 from .parquet_editor import export_from_parqueteditor
 from .parquet_editor import get_log_path
+from .macro_module import MacroModule
+from .macro_module import MacroModuleTab
+from .macro_module import MacroModuleWindow
 from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab
@@ -81,6 +84,9 @@ __all__ = [
     "FreeSearchWindow",
     "HBMethod",
     "HBMethodWindow",
+    "MacroModule",
+    "MacroModuleTab",
+    "MacroModuleWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
