@@ -123,7 +123,10 @@ class MacroModule_ParquetReader:
             raise PreventUpdate from None
 
         if detail_grid:
-            t = t.filter(t.naring.substr(0, length=nace_siffer_level).isin(nace_list))
+            if nace_list:
+                t = t.filter(
+                    t.naring.substr(0, length=nace_siffer_level).isin(nace_list)
+                )
         else:
             # for å loade fleire næringar ved innlasting
             nace_2_siffer_liste = [n.split(".")[0][:2] for n in nace_list]
@@ -733,10 +736,15 @@ class MacroModule:
                 aar - 1,
                 self.base_path,
                 foretak_or_bedrift,
-                [selected_nace],
+                [],
                 nace_siffer_level,
                 detail_grid=True,
             )
+            # må finne ut om vi vil inkludere tala frå fjoråret om dei ikkje inngår i denne næringa. blir vanskeleg å filtrere på diff då i så fall. kan evt berre legge på ei markering på dei som hadde ei anna bedriftsnæring i fjor.
+            id_col: Literal["orgnr_foretak", "orgnr_bedrift"] = (
+                "orgnr_foretak" if foretak_or_bedrift == "foretak" else "orgnr_bedrift"
+            )
+            t_1 = t_1.filter(t_1[id_col].isin(t[id_col]))
 
             # Apply macro-level truncation if needed
             if macro_level not in ("sammensatte variabler",):
@@ -764,6 +772,9 @@ class MacroModule:
                 "aar",
             ]
 
+            t = t.select([c for c in select_cols if c in t.columns])
+            t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
+
             if foretak_or_bedrift == "foretak":
                 rename_mapping = {
                     "naring_f": "naring",
@@ -778,8 +789,6 @@ class MacroModule:
                     "orgnr_b": "orgnr_bedrift",
                 }
 
-            t = t.select([c for c in select_cols if c in t.columns])
-            t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
             t = t.rename(**rename_mapping)
             t_1 = t_1.rename(**rename_mapping)
 
@@ -789,8 +798,8 @@ class MacroModule:
             rename_map = {
                 v: k for k, v in HEATMAP_VARIABLES.items() if k in combined.columns
             }
-            combined = combined.rename(**rename_map)
 
+            combined = combined.rename(**rename_map)
             df = combined.execute()
 
             df_current = df[df["aar"] == str(aar)].copy()
@@ -823,9 +832,22 @@ class MacroModule:
                     )
 
             if valgt_variabel in df.columns and f"{valgt_variabel}_x" in df.columns:
-                df[f"{valgt_variabel}_diff"] = df[valgt_variabel].fillna(0) - df[
-                    f"{valgt_variabel}_x"
-                ].fillna(0)
+                naring_prev: Literal["naring_b", "naring_f"] = (
+                    "naring_b" if "naring_b" in df.columns else "naring_f"
+                )
+                same_prefix = (
+                    df[f"{naring_prev}_x"].str[:nace_siffer_level]
+                    == df[naring_prev].str[:nace_siffer_level]
+                )
+                prev_value_adjusted = (
+                    df[f"{valgt_variabel}_x"].where(same_prefix, other=0).fillna(0)
+                )
+
+                # to correctly calculate diffs per naring for bedrifter/foretak that have changed naring
+                df[f"{valgt_variabel}_diff"] = (
+                    df[valgt_variabel].fillna(0) - prev_value_adjusted
+                )
+
                 heatmap_value_change = cell_data.get("value", 0)
                 heatmap_value_change = float(heatmap_value_change)
                 ascending_sorting_param: bool = heatmap_value_change < 0

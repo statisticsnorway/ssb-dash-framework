@@ -155,39 +155,62 @@ window.dashAgGridFunctions.MacroModule = {
 
     // === Function displayDiffHighlight (Compare current cell's value to previous year, highlight if different) ===
     displayDiffHighlight(props) {
-        const field = props.colDef.field;
-        const value = props.value;
+    const field = props.colDef.field;
+    const value = props.value;
 
-        if (!props.data) return {};
+    if (!props.data) return {};
 
-        // convert to string for comparison
-        const normalize = (v) => v !== null && v !== undefined ? String(v).trim() : "";
+    const normalize = (v) =>
+        v !== null && v !== undefined ? String(v).trim() : "";
 
-        if (field.endsWith('_x')) {
-            // prev year
-            const currentField = field.replace('_x', '');
-            const currentValue = normalize(props.data[currentField]);
-            const prevValue = normalize(value);
+    // special handling for naring_b / naring_f
+    if (field === "naring_b" || field === "naring_f") {
+        const currentVal = normalize(value);
+        const prevVal = normalize(props.data[field + "_x"]);
 
+        const currentPrefix = currentVal.substring(0, 2); // first 2 digits
+        const prevPrefix = prevVal.substring(0, 2);
+
+        // CASE A: prefix changed → darker yellow
+        if (currentPrefix && prevPrefix && currentPrefix !== prevPrefix) {
             return {
-                backgroundColor: '#e8e9eb',
-                color: 'black'
+                backgroundColor: "#ffe491ff",
+                color: "black",
             };
         }
 
-        // current year
-        const prevField = field + '_x';
-        const prevValue = normalize(props.data[prevField]);
-        const currentValue = normalize(value);
-
-        if (prevValue && currentValue && prevValue !== currentValue) {
+        // CASE B: prefix same → normal diff behaviour
+        if (prevVal && currentVal && prevVal !== currentVal) {
             return {
-                backgroundColor: '#fff8c7ff',
-                color: 'black'
+                backgroundColor: "#fff8c7ff", // light yellow
+                color: "black"
             };
         }
 
-        return {};
+        return {}; // no change
+    }
+
+    // all other columns
+    if (field.endsWith("_x")) {
+        return {
+            backgroundColor: '#e8e9eb',
+            color: 'black'
+        };
+    }
+
+    const prevField = field + "_x";
+    const prevValue = normalize(props.data[prevField]);
+    const currentValue = normalize(value);
+
+    if (prevValue && currentValue && prevValue !== currentValue) {
+        return {
+            backgroundColor: "#fff8c7ff",
+            color: "black"
+        };
+    }
+
+    return {};
+
     },
 
      // === Function displayNaringRowMismatch (Grey out row if first 2 digits of naring_b and naring_f differ) ===
