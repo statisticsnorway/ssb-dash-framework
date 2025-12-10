@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Hashable
-from typing import Any, Literal
+from typing import Any
 from typing import ClassVar
 from typing import Literal
 
@@ -124,7 +124,9 @@ class MacroModule_ParquetReader:
 
         if detail_grid:
             if nace_list:
-                t = t.filter(t.naring.substr(0, length=nace_siffer_level).isin(nace_list))
+                t = t.filter(
+                    t.naring.substr(0, length=nace_siffer_level).isin(nace_list)
+                )
         else:
             # for å loade fleire næringar ved innlasting
             nace_2_siffer_liste = [n.split(".")[0][:2] for n in nace_list]
@@ -739,7 +741,9 @@ class MacroModule:
                 detail_grid=True,
             )
             # må finne ut om vi vil inkludere tala frå fjoråret om dei ikkje inngår i denne næringa. blir vanskeleg å filtrere på diff då i så fall. kan evt berre legge på ei markering på dei som hadde ei anna bedriftsnæring i fjor.
-            id_col: Literal['orgnr_foretak', 'orgnr_bedrift'] = "orgnr_foretak" if foretak_or_bedrift == "foretak" else "orgnr_bedrift"
+            id_col: Literal["orgnr_foretak", "orgnr_bedrift"] = (
+                "orgnr_foretak" if foretak_or_bedrift == "foretak" else "orgnr_bedrift"
+            )
             t_1 = t_1.filter(t_1[id_col].isin(t[id_col]))
 
             # Apply macro-level truncation if needed
@@ -828,15 +832,21 @@ class MacroModule:
                     )
 
             if valgt_variabel in df.columns and f"{valgt_variabel}_x" in df.columns:
-                naring_prev: Literal['naring_b', 'naring_f'] = "naring_b" if "naring_b" in df.columns else "naring_f"
+                naring_prev: Literal["naring_b", "naring_f"] = (
+                    "naring_b" if "naring_b" in df.columns else "naring_f"
+                )
                 same_prefix = (
                     df[f"{naring_prev}_x"].str[:nace_siffer_level]
                     == df[naring_prev].str[:nace_siffer_level]
                 )
-                prev_value_adjusted = df[f"{valgt_variabel}_x"].where(same_prefix, other=0).fillna(0)
-                
+                prev_value_adjusted = (
+                    df[f"{valgt_variabel}_x"].where(same_prefix, other=0).fillna(0)
+                )
+
                 # to correctly calculate diffs per naring for bedrifter/foretak that have changed naring
-                df[f"{valgt_variabel}_diff"] = df[valgt_variabel].fillna(0) - prev_value_adjusted
+                df[f"{valgt_variabel}_diff"] = (
+                    df[valgt_variabel].fillna(0) - prev_value_adjusted
+                )
 
                 heatmap_value_change = cell_data.get("value", 0)
                 heatmap_value_change = float(heatmap_value_change)
