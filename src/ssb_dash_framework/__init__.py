@@ -1,6 +1,7 @@
 """SSB Dash Framework."""
 
 from .control import ControlFrameworkBase
+from .control import register_control
 from .modules import Aarsregnskap
 from .modules import AarsregnskapTab
 from .modules import AarsregnskapWindow
@@ -150,6 +151,7 @@ __all__ = [
     "get_log_path",
     "main_layout",
     "module_validator",
+    "register_control",
     "set_variables",
     "sidebar_button",
     #    "hb_method",
