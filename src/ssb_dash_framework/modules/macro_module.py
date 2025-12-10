@@ -828,9 +828,16 @@ class MacroModule:
                     )
 
             if valgt_variabel in df.columns and f"{valgt_variabel}_x" in df.columns:
-                df[f"{valgt_variabel}_diff"] = df[valgt_variabel].fillna(0) - df[
-                    f"{valgt_variabel}_x"
-                ].fillna(0)
+                naring_prev: Literal['naring_b', 'naring_f'] = "naring_b" if "naring_b" in df.columns else "naring_f"
+                same_prefix = (
+                    df[f"{naring_prev}_x"].str[:nace_siffer_level]
+                    == df[naring_prev].str[:nace_siffer_level]
+                )
+                prev_value_adjusted = df[f"{valgt_variabel}_x"].where(same_prefix, other=0).fillna(0)
+                
+                # to correctly calculate diffs per naring for bedrifter/foretak that have changed naring
+                df[f"{valgt_variabel}_diff"] = df[valgt_variabel].fillna(0) - prev_value_adjusted
+
                 heatmap_value_change = cell_data.get("value", 0)
                 heatmap_value_change = float(heatmap_value_change)
                 ascending_sorting_param: bool = heatmap_value_change < 0
