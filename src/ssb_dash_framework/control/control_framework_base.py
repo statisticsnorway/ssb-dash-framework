@@ -245,9 +245,11 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         logger.info("Getting current contents of table 'kontroller'")
         if isinstance(self.conn, EimerDBInstance):
             conn = ibis.polars.connect()
-            kontroller = self.conn.query(
-                "SELECT * FROM kontroller"
-            )  # maybe add something like this?partition_select=self.applies_to_subset
+            try:
+                kontroller = self.conn.query(
+                    "SELECT * FROM kontroller"
+                )  # maybe add something like this?partition_select=self.applies_to_subset
+            except
             conn.create_table("kontroller", kontroller)
         elif conn_is_ibis(self.conn):
             conn = self.conn
@@ -384,9 +386,11 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         logger.info("Getting current kontrollutslag.")
         if isinstance(self.conn, EimerDBInstance):
             conn = ibis.polars.connect()
-            kontrollutslag = self.conn.query(
-                "SELECT * FROM kontrollutslag"
-            )  # maybe add something like this?partition_select=self.applies_to_subset
+            try:
+                kontrollutslag = self.conn.query(
+                    "SELECT * FROM kontrollutslag"
+                )  # maybe add something like this?partition_select=self.applies_to_subset
+            except
             conn.create_table("kontrollutslag", kontrollutslag)
         elif conn_is_ibis(self.conn):
             conn = self.conn
