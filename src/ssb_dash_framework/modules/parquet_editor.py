@@ -19,6 +19,7 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from pandas.io import parquet
 from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 
 from ..setup.variableselector import VariableSelector
@@ -27,6 +28,13 @@ from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
+def check_for_bucket_path(path):
+    """Temporary check to make sure users keep to using '/buckets/' paths.
+    
+    Need to test more with UPath to make sure nothing unexpected happens.
+    """
+    if not path.startswith("/buckets/"):
+        raise NotImplementedError("Due to differences in how files in '/buckets/...' behave compared to files in the cloud buckets this functionality is currently limited to only work with paths that starts with '/buckets'.")
 
 class ParquetEditor:  # TODO add validation of dataframe, workshop argument names
     """Simple module with the sole purpose of editing a parquet file.
@@ -67,7 +75,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
         self.icon = "✏️"  # TODO: Make visible
-
+        check_for_bucket_path(data_source)
         if "/inndata/" not in data_source:
             logger.warning(
                 "Editing is supposed to happen between inndata and klargjort, you might not be following 'Datatilstander'."
@@ -679,6 +687,7 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     Returns:
         A pd.DataFrame with updated data.
     """
+    check_for_bucket_path(parquet_path)
     log_path = get_log_path(parquet_path)
     logger.debug(f"log_path: {log_path}")
     processlog = read_jsonl_log(log_path)
@@ -714,6 +723,7 @@ def export_from_parqueteditor(
         FileNotFoundError: if no log file is found.
         FileExistsError: If any of the files to export already exists and force_overwrite is False.
     """
+    check_for_bucket_path(data_source)
     log_path = get_log_path(data_source)
 
     # Read and update the jsonl log with actual data_target value
