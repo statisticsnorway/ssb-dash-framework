@@ -11,7 +11,10 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
+from eimerdb import EimerDBInstance
 from plotly.graph_objects import Figure
+
+from ssb_dash_framework.utils import conn_is_ibis
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
@@ -46,11 +49,15 @@ class AltinnDataCapture(ABC):
             time_units (list): A list of the time units used.
             label (str): The label for the module.
             database_type (str | None): The selected method / set of database connections. Defaults to None.
-            database (object): The database connection (eimerdb or other with a .query method).
+            database (object): The database connection.
+
+        Raises:
+            TypeError if database is invalid connection type.
         """
-        assert (
-            hasattr(database, "query") or database is None  # Necessary because of mypy
-        ), "The database object, if defined, must have a 'query' method."
+        if not isinstance(database, EimerDBInstance) and not conn_is_ibis(database):
+            raise TypeError(
+                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(database)}"
+            )
         self.module_number = AltinnDataCapture._id_number
         self.module_name = self.__class__.__name__
         AltinnDataCapture._id_number += 1
@@ -59,16 +66,19 @@ class AltinnDataCapture(ABC):
         self.label = label
         self.database_type = database_type
         self.database = database
-        self.time_units = time_units
         self.get_amount_func = (None,)
         self.get_cumulative_func = None
-        self.is_valid()
 
         self.module_layout = self._create_layout()
 
         self.variableselector = VariableSelector(
-            selected_inputs=self.time_units, selected_states=[]
+            selected_inputs=time_units, selected_states=[]
         )
+        self.time_units = [
+            self.variableselector.get_option(x).id.removeprefix("var-")
+            for x in time_units
+        ]
+        self.is_valid()
         self.module_callbacks()
         module_validator(self)
 
@@ -87,8 +97,8 @@ class AltinnDataCapture(ABC):
                 raise NotImplementedError(
                     f"database_type must be one of {AltinnDataCapture.implemented_database_types}."
                 )
-            if not hasattr(self.database, "query"):
-                raise TypeError("The provided object does not have a 'query' method.")
+            # if not hasattr(self.database, "query"):
+            #     raise TypeError("The provided object does not have a 'query' method.")
 
         elif self.database_type is None:
             if self.get_amount_func is None or self.get_cumulative_func is None:
@@ -99,9 +109,9 @@ class AltinnDataCapture(ABC):
                 raise NotImplementedError(
                     "Currently this behavior is not implemented"
                 )  # TODO implement this functionality.
-        if not isinstance(self.time_units, list) or not all(
-            isinstance(unit, str) for unit in self.time_units
-        ):
+        if not isinstance(self.time_units, list):
+            raise TypeError("time_units must be a list of strings.")
+        if not all(isinstance(unit, str) for unit in self.time_units):
             raise TypeError("time_units must be a list of strings.")
 
     def _create_layout(self) -> html.Div:
@@ -183,7 +193,7 @@ class AltinnDataCapture(ABC):
     def module_callbacks(self) -> None:
         """Defines the callbacks for the AltinnDataCapture module."""
         dynamic_states = [
-            self.variableselector.get_inputs(),
+            self.variableselector.get_all_inputs(),
         ]
         if self.database_type == "altinn_default":
             self.callbacks_eimerdb_default(dynamic_states)

@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import time
 import zoneinfo
 from collections.abc import Callable
 from datetime import datetime
@@ -221,8 +220,8 @@ class EditingTable:
         - Cancelling edits (reverting table to saved state) (`cancel_edit`).
         """
         dynamic_states = [
-            self.variableselector.get_inputs(),
-            self.variableselector.get_states(),
+            self.variableselector.get_all_inputs(),
+            self.variableselector.get_all_states(),
         ]
 
         @callback(  # type: ignore[misc]
@@ -414,7 +413,7 @@ class EditingTable:
                 edit_with_reason["user"] = self.user
                 edit_with_reason["change_event"] = "manual"
 
-                aware_timestamp = datetime.now(tz)  # timezone-aware
+                aware_timestamp = datetime.now(self.tz)  # timezone-aware
                 naive_timestamp = aware_timestamp.replace(tzinfo=None)  # drop tzinfo
                 edit_with_reason["timestamp"] = naive_timestamp
 

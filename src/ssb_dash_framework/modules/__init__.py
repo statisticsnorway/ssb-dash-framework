@@ -24,9 +24,6 @@ from .building_blocks import EditingTableWindow
 from .building_blocks import FigureDisplay
 from .building_blocks import FigureDisplayTab
 from .building_blocks import FigureDisplayWindow
-
-# from .hb_method import HBMethod
-# from .hb_method import HBMethodWindow
 from .building_blocks import MapDisplay
 from .building_blocks import MapDisplayTab
 from .building_blocks import MapDisplayWindow
@@ -38,6 +35,16 @@ from .control import ControlWindow
 from .freesearch import FreeSearch
 from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
+from .hb_method import HBMethod
+from .hb_method import HBMethodWindow
+from .macro_module import MacroModule
+from .macro_module import MacroModuleTab
+from .macro_module import MacroModuleWindow
+from .parquet_editor import ParquetEditor
+from .parquet_editor import ParquetEditorChangelog
+from .parquet_editor import apply_edits
+from .parquet_editor import export_from_parqueteditor
+from .parquet_editor import get_log_path
 from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab
@@ -75,18 +82,26 @@ __all__ = [
     "FreeSearch",
     "FreeSearchTab",
     "FreeSearchWindow",
-    # "HBMethod",
-    # "HBMethodWindow",
+    "HBMethod",
+    "HBMethodWindow",
+    "MacroModule",
+    "MacroModuleTab",
+    "MacroModuleWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",
+    "ParquetEditor",
+    "ParquetEditorChangelog",
     "PimemorizerTab",
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",
     "VisualizationBuilder",
     "VisualizationBuilderWindow",
+    "apply_edits",
+    "export_from_parqueteditor",
+    "get_log_path",
 ]

@@ -375,8 +375,8 @@ class BofInformation(ABC):
             - The `bof_data` callback fetches and updates data in the cards based on the selected foretak.
         """
         dynamic_states = [
-            self.variableselector.get_inputs(),
-            self.variableselector.get_states(),
+            self.variableselector.get_all_inputs(),
+            self.variableselector.get_all_states(),
         ]
 
         @callback(  # type: ignore[misc]

@@ -1,6 +1,7 @@
 """SSB Dash Framework."""
 
 from .control import ControlFrameworkBase
+from .control import register_control
 from .modules import Aarsregnskap
 from .modules import AarsregnskapTab
 from .modules import AarsregnskapWindow
@@ -30,18 +31,28 @@ from .modules import FigureDisplayWindow
 from .modules import FreeSearch
 from .modules import FreeSearchTab
 from .modules import FreeSearchWindow
+from .modules import HBMethod
+from .modules import HBMethodWindow
+from .modules import MacroModule
+from .modules import MacroModuleTab
+from .modules import MacroModuleWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
 from .modules import MultiModule
 from .modules import MultiModuleTab
 from .modules import MultiModuleWindow
+from .modules import ParquetEditor
+from .modules import ParquetEditorChangelog
 from .modules import PimemorizerTab
 from .modules import SkjemapdfViewer
 from .modules import SkjemapdfViewerTab
 from .modules import SkjemapdfViewerWindow
 from .modules import VisualizationBuilder
 from .modules import VisualizationBuilderWindow
+from .modules import apply_edits
+from .modules import export_from_parqueteditor
+from .modules import get_log_path
 from .setup import VariableSelector
 from .setup import VariableSelectorOption
 from .setup import app_setup
@@ -53,17 +64,17 @@ from .utils import DebugInspector
 from .utils import DemoDataCreator
 from .utils import TabImplementation
 from .utils import WindowImplementation
+from .utils import _get_kostra_r
+from .utils import active_no_duplicates_refnr_list
+from .utils import conn_is_ibis
 from .utils import create_alert
 from .utils import create_database
 from .utils import create_database_engine
 from .utils import enable_app_logging
+from .utils import hb_method
 from .utils import module_validator
 from .utils import sidebar_button
-from .utils import apply_edits
 
-# from .modals import HBMethod
-# from .utils import _get_kostra_r
-# from .utils import hb_method
 # from .utils import th_error
 
 __all__ = [
@@ -90,10 +101,8 @@ __all__ = [
     "ControlFrameworkBase",
     "ControlWindow",
     "DatabaseBuilderAltinnEimerdb",
-    "create_database",
-    "create_database_engine",
-    "DemoDataCreator",
     "DebugInspector",
+    "DemoDataCreator",
     "EditingTable",
     "EditingTableTab",
     "EditingTableWindow",
@@ -103,8 +112,11 @@ __all__ = [
     "FreeSearch",
     "FreeSearchTab",
     "FreeSearchWindow",
-    # "HBMethod",
-    # "HBMethodWindow",
+    "HBMethod",
+    "HBMethodWindow",
+    "MacroModule",
+    "MacroModuleTab",
+    "MacroModuleWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
@@ -115,6 +127,8 @@ __all__ = [
     "MultiModuleWindow",
     "MultiModuleWindow",
     "MultiModuleWindow",
+    "ParquetEditor",
+    "ParquetEditorChangelog",
     "PimemorizerTab",
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
@@ -125,11 +139,19 @@ __all__ = [
     "VisualizationBuilder",
     "VisualizationBuilderWindow",
     "WindowImplementation",
+    "active_no_duplicates_refnr_list",
     "app_setup",
+    "apply_edits",
+    "conn_is_ibis",
     "create_alert",
+    "create_database",
+    "create_database_engine",
     "enable_app_logging",
+    "export_from_parqueteditor",
+    "get_log_path",
     "main_layout",
     "module_validator",
+    "register_control",
     "set_variables",
     "sidebar_button",
     #    "hb_method",

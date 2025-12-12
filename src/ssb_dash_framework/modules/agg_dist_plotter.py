@@ -21,6 +21,8 @@ from eimerdb import EimerDBInstance
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
+from ..utils import active_no_duplicates_refnr_list
+from ..utils import conn_is_ibis
 from ..utils.eimerdb_helpers import create_partition_select
 from ..utils.module_validation import module_validator
 
@@ -71,11 +73,8 @@ class AggDistPlotter(ABC):
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
         )
-        assert hasattr(
-            conn, "query"
-        ), (  # Necessary because of mypy
-            "The database object must have a 'query' method."
-        )
+        #        if not isinstance(conn, EimerDBInstance) and conn.__class__.__name__ != "Backend":
+        #            raise TypeError("Argument 'conn' must be an 'EimerDBInstance' or Ibis backend. Received: {type(conn)}")
         self.module_number = AggDistPlotter._id_number
         self.module_name = self.__class__.__name__
         AggDistPlotter._id_number += 1
@@ -83,10 +82,15 @@ class AggDistPlotter(ABC):
         self.icon = "🌌"
         self.label = "Aggregering"
 
-        self.time_units = time_units
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
         )
+        self.time_units = [
+            self.variableselector.get_option(x).id.removeprefix("var-")
+            for x in time_units
+        ]
+        print("TIME UNITS ", self.time_units)
+
         self.conn = conn
 
         self.module_layout = self._create_layout()
@@ -97,7 +101,7 @@ class AggDistPlotter(ABC):
     def _is_valid(self) -> None:
         for var in AggDistPlotter._required_variables:
             try:
-                self.variableselector.get_option(var)
+                self.variableselector.get_option(f"var-{var}", search_target="id")
             except ValueError as e:
                 raise ValueError(
                     f"AggDistPlotter requires the variable selector option '{var}' to be set."
@@ -257,7 +261,7 @@ class AggDistPlotter(ABC):
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the AggDistPlotter module."""
-        dynamic_states = self.variableselector.get_inputs()
+        dynamic_states = self.variableselector.get_all_inputs()
 
         @callback(  # type: ignore[misc]
             Output("aggdistplotter-radioitems", "options"),
@@ -305,28 +309,29 @@ class AggDistPlotter(ABC):
                 raise ValueError(
                     f"Trying to run query with no value for 'tabell'. Received value: '{tabell}'"
                 )
+
+            partition_args = dict(zip(self.time_units, dynamic_states, strict=False))
+            partition_select_no_skjema = create_partition_select(
+                desired_partitions=self.time_units, skjema=None, **partition_args
+            )
+            updated_partition_select = self.update_partition_select(
+                partition_select_no_skjema, rullerende_var
+            )
+            time_vars = updated_partition_select.get(rullerende_var)
+            if not isinstance(time_vars, list):
+                raise ValueError(
+                    f"'time_vars' must be list, not '{type(time_vars)}': {time_vars}"
+                )
+            if time_vars[0] is None or time_vars[1] is None:
+                raise ValueError(
+                    "'time_vars' must have two values and they cannot be None."
+                )
+            _t_0 = str(time_vars[0])
+            _t_1 = str(time_vars[1])
             if isinstance(self.conn, EimerDBInstance):
-                con = ibis.polars.connect()
-                partition_args = dict(
-                    zip(self.time_units, dynamic_states, strict=False)
-                )
-                partition_select_no_skjema = create_partition_select(
-                    desired_partitions=self.time_units, skjema=None, **partition_args
-                )
-                updated_partition_select = self.update_partition_select(
-                    partition_select_no_skjema, rullerende_var
-                )
-                time_vars = updated_partition_select.get(rullerende_var)
-                if not isinstance(time_vars, list):
-                    raise ValueError(
-                        f"'time_vars' must be list, not '{type(time_vars)}': {time_vars}"
-                    )
-                if time_vars[0] is None or time_vars[1] is None:
-                    raise ValueError(
-                        "'time_vars' must have two values and they cannot be None."
-                    )
-                _t_0 = str(time_vars[0])
-                _t_1 = str(time_vars[1])
+                _t_0 = int(_t_0)
+                _t_1 = int(_t_1)
+                conn = ibis.polars.connect()
 
                 skjemamottak = self.conn.query(
                     "SELECT * FROM skjemamottak",
@@ -340,29 +345,20 @@ class AggDistPlotter(ABC):
                     "SELECT * FROM datatyper", partition_select=updated_partition_select
                 )
 
-                con.create_table("skjemamottak", skjemamottak)
-                con.create_table("skjemadata_hoved", skjemadata)
-                con.create_table("datatyper", datatyper)
+                conn.create_table("skjemamottak", skjemamottak)
+                conn.create_table("skjemadata_hoved", skjemadata)
+                conn.create_table("datatyper", datatyper)
+            elif conn_is_ibis(self.conn):
+                conn = self.conn
             else:
                 raise NotImplementedError(
                     f"Connection type '{type(self.conn)}' is currently not implemented."
                 )
 
-            skjemamottak_tbl = con.table("skjemamottak")
-            skjemadata_tbl = con.table("skjemadata_hoved")
-            datatyper_tbl = con.table("datatyper")
+            skjemadata_tbl = conn.table("skjemadata_hoved")
+            datatyper_tbl = conn.table("datatyper")
 
-            skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
-                skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
-                .order_by(ibis.desc(skjemamottak_tbl.dato_mottatt))
-                .distinct(on=[*self.time_units, "ident"], keep="first")
-            )
-            if skjema != "all":
-                skjemamottak_tbl = skjemamottak_tbl.filter(
-                    skjemamottak_tbl.skjema == skjema
-                )
-
-            relevant_refnr = skjemamottak_tbl.refnr.to_list()
+            relevant_refnr = active_no_duplicates_refnr_list(conn, skjema)
 
             skjemadata_tbl = (
                 skjemadata_tbl.filter(skjemadata_tbl.refnr.isin(relevant_refnr))
@@ -371,7 +367,7 @@ class AggDistPlotter(ABC):
                     ["variabel"],
                     how="inner",
                 )
-                .filter(datatyper_tbl.datatype == "int")
+                .filter(datatyper_tbl.datatype.isin(["number", "int", "float"]))
                 .cast({"verdi": "float", rullerende_var: "str"})
                 .cast({"verdi": "int"})
                 .mutate(verdi=lambda t: t["verdi"].round(0))
@@ -381,7 +377,10 @@ class AggDistPlotter(ABC):
                     values_from="verdi",
                     values_agg="sum",
                 )
-                .mutate(
+            )
+            if _t_1 in skjemadata_tbl.columns:
+                logger.debug("Calculating diff from last year.")
+                skjemadata_tbl.mutate(
                     diff=lambda t: t[_t_0] - t[_t_1],
                     pdiff=lambda t: (
                         (t[_t_0].fill_null(0) - t[_t_1].fill_null(0))
@@ -389,18 +388,22 @@ class AggDistPlotter(ABC):
                         * 100
                     ).round(2),
                 )
-            )
-            df_wide = skjemadata_tbl.to_pandas()
+            else:
+                logger.debug(
+                    f"Didn't find previous period value, no diff calculated. Columns in dataset: {skjemadata_tbl.columns}"
+                )
+
+            pandas_table = skjemadata_tbl.to_pandas()
             columns = [
                 {
                     "headerName": col,
                     "field": col,
                 }
-                for col in df_wide.columns
+                for col in pandas_table.columns
             ]
             columns[0]["checkboxSelection"] = True
             columns[0]["headerCheckboxSelection"] = True
-            return df_wide.to_dict("records"), columns
+            return pandas_table.to_dict("records"), columns
 
         @callback(  # type: ignore[misc]
             Output("aggdistplotter-graph", "figure"),
@@ -432,25 +435,25 @@ class AggDistPlotter(ABC):
             )
             variabel = current_row[0]["variabel"]
 
-            if isinstance(self.conn, EimerDBInstance):
-                con = ibis.polars.connect()
-                partition_args = dict(
-                    zip(self.time_units, [int(x) for x in args], strict=False)
+            partition_args = dict(
+                zip(self.time_units, [int(x) for x in args], strict=False)
+            )
+            logger.debug(f"Partition args: {partition_args}")
+            if skjema == "all":
+                partition_select = create_partition_select(
+                    desired_partitions=self.time_units,
+                    skjema=None,
+                    **partition_args,
                 )
-                logger.debug(f"Partition args: {partition_args}")
-                if skjema == "all":
-                    partition_select = create_partition_select(
-                        desired_partitions=self.time_units,
-                        skjema=None,
-                        **partition_args,
-                    )
-                else:
-                    partition_select = create_partition_select(
-                        desired_partitions=self.time_units,
-                        skjema=skjema,
-                        **partition_args,
-                    )
+            else:
+                partition_select = create_partition_select(
+                    desired_partitions=self.time_units,
+                    skjema=skjema,
+                    **partition_args,
+                )
 
+            if isinstance(self.conn, EimerDBInstance):
+                conn = ibis.polars.connect()
                 skjemamottak = self.conn.query(
                     "SELECT * FROM skjemamottak", partition_select=partition_select
                 )
@@ -458,26 +461,24 @@ class AggDistPlotter(ABC):
                     "SELECT * FROM skjemadata_hoved", partition_select=partition_select
                 )
 
-                con.create_table("skjemamottak", skjemamottak)
-                con.create_table("skjemadata_hoved", skjemadata)
-                skjemamottak_tbl = con.table("skjemamottak")
-                skjemadata_tbl = con.table("skjemadata_hoved")
+                conn.create_table("skjemamottak", skjemamottak)
+                conn.create_table("skjemadata_hoved", skjemadata)
+            elif conn_is_ibis(self.conn):
+                conn = self.conn
             else:
                 raise NotImplementedError(
                     f"Connection type '{type(self.conn)}' is currently not implemented."
                 )
+            skjemamottak_tbl = conn.table("skjemamottak")
+            skjemadata_tbl = conn.table("skjemadata_hoved")
 
             skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
                 skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
                 .order_by(ibis.desc(skjemamottak_tbl.dato_mottatt))
                 .distinct(on=[*self.time_units, "ident"], keep="first")
             )
-            if skjema != "all":
-                skjemamottak_tbl = skjemamottak_tbl.filter(
-                    skjemamottak_tbl.skjema == skjema
-                )
 
-            relevant_refnr = skjemamottak_tbl["refnr"].to_list()
+            relevant_refnr = active_no_duplicates_refnr_list(conn, skjema)
 
             skjemadata_tbl = (
                 skjemadata_tbl.filter(
