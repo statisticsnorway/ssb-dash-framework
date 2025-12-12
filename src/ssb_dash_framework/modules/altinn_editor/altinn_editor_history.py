@@ -64,7 +64,11 @@ class AltinnEditorHistory:
                 dbc.ModalHeader(dbc.ModalTitle("Historikk")),
                 dbc.ModalBody(
                     dag.AgGrid(
-                        defaultColDef={"editable": True, "filter": True, "resizable": True},
+                        defaultColDef={
+                            "editable": True,
+                            "filter": True,
+                            "resizable": True,
+                        },
                         id="skjemadata-historikkmodal-table1",
                         className="ag-theme-alpine header-style-on-filter",
                         columnSize="responsiveSizeToFit",
@@ -79,7 +83,7 @@ class AltinnEditorHistory:
         )
 
     def _create_layout(self) -> html.Div:
-        """Creates the layout for the module.""" 
+        """Creates the layout for the module."""
         return html.Div(
             [
                 dbc.Form(
@@ -149,13 +153,17 @@ class AltinnEditorHistory:
 
                 if conn_is_ibis(self.conn):
                     conn = self.conn
-                    t= conn.table("skjemadataendringshistorikk")
-                    df= t.filter(_.refnr == refnr).order_by(_.endret_tid.cast("timestamp").desc()).to_pandas()
+                    t = conn.table("skjemadataendringshistorikk")
+                    df = (
+                        t.filter(_.refnr == refnr)
+                        .order_by(_.endret_tid.cast("timestamp").desc())
+                        .to_pandas()
+                    )
                     columns = [
                         {
                             "headerName": col,
                             "field": col,
-                            "filter":True,
+                            "filter": True,
                             "resizable": True,
                         }
                         for col in df.columns
@@ -164,7 +172,7 @@ class AltinnEditorHistory:
                 elif isinstance(self.conn, EimerDBInstance):
                     try:
                         partition_args = dict(zip(self.time_units, args, strict=False))
-                        df= self.conn.query_changes(
+                        df = self.conn.query_changes(
                             f"""SELECT * FROM {tabell}
                             WHERE refnr = '{refnr}'
                             ORDER BY datetime DESC
@@ -181,7 +189,7 @@ class AltinnEditorHistory:
                             {
                                 "headerName": col,
                                 "field": col,
-                                "filter":True,
+                                "filter": True,
                                 "resizable": True,
                             }
                             for col in df.columns
