@@ -26,6 +26,8 @@ def register_control(
 ) -> Callable[..., Any]:
     """Decorator used to attach required metadata to control methods.
 
+    It is recommended to have the name of your control method / function start with the prefix 'control_'.
+
     Args:
         kontrollid (str): The id of the control, preferably a code or shortened name. Must be unique. Note that in the control module controls are sorted alphabetically based on kontrollid, meaning you can add numbers as prefix to control the sorting order in the app.
         kontrolltype (str): The type of control. Must be 'H' (Hard control), 'S' (Soft control) or 'I' (Informative)
@@ -249,7 +251,20 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 kontroller = self.conn.query(
                     "SELECT * FROM kontroller"
                 )  # maybe add something like this?partition_select=self.applies_to_subset
-            except
+            except (
+                ValueError
+            ) as e:  # TODO permanently fix this. Error caused by running .query on eimerdb table with no contents.
+                if str(e) == "max() arg is an empty sequence":
+                    logger.warning(
+                        "Did not find any contents in 'kontrollutslag', starting from scratch."
+                    )
+                    kontroller = pd.DataFrame(
+                        columns=[
+                            *self._required_kontrollutslag_columns,
+                            "skjema",
+                            "verdi",
+                        ]
+                    )
             conn.create_table("kontroller", kontroller)
         elif conn_is_ibis(self.conn):
             conn = self.conn
@@ -390,7 +405,20 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 kontrollutslag = self.conn.query(
                     "SELECT * FROM kontrollutslag"
                 )  # maybe add something like this?partition_select=self.applies_to_subset
-            except
+            except (
+                ValueError
+            ) as e:  # TODO permanently fix this. Error caused by running .query on eimerdb table with no contents.
+                if str(e) == "max() arg is an empty sequence":
+                    logger.warning(
+                        "Did not find any contents in 'kontrollutslag', starting from scratch."
+                    )
+                    kontrollutslag = pd.DataFrame(
+                        columns=[
+                            *self._required_kontrollutslag_columns,
+                            "skjema",
+                            "verdi",
+                        ]
+                    )
             conn.create_table("kontrollutslag", kontrollutslag)
         elif conn_is_ibis(self.conn):
             conn = self.conn
