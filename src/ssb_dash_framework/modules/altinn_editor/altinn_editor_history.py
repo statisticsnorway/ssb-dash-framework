@@ -1,5 +1,4 @@
 import logging
-from pandas.core.frame import DataFrame
 from typing import Any
 
 import dash_ag_grid as dag
@@ -152,7 +151,6 @@ class AltinnEditorHistory:
                     conn = self.conn
                     t= conn.table("skjemadataendringshistorikk")
                     df= t.filter(_.refnr == refnr).order_by(_.endret_tid.cast("timestamp").desc()).to_pandas()
-
                     columns = [
                         {
                             "headerName": col,
@@ -166,7 +164,7 @@ class AltinnEditorHistory:
                 elif isinstance(self.conn, EimerDBInstance):
                     try:
                         partition_args = dict(zip(self.time_units, args, strict=False))
-                        df: pd.DataFrame | None = self.conn.query_changes(
+                        df= self.conn.query_changes(
                             f"""SELECT * FROM {tabell}
                             WHERE refnr = '{refnr}'
                             ORDER BY datetime DESC
