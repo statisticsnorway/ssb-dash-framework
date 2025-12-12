@@ -26,6 +26,8 @@ def register_control(
 ) -> Callable[..., Any]:
     """Decorator used to attach required metadata to control methods.
 
+    It is recommended to have the name of your control method / function start with the prefix 'control_'.
+
     Args:
         kontrollid (str): The id of the control, preferably a code or shortened name. Must be unique. Note that in the control module controls are sorted alphabetically based on kontrollid, meaning you can add numbers as prefix to control the sorting order in the app.
         kontrolltype (str): The type of control. Must be 'H' (Hard control), 'S' (Soft control) or 'I' (Informative)
@@ -204,18 +206,19 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
 
         df_expanded = pd.DataFrame(combinations, columns=self.applies_to_subset.keys())
         rows_to_register = row_to_register.merge(df_expanded, how="cross")
-        rows_to_register = rows_to_register.merge(
-            registered_controls,
-            how="outer",
-            on=[
-                *self.applies_to_subset.keys(),
-                *[k for k in control_meta.keys() if k != "kontrollvars"],
-            ],  # TODO: Fix better Dropping kontrollvars as it is included in control_meta but only clutter in the database.
-            indicator=True,
-        )
-        rows_to_register = rows_to_register[
-            rows_to_register["_merge"] == "left_only"
-        ].drop(columns=["_merge"])
+        if registered_controls is not None:
+            rows_to_register = rows_to_register.merge(
+                registered_controls,
+                how="outer",
+                on=[
+                    *self.applies_to_subset.keys(),
+                    *[k for k in control_meta.keys() if k != "kontrollvars"],
+                ],  # TODO: Fix better Dropping kontrollvars as it is included in control_meta but only clutter in the database.
+                indicator=True,
+            )
+            rows_to_register = rows_to_register[
+                rows_to_register["_merge"] == "left_only"
+            ].drop(columns=["_merge"])
         if rows_to_register.empty:
             logger.debug("No new control to register, ending here.")
             return None
@@ -240,15 +243,24 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             self.register_control(control)
         logger.info("All controls registered.")
 
-    def get_current_kontroller(self) -> pd.DataFrame:
+    def get_current_kontroller(self) -> pd.DataFrame | None:
         """Gets the current contents of the 'kontroller' table."""
         logger.info("Getting current contents of table 'kontroller'")
         if isinstance(self.conn, EimerDBInstance):
             conn = ibis.polars.connect()
-            kontroller = self.conn.query(
-                "SELECT * FROM kontroller"
-            )  # maybe add something like this?partition_select=self.applies_to_subset
-            conn.create_table("kontroller", kontroller)
+            try:
+                kontroller = self.conn.query(
+                    "SELECT * FROM kontroller"
+                )  # maybe add something like this?partition_select=self.applies_to_subset
+                conn.create_table("kontroller", kontroller)
+            except (
+                ValueError
+            ) as e:  # TODO permanently fix this. Error caused by running .query on eimerdb table with no contents.
+                if str(e) == "max() arg is an empty sequence":
+                    logger.warning(
+                        "Did not find any contents in 'kontroller', starting from scratch."
+                    )
+                    return None
         elif conn_is_ibis(self.conn):
             conn = self.conn
         else:
@@ -369,14 +381,14 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
 
     def get_current_kontrollutslag(
         self, specific_control: str | None = None
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | None:
         """Method to get current content of the kontrollutslag table.
 
         Args:
             specific_control: Gets the current content of kontrollutslag table for this control. Defaults to None, which returns the data for all controls.
 
         Returns:
-            pd.DataFrame containing the current kontrollutslag table for all controls or just the specified one.
+            pd.DataFrame containing the current kontrollutslag table for all controls or just the specified one or None if table empty.
 
         Raises:
             NotImplementedError: If connection is not EimerDBInstance or Ibis connection.
@@ -384,10 +396,22 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         logger.info("Getting current kontrollutslag.")
         if isinstance(self.conn, EimerDBInstance):
             conn = ibis.polars.connect()
-            kontrollutslag = self.conn.query(
-                "SELECT * FROM kontrollutslag"
-            )  # maybe add something like this?partition_select=self.applies_to_subset
-            conn.create_table("kontrollutslag", kontrollutslag)
+            try:
+                kontrollutslag = self.conn.query(
+                    "SELECT * FROM kontrollutslag"
+                )  # maybe add something like this?partition_select=self.applies_to_subset
+                conn.create_table("kontrollutslag", kontrollutslag)
+            except (
+                ValueError
+            ) as e:  # TODO permanently fix this. Error caused by running .query on eimerdb table with no contents.
+                if str(e) == "max() arg is an empty sequence":
+                    logger.warning(
+                        "Did not find any contents in 'kontrollutslag', starting from scratch."
+                    )
+                    return None
+                else:
+                    raise e
+
         elif conn_is_ibis(self.conn):
             conn = self.conn
         else:
@@ -413,39 +437,40 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         else:
             specific_control = None
         existing_kontrollutslag = self.get_current_kontrollutslag(specific_control)
-        if existing_kontrollutslag.empty:
-            logger.debug("No existing rows found.")
-        merged = control_results.merge(
-            existing_kontrollutslag,
-            on=[*self.applies_to_subset.keys(), "kontrollid", "ident", "refnr"],
-            how="outer",
-            indicator=True,
-        )
-        merged = (
-            merged[merged["_merge"] == "left_only"][
-                [
-                    *self.applies_to_subset.keys(),
-                    "kontrollid",
-                    "ident",
-                    "refnr",
-                    "verdi_x",
-                    "utslag_x",
+        if existing_kontrollutslag is not None:
+            control_results = control_results.merge(
+                existing_kontrollutslag,
+                on=[*self.applies_to_subset.keys(), "kontrollid", "ident", "refnr"],
+                how="outer",
+                indicator=True,
+            )
+            control_results = (
+                control_results[control_results["_merge"] == "left_only"][
+                    [
+                        *self.applies_to_subset.keys(),
+                        "kontrollid",
+                        "ident",
+                        "refnr",
+                        "verdi_x",
+                        "utslag_x",
+                    ]
                 ]
-            ]
-            .rename(columns={"utslag_x": "utslag", "verdi_x": "verdi"})
-            .dropna()
-        )
-        if merged.empty:
+                .rename(columns={"utslag_x": "utslag", "verdi_x": "verdi"})
+                .dropna()
+            )
+        else:
+            logger.debug("No existing rows found.")
+        if control_results.empty:
             logger.debug("No new rows found, ending here.")
             return None
         # Now to insert new rows into the table.
-        logger.debug(f"Inserting {merged.shape[0]} new rows.")
+        logger.debug(f"Inserting {control_results.shape[0]} new rows.")
         if isinstance(self.conn, EimerDBInstance):
-            self.conn.insert("kontrollutslag", merged)
+            self.conn.insert("kontrollutslag", control_results)
         elif conn_is_ibis(self.conn):
             conn = self.conn
             k = conn.table("kontrollutslag")  # type: ignore[attr-defined]
-            k.insert(merged)
+            k.insert(control_results)
         else:
             raise NotImplementedError(
                 f"Connection type '{type(self.conn)}' is currently not implemented."
@@ -455,35 +480,38 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
     def update_existing_records(self, control_results: pd.DataFrame) -> None:
         """Updates the 'kontrollutslag' table based on results from new run of the method."""
         logger.debug("Starting process.")
+
         if control_results["kontrollid"].nunique() == 1:
             specific_control = next(iter(control_results["kontrollid"].unique()))
         else:
             specific_control = None
         existing_kontrollutslag = self.get_current_kontrollutslag(specific_control)
-        if existing_kontrollutslag.empty:
-            logger.info("No existing rows found, ending here.")
-            return None
         logger.debug(
             f"control_results:\n{control_results}\nexisting_kontrollutslag:\n{existing_kontrollutslag}"
         )
-
-        merged = control_results.merge(
-            existing_kontrollutslag,
-            on=["kontrollid", "ident", "refnr"],
-            how="outer",
-            indicator=True,
-        ).dropna()
-        if merged.empty:
+        if existing_kontrollutslag is None or existing_kontrollutslag.empty:
+            logger.info("No existing rows found, ending here.")
+            return None
+        else:
+            control_results = control_results.merge(
+                existing_kontrollutslag,
+                on=["kontrollid", "ident", "refnr"],
+                how="outer",
+                indicator=True,
+            ).dropna()
+        if control_results.empty:
             raise ValueError(
                 "Combined results from 'control_results' and 'existing_kontrollutslag' is empty."
             )
-        logger.debug(merged)
+        logger.debug(control_results)
         logger.debug(
-            f"Utslag left:\n{merged['utslag_x'].value_counts()}\nUtslag right:\n{merged['utslag_y'].value_counts()}"
+            f"Utslag left:\n{control_results['utslag_x'].value_counts()}\nUtslag right:\n{control_results['utslag_y'].value_counts()}"
         )
-        changed = merged[merged["utslag_x"] != merged["utslag_y"]][
-            ["kontrollid", "ident", "refnr", "verdi_x", "utslag_x"]
-        ].rename(columns={"utslag_x": "utslag", "verdi_x": "verdi"})
+        changed = control_results[
+            control_results["utslag_x"] != control_results["utslag_y"]
+        ][["kontrollid", "ident", "refnr", "verdi_x", "utslag_x"]].rename(
+            columns={"utslag_x": "utslag", "verdi_x": "verdi"}
+        )
         if changed.empty:
             logger.info("No changed rows, ending here.")
             return None

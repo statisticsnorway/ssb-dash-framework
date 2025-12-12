@@ -256,19 +256,38 @@ class AltinnControlView(ABC):
                 logger.info("Refreshing view without re-running controls.")
 
             if isinstance(self.conn, EimerDBInstance):
-                conn = ibis.polars.connect()
-                skjemamottak = self.conn.query(
-                    "SELECT * FROM skjemamottak"
-                )  # maybe add something like this?partition_select=self.applies_to_subset
-                conn.create_table("skjemamottak", skjemamottak)
-                kontroller = self.conn.query(
-                    "SELECT * FROM kontroller"
-                )  # maybe add something like this?partition_select=self.applies_to_subset
-                conn.create_table("kontroller", kontroller)
-                kontrollutslag = self.conn.query(
-                    "SELECT * FROM kontrollutslag"
-                )  # maybe add something like this?partition_select=self.applies_to_subset
-                conn.create_table("kontrollutslag", kontrollutslag)
+                try:
+                    conn = ibis.polars.connect()
+                    skjemamottak = self.conn.query(
+                        "SELECT * FROM skjemamottak"
+                    )  # maybe add something like this?partition_select=self.applies_to_subset
+                    conn.create_table("skjemamottak", skjemamottak)
+                    kontroller = self.conn.query(
+                        "SELECT * FROM kontroller"
+                    )  # maybe add something like this?partition_select=self.applies_to_subset
+                    conn.create_table("kontroller", kontroller)
+                    kontrollutslag = self.conn.query(
+                        "SELECT * FROM kontrollutslag"
+                    )  # maybe add something like this?partition_select=self.applies_to_subset
+                    conn.create_table("kontrollutslag", kontrollutslag)
+                except (
+                    ValueError
+                ) as e:  # TODO permanently fix this. Error caused by running .query on eimerdb table with no contents.
+                    if str(e) == "max() arg is an empty sequence":
+                        logger.warning(
+                            "Did not find any contents in control tables, returning None, None and alert."
+                        )
+                        alert_store = [
+                            create_alert(
+                                "Finner ingen kontroller i dataene, prøv å kjøre kontroller.",
+                                "warning",
+                                ephemeral=True,
+                            ),
+                            *alert_store,
+                        ]
+                        return None, None, alert_store
+                    else:
+                        raise e
             elif conn_is_ibis(self.conn):
                 conn = self.conn
             else:
