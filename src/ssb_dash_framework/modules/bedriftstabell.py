@@ -150,7 +150,7 @@ class Bedriftstabell(ABC):
 
     def module_callbacks(self):
         @callback(
-            Output(f"{self.module_number}-bedriftstabell-columns-checklist", "values"),
+            Output(f"{self.module_number}-bedriftstabell-columns-checklist", "value"),
             Output(f"{self.module_number}-bedriftstabell-others-checklist", "value"),
             self.variableselector.get_input("altinnskjema"),
         )
@@ -159,7 +159,7 @@ class Bedriftstabell(ABC):
             if config is not None:
                 return config["columns_to_show"], config["other_options"]
             else:
-                return [], []
+                return None, None
 
         @callback(
             Output(f"{self.module_number}-bedriftstabell-settings-modal", "is_open"),
@@ -203,8 +203,8 @@ class Bedriftstabell(ABC):
             with open(f"{config_path}/{skjemanummer}.json", "w", encoding="utf-8") as f:
                 json.dump(
                     {
-                        "columns_to_show": selected_columns,
-                        "other_options": selected_options,
+                        "columns_to_show": selected_columns if selected_columns else [],
+                        "other_options": selected_options if selected_options else [],
                     },
                     f,
                     indent=4,
