@@ -1,3 +1,4 @@
+import logging
 from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
@@ -18,6 +19,9 @@ from ..utils.core_query_functions import ibis_filter_with_dict
 from ..utils.alert_handler import create_alert
 from ..utils.functions import get_config_path
 
+logger = logging.getLogger(__name__)
+
+logger.warning("This module is under development and might have many drastic changes.")
 
 def set_time_units(): ...
 
