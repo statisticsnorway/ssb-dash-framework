@@ -76,14 +76,15 @@ class Bedriftstabell(ABC):
                     [
                         dbc.ModalHeader(
                             dbc.ModalTitle(
-                                [dbc.Col(dbc.Button(
-                                    "Hent tabell igjen",
-                                    id=f"{self.module_number}-bedriftstabell-settings-run",
-                                )),
-                                dbc.Col(dbc.Button(
-                                    "Lagre innstillinger",
-                                    id=f"{self.module_number}-bedriftstabell-settings-save",
-                                ))]
+                                [
+                                    "Innstillinger",
+                                    dbc.Col(
+                                        dbc.Button(
+                                            "Lagre innstillinger",
+                                            id=f"{self.module_number}-bedriftstabell-settings-save",
+                                        )
+                                    ),
+                                ]
                             )
                         ),
                         dbc.ModalBody(
@@ -123,13 +124,21 @@ class Bedriftstabell(ABC):
         return dbc.Container(
             [
                 dbc.Row(
-                    [dbc.Col(html.H3("Viser data for: ")), dbc.Col(settings_modal)],
+                    [
+                        dbc.Col(
+                            dbc.Button(
+                                "Hent tabell (igjen)",
+                                id=f"{self.module_number}-bedriftstabell-settings-run",
+                            )
+                        ),
+                        dbc.Col(settings_modal),
+                    ],
                     justify="between",
                 ),
+                html.Hr(),
                 dbc.Row(id=f"{self.module_number}-bedriftstabell-showing"),
                 html.Hr(),
-                # Make some configs and a save button.
-                dbc.Row(dag.AgGrid(id=f"{self.module_number}-bedriftstabell")),
+                dbc.Row(dbc.Col(dag.AgGrid(id=f"{self.module_number}-bedriftstabell"))),
             ],
             fluid=True,
         )
@@ -173,15 +182,13 @@ class Bedriftstabell(ABC):
         @callback(
             Output(f"{self.module_number}-bedriftstabell-columns-checklist", "options"),
             Input(f"{self.module_number}-bedriftstabell-settings-button", "n_clicks"),
-            State(f"{self.module_number}-bedriftstabell", "columnDefs"),
+            Input(f"{self.module_number}-bedriftstabell", "columnDefs"),
         )
         def checklist_get_column_options(n_click, columndefs):
-            if not (
-                ctx.triggered_id
-                == f"{self.module_number}-bedriftstabell-settings-button"
-            ):
-                raise PreventUpdate
-            return [x["field"] for x in columndefs]
+            if columndefs:
+                return [x["field"] for x in columndefs]
+            else:
+                return ["No data in table"]
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
@@ -227,8 +234,9 @@ class Bedriftstabell(ABC):
             self.variableselector.get_input("ident"),
             State(f"{self.module_number}-bedriftstabell-columns-checklist", "value"),
             *self.variableselector.get_all_callback_objects(),
+            prevent_initial_call=True,
         )
-        def placeholder_callbackfunc(run_click, skjema, ident, columns_to_show, *args):
+        def bedriftstabell_get_data(run_click, skjema, ident, columns_to_show, *args):
             print("bedriftstabell args:", args)
             print("varselectorbedrift: ", self.variableselector.selected_variables)
 
@@ -245,8 +253,6 @@ class Bedriftstabell(ABC):
             }
             print("filterdict ", filterdict)
 
-
-
             b = self.conn.table("skjemadata_bedriftstabell")
             b = b.join(f, b.ident == f.orgnr_bedrift)
             b = b.filter(ibis_filter_with_dict(filterdict))
@@ -255,6 +261,7 @@ class Bedriftstabell(ABC):
             print("shape: ", df.shape)
             if columns_to_show is None:
                 columns_to_show = [col for col in df.columns]
+            print("columns_to_show: ", columns_to_show)
             return (
                 df.to_dict("records"),
                 [
