@@ -51,6 +51,9 @@ from .skjemapdfviewer import SkjemapdfViewerTab
 from .skjemapdfviewer import SkjemapdfViewerWindow
 from .visualizationbuilder import VisualizationBuilder
 from .visualizationbuilder import VisualizationBuilderWindow
+from .bedriftstabell import Bedriftstabell
+from .bedriftstabell import BedriftstabellTab
+from .bedriftstabell import BedriftstabellWindow
 
 __all__ = [
     "Aarsregnskap",
@@ -65,6 +68,9 @@ __all__ = [
     "AltinnDataCaptureTab",
     "AltinnDataCaptureWindow",
     "AltinnSkjemadataEditor",
+    "Bedriftstabell",
+    "BedriftstabellTab",
+    "BedriftstabellWindow",
     "BofInformation",
     "BofInformationTab",
     "BofInformationWindow",
