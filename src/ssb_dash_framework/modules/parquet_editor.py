@@ -19,7 +19,6 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-from pandas.io import parquet
 from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 
 from ..setup.variableselector import VariableSelector
@@ -28,13 +27,17 @@ from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
+
 def check_for_bucket_path(path):
     """Temporary check to make sure users keep to using '/buckets/' paths.
-    
+
     Need to test more with UPath to make sure nothing unexpected happens.
     """
     if not path.startswith("/buckets/"):
-        raise NotImplementedError("Due to differences in how files in '/buckets/...' behave compared to files in the cloud buckets this functionality is currently limited to only work with paths that starts with '/buckets'.")
+        raise NotImplementedError(
+            "Due to differences in how files in '/buckets/...' behave compared to files in the cloud buckets this functionality is currently limited to only work with paths that starts with '/buckets'."
+        )
+
 
 class ParquetEditor:  # TODO add validation of dataframe, workshop argument names
     """Simple module with the sole purpose of editing a parquet file.
@@ -624,8 +627,14 @@ def _apply_change_detail(
 
 
 def read_jsonl_file_to_string(file_path: str | Path) -> str:
-    """Reads a JSONL file and returns its contents as a single string."""
+    """Reads a JSONL file and returns its contents as a single string.
+
+    If the file does not exists an empty string is returned.
+    """
     file_path = Path(file_path)
+    if not file_path.exists():
+        logger.warning(f"No file found at {file_path!s}, returning empty string")
+        return ""
     with file_path.open("r", encoding="utf-8") as f:
         return f.read()
 
