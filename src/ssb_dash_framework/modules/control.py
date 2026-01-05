@@ -28,11 +28,7 @@ ident_options = [
 
 
 class Control:
-    """Provides a layout and functionality for a modal that offers an overview of data checks and control results.
-
-    Attributes:
-        ident (str): Name of the identification variable, e.g., 'orgf'.
-    """
+    """Provides a layout and functionality for a modal that offers an overview of data checks and control results."""
 
     def __init__(self, ident: str) -> None:
         """Initialize the control module.
@@ -42,9 +38,6 @@ class Control:
 
         Args:
             ident: The key for the identification variable, e.g., 'orgf'.
-
-        Attributes Set:
-            ident (str): The resolved name of the identification variable.
         """
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."

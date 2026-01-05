@@ -41,13 +41,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
 
     Accomplishes this functionality by writing a processlog in a json lines file and recording any edits in this jsonl file.
 
-    Args:
-        statistics_name: The name of the statistic being edited.
-        id_vars: A list of columns that together form a unique identifier for a single row in your data.
-        data_source: The path to the parquet file you want to edit.
-        output: Columns in your dataframe that should be clickable to output to the variable selector panel.
-        output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
-
     Example:
         >>> id_variabler = ["orgnr", "aar", "kvartal"]
         >>> my_parquet_editor = ParquetEditor(
@@ -70,7 +63,15 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
     ) -> None:
-        """Initializes the module and makes a few validation checks before moving on."""
+        """Initializes the module and makes a few validation checks before moving on.
+
+        Args:
+            statistics_name: The name of the statistic being edited.
+            id_vars: A list of columns that together form a unique identifier for a single row in your data.
+            data_source: The path to the parquet file you want to edit.
+            output: Columns in your dataframe that should be clickable to output to the variable selector panel.
+            output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
+        """
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
@@ -468,10 +469,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
 class ParquetEditorChangelog:
     """Simple module with the sole purpose of showing the changes made using ParquetEditor.
 
-    Args:
-        id_vars: A list of columns that together form a unique identifier for a single row in your data.
-        file_path: The path to the parquet file you want to find the changelog for.
-
     Notes:
         The process log is automatically created in the correct folder structure and is named after your parquet file.
     """
@@ -479,7 +476,12 @@ class ParquetEditorChangelog:
     _id_number: int = 0
 
     def __init__(self, id_vars: list[str], file_path: str) -> None:
-        """Initializes the module and makes a few validation checks before moving on."""
+        """Initializes the module and makes a few validation checks before moving on.
+
+        Args:
+            id_vars: A list of columns that together form a unique identifier for a single row in your data.
+            file_path: The path to the parquet file you want to find the changelog for.
+        """
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1

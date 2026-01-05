@@ -19,12 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class SkjemapdfViewer(ABC):
-    """Module for displaying PDF forms in a tab.
-
-    Attributes:
-        label (str): Label for the tab, displayed as "🗎 Skjema".
-        pdf_folder_path (str): Path to the folder containing the PDF files.
-    """
+    """Module for displaying PDF forms in a tab."""
 
     def __init__(
         self,

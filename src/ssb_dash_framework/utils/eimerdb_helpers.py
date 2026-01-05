@@ -12,7 +12,7 @@ def create_partition_select(
         **kwargs: Should be a dict where key is the partition and value is the specific partition you want.
 
     Returns:
-        dict[str, list[int | str]]
+        A dictionary containing the partition select criteria.
     """
     partition_select: dict[str, list[int | str]] = {
         unit: [kwargs[unit]] for unit in desired_partitions if unit in kwargs

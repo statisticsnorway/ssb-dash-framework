@@ -515,13 +515,14 @@ class DemoDataCreator:
     """Class for creating demo data to test the editing framework.
 
     Assumes your database is set up according to the template with only 'aar' as period columns.
-
-    Args:
-        engine (Engine): An SQLAlchemy Engine to connect to an existing database.
     """
 
     def __init__(self, engine: Engine) -> None:
-        """Initializes the DemoDataCreator class by assigning it an engine to use for inserts."""
+        """Initializes the DemoDataCreator class by assigning it an engine to use for inserts.
+
+        Args:
+            engine: An SQLAlchemy Engine to connect to an existing database.
+        """
         self.engine = engine
 
     def build_demo_database(self) -> None:

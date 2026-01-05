@@ -21,9 +21,6 @@ class TabModule(Protocol):
         label (str): The label for the tab.
         module_name (str): The name of the module, used for generating unique IDs.
         module_layout (html.Div): The layout to display inside the tab.
-
-    Methods:
-        layout() -> dbc.Tab: Returns the layout of the module inside a tab.
     """
 
     label: str
@@ -38,14 +35,14 @@ class TabModule(Protocol):
 class TabImplementation:
     """A mixin class to implement a module inside a tab.
 
-    Dependencies:
-        - self.label (str): The label for the tab.
-        - self.module_name (str): The name of the module, used for generating unique IDs.
-        - self.module_layout (html.Div): The layout to display inside the tab.
+    This class should be used as a mixin in a module class. If necessary,
+    you can override the `get_module_layout` method to further customize the layout
+    inside the tab.
 
-    Note:
-        - This class should be used as a mixin in a module class.
-        - If necessary, you can override the `get_module_layout` method to further customize the layout inside the tab.
+    Attributes:
+        label (str): The label for the tab.
+        module_name (str): The name of the module, used for generating unique IDs.
+        module_layout (html.Div): The layout to display inside the tab.
     """
 
     # Attributes that must be defined in the class using this mixin
@@ -106,9 +103,6 @@ class WindowModule(Protocol):
         label (str): The label for the window.
         module_name (str): The name of the module, used for generating unique IDs.
         module_layout (html.Div): The layout to display inside the window.
-
-    Methods:
-        layout() -> html.Div: Returns the layout of the module inside a window.
     """
 
     label: str
@@ -123,7 +117,7 @@ class WindowModule(Protocol):
 class WindowImplementation:
     """A mixin class to implement a module inside a modal.
 
-    Dependencies:
+    Attributes:
         - self.label (str): The label for the modal and sidebar button.
         - self.module_name (str): The name of the module, used for generating unique IDs.
         - self.module_layout (html.Div): The layout to display inside the modal.

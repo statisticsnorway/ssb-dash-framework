@@ -101,14 +101,6 @@ class BofInformation(ABC):
     - Displays detailed information about selected foretak using cards and ag-grids.
     - Interacts with sqlite files to display information for the currently selected foretak.
     - The sqlite files can be accessed from the oracle-hns shared bucket from the vof team.
-
-    Attributes:
-        label (str): Label for the tab, displayed as "BoF Foretak".
-
-    Methods:
-        generate_card(title, component_id, var_type): Generates a Dash Bootstrap card for displaying information.
-        layout(): Abstract method, needs to generate the layout for the BoF Foretak module.
-        callbacks(): Registers Dash callbacks for handling user interactions.
     """
 
     _id_number: int = 0

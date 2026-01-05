@@ -22,11 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class VisualizationBuilder:
-    """A module for creating and visualizing data queries and graphs interactively.
-
-    Attributes:
-        database (object): The database connection or interface for executing queries.
-    """
+    """A module for creating and visualizing data queries and graphs interactively."""
 
     def __init__(self, database: object) -> None:
         """Initializes the VisualiseringsbyggerModule.

@@ -30,21 +30,17 @@ class FreeSearch(ABC):
     - Enter SQL queries in a text area.
     - Optionally specify partition filters as a dictionary string.
     - Display query results in an editable Dash AgGrid table.
-
-    Attributes:
-        database (Any): Database connection or interface for executing SQL queries.
-        label (str): Label for the module, defaults to "🔍 Frisøk".
-        module_layout (html.Div): The generated layout for the module.
-
-    Methods:
-        layout(): Abstract method to define the module's layout.
-        module_callbacks(): Registers the Dash callbacks for interactivity.
     """
 
     _id_number = 0
 
     def __init__(self, database: Any, label: str = "Frisøk") -> None:
-        """Initialize the FreeSearch module with a database connection and optional label."""
+        """Initialize the FreeSearch module.
+
+        Args:
+            database: Database connection or interface for executing SQL queries.
+            label: Label for the module, defaults to "Frisøk".
+        """
         if not isinstance(database, EimerDBInstance) and not conn_is_ibis(database):
             raise TypeError(
                 f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(database)}"

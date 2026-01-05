@@ -37,6 +37,12 @@ def create_filter_dict(
 def ibis_filter_with_dict(periods_dict: dict[str, Any]) -> list[Any]:
     """Creates a filter expression for Ibis.
 
+    Args:
+        periods_dict: A dictionary of column names and values to filter by.
+
+    Returns:
+        A list of filter expressions for Ibis.
+
     Example:
         filter_dict = {"year": "2025", "quarter": ["3", "4"]}
         t.filter(ibis_filter_with_dict(filter_dict))

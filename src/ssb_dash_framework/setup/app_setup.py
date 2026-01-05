@@ -56,7 +56,7 @@ def app_setup(
         port: The port number for the Dash application.
         service_prefix: The service prefix used for constructing the app's pathname.
         stylesheet: The name of the Bootstrap theme to apply to the app.
-                          Must be a key in `theme_map`.
+            Must be a key in `theme_map`.
         enable_logging: Decides if ssb_dash_framework logging should be used. Defaults to True.
         logging_level: The logging level set for the application logging. Valid values are "debug", "info", "warning", "error", or "critical".
         log_to_file: Decides if log should be written to file 'work/app.log' in addition to the console.

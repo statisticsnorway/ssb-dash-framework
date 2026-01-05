@@ -25,20 +25,12 @@ class PimemorizerTab:
 
     Attributes:
         label (str): The label for the tab, set to "𝝅 Pi memorizer".
-
-    Methods:
-        layout(): Generates the layout for the Pi memorizer tab.
-        callbacks(): Registers the Dash callbacks for handling user interactions.
     """
 
     def __init__(
         self,
     ) -> None:
-        """Initialize the PimemorizerTab component.
-
-        Attributes:
-            label (str): The label for the tab, displayed as "𝝅 Pi memorizer".
-        """
+        """Initialize the PimemorizerTab component."""
         logger.warning(
             f"{self.__class__.__name__} is intended as a proof of concept for the flexibility of the framework, not as a production module."
         )
