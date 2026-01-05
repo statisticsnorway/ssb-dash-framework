@@ -506,7 +506,7 @@ def create_database(engine: Engine) -> None:
     This is only a simple wrapper to make it easier to run 'Base.metadata.create_all(engine)'
 
     Args:
-        engine (Engine): An SQLAlchemy Engine to be used for creating the database.
+        engine: An SQLAlchemy Engine to be used for creating the database.
     """
     Base.metadata.create_all(engine)
 

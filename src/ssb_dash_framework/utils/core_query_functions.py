@@ -15,7 +15,7 @@ def conn_is_ibis(conn: Any) -> bool:
     Used to select which 'path' to take for preparing data in modules.
 
     Args:
-        conn (Any): Object to check.
+        conn: Object to check.
 
     Returns:
         A bool that is True if the supplied object is an Ibis connection.
@@ -64,8 +64,8 @@ def active_no_duplicates_refnr_list(
     If there are more than one active refnr the latest one is returned.
 
     Args:
-        conn (BaseBackend): An ibis connection.
-        skjema (str | None): If not None filters based on a string referring to a specific form RA-number.
+        conn: An ibis connection.
+        skjema: If not None filters based on a string referring to a specific form RA-number.
 
     Returns:
         A list of unique refnr values to select in order to get most recent and currently active response from each respondent.

@@ -29,8 +29,8 @@ class Canvas(ABC):
         """Initializes the Canvas module.
 
         Args:
-            label (str): The label for the canvas, used in the UI.
-            content (html.Div): A Dash layout that will be displayed in the canvas. Can contain other building block modules.
+            label: The label for the canvas, used in the UI.
+            content: A Dash layout that will be displayed in the canvas. Can contain other building block modules.
         """
         self.module_number = Canvas._id_number
         self.module_name = self.__class__.__name__
@@ -64,8 +64,8 @@ class CanvasTab(TabImplementation, Canvas):
         """Initializes the CanvasTab module.
 
         Args:
-            label (str): The label for the canvas tab, used in the UI.
-            content (html.Div): A Dash layout that will be displayed in the canvas tab. Can contain other building block modules.
+            label: The label for the canvas tab, used in the UI.
+            content: A Dash layout that will be displayed in the canvas tab. Can contain other building block modules.
         """
         Canvas.__init__(self, label=label, content=content)
         TabImplementation.__init__(
@@ -80,8 +80,8 @@ class CanvasWindow(WindowImplementation, Canvas):
         """Initializes the CanvasWindow module.
 
         Args:
-            label (str): The label for the canvas tab, used in the UI.
-            content (html.Div): A Dash layout that will be displayed in the canvas tab. Can contain other building block modules.
+            label: The label for the canvas tab, used in the UI.
+            content: A Dash layout that will be displayed in the canvas tab. Can contain other building block modules.
         """
         Canvas.__init__(self, label=label, content=content)
         WindowImplementation.__init__(self)

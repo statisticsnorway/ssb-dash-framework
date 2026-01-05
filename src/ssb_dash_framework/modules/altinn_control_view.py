@@ -51,10 +51,10 @@ class AltinnControlView(ABC):
         """Initializes the AltinnControlView with time units, control dictionary, and database connection.
 
         Args:
-            time_units (list): A list of the time units used.
-            control_dict (dict): A dictionary with one control class per skjema.
-            conn (object): The eimerdb connection.
-            outputs (list[str] | None): Variable selector fields to output to. Defaults to ['ident']
+            time_units: A list of the time units used.
+            control_dict: A dictionary with one control class per skjema.
+            conn: The eimerdb connection.
+            outputs: Variable selector fields to output to. Defaults to ['ident']
         """
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."

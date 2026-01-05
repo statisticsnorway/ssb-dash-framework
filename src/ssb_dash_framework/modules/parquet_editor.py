@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def check_for_bucket_path(path):
     """Temporary check to make sure users keep to using '/buckets/' paths.
-    
+
     Need to test more with UPath to make sure nothing unexpected happens.
     """
     if not path.startswith("/buckets/"):
@@ -551,7 +551,7 @@ def read_jsonl_log(path: str | Path) -> list[Any]:
     """Reads the jsonl log.
 
     Args:
-        path (str | Path): The path that leads to the jsonl log.
+        path: The path that leads to the jsonl log.
 
     Returns:
         A list where each instance is a line in the jsonl file.
@@ -663,8 +663,8 @@ def _raise_if_duplicates(df: pd.DataFrame, subset: set[str] | list[str]) -> None
     """Raises a ValueError if duplicates exist on the given subset of columns.
 
     Args:
-        df (pd.DataFrame): The dataframe to check.
-        subset (list or str): Column(s) to consider for duplicate detection.
+        df: The dataframe to check.
+        subset: Column(s) to consider for duplicate detection.
 
     Raises:
         ValueError: If there are duplicates based on the id_vars specified in the jsonl log.
@@ -682,7 +682,7 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     """Applies edits from the jsonl log to a parquet file.
 
     Args:
-        parquet_path (str): The file path for the parquet file.
+        parquet_path: The file path for the parquet file.
 
     Returns:
         A pd.DataFrame with updated data.

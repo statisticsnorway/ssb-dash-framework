@@ -32,7 +32,7 @@ class VisualizationBuilder:
         """Initializes the VisualiseringsbyggerModule.
 
         Args:
-            database (object): The database connection or interface used for querying data.
+            database: The database connection or interface used for querying data.
 
         Raises:
             TypeError: If database object does not have query method.
@@ -203,8 +203,8 @@ class VisualizationBuilder:
             """Toggles the visibility of the SQL query modal.
 
             Args:
-                n (int): The number of clicks on the sidebar button.
-                is_open (bool): The current visibility state of the modal.
+                n: The number of clicks on the sidebar button.
+                is_open: The current visibility state of the modal.
 
             Returns:
                 bool: The new visibility state of the modal.
@@ -232,8 +232,8 @@ class VisualizationBuilder:
             """Executes an SQL query and updates table data and dropdown options.
 
             Args:
-                n_clicks (int): The number of clicks on the query execution button.
-                value (str): The SQL query string entered in the text area.
+                n_clicks: The number of clicks on the query execution button.
+                value: The SQL query string entered in the text area.
 
             Returns:
                 tuple: Contains:
@@ -271,12 +271,12 @@ class VisualizationBuilder:
             """Generates a graph based on the selected columns and graph type.
 
             Args:
-                x_axis (str | list): The column(s) selected for the x-axis.
-                y_axis (str | list): The column(s) selected for the y-axis.
-                hover_data (str | list): The column(s) to display as hover data.
-                graph_type (str): The type of graph to generate (e.g., "scatter", "bar").
-                rowdata (list[dict]): The data displayed in the table.
-                columndefs (list[dict]): The column definitions for the table.
+                x_axis: The column(s) selected for the x-axis.
+                y_axis: The column(s) selected for the y-axis.
+                hover_data: The column(s) to display as hover data.
+                graph_type: The type of graph to generate (e.g., "scatter", "bar").
+                rowdata: The data displayed in the table.
+                columndefs: The column definitions for the table.
 
             Returns:
                 dict | go.Figure: A Plotly figure or an empty dict.

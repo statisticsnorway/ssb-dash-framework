@@ -22,13 +22,13 @@ def main_layout(
     """Generates the main layout for the Dash application.
 
     Args:
-        window_list (list[html.Div]):
+        window_list:
             A list of modal components to be included in the sidebar.
-        tab_list (list[html.Div | dbc.Tab]):
+        tab_list:
             A list of tab objects, each containing a `layout` method and a `label` attribute.
-        variable_list (list[str] | None):
+        variable_list:
             A list of variable selection components to be included in the main layout. Defaults to all existing VariableSelectorOptions.
-        default_values (dict[str, Any] | None, optional):
+        default_values:
             Default values for the variable selector. Defaults to None.
 
     Returns:

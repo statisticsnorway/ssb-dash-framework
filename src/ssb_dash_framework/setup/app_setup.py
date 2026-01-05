@@ -53,13 +53,13 @@ def app_setup(
     """Set up and configure a Dash application with the specified parameters.
 
     Args:
-        port (int): The port number for the Dash application.
-        service_prefix (str): The service prefix used for constructing the app's pathname.
-        stylesheet (str): The name of the Bootstrap theme to apply to the app.
+        port: The port number for the Dash application.
+        service_prefix: The service prefix used for constructing the app's pathname.
+        stylesheet: The name of the Bootstrap theme to apply to the app.
                           Must be a key in `theme_map`.
-        enable_logging (bool): Decides if ssb_dash_framework logging should be used. Defaults to True.
-        logging_level (str): The logging level set for the application logging. Valid values are "debug", "info", "warning", "error", or "critical".
-        log_to_file (bool): Decides if log should be written to file 'work/app.log' in addition to the console.
+        enable_logging: Decides if ssb_dash_framework logging should be used. Defaults to True.
+        logging_level: The logging level set for the application logging. Valid values are "debug", "info", "warning", "error", or "critical".
+        log_to_file: Decides if log should be written to file 'work/app.log' in addition to the console.
 
     Returns:
         Dash: Configured Dash application instance.
@@ -109,8 +109,8 @@ def app_setup(
         the offcanvas panel (open/closed).
 
         Args:
-            n_clicks (Optional[int]): The number of times the button has been clicked.
-            is_open (bool): The current open/closed state of the offcanvas.
+            n_clicks: The number of times the button has been clicked.
+            is_open: The current open/closed state of the offcanvas.
 
         Returns:
             bool: The new open/closed state of the offcanvas.

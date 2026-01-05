@@ -138,9 +138,9 @@ class FreeSearch(ABC):
             """Execute an SQL query and update the table with the results.
 
             Args:
-                n_clicks (int): Number of clicks on the "kjør" button.
-                query (str): SQL query entered by the user in the text area.
-                partition (str): Partition filters entered as a dictionary string
+                n_clicks: Number of clicks on the "kjør" button.
+                query: SQL query entered by the user in the text area.
+                partition: Partition filters entered as a dictionary string
                                  (e.g., "{'aar': [2023]}"). Can be None if no filters are provided.
 
             Returns:
@@ -192,7 +192,7 @@ class FreeSearchTab(TabImplementation, FreeSearch):
         """Initialize the FreeSearchTab with a database connection.
 
         Args:
-            database (Any): Database connection or interface used for executing SQL queries.
+            database: Database connection or interface used for executing SQL queries.
         """
         FreeSearch.__init__(self, database=database)
         TabImplementation.__init__(self)

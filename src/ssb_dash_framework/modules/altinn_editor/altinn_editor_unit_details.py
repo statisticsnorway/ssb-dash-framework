@@ -36,10 +36,10 @@ class AltinnEditorUnitDetails:
         """Initializes the Altinn Editor Unit Details module.
 
         Args:
-            time_units (list[str]): List of time units to be used in the module.
-            conn (object): Database connection object that must have a 'query' method.
-            variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
-            variable_connection (dict[str, str]): Dict containing the name of characteristics from the dataset as keys and the variable selector name associated with it as value.
+            time_units: List of time units to be used in the module.
+            conn: Database connection object that must have a 'query' method.
+            variable_selector_instance: An instance of VariableSelector for variable selection.
+            variable_connection: Dict containing the name of characteristics from the dataset as keys and the variable selector name associated with it as value.
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.

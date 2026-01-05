@@ -7,9 +7,9 @@ def create_partition_select(
     """Creates partition select for queries with eimerdb in callbacks.
 
     Args:
-        desired_partitions (list[str]): List of partitions you want.
-        skjema (str | None): Optionally you can add which form (RA-number) you want in the partition select.
-        **kwargs (int): Should be a dict where key is the partition and value is the specific partition you want.
+        desired_partitions: List of partitions you want.
+        skjema: Optionally you can add which form (RA-number) you want in the partition select.
+        **kwargs: Should be a dict where key is the partition and value is the specific partition you want.
 
     Returns:
         dict[str, list[int | str]]

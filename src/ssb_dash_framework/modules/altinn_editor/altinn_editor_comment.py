@@ -32,7 +32,7 @@ class AltinnEditorComment:
         """Initializes the Altinn Editor Comment module.
 
         Args:
-            conn (object): Database connection object that must have a 'query' method.
+            conn: Database connection object that must have a 'query' method.
 
         Raises:
             AssertionError: If the connection object does not have a 'query' method.

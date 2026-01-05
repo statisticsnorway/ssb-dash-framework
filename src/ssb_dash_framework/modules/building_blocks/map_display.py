@@ -58,17 +58,17 @@ class MapDisplay:
         """Initialize the MapDisplay module.
 
         Args:
-            map_type(str): The kind of map to be made, currently supports kommune and fylke.
-            aar_var (str): The name of your year variable in the variable selector.
-            inputs (list[str]): List the variables from the variable selector that should trigger an update to the map
-            states (list[str]): List the variables from the variable selector that should be used in the get_data_func, but not trigger an update to the map
-            get_data_func (Callable[..., Any]): Function that when given aar_var, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
-            clickdata_func (Callable[..., Any] | None, optional): A function to process the click data.
+            map_type: The kind of map to be made, currently supports kommune and fylke.
+            aar_var: The name of your year variable in the variable selector.
+            inputs: List the variables from the variable selector that should trigger an update to the map
+            states: List the variables from the variable selector that should be used in the get_data_func, but not trigger an update to the map
+            get_data_func: Function that when given aar_var, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
+            clickdata_func: A function to process the click data.
                 It should accept the click data as an argument and return a value to be sent to the output variable.
                 If None, no click data will be processed. Defaults to None.
-            output_var (str): Variable selector output for clickdata. Defaults to the same value as map_type.
-            label (str): Label for the button / tab for the module. Defaults to 'Kart {map_type}'
-            colorscale (str): Can be used to select another colorscale. See plotly documentation for options.
+            output_var: Variable selector output for clickdata. Defaults to the same value as map_type.
+            label: Label for the button / tab for the module. Defaults to 'Kart {map_type}'
+            colorscale: Can be used to select another colorscale. See plotly documentation for options.
 
         Raises:
             ValueError: If supplied unsupported map_type.
@@ -261,17 +261,17 @@ class MapDisplayTab(TabImplementation, MapDisplay):
         """Initialize the MapDisplayTab module.
 
         Args:
-            map_type(str): The kind of map to be made, currently supports komm_nr and fylke_nr.
-            aar_var (str): The name of your year variable in the variable selector.
-            inputs (list[str]): List the variables from the variable selector that should trigger an update to the map
-            states (list[str]): List the variables from the variable selector that should be used in the get_data_func, but not trigger an update to the map
-            get_data_func (Callable[..., Any]): Function that when given aar_var, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
-            clickdata_func (Callable[..., Any] | None, optional): A function to process the click data.
+            map_type: The kind of map to be made, currently supports komm_nr and fylke_nr.
+            aar_var: The name of your year variable in the variable selector.
+            inputs: List the variables from the variable selector that should trigger an update to the map
+            states: List the variables from the variable selector that should be used in the get_data_func, but not trigger an update to the map
+            get_data_func: Function that when given aar_var, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
+            clickdata_func: A function to process the click data.
                 It should accept the click data as an argument and return a value to be sent to the output variable.
                 If None, no click data will be processed. Defaults to None.
-            output_var (str): Variable selector output for clickdata. Defaults to the same value as map_type.
-            label (str): Label for the button / tab for the module. Defaults to 'Kart {map_type}'
-            colorscale (str): Can be used to select another colorscale. See plotly documentation for options.
+            output_var: Variable selector output for clickdata. Defaults to the same value as map_type.
+            label: Label for the button / tab for the module. Defaults to 'Kart {map_type}'
+            colorscale: Can be used to select another colorscale. See plotly documentation for options.
 
         Note:
             - The clickdata_func needs to process the click data and return a string value that will be sent to the output variable specified in the output argument.
@@ -332,17 +332,17 @@ class MapDisplayWindow(WindowImplementation, MapDisplay):
         """Initialize the MapDisplayWindow module.
 
         Args:
-            map_type(str): The kind of map to be made, currently supports komm_nr and fylke_nr.
-            aar_var (str): The name of your year variable in the variable selector.
-            inputs (list[str]): List the variables from the variable selector that should trigger an update to the map
-            states (list[str]): List the variables from the variable selector that should be used in the get_data_func, but not trigger an update to the map
-            get_data_func (Callable[..., Any]): Function that when given aar_var, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
-            clickdata_func (Callable[..., Any] | None, optional): A function to process the click data.
+            map_type: The kind of map to be made, currently supports komm_nr and fylke_nr.
+            aar_var: The name of your year variable in the variable selector.
+            inputs: List the variables from the variable selector that should trigger an update to the map
+            states: List the variables from the variable selector that should be used in the get_data_func, but not trigger an update to the map
+            get_data_func: Function that when given aar_var, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
+            clickdata_func: A function to process the click data.
                 It should accept the click data as an argument and return a value to be sent to the output variable.
                 If None, no click data will be processed. Defaults to None.
-            output_var (str): Variable selector output for clickdata. Defaults to the same value as map_type.
-            label (str): Label for the button / tab for the module. Defaults to 'Kart {map_type}'
-            colorscale (str): Can be used to select another colorscale. See plotly documentation for options.
+            output_var: Variable selector output for clickdata. Defaults to the same value as map_type.
+            label: Label for the button / tab for the module. Defaults to 'Kart {map_type}'
+            colorscale: Can be used to select another colorscale. See plotly documentation for options.
 
         Note:
             - The clickdata_func needs to process the click data and return a string value that will be sent to the output variable specified in the output argument.

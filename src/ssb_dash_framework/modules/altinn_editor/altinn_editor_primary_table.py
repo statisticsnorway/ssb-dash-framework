@@ -39,9 +39,9 @@ class AltinnEditorPrimaryTable:
         """Initializes the Altinn Editor primary table module.
 
         Args:
-            time_units (list[str]): List of time units to be used in the module.
-            conn (object): Database connection object that must have a 'query' method.
-            variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
+            time_units: List of time units to be used in the module.
+            conn: Database connection object that must have a 'query' method.
+            variable_selector_instance: An instance of VariableSelector for variable selection.
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.

@@ -249,9 +249,9 @@ class PimemorizerTab:
 
             Args:
                 *args: Clicks for numeric buttons (0-9).
-                current_score (int): The current score of the user.
-                high_score (int): The user's highest score so far.
-                current_value (str): The current sequence of digits entered by the user.
+                current_score: The current score of the user.
+                high_score: The user's highest score so far.
+                current_value: The current sequence of digits entered by the user.
 
             Returns:
                 tuple: Contains:

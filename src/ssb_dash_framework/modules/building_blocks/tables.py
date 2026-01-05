@@ -47,16 +47,16 @@ class EditingTable:
         """Initialize the EditingTable component.
 
         Args:
-            label (str): The label for the tab or component, used for display purposes.
-            inputs (list[str]): A list of input variable names that will trigger callbacks.
-            states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
-            get_data_func (Callable[..., Any]): A function that returns a pandas dataframe.
-            update_table_func (Callable[..., Any]): A function for updating data based on edits in the AgGrid.
+            label: The label for the tab or component, used for display purposes.
+            inputs: A list of input variable names that will trigger callbacks.
+            states: A list of state variable names used that will not trigger callbacks, but can be provided as args.
+            get_data_func: A function that returns a pandas dataframe.
+            update_table_func: A function for updating data based on edits in the AgGrid.
                 Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values.
-            output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
-            output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
+            output: Identifier for the table, used for callbacks. Defaults to None.
+            output_varselector_name: Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
                 If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
-            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
+            number_format: A d3 format string for formatting numeric values in the table. Defaults to None.
                 If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
             **kwargs: Additional keyword arguments for the Dash AgGrid component.
         """
@@ -337,16 +337,16 @@ class EditingTableTab(TabImplementation, EditingTable):
         """Initialize the EditingTableTab.
 
         Args:
-            label (str): The label for the tab or component, used for display purposes.
-            inputs (list[str]): A list of input variable names that will trigger callbacks.
-            states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
-            get_data_func (Callable[..., Any]): A function that returns a pandas dataframe.
-            update_table_func (Callable[..., Any]): A function for updating data based on edits in the AgGrid.
+            label: The label for the tab or component, used for display purposes.
+            inputs: A list of input variable names that will trigger callbacks.
+            states: A list of state variable names used that will not trigger callbacks, but can be provided as args.
+            get_data_func: A function that returns a pandas dataframe.
+            update_table_func: A function for updating data based on edits in the AgGrid.
                 Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values.
-            output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
-            output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
+            output: Identifier for the table, used for callbacks. Defaults to None.
+            output_varselector_name: Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
                 If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
-            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
+            number_format: A d3 format string for formatting numeric values in the table. Defaults to None.
                 If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
             **kwargs: Additional keyword arguments for the Dash AgGrid component.
         """
@@ -383,16 +383,16 @@ class EditingTableWindow(WindowImplementation, EditingTable):
         """Initialize the EditingTableWindow.
 
         Args:
-            label (str): The label for the tab or component, used for display purposes.
-            inputs (list[str]): A list of input variable names that will trigger callbacks.
-            states (list[str]): A list of state variable names used that will not trigger callbacks, but can be provided as args.
-            get_data_func (Callable[..., Any]): A function that returns a pandas dataframe.
-            update_table_func (Callable[..., Any]): A function for updating data based on edits in the AgGrid.
+            label: The label for the tab or component, used for display purposes.
+            inputs: A list of input variable names that will trigger callbacks.
+            states: A list of state variable names used that will not trigger callbacks, but can be provided as args.
+            get_data_func: A function that returns a pandas dataframe.
+            update_table_func: A function for updating data based on edits in the AgGrid.
                 Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values.
-            output (str | list[str] | None, optional): Identifier for the table, used for callbacks. Defaults to None.
-            output_varselector_name (str | list[str] | None, optional): Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
+            output: Identifier for the table, used for callbacks. Defaults to None.
+            output_varselector_name: Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
                 If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
-            number_format (str | None, optional): A d3 format string for formatting numeric values in the table. Defaults to None.
+            number_format: A d3 format string for formatting numeric values in the table. Defaults to None.
                 If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
             **kwargs: Additional keyword arguments for the Dash AgGrid component.
         """

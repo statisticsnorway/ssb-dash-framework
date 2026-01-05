@@ -9,9 +9,9 @@ def enable_app_logging(level: str = "info", log_to_file: bool = False) -> None:
     """This function enables logging for the editing framework.
 
     Args:
-        level (str): The logging level to set. Can be one of "debug", "info", "warning", "error", or "critical".
+        level: The logging level to set. Can be one of "debug", "info", "warning", "error", or "critical".
             Defaults to "info".
-        log_to_file (bool): if True, logs will also be written to a file named "app.log". Defaults to False.
+        log_to_file: if True, logs will also be written to a file named "app.log". Defaults to False.
             This file should not be saved in the repository, as it will contain sensitive information in the logs.
 
     Raises:

@@ -121,8 +121,8 @@ class BofInformation(ABC):
         """Initialize the BofInformation tab component.
 
         Args:
-            label (str): The label for the tab, displayed as "BoF Foretak".
-            variableselector_foretak_name (str): The name of the variable selector that holds the foretak number, default is "foretak".
+            label: The label for the tab, displayed as "BoF Foretak".
+            variableselector_foretak_name: The name of the variable selector that holds the foretak number, default is "foretak".
         """
         self.module_number = BofInformation._id_number
         self.module_name = self.__class__.__name__
@@ -174,9 +174,9 @@ class BofInformation(ABC):
         """Generate a Dash Bootstrap card for displaying data.
 
         Args:
-            title (str): Title displayed in the card header.
-            component_id (str): ID assigned to the input component inside the card.
-            var_type (str): Input type for the component (e.g., "text").
+            title: Title displayed in the card header.
+            component_id: ID assigned to the input component inside the card.
+            var_type: Input type for the component (e.g., "text").
 
         Returns:
             dbc.Card: A styled card containing an input field.
@@ -488,7 +488,7 @@ class BofInformation(ABC):
             """Fetch BoF Foretak data based on the selected organization number.
 
             Args:
-                orgf (str): The organization number of the selected foretak.
+                orgf: The organization number of the selected foretak.
 
             Returns:
                 tuple: A tuple containing information about the foretak.

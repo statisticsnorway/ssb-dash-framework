@@ -147,10 +147,10 @@ class Aarsregnskap(ABC):
             """Update the year input field based on the selected year.
 
             Args:
-                aar (int): The selected year.
+                aar: The selected year.
 
             Returns:
-                int: The updated year value.
+                The updated year value.
             """
             logger.debug(f"Args:\naar: {aar}\n")
             return aar
@@ -163,10 +163,10 @@ class Aarsregnskap(ABC):
             """Update the organization number input field.
 
             Args:
-                orgnr (str): The selected organization number.
+                orgnr: The selected organization number.
 
             Returns:
-                str: The updated organization number value.
+                The updated organization number value.
             """
             logger.debug(f"Args:\norgnr: {orgnr}\n")
             return orgnr
@@ -180,11 +180,11 @@ class Aarsregnskap(ABC):
             """Fetch and encode the PDF source based on the year and organization number.
 
             Args:
-                aar (int): The year input value.
-                orgnr (str): The organization number input value.
+                aar: The year input value.
+                orgnr: The organization number input value.
 
             Returns:
-                str: A data URI for the PDF file, encoded in base64.
+                A data URI for the PDF file, encoded in base64.
 
             Raises:
                 PreventUpdate: If the year or organization number is not provided.
