@@ -538,18 +538,26 @@ class BofInformation(ABC):
             Output("tab-bof_foretak-table1", "rowData"),
             Output("tab-bof_foretak-table1", "columnDefs"),
             Input("tab-bof_foretak-foretaksnrcard", "value"),
+            State("var-bedrift", "value"),
         )
         def populate_bedrifter(
             foretaksnr: str,
+            bedrift: str,
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             logger.debug("Args:\n" + f"foretaksnr: {foretaksnr}")
             if foretaksnr is not None:
                 conn = sqlite3.connect(SSB_BEDRIFT_PATH)
                 df = pd.read_sql_query(
-                    f"""SELECT bedrifts_nr, orgnr, navn, sn07_1, org_form, sysselsatte, ansatte_totalt, omsetning, statuskode, statuskode_gdato, statuskode_rdato
+                    f"""SELECT bedrifts_nr, orgnr, navn, sn07_1, org_form, sysselsatte, ansatte_totalt, omsetning, statuskode, sb_type, statuskode_gdato, statuskode_rdato
                     FROM ssb_bedrift WHERE foretaks_nr = '{foretaksnr}';""",
                     conn,
                 )
+
+                if bedrift:
+                    df["_priority"] = (df["orgnr"] != bedrift).astype(int)
+                    df = df.sort_values("_priority").reset_index(drop=True)
+                    df = df.drop(columns=["_priority"])
+
                 columns = (
                     [  # col == "bedrifts_nr" results to true if col is bedrifts_nr
                         {
@@ -557,6 +565,7 @@ class BofInformation(ABC):
                             "field": col,
                             "checkboxSelection": col == "bedrifts_nr",
                             "headerCheckboxSelection": col == "bedrifts_nr",
+
                         }
                         for col in df.columns
                     ]
