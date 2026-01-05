@@ -29,22 +29,22 @@ def register_control(
     It is recommended to have the name of your control method / function start with the prefix 'control_'.
 
     Args:
-        kontrollid (str): The id of the control, preferably a code or shortened name. Must be unique. Note that in the control module controls are sorted alphabetically based on kontrollid, meaning you can add numbers as prefix to control the sorting order in the app.
-        kontrolltype (str): The type of control. Must be 'H' (Hard control), 'S' (Soft control) or 'I' (Informative)
-        beskrivelse (str): A description of the control.
-        kontrollerte_variabler (list[str]): A list of variables that are covered / relevant to the control.
-        sorteringsvariabel (str | None): Variable to sort the values on.
-        sortering (str | None): Controls if the sorting is ascending (ASC) or descending (DESC). Defaults to DESC
-        kwargs (Any): These will be added to the _control_meta dict attached to the method as additional key and value pairs.
+        kontrollid: The id of the control, preferably a code or shortened name. Must be unique. Note that in the control module controls are sorted alphabetically based on kontrollid, meaning you can add numbers as prefix to control the sorting order in the app.
+        kontrolltype: The type of control. Must be 'H' (Hard control), 'S' (Soft control) or 'I' (Informative)
+        beskrivelse: A description of the control.
+        kontrollerte_variabler: A list of variables that are covered / relevant to the control.
+        sorteringsvariabel: Variable to sort the values on.
+        sortering: Controls if the sorting is ascending (ASC) or descending (DESC). Defaults to DESC
+        **kwargs: These will be added to the `_control_meta` dict attached to the method as additional key and value pairs.
 
     Raises:
         TypeError: If `kontrollerte_variabler` is not a list of strings.
-        ValueError: If `kontrolltype` is not one of 'H', 'S', or 'I'.
-        ValueError: If `sortering` is not one of 'ASC' or 'DESC'.
-        ValueError: If required keys are missing from the metadata dictionary.
+        ValueError: If `kontrolltype` is not one of 'H', 'S', or 'I'. Or
+            if `sortering` is not one of 'ASC' or 'DESC'. Or
+            if required keys are missing from the metadata dictionary.
 
     Returns:
-        Callable[..., Any]: The decorated function with added attribute '_control_meta' containing a dictionary with metadata.
+        The decorated function with added attribute '_control_meta' containing a dictionary with metadata.
 
     Example:
         @register_control(
@@ -313,14 +313,14 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
 
         Raises:
             TypeError: If the control method does not return a `pd.DataFrame`.
-            ValueError: If a required column from `_required_kontrollutslag_columns` is missing.
-            ValueError: If the result contains extra columns that are not allowed.
-            ValueError: If the control is not registered in `self.controls`.
-            ValueError: If any key in `applies_to_subset` has too many unique values.
-            ValueError: If any value in `applies_to_subset` does not match the expected period.
-            ValueError: If the results contain more than one unique `kontrollid`.
-            ValueError: If the `kontrollid` in the results does not match the registered `_control_meta`.
-            ValueError: If there are duplicated rows in the results based on `time_units`, `ident`, and `refnr`.
+            ValueError: If a required column from `_required_kontrollutslag_columns` is missing. Or
+                if the result contains extra columns that are not allowed. Or
+                if the control is not registered in `self.controls`. Or
+                if any key in `applies_to_subset` has too many unique values. Or
+                if any value in `applies_to_subset` does not match the expected period. Or
+                if the results contain more than one unique `kontrollid`. Or
+                if the `kontrollid` in the results does not match the registered `_control_meta`. Or
+                if there are duplicated rows in the results based on `time_units`, `ident`, and `refnr`.
         """
         logger.info(f"Running control: {control}")
         results = getattr(self, control)()
@@ -533,10 +533,10 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         """Generates a SQL UPDATE query for updating rows in 'kontrollutslag'.
 
         Args:
-            df_updates (pd.DataFrame): DataFrame with updates to apply.
+            df_updates: DataFrame with updates to apply.
 
         Returns:
-            str: SQL query string.
+            SQL query string.
         """
         update_query = "UPDATE kontrollutslag SET utslag = CASE"
 

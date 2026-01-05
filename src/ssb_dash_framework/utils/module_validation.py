@@ -11,7 +11,7 @@ def module_validator(module_class: Any) -> None:
     It also ensures that the class can use the mixins for implementing the module, see implementations.py to see the mixin classes.
 
     Args:
-        module_class (Any): The instantiated class to validate.
+        module_class: The instantiated class to validate.
 
     Raises:
         AttributeError: If the class does not have the required attributes.

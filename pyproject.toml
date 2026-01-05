@@ -61,6 +61,7 @@ typeguard = ">=2.13.3"
 xdoctest = { extras = ["colors"], version = ">=0.15.10" }
 myst-parser = { version = ">=0.16.1" }
 deptry = ">=0.23.0"
+pydoclint = ">=0.8.3"
 
 [tool.poetry.requires-plugins]
 poetry-plugin-export = ">=1.9"
@@ -91,6 +92,16 @@ pretty = true
 show_column_numbers = true
 show_error_context = true
 ignore_missing_imports = true
+
+[tool.pydoclint]
+style = "google"
+exclude = '\.git|\.nox'
+arg-type-hints-in-docstring = false
+check-return-types = false
+check-yield-types = false
+allow-init-docstring = true
+native-mode-noqa-location = "definition"
+quiet = true
 
 [tool.ruff]
 force-exclude = true  # Apply excludes to pre-commit

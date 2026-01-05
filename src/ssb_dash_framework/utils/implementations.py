@@ -245,8 +245,8 @@ class WindowImplementation:
             """Toggle the state of the modal window.
 
             Args:
-                n (int): Number of clicks on the toggle button.
-                is_open (bool): Current state of the modal (open/closed).
+                n: Number of clicks on the toggle button.
+                is_open: Current state of the modal (open/closed).
 
             Returns:
                 bool: The new state of the modal (open/closed).
