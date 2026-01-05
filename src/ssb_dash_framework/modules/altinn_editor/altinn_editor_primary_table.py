@@ -110,16 +110,18 @@ class AltinnEditorPrimaryTable:
             Input("altinnedit-refnr", "value"),
             Input("altinnedit-option1", "value"),
             State("altinnedit-skjemaer", "value"),
+            State("var-bedrift", "value"),
             self.variableselector.get_all_states(),
         )
         def hovedside_update_altinnskjema(
-            refnr: str, tabell: str, skjema: str, *args: Any
+            refnr: str, tabell: str, skjema: str, bedrift: str, *args: Any
         ) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
             logger.debug(
                 f"Args:\n"
                 f"refnr: {refnr}\n"
                 f"tabell: {tabell}\n"
                 f"skjema: {skjema}\n"
+                f"bedrift: {bedrift}\n"
                 f"args: {args}"
             )
 
@@ -201,14 +203,21 @@ class AltinnEditorPrimaryTable:
                         .filter(_.refnr == refnr)
                         .to_pandas()
                     )
+
+                    if bedrift:
+                        df["_priority"] = (df["ident"] != bedrift).astype(int)
+                        df = df.sort_values("_priority").reset_index(drop=True)
+                        df = df.drop(columns=["_priority"])
+
+                    visible_columns = [col for col in df.columns if col not in ("row_ids", "refnr")]
                     columndefs = [
                         {
                             "headerName": col,
                             "field": col,
-                            "hide": col == "row_id",
                         }
-                        for col in df.columns
+                        for col in visible_columns
                     ]
+
                     return df.to_dict("records"), columndefs
                 except Exception as e:
                     logger.error(
