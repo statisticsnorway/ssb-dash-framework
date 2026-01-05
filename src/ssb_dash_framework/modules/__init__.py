@@ -37,12 +37,23 @@ from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
 from .hb_method import HBMethod
 from .hb_method import HBMethodWindow
+from .macro_module import MacroModule
+from .macro_module import MacroModuleTab
+from .macro_module import MacroModuleWindow
+from .parquet_editor import ParquetEditor
+from .parquet_editor import ParquetEditorChangelog
+from .parquet_editor import apply_edits
+from .parquet_editor import export_from_parqueteditor
+from .parquet_editor import get_log_path
 from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab
 from .skjemapdfviewer import SkjemapdfViewerWindow
 from .visualizationbuilder import VisualizationBuilder
 from .visualizationbuilder import VisualizationBuilderWindow
+from .bedriftstabell import Bedriftstabell
+from .bedriftstabell import BedriftstabellTab
+from .bedriftstabell import BedriftstabellWindow
 
 __all__ = [
     "Aarsregnskap",
@@ -57,6 +68,9 @@ __all__ = [
     "AltinnDataCaptureTab",
     "AltinnDataCaptureWindow",
     "AltinnSkjemadataEditor",
+    "Bedriftstabell",
+    "BedriftstabellTab",
+    "BedriftstabellWindow",
     "BofInformation",
     "BofInformationTab",
     "BofInformationWindow",
@@ -76,16 +90,24 @@ __all__ = [
     "FreeSearchWindow",
     "HBMethod",
     "HBMethodWindow",
+    "MacroModule",
+    "MacroModuleTab",
+    "MacroModuleWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",
+    "ParquetEditor",
+    "ParquetEditorChangelog",
     "PimemorizerTab",
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",
     "VisualizationBuilder",
     "VisualizationBuilderWindow",
+    "apply_edits",
+    "export_from_parqueteditor",
+    "get_log_path",
 ]
