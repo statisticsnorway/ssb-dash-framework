@@ -155,6 +155,8 @@ class MacroModule:
     _required_variables: ClassVar[list[str]] = (
         [  # Used for validating that the variable selector has the required variables set. These are hard-coded in the callbacks.
             "ident",
+            "foretak",
+            "bedrift",
             "valgt_tabell",
             "altinnskjema",
         ]
@@ -531,6 +533,14 @@ class MacroModule:
 
             t = t.select([*cols, "selected_nace"])
             t_1 = t_1.select([*cols, "selected_nace"])
+
+            # cast numerics to float in case of yearly type mismatches
+            for col in (HEATMAP_VARIABLES.keys()):
+                if col in t.columns:
+                    t = t.mutate(**{col: t[col].cast("float64")})
+                if col in t_1.columns:
+                    t_1 = t_1.mutate(**{col: t_1[col].cast("float64")})
+
             combined = t.union(t_1)
 
             if macro_level == "sammensatte variabler":
@@ -792,6 +802,13 @@ class MacroModule:
             t = t.rename(**rename_mapping)
             t_1 = t_1.rename(**rename_mapping)
 
+            # cast numerics to float in case of yearly type mismatches
+            for col in (HEATMAP_VARIABLES.keys()):
+                if col in t.columns:
+                    t = t.mutate(**{col: t[col].cast("float64")})
+                if col in t_1.columns:
+                    t_1 = t_1.mutate(**{col: t_1[col].cast("float64")})
+
             combined = t.union(t_1)
 
             # rename cols to chosen variable names
@@ -849,7 +866,7 @@ class MacroModule:
                 )
 
                 heatmap_value_change = cell_data.get("value", 0)
-                heatmap_value_change = float(heatmap_value_change)
+                heatmap_value_change = float(heatmap_value_change) if heatmap_value_change != None else 0
                 ascending_sorting_param: bool = heatmap_value_change < 0
                 df = df.sort_values(
                     f"{valgt_variabel}_diff", ascending=ascending_sorting_param
@@ -977,17 +994,15 @@ class MacroModule:
                 raise PreventUpdate
 
             clicked_row = rowdata[row_idx]
+            ident = clicked_row.get("orgnr_f", "")
+            foretak = ident
 
             if col_id == "orgnr_f":
-                ident = clicked_row.get("orgnr_f", "")
-                foretak = ident
                 bedrift = ""
                 tabell = "skjemadata_foretak"
             elif col_id == "orgnr_b":
-                ident = clicked_row.get("orgnr_b", "")
-                foretak = clicked_row.get("orgnr_f", "")
-                bedrift = ident
-                tabell = "skjemadata_bedrifter"
+                bedrift = clicked_row.get("orgnr_b", "")
+                tabell = "skjemadata_bedriftstabell"
             else:
                 raise PreventUpdate
 
