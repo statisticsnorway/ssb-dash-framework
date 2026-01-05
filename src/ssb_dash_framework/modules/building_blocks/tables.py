@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import zoneinfo
@@ -7,10 +6,8 @@ from datetime import datetime
 from typing import Any
 
 import dash_ag_grid as dag
-import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import callback
-from dash import dcc
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -166,9 +163,7 @@ class EditingTable:
         )
         def load_to_table(
             *dynamic_states: Any,
-        ) -> tuple[
-            list[dict[str, Any]], list[dict[str, str | bool]]
-        ]:
+        ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
             """Loads data to the AgGrid table using supplied get_data_func function.
 
             Raises exception when it fails.
@@ -189,9 +184,6 @@ class EditingTable:
                     }
                     for col in df.columns
                 ]
-                if columns:
-                    columns[0]["checkboxSelection"] = True
-                    columns[0]["headerCheckboxSelection"] = True
                 row_data = df.to_dict("records")
                 return row_data, columns
             except Exception as e:
@@ -276,23 +268,19 @@ class EditingTable:
 
         @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
-            Output(
-                f"{self.module_number}-table-data", "data", allow_duplicate=True
-            ),  # Somewhat sure this is not needed
-            Input(
-                f"{self.module_number}-tabelleditering-table1", "cellValueChanged"
-            ),
+            Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
             State("alert_store", "data"),
-            State(f"{self.module_number}-table-data", "data"),
             *dynamic_states,
             prevent_initial_call=True,
         )
         def make_edit(
             edited: list[dict[str, Any]],
             error_log: list[dict[str, Any]],
-            table_data: list[dict[str, Any]],
             *dynamic_states: Any,
         ) -> list[dict[str, Any]]:
+            logger.debug(
+                f"Args:\nedited: {edited}\nerror_log: {error_log}\ndynamic_states: {dynamic_states}"
+            )
             if not edited:
                 raise PreventUpdate
             edit = edited[0]
