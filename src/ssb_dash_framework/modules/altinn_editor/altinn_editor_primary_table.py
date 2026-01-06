@@ -45,9 +45,8 @@ class AltinnEditorPrimaryTable:
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
-            AssertionError: If the connection object does not have a 'query' method.
+            TypeError: If connection object is neither EimerDBInstance or Ibis connection.
         """
-        print("Test: ", conn_is_ibis(conn))
         if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
             raise TypeError(
                 f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
@@ -178,7 +177,14 @@ class AltinnEditorPrimaryTable:
                         {
                             "headerName": col,
                             "field": col,
-                            "hide": col == "row_id",
+                            "hide": col
+                            in [
+                                "row_id",
+                                "row_ids",
+                                *self.time_units,
+                                "skjema",
+                                "refnr",
+                            ],
                             "flex": 2 if col == "variabel" else 1,
                         }
                         for col in df.columns
@@ -205,7 +211,8 @@ class AltinnEditorPrimaryTable:
                         {
                             "headerName": col,
                             "field": col,
-                            "hide": col == "row_id",
+                            "hide": col
+                            in ["row_id", *self.time_units, "skjema", "refnr"],
                         }
                         for col in df.columns
                     ]
