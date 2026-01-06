@@ -58,6 +58,11 @@ class AltinnEditorPrimaryTable:
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
             )
+        self.variableselector = variable_selector_instance
+        self.time_units = [
+            self.variableselector.get_option(x).id.removeprefix("var-")
+            for x in time_units
+        ]
         if cols_to_hide is None:
             self.cols_to_hide = [
                 "row_id",
@@ -67,16 +72,11 @@ class AltinnEditorPrimaryTable:
                 "refnr",
             ]
         else:
-            if not isinstance(list, cols_to_hide):
+            if not isinstance(cols_to_hide, list):
                 raise TypeError(
                     f"Argument 'cols_to_hide' must be a list of strings. Received: {cols_to_hide}"
                 )
             self.cols_to_hide = cols_to_hide
-        self.variableselector = variable_selector_instance
-        self.time_units = [
-            self.variableselector.get_option(x).id.removeprefix("var-")
-            for x in time_units
-        ]
         self.module_layout = self._create_layout()
         self._is_valid()
         self.module_callbacks()
