@@ -35,6 +35,7 @@ class AltinnEditorPrimaryTable:
         time_units: list[str],
         conn: object,
         variable_selector_instance: VariableSelector,
+        cols_to_hide: list[str] | None = None,
     ) -> None:
         """Initializes the Altinn Editor primary table module.
 
@@ -42,6 +43,7 @@ class AltinnEditorPrimaryTable:
             time_units (list[str]): List of time units to be used in the module.
             conn (object): Database connection object that must have a 'query' method.
             variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
+            cols_to_hide (list[str]): A list of columns to ignore. Defaults to ["row_id","row_ids",*self.time_units,"skjema","refnr"].
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
@@ -56,6 +58,20 @@ class AltinnEditorPrimaryTable:
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
             )
+        if cols_to_hide is None:
+            self.cols_to_hide = [
+                "row_id",
+                "row_ids",
+                *self.time_units,
+                "skjema",
+                "refnr",
+            ]
+        else:
+            if not isinstance(list, cols_to_hide):
+                raise TypeError(
+                    f"Argument 'cols_to_hide' must be a list of strings. Received: {cols_to_hide}"
+                )
+            self.cols_to_hide = cols_to_hide
         self.variableselector = variable_selector_instance
         self.time_units = [
             self.variableselector.get_option(x).id.removeprefix("var-")
