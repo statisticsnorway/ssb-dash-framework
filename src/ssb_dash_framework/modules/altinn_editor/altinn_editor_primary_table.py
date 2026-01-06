@@ -35,6 +35,7 @@ class AltinnEditorPrimaryTable:
         time_units: list[str],
         conn: object,
         variable_selector_instance: VariableSelector,
+        cols_to_hide: list[str] | None = None,
     ) -> None:
         """Initializes the Altinn Editor primary table module.
 
@@ -42,12 +43,12 @@ class AltinnEditorPrimaryTable:
             time_units (list[str]): List of time units to be used in the module.
             conn (object): Database connection object that must have a 'query' method.
             variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
+            cols_to_hide (list[str]): A list of columns to ignore. Defaults to ["row_id","row_ids",*self.time_units,"skjema","refnr"].
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
-            AssertionError: If the connection object does not have a 'query' method.
+            TypeError: If connection object is neither EimerDBInstance or Ibis connection.
         """
-        print("Test: ", conn_is_ibis(conn))
         if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
             raise TypeError(
                 f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
@@ -62,6 +63,20 @@ class AltinnEditorPrimaryTable:
             self.variableselector.get_option(x).id.removeprefix("var-")
             for x in time_units
         ]
+        if cols_to_hide is None:
+            self.cols_to_hide = [
+                "row_id",
+                "row_ids",
+                *self.time_units,
+                "skjema",
+                "refnr",
+            ]
+        else:
+            if not isinstance(cols_to_hide, list):
+                raise TypeError(
+                    f"Argument 'cols_to_hide' must be a list of strings. Received: {cols_to_hide}"
+                )
+            self.cols_to_hide = cols_to_hide
         self.module_layout = self._create_layout()
         self._is_valid()
         self.module_callbacks()
@@ -180,7 +195,14 @@ class AltinnEditorPrimaryTable:
                         {
                             "headerName": col,
                             "field": col,
-                            "hide": col == "row_id",
+                            "hide": col
+                            in [
+                                "row_id",
+                                "row_ids",
+                                *self.time_units,
+                                "skjema",
+                                "refnr",
+                            ],
                             "flex": 2 if col == "variabel" else 1,
                         }
                         for col in df.columns
@@ -209,16 +231,17 @@ class AltinnEditorPrimaryTable:
                         df = df.sort_values("_priority").reset_index(drop=True)
                         df = df.drop(columns=["_priority"])
 
-                    visible_columns = [col for col in df.columns if col not in ("row_ids", "refnr")]
                     columndefs = [
                         {
                             "headerName": col,
                             "field": col,
+                            "hide": col
+                            in ["row_id", *self.time_units, "skjema", "refnr"],
                         }
-                        for col in visible_columns
+                        for col in df.columns
                     ]
-
                     return df.to_dict("records"), columndefs
+                    
                 except Exception as e:
                     logger.error(
                         f"Error in hovedside_update_altinnskjema (wide format): {e}",
