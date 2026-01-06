@@ -997,7 +997,7 @@ class MacroModule:
             ident = clicked_row.get("orgnr_f", "")
             foretak = ident
 
-            if col_id == "orgnr_f":
+            if col_id in ("orgnr_f", "navn"):
                 bedrift = ""
                 tabell = "skjemadata_foretak"
             elif col_id == "orgnr_b":

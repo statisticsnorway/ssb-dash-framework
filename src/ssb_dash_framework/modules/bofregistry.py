@@ -535,14 +535,13 @@ class BofInformation(ABC):
                 )
 
         @callback(  # type: ignore[misc]
-            Output("tab-bof_foretak-table1", "rowData"),
-            Output("tab-bof_foretak-table1", "columnDefs"),
+            Output("tab-bof_foretak-table1", "rowData", allow_duplicate=True),
+            Output("tab-bof_foretak-table1", "columnDefs", allow_duplicate=True),
             Input("tab-bof_foretak-foretaksnrcard", "value"),
-            State("var-bedrift", "value"),
+            prevent_initial_call=True,
         )
         def populate_bedrifter(
             foretaksnr: str,
-            bedrift: str,
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             logger.debug("Args:\n" + f"foretaksnr: {foretaksnr}")
             if foretaksnr is not None:
@@ -552,11 +551,6 @@ class BofInformation(ABC):
                     FROM ssb_bedrift WHERE foretaks_nr = '{foretaksnr}';""",
                     conn,
                 )
-
-                if bedrift:
-                    df["_priority"] = (df["orgnr"] != bedrift).astype(int)
-                    df = df.sort_values("_priority").reset_index(drop=True)
-                    df = df.drop(columns=["_priority"])
 
                 columns = (
                     [  # col == "bedrifts_nr" results to true if col is bedrifts_nr
@@ -573,6 +567,37 @@ class BofInformation(ABC):
                 return df.to_dict("records"), columns
 
         logger.debug("Generated callbacks")
+
+        try: # TODO Find better solution to sort - config file?
+            VariableSelector([],[]).get_option("var-bedrift", search_target="id")
+            
+            @callback(
+                Output("tab-bof_foretak-table1", "rowData"),
+                Output("tab-bof_foretak-table1", "columnDefs"),
+                Input("tab-bof_foretak-table1", "rowData"),
+                Input("tab-bof_foretak-table1", "columnDefs"),
+                State("var-bedrift", "value"),
+                prevent_initial_call=True,
+            )
+            def sort_bedrifter_by_selection(
+                row_data: list[dict[Any, Any]],
+                column_defs: list[dict[str, Any]],
+                bedrift: str,
+            ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
+                """Sort bedrifter table to prioritize selected bedrift."""
+                if not bedrift or not row_data:
+                    return row_data, column_defs
+                
+                # Sort directly without DataFrame conversion
+                sorted_data = sorted(
+                    row_data,
+                    key=lambda row: 0 if row.get("orgnr") == bedrift else 1
+                )
+                
+                return sorted_data, column_defs
+                
+        except ValueError:
+            logger.debug("var-bedrift not available, skipping bedrift sorting callback")
 
 
 class BofInformationTab(TabImplementation, BofInformation):
