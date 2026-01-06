@@ -39,7 +39,6 @@ class AltinnEditorHistory:
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
-            AssertionError: If the connection object does not have a 'query_changes' method.
         """
         # assert hasattr(
         #     conn, "query_changes"

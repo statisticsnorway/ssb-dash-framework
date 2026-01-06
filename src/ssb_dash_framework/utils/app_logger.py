@@ -15,9 +15,9 @@ def enable_app_logging(level: str = "info", log_to_file: bool = False) -> None:
             This file should not be saved in the repository, as it will contain sensitive information in the logs.
 
     Raises:
-        TypeError: If level is not a string.
-        TypeError: If log_to_file is not a bool.
-        FileNotFoundError: If cannot find 'work' folder.
+        TypeError: If level is not a string. Or
+            if log_to_file is not a bool.
+        FileNotFoundError: If cannot find a 'work' folder.
         ValueError: If the provided logging level is not valid.
         RuntimeError: If logging is already enabled.
 

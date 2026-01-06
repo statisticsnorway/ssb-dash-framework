@@ -46,13 +46,13 @@ class AltinnDataCapture(ABC):
         """Initializes the AntinnDataCapture module.
 
         Args:
-            time_units (list): A list of the time units used.
-            label (str): The label for the module.
-            database_type (str | None): The selected method / set of database connections. Defaults to None.
-            database (object): The database connection.
+            time_units: A list of the time units used.
+            label: The label for the module.
+            database_type: The selected method / set of database connections. Defaults to None.
+            database: The database connection.
 
         Raises:
-            TypeError if database is invalid connection type.
+            TypeError: If database is invalid connection type.
         """
         if not isinstance(database, EimerDBInstance) and not conn_is_ibis(database):
             raise TypeError(

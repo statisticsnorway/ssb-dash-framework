@@ -24,10 +24,19 @@ class Aarsregnskap(ABC):
     """Module for displaying annual financial statements (Årsregnskap).
 
     Attributes:
-        label (str): Label for the module when initialized, displayed as "Årsregnskap".
+        module_number: Sequential ID of the module instance.
+        module_name: Name of the module class.
+        label: User-visible label of the module, shown as "Årsregnskap".
+        icon: Emoji icon representing the module.
+        module_layout: The UI layout object returned by ``_create_layout()``.
     """
 
     _id_number: ClassVar[int] = 0
+    module_number: int
+    module_name: str
+    label: str
+    icon: str
+    module_layout: html.Div
 
     def __init__(
         self,

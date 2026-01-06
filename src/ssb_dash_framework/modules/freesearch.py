@@ -40,6 +40,9 @@ class FreeSearch(ABC):
         Args:
             database: Database connection or interface for executing SQL queries.
             label: Label for the module, defaults to "Frisøk".
+
+        Raises:
+            TypeError: If the connection object is not 'EimerDBInstance' or ibis connection.
         """
         if not isinstance(database, EimerDBInstance) and not conn_is_ibis(database):
             raise TypeError(

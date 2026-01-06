@@ -46,7 +46,6 @@ class AltinnEditorSupportTables:
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
-            AssertionError: If the connection object does not have a 'query' method.
         """
         if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
             raise TypeError(

@@ -392,6 +392,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
 
         Raises:
             NotImplementedError: If connection is not EimerDBInstance or Ibis connection.
+            ValueError: If the query fails for reasons other than an empty 'kontrollutslag' table.
         """
         logger.info("Getting current kontrollutslag.")
         if isinstance(self.conn, EimerDBInstance):

@@ -24,8 +24,10 @@ class PimemorizerTab:
     - A scoring system to track the current and high scores.
 
     Attributes:
-        label (str): The label for the tab, set to "𝝅 Pi memorizer".
+        label: The label for the tab, set to "𝝅 Pi memorizer".
     """
+
+    label: str
 
     def __init__(
         self,
