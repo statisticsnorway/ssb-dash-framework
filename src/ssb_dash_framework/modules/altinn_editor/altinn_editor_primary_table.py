@@ -236,7 +236,7 @@ class AltinnEditorPrimaryTable:
                             "headerName": col,
                             "field": col,
                             "hide": col
-                            in ["row_id", *self.time_units, "skjema", "refnr"],
+                            in ["row_id", "row_ids", *self.time_units, "skjema", "refnr"],
                         }
                         for col in df.columns
                     ]
