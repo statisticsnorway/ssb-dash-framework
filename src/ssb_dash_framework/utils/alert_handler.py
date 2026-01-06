@@ -188,7 +188,7 @@ class AlertHandler:
             Input("alert_filter_danger", "n_clicks"),
             prevent_initial_call=True,
         )
-        def set_filter(  # noqa: DOC102, DOC103, DOC106
+        def set_filter(
             _: int | None, __: int | None, ___: int | None, ____: int | None
         ) -> str:
             """Updates the alert filter based on the clicked filter button.
@@ -296,7 +296,7 @@ class AlertHandler:
             Input("alert_ephemeral_interval", "n_intervals"),
             State("alert_store", "data"),
         )
-        def display_ephemeral_alerts(  # noqa: DOC102, DOC103
+        def display_ephemeral_alerts(
             _: int, alerts: list[dict[str, Any]]
         ) -> list[dict[str, Any]]:
             """Displays ephemeral alerts for 4 seconds.

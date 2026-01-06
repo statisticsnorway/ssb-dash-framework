@@ -5,8 +5,12 @@ from dash import html
 
 logger = logging.getLogger(__name__)
 
-def get_config_path(module_name: str, ssb_template: bool=True):
-    return f"/home/onyxia/work/stat-naringer-dash/config/ssb-dash-framework/{module_name}"
+
+def get_config_path(module_name: str, ssb_template: bool = True):
+    return (
+        f"/home/onyxia/work/stat-naringer-dash/config/ssb-dash-framework/{module_name}"
+    )
+
 
 def sidebar_button(
     icon: str,
