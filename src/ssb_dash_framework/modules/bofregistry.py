@@ -559,7 +559,6 @@ class BofInformation(ABC):
                             "field": col,
                             "checkboxSelection": col == "bedrifts_nr",
                             "headerCheckboxSelection": col == "bedrifts_nr",
-
                         }
                         for col in df.columns
                     ]
@@ -568,9 +567,9 @@ class BofInformation(ABC):
 
         logger.debug("Generated callbacks")
 
-        try: # TODO Find better solution to sort - config file?
-            VariableSelector([],[]).get_option("var-bedrift", search_target="id")
-            
+        try:  # TODO Find better solution to sort - config file?
+            VariableSelector([], []).get_option("var-bedrift", search_target="id")
+
             @callback(
                 Output("tab-bof_foretak-table1", "rowData"),
                 Output("tab-bof_foretak-table1", "columnDefs"),
@@ -587,15 +586,14 @@ class BofInformation(ABC):
                 """Sort bedrifter table to prioritize selected bedrift."""
                 if not bedrift or not row_data:
                     return row_data, column_defs
-                
+
                 # Sort directly without DataFrame conversion
                 sorted_data = sorted(
-                    row_data,
-                    key=lambda row: 0 if row.get("orgnr") == bedrift else 1
+                    row_data, key=lambda row: 0 if row.get("orgnr") == bedrift else 1
                 )
-                
+
                 return sorted_data, column_defs
-                
+
         except ValueError:
             logger.debug("var-bedrift not available, skipping bedrift sorting callback")
 

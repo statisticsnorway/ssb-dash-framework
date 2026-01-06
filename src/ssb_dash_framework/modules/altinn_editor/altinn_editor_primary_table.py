@@ -121,7 +121,7 @@ class AltinnEditorPrimaryTable:
 
         @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemadata", "rowData", allow_duplicate=True),
-            Output("altinnedit-table-skjemadata", "columnDefs",  allow_duplicate=True),
+            Output("altinnedit-table-skjemadata", "columnDefs", allow_duplicate=True),
             Input("altinnedit-refnr", "value"),
             Input("altinnedit-option1", "value"),
             State("altinnedit-skjemaer", "value"),
@@ -230,12 +230,18 @@ class AltinnEditorPrimaryTable:
                             "headerName": col,
                             "field": col,
                             "hide": col
-                            in ["row_id", "row_ids", *self.time_units, "skjema", "refnr"],
+                            in [
+                                "row_id",
+                                "row_ids",
+                                *self.time_units,
+                                "skjema",
+                                "refnr",
+                            ],
                         }
                         for col in df.columns
                     ]
                     return df.to_dict("records"), columndefs
-                    
+
                 except Exception as e:
                     logger.error(
                         f"Error in hovedside_update_altinnskjema (wide format): {e}",
@@ -243,9 +249,9 @@ class AltinnEditorPrimaryTable:
                     )
                     return None, None
 
-        try: # TODO Find better solution to sort - config file?
+        try:  # TODO Find better solution to sort - config file?
             self.variableselector.get_option("var-bedrift", search_target="id")
-            
+
             @callback(
                 Output("altinnedit-table-skjemadata", "rowData"),
                 Output("altinnedit-table-skjemadata", "columnDefs"),
@@ -255,24 +261,23 @@ class AltinnEditorPrimaryTable:
                 prevent_initial_call=True,
             )
             def sort_by_bedrift(
-                row_data: list[dict[str, Any]], 
-                column_defs: list[dict[str, Any]], 
-                bedrift: str
+                row_data: list[dict[str, Any]],
+                column_defs: list[dict[str, Any]],
+                bedrift: str,
             ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
                 """Sort table to prioritize selected bedrift."""
                 if not bedrift or not row_data:
                     return row_data, column_defs
-                
+
                 sorted_data = sorted(
-                row_data, 
-                key=lambda row: 0 if row.get("ident") == bedrift else 1
+                    row_data, key=lambda row: 0 if row.get("ident") == bedrift else 1
                 )
-                
+
                 return sorted_data, column_defs
-                
+
         except ValueError:
             logger.debug("var-bedrift not available, skipping bedrift sorting callback")
-        
+
         @callback(  # type: ignore[misc]
             Output("var-statistikkvariabel", "value"),
             Input("altinnedit-table-skjemadata", "cellClicked"),

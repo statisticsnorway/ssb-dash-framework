@@ -535,7 +535,7 @@ class MacroModule:
             t_1 = t_1.select([*cols, "selected_nace"])
 
             # cast numerics to float in case of yearly type mismatches
-            for col in (HEATMAP_VARIABLES.keys()):
+            for col in HEATMAP_VARIABLES.keys():
                 if col in t.columns:
                     t = t.mutate(**{col: t[col].cast("float64")})
                 if col in t_1.columns:
@@ -803,7 +803,7 @@ class MacroModule:
             t_1 = t_1.rename(**rename_mapping)
 
             # cast numerics to float in case of yearly type mismatches
-            for col in (HEATMAP_VARIABLES.keys()):
+            for col in HEATMAP_VARIABLES.keys():
                 if col in t.columns:
                     t = t.mutate(**{col: t[col].cast("float64")})
                 if col in t_1.columns:
@@ -866,7 +866,11 @@ class MacroModule:
                 )
 
                 heatmap_value_change = cell_data.get("value", 0)
-                heatmap_value_change = float(heatmap_value_change) if heatmap_value_change != None else 0
+                heatmap_value_change = (
+                    float(heatmap_value_change)
+                    if heatmap_value_change is not None
+                    else 0
+                )
                 ascending_sorting_param: bool = heatmap_value_change < 0
                 df = df.sort_values(
                     f"{valgt_variabel}_diff", ascending=ascending_sorting_param
