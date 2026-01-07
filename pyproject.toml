@@ -100,7 +100,7 @@ arg-type-hints-in-docstring = false
 check-return-types = false
 check-yield-types = false
 allow-init-docstring = true
-native-mode-noqa-location = "definition"
+# native-mode-noqa-location = "definition"
 quiet = true
 
 [tool.ruff]
@@ -141,6 +141,7 @@ ignore = [
     "E501",   # Supress line-too-long warnings: trust black's judgement on this one.
     "PLR2004", # Allow to compare with unnamed numerical constants.
 ]
+external = ["DOC"]  ## Avoiding removing any codes starting with `DOC` from any `# noqa` directives.
 
 [tool.ruff.lint.isort]
 force-single-line = true

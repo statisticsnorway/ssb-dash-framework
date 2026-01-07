@@ -201,7 +201,7 @@ class AlertHandler:
 
             Returns:
                 str: The selected filter type ('all', 'info', 'warning', or 'danger').
-            """
+            """  # noqa: DOC102, DOC103, DOC106
             triggered_id = ctx.triggered_id if hasattr(ctx, "triggered_id") else None
             if triggered_id == "alert_filter_info":
                 return "info"
@@ -309,7 +309,7 @@ class AlertHandler:
 
             Returns:
                 A list of Dash Bootstrap Components alerts to display as ephemeral alerts.
-            """
+            """  # noqa: DOC102, DOC103
             if not alerts:
                 return []
 
