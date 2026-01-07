@@ -40,9 +40,9 @@ class DebugInspector:
         """Initialize the DebugInspector class.
 
         Args:
-            inputs (list[str]): List of input IDs to be monitored.
-            states (list[str]): List of state IDs to be monitored.
-            func (Callable[..., Any], optional): Function to be called when the debugger is triggered. Defaults to default_func.
+            inputs: List of input IDs to be monitored.
+            states: List of state IDs to be monitored.
+            func: Function to be called when the debugger is triggered. Defaults to default_func.
         """
         logger.warning(
             f"{self.__class__.__name__} is made for checking how modules behave and is not intended for production."

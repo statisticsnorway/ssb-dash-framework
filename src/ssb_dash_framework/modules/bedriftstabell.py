@@ -1,27 +1,31 @@
+import json
 import logging
 from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
-import json
-import ibis
-from ibis import _
-from dash import callback_context as ctx
 
-from dash import html, Output, callback, dcc, Input, State
-from dash.exceptions import PreventUpdate
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+from dash import Input
+from dash import Output
+from dash import State
+from dash import callback
+from dash import dcc
+from dash import html
+from dash.exceptions import PreventUpdate
+
 from ..setup.variableselector import VariableSelector
-from ..utils.module_validation import module_validator
+from ..utils.alert_handler import create_alert
+from ..utils.core_query_functions import ibis_filter_with_dict
+from ..utils.functions import get_config_path
 from ..utils.implementations import TabImplementation
 from ..utils.implementations import WindowImplementation
-from ..utils.core_query_functions import ibis_filter_with_dict
-from ..utils.alert_handler import create_alert
-from ..utils.functions import get_config_path
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
 logger.warning("This module is under development and might have many drastic changes.")
+
 
 def set_time_units(): ...
 
@@ -158,7 +162,7 @@ class Bedriftstabell(ABC):
             )
             with config_path.open("r", encoding="utf-8") as f:
                 return json.load(f)
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             return None
 
     def module_callbacks(self):

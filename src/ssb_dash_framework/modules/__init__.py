@@ -12,6 +12,9 @@ from .altinn_data_capture import AltinnDataCapture
 from .altinn_data_capture import AltinnDataCaptureTab
 from .altinn_data_capture import AltinnDataCaptureWindow
 from .altinn_editor import AltinnSkjemadataEditor
+from .bedriftstabell import Bedriftstabell
+from .bedriftstabell import BedriftstabellTab
+from .bedriftstabell import BedriftstabellWindow
 from .bofregistry import BofInformation
 from .bofregistry import BofInformationTab
 from .bofregistry import BofInformationWindow
@@ -51,9 +54,6 @@ from .skjemapdfviewer import SkjemapdfViewerTab
 from .skjemapdfviewer import SkjemapdfViewerWindow
 from .visualizationbuilder import VisualizationBuilder
 from .visualizationbuilder import VisualizationBuilderWindow
-from .bedriftstabell import Bedriftstabell
-from .bedriftstabell import BedriftstabellTab
-from .bedriftstabell import BedriftstabellWindow
 
 __all__ = [
     "Aarsregnskap",

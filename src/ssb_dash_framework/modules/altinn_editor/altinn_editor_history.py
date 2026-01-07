@@ -33,13 +33,12 @@ class AltinnEditorHistory:
         """Initializes the Altinn Editor History module.
 
         Args:
-            time_units (list[str]): List of time units to be used in the module.
-            conn (object): Database connection object that must have a 'query_changes' method.
-            variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
+            time_units: List of time units to be used in the module.
+            conn: Database connection object that must have a 'query_changes' method.
+            variable_selector_instance: An instance of VariableSelector for variable selection.
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
-            AssertionError: If the connection object does not have a 'query_changes' method.
         """
         # assert hasattr(
         #     conn, "query_changes"

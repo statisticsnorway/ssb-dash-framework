@@ -27,8 +27,8 @@ class MultiModule:
         """Initialize the MultiModule.
 
         Args:
-            label (str): The label for the MultiModule.
-            module_list (list[Any]): A list of modules to switch between. Each module should have
+            label: The label for the MultiModule.
+            module_list: A list of modules to switch between. Each module should have
                 a `label` and `module_layout` attribute.
 
         Notes:
@@ -131,8 +131,8 @@ class MultiModuleTab(TabImplementation, MultiModule):
         """Initialize the MultiModuleTab.
 
         Args:
-            label (str): The label for the MultiModuleTab.
-            module_list (list[Any]): A list of modules to switch between. Each module should have
+            label: The label for the MultiModuleTab.
+            module_list: A list of modules to switch between. Each module should have
         """
         MultiModule.__init__(self, label=label, module_list=module_list)
         TabImplementation.__init__(
@@ -147,8 +147,8 @@ class MultiModuleWindow(WindowImplementation, MultiModule):
         """Initialize the MultiModuleWindow.
 
         Args:
-            label (str): The label for the MultiModuleWindow.
-            module_list (list[Any]): A list of modules to switch between. Each module should have
+            label: The label for the MultiModuleWindow.
+            module_list: A list of modules to switch between. Each module should have
         """
         MultiModule.__init__(self, label=label, module_list=module_list)
         WindowImplementation.__init__(self)

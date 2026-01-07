@@ -14,6 +14,9 @@ from .modules import AltinnDataCapture
 from .modules import AltinnDataCaptureTab
 from .modules import AltinnDataCaptureWindow
 from .modules import AltinnSkjemadataEditor
+from .modules import Bedriftstabell
+from .modules import BedriftstabellTab
+from .modules import BedriftstabellWindow
 from .modules import BofInformation
 from .modules import BofInformationTab
 from .modules import BofInformationWindow
@@ -74,9 +77,7 @@ from .utils import enable_app_logging
 from .utils import hb_method
 from .utils import module_validator
 from .utils import sidebar_button
-from .modules import Bedriftstabell
-from .modules import BedriftstabellTab
-from .modules import BedriftstabellWindow
+
 # from .utils import th_error
 
 __all__ = [

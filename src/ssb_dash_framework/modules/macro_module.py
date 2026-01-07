@@ -169,10 +169,10 @@ class MacroModule:
         The base_path is used by _load_year to locate parquet files.
 
         Args:
-            time_units (list[str]): Your time variables used in the variable selector. Example year, quarter, month, etc.
-            conn (object): A connection object to a database (kept for compatibility, but DuckDB is used internally).
+            time_units: Your time variables used in the variable selector. Example year, quarter, month, etc.
+            conn: A connection object to a database (kept for compatibility, but DuckDB is used internally).
                 Currently designed with parquet files in GC in mind.
-            base_path (str): Base path to parquet files
+            base_path: Base path to parquet files
                 (e.g., "/buckets/produkt/naringer/klargjorte-data/statistikkfiler").
         """
         # if not isinstance(base_path, str):

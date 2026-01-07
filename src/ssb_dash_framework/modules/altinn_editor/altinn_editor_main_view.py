@@ -52,12 +52,12 @@ class AltinnSkjemadataEditor:
         """Initialize the Altinn Skjemadata Editor module.
 
         Args:
-            time_units (list[str]): List of time units to be used in the module.
-            conn (object): Database connection object that must have a 'query' method.
-            starting_table (str | None): Table to be selected by default in module. If None, defaults to first table it finds.
-            variable_connection (dict[str, str]): Dict containing the name of characteristics from the dataset as keys and the variable selector name associated with it as value.
-            sidepanels (None): Later might be used for customizing sidepanel modules.
-            top_panels (None): Later might be used for customizing top-panel modules.
+            time_units: List of time units to be used in the module.
+            conn: Database connection object that must have a 'query' method.
+            starting_table: Table to be selected by default in module. If None, defaults to first table it finds.
+            variable_connection: Dict containing the name of characteristics from the dataset as keys and the variable selector name associated with it as value.
+            sidepanels: Later might be used for customizing sidepanel modules.
+            top_panels: Later might be used for customizing top-panel modules.
         """
         # assert hasattr(
         #     conn, "tables"

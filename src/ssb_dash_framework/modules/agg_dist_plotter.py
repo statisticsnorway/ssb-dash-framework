@@ -66,8 +66,8 @@ class AggDistPlotter(ABC):
         """Initializes the AggDistPlotter.
 
         Args:
-            time_units (list[str]): Your time variables used in the variable selector. Example year, quarter, month, etc.
-            conn (object): A connection object to a database. It must have a .query method that can handle SQL queries.
+            time_units: Your time variables used in the variable selector. Example year, quarter, month, etc.
+            conn: A connection object to a database. It must have a .query method that can handle SQL queries.
                 Currently designed with eimerdb in mind.
         """
         logger.warning(
@@ -235,7 +235,7 @@ class AggDistPlotter(ABC):
         This is an abstract method that must be implemented by subclasses to define the module's layout.
 
         Returns:
-            html.Div: A Dash HTML Div component representing the layout of the module.
+            A Dash HTML Div component representing the layout of the module.
         """
         pass
 

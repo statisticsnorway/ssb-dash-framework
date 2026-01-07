@@ -33,8 +33,11 @@ def check_for_bucket_path(path: str) -> None:
 
     Need to test more with UPath to make sure nothing unexpected happens.
 
+    Args:
+        path: The path to check.
+
     Raises:
-        NotImplementedError if path doesn't start with '/buckets/'
+        NotImplementedError: If path doesn't start with '/buckets/'
     """
     if not path.startswith("/buckets/"):
         raise NotImplementedError(
@@ -46,13 +49,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
     """Simple module with the sole purpose of editing a parquet file.
 
     Accomplishes this functionality by writing a processlog in a json lines file and recording any edits in this jsonl file.
-
-    Args:
-        statistics_name: The name of the statistic being edited.
-        id_vars: A list of columns that together form a unique identifier for a single row in your data.
-        data_source: The path to the parquet file you want to edit.
-        output: Columns in your dataframe that should be clickable to output to the variable selector panel.
-        output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
 
     Example:
         >>> id_variabler = ["orgnr", "aar", "kvartal"]
@@ -76,7 +72,15 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
     ) -> None:
-        """Initializes the module and makes a few validation checks before moving on."""
+        """Initializes the module and makes a few validation checks before moving on.
+
+        Args:
+            statistics_name: The name of the statistic being edited.
+            id_vars: A list of columns that together form a unique identifier for a single row in your data.
+            data_source: The path to the parquet file you want to edit.
+            output: Columns in your dataframe that should be clickable to output to the variable selector panel.
+            output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
+        """
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
@@ -474,10 +478,6 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
 class ParquetEditorChangelog:
     """Simple module with the sole purpose of showing the changes made using ParquetEditor.
 
-    Args:
-        id_vars: A list of columns that together form a unique identifier for a single row in your data.
-        file_path: The path to the parquet file you want to find the changelog for.
-
     Notes:
         The process log is automatically created in the correct folder structure and is named after your parquet file.
     """
@@ -485,7 +485,12 @@ class ParquetEditorChangelog:
     _id_number: int = 0
 
     def __init__(self, id_vars: list[str], file_path: str) -> None:
-        """Initializes the module and makes a few validation checks before moving on."""
+        """Initializes the module and makes a few validation checks before moving on.
+
+        Args:
+            id_vars: A list of columns that together form a unique identifier for a single row in your data.
+            file_path: The path to the parquet file you want to find the changelog for.
+        """
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
@@ -557,7 +562,7 @@ def read_jsonl_log(path: str | Path) -> list[Any]:
     """Reads the jsonl log.
 
     Args:
-        path (str | Path): The path that leads to the jsonl log.
+        path: The path that leads to the jsonl log.
 
     Returns:
         A list where each instance is a line in the jsonl file.
@@ -675,8 +680,8 @@ def _raise_if_duplicates(df: pd.DataFrame, subset: set[str] | list[str]) -> None
     """Raises a ValueError if duplicates exist on the given subset of columns.
 
     Args:
-        df (pd.DataFrame): The dataframe to check.
-        subset (list or str): Column(s) to consider for duplicate detection.
+        df: The dataframe to check.
+        subset: Column(s) to consider for duplicate detection.
 
     Raises:
         ValueError: If there are duplicates based on the id_vars specified in the jsonl log.
@@ -695,7 +700,7 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     """Applies edits from the jsonl log to a parquet file.
 
     Args:
-        parquet_path (str): The file path for the parquet file.
+        parquet_path: The file path for the parquet file.
 
     Returns:
         A pd.DataFrame with updated data.

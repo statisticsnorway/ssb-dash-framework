@@ -28,11 +28,7 @@ ident_options = [
 
 
 class Control:
-    """Provides a layout and functionality for a modal that offers an overview of data checks and control results.
-
-    Attributes:
-        ident (str): Name of the identification variable, e.g., 'orgf'.
-    """
+    """Provides a layout and functionality for a modal that offers an overview of data checks and control results."""
 
     def __init__(self, ident: str) -> None:
         """Initialize the control module.
@@ -41,10 +37,7 @@ class Control:
         and prepares data tables for control documentation and outputs.
 
         Args:
-            ident (str): The key for the identification variable, e.g., 'orgf'.
-
-        Attributes Set:
-            ident (str): The resolved name of the identification variable.
+            ident: The key for the identification variable, e.g., 'orgf'.
         """
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
@@ -118,8 +111,8 @@ class Control:
             """Toggles the open/close state of the control modal.
 
             Args:
-                n (int | None): Number of clicks on the sidebar button.
-                is_open (bool): Current state of the modal.
+                n: Number of clicks on the sidebar button.
+                is_open: Current state of the modal.
 
             Returns:
                 bool: Updated state of the modal.
@@ -140,8 +133,8 @@ class Control:
             """Links clicks on the control overview table to filter the detailed control results table.
 
             Args:
-                click (dict | None): Data about the clicked cell in the overview table.
-                rowdata (dict): Data from the rows in the overview table.
+                click: Data about the clicked cell in the overview table.
+                rowdata: Data from the rows in the overview table.
 
             Returns:
                 dict: Filter model to apply to the detailed results table.
@@ -176,8 +169,8 @@ class Control:
             """Links clicks in the detailed control results table to select the identification variable value.
 
             Args:
-                click (dict | None): Data about the clicked cell in the detailed table.
-                rowdata (dict): Data from the rows in the detailed table.
+                click: Data about the clicked cell in the detailed table.
+                rowdata: Data from the rows in the detailed table.
 
             Returns:
                 str: Selected identification variable value.

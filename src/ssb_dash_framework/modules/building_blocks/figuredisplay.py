@@ -37,14 +37,14 @@ class FigureDisplay:
         """Initialize the FigureDisplay module.
 
         Args:
-            label (str): The label for the module.
-            figure_func (Callable[..., Any]): A function that returns a plotly figure. It should accept the dynamic states as arguments.
-            inputs (list[str]): A list of input variable names to be used in the figure function.
-            states (list[str] | None, optional): A list of state variable names to be used in the figure function. Defaults to None.
-            output (str | None, optional): The name of the output variable to which the click data will be sent.
+            label: The label for the module.
+            figure_func: A function that returns a plotly figure. It should accept the dynamic states as arguments.
+            inputs: A list of input variable names to be used in the figure function.
+            states: A list of state variable names to be used in the figure function. Defaults to None.
+            output: The name of the output variable to which the click data will be sent.
                 If provided, the click data will be processed and sent to this variable.
                 If None, no click data will be processed. Defaults to None.
-            clickdata_func (Callable[..., Any] | None, optional): A function to process the click data.
+            clickdata_func: A function to process the click data.
                 It should accept the click data as an argument and return a value to be sent to the output variable.
                 If None, no click data will be processed. Defaults to None.
 

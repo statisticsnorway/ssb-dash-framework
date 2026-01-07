@@ -18,12 +18,9 @@ class TabModule(Protocol):
     """A protocol that defines the expected interface for a module to be used in a tab.
 
     Attributes:
-        label (str): The label for the tab.
-        module_name (str): The name of the module, used for generating unique IDs.
-        module_layout (html.Div): The layout to display inside the tab.
-
-    Methods:
-        layout() -> dbc.Tab: Returns the layout of the module inside a tab.
+        label: The label for the tab.
+        module_name: The name of the module, used for generating unique IDs.
+        module_layout: The layout to display inside the tab.
     """
 
     label: str
@@ -38,14 +35,14 @@ class TabModule(Protocol):
 class TabImplementation:
     """A mixin class to implement a module inside a tab.
 
-    Dependencies:
-        - self.label (str): The label for the tab.
-        - self.module_name (str): The name of the module, used for generating unique IDs.
-        - self.module_layout (html.Div): The layout to display inside the tab.
+    This class should be used as a mixin in a module class. If necessary,
+    you can override the `get_module_layout` method to further customize the layout
+    inside the tab.
 
-    Note:
-        - This class should be used as a mixin in a module class.
-        - If necessary, you can override the `get_module_layout` method to further customize the layout inside the tab.
+    Attributes:
+        label: The label for the tab.
+        module_name: The name of the module, used for generating unique IDs.
+        module_layout: The layout to display inside the tab.
     """
 
     # Attributes that must be defined in the class using this mixin
@@ -74,7 +71,7 @@ class TabImplementation:
         """Generate the layout for the module as a tab.
 
         Returns:
-            html.Div: The layout containing the module layout.
+            The layout containing the module layout.
         """
         self.label = self.icon + " " + self.label
         layout = dbc.Tab(
@@ -103,12 +100,9 @@ class WindowModule(Protocol):
     """A protocol that defines the expected interface for a module to be used in a window.
 
     Attributes:
-        label (str): The label for the window.
-        module_name (str): The name of the module, used for generating unique IDs.
-        module_layout (html.Div): The layout to display inside the window.
-
-    Methods:
-        layout() -> html.Div: Returns the layout of the module inside a window.
+        label: The label for the window.
+        module_name: The name of the module, used for generating unique IDs.
+        module_layout: The layout to display inside the window.
     """
 
     label: str
@@ -123,10 +117,10 @@ class WindowModule(Protocol):
 class WindowImplementation:
     """A mixin class to implement a module inside a modal.
 
-    Dependencies:
-        - self.label (str): The label for the modal and sidebar button.
-        - self.module_name (str): The name of the module, used for generating unique IDs.
-        - self.module_layout (html.Div): The layout to display inside the modal.
+    Attributes:
+        label: The label for the modal and sidebar button.
+        module_name: The name of the module, used for generating unique IDs.
+        module_layout: The layout to display inside the modal.
 
     Note:
         - This class should be used as a mixin in a module class.
@@ -172,7 +166,7 @@ class WindowImplementation:
         It also creates a sidebar button to toggle the modal.
 
         Returns:
-            html.Div: The layout containing the modal and the sidebar button.
+            The layout containing the modal and the sidebar button.
         """
         layout = html.Div(
             children=[
@@ -245,11 +239,11 @@ class WindowImplementation:
             """Toggle the state of the modal window.
 
             Args:
-                n (int): Number of clicks on the toggle button.
-                is_open (bool): Current state of the modal (open/closed).
+                n: Number of clicks on the toggle button.
+                is_open: Current state of the modal (open/closed).
 
             Returns:
-                bool: The new state of the modal (open/closed).
+                The new state of the modal (open/closed).
             """
             logger.info("Toggle modal")
             if n:
