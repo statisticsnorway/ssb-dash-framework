@@ -514,8 +514,8 @@ class AltinnControlViewTab(TabImplementation, ControlView):
     ) -> None:
         """Initializes the ControlViewTab module."""
         warnings.warn(
-            "OldClass is deprecated and will be removed in a future version. "
-            "Use NewClass instead.",
+            "AltinnControlViewTab is deprecated and will be removed in a future version. "
+            "Use ControlViewTab instead.",
             FutureWarning,
             stacklevel=2,
         )
@@ -536,8 +536,8 @@ class AltinnControlViewWindow(WindowImplementation, ControlView):
     ) -> None:
         """Initializes the ControlViewWindow module."""
         warnings.warn(
-            "OldClass is deprecated and will be removed in a future version. "
-            "Use NewClass instead.",
+            "AltinnControlViewWindow is deprecated and will be removed in a future version. "
+            "Use ControlViewWindow instead.",
             FutureWarning,
             stacklevel=2,
         )
