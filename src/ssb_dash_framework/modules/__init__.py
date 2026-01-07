@@ -6,8 +6,11 @@ from .aarsregnskap import AarsregnskapWindow
 from .agg_dist_plotter import AggDistPlotter
 from .agg_dist_plotter import AggDistPlotterTab
 from .agg_dist_plotter import AggDistPlotterWindow
-from .altinn_control_view import AltinnControlView
+from .altinn_control_view import AltinnControlViewTab
 from .altinn_control_view import AltinnControlViewWindow
+from .altinn_control_view import ControlView
+from .altinn_control_view import ControlViewTab
+from .altinn_control_view import ControlViewWindow
 from .altinn_data_capture import AltinnDataCapture
 from .altinn_data_capture import AltinnDataCaptureTab
 from .altinn_data_capture import AltinnDataCaptureWindow
@@ -33,8 +36,6 @@ from .building_blocks import MapDisplayWindow
 from .building_blocks import MultiModule
 from .building_blocks import MultiModuleTab
 from .building_blocks import MultiModuleWindow
-from .control import Control
-from .control import ControlWindow
 from .freesearch import FreeSearch
 from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
@@ -62,7 +63,7 @@ __all__ = [
     "AggDistPlotter",
     "AggDistPlotterTab",
     "AggDistPlotterWindow",
-    "AltinnControlView",
+    "AltinnControlViewTab",
     "AltinnControlViewWindow",
     "AltinnDataCapture",
     "AltinnDataCaptureTab",
@@ -77,8 +78,9 @@ __all__ = [
     "Canvas",
     "CanvasTab",
     "CanvasWindow",
-    "Control",
-    "ControlWindow",
+    "ControlView",
+    "ControlViewTab",
+    "ControlViewWindow",
     "EditingTable",
     "EditingTableTab",
     "EditingTableWindow",

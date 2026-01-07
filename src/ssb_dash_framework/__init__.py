@@ -8,7 +8,7 @@ from .modules import AarsregnskapWindow
 from .modules import AggDistPlotter
 from .modules import AggDistPlotterTab
 from .modules import AggDistPlotterWindow
-from .modules import AltinnControlView
+from .modules import AltinnControlViewTab
 from .modules import AltinnControlViewWindow
 from .modules import AltinnDataCapture
 from .modules import AltinnDataCaptureTab
@@ -23,8 +23,9 @@ from .modules import BofInformationWindow
 from .modules import Canvas
 from .modules import CanvasTab
 from .modules import CanvasWindow
-from .modules import Control
-from .modules import ControlWindow
+from .modules import ControlView
+from .modules import ControlViewTab
+from .modules import ControlViewWindow
 from .modules import EditingTable
 from .modules import EditingTableTab
 from .modules import EditingTableWindow
@@ -88,7 +89,7 @@ __all__ = [
     "AggDistPlotterTab",
     "AggDistPlotterWindow",
     "AlertHandler",
-    "AltinnControlView",
+    "AltinnControlViewTab",
     "AltinnControlViewWindow",
     "AltinnDataCapture",
     "AltinnDataCaptureTab",
@@ -103,9 +104,10 @@ __all__ = [
     "Canvas",
     "CanvasTab",
     "CanvasWindow",
-    "Control",
     "ControlFrameworkBase",
-    "ControlWindow",
+    "ControlView",
+    "ControlViewTab",
+    "ControlViewWindow",
     "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
     "DemoDataCreator",

@@ -94,9 +94,9 @@ Det er lagt til en del validering av resultatene som kontrollkoden din lager, me
 Da er vi på det et siste steget før det burde fungere, og det er å legge det inn i selve applikasjonen.
 
 ```python
-from ssb_dash_framework import AltinnControlViewWindow
+from ssb_dash_framework import ControlViewWindow
 
-kontrollvindu = AltinnControlViewWindow(
+kontrollvindu = ControlViewWindow(
     time_units=["aar", "kvartal"],
     control_dict={"RA-XXXX": MineEgneKontroller}, # Sett inn ditt skjemanummer og kontrollklassen som gjelder for skjemaet her.
     conn=conn,
