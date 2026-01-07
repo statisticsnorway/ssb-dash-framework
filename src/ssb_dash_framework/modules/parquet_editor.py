@@ -630,8 +630,14 @@ def _apply_change_detail(
 
 
 def read_jsonl_file_to_string(file_path: str | Path) -> str:
-    """Reads a JSONL file and returns its contents as a single string."""
+    """Reads a JSONL file and returns its contents as a single string.
+
+    If the file does not exists an empty string is returned.
+    """
     file_path = Path(file_path)
+    if not file_path.exists():
+        logger.warning(f"No file found at {file_path!s}, returning empty string")
+        return ""
     with file_path.open("r", encoding="utf-8") as f:
         return f.read()
 
