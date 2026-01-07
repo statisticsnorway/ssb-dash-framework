@@ -28,14 +28,20 @@ from ..utils.module_validation import module_validator
 logger = logging.getLogger(__name__)
 
 
-def check_for_bucket_path(path):
+def check_for_bucket_path(path: str) -> None:
     """Temporary check to make sure users keep to using '/buckets/' paths.
 
     Need to test more with UPath to make sure nothing unexpected happens.
+
+    Args:
+        path: The path to check.
+
+    Raises:
+        NotImplementedError: If path doesn't start with '/buckets/'
     """
     if not path.startswith("/buckets/"):
         raise NotImplementedError(
-            "Due to differences in how files in '/buckets/...' behave compared to files in the cloud buckets this functionality is currently limited to only work with paths that starts with '/buckets'."
+            "Due to differences in how files in '/buckets/...' behave compared to files in the cloud buckets this functionality is currently limited to only work with paths that starts with '/buckets/'."
         )
 
 
@@ -629,8 +635,14 @@ def _apply_change_detail(
 
 
 def read_jsonl_file_to_string(file_path: str | Path) -> str:
-    """Reads a JSONL file and returns its contents as a single string."""
+    """Reads a JSONL file and returns its contents as a single string.
+
+    If the file does not exists an empty string is returned.
+    """
     file_path = Path(file_path)
+    if not file_path.exists():
+        logger.warning(f"No file found at {file_path!s}, returning empty string")
+        return ""
     with file_path.open("r", encoding="utf-8") as f:
         return f.read()
 
@@ -674,6 +686,7 @@ def _raise_if_duplicates(df: pd.DataFrame, subset: set[str] | list[str]) -> None
     Raises:
         ValueError: If there are duplicates based on the id_vars specified in the jsonl log.
     """
+    subset = list(subset)
     dupes = df.duplicated(subset=subset, keep=False)
 
     if dupes.any():
