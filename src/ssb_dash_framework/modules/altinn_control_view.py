@@ -1,6 +1,5 @@
-# TODO: Rewrite to window/tab implementation model
-
 import logging
+import warnings
 from abc import ABC
 from abc import abstractmethod
 from typing import Any
@@ -36,7 +35,7 @@ default_col_def = {
 }
 
 
-class AltinnControlView(ABC):
+class ControlView(ABC):
     """Provides a layout and functionality for a modal that offers a tabular view of the controls."""
 
     _id_number: int = 0
@@ -48,7 +47,7 @@ class AltinnControlView(ABC):
         conn: object,
         outputs: list[str] | None = None,
     ) -> None:  # TODO add proper annotation for control_dict value
-        """Initializes the AltinnControlView with time units, control dictionary, and database connection.
+        """Initializes the ControlView with time units, control dictionary, and database connection.
 
         Args:
             time_units (list): A list of the time units used.
@@ -64,9 +63,9 @@ class AltinnControlView(ABC):
         assert hasattr(
             conn, "query"
         ), "The database connection object must have a 'query' method."
-        self.module_number = AltinnControlView._id_number
+        self.module_number = ControlView._id_number
         self.module_name = self.__class__.__name__
-        AltinnControlView._id_number += 1
+        ControlView._id_number += 1
 
         self.icon = "⚠️"
         self.label = "Kontroll"
@@ -91,7 +90,7 @@ class AltinnControlView(ABC):
         VariableSelector([], []).get_option("var-ident", search_target="id")
 
     def create_layout(self) -> html.Div:
-        """Generates the layout for the AltinnControlView module.
+        """Generates the layout for the ControlView module.
 
         Returns:
             layout: A Div element containing two tables, kontroller and kontrollutslag.
@@ -156,7 +155,7 @@ class AltinnControlView(ABC):
 
     @abstractmethod
     def layout(self) -> html.Div:
-        """Defines the layout for the AltinnControlView module.
+        """Defines the layout for the ControlView module.
 
         This is an abstract method that must be implemented by subclasses to define the module's layout.
 
@@ -166,7 +165,7 @@ class AltinnControlView(ABC):
         pass
 
     def module_callbacks(self) -> None:
-        """Registers Dash callbacks for the AltinnControlView module."""
+        """Registers Dash callbacks for the ControlView module."""
 
         @callback(
             Output(f"{self.module_number}-kontroll-var", "children"),
@@ -474,14 +473,14 @@ class AltinnControlView(ABC):
                 )
 
 
-class AltinnControlViewTab(TabImplementation, AltinnControlView):
-    """AltinnControlView implemented as a tab."""
+class ControlViewTab(TabImplementation, ControlView):
+    """ControlView implemented as a tab."""
 
     def __init__(
         self, time_units: list[str], control_dict: dict[str, Any], conn: object
     ) -> None:
-        """Initializes the AltinnControlViewTab module."""
-        AltinnControlView.__init__(
+        """Initializes the ControlViewTab module."""
+        ControlView.__init__(
             self,
             time_units=time_units,
             control_dict=control_dict,
@@ -490,14 +489,59 @@ class AltinnControlViewTab(TabImplementation, AltinnControlView):
         TabImplementation.__init__(self)
 
 
-class AltinnControlViewWindow(WindowImplementation, AltinnControlView):
-    """AltinnControlView implemented as a window."""
+class ControlViewWindow(WindowImplementation, ControlView):
+    """ControlView implemented as a window."""
 
     def __init__(
         self, time_units: list[str], control_dict: dict[str, Any], conn: object
     ) -> None:
-        """Initializes the AltinnControlViewWindow module."""
-        AltinnControlView.__init__(
+        """Initializes the ControlViewWindow module."""
+        ControlView.__init__(
+            self,
+            time_units=time_units,
+            control_dict=control_dict,
+            conn=conn,
+        )
+        WindowImplementation.__init__(self)
+
+
+# Temporary
+class AltinnControlViewTab(TabImplementation, ControlView):
+    """ControlView implemented as a tab."""
+
+    def __init__(
+        self, time_units: list[str], control_dict: dict[str, Any], conn: object
+    ) -> None:
+        """Initializes the ControlViewTab module."""
+        warnings.warn(
+            "OldClass is deprecated and will be removed in a future version. "
+            "Use NewClass instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        ControlView.__init__(
+            self,
+            time_units=time_units,
+            control_dict=control_dict,
+            conn=conn,
+        )
+        TabImplementation.__init__(self)
+
+
+class AltinnControlViewWindow(WindowImplementation, ControlView):
+    """ControlView implemented as a window."""
+
+    def __init__(
+        self, time_units: list[str], control_dict: dict[str, Any], conn: object
+    ) -> None:
+        """Initializes the ControlViewWindow module."""
+        warnings.warn(
+            "OldClass is deprecated and will be removed in a future version. "
+            "Use NewClass instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        ControlView.__init__(
             self,
             time_units=time_units,
             control_dict=control_dict,
