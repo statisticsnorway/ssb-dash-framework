@@ -19,7 +19,9 @@ from .altinn_editor_history import AltinnEditorHistory
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 from .altinn_editor_submitted_forms import AltinnEditorSubmittedForms
 from .altinn_editor_supporting_table import AltinnEditorSupportTables
+from .altinn_editor_supporting_table import add_year_diff_support_table
 from .altinn_editor_unit_details import AltinnEditorUnitDetails
+from .altinn_editor_utility import AltinnEditorStateTracker
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +50,7 @@ class AltinnSkjemadataEditor:
         variable_connection: dict[str, str] | None = None,
         sidepanels: None = None,
         top_panels: None = None,
+        primary_view: None = None,
     ) -> None:
         """Initialize the Altinn Skjemadata Editor module.
 
@@ -58,13 +61,17 @@ class AltinnSkjemadataEditor:
             variable_connection: Dict containing the name of characteristics from the dataset as keys and the variable selector name associated with it as value.
             sidepanels: Later might be used for customizing sidepanel modules.
             top_panels: Later might be used for customizing top-panel modules.
+            primary_view: Later might be used for replacing the primary table with different views.
         """
-        # assert hasattr(
-        #     conn, "tables"
-        # ), "The database object must have a 'tables' attribute."
+        AltinnEditorStateTracker.valid_altinnedit_options = [  # This list is used for checking what components are available for other modules connected to the AltinnSkjemadataEditor.
+            "altinnedit-option1",  # skjemadata_table
+            "altinnedit-ident",  # ident
+        ]
+
         self.icon = "🗊"
         self.label = "Data editor"
 
+        add_year_diff_support_table(conn)
         self.conn = conn
         self.variable_connection = variable_connection if variable_connection else {}
 
@@ -78,12 +85,13 @@ class AltinnSkjemadataEditor:
         ]
         self.starting_table = starting_table
 
-        self.primary_table = AltinnEditorPrimaryTable(  # TODO: Should be turned into an argument in __init__ in order to increase modularity.
-            time_units=time_units,
-            conn=self.conn,
-            variable_selector_instance=self.variableselector,
-        )
         # Below is futureproofing in case of increasing modularity
+        if primary_view is None:
+            self.primary_table = AltinnEditorPrimaryTable(
+                time_units=time_units,
+                conn=self.conn,
+                variable_selector_instance=self.variableselector,
+            )
         if sidepanels is None:
             self.sidepanels: list[AltinnEditorModule] = [
                 AltinnEditorSubmittedForms(
@@ -100,11 +108,7 @@ class AltinnSkjemadataEditor:
             ]
         if top_panels is None:
             self.top_panels: list[AltinnEditorModule] = [
-                AltinnEditorSupportTables(
-                    time_units=time_units,
-                    conn=self.conn,
-                    variable_selector_instance=self.variableselector,
-                ),
+                AltinnEditorSupportTables(),
                 AltinnEditorContact(
                     time_units=time_units,
                     conn=self.conn,
