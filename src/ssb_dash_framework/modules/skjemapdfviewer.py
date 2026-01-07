@@ -19,12 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class SkjemapdfViewer(ABC):
-    """Module for displaying PDF forms in a tab.
-
-    Attributes:
-        label (str): Label for the tab, displayed as "🗎 Skjema".
-        pdf_folder_path (str): Path to the folder containing the PDF files.
-    """
+    """Module for displaying PDF forms in a tab."""
 
     def __init__(
         self,
@@ -34,8 +29,8 @@ class SkjemapdfViewer(ABC):
         """Initialize the SkjemapdfViewer module.
 
         Args:
-            form_identifier (str): The identifier for the form. This should match the VariableSelector value.
-            pdf_folder_path (str): The path to the folder containing the PDF files.
+            form_identifier: The identifier for the form. This should match the VariableSelector value.
+            pdf_folder_path: The path to the folder containing the PDF files.
         """
         self.label = "🗎 Skjema"
         self.variableselector = VariableSelector([form_identifier], [])
@@ -49,7 +44,7 @@ class SkjemapdfViewer(ABC):
         """Validate the form identifier and PDF folder path.
 
         Args:
-            form_identifier (str): The identifier for the form.
+            form_identifier: The identifier for the form.
 
         Raises:
             ValueError: If the form identifier is not found in the VariableSelector.
@@ -130,7 +125,7 @@ class SkjemapdfViewer(ABC):
             """Update the form identifier input field.
 
             Args:
-                orgnr (str): The selected organization number.
+                orgnr: The selected organization number.
 
             Returns:
                 str: The updated organization number value.
@@ -146,7 +141,7 @@ class SkjemapdfViewer(ABC):
             """Fetch and encode the PDF source based on the form identifier.
 
             Args:
-                form_identifier (str): The form identifier input value.
+                form_identifier: The form identifier input value.
 
             Returns:
                 str | None: A data URI for the PDF file, encoded in base64, or None if the file is not found.
@@ -187,8 +182,8 @@ class SkjemapdfViewerTab(TabImplementation, SkjemapdfViewer):
         """Initializes the SkjemapdfViewerTab class.
 
         Args:
-            pdf_folder_path (str): The path to the folder containing PDF files.
-            form_identifier (str): The identifier for the form. This should be the VariableSelector value that matches the PDF file name.
+            pdf_folder_path: The path to the folder containing PDF files.
+            form_identifier: The identifier for the form. This should be the VariableSelector value that matches the PDF file name.
                 Defaults to "refnr".
         """
         SkjemapdfViewer.__init__(self, form_identifier, pdf_folder_path)
@@ -204,8 +199,8 @@ class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
         This class is a subclass of SkjemapdfViewer and is used to create a window for viewing PDF files.
 
         Args:
-            pdf_folder_path (str): The path to the folder containing PDF files.
-            form_identifier (str): The identifier for the form. Defaults to "refnr".
+            pdf_folder_path: The path to the folder containing PDF files.
+            form_identifier: The identifier for the form. Defaults to "refnr".
         """
         SkjemapdfViewer.__init__(self, form_identifier, pdf_folder_path)
         WindowImplementation.__init__(

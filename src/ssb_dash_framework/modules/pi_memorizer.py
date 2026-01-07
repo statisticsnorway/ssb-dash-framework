@@ -24,21 +24,15 @@ class PimemorizerTab:
     - A scoring system to track the current and high scores.
 
     Attributes:
-        label (str): The label for the tab, set to "𝝅 Pi memorizer".
-
-    Methods:
-        layout(): Generates the layout for the Pi memorizer tab.
-        callbacks(): Registers the Dash callbacks for handling user interactions.
+        label: The label for the tab, set to "𝝅 Pi memorizer".
     """
+
+    label: str
 
     def __init__(
         self,
     ) -> None:
-        """Initialize the PimemorizerTab component.
-
-        Attributes:
-            label (str): The label for the tab, displayed as "𝝅 Pi memorizer".
-        """
+        """Initialize the PimemorizerTab component."""
         logger.warning(
             f"{self.__class__.__name__} is intended as a proof of concept for the flexibility of the framework, not as a production module."
         )
@@ -249,9 +243,9 @@ class PimemorizerTab:
 
             Args:
                 *args: Clicks for numeric buttons (0-9).
-                current_score (int): The current score of the user.
-                high_score (int): The user's highest score so far.
-                current_value (str): The current sequence of digits entered by the user.
+                current_score: The current score of the user.
+                high_score: The user's highest score so far.
+                current_value: The current sequence of digits entered by the user.
 
             Returns:
                 tuple: Contains:

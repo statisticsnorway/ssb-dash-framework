@@ -25,7 +25,11 @@ _attempts_kostra_r = 0
 def _get_kostra_r() -> InstalledSTPackage:
     """Loads the R package Kostra.
 
-    :return: Kostra R package
+    Returns:
+        The Kostra R package.
+
+    Raises:
+        Exception: If something goes wrong after 10 attempts.
     """
     globals()["_attempts_kostra_r"] += 1
     if globals()["_attempts_kostra_r"] > 10:
@@ -69,14 +73,17 @@ def hb_method(
 ) -> pd.DataFrame:
     """Runs the Hb method from the R package Kostra.
 
-    :param data: The data to run the method on
-    :param p_c: The value of pC
-    :param p_u: The value of pU
-    :param p_a: The value of pA
-    :param id_field_name: The name of the id field
-    :param x_1_field_name: The name of the first x field
-    :param x_2_field_name: The name of the second x field
-    :return: The result of the method
+    Args:
+        data: The data to run the method on.
+        p_c: The value of pC.
+        p_u: The value of pU.
+        p_a: The value of pA.
+        id_field_name: The name of the id field.
+        x_1_field_name: The name of the first x field.
+        x_2_field_name: The name of the second x field.
+
+    Returns:
+        The result of the method.
     """
     with conversion.localconverter(default_converter + pandas2ri.converter):
         hb_result = _get_kostra_r().Hb(
@@ -99,11 +106,14 @@ def th_error(
 ) -> pd.DataFrame:
     """Runs the ThError method from the R package Kostra.
 
-    :param data: The data to run the method on
-    :param id_field_name: The name of the id field
-    :param x_1_field_name: The name of the first x field
-    :param x_2_field_name: The name of the second x field
-    :return: The result of the method
+    Args:
+        data: The data to run the method on.
+        id_field_name: The name of the id field.
+        x_1_field_name: The name of the first x field.
+        x_2_field_name: The name of the second x field.
+
+    Returns:
+        The result of the method.
     """
     with conversion.localconverter(default_converter + pandas2ri.converter):
         th_error_result = _get_kostra_r().ThError(

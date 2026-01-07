@@ -32,10 +32,10 @@ class AltinnEditorComment:
         """Initializes the Altinn Editor Comment module.
 
         Args:
-            conn (object): Database connection object that must have a 'query' method.
+            conn: Database connection object that must have a 'query' method.
 
         Raises:
-            AssertionError: If the connection object does not have a 'query' method.
+            TypeError: If the connection object is not 'EimerDBInstance' or ibis connection.
         """
         if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
             raise TypeError(

@@ -5,8 +5,12 @@ from dash import html
 
 logger = logging.getLogger(__name__)
 
-def get_config_path(module_name: str, ssb_template: bool=True):
-    return f"/home/onyxia/work/stat-naringer-dash/config/ssb-dash-framework/{module_name}"
+
+def get_config_path(module_name: str, ssb_template: bool = True):
+    return (
+        f"/home/onyxia/work/stat-naringer-dash/config/ssb-dash-framework/{module_name}"
+    )
+
 
 def sidebar_button(
     icon: str,
@@ -17,10 +21,10 @@ def sidebar_button(
     """Generate a sidebar button with an icon and label.
 
     Args:
-        icon (str): The icon displayed at the top of the button.
-        text (str): The label text displayed below the icon.
-        component_id (str): The ID assigned to the button component.
-        additional_styling (dict, optional): Additional styling applied to the button. Defaults to an empty dictionary.
+        icon: The icon displayed at the top of the button.
+        text: The label text displayed below the icon.
+        component_id: The ID assigned to the button component.
+        additional_styling: Additional styling applied to the button. Defaults to an empty dictionary.
 
     Returns:
         html.Div: A Div containing the styled button.

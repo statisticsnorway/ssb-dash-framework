@@ -1,6 +1,6 @@
 # What can you find here?
 
-As the name implies, here you can find a non exhaustive collection of tips, tricks and workarounds to increase functionality. 
+As the name implies, here you can find a non exhaustive collection of tips, tricks and workarounds to increase functionality.
 
 > Arcane: known or knowable only to a few people. Arcane technical details.
 
@@ -12,7 +12,7 @@ While it is not supposed to work like this, it is possible to connect a callback
 
 This can be achieved by creating your own custom callbacks to the variables added in the variable selector panel. The example below reacts to the ident field and updates either the foretak or bedrift field depending on whether or not ident exists as a orgnr_foretak in the data.
 
-```python 
+```python
 from ssb_dash_framework import set_variables
 from ssb_dash_framework import VariableSelector
 

@@ -18,7 +18,7 @@ def set_variables(variable_list: str | list[str]) -> None:
     """Sets the list of variables for the VariableSelector.
 
     Args:
-        variable_list (str | List[str]): List of variable names to be added to the VariableSelector.
+        variable_list: List of variable names to be added to the VariableSelector.
 
     Raises:
         TypeError: If variable_list is not a string or a list of strings.
@@ -57,10 +57,9 @@ class VariableSelector:
         """Initializes the VariableSelector class.
 
         Args:
-            selected_inputs (List[str]): List of selected input variable names. Will trigger callbacks.
-            selected_states (List[str]): List of selected state variable names. Will not trigger callbacks.
-            default_values (Optional[Dict[str, Union[str, int, float]]], optional):
-                Default values for variables. Defaults to None.
+            selected_inputs: List of selected input variable names. Will trigger callbacks.
+            selected_states: List of selected state variable names. Will not trigger callbacks.
+            default_values: Default values for variables. Defaults to None.
 
         Examples:
             >>> VariableSelector(selected_inputs = ["foretak"], selected_states = ["aar"])
@@ -133,8 +132,8 @@ class VariableSelector:
         """Retrieves a VariableSelectorOption by variable name.
 
         Args:
-            search_term (str): Word to search for, needs to be an exact match.
-            search_target (str): Element of VariableSelectorOption to search.
+            search_term: Word to search for, needs to be an exact match.
+            search_target: Element of VariableSelectorOption to search.
 
         Returns:
             VariableSelectorOption object matching description.
@@ -225,7 +224,7 @@ class VariableSelector:
         Use this if you need to have a module output back to the shared VariableSelector in the main layout.
 
         Args:
-            variable (str): The variable name.
+            variable: The variable name.
 
         Returns:
             Output: The corresponding Dash Output object.
@@ -252,10 +251,10 @@ class VariableSelector:
         """Generate a Dash Bootstrap card with an input field.
 
         Args:
-            text (str): The title text to display on the card.
-            component_id (str): The ID to assign to the input field within the card.
-            input_type (str): The type of the input field (e.g., "text", "number").
-            value (str, optional): The default value for the input field. Defaults to an empty string.
+            text: The title text to display on the card.
+            component_id: The ID to assign to the input field within the card.
+            input_type: The type of the input field (e.g., "text", "number").
+            value: The default value for the input field. Defaults to an empty string.
 
         Returns:
             dbc.Col: A column containing the card with an input field.
@@ -361,8 +360,8 @@ class VariableSelectorOption:  # TODO: Should maybe reverse the logic and have t
         After checking its own validity, adds itself as an option for the VariableSelector by appending itself into the VariableSelector._variableselectoroptions class variable.
 
         Args:
-            variable_title (str): The name of the variable. This is the label you want to see in the app.
-            variable_id (str): The id of the variable. This should be the name of the variable in your data. Defaults to be the supplied variable_title with a 'var-' prefix.
+            variable_title: The name of the variable. This is the label you want to see in the app.
+            variable_id: The id of the variable. This should be the name of the variable in your data. Defaults to be the supplied variable_title with a 'var-' prefix.
 
         Raises:
             ValueError: If the variable_id supplied starts with '-var'. This is added automatically during intialization.

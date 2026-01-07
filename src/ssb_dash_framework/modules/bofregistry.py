@@ -101,14 +101,6 @@ class BofInformation(ABC):
     - Displays detailed information about selected foretak using cards and ag-grids.
     - Interacts with sqlite files to display information for the currently selected foretak.
     - The sqlite files can be accessed from the oracle-hns shared bucket from the vof team.
-
-    Attributes:
-        label (str): Label for the tab, displayed as "BoF Foretak".
-
-    Methods:
-        generate_card(title, component_id, var_type): Generates a Dash Bootstrap card for displaying information.
-        layout(): Abstract method, needs to generate the layout for the BoF Foretak module.
-        callbacks(): Registers Dash callbacks for handling user interactions.
     """
 
     _id_number: int = 0
@@ -121,8 +113,8 @@ class BofInformation(ABC):
         """Initialize the BofInformation tab component.
 
         Args:
-            label (str): The label for the tab, displayed as "BoF Foretak".
-            variableselector_foretak_name (str): The name of the variable selector that holds the foretak number, default is "foretak".
+            label: The label for the tab, displayed as "BoF Foretak".
+            variableselector_foretak_name: The name of the variable selector that holds the foretak number, default is "foretak".
         """
         self.module_number = BofInformation._id_number
         self.module_name = self.__class__.__name__
@@ -174,9 +166,9 @@ class BofInformation(ABC):
         """Generate a Dash Bootstrap card for displaying data.
 
         Args:
-            title (str): Title displayed in the card header.
-            component_id (str): ID assigned to the input component inside the card.
-            var_type (str): Input type for the component (e.g., "text").
+            title: Title displayed in the card header.
+            component_id: ID assigned to the input component inside the card.
+            var_type: Input type for the component (e.g., "text").
 
         Returns:
             dbc.Card: A styled card containing an input field.
@@ -488,7 +480,7 @@ class BofInformation(ABC):
             """Fetch BoF Foretak data based on the selected organization number.
 
             Args:
-                orgf (str): The organization number of the selected foretak.
+                orgf: The organization number of the selected foretak.
 
             Returns:
                 tuple: A tuple containing information about the foretak.

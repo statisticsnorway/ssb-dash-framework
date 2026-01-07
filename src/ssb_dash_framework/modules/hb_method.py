@@ -42,10 +42,10 @@ class HBMethod:
         """Initializes the HB method module.
 
         Args:
-            get_data_func (Callable[..., Any]): A function that takes a time_variable as input and returns a dataframe. The dataframe MUST have the columns 'ident', 'variabel' and two columns containing the values from different times to compare.
-            time_units (list[str]): A list of time units for the dataset. Example: ['year']
-            varselector_variable (str): The name of the variableselector field used for determining which variable to analyze.
-            output (str): Which variableselector field to update based on clicks in the graph.
+            get_data_func: A function that takes a time_variable as input and returns a dataframe. The dataframe MUST have the columns 'ident', 'variabel' and two columns containing the values from different times to compare.
+            time_units: A list of time units for the dataset. Example: ['year']
+            varselector_variable: The name of the variableselector field used for determining which variable to analyze.
+            output: Which variableselector field to update based on clicks in the graph.
         """
         logger.warning(
             "This module is still in development and most likely has issues. If you notice something strange, please add it to Issues on the github repo."
@@ -325,7 +325,7 @@ class HBMethod:
             """Passes the selected observation identifier to `variabelvelger`.
 
             Args:
-                clickdata (dict): Data from the clicked point in the HB visualization.
+                clickdata: Data from the clicked point in the HB visualization.
 
             Returns:
                 str: Identifier of the selected observation.
@@ -364,10 +364,10 @@ class HBMethodTab(TabImplementation, HBMethod):
         """Initializes the HB method module.
 
         Args:
-            get_data_func (Callable[..., Any]): A function that takes a time_variable as input and returns a dataframe. The dataframe MUST have the columns 'ident', 'variabel' and two columns containing the values from different times to compare.
-            time_units (list[str]): A list of time units for the dataset. Example: ['year']
-            varselector_variable (str): The name of the variableselector field used for determining which variable to analyze.
-            output (str): Which variableselector field to update based on clicks in the graph.
+            get_data_func: A function that takes a time_variable as input and returns a dataframe. The dataframe MUST have the columns 'ident', 'variabel' and two columns containing the values from different times to compare.
+            time_units: A list of time units for the dataset. Example: ['year']
+            varselector_variable: The name of the variableselector field used for determining which variable to analyze.
+            output: Which variableselector field to update based on clicks in the graph.
         """
         HBMethod.__init__(
             self,
@@ -392,10 +392,10 @@ class HBMethodWindow(WindowImplementation, HBMethod):
         """Initializes the HB method module.
 
         Args:
-            get_data_func (Callable[..., Any]): A function that takes a time_variable as input and returns a dataframe. The dataframe MUST have the columns 'ident', 'variabel' and two columns containing the values from different times to compare.
-            time_units (list[str]): A list of time units for the dataset. Example: ['year']
-            varselector_variable (str): The name of the variableselector field used for determining which variable to analyze.
-            output (str): Which variableselector field to update based on clicks in the graph.
+            get_data_func: A function that takes a time_variable as input and returns a dataframe. The dataframe MUST have the columns 'ident', 'variabel' and two columns containing the values from different times to compare.
+            time_units: A list of time units for the dataset. Example: ['year']
+            varselector_variable: The name of the variableselector field used for determining which variable to analyze.
+            output: Which variableselector field to update based on clicks in the graph.
         """
         HBMethod.__init__(
             self,

@@ -40,14 +40,14 @@ class AltinnEditorPrimaryTable:
         """Initializes the Altinn Editor primary table module.
 
         Args:
-            time_units (list[str]): List of time units to be used in the module.
-            conn (object): Database connection object that must have a 'query' method.
-            variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
-            cols_to_hide (list[str]): A list of columns to ignore. Defaults to ["row_id","row_ids",*self.time_units,"skjema","refnr"].
+            time_units: List of time units to be used in the module.
+            conn: Database connection object that must have a 'query' method.
+            variable_selector_instance: An instance of VariableSelector for variable selection.
+            cols_to_hide: A list of columns to ignore. Defaults to ["row_id","row_ids",*self.time_units,"skjema","refnr"].
 
         Raises:
-            TypeError: If variable_selector_instance is not an instance of VariableSelector.
-            TypeError: If connection object is neither EimerDBInstance or Ibis connection.
+            TypeError: If variable_selector_instance is not an instance of VariableSelector. Or
+                if connection object is neither EimerDBInstance or Ibis connection.
         """
         if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
             raise TypeError(

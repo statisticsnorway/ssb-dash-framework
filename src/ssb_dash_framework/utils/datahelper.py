@@ -506,7 +506,7 @@ def create_database(engine: Engine) -> None:
     This is only a simple wrapper to make it easier to run 'Base.metadata.create_all(engine)'
 
     Args:
-        engine (Engine): An SQLAlchemy Engine to be used for creating the database.
+        engine: An SQLAlchemy Engine to be used for creating the database.
     """
     Base.metadata.create_all(engine)
 
@@ -515,13 +515,14 @@ class DemoDataCreator:
     """Class for creating demo data to test the editing framework.
 
     Assumes your database is set up according to the template with only 'aar' as period columns.
-
-    Args:
-        engine (Engine): An SQLAlchemy Engine to connect to an existing database.
     """
 
     def __init__(self, engine: Engine) -> None:
-        """Initializes the DemoDataCreator class by assigning it an engine to use for inserts."""
+        """Initializes the DemoDataCreator class by assigning it an engine to use for inserts.
+
+        Args:
+            engine: An SQLAlchemy Engine to connect to an existing database.
+        """
         self.engine = engine
 
     def build_demo_database(self) -> None:
