@@ -35,6 +35,7 @@ class AltinnEditorPrimaryTable:
         time_units: list[str],
         conn: object,
         variable_selector_instance: VariableSelector,
+        cols_to_hide: list[str] | None = None,
     ) -> None:
         """Initializes the Altinn Editor primary table module.
 
@@ -42,12 +43,12 @@ class AltinnEditorPrimaryTable:
             time_units (list[str]): List of time units to be used in the module.
             conn (object): Database connection object that must have a 'query' method.
             variable_selector_instance (VariableSelector): An instance of VariableSelector for variable selection.
+            cols_to_hide (list[str]): A list of columns to ignore. Defaults to ["row_id","row_ids",*self.time_units,"skjema","refnr"].
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
-            AssertionError: If the connection object does not have a 'query' method.
+            TypeError: If connection object is neither EimerDBInstance or Ibis connection.
         """
-        print("Test: ", conn_is_ibis(conn))
         if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
             raise TypeError(
                 f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
@@ -62,6 +63,20 @@ class AltinnEditorPrimaryTable:
             self.variableselector.get_option(x).id.removeprefix("var-")
             for x in time_units
         ]
+        if cols_to_hide is None:
+            self.cols_to_hide = [
+                "row_id",
+                "row_ids",
+                *self.time_units,
+                "skjema",
+                "refnr",
+            ]
+        else:
+            if not isinstance(cols_to_hide, list):
+                raise TypeError(
+                    f"Argument 'cols_to_hide' must be a list of strings. Received: {cols_to_hide}"
+                )
+            self.cols_to_hide = cols_to_hide
         self.module_layout = self._create_layout()
         self._is_valid()
         self.module_callbacks()
@@ -105,12 +120,13 @@ class AltinnEditorPrimaryTable:
         """Defines the callbacks for the module."""
 
         @callback(  # type: ignore[misc]
-            Output("altinnedit-table-skjemadata", "rowData"),
-            Output("altinnedit-table-skjemadata", "columnDefs"),
+            Output("altinnedit-table-skjemadata", "rowData", allow_duplicate=True),
+            Output("altinnedit-table-skjemadata", "columnDefs", allow_duplicate=True),
             Input("altinnedit-refnr", "value"),
             Input("altinnedit-option1", "value"),
             State("altinnedit-skjemaer", "value"),
             self.variableselector.get_all_states(),
+            prevent_initial_call=True,
         )
         def hovedside_update_altinnskjema(
             refnr: str, tabell: str, skjema: str, *args: Any
@@ -131,7 +147,7 @@ class AltinnEditorPrimaryTable:
             ):
                 logger.info("Returning nothing.")
                 logger.debug(f"Args length: {len(args)}")
-                return None, None
+                return [], []
             if isinstance(self.conn, EimerDBInstance):
                 conn = ibis.polars.connect()
                 data = self.conn.query(f"SELECT * FROM {tabell}")
@@ -178,7 +194,14 @@ class AltinnEditorPrimaryTable:
                         {
                             "headerName": col,
                             "field": col,
-                            "hide": col == "row_id",
+                            "hide": col
+                            in [
+                                "row_id",
+                                "row_ids",
+                                *self.time_units,
+                                "skjema",
+                                "refnr",
+                            ],
                             "flex": 2 if col == "variabel" else 1,
                         }
                         for col in df.columns
@@ -201,21 +224,59 @@ class AltinnEditorPrimaryTable:
                         .filter(_.refnr == refnr)
                         .to_pandas()
                     )
+
                     columndefs = [
                         {
                             "headerName": col,
                             "field": col,
-                            "hide": col == "row_id",
+                            "hide": col
+                            in [
+                                "row_id",
+                                "row_ids",
+                                *self.time_units,
+                                "skjema",
+                                "refnr",
+                            ],
                         }
                         for col in df.columns
                     ]
                     return df.to_dict("records"), columndefs
+
                 except Exception as e:
                     logger.error(
                         f"Error in hovedside_update_altinnskjema (wide format): {e}",
                         exc_info=True,
                     )
                     return None, None
+
+        try:  # TODO Find better solution to sort - config file?
+            self.variableselector.get_option("var-bedrift", search_target="id")
+
+            @callback(
+                Output("altinnedit-table-skjemadata", "rowData"),
+                Output("altinnedit-table-skjemadata", "columnDefs"),
+                Input("altinnedit-table-skjemadata", "rowData"),
+                Input("altinnedit-table-skjemadata", "columnDefs"),
+                State("var-bedrift", "value"),
+                prevent_initial_call=True,
+            )
+            def sort_by_bedrift(
+                row_data: list[dict[str, Any]],
+                column_defs: list[dict[str, Any]],
+                bedrift: str,
+            ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+                """Sort table to prioritize selected bedrift."""
+                if not bedrift or not row_data:
+                    return row_data, column_defs
+
+                sorted_data = sorted(
+                    row_data, key=lambda row: 0 if row.get("ident") == bedrift else 1
+                )
+
+                return sorted_data, column_defs
+
+        except ValueError:
+            logger.debug("var-bedrift not available, skipping bedrift sorting callback")
 
         @callback(  # type: ignore[misc]
             Output("var-statistikkvariabel", "value"),
