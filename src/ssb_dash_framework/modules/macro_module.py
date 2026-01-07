@@ -17,6 +17,8 @@ from dash_ag_grid import AgGrid
 from ibis.backends import BaseBackend
 from ibis.expr.types.relations import Table
 from pandas.core.frame import DataFrame
+from klass import KlassClassification
+from datetime import date
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
@@ -25,6 +27,33 @@ from ..utils.module_validation import module_validator
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
+
+##
+# kan velge bokstav frå klass som ein option
+# om vi velg ein bokstav: hentar den ei liste med samsvarande næringar, feks. G: 46,47 og desse blir slått saman til ein
+# i load year: om bokstav, hent denne lista
+# i get nace options: klass-kode for å hente relevante bokstavar og då kan denne returnere vanlege nace verdiar + bokstavane
+# i sjølve heatmap-grid koda, om man velg ein bokstav må kalkulasjonen slå saman dei som hører til lista som blei returnert i load year
+def get_nace_groups() -> dict[str, str]:
+    """
+    Uses Klass to get the current letter codes and NACE values in said group.
+    """
+    today = date.today().strftime("%Y-%m-%d")
+    standard_for_naeringsgruppering = KlassClassification(6)
+    df = standard_for_naeringsgruppering.get_codes(today).data
+
+    # Get group and naringskoder
+    df = df[df["level"].isin(["2"])][["code", "parentCode"]]
+
+    # Create a dictionary with "group": ["codes"]
+    strukt_naering_gruppekoder = {}
+    for row in range(len(df)):
+        gruppe, naring = df.parentCode.iloc[row], df.code.iloc[row]
+        if gruppe not in strukt_naering_gruppekoder:
+            strukt_naering_gruppekoder[gruppe] = [naring]
+        else:
+            strukt_naering_gruppekoder[gruppe].append(naring)
+    return strukt_naering_gruppekoder
 
 # Variables used in the heatmap-grid
 HEATMAP_VARIABLES: dict[str, str] = {
@@ -93,6 +122,123 @@ class MacroModule_ParquetReader:
         """Initialize a persistent DuckDB connection."""
         self.conn: BaseBackend = ibis.connect("duckdb://")
 
+    # def _load_year(
+    #     self,
+    #     aar: int,
+    #     base_path: str,
+    #     foretak_or_bedrift: str,
+    #     nace_list: list[str],
+    #     nace_siffer_level: int,
+    #     detail_grid: bool = False,
+    # ) -> Table:
+    #     """Used to read parquet files, picking between foretak or bedrift level. Then filtering on chosen naring, and setting "aar" to a str column.
+
+    #     Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
+    #     """
+    #     if aar >= 2024:  # new nedtrekk in Dapla has a specific file path
+    #         file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+    #     else:
+    #         file_path = (
+    #             f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+    #         )
+
+    #     try:
+    #         t: ibis.TableExpr = self.conn.read_parquet(file_path)
+    #     except Exception as e:
+    #         print(
+    #             f"Failed to read parquet file at {file_path}: {e}. "
+    #             "Did you put in a valid year into the variabelvelger?"
+    #         )
+    #         raise PreventUpdate from None
+
+    #     if detail_grid:
+    #         if nace_list:
+    #             t = t.filter(
+    #                 t.naring.substr(0, length=nace_siffer_level).isin(nace_list)
+    #             )
+    #     else:
+    #         # for å loade fleire næringar ved innlasting
+    #         nace_2_siffer_liste = [n.split(".")[0][:2] for n in nace_list]
+    #         t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
+    #         t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
+
+    #     return t.mutate(aar=ibis.literal(aar).cast("string"))
+
+    # def _load_year( DENNE FUNGERER MEN 47 feks vil blende seg inn i gruppe G
+    #     self,
+    #     aar: int,
+    #     base_path: str,
+    #     foretak_or_bedrift: str,
+    #     nace_list: list[str],
+    #     nace_siffer_level: int,
+    #     detail_grid: bool = False,
+    # ) -> Table:
+    #     """Used to read parquet files, picking between foretak or bedrift level. Then filtering on chosen naring, and setting "aar" to a str column.
+
+    #     Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
+        
+    #     Now supports letter codes (e.g., 'G') which represent groups of NACE codes.
+    #     """
+    #     if aar >= 2024:  # new nedtrekk in Dapla has a specific file path
+    #         file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+    #     else:
+    #         file_path = (
+    #             f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+    #         )
+
+    #     try:
+    #         t: ibis.TableExpr = self.conn.read_parquet(file_path)
+    #     except Exception as e:
+    #         print(
+    #             f"Failed to read parquet file at {file_path}: {e}. "
+    #             "Did you put in a valid year into the variabelvelger?"
+    #         )
+    #         raise PreventUpdate from None
+
+    #     # Separate letter codes from numeric codes and expand letters to their NACE values
+    #     nace_groups = get_nace_groups()
+    #     expanded_nace_list = []
+    #     letter_to_nace_mapping = {}  # Track which NACE codes belong to which letters
+        
+    #     for item in nace_list:
+    #         if item.isalpha() and len(item) == 1:  # It's a letter code
+    #             letter_code = item.upper()
+    #             if letter_code in nace_groups:
+    #                 nace_codes = nace_groups[letter_code]
+    #                 expanded_nace_list.extend(nace_codes)
+    #                 # Store mapping for later grouping
+    #                 for code in nace_codes:
+    #                     letter_to_nace_mapping[code] = letter_code
+    #         else:  # It's a numeric code
+    #             expanded_nace_list.append(item)
+
+    #     if detail_grid:
+    #         if expanded_nace_list:
+    #             t = t.filter(
+    #                 t.naring.substr(0, length=nace_siffer_level).isin(expanded_nace_list)
+    #             )
+    #     else:
+    #         # for å loade fleire næringar ved innlasting
+    #         nace_2_siffer_liste = [n.split(".")[0][:2] for n in expanded_nace_list]
+    #         t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
+            
+    #         # Create selected_nace column - use letter code if applicable, otherwise use truncated NACE
+    #         nace_2_digit = t.naring.substr(0, length=2)
+            
+    #         # Start with the default: truncated NACE at specified siffer level
+    #         selected_nace_expr = t.naring.substr(0, length=nace_siffer_level)
+            
+    #         # Build conditional expression to map NACE codes to their letter codes
+    #         for nace_code, letter in letter_to_nace_mapping.items():
+    #             selected_nace_expr = (nace_2_digit == nace_code).ifelse(
+    #                 ibis.literal(letter),
+    #                 selected_nace_expr
+    #             )
+            
+    #         t = t.mutate(selected_nace=selected_nace_expr)
+
+    #     return t.mutate(aar=ibis.literal(aar).cast("string"))
+
     def _load_year(
         self,
         aar: int,
@@ -105,8 +251,10 @@ class MacroModule_ParquetReader:
         """Used to read parquet files, picking between foretak or bedrift level. Then filtering on chosen naring, and setting "aar" to a str column.
 
         Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
+        
+        Now supports letter codes (e.g., 'G') which represent groups of NACE codes.
         """
-        if aar == 2024:  # new nedtrekk in Dapla has a specific file path
+        if aar >= 2024:  # new nedtrekk in Dapla has a specific file path
             file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
         else:
             file_path = (
@@ -122,16 +270,52 @@ class MacroModule_ParquetReader:
             )
             raise PreventUpdate from None
 
+        # Separate letter codes from numeric codes and expand letters to their NACE values
+        nace_groups = get_nace_groups()
+        expanded_nace_list = []
+        letter_to_nace_mapping = {}  # Track which NACE codes belong to which letters
+        explicit_numeric_codes = set()  # Track explicitly selected numeric codes
+        
+        for item in nace_list:
+            if item.isalpha() and len(item) == 1:  # It's a letter code
+                letter_code = item.upper()
+                if letter_code in nace_groups:
+                    nace_codes = nace_groups[letter_code]
+                    expanded_nace_list.extend(nace_codes)
+                    # Store mapping for later grouping
+                    for code in nace_codes:
+                        letter_to_nace_mapping[code] = letter_code
+            else:  # It's a numeric code
+                expanded_nace_list.append(item)
+                # Store the 2-digit version as explicitly selected
+                explicit_numeric_codes.add(item.split(".")[0][:2])
+
         if detail_grid:
-            if nace_list:
+            if expanded_nace_list:
                 t = t.filter(
-                    t.naring.substr(0, length=nace_siffer_level).isin(nace_list)
+                    t.naring.substr(0, length=nace_siffer_level).isin(expanded_nace_list)
                 )
         else:
             # for å loade fleire næringar ved innlasting
-            nace_2_siffer_liste = [n.split(".")[0][:2] for n in nace_list]
+            nace_2_siffer_liste = [n.split(".")[0][:2] for n in expanded_nace_list]
             t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
-            t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
+            
+            # Create selected_nace column - use letter code if applicable, otherwise use truncated NACE
+            nace_2_digit = t.naring.substr(0, length=2)
+            
+            # Start with the default: truncated NACE at specified siffer level
+            selected_nace_expr = t.naring.substr(0, length=nace_siffer_level)
+            
+            # Build conditional expression to map NACE codes to their letter codes
+            # BUT only if they weren't explicitly selected as numbers
+            for nace_code, letter in letter_to_nace_mapping.items():
+                if nace_code not in explicit_numeric_codes:
+                    selected_nace_expr = (nace_2_digit == nace_code).ifelse(
+                        ibis.literal(letter),
+                        selected_nace_expr
+                    )
+            
+            t = t.mutate(selected_nace=selected_nace_expr)
 
         return t.mutate(aar=ibis.literal(aar).cast("string"))
 
@@ -416,7 +600,9 @@ class MacroModule:
         naring_filter = t.naring.substr(0, length=2).name("nace2")
         t = t.select(naring_filter).distinct()
         df: DataFrame = t.to_pandas()
-        return sorted(df["nace2"].astype(str))
+        nace_numbers: list[str] = sorted(df["nace2"].astype(str))
+        nace_groups: list[str] = list(get_nace_groups().keys())
+        return [*nace_numbers, *nace_groups]
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the MacroModule module."""
@@ -666,7 +852,7 @@ class MacroModule:
 
                 if col_defs:
                     col_defs[0]["pinned"] = "left"
-                    col_defs[0]["width"] = 200 if category_column == "variabel" else 115
+                    col_defs[0]["width"] = 180 if category_column == "variabel" else 130
 
                 return col_defs
 
