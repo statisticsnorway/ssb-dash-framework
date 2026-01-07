@@ -120,12 +120,13 @@ class AltinnEditorPrimaryTable:
         """Defines the callbacks for the module."""
 
         @callback(  # type: ignore[misc]
-            Output("altinnedit-table-skjemadata", "rowData"),
-            Output("altinnedit-table-skjemadata", "columnDefs"),
+            Output("altinnedit-table-skjemadata", "rowData", allow_duplicate=True),
+            Output("altinnedit-table-skjemadata", "columnDefs", allow_duplicate=True),
             Input("altinnedit-refnr", "value"),
             Input("altinnedit-option1", "value"),
             State("altinnedit-skjemaer", "value"),
             self.variableselector.get_all_states(),
+            prevent_initial_call=True,
         )
         def hovedside_update_altinnskjema(
             refnr: str, tabell: str, skjema: str, *args: Any
@@ -146,7 +147,7 @@ class AltinnEditorPrimaryTable:
             ):
                 logger.info("Returning nothing.")
                 logger.debug(f"Args length: {len(args)}")
-                return None, None
+                return [], []
             if isinstance(self.conn, EimerDBInstance):
                 conn = ibis.polars.connect()
                 data = self.conn.query(f"SELECT * FROM {tabell}")
@@ -223,22 +224,59 @@ class AltinnEditorPrimaryTable:
                         .filter(_.refnr == refnr)
                         .to_pandas()
                     )
+
                     columndefs = [
                         {
                             "headerName": col,
                             "field": col,
                             "hide": col
-                            in ["row_id", *self.time_units, "skjema", "refnr"],
+                            in [
+                                "row_id",
+                                "row_ids",
+                                *self.time_units,
+                                "skjema",
+                                "refnr",
+                            ],
                         }
                         for col in df.columns
                     ]
                     return df.to_dict("records"), columndefs
+
                 except Exception as e:
                     logger.error(
                         f"Error in hovedside_update_altinnskjema (wide format): {e}",
                         exc_info=True,
                     )
                     return None, None
+
+        try:  # TODO Find better solution to sort - config file?
+            self.variableselector.get_option("var-bedrift", search_target="id")
+
+            @callback(
+                Output("altinnedit-table-skjemadata", "rowData"),
+                Output("altinnedit-table-skjemadata", "columnDefs"),
+                Input("altinnedit-table-skjemadata", "rowData"),
+                Input("altinnedit-table-skjemadata", "columnDefs"),
+                State("var-bedrift", "value"),
+                prevent_initial_call=True,
+            )
+            def sort_by_bedrift(
+                row_data: list[dict[str, Any]],
+                column_defs: list[dict[str, Any]],
+                bedrift: str,
+            ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+                """Sort table to prioritize selected bedrift."""
+                if not bedrift or not row_data:
+                    return row_data, column_defs
+
+                sorted_data = sorted(
+                    row_data, key=lambda row: 0 if row.get("ident") == bedrift else 1
+                )
+
+                return sorted_data, column_defs
+
+        except ValueError:
+            logger.debug("var-bedrift not available, skipping bedrift sorting callback")
 
         @callback(  # type: ignore[misc]
             Output("var-statistikkvariabel", "value"),
