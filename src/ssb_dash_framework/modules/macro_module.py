@@ -28,19 +28,12 @@ from ..utils.module_validation import module_validator
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
-##
-# kan velge bokstav frå klass som ein option
-# om vi velg ein bokstav: hentar den ei liste med samsvarande næringar, feks. G: 46,47 og desse blir slått saman til ein
-# i load year: om bokstav, hent denne lista
-# i get nace options: klass-kode for å hente relevante bokstavar og då kan denne returnere vanlege nace verdiar + bokstavane
-# i sjølve heatmap-grid koda, om man velg ein bokstav må kalkulasjonen slå saman dei som hører til lista som blei returnert i load year
-def get_nace_groups() -> dict[str, str]:
+def get_nace_groups(aar) -> dict[str, str]:
     """
     Uses Klass to get the current letter codes and NACE values in said group.
     """
-    today = date.today().strftime("%Y-%m-%d")
     standard_for_naeringsgruppering = KlassClassification(6)
-    df = standard_for_naeringsgruppering.get_codes(today).data
+    df = standard_for_naeringsgruppering.get_codes(f"{aar}-10-01").data # selected 1st of Oct to determine per year
 
     # Get group and naringskoder
     df = df[df["level"].isin(["2"])][["code", "parentCode"]]
@@ -79,12 +72,12 @@ HEATMAP_VARIABLES: dict[str, str] = {
     "bruttoinvestering_oslo": "brut_inv_oslo",
     "bruttoinvestering_kvgr": "brut_inv_kvgr",
 }
-# skriv om til å bruke dict som i heatmap_variables og rename til detail_grid_DETAIL_GRID_ID_COLS
+
 DETAIL_GRID_ID_COLS = {
     "navn": "navn",
     "orgnr_foretak": "orgnr_f",
     "orgnr_bedrift": "orgnr_b",
-    "naring": "naring", # må ha spesialbehandling for foretak og bedrift her
+    "naring": "naring",
     "naring_f": "naring_f",
     "reg_type": "reg_type",
     "reg_type_f": "reg_type_f",
@@ -102,7 +95,7 @@ DETAIL_GRID_ID_COLS_ORDERED = [
     "type",
 ]
 
-ALL_RELEVANT_COLS: list[str] = [ # all relevant cols needed for this app
+ALL_RELEVANT_COLS: list[str] = [ # all relevant cols needed for this app aside from 'kommune'
     *DETAIL_GRID_ID_COLS.keys(),
     *HEATMAP_VARIABLES.keys(),
     "giver_fnr",
@@ -122,6 +115,8 @@ NACE_LEVEL_OPTIONS: dict[str, int] = {
     "5-siffer": 6,
 }
 HEATMAP_NUMBER_FORMAT: dict[str, bool] = {"Prosentendring": True, "Totalsum": False}
+
+# TODO: Legg til absolutt endring som eit valg: HEATMAP_NUMBER_FORMAT: dict[str, bool] = {"Prosentendring": True, "Absolutt endring": False, "Totalsum": False}
 STATUS_CHANGE_DETAIL_GRID: list[str] = [
     "orgnr_f",
     "navn",
@@ -140,16 +135,122 @@ class MacroModule_ParquetReader:
         """Initialize a persistent DuckDB connection."""
         self.conn: BaseBackend = ibis.connect("duckdb://")
 
+    # def _load_year(
+    #     self,
+    #     aar: int,
+    #     base_path: str,
+    #     foretak_or_bedrift: str,
+    #     nace_list: list[str],
+    #     nace_siffer_level: int,
+    #     detail_grid: bool = False,
+    #     nace_groups_from_klass: bool = True,
+    # ) -> Table:
+    #     """Used to read parquet files, picking between foretak or bedrift level. 
+    #     Then filtering on chosen naring, and setting "aar" to a str column.
+
+    #     Can be used for both the heatmap-grid and the detail-grid. If used for the prior, 
+    #     only filters on the first 2 naring digits (like "45", "88"), whereas for the latter 
+    #     it selects at specified nace_siffer_level.
+
+    #     Now supports letter codes (e.g., 'G') which represent groups of NACE codes.
+    #     nace_groups_from_klass: If True, enables NACE group-values from SSB Klass library.
+    #     """
+    #     if aar >= 2024:
+    #         file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+    #     else:
+    #         file_path = f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+
+    #     try:
+    #         t: ibis.TableExpr = self.conn.read_parquet(file_path).select([*ALL_RELEVANT_COLS, "kommune"])
+    #     except Exception as e:
+    #         print(
+    #             f"Failed to read parquet file at {file_path}: {e}. "
+    #             "Did you put in a valid year into the variabelvelger?"
+    #         )
+    #         raise PreventUpdate from None
+        
+    #     if not nace_groups_from_klass:
+    #         # Simple mode: no letter grouping support
+    #         if detail_grid:
+    #             if nace_list:
+    #                 t = t.filter(
+    #                     t.naring.substr(0, length=nace_siffer_level).isin(nace_list)
+    #                 )
+    #         else:
+    #             # for å loade fleire næringar ved innlasting
+    #             nace_2_siffer_liste = [n.split(".")[0][:2] for n in nace_list]
+    #             t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
+    #             t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
+        
+    #     else:
+    #         # Advanced mode: support letter codes from Klass
+    #         # Parse nace_list to separate letters from numbers and build mappings
+    #         nace_groups = get_nace_groups(aar)
+    #         expanded_nace_list = []
+    #         nace_to_categories = {}  # Maps each 2-digit NACE to list of categories it belongs to
+            
+    #         for item in nace_list:
+    #             if item.isalpha() and item in nace_groups:
+    #                 # Letter code: add all its NACE codes
+    #                 for nace_code in nace_groups[item]:
+    #                     expanded_nace_list.append(nace_code)
+    #                     nace_to_categories.setdefault(nace_code, []).append(item)
+    #             else:
+    #                 # Numeric code
+    #                 nace_2_digit = item.split(".")[0][:2]
+    #                 expanded_nace_list.append(item)
+    #                 nace_to_categories.setdefault(nace_2_digit, []).append(item)
+
+    #         if detail_grid:
+    #             if expanded_nace_list:
+    #                 t = t.filter(
+    #                     t.naring.substr(0, length=nace_siffer_level).isin(expanded_nace_list)
+    #                 )
+    #         else:
+    #             # Filter to relevant NACE codes
+    #             nace_2_siffer_liste = [n.split(".")[0][:2] for n in expanded_nace_list]
+    #             t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
+                
+    #             # Duplicate rows for codes that belong to multiple categories
+    #             nace_2_digit = t.naring.substr(0, length=2)
+    #             tables_to_union = []
+                
+    #             for nace_code, categories in nace_to_categories.items():
+    #                 for category in categories:
+    #                     t_filtered = t.filter(nace_2_digit == nace_code)
+                        
+    #                     # Assign the category as selected_nace
+    #                     if category.isalpha():
+    #                         # Letter code: use the letter
+    #                         t_filtered = t_filtered.mutate(selected_nace=ibis.literal(category))
+    #                     else:
+    #                         # Numeric code: truncate to siffer level
+    #                         t_filtered = t_filtered.mutate(
+    #                             selected_nace=t_filtered.naring.substr(0, length=nace_siffer_level)
+    #                         )
+                        
+    #                     tables_to_union.append(t_filtered)
+                
+    #             # Union all filtered tables
+    #             if tables_to_union:
+    #                 t = tables_to_union[0]
+    #                 for table in tables_to_union[1:]:
+    #                     t = t.union(table)
+
+    #     return t.mutate(aar=ibis.literal(aar).cast("string")) ############################## old version failing on counting rows for antall enheter, overcounts for groups
+    
+    
+    ########################################## newer simpler version so aggregation needs to be handled in the rest of the code, perhaps better? needs testing
     def _load_year(
-        self,
-        aar: int,
-        base_path: str,
-        foretak_or_bedrift: str,
-        nace_list: list[str],
-        nace_siffer_level: int,
-        detail_grid: bool = False,
-        nace_groups_from_klass: bool = True,
-    ) -> Table:
+    self,
+    aar: int,
+    base_path: str,
+    foretak_or_bedrift: str,
+    nace_list: list[str],
+    nace_siffer_level: int,
+    detail_grid: bool = False,
+    nace_groups_from_klass: bool = True,
+    ) -> tuple[Table, dict[str, list[str]]]:
         """Used to read parquet files, picking between foretak or bedrift level. 
         Then filtering on chosen naring, and setting "aar" to a str column.
 
@@ -159,6 +260,10 @@ class MacroModule_ParquetReader:
 
         Now supports letter codes (e.g., 'G') which represent groups of NACE codes.
         nace_groups_from_klass: If True, enables NACE group-values from SSB Klass library.
+        
+        Returns:
+            Table with data
+            Dictionary mapping categories to their NACE codes (for handling overlaps in aggregation)
         """
         if aar >= 2024:
             file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
@@ -166,13 +271,15 @@ class MacroModule_ParquetReader:
             file_path = f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
 
         try:
-            t: ibis.TableExpr = self.conn.read_parquet(file_path).select(ALL_RELEVANT_COLS)
+            t: ibis.TableExpr = self.conn.read_parquet(file_path)
         except Exception as e:
             print(
                 f"Failed to read parquet file at {file_path}: {e}. "
                 "Did you put in a valid year into the variabelvelger?"
             )
             raise PreventUpdate from None
+        
+        category_to_nace = {}  # Maps categories (letters or numbers) to their NACE codes
         
         if not nace_groups_from_klass:
             # Simple mode: no letter grouping support
@@ -186,25 +293,28 @@ class MacroModule_ParquetReader:
                 nace_2_siffer_liste = [n.split(".")[0][:2] for n in nace_list]
                 t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
                 t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
+                
+                # Build simple mapping
+                for item in nace_list:
+                    nace_2_digit = item.split(".")[0][:2]
+                    category_to_nace[item] = [nace_2_digit]
         
         else:
             # Advanced mode: support letter codes from Klass
-            # Parse nace_list to separate letters from numbers and build mappings
-            nace_groups = get_nace_groups()
+            nace_groups = get_nace_groups(aar)
             expanded_nace_list = []
-            nace_to_categories = {}  # Maps each 2-digit NACE to list of categories it belongs to
             
             for item in nace_list:
                 if item.isalpha() and item in nace_groups:
                     # Letter code: add all its NACE codes
-                    for nace_code in nace_groups[item]:
-                        expanded_nace_list.append(nace_code)
-                        nace_to_categories.setdefault(nace_code, []).append(item)
+                    nace_codes = nace_groups[item]
+                    expanded_nace_list.extend(nace_codes)
+                    category_to_nace[item] = nace_codes
                 else:
                     # Numeric code
                     nace_2_digit = item.split(".")[0][:2]
                     expanded_nace_list.append(item)
-                    nace_to_categories.setdefault(nace_2_digit, []).append(item)
+                    category_to_nace[item] = [nace_2_digit]
 
             if detail_grid:
                 if expanded_nace_list:
@@ -212,37 +322,17 @@ class MacroModule_ParquetReader:
                         t.naring.substr(0, length=nace_siffer_level).isin(expanded_nace_list)
                     )
             else:
-                # Filter to relevant NACE codes
+                # Filter to relevant NACE codes (no duplication)
                 nace_2_siffer_liste = [n.split(".")[0][:2] for n in expanded_nace_list]
                 t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
                 
-                # Duplicate rows for codes that belong to multiple categories
-                nace_2_digit = t.naring.substr(0, length=2)
-                tables_to_union = []
-                
-                for nace_code, categories in nace_to_categories.items():
-                    for category in categories:
-                        t_filtered = t.filter(nace_2_digit == nace_code)
-                        
-                        # Assign the category as selected_nace
-                        if category.isalpha():
-                            # Letter code: use the letter
-                            t_filtered = t_filtered.mutate(selected_nace=ibis.literal(category))
-                        else:
-                            # Numeric code: truncate to siffer level
-                            t_filtered = t_filtered.mutate(
-                                selected_nace=t_filtered.naring.substr(0, length=nace_siffer_level)
-                            )
-                        
-                        tables_to_union.append(t_filtered)
-                
-                # Union all filtered tables
-                if tables_to_union:
-                    t = tables_to_union[0]
-                    for table in tables_to_union[1:]:
-                        t = t.union(table)
+                # Add a basic selected_nace column at the specified siffer level
+                # The actual grouping will be handled in the callback
+                t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
 
-        return t.mutate(aar=ibis.literal(aar).cast("string"))
+            print(category_to_nace)
+
+        return t.mutate(aar=ibis.literal(aar).cast("string")), category_to_nace
 
     # def __exit__(self, exc_type, exc, tb) -> None:
     #     """Close the ibis connection."""
@@ -526,7 +616,7 @@ class MacroModule:
         t = t.select(naring_filter).distinct()
         df: DataFrame = t.to_pandas()
         nace_numbers: list[str] = sorted(df["nace2"].astype(str))
-        nace_groups: list[str] = list(get_nace_groups().keys())
+        nace_groups: list[str] = list(get_nace_groups(aar).keys())
         return [*nace_numbers, *nace_groups]
 
     def module_callbacks(self) -> None:
@@ -879,18 +969,7 @@ class MacroModule:
                 t_1 = t_1.filter(t_1[macro_level] == selected_filter_val)
 
             select_cols = [
-                # "navn",
-                # "orgnr_foretak",
-                # "orgnr_bedrift",
-                # "naring",
-                # "naring_f",
-                # "reg_type",
-                # "reg_type_f",
-                # "type",
-                *DETAIL_GRID_ID_COLS.keys(),
-                *HEATMAP_VARIABLES.keys(),
-                "giver_fnr",
-                "giver_bnr",
+                *ALL_RELEVANT_COLS,
                 "aar",
             ]
 
