@@ -1,8 +1,11 @@
+# TODO: Add functionality to add more types of helper things into the module.
 import logging
+from collections.abc import Callable
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import ibis
+import pandas as pd
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -12,6 +15,7 @@ from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
 from ibis import _
 
+from ssb_dash_framework.setup import VariableSelector
 from ssb_dash_framework.utils import conn_is_ibis
 
 from ...utils.core_query_functions import conn_is_ibis
@@ -20,53 +24,42 @@ from .altinn_editor_utility import AltinnEditorStateTracker
 logger = logging.getLogger(__name__)
 
 
-class AltinnSupportGenericContent:
-    supcontent_id = 0
-
-    def __init__(self, label, *args, **kwargs) -> None:
-        self.label = label
-        self.supcontent_id = AltinnSupportGenericContent.supcontent_id
-        AltinnSupportGenericContent.supcontent_id += 1
-        AltinnEditorSupportTables.support_components.append(
-            self.support_content_layout()
-        )
-
-    def get_support_content(self):
-        return None
-
-    def support_content_layout(self):
-        return dbc.Tab(
-            self.get_support_content(),
-            label=self.label,
-            tab_id=f"support-table-{self.label}-{self.supcontent_id}",
-        )
-
-    def support_content_callbacks():
-        raise
-
-
 class AltinnSupportTable:
-    """ """
+    """Class for adding a supporting table to the component in AltinnSkjemadataEditor.
+
+    In order to use it you need to connect it to inputs, preferably variables contained in the AltinnSkjemadataEditor such as 'altinnedit-ident', but it also supports connecting it to the VariableSelector.
+    """
 
     suptable_id = 0
 
-    def __init__(self, label, inputs, get_data_func) -> None:
+    def __init__(
+        self,
+        label: str,
+        get_data_func: Callable[..., pd.DataFrame],
+        inputs: list[str] | None = None,
+        variableselector: VariableSelector | None = None,
+    ) -> None:
         self.label = label
         self.inputs = inputs
         self.get_data_func = get_data_func
+        if variableselector:
+            self.variableselector = variableselector
+        else:
+            self.variableselector = VariableSelector([], [])
         self.suptable_id = AltinnSupportTable.suptable_id
         AltinnSupportTable.suptable_id += 1
         AltinnEditorSupportTables.support_components.append(self.support_table_layout())
         self.support_table_callbacks()
 
-    def is_valid(self):
-        for input in self.inputs:
-            if input not in AltinnEditorStateTracker.valid_altinnedit_options:
-                raise ValueError(
-                    f"Invalid value passed in 'inputs'. Received '{input}', expected one of {AltinnEditorStateTracker.valid_altinnedit_options}"
-                )
+    def is_valid(self) -> None:
+        if self.inputs:
+            for input in self.inputs:
+                if input not in AltinnEditorStateTracker.valid_altinnedit_options:
+                    raise ValueError(
+                        f"Invalid value passed in 'inputs'. Received '{input}', expected one of {AltinnEditorStateTracker.valid_altinnedit_options}"
+                    )
 
-    def support_table_content(self):
+    def support_table_content(self) -> html.Div:
         return html.Div(
             dag.AgGrid(
                 defaultColDef={"editable": False},
@@ -74,13 +67,17 @@ class AltinnSupportTable:
             )
         )
 
-    def support_table_callbacks(self):
+    def support_table_callbacks(self) -> None:
         @callback(
             Output(f"support-table-{self.suptable_id}", "rowData"),
             Output(f"support-table-{self.suptable_id}", "columnDefs"),
-            *[Input(_id, "value") for _id in self.inputs],
+            *[[Input(_id, "value") for _id in self.inputs] if self.inputs else []],
+            *self.variableselector.get_all_callback_objects(),
         )
         def load_support_table_data(*args):
+            logger.info(
+                f"Running get_data_func for table '{self.label}' using args: {args}"
+            )
             data = self.get_data_func(*args)
             return data.to_dict("records"), [{"field": col} for col in data.columns]
 
@@ -132,6 +129,15 @@ class AltinnEditorSupportTables:
         """Initializes the AltinnEditorSupportTables module."""
         self.module_layout = self._create_layout()
         self.module_callbacks()
+
+    def add_default_tables(self, tables_to_add: list[str], conn):
+        for table in tables_to_add:
+            if table == "aar_til_fjoraar":
+                add_year_diff_support_table(conn)
+            else:
+                raise ValueError(
+                    f"Table named '{table}' not among available default tables."
+                )
 
     def support_tables_modal(self) -> dbc.Modal:
         """Return a modal component containing tab content."""
