@@ -14,6 +14,7 @@ from .modules import AltinnDataCapture
 from .modules import AltinnDataCaptureTab
 from .modules import AltinnDataCaptureWindow
 from .modules import AltinnSkjemadataEditor
+from .modules import AltinnSupportTable
 from .modules import Bedriftstabell
 from .modules import BedriftstabellTab
 from .modules import BedriftstabellWindow
@@ -95,6 +96,7 @@ __all__ = [
     "AltinnDataCaptureTab",
     "AltinnDataCaptureWindow",
     "AltinnSkjemadataEditor",
+    "AltinnSupportTable",
     "Bedriftstabell",
     "BedriftstabellTab",
     "BedriftstabellWindow",

@@ -4,7 +4,9 @@ It has a main view that acts as an organizer for several submodules with specifi
 """
 
 from .altinn_editor_main_view import AltinnSkjemadataEditor
+from .altinn_editor_supporting_table import AltinnSupportTable
 
 __all__ = [
     "AltinnSkjemadataEditor",
+    "AltinnSupportTable",
 ]

@@ -21,6 +21,7 @@ from ssb_dash_framework.utils import ibis_filter_with_dict
 from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
 from ...utils.eimerdb_helpers import create_partition_select
+from .altinn_editor_utility import AltinnEditorStateTracker
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,10 @@ class AltinnEditorSubmittedForms:
             for x in time_units
         ]
         self._is_valid()
+
+        AltinnEditorStateTracker.valid_altinnedit_options.append("altinnedit-skjemaer")
+        AltinnEditorStateTracker.valid_altinnedit_options.append("altinnedit-refnr")
+
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
