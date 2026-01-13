@@ -47,6 +47,9 @@ from .modules import MapDisplayWindow
 from .modules import MultiModule
 from .modules import MultiModuleTab
 from .modules import MultiModuleWindow
+from .modules import Naeringsspesifikasjon
+from .modules import NaeringsspesifikasjonTab
+from .modules import NaeringsspesifikasjonWindow
 from .modules import ParquetEditor
 from .modules import ParquetEditorChangelog
 from .modules import PimemorizerTab
@@ -137,6 +140,9 @@ __all__ = [
     "MultiModuleWindow",
     "MultiModuleWindow",
     "MultiModuleWindow",
+    "Naeringsspesifikasjon",
+    "NaeringsspesifikasjonTab",
+    "NaeringsspesifikasjonWindow",
     "ParquetEditor",
     "ParquetEditorChangelog",
     "PimemorizerTab",
