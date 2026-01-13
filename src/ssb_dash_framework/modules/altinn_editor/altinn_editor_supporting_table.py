@@ -1,25 +1,136 @@
+# TODO: Add functionality to add more types of helper things into the module.
 import logging
-import re
+from collections.abc import Callable
 from typing import Any
+from typing import ClassVar
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import ibis
+import pandas as pd
 from dash import callback
-from dash import dcc
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
+from ibis import _
 
-from ssb_dash_framework.utils import conn_is_ibis
+from ssb_dash_framework.setup import VariableSelector
 
-from ...setup.variableselector import VariableSelector
-from ...utils.eimerdb_helpers import SQL_COLUMN_CONCAT
-from ...utils.eimerdb_helpers import create_partition_select
+from ...utils.core_query_functions import conn_is_ibis
+from .altinn_editor_utility import AltinnEditorStateTracker
 
 logger = logging.getLogger(__name__)
+
+
+class AltinnSupportTable:
+    """Class for adding a supporting table to the component in AltinnSkjemadataEditor.
+
+    In order to use it you need to connect it to inputs, preferably variables contained in the AltinnSkjemadataEditor such as 'altinnedit-ident', but it also supports connecting it to the VariableSelector.
+    """
+
+    suptable_id = 0
+
+    def __init__(
+        self,
+        label: str,
+        get_data_func: Callable[..., pd.DataFrame],
+        editor_inputs: list[str] | None = None,
+        variableselector: VariableSelector | None = None,
+    ) -> None:
+        """Initializes the support table.
+
+        Args:
+            label: Label to put on the tab in the modal.
+            get_data_func: Function that returns data to show in the supporting table.
+            editor_inputs: List of inputs from the AltinnSkjemadataEditor to use as arguments in the get_data_func.
+            variableselector: VariableSelector instance for adding arguments from the overall variableselector.
+
+        Note:
+            The component is automatically added to the panel inside the modal.
+        """
+        self.label = label
+        self.inputs = editor_inputs
+        self.get_data_func = get_data_func
+        if variableselector:
+            self.variableselector = variableselector
+        else:
+            self.variableselector = VariableSelector([], [])
+        self.suptable_id = AltinnSupportTable.suptable_id
+        AltinnSupportTable.suptable_id += 1
+        AltinnEditorSupportTables.support_components.append(self.support_table_layout())
+        self.support_table_callbacks()
+
+    def is_valid(self) -> None:
+        """Checks that all options added from the editor are activated in the AltinnEditorStateTracker."""
+        if self.inputs:
+            for input_var in self.inputs:
+                if input_var not in AltinnEditorStateTracker.get_options():
+                    raise ValueError(
+                        f"Invalid value passed in 'inputs'. Received '{input_var}', expected one of {AltinnEditorStateTracker.get_options()}"
+                    )
+
+    def support_table_content(self) -> html.Div:
+        """The content to show in the support table."""
+        return html.Div(
+            dag.AgGrid(
+                defaultColDef={"editable": False},
+                id=f"support-table-{self.suptable_id}",
+            )
+        )
+
+    def support_table_callbacks(self) -> None:
+        """Adds necessary callbacks."""
+
+        @callback(
+            Output(f"support-table-{self.suptable_id}", "rowData"),
+            Output(f"support-table-{self.suptable_id}", "columnDefs"),
+            *[[Input(_id, "value") for _id in self.inputs] if self.inputs else []],
+            *self.variableselector.get_all_callback_objects(),
+        )
+        def load_support_table_data(*args: Any):
+            logger.info(
+                f"Running get_data_func for table '{self.label}' using args: {args}"
+            )
+            data = self.get_data_func(*args)
+            return data.to_dict("records"), [{"field": col} for col in data.columns]
+
+    def support_table_layout(self) -> dbc.Tab:
+        """Creates the layout."""
+        return dbc.Tab(
+            self.support_table_content(),
+            label=self.label,
+            tab_id=f"support-table-{self.label}-{self.suptable_id}",
+        )
+
+
+def add_year_diff_support_table(
+    conn: Any,
+) -> None:  # TODO make actually return two periods and diff.
+    """Adds a table showing difference to previous year."""
+
+    def year_diff_support_table_get_data_func(ident: str, year: str) -> pd.DataFrame:
+        if conn_is_ibis(conn):
+            logger.info("Assuming is ibis connection.")
+            connection = conn
+        elif isinstance(conn, EimerDBInstance):
+            connection = ibis.polars.connect()
+            data = conn.query(
+                f"SELECT * FROM skjemadata_hoved WHERE ident = {ident} AND aar = {year}"
+            )
+            connection.create_table("skjemadata_hoved", data)
+        else:
+            raise TypeError("Wah")  # TODO fix
+        s = connection.table("skjemadata_hoved")
+        return s.filter(_.ident == ident).to_pandas()
+
+    AltinnSupportTable(
+        label="Endring fra fjorår",
+        editor_inputs=["altinnedit-ident", "altinnedit-aar"],
+        get_data_func=year_diff_support_table_get_data_func,
+    )
 
 
 class AltinnEditorSupportTables:
@@ -31,38 +142,24 @@ class AltinnEditorSupportTables:
         Adding your own supporting tables is not supported at this time.
     """
 
+    support_components: ClassVar[list[AltinnSupportTable]] = []
+
     def __init__(
         self,
-        time_units: list[str],
-        conn: object,
-        variable_selector_instance: VariableSelector,
     ) -> None:
-        """Initializes the AltinnEditorSupportTables module.
-
-        Args:
-            time_units: List of time units to be used in the module.
-            conn: Database connection object that must have a 'query' method.
-            variable_selector_instance: An instance of VariableSelector for variable selection.
-
-        Raises:
-            TypeError: If variable_selector_instance is not an instance of VariableSelector.
-        """
-        if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
-            raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
-            )
-        self.conn = conn
-        if not isinstance(variable_selector_instance, VariableSelector):
-            raise TypeError(
-                "variable_selector_instance must be an instance of VariableSelector"
-            )
-        self.variableselector = variable_selector_instance
-        self.time_units = [
-            self.variableselector.get_option(x).id.removeprefix("var-")
-            for x in time_units
-        ]
+        """Initializes the AltinnEditorSupportTables module."""
         self.module_layout = self._create_layout()
         self.module_callbacks()
+
+    def add_default_tables(self, tables_to_add: list[str], conn: Any) -> None:
+        """Adds specified default supporting tables to view."""
+        for table in tables_to_add:
+            if table == "aar_til_fjoraar":
+                add_year_diff_support_table(conn)
+            else:
+                raise ValueError(
+                    f"Table named '{table}' not among available default tables."
+                )
 
     def support_tables_modal(self) -> dbc.Modal:
         """Return a modal component containing tab content."""
@@ -72,34 +169,8 @@ class AltinnEditorSupportTables:
                 dbc.ModalBody(
                     html.Div(
                         [
-                            html.P("Velg hvilken tidsenhet som skal rullere -1:"),
-                            dcc.Dropdown(
-                                id="skjemadata-hjelpetablellmodal-dd",
-                                options=[
-                                    {"label": unit, "value": unit}
-                                    for unit in self.time_units
-                                ],
-                                value=self.time_units[0] if self.time_units else None,
-                                clearable=False,
-                                className="dbc",
-                            ),
                             dbc.Tabs(
-                                [
-                                    dbc.Tab(
-                                        self.create_ag_grid(
-                                            "skjemadata-hjelpetabellmodal-table1"
-                                        ),
-                                        tab_id="modal-hjelpetabeller-tab1",
-                                        label="Endringer",
-                                    ),
-                                    dbc.Tab(
-                                        self.create_ag_grid(
-                                            "skjemadata-hjelpetabellmodal-table2"
-                                        ),
-                                        tab_id="modal-hjelpetabeller-tab2",
-                                        label="Tabell2",
-                                    ),
-                                ],
+                                [*AltinnEditorSupportTables.support_components],
                                 id="skjemadata-hjelpetabellmodal-tabs",
                             ),
                         ],
@@ -112,14 +183,6 @@ class AltinnEditorSupportTables:
         )
         logger.debug("Created support tables modal")
         return hjelpetabellmodal
-
-    def create_ag_grid(self, component_id: str) -> dag.AgGrid:
-        """Returns a non-editable AgGrid component with a dark alpine theme."""
-        return dag.AgGrid(
-            defaultColDef={"editable": False},
-            id=component_id,
-            className="ag-theme-alpine header-style-on-filter",
-        )
 
     def _create_layout(self) -> html.Div:
         return html.Div(
@@ -145,20 +208,6 @@ class AltinnEditorSupportTables:
         """Returns the layout for the Altinn Editor Support Tables module."""
         return self.module_layout
 
-    def update_partition_select(
-        self, partition_dict: dict[str, list[int | str]], key_to_update: str
-    ) -> dict[str, list[int | str]]:
-        """Updates the dictionary by adding the previous value (N-1) to the list for a single specified key.
-
-        :param partition_dict: Dictionary containing lists of values
-        :param key_to_update: Key to update by appending (N-1)
-        :return: Updated dictionary
-        """
-        if partition_dict.get(key_to_update):
-            min_value = min(partition_dict[key_to_update])
-            partition_dict[key_to_update].append(int(min_value) - 1)
-        return partition_dict
-
     def module_callbacks(self) -> None:
         """Registers the callbacks for the Altinn Editor Support Tables module."""
 
@@ -175,145 +224,3 @@ class AltinnEditorSupportTables:
             if not is_open:
                 return True
             return False
-
-        @callback(  # type: ignore[misc]
-            Output("skjemadata-hjelpetabellmodal-table1", "rowData"),
-            Output("skjemadata-hjelpetabellmodal-table1", "columnDefs"),
-            Input("skjemadata-hjelpetabellmodal-tabs", "active_tab"),
-            Input(
-                "altinnedit-table-skjemaer", "selectedRows"
-            ),  # TODO: Is this even needed?
-            Input("skjemadata-hjelpetablellmodal-dd", "value"),
-            State("altinnedit-option1", "value"),
-            State("altinnedit-ident", "value"),
-            State("altinnedit-skjemaer", "value"),
-            self.variableselector.get_all_states(),
-            prevent_initial_call=True,
-        )
-        def hjelpetabeller(
-            tab: str,
-            selected_row: list[dict[str, int | float | str]],
-            rullerende_var: str,
-            tabell: str,
-            ident: str,
-            skjema: str,
-            *args: Any,
-        ) -> tuple[list[dict[str, Any]], list[dict[str, str | bool]]]:
-            logger.debug(
-                f"Args:\n"
-                f"tab: {tab}\n"
-                f"selected_row: {selected_row}\n"
-                f"rullerende_var: {rullerende_var}\n"
-                f"tabell: {tabell}\n"
-                f"ident: {ident}\n"
-                f"skjema: {skjema}\n"
-                f"args: {args}"
-            )
-            if tab == "modal-hjelpetabeller-tab1":
-                try:
-                    partition_args = dict(zip(self.time_units, args, strict=False))
-                    partition_select = create_partition_select(
-                        desired_partitions=self.time_units,
-                        skjema=skjema,
-                        **partition_args,
-                    )
-                    partition_select_no_skjema = create_partition_select(
-                        desired_partitions=self.time_units,
-                        skjema=None,
-                        **partition_args,
-                    )
-                    updated_partition_select = self.update_partition_select(
-                        partition_select, rullerende_var
-                    )
-                    column_name_expr_outer = SQL_COLUMN_CONCAT.join(
-                        [f"s.{unit}" for unit in self.time_units]
-                    )
-                    column_name_expr_inner = SQL_COLUMN_CONCAT.join(
-                        [f"t2.{unit}" for unit in self.time_units]
-                    )
-
-                    group_by_clause = ", ".join(
-                        [f"s.{unit}" for unit in self.time_units]
-                    )
-
-                    query = f"""
-                        SELECT
-                            s.variabel,
-                            {column_name_expr_outer} AS time_combination,
-                            SUM(CAST(s.verdi AS NUMERIC)) AS verdi
-                        FROM {tabell} AS s
-                        JOIN (
-                            SELECT
-                                {column_name_expr_inner} AS time_combination,
-                                t2.ident,
-                                t2.refnr,
-                                t2.dato_mottatt
-                            FROM
-                                skjemamottak AS t2
-                            WHERE aktiv = True
-                            QUALIFY
-                                ROW_NUMBER() OVER (PARTITION BY time_combination, t2.ident ORDER BY t2.dato_mottatt DESC) = 1
-                        ) AS mottak_subquery ON
-                            {column_name_expr_outer} = mottak_subquery.time_combination
-                            AND s.ident = mottak_subquery.ident
-                            AND s.refnr = mottak_subquery.refnr
-                        JOIN (
-                        SELECT * FROM datatyper AS d
-                        ) AS subquery ON s.variabel = subquery.variabel
-                        WHERE s.ident = '{ident}' AND subquery.datatype = 'int'
-                        GROUP BY s.variabel, subquery.radnr, {group_by_clause}
-                        ORDER BY subquery.radnr
-                        ;
-                    """
-
-                    df = self.conn.query(
-                        query.format(ident=ident),
-                        partition_select={
-                            tabell: updated_partition_select,
-                            "datatyper": partition_select_no_skjema,
-                        },
-                    )
-
-                    df_wide = df.pivot(
-                        index="variabel", columns="time_combination", values="verdi"
-                    ).reset_index()
-
-                    df_wide = df_wide.rename(
-                        columns={
-                            col: f"verdi_{col}" if col != "variabel" else col
-                            for col in df_wide.columns
-                        }
-                    )
-
-                    df_wide.columns.name = None
-
-                    def extract_numeric_sum(col_name: str) -> int | float:
-                        numbers = list(map(int, re.findall(r"\d+", col_name)))
-                        return sum(numbers) if numbers else 0
-
-                    time_columns_sorted = sorted(
-                        [col for col in df_wide.columns if col.startswith("verdi_")],
-                        key=extract_numeric_sum,
-                    )
-
-                    if len(time_columns_sorted) >= 2:
-                        latest_col = max(time_columns_sorted, key=extract_numeric_sum)
-                        prev_col = min(time_columns_sorted, key=extract_numeric_sum)
-                        df_wide["diff"] = df_wide[latest_col] - df_wide[prev_col]
-                        df_wide["pdiff"] = (df_wide["diff"] / df_wide[prev_col]) * 100
-                        df_wide["pdiff"] = df_wide["pdiff"].round(2).astype(str) + " %"
-                    columns = [
-                        {
-                            "headerName": col,
-                            "field": col,
-                        }
-                        for col in df_wide.columns
-                    ]
-                    return df_wide.to_dict("records"), columns
-                except Exception as e:
-                    logger.error(f"Error in hjelpetabeller: {e}", exc_info=True)
-                    logger.debug("Raised PreventUpdate")
-                    raise PreventUpdate from e
-            else:
-                logger.debug("Raised PreventUpdate")
-                raise PreventUpdate
