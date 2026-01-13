@@ -42,6 +42,12 @@ class AltinnSupportTable:
     ) -> None:
         """Initializes the support table.
 
+        Args:
+            label: Label to put on the tab in the modal.
+            get_data_func: Function that returns data to show in the supporting table.
+            editor_inputs: List of inputs from the AltinnSkjemadataEditor to use as arguments in the get_data_func.
+            variableselector: VariableSelector instance for adding arguments from the overall variableselector.
+
         Note:
             The component is automatically added to the panel inside the modal.
         """
