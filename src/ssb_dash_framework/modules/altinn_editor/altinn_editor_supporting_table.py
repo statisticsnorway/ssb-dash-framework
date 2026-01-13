@@ -1,6 +1,8 @@
 # TODO: Add functionality to add more types of helper things into the module.
 import logging
 from collections.abc import Callable
+from typing import Any
+from typing import ClassVar
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -16,7 +18,6 @@ from eimerdb import EimerDBInstance
 from ibis import _
 
 from ssb_dash_framework.setup import VariableSelector
-from ssb_dash_framework.utils import conn_is_ibis
 
 from ...utils.core_query_functions import conn_is_ibis
 from .altinn_editor_utility import AltinnEditorStateTracker
@@ -36,11 +37,16 @@ class AltinnSupportTable:
         self,
         label: str,
         get_data_func: Callable[..., pd.DataFrame],
-        inputs: list[str] | None = None,
+        editor_inputs: list[str] | None = None,
         variableselector: VariableSelector | None = None,
     ) -> None:
+        """Initializes the support table.
+
+        Note:
+            The component is automatically added to the panel inside the modal.
+        """
         self.label = label
-        self.inputs = inputs
+        self.inputs = editor_inputs
         self.get_data_func = get_data_func
         if variableselector:
             self.variableselector = variableselector
@@ -52,14 +58,16 @@ class AltinnSupportTable:
         self.support_table_callbacks()
 
     def is_valid(self) -> None:
+        """Checks that all options added from the editor are activated in the AltinnEditorStateTracker."""
         if self.inputs:
-            for input in self.inputs:
-                if input not in AltinnEditorStateTracker.valid_altinnedit_options:
+            for input_var in self.inputs:
+                if input_var not in AltinnEditorStateTracker.get_options():
                     raise ValueError(
-                        f"Invalid value passed in 'inputs'. Received '{input}', expected one of {AltinnEditorStateTracker.valid_altinnedit_options}"
+                        f"Invalid value passed in 'inputs'. Received '{input_var}', expected one of {AltinnEditorStateTracker.get_options()}"
                     )
 
     def support_table_content(self) -> html.Div:
+        """The content to show in the support table."""
         return html.Div(
             dag.AgGrid(
                 defaultColDef={"editable": False},
@@ -68,20 +76,23 @@ class AltinnSupportTable:
         )
 
     def support_table_callbacks(self) -> None:
+        """Adds necessary callbacks."""
+
         @callback(
             Output(f"support-table-{self.suptable_id}", "rowData"),
             Output(f"support-table-{self.suptable_id}", "columnDefs"),
             *[[Input(_id, "value") for _id in self.inputs] if self.inputs else []],
             *self.variableselector.get_all_callback_objects(),
         )
-        def load_support_table_data(*args):
+        def load_support_table_data(*args: Any):
             logger.info(
                 f"Running get_data_func for table '{self.label}' using args: {args}"
             )
             data = self.get_data_func(*args)
             return data.to_dict("records"), [{"field": col} for col in data.columns]
 
-    def support_table_layout(self):
+    def support_table_layout(self) -> dbc.Tab:
+        """Creates the layout."""
         return dbc.Tab(
             self.support_table_content(),
             label=self.label,
@@ -89,8 +100,12 @@ class AltinnSupportTable:
         )
 
 
-def add_year_diff_support_table(conn):
-    def year_diff_support_table_get_data_func(ident, year):
+def add_year_diff_support_table(
+    conn: Any,
+) -> None:  # TODO make actually return two periods and diff.
+    """Adds a table showing difference to previous year."""
+
+    def year_diff_support_table_get_data_func(ident: str, year: str) -> pd.DataFrame:
         if conn_is_ibis(conn):
             logger.info("Assuming is ibis connection.")
             connection = conn
@@ -101,13 +116,13 @@ def add_year_diff_support_table(conn):
             )
             connection.create_table("skjemadata_hoved", data)
         else:
-            raise TypeError("Wah")
+            raise TypeError("Wah")  # TODO fix
         s = connection.table("skjemadata_hoved")
         return s.filter(_.ident == ident).to_pandas()
 
     AltinnSupportTable(
         label="Endring fra fjorår",
-        inputs=["altinnedit-ident", "altinnedit-aar"],
+        editor_inputs=["altinnedit-ident", "altinnedit-aar"],
         get_data_func=year_diff_support_table_get_data_func,
     )
 
@@ -121,7 +136,7 @@ class AltinnEditorSupportTables:
         Adding your own supporting tables is not supported at this time.
     """
 
-    support_components = []
+    support_components: ClassVar[list[AltinnSupportTable]] = []
 
     def __init__(
         self,
@@ -130,7 +145,8 @@ class AltinnEditorSupportTables:
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
-    def add_default_tables(self, tables_to_add: list[str], conn):
+    def add_default_tables(self, tables_to_add: list[str], conn: Any) -> None:
+        """Adds specified default supporting tables to view."""
         for table in tables_to_add:
             if table == "aar_til_fjoraar":
                 add_year_diff_support_table(conn)

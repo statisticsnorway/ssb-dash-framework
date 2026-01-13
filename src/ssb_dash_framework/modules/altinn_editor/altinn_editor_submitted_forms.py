@@ -61,8 +61,8 @@ class AltinnEditorSubmittedForms:
         ]
         self._is_valid()
 
-        AltinnEditorStateTracker.valid_altinnedit_options.append("altinnedit-skjemaer")
-        AltinnEditorStateTracker.valid_altinnedit_options.append("altinnedit-refnr")
+        AltinnEditorStateTracker.register_option("altinnedit-refnr")
+        AltinnEditorStateTracker.register_option("altinnedit-skjemaer")
 
         self.module_layout = self._create_layout()
         self.module_callbacks()

@@ -63,10 +63,8 @@ class AltinnSkjemadataEditor:
             top_panels: Later might be used for customizing top-panel modules.
             primary_view: Later might be used for replacing the primary table with different views.
         """
-        AltinnEditorStateTracker.valid_altinnedit_options = [  # This list is used for checking what components are available for other modules connected to the AltinnSkjemadataEditor.
-            "altinnedit-option1",  # skjemadata_table
-            "altinnedit-ident",  # ident
-        ]
+        AltinnEditorStateTracker.register_option("altinnedit-option1")
+        AltinnEditorStateTracker.register_option("altinnedit-ident")
 
         self.icon = "🗊"
         self.label = "Data editor"
