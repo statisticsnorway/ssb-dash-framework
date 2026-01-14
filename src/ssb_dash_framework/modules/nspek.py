@@ -1,6 +1,4 @@
 from pandas.core.frame import DataFrame
-
-
 from dash_ag_grid import AgGrid
 import dash_bootstrap_components as dbc
 from dash import dcc, html, callback
@@ -27,11 +25,10 @@ ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
 # alle filene ligg her
-NSSPEK = '/buckets/shared/nspek/naeringsdata/flat_p2024_v1.parquet/'
+# NSSPEK = '/buckets/shared/nspek/naeringsdata/flat_p2024_v1.parquet/'
 
-
-noposter_resultatregnskap: DataFrame= pd.read_csv("/buckets/produkt/temp/nspek_editeringsrammeverk/nspek_utility/nspek_resultatposter.csv")
-noposter_balanseregnskap: DataFrame= pd.read_csv("/buckets/produkt/temp/nspek_editeringsrammeverk/nspek_utility/nspek_balanseposter.csv")
+# noposter_resultatregnskap: DataFrame= pd.read_csv("/buckets/produkt/temp/nspek_editeringsrammeverk/nspek_utility/nspek_resultatposter.csv")
+# noposter_balanseregnskap: DataFrame= pd.read_csv("/buckets/produkt/temp/nspek_editeringsrammeverk/nspek_utility/nspek_balanseposter.csv")
 
 TYPE_REGNSKAP_FILEPATH = { # type: file-path
     "balanseregnskap": "/buckets/shared/nspek/naeringsdata/flat_p2024_v1.parquet/balanseregnskap",
