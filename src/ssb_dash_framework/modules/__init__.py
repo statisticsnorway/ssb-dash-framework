@@ -45,6 +45,9 @@ from .hb_method import HBMethodWindow
 from .macro_module import MacroModule
 from .macro_module import MacroModuleTab
 from .macro_module import MacroModuleWindow
+from .nspek import Naeringsspesifikasjon
+from .nspek import NaeringsspesifikasjonTab
+from .nspek import NaeringsspesifikasjonWindow
 from .parquet_editor import ParquetEditor
 from .parquet_editor import ParquetEditorChangelog
 from .parquet_editor import apply_edits
@@ -103,6 +106,9 @@ __all__ = [
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",
+    "Naeringsspesifikasjon",
+    "NaeringsspesifikasjonTab",
+    "NaeringsspesifikasjonWindow",
     "ParquetEditor",
     "ParquetEditorChangelog",
     "PimemorizerTab",
