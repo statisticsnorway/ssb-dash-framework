@@ -61,10 +61,10 @@ def ibis_filter_with_dict(periods_dict: dict[str, Any]) -> list[Any]:
 
 
 def active_no_duplicates_refnr_list(
-    conn: ibis.BaseBackend, skjema: str | None = None
-) -> list[
-    str
-]:  # TODO: Ensure that the selecting works as intended. Refactor to use table object instead of conn???
+    conn: ibis.BaseBackend,
+    skjema: str | None = None,
+    filters: dict[str, Any] | None = None,
+) -> list[str]:
     """Takes an Ibis connection and optionally a skjema-ra-number and returns the latest refnr for each unit that is still marked as active.
 
     If there are more than one active refnr the latest one is returned.
@@ -72,12 +72,26 @@ def active_no_duplicates_refnr_list(
     Args:
         conn: An ibis connection.
         skjema: If not None filters based on a string referring to a specific form RA-number.
+        filters: Dict with filters to filter which subset of refnr to return.
 
     Returns:
-        A list of unique refnr values to select in order to get most recent and currently active response from each respondent.
+        A list of unique refnr values to select in order to get most recent and currently active response from each respondent in the filtered data.
+
+    Examples:
+        result = active_no_duplicates_refnr_list(conn)
+        result = active_no_duplicates_refnr_list(conn, filters={"aar": "2023"})
+        result = active_no_duplicates_refnr_list(conn, skjema = "RA-9999")
+        result = active_no_duplicates_refnr_list(conn, skjema = "RA-9999", filters={"aar": "2023"})
     """
     skjemamottak_tbl = conn.table("skjemamottak")
     if skjema and skjema != "all":
-        skjemamottak_tbl = skjemamottak_tbl.filter(skjemamottak_tbl.skjema == skjema)
-    latest_per_group = skjemamottak_tbl.filter(_.aktiv).order_by(_.dato_mottatt.desc())
-    return list(latest_per_group.to_pandas()["refnr"].unique())
+        skjemamottak_tbl = skjemamottak_tbl.filter(_.skjema == skjema)
+    if filters:
+        skjemamottak_tbl = skjemamottak_tbl.filter(ibis_filter_with_dict(filters))
+
+    skjemamottak_tbl = skjemamottak_tbl.filter(_.aktiv).order_by(_.dato_mottatt.desc())
+    return list(
+        skjemamottak_tbl.to_pandas()
+        .drop_duplicates(subset=["ident"], keep="first")["refnr"]
+        .unique()
+    )
