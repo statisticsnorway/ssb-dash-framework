@@ -64,9 +64,11 @@ class AltinnEditorHistory:
                 dbc.ModalBody(
                     dag.AgGrid(
                         defaultColDef={
-                            "editable": True,
                             "filter": True,
                             "resizable": True,
+                        },
+                        dashGridOptions={
+                            "enableCellTextSelection": True,
                         },
                         id="skjemadata-historikkmodal-table1",
                         className="ag-theme-alpine header-style-on-filter",
