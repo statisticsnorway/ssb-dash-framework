@@ -76,7 +76,9 @@ class AltinnSupportTable:
         """The content to show in the support table."""
         return html.Div(
             dag.AgGrid(
-                defaultColDef={"editable": False},
+                defaultColDef={"editable": False, "filter": True},
+                dashGridOptions={"enableCellTextSelection": True},
+                columnSize="responsiveSizeToFit",
                 id=f"support-table-{self.suptable_id}",
             )
         )
@@ -95,7 +97,7 @@ class AltinnSupportTable:
                 f"Running get_data_func for table '{self.label}' using args: {args}"
             )
             data = self.get_data_func(*args)
-            return data.to_dict("records"), [{"field": col} for col in data.columns]
+            return data.to_dict("records"), [{"field": col, "filter": True} for col in data.columns]
 
     def support_table_layout(self) -> dbc.Tab:
         """Creates the layout."""
@@ -179,7 +181,7 @@ class AltinnEditorSupportTables:
             ],
             id="skjemadata-hjelpetabellmodal",
             is_open=False,
-            size="xl",
+            className="hjelpetabeller-modal",
         )
         logger.debug("Created support tables modal")
         return hjelpetabellmodal

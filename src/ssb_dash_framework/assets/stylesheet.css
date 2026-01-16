@@ -231,6 +231,18 @@ Altinn Editor History
 
 
 /*
+Altinn Editor Support Tables
+*/
+.hjelpetabeller-modal .modal-dialog {
+    max-width: 70vw !important;
+    width: 80vw !important;
+}
+
+.hjelpetabeller-modal .modal-content {
+    height: 60vh !important;
+}
+
+/*
 MacroModule
 */
 
