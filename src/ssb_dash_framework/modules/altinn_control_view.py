@@ -60,9 +60,10 @@ class ControlView(ABC):
         )
         if outputs is None:
             outputs = ["ident"]
-        assert hasattr(
-            conn, "query"
-        ), "The database connection object must have a 'query' method."
+        if not conn_is_ibis(conn) and not isinstance(conn, EimerDBInstance):
+            raise TypeError(
+                f"Argument 'conn' must be an 'EimerDBInstance' or Ibis backend. Received: {type(conn)}"
+            )
         self.module_number = ControlView._id_number
         self.module_name = self.__class__.__name__
         ControlView._id_number += 1
@@ -302,7 +303,7 @@ class ControlView(ABC):
             utslag = (
                 kontrollutslag.filter(kontrollutslag.utslag == True)
                 .group_by(kontrollutslag.kontrollid)
-                .aggregate(ant_utslag=kontrollutslag.row_id.count())
+                .aggregate(ant_utslag=ibis._.count())
             )
 
             subq = (
@@ -319,7 +320,7 @@ class ControlView(ABC):
                 )
                 .filter(kontrollutslag.utslag == True)
                 .group_by(kontrollutslag.kontrollid)
-                .aggregate(uediterte=kontrollutslag.row_id.count())
+                .aggregate(uediterte=ibis._.count())
                 .select("kontrollid", "uediterte")
             )
 
