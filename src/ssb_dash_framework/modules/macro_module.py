@@ -60,6 +60,8 @@ DETAIL_GRID_ID_COLS = [
     "reg_type_f",
     "reg_type_b",
     "type",
+    "kommune_f",
+    "kommune_b"
 ]
 
 FORETAK_OR_BEDRIFT: dict[str, str] = {"Foretak": "foretak", "Bedrifter": "bedrifter"}
@@ -83,6 +85,8 @@ STATUS_CHANGE_DETAIL_GRID: list[str] = [
     "type",
     "reg_type_f",
     "reg_type_b",
+    "kommune_f",
+    "kommune_b",
 ]  # gets tooltip + colour change per year if changed (should be categorical col)
 
 
@@ -261,7 +265,7 @@ class MacroModule:
                                         {"label": k, "value": k}
                                         for k in MACRO_FILTER_OPTIONS.keys()
                                     ],
-                                    value="sammensatte variabler",
+                                    value="fylke", # skal vere "sammensatte variabler"
                                     id="macromodule-filter-velger",
                                 ),
                                 html.Label(
@@ -289,7 +293,7 @@ class MacroModule:
                                     className="macromodule-naring-dropdown",
                                     options=[],
                                     multi=True,
-                                    value=[],
+                                    value=["86"],
                                     placeholder="Velg næring(er) ...",
                                     maxHeight=300,
                                 ),
@@ -304,7 +308,7 @@ class MacroModule:
                                         {"label": k, "value": v}
                                         for k, v in NACE_LEVEL_OPTIONS.items()
                                     ],
-                                    value=NACE_LEVEL_OPTIONS["3-siffer"],
+                                    value=NACE_LEVEL_OPTIONS["2-siffer"],
                                 ),
                                 html.Label(
                                     "Velg tallvisning",
@@ -750,22 +754,47 @@ class MacroModule:
                 nace_siffer_level,
                 detail_grid=True,
             )
+
             # må finne ut om vi vil inkludere tala frå fjoråret om dei ikkje inngår i denne næringa. blir vanskeleg å filtrere på diff då i så fall. kan evt berre legge på ei markering på dei som hadde ei anna bedriftsnæring i fjor.
-            id_col: Literal["orgnr_foretak", "orgnr_bedrift"] = (
-                "orgnr_foretak" if foretak_or_bedrift == "foretak" else "orgnr_bedrift"
-            )
-            t_1 = t_1.filter(t_1[id_col].isin(t[id_col]))
+            # id_col: Literal["orgnr_foretak", "orgnr_bedrift"] = (
+            #     "orgnr_foretak" if foretak_or_bedrift == "foretak" else "orgnr_bedrift"
+            # )
+            # t_1 = t_1.filter(t_1[id_col].isin(t[id_col]))
+            id_cols = ["orgnr_foretak", "orgnr_bedrift"]
 
             # Apply macro-level truncation if needed
             if macro_level not in ("sammensatte variabler",):
                 assert isinstance(macro_level, str)
                 col_length: int = MACRO_FILTER_OPTIONS[macro_level]
                 t = t.mutate(**{macro_level: t.kommune.substr(0, length=col_length)})
-                t = t.filter(t[macro_level] == selected_filter_val)
+                # t = t.filter(t[macro_level] == selected_filter_val) # macro_level = fylke
                 t_1 = t_1.mutate(
                     **{macro_level: t_1.kommune.substr(0, length=col_length)}
                 )
-                t_1 = t_1.filter(t_1[macro_level] == selected_filter_val)
+
+                id_cols = ["orgnr_foretak", "orgnr_bedrift"]
+
+                # Select units in current and previous year
+                units_current = t.select(*id_cols, macro_level).filter(
+                    lambda x: x[macro_level] == selected_filter_val
+                )
+                units_previous = t_1.select(*id_cols, macro_level).filter(
+                    lambda x: x[macro_level] == selected_filter_val
+                )
+
+                # Combine and keep unique units
+                units = units_current.union(units_previous).select(*id_cols).distinct()
+
+                # Filter current-year table: keep rows where either column matches
+                t = t.filter(
+                    (t["orgnr_foretak"].isin(units["orgnr_foretak"])) |
+                    (t["orgnr_bedrift"].isin(units["orgnr_bedrift"]))
+                )
+                t_1 = t_1.filter(
+                    (t_1["orgnr_foretak"].isin(units["orgnr_foretak"])) |
+                    (t_1["orgnr_bedrift"].isin(units["orgnr_bedrift"]))
+                )
+
 
             select_cols = [
                 "navn",
@@ -776,6 +805,7 @@ class MacroModule:
                 "reg_type",
                 "reg_type_f",
                 "type",
+                "kommune",
                 *HEATMAP_VARIABLES.keys(),
                 "giver_fnr",
                 "giver_bnr",
@@ -790,6 +820,7 @@ class MacroModule:
                     "naring_f": "naring",
                     "reg_type_f": "reg_type",
                     "orgnr_f": "orgnr_foretak",
+                    "kommune_f": "kommune",
                 }
             elif foretak_or_bedrift == "bedrifter":
                 rename_mapping = {
@@ -797,6 +828,7 @@ class MacroModule:
                     "reg_type_b": "reg_type",
                     "orgnr_f": "orgnr_foretak",
                     "orgnr_b": "orgnr_bedrift",
+                    "kommune_b": "kommune",
                 }
 
             t = t.rename(**rename_mapping)
@@ -830,6 +862,11 @@ class MacroModule:
                 for c in ["orgnr_f", "orgnr_b"]
                 if c in df_current.columns and c in df_previous.columns
             ]
+
+            print("prev year df", df_previous.head(10))
+            print("this year df", df_current.head(10))
+
+            # merge_keys = [id_col]
             df_merged = df_current.merge(
                 df_previous, on=merge_keys, how="left", suffixes=("", "_x")
             )
@@ -849,20 +886,49 @@ class MacroModule:
                     )
 
             if valgt_variabel in df.columns and f"{valgt_variabel}_x" in df.columns:
+                
+                # for 2-digit nace changes
                 naring_prev: Literal["naring_b", "naring_f"] = (
                     "naring_b" if "naring_b" in df.columns else "naring_f"
                 )
-                same_prefix = (
+                same_nace_prefix = (
                     df[f"{naring_prev}_x"].str[:nace_siffer_level]
                     == df[naring_prev].str[:nace_siffer_level]
                 )
+
+                current_in_bucket = True
+                prev_in_bucket = True
+
+                if macro_level in ("fylke", "kommune"):
+                    kommune_column: Literal["kommune_f", "kommune_b"] = (
+                        "kommune_f" if foretak_or_bedrift == "foretak" else "kommune_b"
+                    )
+                    macro_len = MACRO_FILTER_OPTIONS[macro_level]
+
+                    # does the unit belong to the selected bucket THIS year?
+                    current_in_bucket = (
+                        df[kommune_column].str[:macro_len] == selected_filter_val
+                    )
+
+                    # did the unit belong to the selected bucket LAST year?
+                    prev_in_bucket = (
+                        df[f"{kommune_column}_x"].str[:macro_len] == selected_filter_val
+                    )
+
+                current_value_adjusted = (
+                    df[valgt_variabel]
+                    .where(current_in_bucket, other=0)
+                    .fillna(0)
+                )
                 prev_value_adjusted = (
-                    df[f"{valgt_variabel}_x"].where(same_prefix, other=0).fillna(0)
+                    df[f"{valgt_variabel}_x"]
+                    .where(prev_in_bucket & same_nace_prefix, other=0)
+                    .fillna(0)
                 )
 
-                # to correctly calculate diffs per naring for bedrifter/foretak that have changed naring
+                # to correctly calculate diffs per naring for bedrifter/foretak that have changed naring or kommune
                 df[f"{valgt_variabel}_diff"] = (
-                    df[valgt_variabel].fillna(0) - prev_value_adjusted
+                    current_value_adjusted - prev_value_adjusted
                 )
 
                 heatmap_value_change = cell_data.get("value", 0)
