@@ -41,7 +41,7 @@ class AltinnDataCapture(ABC):
         time_units: list[str],
         label: str = "🎣 Datafangst",
         database_type: str | None = "altinn_default",
-        database: object | None = None,
+        conn: object | None = None,
     ) -> None:  # TODO check type hint for time_units
         """Initializes the AntinnDataCapture module.
 
@@ -54,9 +54,12 @@ class AltinnDataCapture(ABC):
         Raises:
             TypeError: If database is invalid connection type.
         """
-        if not isinstance(database, EimerDBInstance) and not conn_is_ibis(database):
+        self.database = conn
+        if not isinstance(self.database, EimerDBInstance) and not conn_is_ibis(
+            self.database
+        ):
             raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(database)}"
+                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(self.database)}"
             )
         self.module_number = AltinnDataCapture._id_number
         self.module_name = self.__class__.__name__
@@ -65,7 +68,6 @@ class AltinnDataCapture(ABC):
         self.icon = "🎣"
         self.label = label
         self.database_type = database_type
-        self.database = database
         self.get_amount_func = (None,)
         self.get_cumulative_func = None
 
