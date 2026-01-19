@@ -358,7 +358,7 @@ class AltinnDataCaptureTab(TabImplementation, AltinnDataCapture):
         time_units: list[str],
         label: str = "🎣 Datafangst",
         database_type: str | None = "altinn_default",
-        database: object | None = None,
+        conn: object | None = None,
     ) -> None:
         """Initializes the AltinnDataCaptureTab module."""
         AltinnDataCapture.__init__(
@@ -366,7 +366,7 @@ class AltinnDataCaptureTab(TabImplementation, AltinnDataCapture):
             time_units=time_units,
             label=label,
             database_type=database_type,
-            database=database,
+            conn=conn,
         )
         TabImplementation.__init__(self)
 
@@ -379,7 +379,7 @@ class AltinnDataCaptureWindow(WindowImplementation, AltinnDataCapture):
         time_units: list[str],
         label: str = "Datafangst",
         database_type: str | None = "altinn_default",
-        database: object | None = None,
+        conn: object | None = None,
     ) -> None:
         """Initializes the AltinnDataCaptureWindow module."""
         AltinnDataCapture.__init__(
@@ -387,6 +387,6 @@ class AltinnDataCaptureWindow(WindowImplementation, AltinnDataCapture):
             time_units=time_units,
             label=label,
             database_type=database_type,
-            database=database,
+            conn=conn,
         )
         WindowImplementation.__init__(self)
