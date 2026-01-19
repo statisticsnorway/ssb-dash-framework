@@ -19,6 +19,7 @@ from ssb_dash_framework.utils import conn_is_ibis
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
+from ..utils.config_tools import get_connection
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ class AltinnDataCapture(ABC):
         Raises:
             TypeError: If database is invalid connection type.
         """
-        self.database = conn
+        self.database = conn if conn else get_connection()
         if not isinstance(self.database, EimerDBInstance) and not conn_is_ibis(
             self.database
         ):
