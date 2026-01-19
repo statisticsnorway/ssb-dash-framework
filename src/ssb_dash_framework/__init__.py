@@ -79,8 +79,10 @@ from .utils import create_alert
 from .utils import create_database
 from .utils import create_database_engine
 from .utils import enable_app_logging
+from .utils import get_connection
 from .utils import hb_method
 from .utils import module_validator
+from .utils import set_connection
 from .utils import sidebar_button
 
 # from .utils import th_error
@@ -164,10 +166,12 @@ __all__ = [
     "create_database_engine",
     "enable_app_logging",
     "export_from_parqueteditor",
+    "get_connection",
     "get_log_path",
     "main_layout",
     "module_validator",
     "register_control",
+    "set_connection",
     "set_variables",
     "sidebar_button",
     #    "hb_method",

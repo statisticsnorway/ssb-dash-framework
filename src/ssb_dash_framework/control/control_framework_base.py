@@ -9,6 +9,7 @@ import pandas as pd
 from eimerdb import EimerDBInstance
 from ibis import _
 
+from ..utils.config_tools import get_connection
 from ..utils.core_query_functions import conn_is_ibis
 from ..utils.core_query_functions import ibis_filter_with_dict
 
@@ -142,7 +143,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         self,
         time_units: list[str],
         applies_to_subset: dict[str, Any],
-        conn: object,
+        conn: object | None = None,
     ) -> None:
         """Initialize the control framework.
 
@@ -156,7 +157,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         for key, value in self.applies_to_subset.items():
             if not isinstance(value, list):
                 self.applies_to_subset[key] = [value]
-        self.conn = conn
+        self.conn = conn if conn else get_connection
 
         self._required_kontroller_columns = [
             *self.time_units,
