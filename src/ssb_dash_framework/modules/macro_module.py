@@ -1,8 +1,9 @@
 import logging
 from collections.abc import Hashable
-from typing import Any
+from typing import Any, Literal
 from typing import ClassVar
 from typing import Literal
+import numpy as np
 
 import ibis
 import pandas as pd
@@ -131,6 +132,7 @@ class MacroModule_ParquetReader:
                 t = t.filter(
                     t.naring.substr(0, length=nace_siffer_level).isin(nace_list)
                 )
+
         else:
             # for å loade fleire næringar ved innlasting
             nace_2_siffer_liste = [n.split(".")[0][:2] for n in nace_list]
@@ -738,64 +740,86 @@ class MacroModule:
             if not selected_filter_val or not selected_nace:
                 raise PreventUpdate
 
-            t: ibis.TableExpr = self.parquet_reader._load_year(
-                aar,
-                self.base_path,
-                foretak_or_bedrift,
-                [selected_nace],
-                nace_siffer_level,
-                detail_grid=True,
-            )
-            t_1: ibis.TableExpr = self.parquet_reader._load_year(
-                aar - 1,
-                self.base_path,
-                foretak_or_bedrift,
-                [],
-                nace_siffer_level,
-                detail_grid=True,
-            )
+            if macro_level == "sammensatte variabler":
+                t: ibis.TableExpr = self.parquet_reader._load_year(
+                    aar,
+                    self.base_path,
+                    foretak_or_bedrift,
+                    [selected_nace],
+                    nace_siffer_level,
+                    detail_grid=True,
+                )
+                t_1: ibis.TableExpr = self.parquet_reader._load_year(
+                    aar - 1,
+                    self.base_path,
+                    foretak_or_bedrift,
+                    [],
+                    nace_siffer_level,
+                    detail_grid=True,
+                )
 
-            # må finne ut om vi vil inkludere tala frå fjoråret om dei ikkje inngår i denne næringa. blir vanskeleg å filtrere på diff då i så fall. kan evt berre legge på ei markering på dei som hadde ei anna bedriftsnæring i fjor.
-            # id_col: Literal["orgnr_foretak", "orgnr_bedrift"] = (
-            #     "orgnr_foretak" if foretak_or_bedrift == "foretak" else "orgnr_bedrift"
-            # )
-            # t_1 = t_1.filter(t_1[id_col].isin(t[id_col]))
-            id_cols = ["orgnr_foretak", "orgnr_bedrift"]
-
-            # Apply macro-level truncation if needed
-            if macro_level not in ("sammensatte variabler",):
+            
+            else:
                 assert isinstance(macro_level, str)
+                
+                # Step 1: Load filtered data to identify units in the bucket
+                t_curr_filtered: ibis.TableExpr = self.parquet_reader._load_year(
+                    aar,
+                    self.base_path,
+                    foretak_or_bedrift,
+                    [selected_nace],
+                    nace_siffer_level,
+                    detail_grid=True,
+                )
+                t_prev_filtered: ibis.TableExpr = self.parquet_reader._load_year(
+                    aar - 1,
+                    self.base_path,
+                    foretak_or_bedrift,
+                    [selected_nace],
+                    nace_siffer_level,
+                    detail_grid=True,
+                )
+                
+                # Apply macro-level column and filter
                 col_length: int = MACRO_FILTER_OPTIONS[macro_level]
-                t = t.mutate(**{macro_level: t.kommune.substr(0, length=col_length)})
-                # t = t.filter(t[macro_level] == selected_filter_val) # macro_level = fylke
-                t_1 = t_1.mutate(
-                    **{macro_level: t_1.kommune.substr(0, length=col_length)}
+                t_curr_filtered = t_curr_filtered.mutate(
+                    **{macro_level: t_curr_filtered.kommune.substr(0, length=col_length)}
                 )
-
-                id_cols = ["orgnr_foretak", "orgnr_bedrift"]
-
-                # Select units in current and previous year
-                units_current = t.select(*id_cols, macro_level).filter(
-                    lambda x: x[macro_level] == selected_filter_val
+                t_prev_filtered = t_prev_filtered.mutate(
+                    **{macro_level: t_prev_filtered.kommune.substr(0, length=col_length)}
                 )
-                units_previous = t_1.select(*id_cols, macro_level).filter(
-                    lambda x: x[macro_level] == selected_filter_val
+                
+                t_curr_filtered = t_curr_filtered.filter(t_curr_filtered[macro_level] == selected_filter_val)
+                t_prev_filtered = t_prev_filtered.filter(t_prev_filtered[macro_level] == selected_filter_val)
+                
+                # Step 2: Collect all unique units (orgnr_foretak) from both years
+                units_curr = t_curr_filtered.select("orgnr_foretak").distinct()
+                units_prev = t_prev_filtered.select("orgnr_foretak").distinct()
+                units_all = units_curr.union(units_prev).distinct()
+                
+                # Step 3: Reload ALL data (no nace/macro filters) for those units
+                t: ibis.TableExpr = self.parquet_reader._load_year(
+                    aar,
+                    self.base_path,
+                    foretak_or_bedrift,
+                    [],  # No nace filter
+                    nace_siffer_level,
+                    detail_grid=True,
                 )
-
-                # Combine and keep unique units
-                units = units_current.union(units_previous).select(*id_cols).distinct()
-
-                # Filter current-year table: keep rows where either column matches
-                t = t.filter(
-                    (t["orgnr_foretak"].isin(units["orgnr_foretak"])) |
-                    (t["orgnr_bedrift"].isin(units["orgnr_bedrift"]))
+                t_1: ibis.TableExpr = self.parquet_reader._load_year(
+                    aar - 1,
+                    self.base_path,
+                    foretak_or_bedrift,
+                    [],  # No nace filter
+                    nace_siffer_level,
+                    detail_grid=True,
                 )
-                t_1 = t_1.filter(
-                    (t_1["orgnr_foretak"].isin(units["orgnr_foretak"])) |
-                    (t_1["orgnr_bedrift"].isin(units["orgnr_bedrift"]))
-                )
+                
+                # Filter to only the units we identified
+                t = t.semi_join(units_all, ["orgnr_foretak"])
+                t_1 = t_1.semi_join(units_all, ["orgnr_foretak"])
 
-
+            # Continue with select_cols and rest of the logic...
             select_cols = [
                 "navn",
                 "orgnr_foretak",
@@ -815,6 +839,7 @@ class MacroModule:
             t = t.select([c for c in select_cols if c in t.columns])
             t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
 
+            # Rename columns based on foretak/bedrift
             if foretak_or_bedrift == "foretak":
                 rename_mapping = {
                     "naring_f": "naring",
@@ -834,43 +859,252 @@ class MacroModule:
             t = t.rename(**rename_mapping)
             t_1 = t_1.rename(**rename_mapping)
 
-            # cast numerics to float in case of yearly type mismatches
+            # Cast numerics to float
             for col in HEATMAP_VARIABLES.keys():
                 if col in t.columns:
                     t = t.mutate(**{col: t[col].cast("float64")})
                 if col in t_1.columns:
                     t_1 = t_1.mutate(**{col: t_1[col].cast("float64")})
 
-            combined = t.union(t_1)
+            # Execute to DataFrames
+            t_curr = t.filter(t.aar == str(aar))
+            t_prev = t_1.filter(t_1.aar == str(aar - 1))
 
-            # rename cols to chosen variable names
-            rename_map = {
-                v: k for k, v in HEATMAP_VARIABLES.items() if k in combined.columns
-            }
+            t_curr = t_curr.rename({v: k for k, v in HEATMAP_VARIABLES.items() if k in t_curr.columns}).execute()
+            t_prev = t_prev.rename({v: k for k, v in HEATMAP_VARIABLES.items() if k in t_prev.columns}).execute()
 
-            combined = combined.rename(**rename_map)
-            df = combined.execute()
-
-            df_current = df[df["aar"] == str(aar)].copy()
-            df_previous = df[df["aar"] == str(aar - 1)].copy()
-
-            df_previous.drop(columns="aar", inplace=True)
-            df_current.drop(columns="aar", inplace=True)
-
+            # Determine merge keys
             merge_keys = [
-                c
-                for c in ["orgnr_f", "orgnr_b"]
-                if c in df_current.columns and c in df_previous.columns
+                c for c in ["orgnr_f", "orgnr_b"]
+                if c in t_curr.columns and c in t_prev.columns
             ]
 
-            print("prev year df", df_previous.head(10))
-            print("this year df", df_current.head(10))
-
-            # merge_keys = [id_col]
-            df_merged = df_current.merge(
-                df_previous, on=merge_keys, how="left", suffixes=("", "_x")
+            # LEFT merge: keep all units and their history
+            # Use outer to catch units that may only exist in one year due to orgnr_bedrift changes
+            merged_df = t_curr.merge(
+                t_prev,
+                how="outer",
+                on=merge_keys,
+                suffixes=("", "_x")
             )
-            df = df_merged.copy()
+
+            # Identify rows with no current year data (exiters) or no previous year data (new entrants)
+            merged_df["is_exiter"] = merged_df["navn"].isna()
+            merged_df["is_new"] = merged_df["navn_x"].isna()
+
+            # For exiters, use previous year's info columns
+            for col in DETAIL_GRID_ID_COLS + STATUS_CHANGE_DETAIL_GRID:
+                if col in merged_df.columns and f"{col}_x" in merged_df.columns:
+                    merged_df.loc[merged_df["is_exiter"], col] = merged_df.loc[merged_df["is_exiter"], f"{col}_x"]
+
+            df = merged_df.copy()
+
+            # må finne ut om vi vil inkludere tala frå fjoråret om dei ikkje inngår i denne næringa. blir vanskeleg å filtrere på diff då i så fall. kan evt berre legge på ei markering på dei som hadde ei anna bedriftsnæring i fjor.
+            # id_col: Literal["orgnr_foretak", "orgnr_bedrift"] = (
+            #     "orgnr_foretak" if foretak_or_bedrift == "foretak" else "orgnr_bedrift"
+            # )
+            # t_1 = t_1.filter(t_1[id_col].isin(t[id_col]))
+            # id_cols = ["orgnr_foretak", "orgnr_bedrift"]
+
+            # Apply macro-level truncation if needed
+            # else:
+            #     assert isinstance(macro_level, str)
+
+            #     # fetch orgnr for foretak in this specific naring either year
+            #     t_temp: ibis.TableExpr = self.parquet_reader._load_year(
+            #         aar,
+            #         self.base_path,
+            #         foretak_or_bedrift,
+            #         [selected_nace],
+            #         nace_siffer_level,
+            #         detail_grid=True,
+            #     )
+            #     t_1_temp: ibis.TableExpr = self.parquet_reader._load_year(
+            #         aar - 1,
+            #         self.base_path,
+            #         foretak_or_bedrift,
+            #         [selected_nace],
+            #         nace_siffer_level,
+            #         detail_grid=True,
+            #     )
+            #     col_length: int = MACRO_FILTER_OPTIONS[macro_level]
+            #     t_temp = t_temp.mutate(
+            #         **{macro_level: t_temp.kommune.substr(0, length=col_length)}
+            #     )
+            #     t_1_temp = t_1_temp.mutate(
+            #         **{macro_level: t_1_temp.kommune.substr(0, length=col_length)}
+            #     )
+                
+            #     ################ TESTING WITH NEW FILTERING
+
+            #     # filter by selected kommune/fylke
+            #     t_temp = t_temp.filter(t_temp[macro_level] == selected_filter_val)
+            #     t_1_temp = t_1_temp.filter(t_1_temp[macro_level] == selected_filter_val)
+
+            #     units = (
+            #         t_temp.select(t_temp.orgnr_foretak)
+            #         .union(t_1_temp.select(t_1_temp.orgnr_foretak))
+            #         .distinct()
+            #     )
+
+            #     print(units)
+
+            #     # print(units)
+
+            #     # load all data for selected orgnr
+            #     t: ibis.TableExpr = self.parquet_reader._load_year(
+            #         aar,
+            #         self.base_path,
+            #         foretak_or_bedrift,
+            #         [],
+            #         nace_siffer_level,
+            #         detail_grid=True,
+            #     )
+            #     t_1: ibis.TableExpr = self.parquet_reader._load_year(
+            #         aar - 1,
+            #         self.base_path,
+            #         foretak_or_bedrift,
+            #         [],
+            #         nace_siffer_level,
+            #         detail_grid=True,
+            #     )
+
+            #     t = t.mutate(
+            #         **{macro_level: t.kommune.substr(0, length=col_length)}
+            #     )
+            #     t_1 = t_1.mutate(
+            #         **{macro_level: t_1.kommune.substr(0, length=col_length)}
+            #     )
+
+            #     # only fetch the row for those that have values this year
+            #     t = t.filter(t[macro_level] == selected_filter_val).semi_join(units, ["orgnr_foretak"])
+            #     t_1 = t_1.filter(t_1[macro_level] == selected_filter_val).semi_join(units, ["orgnr_foretak"])
+
+            #     print(t.head())
+
+            #     # id_cols = ["navn", "orgnr_bedrift"]
+
+            #     # # Select units in current and previous year
+            #     # units_current = t.select(*id_cols, macro_level).filter(
+            #     #     lambda x: x[macro_level] == selected_filter_val
+            #     # )
+            #     # units_previous = t_1.select(*id_cols, macro_level).filter(
+            #     #     lambda x: x[macro_level] == selected_filter_val
+            #     # )
+
+            #     # Combine and keep unique units
+            #     # units = units_current.union(units_previous).select("orgnr_foretak").distinct()
+
+            #     # # Filter current-year table: keep rows where either column matches
+            #     # t = t.filter(
+            #     #     (t["orgnr_foretak"].isin(units["orgnr_foretak"])) |
+            #     #     (t["orgnr_bedrift"].isin(units["orgnr_bedrift"]))
+            #     # )
+            #     # t_1 = t_1.filter(
+            #     #     (t_1["orgnr_foretak"].isin(units["orgnr_foretak"])) |
+            #     #     (t_1["orgnr_bedrift"].isin(units["orgnr_bedrift"]))
+            #     # )
+
+            # select_cols = [
+            #     "navn",
+            #     "orgnr_foretak",
+            #     "orgnr_bedrift",
+            #     "naring",
+            #     "naring_f",
+            #     "reg_type",
+            #     "reg_type_f",
+            #     "type",
+            #     "kommune",
+            #     *HEATMAP_VARIABLES.keys(),
+            #     "giver_fnr",
+            #     "giver_bnr",
+            #     "aar",
+            # ]
+
+            # t = t.select([c for c in select_cols if c in t.columns])
+            # t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
+
+            # if foretak_or_bedrift == "foretak":
+            #     rename_mapping = {
+            #         "naring_f": "naring",
+            #         "reg_type_f": "reg_type",
+            #         "orgnr_f": "orgnr_foretak",
+            #         "kommune_f": "kommune",
+            #     }
+            # elif foretak_or_bedrift == "bedrifter":
+            #     rename_mapping = {
+            #         "naring_b": "naring",
+            #         "reg_type_b": "reg_type",
+            #         "orgnr_f": "orgnr_foretak",
+            #         "orgnr_b": "orgnr_bedrift",
+            #         "kommune_b": "kommune",
+            #     }
+
+            # t = t.rename(**rename_mapping)
+            # t_1 = t_1.rename(**rename_mapping)
+
+            # # cast numerics to float in case of yearly type mismatches
+            # for col in HEATMAP_VARIABLES.keys():
+            #     if col in t.columns:
+            #         t = t.mutate(**{col: t[col].cast("float64")})
+            #     if col in t_1.columns:
+            #         t_1 = t_1.mutate(**{col: t_1[col].cast("float64")})
+
+            # # combined = t.union(t_1)
+
+            # # rename cols to chosen variable names
+            # # rename_map = {
+            # #     v: k for k, v in HEATMAP_VARIABLES.items() if k in combined.columns
+            # # }
+
+            # # combined = combined.rename(**rename_map)
+            # # df = combined.execute()
+
+            # # df_current = df[df["aar"] == str(aar)].copy()
+            # # df_previous = df[df["aar"] == str(aar - 1)].copy()
+
+            # # df_previous.drop(columns="aar", inplace=True)
+            # # df_current.drop(columns="aar", inplace=True)
+
+            # # merge_keys = "orgnr_f" if foretak_or_bedrift == "foretak" else "bedrift"
+            # # merge_type = "outer" if macro_level != "sammensatte variabler" else "left"
+            # # df_merged = df_current.merge(
+            # #     right=df_previous, on=merge_keys, how=merge_type, suffixes=("", "_x")
+            # # )
+            # # df = df_merged.copy()
+
+            # ################ TESTING WITH DUCKDB JOIN INSTEAD OF PANDAS
+
+            # t_curr = t.filter(t.aar == str(aar))
+            # t_prev = t_1.filter(t_1.aar == str(aar - 1))
+
+            # t_curr = t_curr.rename({v: k for k, v in HEATMAP_VARIABLES.items() if k in t_curr.columns}).execute()
+            # t_prev = t_prev.rename({v: k for k, v in HEATMAP_VARIABLES.items() if k in t_prev.columns}).execute()
+            
+            # merge_keys = [
+            #     c
+            #     for c in ["orgnr_f", "orgnr_b"]
+            #     if c in t_curr.columns and c in t_prev.columns
+            # ]
+            # join_type: Literal['outer', 'left'] = "outer" if macro_level != "sammensatte variabler" else "left"
+
+            # # joined = t_curr.join(
+            # #     t_prev,
+            # #     predicates=predicates,
+            # #     how=join_type,
+            # #     lname="",
+            # #     rname="{name}_x"
+            # # )
+            # merged_df = t_curr.merge(
+            #     t_prev,
+            #     how="outer",
+            #     on=merge_keys,
+            #     suffixes=("", "_x")
+            # )
+
+            # df = merged_df.copy()
+            ###########################################################
+            print(df.head(10))
 
             if (
                 "giver_bnr" in df.columns and "giver_fnr" in df.columns
@@ -925,6 +1159,8 @@ class MacroModule:
                     .where(prev_in_bucket & same_nace_prefix, other=0)
                     .fillna(0)
                 )
+                ############################### KAN LAGE EI FARGE-KODING PÅ TILGANG VS AVGANG HER FOR Å MARKERE KVA SOM SKJER
+                # prev_in_bucket & same_nace_prefix
 
                 # to correctly calculate diffs per naring for bedrifter/foretak that have changed naring or kommune
                 df[f"{valgt_variabel}_diff"] = (
