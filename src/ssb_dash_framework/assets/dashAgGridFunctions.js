@@ -155,10 +155,11 @@ window.dashAgGridFunctions.MacroModule = {
 
     // === Function displayDiffHighlight (Compare current cell's value to previous year, highlight if different) ===
     displayDiffHighlight(props) {
-    const field = props.colDef.field;
-    const value = props.value;
 
     if (!props.data) return {};
+
+    const field = props.colDef.field;
+    const value = props.value;
 
     const normalize = (v) =>
         v !== null && v !== undefined ? String(v).trim() : "";
@@ -188,14 +189,6 @@ window.dashAgGridFunctions.MacroModule = {
         }
 
         return {}; // no change
-    }
-
-    // all other columns
-    if (field.endsWith("_x")) {
-        return {
-            backgroundColor: '#e8e9eb',
-            color: 'black'
-        };
     }
 
     const prevField = field + "_x";
@@ -228,6 +221,35 @@ window.dashAgGridFunctions.MacroModule = {
         const prefixF = String(naringF).substring(0, 2);
 
         return prefixB !== prefixF;
+    },
+
+    // === Function displayDiffColumnHighlight (Mark tilgang & avgang on the diff-column) ===
+    displayDiffColumnHighlight(props) {
+        if (!props.data) return {};
+
+        const value = props.value;
+        const field = props.colDef.field;
+
+        // Only _diff columns should ever call this,
+        // but this guard keeps it safe
+        if (!field.endsWith("_diff")) return {};
+
+        // tilgang / avgang still applies — but scoped to this column
+        if (props.data.is_tilgang) {
+            return {
+                backgroundColor: "#c7f5c7",
+                color: "black",
+            };
+        }
+
+        if (props.data.is_avgang) {
+            return {
+                backgroundColor: "#ffc7c7",
+                color: "black",
+            };
+        }
+
+        return {};
     }
 
 };
