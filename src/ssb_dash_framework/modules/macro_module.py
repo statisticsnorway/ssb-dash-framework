@@ -770,7 +770,6 @@ class MacroModule:
             select_cols = [
                 "navn",
                 "orgnr_foretak",
-                "orgnr_bedrift",
                 "naring",
                 "naring_f",
                 "reg_type",
@@ -781,6 +780,9 @@ class MacroModule:
                 "giver_bnr",
                 "aar",
             ]
+
+            if foretak_or_bedrift == "bedrifter":
+                select_cols.append("orgnr_bedrift")
 
             t = t.select([c for c in select_cols if c in t.columns])
             t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
