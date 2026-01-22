@@ -950,6 +950,9 @@ class MacroModule:
             if naring_col in merged_df.columns and f"{naring_col}_x" in merged_df.columns:
                 merged_df["nace_prefix_curr"] = merged_df[naring_col].astype(str).str[:nace_siffer_level]
                 merged_df["nace_prefix_prev"] = merged_df[f"{naring_col}_x"].astype(str).str[:nace_siffer_level]
+
+                print(merged_df["nace_prefix_prev"])
+                print(merged_df["nace_prefix_prev"].dtypes)
                 
                 # Unit entered this nace bucket (was in different nace last year)
                 merged_df["is_nace_entrant"] = (
@@ -1014,6 +1017,10 @@ class MacroModule:
                 merged_df["in_bucket_prev"] = True
                 merged_df["is_macro_entrant"] = False
                 merged_df["is_macro_exiter"] = False
+
+                # drop rows/units if it wasn't in bucket this or last year, necessary because of merging on orgnr_foretak
+                mask = (merged_df["nace_prefix_curr"] == selected_nace) | (merged_df["nace_prefix_prev"] == selected_nace)
+                merged_df = merged_df[mask]
 
             print("Finished creating styling columns.")
             
