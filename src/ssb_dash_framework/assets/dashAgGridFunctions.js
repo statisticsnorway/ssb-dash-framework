@@ -227,21 +227,26 @@ window.dashAgGridFunctions.MacroModule = {
     displayDiffColumnHighlight(props) {
         if (!props.data) return {};
 
-        const value = props.value;
         const field = props.colDef.field;
 
-        // Only _diff columns should ever call this,
-        // but this guard keeps it safe
-        if (!field.endsWith("_diff")) return {};
+        const isDiffColumn = field.endsWith("_diff");
+        const isExitHighlightField =
+            (field === "orgnr_b" || field === "navn") &&
+            props.data.is_avgang &&
+            props.data.is_exiter;
 
-        // tilgang / avgang still applies — but scoped to this column
-        if (props.data.is_tilgang) {
+        // Guard: only apply to allowed columns
+        if (!isDiffColumn && !isExitHighlightField) return {};
+
+        // tilgang (still only for diff columns)
+        if (isDiffColumn && props.data.is_tilgang) {
             return {
                 backgroundColor: "#c7f5c7",
                 color: "black",
             };
         }
 
+        // avgang (diff columns OR exiter name/orgnr)
         if (props.data.is_avgang) {
             return {
                 backgroundColor: "#ffc7c7",

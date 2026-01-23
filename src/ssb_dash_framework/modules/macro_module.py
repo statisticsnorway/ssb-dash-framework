@@ -739,10 +739,9 @@ class MacroModule:
 
             if not selected_filter_val or not selected_nace:
                 raise PreventUpdate
-
-            # TODO: we don't need a specific separator here, can put everything into one line to avoid duplication?
-            if macro_level == "sammensatte variabler":
-                t_curr_filtered: ibis.TableExpr = self.parquet_reader._load_year(
+            
+            # read in every unit in selected nace
+            t_curr_filtered: ibis.TableExpr = self.parquet_reader._load_year(
                     aar,
                     self.base_path,
                     foretak_or_bedrift,
@@ -750,64 +749,19 @@ class MacroModule:
                     nace_siffer_level,
                     detail_grid=True,
                 )
-                t_prev_filtered: ibis.TableExpr = self.parquet_reader._load_year(
-                    aar - 1,
-                    self.base_path,
-                    foretak_or_bedrift,
-                    [selected_nace],
-                    nace_siffer_level,
-                    detail_grid=True,
-                )
+            t_prev_filtered: ibis.TableExpr = self.parquet_reader._load_year(
+                aar - 1,
+                self.base_path,
+                foretak_or_bedrift,
+                [selected_nace],
+                nace_siffer_level,
+                detail_grid=True,
+            )
 
-                # Step 2: Collect all unique units (orgnr_foretak) from both years
-                units_curr = t_curr_filtered.select("orgnr_foretak").distinct()
-                units_prev = t_prev_filtered.select("orgnr_foretak").distinct()
-                units_all = units_curr.union(units_prev).distinct()
+            # handle kommune/fylke filters
+            if macro_level != "sammensatte variabler":
 
-                # Step 3: Reload ALL data (no nace/macro filters) for those units
-                t: ibis.TableExpr = self.parquet_reader._load_year(
-                    aar,
-                    self.base_path,
-                    foretak_or_bedrift,
-                    [],  # no nace filter
-                    nace_siffer_level,
-                    detail_grid=True,
-                )
-                t_1: ibis.TableExpr = self.parquet_reader._load_year(
-                    aar - 1,
-                    self.base_path,
-                    foretak_or_bedrift,
-                    [],  # no nace filter
-                    nace_siffer_level,
-                    detail_grid=True,
-                )
-
-                # Filter to only the units we identified
-                t = t.semi_join(units_all, ["orgnr_foretak"])
-                t_1 = t_1.semi_join(units_all, ["orgnr_foretak"])
-
-                print("Done loading in datasets.")
-
-            else:
                 assert isinstance(macro_level, str)
-                
-                # Step 1: Load filtered data to identify units in the bucket
-                t_curr_filtered: ibis.TableExpr = self.parquet_reader._load_year(
-                    aar,
-                    self.base_path,
-                    foretak_or_bedrift,
-                    [selected_nace],
-                    nace_siffer_level,
-                    detail_grid=True,
-                )
-                t_prev_filtered: ibis.TableExpr = self.parquet_reader._load_year(
-                    aar - 1,
-                    self.base_path,
-                    foretak_or_bedrift,
-                    [selected_nace],
-                    nace_siffer_level,
-                    detail_grid=True,
-                )
                 
                 # Apply macro-level column and filter
                 col_length: int = MACRO_FILTER_OPTIONS[macro_level]
@@ -821,32 +775,32 @@ class MacroModule:
                 t_curr_filtered = t_curr_filtered.filter(t_curr_filtered[macro_level] == selected_filter_val)
                 t_prev_filtered = t_prev_filtered.filter(t_prev_filtered[macro_level] == selected_filter_val)
                 
-                # Step 2: Collect all unique units (orgnr_foretak) from both years
-                units_curr = t_curr_filtered.select("orgnr_foretak").distinct()
-                units_prev = t_prev_filtered.select("orgnr_foretak").distinct()
-                units_all = units_curr.union(units_prev).distinct()
+            # collect all unique units (orgnr_foretak) from both years
+            units_curr = t_curr_filtered.select("orgnr_foretak").distinct()
+            units_prev = t_prev_filtered.select("orgnr_foretak").distinct()
+            units_all = units_curr.union(units_prev).distinct()
                 
-                # Step 3: Reload ALL data (no nace/macro filters) for those units
-                t: ibis.TableExpr = self.parquet_reader._load_year(
-                    aar,
-                    self.base_path,
-                    foretak_or_bedrift,
-                    [],  # no nace filter
-                    nace_siffer_level,
-                    detail_grid=True,
-                )
-                t_1: ibis.TableExpr = self.parquet_reader._load_year(
-                    aar - 1,
-                    self.base_path,
-                    foretak_or_bedrift,
-                    [],  # no nace filter
-                    nace_siffer_level,
-                    detail_grid=True,
-                )
+            # reload ALL data (no nace/macro filters) for those units
+            t: ibis.TableExpr = self.parquet_reader._load_year(
+                aar,
+                self.base_path,
+                foretak_or_bedrift,
+                [],  # no nace filter
+                nace_siffer_level,
+                detail_grid=True,
+            )
+            t_1: ibis.TableExpr = self.parquet_reader._load_year(
+                aar - 1,
+                self.base_path,
+                foretak_or_bedrift,
+                [],  # no nace filter
+                nace_siffer_level,
+                detail_grid=True,
+            )
                 
-                # Filter to only the units we identified
-                t = t.semi_join(units_all, ["orgnr_foretak"])
-                t_1 = t_1.semi_join(units_all, ["orgnr_foretak"])
+            # filter to only the units we identified
+            t = t.semi_join(units_all, ["orgnr_foretak"])
+            t_1 = t_1.semi_join(units_all, ["orgnr_foretak"])
 
             # Continue with select_cols and rest of the logic...
             select_cols = [
@@ -878,6 +832,8 @@ class MacroModule:
                     "kommune_f": "kommune",
                 }
                 kommune_col = "kommune_f"
+                naring_col = "naring_f"
+                merge_keys = "orgnr_f"
             elif foretak_or_bedrift == "bedrifter":
                 rename_mapping = {
                     "naring_b": "naring",
@@ -887,6 +843,8 @@ class MacroModule:
                     "kommune_b": "kommune",
                 }
                 kommune_col = "kommune_b"
+                naring_col = "naring_b"
+                merge_keys = ["orgnr_f", "orgnr_b"]
 
             t = t.rename(**rename_mapping)
             t_1 = t_1.rename(**rename_mapping)
@@ -905,54 +863,29 @@ class MacroModule:
             t_curr = t_curr.rename({v: k for k, v in HEATMAP_VARIABLES.items() if k in t_curr.columns}).execute()
             t_prev = t_prev.rename({v: k for k, v in HEATMAP_VARIABLES.items() if k in t_prev.columns}).execute()
 
-            print("Finished casting, renaming etc.")
-
-            # Determine merge keys
-            merge_keys = [
-                c for c in ["orgnr_f", "orgnr_b"]
-                if c in t_curr.columns and c in t_prev.columns
-            ]
-
-            # merge_type: Literal['left', 'outer'] = "left" if macro_level == "sammensatte variabler" else "outer"
-
-            print("Starting merge.")
-            # LEFT merge: keep all units and their history
-            # Use outer to catch units that may only exist in one year due to orgnr_bedrift changes
+            # use outer to catch units that may only exist in one year due to orgnr_bedrift changes
             merged_df = t_curr.merge(
                 t_prev,
-                # how=merge_type,
                 how="outer",
                 on=merge_keys,
-                suffixes=("", "_x")
+                suffixes=("", "_x"),
+                indicator=True,
             )
 
-            print("Finished merge.")
+            merged_df["is_new"] = merged_df["_merge"] == "left_only"  # Only in current year
+            merged_df["is_exiter"] = merged_df["_merge"] == "right_only"  # Only in previous year
 
-            # Identify rows with no current year data (exiters) or no previous year data (new entrants)
+            # For exiters, fill in key identifying columns from previous year
+            if "navn" in merged_df.columns and "navn_x" in merged_df.columns:
+                merged_df["navn"] = merged_df["navn"].fillna(merged_df["navn_x"])
 
-            ###################################### TODO: CHECK HOW WE IDENTIFY THIS ############################################
-            merged_df["is_exiter"] = merged_df["navn"].isna()
-            merged_df["is_new"] = merged_df["navn_x"].isna()
-
-            # # For exiters, use previous year's info columns COMMENTED THS OUT BUT TEST WHAT WE NEED
-            # for col in DETAIL_GRID_ID_COLS + STATUS_CHANGE_DETAIL_GRID:
-            #     if col in merged_df.columns and f"{col}_x" in merged_df.columns:
-            #         merged_df.loc[merged_df["is_exiter"], col] = merged_df.loc[merged_df["is_exiter"], f"{col}_x"]
-            
-            # === Nace change flags ===
-            naring_col: Literal["naring_b", "naring_f"] = (
-                "naring_b" if "naring_b" in merged_df.columns else "naring_f"
-            )
-
-            print("Creating styling columns.")
+            # drop the merge indicator column
+            merged_df = merged_df.drop(columns=["_merge"])
 
             # Check if nace prefix changed (at selected siffer level)
             if naring_col in merged_df.columns and f"{naring_col}_x" in merged_df.columns:
                 merged_df["nace_prefix_curr"] = merged_df[naring_col].astype(str).str[:nace_siffer_level]
                 merged_df["nace_prefix_prev"] = merged_df[f"{naring_col}_x"].astype(str).str[:nace_siffer_level]
-
-                print(merged_df["nace_prefix_prev"])
-                print(merged_df["nace_prefix_prev"].dtypes)
                 
                 # Unit entered this nace bucket (was in different nace last year)
                 merged_df["is_nace_entrant"] = (
@@ -973,16 +906,16 @@ class MacroModule:
                     merged_df["nace_prefix_curr"] == merged_df["nace_prefix_prev"]
                 ).fillna(False)
 
+                # drop rows/units if it wasn't in bucket this or last year, necessary because of merging on orgnr_foretak
+                mask = (merged_df["nace_prefix_curr"] == selected_nace) | (merged_df["nace_prefix_prev"] == selected_nace)
+                merged_df = merged_df[mask]
+
             # === Kommune/Fylke change flags ===
             if macro_level in ("fylke", "kommune"):
-                # kommune_col: Literal["kommune_f", "kommune_b"] = (
-                #     "kommune_f" if foretak_or_bedrift == "foretak" else "kommune_b"
-                # )
-                macro_len = MACRO_FILTER_OPTIONS[macro_level] # can change macro len and use another variable I've already created
                 
                 if kommune_col in merged_df.columns and f"{kommune_col}_x" in merged_df.columns:
-                    merged_df["macro_prefix_curr"] = merged_df[kommune_col].astype(str).str[:macro_len]
-                    merged_df["macro_prefix_prev"] = merged_df[f"{kommune_col}_x"].astype(str).str[:macro_len]
+                    merged_df["macro_prefix_curr"] = merged_df[kommune_col].astype(str).str[:col_length]
+                    merged_df["macro_prefix_prev"] = merged_df[f"{kommune_col}_x"].astype(str).str[:col_length]
                     
                     # Unit is currently in selected bucket
                     merged_df["in_bucket_curr"] = (
@@ -994,7 +927,7 @@ class MacroModule:
                         merged_df["macro_prefix_prev"] == selected_filter_val
                     ).fillna(False)
 
-                    # drop rows/units if it wasn't in bucket this or last year, necessary because of merging on orgnr_foretak
+                    # drop rows/units if it wasn't in bucket this or last year, necessary because of excess bedrifter when merging on orgnr_foretak
                     mask = merged_df["in_bucket_curr"] | merged_df["in_bucket_prev"]
                     merged_df = merged_df[mask]
 
@@ -1017,12 +950,6 @@ class MacroModule:
                 merged_df["in_bucket_prev"] = True
                 merged_df["is_macro_entrant"] = False
                 merged_df["is_macro_exiter"] = False
-
-                # drop rows/units if it wasn't in bucket this or last year, necessary because of merging on orgnr_foretak
-                mask = (merged_df["nace_prefix_curr"] == selected_nace) | (merged_df["nace_prefix_prev"] == selected_nace)
-                merged_df = merged_df[mask]
-
-            print("Finished creating styling columns.")
             
             df = merged_df.copy()
 
@@ -1039,8 +966,6 @@ class MacroModule:
                         str
                     )
 
-
-            print("Starting diff calculation.")
             # calculate diff
             if valgt_variabel in df.columns and f"{valgt_variabel}_x" in df.columns:
 
@@ -1078,11 +1003,7 @@ class MacroModule:
                     current_value_adjusted - prev_value_adjusted
                 )
                 
-                # Add movement flags for visual marking
-                # Tilgang (entry): unit is now contributing but wasn't before
                 df["is_tilgang"] = current_contributes & ~prev_contributes
-                
-                # Avgang (exit): unit was contributing but isn't now
                 df["is_avgang"] = ~current_contributes & prev_contributes
                 
                 heatmap_value_change = cell_data.get("value", 0)
@@ -1095,8 +1016,6 @@ class MacroModule:
                 df = df.sort_values(
                     f"{valgt_variabel}_diff", ascending=ascending_sorting_param
                 )
-
-            print("Finished diff calculation.")
 
             # order for columns
             if valgt_variabel in df.columns:
@@ -1126,13 +1045,8 @@ class MacroModule:
             visible_cols = [
                 c for c in DETAIL_GRID_ID_COLS + ordered_value_cols if c in df.columns
             ]
-            print("Creating row data.")
+
             row_data: list[dict[Hashable, Any]] | Any = df.to_dict("records")
-            print("Finished creating row data.")
-
-            print(df.head())
-
-            print("Creating column definitions.")
             if macro_level in ("fylke", "kommune"):
                 for row in row_data:
                     row["macro_len"] = MACRO_FILTER_OPTIONS[macro_level] # for frontend JavaScript
@@ -1166,7 +1080,7 @@ class MacroModule:
                         }
                     )
 
-                if col.endswith("_diff"):
+                if col.endswith("_diff") or col in ("orgnr_b", "navn"):
                     col_def["cellStyle"] = {
                         "function": "MacroModule.displayDiffColumnHighlight(params)"
                     }
@@ -1177,13 +1091,9 @@ class MacroModule:
                 column_defs[0]["pinned"] = "left"
                 column_defs[0]["width"] = 240
 
-            print("Finished creating column definitions.")
-
             title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace} i {macro_level} {selected_filter_val}"
             if macro_level == "sammensatte variabler":
                 title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace}"
-
-            print("Created title.")
 
             return row_data, column_defs, title, []
 
@@ -1191,6 +1101,8 @@ class MacroModule:
             Output("macromodule-detail-grid", "rowData", allow_duplicate=True),
             Output("macromodule-detail-grid", "columnDefs", allow_duplicate=True),
             Output("macromodule-detail-grid-title", "children", allow_duplicate=True),
+            Output("macromodule-detail-grid", "filterModel", allow_duplicate=True),
+            Output("macromodule-detail-grid", "columnState", allow_duplicate=True),
             Input("var-aar", "value"),
             Input("macromodule-foretak-or-bedrift", "value"),
             Input("macromodule-filter-velger", "value"),
@@ -1199,9 +1111,10 @@ class MacroModule:
             Input("macromodule-macro-variable", "value"),
             prevent_initial_call=True,
         )
-        def reset_detail_grid_on_filter_change(*args: Any) -> tuple[list, list, str]:
-            """Reset detail grid when any filter changes."""
-            return [], [], ""
+        def reset_detail_grid_on_filter_change(*args: Any) -> tuple[list, list, str, dict, list]:
+            """Hard reset detail grid when any filter changes."""
+            return [], [], "", {}, []
+            ################################################# HAVE TO UPDATE THIS
 
         @callback(
             Output("macromodule-macro-variable", "disabled"),
