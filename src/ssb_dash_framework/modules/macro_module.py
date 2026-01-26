@@ -266,7 +266,7 @@ class MacroModule:
                                         {"label": k, "value": k}
                                         for k in MACRO_FILTER_OPTIONS.keys()
                                     ],
-                                    value="fylke",  # skal vere "sammensatte variabler"
+                                    value="sammensatte variabler",
                                     id="macromodule-filter-velger",
                                 ),
                                 html.Label(
@@ -294,7 +294,7 @@ class MacroModule:
                                     className="macromodule-naring-dropdown",
                                     options=[],
                                     multi=True,
-                                    value=["86"],
+                                    value=[],
                                     placeholder="Velg næring(er) ...",
                                     maxHeight=300,
                                 ),
