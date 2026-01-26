@@ -686,6 +686,9 @@ class MacroModule:
             Output("macromodule-detail-grid", "columnDefs"),
             Output("macromodule-detail-grid-title", "children"),
             Output("macromodule-detail-grid", "columnState"),
+            Output("macromodule-detail-grid", "resetColumnState"),
+            Output("macromodule-detail-grid", "filterModel"),
+            Output("macromodule-detail-grid", "paginationGoTo"),
             Input("macromodule-heatmap-grid", "cellClicked"),
             State("var-aar", "value"),
             State("macromodule-foretak-or-bedrift", "value"),
@@ -708,6 +711,9 @@ class MacroModule:
             list[dict[str, Any]],
             str,
             list[dict[str, Any]],
+            bool,
+            None,
+            int,
         ]:
             """Table with foretak & bedrift-level details which updates when user selects a cell in heatmap-grid."""
             if not cell_data or not variabelvelger_aar:
@@ -1095,14 +1101,12 @@ class MacroModule:
             if macro_level == "sammensatte variabler":
                 title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace}"
 
-            return row_data, column_defs, title, []
+            return row_data, column_defs, title, [], True, None, 0
 
         @callback(
             Output("macromodule-detail-grid", "rowData", allow_duplicate=True),
             Output("macromodule-detail-grid", "columnDefs", allow_duplicate=True),
             Output("macromodule-detail-grid-title", "children", allow_duplicate=True),
-            Output("macromodule-detail-grid", "filterModel", allow_duplicate=True),
-            Output("macromodule-detail-grid", "columnState", allow_duplicate=True),
             Input("var-aar", "value"),
             Input("macromodule-foretak-or-bedrift", "value"),
             Input("macromodule-filter-velger", "value"),
@@ -1111,10 +1115,9 @@ class MacroModule:
             Input("macromodule-macro-variable", "value"),
             prevent_initial_call=True,
         )
-        def reset_detail_grid_on_filter_change(*args: Any) -> tuple[list, list, str, dict, list]:
-            """Hard reset detail grid when any filter changes."""
-            return [], [], "", {}, []
-            ################################################# HAVE TO UPDATE THIS
+        def reset_detail_grid_on_filter_change(*args: Any) -> tuple[list, list, str]:
+            """Reset detail grid when any filter changes."""
+            return [], [], ""
 
         @callback(
             Output("macromodule-macro-variable", "disabled"),
