@@ -500,14 +500,18 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             )
             control_results = control_results.merge(
                 existing_kontrollutslag,
-                on=["kontrollid", "ident", "refnr"],
+                on=[*self.time_units, "kontrollid", "ident", "refnr"],
                 how="outer",
                 indicator=True,
-            ).dropna()  # TODO: Check if this causes unexpected behavior.
+            )
+            logger.debug(f"{control_results}")
+            control_results = control_results.dropna(
+                subset=[col for col in control_results if col != "verdi"]
+            )  # TODO: Check if this causes unexpected behavior.
         if control_results.empty:
             logger.debug(f"Empty control_results:\n{control_results}")
             raise ValueError(
-                "Combined results from 'control_results' and 'existing_kontrollutslag' is empty."
+                "Combined results from 'control_results' and 'existing_kontrollutslag' is empty when it shouldn't be."
             )
         logger.debug(control_results)
         logger.debug(
@@ -515,9 +519,24 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         )
         changed = control_results[  # This might have issues.
             control_results["utslag_x"] != control_results["utslag_y"]
-        ][["kontrollid", "ident", "refnr", "verdi_x", "utslag_x"]].rename(
-            columns={"utslag_x": "utslag", "verdi_x": "verdi"}
+        ][
+            [
+                *self.time_units,
+                "kontrollid",
+                "ident",
+                "refnr",
+                "verdi_x" if "verdi_x" in control_results.columns else "verdi",
+                "utslag_x",
+            ]
+        ].rename(
+            columns={"utslag_x": "utslag"}
         )
+        if "verdi_x" in changed.columns:
+            changed = changed.rename(columns={"verdi_x": "verdi"})
+
+        missing = set(self._required_kontrollutslag_columns) - set(changed.columns)
+        if missing:
+            raise ValueError(f"Missing required columns: {missing}")
         if changed.empty:
             logger.info("No changed rows, ending here.")
             return None
