@@ -441,6 +441,9 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             specific_control = None
         existing_kontrollutslag = self.get_current_kontrollutslag(specific_control)
         if existing_kontrollutslag is not None and not existing_kontrollutslag.empty:
+            logger.debug(
+                f"Merging new results with existing results.\nNew:{control_results.shape}\n{control_results.head(10)}\n\nExisting:{existing_kontrollutslag.shape}\n{existing_kontrollutslag.head(10)}"
+            )
             control_results = control_results.merge(
                 existing_kontrollutslag,
                 on=[*self.applies_to_subset.keys(), "kontrollid", "ident", "refnr"],
@@ -454,7 +457,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                         "kontrollid",
                         "ident",
                         "refnr",
-                        "verdi_x",
+                        "verdi_x" if "verdi_x" in control_results.columns else "verdi",
                         "utslag_x",
                     ]
                 ]
@@ -500,7 +503,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             )
             control_results = control_results.merge(
                 existing_kontrollutslag,
-                on=[*self.time_units, "kontrollid", "ident", "refnr"],
+                on=[*self.applies_to_subset.keys(), "kontrollid", "ident", "refnr"],
                 how="outer",
                 indicator=True,
             )
