@@ -60,6 +60,10 @@ class MineEgneKontroller(ControlFrameworkBase):
     )
     def control_skjema_dublett(self):
         df = self.conn.query("SELECT * FROM skjemamottak")
+        # Det nedenfor filtrerer til relevante data ved å filtrere til kun gjeldende tidsperiode og valgt skjema.
+        for col, values in self.applies_to_subset.items():
+            df = df[df[col].isin(values)]
+        # Årsaken til at denne filtreringen fungerer er at self.applies_to_subset er en dictionary bestående av variabelen som skal selekteres på som key, og verdiene som skal plukkes ut som value.
         df["utslag"] = df["ident"].isin(
             df["ident"].value_counts()[lambda x: x > 1].index
         )

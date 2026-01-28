@@ -80,6 +80,7 @@ from .utils import create_database
 from .utils import create_database_engine
 from .utils import enable_app_logging
 from .utils import hb_method
+from .utils import ibis_filter_with_dict
 from .utils import module_validator
 from .utils import sidebar_button
 
@@ -165,6 +166,7 @@ __all__ = [
     "enable_app_logging",
     "export_from_parqueteditor",
     "get_log_path",
+    "ibis_filter_with_dict",
     "main_layout",
     "module_validator",
     "register_control",

@@ -227,8 +227,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             self.conn.insert("kontroller", rows_to_register)
         elif conn_is_ibis(self.conn):
             conn = self.conn
-            k = conn.table("kontroller")  # type: ignore[attr-defined]
-            k.insert(rows_to_register)
+            conn.insert("kontroller", rows_to_register)
         else:
             raise NotImplementedError(
                 f"Connection type '{type(self.conn)}' is currently not implemented."
@@ -324,7 +323,6 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         """
         logger.info(f"Running control: {control}")
         results = getattr(self, control)()
-
         logger.debug("Starting validation of results.")
         if not isinstance(results, pd.DataFrame):
             raise TypeError(
@@ -348,10 +346,14 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             raise ValueError(
                 f"Error when running {control}. Could not find {results['kontrollid'].unique()} among registered controls. Valid options retrieved from the 'kontrollutslag' table: {self.controls}"
             )
+
+        # IMPORTANT! This code must not fix the error for the user.
+        # This check exists because it is expected that users mistakenly forget to filter on periods / form type
+        # and that forgetting that filtering WILL cause false positives/negatives. Do not change this validation check.
         for key, value in self.applies_to_subset.items():
             if len(results[key].unique()) != 1:
                 raise ValueError(
-                    f"Results from control {control} has too many unique values for '{key}'. Expected '{value[0]}'. Received: '{results[key].unique()}'"
+                    f"Results from control '{control}' has too many unique values for '{key}'. Expected '{value[0]}'. Received: '{results[key].unique()}'\nYou "
                 )
             if not value[0] == results[key].unique()[0]:
                 raise ValueError(
@@ -438,7 +440,10 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         else:
             specific_control = None
         existing_kontrollutslag = self.get_current_kontrollutslag(specific_control)
-        if existing_kontrollutslag is not None:
+        if existing_kontrollutslag is not None and not existing_kontrollutslag.empty:
+            logger.debug(
+                f"Merging new results with existing results.\nNew:{control_results.shape}\n{control_results.head(10)}\n\nExisting:{existing_kontrollutslag.shape}\n{existing_kontrollutslag.head(10)}"
+            )
             control_results = control_results.merge(
                 existing_kontrollutslag,
                 on=[*self.applies_to_subset.keys(), "kontrollid", "ident", "refnr"],
@@ -452,7 +457,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                         "kontrollid",
                         "ident",
                         "refnr",
-                        "verdi_x",
+                        "verdi_x" if "verdi_x" in control_results.columns else "verdi",
                         "utslag_x",
                     ]
                 ]
@@ -470,8 +475,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             self.conn.insert("kontrollutslag", control_results)
         elif conn_is_ibis(self.conn):
             conn = self.conn
-            k = conn.table("kontrollutslag")  # type: ignore[attr-defined]
-            k.insert(control_results)
+            conn.insert("kontrollutslag", control_results)
         else:
             raise NotImplementedError(
                 f"Connection type '{type(self.conn)}' is currently not implemented."
@@ -494,25 +498,48 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             logger.info("No existing rows found, ending here.")
             return None
         else:
+            logger.debug(
+                f"Merging new results with existing results.\nNew:{control_results.shape}\n{control_results.head(10)}\n\nExisting:{existing_kontrollutslag.shape}\n{existing_kontrollutslag.head(10)}"
+            )
             control_results = control_results.merge(
                 existing_kontrollutslag,
-                on=["kontrollid", "ident", "refnr"],
+                on=[*self.applies_to_subset.keys(), "kontrollid", "ident", "refnr"],
                 how="outer",
                 indicator=True,
-            ).dropna()
+            )
+            logger.debug(f"{control_results}")
+            control_results = control_results.dropna(
+                subset=[col for col in control_results if col != "verdi"]
+            )  # TODO: Check if this causes unexpected behavior.
         if control_results.empty:
+            logger.debug(f"Empty control_results:\n{control_results}")
             raise ValueError(
-                "Combined results from 'control_results' and 'existing_kontrollutslag' is empty."
+                "Combined results from 'control_results' and 'existing_kontrollutslag' is empty when it shouldn't be."
             )
         logger.debug(control_results)
         logger.debug(
             f"Utslag left:\n{control_results['utslag_x'].value_counts()}\nUtslag right:\n{control_results['utslag_y'].value_counts()}"
         )
-        changed = control_results[
+        changed = control_results[  # This might have issues.
             control_results["utslag_x"] != control_results["utslag_y"]
-        ][["kontrollid", "ident", "refnr", "verdi_x", "utslag_x"]].rename(
-            columns={"utslag_x": "utslag", "verdi_x": "verdi"}
+        ][
+            [
+                *self.time_units,
+                "kontrollid",
+                "ident",
+                "refnr",
+                "verdi_x" if "verdi_x" in control_results.columns else "verdi",
+                "utslag_x",
+            ]
+        ].rename(
+            columns={"utslag_x": "utslag"}
         )
+        if "verdi_x" in changed.columns:
+            changed = changed.rename(columns={"verdi_x": "verdi"})
+
+        missing = set(self._required_kontrollutslag_columns) - set(changed.columns)
+        if missing:
+            raise ValueError(f"Missing required columns: {missing}")
         if changed.empty:
             logger.info("No changed rows, ending here.")
             return None

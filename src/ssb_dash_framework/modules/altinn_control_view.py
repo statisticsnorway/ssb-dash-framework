@@ -54,15 +54,19 @@ class ControlView(ABC):
             control_dict: A dictionary with one control class per skjema.
             conn: The eimerdb connection.
             outputs: Variable selector fields to output to. Defaults to ['ident']
+
+        Raises:
+            TypeError: if conn type is not 'EimerDBInstance' or ibis connection.
         """
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
         )
         if outputs is None:
             outputs = ["ident"]
-        assert hasattr(
-            conn, "query"
-        ), "The database connection object must have a 'query' method."
+        if not conn_is_ibis(conn) and not isinstance(conn, EimerDBInstance):
+            raise TypeError(
+                f"Argument 'conn' must be an 'EimerDBInstance' or Ibis backend. Received: {type(conn)}"
+            )
         self.module_number = ControlView._id_number
         self.module_name = self.__class__.__name__
         ControlView._id_number += 1
@@ -172,13 +176,11 @@ class ControlView(ABC):
             Input("var-altinnskjema", "value"),
             self.variableselector.get_all_inputs(),
         )
-        def kontroller_show_selected_controls(skjema: str, *args: Any):
+        def kontroller_show_selected_controls(skjema: str | None, *args: Any):
             logger.debug(f"Args:\nskjema: {skjema}\nargs: {args}")
             partition_args = dict(zip(self.time_units, args, strict=False))
             if partition_args is not None and skjema is not None:
-                valgte_vars = (
-                    f"valgt partisjon: {partition_args}\nvalgt skjema: {skjema}"
-                )
+                valgte_vars = f"valgt partisjon: {partition_args}\nvalgt skjema: {skjema if skjema else 'Velg skjema for å starte'}"
                 return valgte_vars
 
         @callback(
@@ -187,7 +189,9 @@ class ControlView(ABC):
             State("alert_store", "data"),
             prevent_initial_call=True,
         )
-        def alert_user_of_controls(click, alert_store):
+        def alert_user_of_controls(
+            click: int | None, alert_store: list[dict[str, Any]]
+        ) -> list[dict[str, Any]]:
             return [
                 create_alert(
                     "Kjører kontroller, dette kan ta litt tid, du får beskjed når den er ferdig. Ikke klikk på knappen igjen.",
@@ -209,7 +213,11 @@ class ControlView(ABC):
             prevent_initial_call=True,
         )
         def get_kontroller_overview(
-            skjema: str, refresh: int | None, rerun: int | None, alert_store, *args: Any
+            skjema: str,
+            refresh: int | None,
+            rerun: int | None,
+            alert_store: list[dict[str, Any]],
+            *args: Any,
         ):
             logger.debug(
                 f"Args:\n"
@@ -302,7 +310,7 @@ class ControlView(ABC):
             utslag = (
                 kontrollutslag.filter(kontrollutslag.utslag == True)
                 .group_by(kontrollutslag.kontrollid)
-                .aggregate(ant_utslag=kontrollutslag.row_id.count())
+                .aggregate(ant_utslag=ibis._.count())
             )
 
             subq = (
@@ -319,7 +327,7 @@ class ControlView(ABC):
                 )
                 .filter(kontrollutslag.utslag == True)
                 .group_by(kontrollutslag.kontrollid)
-                .aggregate(uediterte=kontrollutslag.row_id.count())
+                .aggregate(uediterte=ibis._.count())
                 .select("kontrollid", "uediterte")
             )
 
