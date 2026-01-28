@@ -287,9 +287,21 @@ class AltinnEditorPrimaryTable:
             click: dict[str, Any], row_data: list[dict[str, Any]]
         ) -> str:
             logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")
-            if not click:
+            
+            if not click or not row_data:
                 raise PreventUpdate
-            return str(row_data[click["rowIndex"]]["variabel"])
+
+            columns = list(row_data[0].keys())
+            
+            long_format = "variabel" in columns and "verdi" in columns
+            if long_format:
+                return str(row_data[click["rowIndex"]]["variabel"])
+            
+            column =  click.get("colId") # wide format
+            if column in ("aar", "ident", "skjema", "refnr", "tabell"):
+                raise PreventUpdate
+
+            return str(column)
 
         @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
