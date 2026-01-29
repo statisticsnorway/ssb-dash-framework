@@ -11,6 +11,8 @@ from typing import Any
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import pandas as pd
+import numpy as np
+from pandas.api import types as pdt
 from dash import callback
 from dash import ctx
 from dash import dcc
@@ -19,6 +21,7 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from pandas.io import parquet
 from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 
 from ..setup.variableselector import VariableSelector
@@ -27,28 +30,28 @@ from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
-
 def check_for_bucket_path(path: str) -> None:
     """Temporary check to make sure users keep to using '/buckets/' paths.
-
+    
     Need to test more with UPath to make sure nothing unexpected happens.
-
-    Args:
-        path: The path to check.
-
-    Raises:
-        NotImplementedError: If path doesn't start with '/buckets/'
     """
     if not path.startswith("/buckets/"):
-        raise NotImplementedError(
-            "Due to differences in how files in '/buckets/...' behave compared to files in the cloud buckets this functionality is currently limited to only work with paths that starts with '/buckets/'."
-        )
-
+        raise NotImplementedError("Due to differences in how files in '/buckets/...' behave compared to files in the cloud buckets this functionality is currently limited to only work with paths that starts with '/buckets'.")
 
 class ParquetEditor:  # TODO add validation of dataframe, workshop argument names
     """Simple module with the sole purpose of editing a parquet file.
 
     Accomplishes this functionality by writing a processlog in a json lines file and recording any edits in this jsonl file.
+
+    Args:
+        statistics_name: The name of the statistic being edited.
+        id_vars: A list of columns that together form a unique identifier for a single row in your data.
+        data_source: The path to the parquet file you want to edit.
+        output: Columns in your dataframe that should be clickable to output to the variable selector panel.
+        output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
+        require_reason: If True (default), a reason and comment are required for each edit.
+                        If False, edits are logged immediately without opening the modal,
+                        using change_event_reason="OTHER" (valid enum) and empty comment.
 
     Example:
         >>> id_variabler = ["orgnr", "aar", "kvartal"]
@@ -71,16 +74,9 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         data_source: str,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
+        require_reason: bool = True,
     ) -> None:
-        """Initializes the module and makes a few validation checks before moving on.
-
-        Args:
-            statistics_name: The name of the statistic being edited.
-            id_vars: A list of columns that together form a unique identifier for a single row in your data.
-            data_source: The path to the parquet file you want to edit.
-            output: Columns in your dataframe that should be clickable to output to the variable selector panel.
-            output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
-        """
+        """Initializes the module and makes a few validation checks before moving on."""
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
@@ -94,6 +90,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         self.statistics_name = statistics_name
         self.output = output
         self.output_varselector_name = output_varselector_name or output
+        self.require_reason = require_reason
         self.user = os.getenv("DAPLA_USER")
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
         self.id_vars = id_vars
@@ -217,8 +214,24 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             ),
             dcc.Store(id=f"{self.module_number}-parqueteditor-table-data-store"),
         ]
+        # Add-row button beneath the table
+        add_row_controls = html.Div(
+            [
+                dbc.Button(
+                    "Legg til rad",
+                    id=f"{self.module_number}-add-row",
+                    color="primary",
+                    className="mt-2",
+                ),
+            ]
+        )
+
         return html.Div(
-            [*reason_modal, dag.AgGrid(id=f"{self.module_number}-parqueteditor-table")]
+            [
+                *reason_modal,
+                dag.AgGrid(id=f"{self.module_number}-parqueteditor-table"),
+                add_row_controls,
+            ]
         )
 
     def layout(self) -> html.Div:
@@ -239,11 +252,12 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
             logger.debug("Getting data for module.")
             data = self.get_data()
+            # Make all columns editable to allow entering id_vars for new rows
             columns = [
                 {
                     "headerName": col,
                     "field": col,
-                    "editable": True if col not in self.id_vars else False,
+                    "editable": True,
                 }
                 for col in data.columns
             ]
@@ -258,19 +272,45 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             Output(f"{self.module_number}-reason-modal", "is_open"),
             Output(f"{self.module_number}-edit-details", "children"),
             Output(f"{self.module_number}-edit-comment", "value"),
+            Output("alert_store", "data", allow_duplicate=True),
             Input(f"{self.module_number}-parqueteditor-table", "cellValueChanged"),
+            State("alert_store", "data"),
             prevent_initial_call=True,
         )
         def capture_edit(
             edited: list[dict[str, Any]],
-        ) -> tuple[dict[str, Any], bool, str, str]:
+            error_log: list[dict[str, Any]],
+        ) -> tuple[dict[str, Any], bool, str, str, list[dict[str, Any]]]:
             if not edited:
                 logger.debug("Raising PreventUpdate")
                 raise PreventUpdate
             logger.info(f"Edited: {edited}")
             edit = edited[0]
             details = f"Column: {edit.get('colId')} | Old: {edit.get('oldValue')} | New: {edit.get('value')}"
-            return edit, True, details, ""
+
+            if not self.require_reason:
+                # Auto-log immediately with a valid enum reason
+                edit["reason"] = "OTHER"
+                edit["comment"] = ""
+                try:
+                    change_to_log = self._build_process_log_entry(edit)
+                    with open(self.log_filepath, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(change_to_log, ensure_ascii=False, default=str) + "\n")
+                    error_log = [
+                        create_alert("Endring logget (uten begrunnelse).", "info", ephemeral=True),
+                        *error_log,
+                    ]
+                except Exception as e:
+                    logger.exception("Failed to auto-log edit when require_reason=False.")
+                    error_log = [
+                        create_alert(f"Kunne ikke logge endringen: {e}", "error", ephemeral=True),
+                        *error_log,
+                    ]
+                # Keep modal closed
+                return edit, False, details, "", error_log
+
+            # Default (require_reason=True): open modal and wait for confirm
+            return edit, True, details, "", error_log
 
         @callback(
             Output(
@@ -304,18 +344,15 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             table_data: list[dict[str, Any]],
             *dynamic_states: Any,
         ) -> tuple[bool, list[dict[str, Any]], list[dict[str, Any]]]:
-            if not (n_clicks or n_submit):
-                logger.debug("Raising PreventUpdate")
+            # Only used when require_reason=True
+            if not self.require_reason:
                 raise PreventUpdate
 
             trigger_id = ctx.triggered_id
-            if (
-                trigger_id
-                not in {  # This check is necessary to make sure it doesn't randomly log the same change a second time.
-                    f"{self.module_number}-confirm-edit",
-                    f"{self.module_number}-edit-comment",
-                }
-            ):
+            if trigger_id not in {
+                f"{self.module_number}-confirm-edit",
+                f"{self.module_number}-edit-comment",
+            }:
                 logger.debug(f"Ignoring callback from {trigger_id}")
                 raise PreventUpdate
 
@@ -338,24 +375,55 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             pending_edit["comment"] = comment
             logger.debug(f"Trying to log change.\nChangedict received: {pending_edit}")
 
-            change_to_log = self._build_process_log_entry(pending_edit)
+            try:
+                change_to_log = self._build_process_log_entry(pending_edit)
+                with open(self.log_filepath, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(change_to_log, ensure_ascii=False, default=str) + "\n")
+                error_log = [
+                    create_alert("Prosesslogg oppdatert!", "info", ephemeral=True),
+                    *error_log,
+                ]
+            except Exception as e:
+                logger.exception("Failed to log confirmed edit.")
+                error_log = [
+                    create_alert(f"Kunne ikke logge endringen: {e}", "error", ephemeral=True),
+                    *error_log,
+                ]
+                # Keep modal open to allow fix
+                return True, error_log, table_data
 
-            logger.debug(f"Record for changelog: {change_to_log}")
-            with open(self.log_filepath, "a", encoding="utf-8") as f:
-                logger.debug("Writing change")
-                f.write(
-                    json.dumps(change_to_log, ensure_ascii=False, default=str) + "\n"
-                )
-                logger.debug("Change written.")
+            # Close modal on success
+            return False, error_log, table_data
+
+        # Add-row callback
+        @callback(
+            Output(f"{self.module_number}-parqueteditor-table", "rowData", allow_duplicate=True),
+            Output(f"{self.module_number}-parqueteditor-table-data-store", "data", allow_duplicate=True),
+            Output("alert_store", "data", allow_duplicate=True),
+            Input(f"{self.module_number}-add-row", "n_clicks"),
+            State(f"{self.module_number}-parqueteditor-table-data-store", "data"),
+            State("alert_store", "data"),
+            prevent_initial_call=True,
+        )
+        def add_row(n_clicks: int, table_data: list[dict[str, Any]] | None, error_log: list[dict[str, Any]]) \
+            -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+            if not n_clicks:
+                raise PreventUpdate
+            if not table_data or len(table_data) == 0:
+                # If the table has not been loaded yet, pull schema from parquet
+                df = self.get_data()
+                cols = list(df.columns)
+            else:
+                cols = list(table_data[0].keys())
+
+            new_row = {col: None for col in cols}
+            updated_data = (table_data or []) + [new_row]
+
             error_log = [
-                create_alert(
-                    "Prosesslogg oppdatert!",
-                    "info",
-                    ephemeral=True,
-                ),
+                create_alert("Ny rad lagt til. Fyll inn verdier og bekreft endringer som vanlig.", "info", ephemeral=True),
                 *error_log,
             ]
-            return False, error_log, table_data
+            return updated_data, updated_data, error_log
 
         if self.output and self.output_varselector_name:
             logger.debug(
@@ -408,19 +476,19 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
                     if clickdata["colId"] != column:
                         logger.debug("Raised PreventUpdate")
                         raise PreventUpdate
-                    output = clickdata["value"]
-                    if not isinstance(output, str):
+                    output_val = clickdata["value"]
+                    if not isinstance(output_val, str):
                         logger.debug(
-                            f"{output} is not a string, is type {type(output)}. Trying to convert to string."
+                            f"{output_val} is not a string, is type {type(output_val)}. Trying to convert to string."
                         )
                         try:
-                            output = str(output)
+                            output_val = str(output_val)
                         except Exception as e:
                             logger.debug(f"Failed to convert to string: {e}")
                             logger.debug("Raised PreventUpdate")
                             raise PreventUpdate from e
-                    logger.debug(f"Transfering {output} to {output_varselector_name}")
-                    return output
+                    logger.debug(f"Transfering {output_val} to {output_varselector_name}")
+                    return output_val
 
             for i in range(len(output_objects)):
                 make_table_to_varselector_connection(
@@ -458,7 +526,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             "data_change_type": "UPD",
             "change_comment": comment.replace(
                 "\n", ""
-            ),  # Not sure what replace does but it was there before.
+            ),
             "change_details": {
                 "detail_type": "unit",
                 "unit_id": unit_id,
@@ -478,6 +546,10 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
 class ParquetEditorChangelog:
     """Simple module with the sole purpose of showing the changes made using ParquetEditor.
 
+    Args:
+        id_vars: A list of columns that together form a unique identifier for a single row in your data.
+        file_path: The path to the parquet file you want to find the changelog for.
+
     Notes:
         The process log is automatically created in the correct folder structure and is named after your parquet file.
     """
@@ -485,12 +557,7 @@ class ParquetEditorChangelog:
     _id_number: int = 0
 
     def __init__(self, id_vars: list[str], file_path: str) -> None:
-        """Initializes the module and makes a few validation checks before moving on.
-
-        Args:
-            id_vars: A list of columns that together form a unique identifier for a single row in your data.
-            file_path: The path to the parquet file you want to find the changelog for.
-        """
+        """Initializes the module and makes a few validation checks before moving on."""
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
@@ -526,7 +593,6 @@ class ParquetEditorChangelog:
             *args: Any,
         ) -> str:
             data = log_as_text(self.log_filepath)
-
             return str(data)
 
     def layout(self) -> html.Div:
@@ -562,7 +628,7 @@ def read_jsonl_log(path: str | Path) -> list[Any]:
     """Reads the jsonl log.
 
     Args:
-        path: The path that leads to the jsonl log.
+        path (str | Path): The path that leads to the jsonl log.
 
     Returns:
         A list where each instance is a line in the jsonl file.
@@ -584,65 +650,160 @@ def read_jsonl_log(path: str | Path) -> list[Any]:
     return all_data
 
 
+def _typed_missing_for_col(series: pd.Series):
+    """Return a dtype-appropriate missing value for the given series."""
+    dtype = series.dtype
+    if pdt.is_integer_dtype(dtype):
+        return pd.NA
+    if pdt.is_float_dtype(dtype):
+        return np.nan
+    if pdt.is_bool_dtype(dtype):
+        return pd.NA
+    if pdt.is_datetime64_any_dtype(dtype):
+        return pd.NaT
+    return None
+
+
 def _match_dtype(
     data_to_change: pd.DataFrame, column: str, value_to_change: Any
 ) -> Any | None:
-    # Change the dtype to match the column dtype
-    if value_to_change == "None":
-        return None
+    """Cast or coerce the provided value to match the column dtype.
+
+    - Strings like "40" will become int/float/bool/datetime where appropriate.
+    - "None", empty string, "nan"/"NA", or None become dtype-appropriate missing values.
+    """
+    # Handle missing representations
+    if isinstance(value_to_change, str):
+        if value_to_change.strip().lower() in {"", "none", "nan", "na"}:
+            return _typed_missing_for_col(data_to_change[column])
+    if value_to_change in (None,):
+        return _typed_missing_for_col(data_to_change[column])
+
     col_dtype = data_to_change[column].dtype
-    return col_dtype.type(value_to_change)
+    text = str(value_to_change)
+
+    try:
+        if pdt.is_integer_dtype(col_dtype):
+            # Convert to Python int; assignment will work with nullable Int64 later
+            return int(text)
+        if pdt.is_float_dtype(col_dtype):
+            return float(text)
+        if pdt.is_bool_dtype(col_dtype):
+            low = text.lower()
+            if low in ("true", "1", "yes"):
+                return True
+            if low in ("false", "0", "no"):
+                return False
+            return _typed_missing_for_col(data_to_change[column])
+        if pdt.is_datetime64_any_dtype(col_dtype):
+            return pd.to_datetime(text, errors="coerce")
+        # Fallback for object/string columns
+        return value_to_change
+    except Exception:
+        # On any conversion failure, return a missing value appropriate for the dtype
+        return _typed_missing_for_col(data_to_change[column])
 
 
 def _apply_change_detail(
     data_to_change: pd.DataFrame, change: dict[str, Any]
 ) -> pd.DataFrame:
-    """Apply a single jsonl row change to the dataframe."""
-    mask = pd.Series([True] * len(data_to_change))
-    for cond in change["unit_id"]:
-        col = cond["unit_id_variable"]
-        val = cond["unit_id_value"]
-        mask &= data_to_change[col].astype(str) == str(val)
+    """Apply a single jsonl row change to the dataframe.
 
-    num_matches = mask.sum()
-    if num_matches == 0:
-        raise ValueError("No rows match the specified unit_id. Cannot apply change.")
+    Supports updates and implicit inserts:
+    - Try match with new snapshot of unit_id.
+    - If no match, try with old value for the edited column.
+    - If still no match and old_value is missing, insert a new row with unit_id typed.
+    """
+    unit_ids = change["unit_id"]
 
-    if num_matches > 1:
-        raise ValueError(
-            f"Unit_id is not unique: expected 1 row, found {num_matches} rows."
-        )
-
-    # The below might need to be a loop to account for bulk edits.
+    # Edited variable + typed values
     old_var = change["old_value"][0]["variable_name"]
     old_val = _match_dtype(data_to_change, old_var, change["old_value"][0]["value"])
     new_val = _match_dtype(data_to_change, old_var, change["new_value"][0]["value"])
 
-    if not (data_to_change.loc[mask, old_var] == old_val).all():
-        found_val = data_to_change.loc[mask, old_var].iloc[0]
-        if old_val is not None:
+    def build_mask(use_old_for_oldvar: bool) -> pd.Series:
+        mask = pd.Series([True] * len(data_to_change))
+        for cond in unit_ids:
+            col = cond["unit_id_variable"]
+            val = cond["unit_id_value"]
+            match_val = _match_dtype(
+                data_to_change,
+                col,
+                (old_val if use_old_for_oldvar and col == old_var else val),
+            )
+            # Treat any NA-like value (np.nan, pd.NA, None, pd.NaT) as missing
+            if pd.isna(match_val):
+                mask &= data_to_change[col].isna()
+            else:
+                mask &= data_to_change[col] == match_val
+        return mask
+
+    # Match with new-snapshot
+    mask_new = build_mask(use_old_for_oldvar=False)
+    num_new = int(mask_new.sum())
+    target_mask: pd.Series | None = None
+
+    if num_new == 0:
+        # Try matching with old value for edited column
+        mask_old = build_mask(use_old_for_oldvar=True)
+        num_old = int(mask_old.sum())
+        if num_old == 1:
+            target_mask = mask_old
+        elif num_old > 1:
+            raise ValueError(
+                f"Unit_id is not unique when matching with old value for '{old_var}'. Found {num_old} rows."
+            )
+        else:
+            # No match with either snapshot -> possible insert if old_val is missing
+            if pd.isna(old_val):
+                # Build a new row with dtype-appropriate missing values
+                new_row = {
+                    col: _typed_missing_for_col(data_to_change[col])
+                    for col in data_to_change.columns
+                }
+                # Fill unit_id values (typed)
+                for cond in unit_ids:
+                    uid_col = cond["unit_id_variable"]
+                    uid_val = _match_dtype(data_to_change, uid_col, cond["unit_id_value"])
+                    new_row[uid_col] = uid_val
+                # Set the edited column's new value
+                new_row[old_var] = new_val
+                # Append
+                data_to_change = pd.concat(
+                    [data_to_change, pd.DataFrame([new_row])], ignore_index=True
+                )
+                return data_to_change
+            else:
+                raise ValueError("No rows match the specified unit_id. Cannot apply change.")
+    elif num_new > 1:
+        raise ValueError(
+            f"Unit_id is not unique using new-snapshot values. Found {num_new} rows."
+        )
+    else:
+        target_mask = mask_new
+
+    # UPDATE CASE on matched row
+    # Only enforce old-value match when old_val is not missing
+    if not pd.isna(old_val):
+        if not (data_to_change.loc[target_mask, old_var] == old_val).all():
+            found_val = data_to_change.loc[target_mask, old_var].iloc[0]
             raise ValueError(
                 f"Old value mismatch: expected {old_val}, but found {found_val}."
             )
 
-    if old_val is None:
-        check_mask = mask & (data_to_change[old_var].isna())
+    # Assign new value
+    if pd.isna(old_val):
+        check_mask = target_mask & data_to_change[old_var].isna()
     else:
-        check_mask = mask & (data_to_change[old_var] == old_val)
+        check_mask = target_mask & (data_to_change[old_var] == old_val)
 
     data_to_change.loc[check_mask, old_var] = new_val
     return data_to_change
 
 
 def read_jsonl_file_to_string(file_path: str | Path) -> str:
-    """Reads a JSONL file and returns its contents as a single string.
-
-    If the file does not exists an empty string is returned.
-    """
+    """Reads a JSONL file and returns its contents as a single string."""
     file_path = Path(file_path)
-    if not file_path.exists():
-        logger.warning(f"No file found at {file_path!s}, returning empty string")
-        return ""
     with file_path.open("r", encoding="utf-8") as f:
         return f.read()
 
@@ -677,18 +838,8 @@ def log_as_text(file_path: str | Path) -> str:
 
 
 def _raise_if_duplicates(df: pd.DataFrame, subset: set[str] | list[str]) -> None:
-    """Raises a ValueError if duplicates exist on the given subset of columns.
-
-    Args:
-        df: The dataframe to check.
-        subset: Column(s) to consider for duplicate detection.
-
-    Raises:
-        ValueError: If there are duplicates based on the id_vars specified in the jsonl log.
-    """
-    subset = list(subset)
+    """Raises a ValueError if duplicates exist on the given subset of columns."""
     dupes = df.duplicated(subset=subset, keep=False)
-
     if dupes.any():
         duplicate_rows = df[dupes]
         raise ValueError(
@@ -696,11 +847,45 @@ def _raise_if_duplicates(df: pd.DataFrame, subset: set[str] | list[str]) -> None
         )
 
 
+def _harmonize_dtypes(edited_df: pd.DataFrame, reference_df: pd.DataFrame) -> pd.DataFrame:
+    """Coerce edited_df column dtypes to match reference_df schema.
+
+    - Integer columns -> numeric then pandas nullable Int64 (supports NA).
+    - Float columns -> numeric float dtype.
+    - Boolean columns -> pandas 'boolean' dtype.
+    - Datetime columns -> to_datetime (coerce).
+    - Others left as-is.
+    """
+    df = edited_df.copy()
+    for col in df.columns:
+        ref_dtype = reference_df[col].dtype if col in reference_df.columns else df[col].dtype
+        try:
+            if pdt.is_integer_dtype(ref_dtype):
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+                df[col] = df[col].astype("Int64")
+            elif pdt.is_float_dtype(ref_dtype):
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+                df[col] = df[col].astype(ref_dtype)
+            elif pdt.is_bool_dtype(ref_dtype):
+                # Cast to pandas nullable boolean
+                df[col] = df[col].astype("boolean")
+            elif pdt.is_datetime64_any_dtype(ref_dtype):
+                df[col] = pd.to_datetime(df[col], errors="coerce")
+            else:
+                # Leave object/string columns as-is
+                pass
+        except Exception as e:
+            logger.warning(f"Failed to harmonize dtype for column '{col}': {e}")
+            # leave column unchanged if coercion fails
+            continue
+    return df
+
+
 def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     """Applies edits from the jsonl log to a parquet file.
 
     Args:
-        parquet_path: The file path for the parquet file.
+        parquet_path (str): The file path for the parquet file.
 
     Returns:
         A pd.DataFrame with updated data.
@@ -709,7 +894,11 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     log_path = get_log_path(parquet_path)
     logger.debug(f"log_path: {log_path}")
     processlog = read_jsonl_log(log_path)
-    data = pd.read_parquet(processlog[0]["data_source"][0])
+
+    # Load original and keep a copy of the reference schema
+    original = pd.read_parquet(processlog[0]["data_source"][0])
+    data = original.copy()
+
     id_vars = set()
     for line in processlog:
         for id_var in [
@@ -718,6 +907,10 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
         ]:
             id_vars.add(id_var)
         data = _apply_change_detail(data, line["change_details"])
+
+    # Harmonize dtypes to original schema to avoid ArrowInvalid on export
+    data = _harmonize_dtypes(data, original)
+
     logger.debug(f"id_vars deduced from processlog: {id_vars}")
     _raise_if_duplicates(data, id_vars)
     return data
@@ -770,12 +963,14 @@ def export_from_parqueteditor(
         raise FileNotFoundError(
             f"Process log not found at '{log_path}'. No edits have been recorded for '{data_source}'."
         )
+
     data_target_path = Path(data_target)
     if data_target_path.exists() and not force_overwrite:
         raise FileExistsError(
             f"Target parquet file '{data_target}' already exists. "
             "Use force_overwrite=True to overwrite."
         )
+
     updated_data = apply_edits(data_source)
     updated_data.to_parquet(data_target)
     print(
