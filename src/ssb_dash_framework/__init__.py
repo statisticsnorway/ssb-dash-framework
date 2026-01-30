@@ -60,6 +60,7 @@ from .modules import VisualizationBuilder
 from .modules import VisualizationBuilderWindow
 from .modules import apply_edits
 from .modules import export_from_parqueteditor
+from .modules import get_export_log_path
 from .modules import get_log_path
 from .setup import VariableSelector
 from .setup import VariableSelectorOption
@@ -165,6 +166,7 @@ __all__ = [
     "create_database_engine",
     "enable_app_logging",
     "export_from_parqueteditor",
+    "get_export_log_path",
     "get_log_path",
     "ibis_filter_with_dict",
     "main_layout",
