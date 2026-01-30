@@ -62,6 +62,14 @@ def parquet_with_log(tmp_path):
     return str(data_source), str(data_target), bucket_root
 
 
+def test_get_log_path():
+    cases = {  # Key should be input, values should be expected output.
+        "/buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/inndata/temp/parqueteditor/test_p2024_v1.jsonl"
+    }
+    for given_input, expected in cases.items():
+        assert get_log_path(given_input) == expected
+
+
 def test_changelog_creation_success(monkeypatch) -> None:
     os.environ["DAPLA_USER"] = "TEST"
     set_variables(["aar", "orgnr"])
