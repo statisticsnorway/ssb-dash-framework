@@ -10,5 +10,7 @@ def test_import_freesearch() -> None:
 
 
 def test_instantiation(ibis_polars_conn) -> None:
-    FreeSearchTab(database=ibis_polars_conn)
-    FreeSearchWindow(database=ibis_polars_conn)
+    FreeSearchTab()
+    FreeSearchWindow()
+    FreeSearchTab(conn=ibis_polars_conn)
+    FreeSearchWindow(conn=ibis_polars_conn)
