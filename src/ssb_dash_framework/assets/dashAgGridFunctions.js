@@ -155,10 +155,11 @@ window.dashAgGridFunctions.MacroModule = {
 
     // === Function displayDiffHighlight (Compare current cell's value to previous year, highlight if different) ===
     displayDiffHighlight(props) {
-    const field = props.colDef.field;
-    const value = props.value;
 
     if (!props.data) return {};
+
+    const field = props.colDef.field;
+    const value = props.value;
 
     const normalize = (v) =>
         v !== null && v !== undefined ? String(v).trim() : "";
@@ -188,14 +189,6 @@ window.dashAgGridFunctions.MacroModule = {
         }
 
         return {}; // no change
-    }
-
-    // all other columns
-    if (field.endsWith("_x")) {
-        return {
-            backgroundColor: '#e8e9eb',
-            color: 'black'
-        };
     }
 
     const prevField = field + "_x";
@@ -228,6 +221,40 @@ window.dashAgGridFunctions.MacroModule = {
         const prefixF = String(naringF).substring(0, 2);
 
         return prefixB !== prefixF;
+    },
+
+    // === Function displayDiffColumnHighlight (Mark tilgang & avgang on the diff-column) ===
+    displayDiffColumnHighlight(props) {
+        if (!props.data) return {};
+
+        const field = props.colDef.field;
+
+        const isDiffColumn = field.endsWith("_diff");
+        const isExitHighlightField =
+            (field === "orgnr_b" || field === "navn") &&
+            props.data.is_avgang &&
+            props.data.is_exiter;
+
+        // Guard: only apply to allowed columns
+        if (!isDiffColumn && !isExitHighlightField) return {};
+
+        // tilgang (still only for diff columns)
+        if (isDiffColumn && props.data.is_tilgang) {
+            return {
+                backgroundColor: "#c7f5c7",
+                color: "black",
+            };
+        }
+
+        // avgang (diff columns OR exiter name/orgnr)
+        if (props.data.is_avgang) {
+            return {
+                backgroundColor: "#ffc7c7",
+                color: "black",
+            };
+        }
+
+        return {};
     }
 
 };
