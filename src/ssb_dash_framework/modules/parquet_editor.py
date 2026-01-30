@@ -137,6 +137,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             logger.debug("Reading file, no edits to apply.")
             df = pd.read_parquet(self.file_path)
         _raise_if_duplicates(df, self.id_vars)
+        _raise_if_index_wrong(df)
         return df
 
     def _create_layout(self) -> html.Div:
@@ -696,6 +697,21 @@ def _raise_if_duplicates(df: pd.DataFrame, subset: set[str] | list[str]) -> None
         )
 
 
+def _raise_if_index_wrong(df: pd.DataFrame) -> None:
+    """Raises a ValueError if reset_index(drop=True) needs to be run on dataframe to prevent errors.
+
+    Args:
+        df: The dataframe to check.
+
+    Raises:
+        ValueError: If resetting the index would change the index.
+    """
+    if not df.index.equals(df.reset_index(drop=True).index):
+        raise ValueError(
+            "In order for ParquetEditor to be able to correctly apply updates to your dataset, you need to reset your dataframe index. Try df = df.reset_index(drop=True)."
+        )
+
+
 def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     """Applies edits from the jsonl log to a parquet file.
 
@@ -720,6 +736,7 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
         data = _apply_change_detail(data, line["change_details"])
     logger.debug(f"id_vars deduced from processlog: {id_vars}")
     _raise_if_duplicates(data, id_vars)
+    _raise_if_index_wrong(data)
     return data
 
 
