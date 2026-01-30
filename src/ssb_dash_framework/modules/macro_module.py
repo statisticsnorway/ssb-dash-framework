@@ -1162,8 +1162,6 @@ class MacroModule:
 
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
-            Output("var-foretak", "value"),
-            Output("var-bedrift", "value"),
             Output("altinnedit-option1", "value"),
             Input("macromodule-detail-grid", "cellClicked"),
             State("macromodule-detail-grid", "rowData"),
@@ -1171,7 +1169,7 @@ class MacroModule:
         )
         def output_to_variabelvelger(
             clickdata: dict | None, rowdata: list[dict[str, Any]]
-        ) -> tuple[str, str, str, str]:
+        ) -> tuple[str, str]:
             """Handle cell clicks in detail grid and update variable selector in the Dash app."""
             if not clickdata:
                 raise PreventUpdate
@@ -1179,7 +1177,7 @@ class MacroModule:
             row_id = clickdata.get("rowId")
             col_id = clickdata.get("colId")
 
-            if row_id is None:
+            if row_id is None or col_id not in ("orgnr_f", "orgnr_b", "navn"):
                 raise PreventUpdate
 
             row_idx = int(row_id)
@@ -1187,24 +1185,17 @@ class MacroModule:
                 raise PreventUpdate
 
             clicked_row = rowdata[row_idx]
-            ident = clicked_row.get("orgnr_f", "")
-            foretak = ident
 
             if col_id in ("orgnr_f", "navn"):
-                bedrift = ""
+                ident = clicked_row.get("orgnr_f", "")
                 tabell = "skjemadata_foretak"
             elif col_id == "orgnr_b":
-                bedrift = clicked_row.get("orgnr_b", "")
+                ident = clicked_row.get("orgnr_b", "")
                 tabell = "skjemadata_bedriftstabell"
             else:
                 raise PreventUpdate
 
-            ident = str(ident) if ident else ""
-            foretak = str(foretak) if foretak else ""
-            bedrift = str(bedrift) if bedrift else ""
-            tabell = str(tabell) if tabell else ""
-
-            return ident, foretak, bedrift, tabell
+            return str(ident) if ident else "", str(tabell) if tabell else ""
 
 
 class MacroModuleTab(TabImplementation, MacroModule):
