@@ -740,6 +740,21 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     return data
 
 
+def get_export_log_path(target_path: Path) -> Path:
+    """Derive the correct path to save the exported log file to.
+
+    Args:
+        target_path: The path where the exported data is to be written to.
+
+    Returns:
+        The correct path to save the processlog.
+    """
+    bucket_root = target_path.parents[1]
+    relative = target_path.relative_to(bucket_root).with_suffix(".jsonl")
+
+    return bucket_root / "logg" / "prosessdata" / relative
+
+
 def export_from_parqueteditor(
     data_source: str, data_target: str, force_overwrite: bool = False
 ) -> None:
@@ -767,10 +782,7 @@ def export_from_parqueteditor(
         for entry in processlog:
             if entry.get("data_target") == "data_target_placeholder":
                 entry["data_target"] = data_target
-        data_path = Path(data_target)
-        bucket_root = data_path.parents[1]
-        relative = data_path.relative_to(bucket_root).with_suffix(".jsonl")
-        export_log_path = bucket_root / "logg" / "prosessdata" / relative
+        export_log_path = get_export_log_path(Path(data_target))
         export_log_path.parent.mkdir(parents=True, exist_ok=True)
         logger.debug(f"export_log_path:\n{export_log_path}")
         Path(data_target).parent.mkdir(parents=True, exist_ok=True)

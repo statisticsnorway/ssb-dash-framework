@@ -8,6 +8,7 @@ from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 
 from ssb_dash_framework import ParquetEditor
 from ssb_dash_framework import export_from_parqueteditor
+from ssb_dash_framework import get_export_log_path
 from ssb_dash_framework import get_log_path
 from ssb_dash_framework import set_variables
 
@@ -64,10 +65,20 @@ def parquet_with_log(tmp_path):
 
 def test_get_log_path():
     cases = {  # Key should be input, values should be expected output.
-        "/buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/inndata/temp/parqueteditor/test_p2024_v1.jsonl"
+        "/buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/inndata/temp/parqueteditor/test_p2024_v1.jsonl",
+        "/buckets/produkt/editering-eksempel/inndata/temp/test_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/inndata/temp/parqueteditor/temp/test_p2024_v1.jsonl",
     }
     for given_input, expected in cases.items():
         assert get_log_path(given_input) == expected
+
+
+def test_get_export_log_path():
+    cases = {  # Key should be input, values should be expected output.
+        "/buckets/produkt/editering-eksempel/klargjorte-data/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/klargjorte-data/editert_p2024_v1.jsonl",
+        "/buckets/produkt/editering-eksempel/klargjorte-data/temp/subfolder/another_subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/klargjorte-data/temp/subfolder/another_subfolder/editert_p2024_v1.parquet",
+    }
+    for given_input, expected in cases.items():
+        assert get_export_log_path(Path(given_input)) == expected
 
 
 def test_changelog_creation_success(monkeypatch) -> None:
