@@ -16,6 +16,7 @@ from dash.exceptions import PreventUpdate
 
 from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
+from ..utils.config_tools import get_connection
 from ..utils.core_query_functions import ibis_filter_with_dict
 from ..utils.functions import get_config_path
 from ..utils.implementations import TabImplementation
@@ -41,14 +42,14 @@ class Bedriftstabell(ABC):
     def __init__(
         self,
         table_name,
-        conn,
+        conn: object | None = None,
     ):
         self.module_number = Bedriftstabell._id_number
         self.module_name = self.__class__.__name__
         Bedriftstabell._id_number += 1
         self.icon = "?"
         self.label = "Bedriftstabell"
-        self.conn = conn
+        self.conn = conn if conn else get_connection()
         self.variableselector = VariableSelector(
             selected_inputs=["altinnskjema", "ident"],
             selected_states=["aar"],
