@@ -75,6 +75,7 @@ def test_get_log_path():
 def test_get_export_log_path():
     cases = {  # Key should be input, values should be expected output.
         "/buckets/produkt/editering-eksempel/klargjorte-data/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/klargjorte-data/editert_p2024_v1.jsonl",
+        "/buckets/produkt/editering-eksempel/klargjorte-data/temp/subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/klargjorte-data/temp/subfolder/editert_p2024_v1.parquet",
         "/buckets/produkt/editering-eksempel/klargjorte-data/temp/subfolder/another_subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/klargjorte-data/temp/subfolder/another_subfolder/editert_p2024_v1.parquet",
     }
     for given_input, expected in cases.items():
