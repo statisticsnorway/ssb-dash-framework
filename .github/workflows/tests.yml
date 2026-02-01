@@ -45,7 +45,7 @@ jobs:
           git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Set up Python ${{ matrix.python }}
-        uses: actions/setup-python@v6.1.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python }}
 
@@ -104,7 +104,7 @@ jobs:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Set up Python
-        uses: actions/setup-python@v6.1.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.11"
 
