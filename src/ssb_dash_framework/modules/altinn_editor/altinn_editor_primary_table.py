@@ -119,18 +119,32 @@ class AltinnEditorPrimaryTable:
     def module_callbacks(self) -> None:
         """Defines the callbacks for the module."""
 
+        # check if var-bedrift exists
+        try:
+            self.variableselector.get_option("var-bedrift", search_target="id")
+            has_bedrift = True
+        except ValueError:
+            has_bedrift = False
+            logger.debug("var-bedrift not available, skipping bedrift sorting")
+
         @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemadata", "rowData", allow_duplicate=True),
             Output("altinnedit-table-skjemadata", "columnDefs", allow_duplicate=True),
             Input("altinnedit-refnr", "value"),
             Input("altinnedit-option1", "value"),
+            Input("var-ident", "value"),
             State("altinnedit-skjemaer", "value"),
+            State("var-bedrift", "value") if has_bedrift else State("altinnedit-refnr", "value"),  # Dummy state if no bedrift
             self.variableselector.get_all_states(),
             prevent_initial_call=True,
         )
         def hovedside_update_altinnskjema(
-            refnr: str, tabell: str, skjema: str, *args: Any
+            refnr: str, tabell: str, ident: str, skjema: str, bedrift_or_dummy: str, *args: Any
         ) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
+
+            # extract bedrift if it exists
+            bedrift = bedrift_or_dummy if has_bedrift else None
+
             logger.debug(
                 f"Args:\n"
                 f"refnr: {refnr}\n"
@@ -182,9 +196,20 @@ class AltinnEditorPrimaryTable:
                     t = (
                         t.filter(_.refnr == refnr)
                         .join(d, "variabel", how="left")
-                        .order_by(_.radnr)
                     )
                     t = t.filter(ibis_filter_with_dict(filter_dict))
+
+                    # sort by bedrift if available
+                    if bedrift and "ident" in t.columns:
+                        t = t.mutate(
+                            sort_priority=ibis.case()
+                            .when(_.ident == bedrift, 0)
+                            .else_(1)
+                            .end()
+                        ).order_by(["sort_priority", _.radnr])
+                    else:
+                        t = t.order_by(_.radnr)
+
                     df = t.drop(
                         [col for col in t.columns if col.endswith("_right")]
                         + ["datatype", "radnr", "tabell"]
@@ -225,6 +250,13 @@ class AltinnEditorPrimaryTable:
                         .to_pandas()
                     )
 
+                    # sort by bedrift if it exists
+                    if bedrift and "ident" in df.columns:
+                        df = df.sort_values(
+                            by="ident",
+                            key=lambda x: x.map(lambda v: 0 if v == bedrift else 1)
+                        )
+
                     columndefs = [
                         {
                             "headerName": col,
@@ -248,35 +280,6 @@ class AltinnEditorPrimaryTable:
                         exc_info=True,
                     )
                     return None, None
-
-        try:  # TODO Find better solution to sort - config file?
-            self.variableselector.get_option("var-bedrift", search_target="id")
-
-            @callback(
-                Output("altinnedit-table-skjemadata", "rowData"),
-                Output("altinnedit-table-skjemadata", "columnDefs"),
-                Input("altinnedit-table-skjemadata", "rowData"),
-                Input("altinnedit-table-skjemadata", "columnDefs"),
-                State("var-bedrift", "value"),
-                prevent_initial_call=True,
-            )
-            def sort_by_bedrift(
-                row_data: list[dict[str, Any]],
-                column_defs: list[dict[str, Any]],
-                bedrift: str,
-            ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-                """Sort table to prioritize selected bedrift."""
-                if not bedrift or not row_data:
-                    return row_data, column_defs
-
-                sorted_data = sorted(
-                    row_data, key=lambda row: 0 if row.get("ident") == bedrift else 1
-                )
-
-                return sorted_data, column_defs
-
-        except ValueError:
-            logger.debug("var-bedrift not available, skipping bedrift sorting callback")
 
         @callback(  # type: ignore[misc]
             Output("var-statistikkvariabel", "value"),
