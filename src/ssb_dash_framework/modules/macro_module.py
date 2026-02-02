@@ -26,7 +26,6 @@ from ..utils.module_validation import module_validator
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
-# Variables used in the heatmap-grid
 HEATMAP_VARIABLES: dict[str, str] = {
     "omsetning": "omsetning",
     "ts_forbruk": "forbruk",
@@ -767,8 +766,7 @@ class MacroModule:
             if macro_level != "sammensatte variabler":
 
                 assert isinstance(macro_level, str)
-
-                # Apply macro-level column and filter
+                
                 col_length: int = MACRO_FILTER_OPTIONS[macro_level]
                 t_curr_filtered = t_curr_filtered.mutate(
                     **{
@@ -819,7 +817,6 @@ class MacroModule:
             t = t.semi_join(units_all, ["orgnr_foretak"])
             t_1 = t_1.semi_join(units_all, ["orgnr_foretak"])
 
-            # Continue with select_cols and rest of the logic...
             select_cols = [
                 "navn",
                 "orgnr_foretak",
@@ -840,7 +837,6 @@ class MacroModule:
             t = t.select([c for c in select_cols if c in t.columns])
             t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
 
-            # Rename columns based on foretak/bedrift
             if foretak_or_bedrift == "foretak":
                 rename_mapping = {
                     "naring_f": "naring",
@@ -866,14 +862,12 @@ class MacroModule:
             t = t.rename(**rename_mapping)
             t_1 = t_1.rename(**rename_mapping)
 
-            # Cast numerics to float
             for col in HEATMAP_VARIABLES.keys():
                 if col in t.columns:
                     t = t.mutate(**{col: t[col].cast("float64")})
                 if col in t_1.columns:
                     t_1 = t_1.mutate(**{col: t_1[col].cast("float64")})
 
-            # Execute to DataFrames
             t_curr = t.filter(t.aar == str(aar))
             t_prev = t_1.filter(t_1.aar == str(aar - 1))
 
@@ -895,19 +889,17 @@ class MacroModule:
 
             merged_df["is_new"] = (
                 merged_df["_merge"] == "left_only"
-            )  # Only in current year
+            )
             merged_df["is_exiter"] = (
                 merged_df["_merge"] == "right_only"
-            )  # Only in previous year
+            )
 
-            # For exiters, fill in key identifying columns from previous year
+            # for exiters, fill in key identifying columns from previous year
             if "navn" in merged_df.columns and "navn_x" in merged_df.columns:
                 merged_df["navn"] = merged_df["navn"].fillna(merged_df["navn_x"])
-
-            # drop the merge indicator column
             merged_df = merged_df.drop(columns=["_merge"])
 
-            # Check if nace prefix changed (at selected siffer level)
+            # 2-siffer nace changes?
             if (
                 naring_col in merged_df.columns
                 and f"{naring_col}_x" in merged_df.columns
@@ -919,21 +911,18 @@ class MacroModule:
                     merged_df[f"{naring_col}_x"].astype(str).str[:nace_siffer_level]
                 )
 
-                # Unit entered this nace bucket (was in different nace last year)
-                merged_df["is_nace_entrant"] = (
+                merged_df["is_nace_entrant"] = ( # different nace LAST year
                     ~merged_df["is_new"]
                     & (merged_df["nace_prefix_curr"] == selected_nace)
                     & (merged_df["nace_prefix_prev"] != selected_nace)
                 )
 
-                # Unit exited this nace bucket (is in different nace this year)
-                merged_df["is_nace_exiter"] = (
+                merged_df["is_nace_exiter"] = ( # different nace THIS year
                     ~merged_df["is_exiter"]
                     & (merged_df["nace_prefix_prev"] == selected_nace)
                     & (merged_df["nace_prefix_curr"] != selected_nace)
                 )
 
-                # Nace stayed the same
                 merged_df["nace_same"] = (
                     merged_df["nace_prefix_curr"] == merged_df["nace_prefix_prev"]
                 ).fillna(False)
@@ -944,7 +933,7 @@ class MacroModule:
                 )
                 merged_df = merged_df[mask]
 
-            # === Kommune/Fylke change flags ===
+            # kommune/fylke change flags
             if macro_level in ("fylke", "kommune"):
 
                 if (
@@ -958,12 +947,9 @@ class MacroModule:
                         merged_df[f"{kommune_col}_x"].astype(str).str[:col_length]
                     )
 
-                    # Unit is currently in selected bucket
                     merged_df["in_bucket_curr"] = (
                         merged_df["macro_prefix_curr"] == selected_filter_val
                     ).fillna(False)
-
-                    # Unit was in selected bucket last year
                     merged_df["in_bucket_prev"] = (
                         merged_df["macro_prefix_prev"] == selected_filter_val
                     ).fillna(False)
@@ -972,21 +958,17 @@ class MacroModule:
                     mask = merged_df["in_bucket_curr"] | merged_df["in_bucket_prev"]
                     merged_df = merged_df[mask]
 
-                    # Unit entered this macro bucket
                     merged_df["is_macro_entrant"] = (
                         ~merged_df["is_new"]
                         & merged_df["in_bucket_curr"]
                         & ~merged_df["in_bucket_prev"]
                     )
-
-                    # Unit exited this macro bucket
                     merged_df["is_macro_exiter"] = (
                         ~merged_df["is_exiter"]
                         & merged_df["in_bucket_prev"]
                         & ~merged_df["in_bucket_curr"]
                     )
             else:
-                # For "sammensatte variabler" - everyone is in bucket
                 merged_df["in_bucket_curr"] = True
                 merged_df["in_bucket_prev"] = True
                 merged_df["is_macro_entrant"] = False
@@ -1007,27 +989,21 @@ class MacroModule:
                         str
                     )
 
-            # calculate diff
+            # adjust values for current and previous contributors and then calculate diff accordingly
             if valgt_variabel in df.columns and f"{valgt_variabel}_x" in df.columns:
 
-                # Use the flags we created earlier for cleaner logic
-                # A unit contributes to the current bucket if:
-                # 1. It exists this year AND is in the bucket this year AND is in the correct nace
                 current_contributes = (
                     ~df["is_exiter"]
                     & df["in_bucket_curr"]
                     & (df["nace_prefix_curr"] == selected_nace)
                 )
 
-                # A unit contributed to the previous bucket if:
-                # 1. It existed last year AND was in the bucket last year AND was in the correct nace
                 prev_contributes = (
                     ~df["is_new"]
                     & df["in_bucket_prev"]
                     & (df["nace_prefix_prev"] == selected_nace)
                 )
 
-                # Calculate adjusted values (0 if not contributing to bucket)
                 current_value_adjusted = (
                     df[valgt_variabel].where(current_contributes, other=0).fillna(0)
                 )
@@ -1035,7 +1011,6 @@ class MacroModule:
                     df[f"{valgt_variabel}_x"].where(prev_contributes, other=0).fillna(0)
                 )
 
-                # Calculate diff for sorting
                 df[f"{valgt_variabel}_diff"] = (
                     current_value_adjusted - prev_value_adjusted
                 )
@@ -1162,6 +1137,7 @@ class MacroModule:
 
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
+            Output("var-bedrift", "value", allow_duplicate=True),
             Output("altinnedit-option1", "value"),
             Input("macromodule-detail-grid", "cellClicked"),
             State("macromodule-detail-grid", "rowData"),
@@ -1169,7 +1145,7 @@ class MacroModule:
         )
         def output_to_variabelvelger(
             clickdata: dict | None, rowdata: list[dict[str, Any]]
-        ) -> tuple[str, str]:
+        ) -> tuple[str, str, str]:
             """Handle cell clicks in detail grid and update variable selector in the Dash app."""
             if not clickdata:
                 raise PreventUpdate
@@ -1185,17 +1161,19 @@ class MacroModule:
                 raise PreventUpdate
 
             clicked_row = rowdata[row_idx]
-
+            bedrift = ""
+            
             if col_id in ("orgnr_f", "navn"):
-                ident = clicked_row.get("orgnr_f", "")
                 tabell = "skjemadata_foretak"
             elif col_id == "orgnr_b":
-                ident = clicked_row.get("orgnr_b", "")
+                bedrift = clicked_row.get("orgnr_b", "")
                 tabell = "skjemadata_bedriftstabell"
             else:
                 raise PreventUpdate
 
-            return str(ident) if ident else "", str(tabell) if tabell else ""
+            ident = clicked_row.get("orgnr_f", "")
+
+            return str(ident) if ident else "", str(bedrift) if bedrift else "", str(tabell) if tabell else ""
 
 
 class MacroModuleTab(TabImplementation, MacroModule):
