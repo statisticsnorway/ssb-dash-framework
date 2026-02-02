@@ -158,10 +158,7 @@ class AltinnEditorHistory:
                 if conn_is_ibis(self.conn):
                     conn = self.conn
                     t = conn.table("skjemadataendringshistorikk")
-                    df = (
-                        t.filter(_.refnr == refnr)
-                        .to_pandas()
-                    )
+                    df = t.filter(_.refnr == refnr).to_pandas()
                     df["endret_tid"] = (
                         pd.to_datetime(df["endret_tid"], utc=True)
                         .dt.tz_convert(local_tz)

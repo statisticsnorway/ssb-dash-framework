@@ -134,12 +134,21 @@ class AltinnEditorPrimaryTable:
             Input("altinnedit-option1", "value"),
             Input("var-ident", "value"),
             State("altinnedit-skjemaer", "value"),
-            State("var-bedrift", "value") if has_bedrift else State("altinnedit-refnr", "value"),  # Dummy state if no bedrift
+            (
+                State("var-bedrift", "value")
+                if has_bedrift
+                else State("altinnedit-refnr", "value")
+            ),  # Dummy state if no bedrift
             self.variableselector.get_all_states(),
             prevent_initial_call=True,
         )
         def hovedside_update_altinnskjema(
-            refnr: str, tabell: str, ident: str, skjema: str, bedrift_or_dummy: str, *args: Any
+            refnr: str,
+            tabell: str,
+            ident: str,
+            skjema: str,
+            bedrift_or_dummy: str,
+            *args: Any,
         ) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
 
             # extract bedrift if it exists
@@ -193,10 +202,7 @@ class AltinnEditorPrimaryTable:
                         f"partition_select:\n{create_partition_select(desired_partitions=self.time_units,skjema=skjema,**partition_args,)}"
                     )
 
-                    t = (
-                        t.filter(_.refnr == refnr)
-                        .join(d, "variabel", how="left")
-                    )
+                    t = t.filter(_.refnr == refnr).join(d, "variabel", how="left")
                     t = t.filter(ibis_filter_with_dict(filter_dict))
 
                     # sort by bedrift if available
@@ -254,7 +260,7 @@ class AltinnEditorPrimaryTable:
                     if bedrift and "ident" in df.columns:
                         df = df.sort_values(
                             by="ident",
-                            key=lambda x: x.map(lambda v: 0 if v == bedrift else 1)
+                            key=lambda x: x.map(lambda v: 0 if v == bedrift else 1),
                         )
 
                     columndefs = [
@@ -290,17 +296,17 @@ class AltinnEditorPrimaryTable:
             click: dict[str, Any], row_data: list[dict[str, Any]]
         ) -> str:
             logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")
-            
+
             if not click or not row_data:
                 raise PreventUpdate
 
             columns = list(row_data[0].keys())
-            
+
             long_format = "variabel" in columns and "verdi" in columns
             if long_format:
                 return str(row_data[click["rowIndex"]]["variabel"])
-            
-            column =  click.get("colId") # wide format
+
+            column = click.get("colId")  # wide format
             if column in ("aar", "ident", "skjema", "refnr", "tabell"):
                 raise PreventUpdate
 

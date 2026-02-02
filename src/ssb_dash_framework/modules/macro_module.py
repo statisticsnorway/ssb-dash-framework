@@ -766,7 +766,7 @@ class MacroModule:
             if macro_level != "sammensatte variabler":
 
                 assert isinstance(macro_level, str)
-                
+
                 col_length: int = MACRO_FILTER_OPTIONS[macro_level]
                 t_curr_filtered = t_curr_filtered.mutate(
                     **{
@@ -887,12 +887,8 @@ class MacroModule:
                 indicator=True,
             )
 
-            merged_df["is_new"] = (
-                merged_df["_merge"] == "left_only"
-            )
-            merged_df["is_exiter"] = (
-                merged_df["_merge"] == "right_only"
-            )
+            merged_df["is_new"] = merged_df["_merge"] == "left_only"
+            merged_df["is_exiter"] = merged_df["_merge"] == "right_only"
 
             # for exiters, fill in key identifying columns from previous year
             if "navn" in merged_df.columns and "navn_x" in merged_df.columns:
@@ -911,13 +907,13 @@ class MacroModule:
                     merged_df[f"{naring_col}_x"].astype(str).str[:nace_siffer_level]
                 )
 
-                merged_df["is_nace_entrant"] = ( # different nace LAST year
+                merged_df["is_nace_entrant"] = (  # different nace LAST year
                     ~merged_df["is_new"]
                     & (merged_df["nace_prefix_curr"] == selected_nace)
                     & (merged_df["nace_prefix_prev"] != selected_nace)
                 )
 
-                merged_df["is_nace_exiter"] = ( # different nace THIS year
+                merged_df["is_nace_exiter"] = (  # different nace THIS year
                     ~merged_df["is_exiter"]
                     & (merged_df["nace_prefix_prev"] == selected_nace)
                     & (merged_df["nace_prefix_curr"] != selected_nace)
@@ -1162,7 +1158,7 @@ class MacroModule:
 
             clicked_row = rowdata[row_idx]
             bedrift = ""
-            
+
             if col_id in ("orgnr_f", "navn"):
                 tabell = "skjemadata_foretak"
             elif col_id == "orgnr_b":
@@ -1173,7 +1169,11 @@ class MacroModule:
 
             ident = clicked_row.get("orgnr_f", "")
 
-            return str(ident) if ident else "", str(bedrift) if bedrift else "", str(tabell) if tabell else ""
+            return (
+                str(ident) if ident else "",
+                str(bedrift) if bedrift else "",
+                str(tabell) if tabell else "",
+            )
 
 
 class MacroModuleTab(TabImplementation, MacroModule):

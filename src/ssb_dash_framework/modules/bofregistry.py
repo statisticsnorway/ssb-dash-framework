@@ -378,7 +378,9 @@ class BofInformation(ABC):
             has_bedrift = True
         except ValueError:
             has_bedrift = False
-            logger.debug("var-bedrift not available, skipping bedrift sorting in bof module")
+            logger.debug(
+                "var-bedrift not available, skipping bedrift sorting in bof module"
+            )
 
         @callback(  # type: ignore[misc]
             Output("bofregistry-modal-ssb_foretak", "is_open"),
@@ -443,7 +445,11 @@ class BofInformation(ABC):
             Output("bofregistry-ssb_bedrift-table", "columnDefs"),
             Input("tab-vof-foretak-button2", "n_clicks"),
             State("tab-bof_foretak-table1", "selectedRows"),
-            State("var-bedrift", "value") if has_bedrift else State("tab-bof_foretak-orgnrcard", "value"),  # dummy state if no bedrift
+            (
+                State("var-bedrift", "value")
+                if has_bedrift
+                else State("tab-bof_foretak-orgnrcard", "value")
+            ),  # dummy state if no bedrift
         )
         def ssb_bof_bedrift(
             n_clicks: int, selected_row: list[dict[str, Any]], bedrift_or_dummy: str
@@ -453,7 +459,7 @@ class BofInformation(ABC):
             )
             # Extract bedrift if it exists
             bedrift = bedrift_or_dummy if has_bedrift else None
-            
+
             orgnr = selected_row[0]["orgnr"]
             if n_clicks > 0:
                 conn = sqlite3.connect(SSB_BEDRIFT_PATH)
@@ -464,7 +470,7 @@ class BofInformation(ABC):
                 if bedrift:
                     df = df.sort_values(
                         by="orgnr",
-                        key=lambda x: x.map(lambda v:0 if v == bedrift else 1)
+                        key=lambda x: x.map(lambda v: 0 if v == bedrift else 1),
                     )
                 columns = [
                     {
@@ -576,6 +582,7 @@ class BofInformation(ABC):
                 return df.to_dict("records"), columns
 
         logger.debug("Generated callbacks")
+
 
 class BofInformationTab(TabImplementation, BofInformation):
     """A class to implement a bof information module as a tab."""
