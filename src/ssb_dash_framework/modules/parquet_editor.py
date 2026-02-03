@@ -774,7 +774,7 @@ def get_export_log_path(target_path: Path) -> Path:
     # <data_state>/...
     relative = Path(*parts[data_state_idx:]).with_suffix("-change-data-log.jsonl")
 
-    return bucket_root / "logg" / "produksjonslogg" / relative
+    return bucket_root / "logg" / "prosessdata" / relative
 
 
 def export_from_parqueteditor(
