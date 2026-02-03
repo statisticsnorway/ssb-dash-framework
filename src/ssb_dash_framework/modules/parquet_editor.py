@@ -555,7 +555,7 @@ def get_log_path(parquet_path: str | Path) -> Path:
         token = f"/{state}/"
         if token in posix:
             replaced = posix.replace(token, f"/{state}/{log_subpath}/")
-            return Path(replaced).with_suffix(".jsonl")
+            return Path(replaced).with_suffix("-change-data-log.jsonl")
 
     print(f"Expecting subfolder {data_states}. Log file path set to parquet path.")
     return p.with_suffix(".jsonl")
@@ -772,7 +772,7 @@ def get_export_log_path(target_path: Path) -> Path:
     bucket_root = Path(*parts[:data_state_idx])
 
     # <data_state>/...
-    relative = Path(*parts[data_state_idx:]).with_suffix(".jsonl")
+    relative = Path(*parts[data_state_idx:]).with_suffix("-change-data-log.jsonl")
 
     return bucket_root / "logg" / "produksjonslogg" / relative
 

@@ -65,10 +65,10 @@ def parquet_with_log(tmp_path):
 
 def test_get_log_path():
     cases = {  # Key should be input, values should be expected output.
-        "/buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/inndata/temp/parqueteditor/test_p2024_v1.jsonl",
-        "/buckets/produkt/editering-eksempel/inndata/temp/test_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/inndata/temp/parqueteditor/temp/test_p2024_v1.jsonl",
-        "/buckets/produkt/editering-eksempel/klargjorte-data/temp/subfolder/another_subfolder/editeres_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/klargjorte-data/temp/parqueteditor/temp/subfolder/another_subfolder/editeres_p2024_v1.jsonl",
-        "/buckets/produkt/kirkekostra/klargjorte-data/temp/mindre/min-kirkefil_p2024_v1.parquet": "/buckets/produkt/kirkekostra/klargjorte-data/temp/parqueteditor/temp/mindre/min-kirkefil_p2024_v1.jsonl",
+        "/buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/inndata/temp/parqueteditor/test_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/inndata/temp/test_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/inndata/temp/parqueteditor/temp/test_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/klargjorte-data/temp/subfolder/another_subfolder/editeres_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/klargjorte-data/temp/parqueteditor/temp/subfolder/another_subfolder/editeres_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/kirkekostra/klargjorte-data/temp/mindre/min-kirkefil_p2024_v1.parquet": "/buckets/produkt/kirkekostra/klargjorte-data/temp/parqueteditor/temp/mindre/min-kirkefil_p2024_v1-change-data-log.jsonl",
     }
     for given_input, expected in cases.items():
         assert str(get_log_path(given_input)) == expected
@@ -76,13 +76,13 @@ def test_get_log_path():
 
 def test_get_export_log_path():
     cases = {  # Key should be input, values should be expected output.
-        "/buckets/produkt/editering-eksempel/inndata/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/inndata/editert_p2024_v1.jsonl",
-        "/buckets/produkt/editering-eksempel/inndata/temp/subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/inndata/temp/subfolder/editert_p2024_v1.jsonl",
-        "/buckets/produkt/editering-eksempel/inndata/temp/subfolder/another_subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/inndata/temp/subfolder/another_subfolder/editert_p2024_v1.jsonl",
-        "/buckets/produkt/editering-eksempel/klargjorte-data/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/klargjorte-data/editert_p2024_v1.jsonl",
-        "/buckets/produkt/editering-eksempel/klargjorte-data/temp/subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/klargjorte-data/temp/subfolder/editert_p2024_v1.jsonl",
-        "/buckets/produkt/editering-eksempel/klargjorte-data/temp/subfolder/another_subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/klargjorte-data/temp/subfolder/another_subfolder/editert_p2024_v1.jsonl",
-        "/buckets/produkt/kirkekostra/klargjorte-data/temp/mindre/min-kirkefil_p2024_v1.parquet": "/buckets/produkt/kirkekostra/logg/produksjonslogg/klargjorte-data/temp/mindre/min-kirkefil_p2024_v1.jsonl",
+        "/buckets/produkt/editering-eksempel/inndata/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/inndata/editert_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/inndata/temp/subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/inndata/temp/subfolder/editert_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/inndata/temp/subfolder/another_subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/inndata/temp/subfolder/another_subfolder/editert_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/klargjorte-data/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/klargjorte-data/editert_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/klargjorte-data/temp/subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/klargjorte-data/temp/subfolder/editert_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/klargjorte-data/temp/subfolder/another_subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/produksjonslogg/klargjorte-data/temp/subfolder/another_subfolder/editert_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/kirkekostra/klargjorte-data/temp/mindre/min-kirkefil_p2024_v1.parquet": "/buckets/produkt/kirkekostra/logg/produksjonslogg/klargjorte-data/temp/mindre/min-kirkefil_p2024_v1-change-data-log.jsonl",
     }
     for given_input, expected in cases.items():
         assert str(get_export_log_path(Path(given_input))) == expected
