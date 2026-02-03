@@ -45,7 +45,7 @@ def check_for_bucket_path(path: str) -> None:
         )
 
 
-class ParquetEditor:  # TODO add validation of dataframe, workshop argument names
+class ParquetEditor:
     """Simple module with the sole purpose of editing a parquet file.
 
     Accomplishes this functionality by writing a processlog in a json lines file and recording any edits in this jsonl file.
@@ -103,7 +103,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         self.file_path = data_source
         path = Path(data_source)
         self.log_filepath = get_log_path(data_source)
-        self.label = path.stem
+        self.label = f"{self.icon} {path.stem!s}"
 
         self.log_filepath.parent.mkdir(parents=True, exist_ok=True)
 
@@ -456,7 +456,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             "change_event_reason": reason_category,
             "change_datetime": change_datetime,
             "changed_by": self.user,
-            "data_change_type": "UPD",
+            "data_change_type": "UPD",  # TODO: Make it possible to change when writing to support inserts.
             "change_comment": comment.replace(
                 "\n", ""
             ),  # Not sure what replace does but it was there before.
@@ -740,6 +740,9 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     return data
 
 
+DATA_STATES = {"inndata", "klargjorte-data", "statistikk", "utdata"}
+
+
 def get_export_log_path(target_path: Path) -> Path:
     """Derive the correct path to save the exported log file to.
 
@@ -748,11 +751,28 @@ def get_export_log_path(target_path: Path) -> Path:
 
     Returns:
         The correct path to save the processlog.
-    """
-    bucket_root = target_path.parents[1]
-    relative = target_path.relative_to(bucket_root).with_suffix(".jsonl")
 
-    return bucket_root / "logg" / "prosessdata" / relative
+    Raises:
+        ValueError: If a valid data state is not found in the path.
+    """
+    parts = target_path.parts
+
+    # Find the data_state position
+    try:
+        data_state_idx = next(i for i, part in enumerate(parts) if part in DATA_STATES)
+    except StopIteration as e:
+        logger.debug(f"Encountered error: {e}")
+        raise ValueError(
+            f"Path does not contain a valid data_state: {target_path}"
+        ) from e
+
+    # /buckets/produkt/<product>
+    bucket_root = Path(*parts[:data_state_idx])
+
+    # <data_state>/...
+    relative = Path(*parts[data_state_idx:]).with_suffix(".jsonl")
+
+    return bucket_root / "logg" / "produksjonslogg" / relative
 
 
 def export_from_parqueteditor(
