@@ -545,20 +545,52 @@ def get_log_path(parquet_path: str | Path) -> Path:
     to the corresponding temp folder under /<state>/temp/parqueteditor/.
     If none match, the log file is assumed to be in the same directory as the parquet file.
     """
-    data_states = ["inndata", "klargjorte-data", "statistikk", "utdata"]
-    log_subpath = "temp/parqueteditor"
-
     p = Path(parquet_path)
-    posix = p.as_posix()
+    parts = p.parts
 
-    for state in data_states:
-        token = f"/{state}/"
-        if token in posix:
-            replaced = posix.replace(token, f"/{state}/{log_subpath}/")
-            return Path(replaced).with_suffix("-change-data-log.jsonl")
+    try:
+        state_idx = next(i for i, part in enumerate(parts) if part in DATA_STATES)
+    except StopIteration:
+        print(f"Expecting subfolder {DATA_STATES}. Log file path set to parquet path.")
+        return p.with_suffix(".jsonl")
 
-    print(f"Expecting subfolder {data_states}. Log file path set to parquet path.")
-    return p.with_suffix(".jsonl")
+    bucket_root = Path(*parts[: state_idx + 1])
+    relative = Path(*parts[state_idx + 1 :])
+
+    log_path = bucket_root / "temp" / "parqueteditor" / relative
+
+    return log_path.with_name(f"{log_path.stem}-change-data-log.jsonl")
+
+
+def get_export_log_path(target_path: Path) -> Path:
+    """Derive the correct path to save the exported log file to.
+
+    Args:
+        target_path: The path where the exported data is to be written to.
+
+    Returns:
+        The correct path to save the processlog.
+
+    Raises:
+        ValueError: If a valid data state is not found in the path.
+    """
+    parts = target_path.parts
+
+    try:
+        data_state_idx = next(i for i, part in enumerate(parts) if part in DATA_STATES)
+    except StopIteration as e:
+        logger.debug(f"Encountered error: {e}")
+        raise ValueError(
+            f"Path does not contain a valid data_state: {target_path}"
+        ) from e
+
+    bucket_root = Path(*parts[:data_state_idx])
+
+    relative = Path(*parts[data_state_idx:])
+
+    relative = relative.with_name(f"{relative.stem}-change-data-log.jsonl")
+
+    return bucket_root / "logg" / "prosessdata" / relative
 
 
 def read_jsonl_log(path: str | Path) -> list[Any]:
@@ -743,38 +775,6 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     _raise_if_duplicates(data, id_vars)
     _raise_if_index_wrong(data)
     return data
-
-
-def get_export_log_path(target_path: Path) -> Path:
-    """Derive the correct path to save the exported log file to.
-
-    Args:
-        target_path: The path where the exported data is to be written to.
-
-    Returns:
-        The correct path to save the processlog.
-
-    Raises:
-        ValueError: If a valid data state is not found in the path.
-    """
-    parts = target_path.parts
-
-    # Find the data_state position
-    try:
-        data_state_idx = next(i for i, part in enumerate(parts) if part in DATA_STATES)
-    except StopIteration as e:
-        logger.debug(f"Encountered error: {e}")
-        raise ValueError(
-            f"Path does not contain a valid data_state: {target_path}"
-        ) from e
-
-    # /buckets/produkt/<product>
-    bucket_root = Path(*parts[:data_state_idx])
-
-    # <data_state>/...
-    relative = Path(*parts[data_state_idx:]).with_suffix("-change-data-log.jsonl")
-
-    return bucket_root / "logg" / "prosessdata" / relative
 
 
 def export_from_parqueteditor(
