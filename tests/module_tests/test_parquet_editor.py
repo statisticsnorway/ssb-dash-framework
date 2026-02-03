@@ -128,7 +128,7 @@ def test_changelog_creation_success(monkeypatch) -> None:
 
 
 def test_export_from_parqueteditor_success(parquet_with_log):
-    data_source, data_target, bucket_root = parquet_with_log
+    data_source, data_target, _ = parquet_with_log
 
     export_from_parqueteditor(
         data_source=data_source,
@@ -142,7 +142,7 @@ def test_export_from_parqueteditor_success(parquet_with_log):
     assert exported_df.loc[0, "value"] == 20
 
     # ---- process log exported ----
-    export_log_path = bucket_root / "logg" / "prosessdata" / "utdata" / "exported.jsonl"
+    export_log_path = get_export_log_path(Path(data_target))
     assert export_log_path.exists()
 
     with open(export_log_path, encoding="utf-8") as f:
@@ -183,10 +183,10 @@ def test_export_from_parqueteditor_existing_target(parquet_with_log):
 
 
 def test_export_from_parqueteditor_existing_processlog(parquet_with_log):
-    data_source, data_target, bucket_root = parquet_with_log
+    data_source, data_target, _ = parquet_with_log
 
     # Pre-create exported process log
-    export_log_path = bucket_root / "logg" / "prosessdata" / "utdata" / "exported.jsonl"
+    export_log_path = get_export_log_path(Path(data_target))
     export_log_path.parent.mkdir(parents=True, exist_ok=True)
     export_log_path.write_text("existing log")
 

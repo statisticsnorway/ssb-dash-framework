@@ -27,6 +27,8 @@ from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
+DATA_STATES = {"inndata", "klargjorte-data", "statistikk", "utdata"}
+
 
 def check_for_bucket_path(path: str) -> None:
     """Temporary check to make sure users keep to using '/buckets/' paths.
@@ -700,6 +702,9 @@ def _raise_if_duplicates(df: pd.DataFrame, subset: set[str] | list[str]) -> None
 def _raise_if_index_wrong(df: pd.DataFrame) -> None:
     """Raises a ValueError if reset_index(drop=True) needs to be run on dataframe to prevent errors.
 
+    Long term, this should be fixed in a better way. When a dataframe with an altered index was used, it raised a seemingly random assertion error.
+    The issue can most likely be reproduced by finding a dataframe which breaks this the condition being checked and disabling the code that runs this function.
+
     Args:
         df: The dataframe to check.
 
@@ -738,9 +743,6 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     _raise_if_duplicates(data, id_vars)
     _raise_if_index_wrong(data)
     return data
-
-
-DATA_STATES = {"inndata", "klargjorte-data", "statistikk", "utdata"}
 
 
 def get_export_log_path(target_path: Path) -> Path:
