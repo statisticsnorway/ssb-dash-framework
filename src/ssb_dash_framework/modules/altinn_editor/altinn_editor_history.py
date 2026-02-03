@@ -12,6 +12,7 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
 from ibis import _
+import tzlocal
 
 from ssb_dash_framework.utils import conn_is_ibis
 
@@ -19,6 +20,8 @@ from ...setup.variableselector import VariableSelector
 from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
+
+local_tz = tzlocal.get_localzone()
 
 
 class AltinnEditorHistory:
@@ -155,11 +158,15 @@ class AltinnEditorHistory:
                 if conn_is_ibis(self.conn):
                     conn = self.conn
                     t = conn.table("skjemadataendringshistorikk")
-                    df = (
-                        t.filter(_.refnr == refnr)
-                        .order_by(_.endret_tid.cast("timestamp").desc())
-                        .to_pandas()
+                    df = t.filter(_.refnr == refnr).to_pandas()
+                    df["endret_tid"] = (
+                        pd.to_datetime(df["endret_tid"], utc=True)
+                        .dt.tz_convert(local_tz)
+                        .dt.floor("s")
+                        .dt.tz_localize(None)
+                        .dt.strftime("%Y-%m-%d %H:%M:%S")
                     )
+                    df = df.sort_values("endret_tid", ascending=False)
                     columns = [
                         {
                             "headerName": col,
