@@ -101,7 +101,9 @@ class AltinnSupportTable:
             for col in data.columns:
                 col_def = {"field": col, "headerName": col.lower(), "filter": True}
                 if col.endswith("_x"):
-                    col_def["cellStyle"] = {"backgroundColor": "#e8e9eb"} # light grey for previous year
+                    col_def["cellStyle"] = {
+                        "backgroundColor": "#e8e9eb"
+                    }  # light grey for previous year
                 column_defs.append(col_def)
             if column_defs:
                 column_defs[0]["pinned"] = "left"
@@ -141,6 +143,7 @@ def add_year_diff_support_table(
         editor_inputs=["altinnedit-ident", "altinnedit-aar"],
         get_data_func=year_diff_support_table_get_data_func,
     )
+
 
 class AltinnEditorSupportTables:
     """This module provides supporting tables for the Altinn editor.
