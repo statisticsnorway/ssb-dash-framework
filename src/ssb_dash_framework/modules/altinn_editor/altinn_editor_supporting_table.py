@@ -78,8 +78,8 @@ class AltinnSupportTable:
             dag.AgGrid(
                 defaultColDef={"editable": False, "filter": True},
                 dashGridOptions={"enableCellTextSelection": True},
-                columnSize="responsiveSizeToFit",
                 id=f"support-table-{self.suptable_id}",
+                style={"height": "600px"},
             )
         )
 
@@ -97,7 +97,15 @@ class AltinnSupportTable:
                 f"Running get_data_func for table '{self.label}' using args: {args}"
             )
             data = self.get_data_func(*args)
-            return data.to_dict("records"), [{"field": col, "filter": True} for col in data.columns]
+            column_defs = []
+            for col in data.columns:
+                col_def = {"field": col, "headerName": col.lower(), "filter": True}
+                if col.endswith("_x"):
+                    col_def["cellStyle"] = {"backgroundColor": "#e8e9eb"} # light grey for previous year
+                column_defs.append(col_def)
+            if column_defs:
+                column_defs[0]["pinned"] = "left"
+            return data.to_dict("records"), column_defs
 
     def support_table_layout(self) -> dbc.Tab:
         """Creates the layout."""
@@ -133,7 +141,6 @@ def add_year_diff_support_table(
         editor_inputs=["altinnedit-ident", "altinnedit-aar"],
         get_data_func=year_diff_support_table_get_data_func,
     )
-
 
 class AltinnEditorSupportTables:
     """This module provides supporting tables for the Altinn editor.
