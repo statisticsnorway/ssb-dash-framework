@@ -31,7 +31,17 @@ class BulkEditor:
             dbc.Modal(
                 [
                     dbc.ModalHeader(dbc.ModalTitle("Header")),
-                    dbc.ModalBody("This is the content of the modal"),
+                    dbc.ModalBody(
+                        [
+                            dbc.Row(
+                                "Preview edits here.",
+                                id=f"{self.module_number}-bulk-edits-preview",
+                            ),
+                            dbc.Row(
+                                dbc.Button(id=f"{self.module_number}-commit-action")
+                            ),
+                        ]
+                    ),
                     dbc.ModalFooter(
                         dbc.Button("Close", id="close", className="ms-auto", n_clicks=0)
                     ),
@@ -67,6 +77,10 @@ class BulkEditor:
 
     def get_data(self): ...
 
+    def apply_update(self, single_update_dict):
+        """Method to apply an edit to the database."""
+        ...
+
     def module_callbacks(self):
 
         @callback()
@@ -85,11 +99,20 @@ class BulkEditor:
             logger.debug(f"Fresh edit:\n{fresh_edit}\nstored_edits: \n{stored_edits}")
             return f"Commit {len(stored_edits)} changes", stored_edits
 
-        @callback()
+        @callback(
+            Output(f"{self.module_number}-bulk-edits-preview", "children"),
+            Input(f"{self.module_number}-stored-edits", "data"),
+        )
         def preview_commit(): ...
 
-        @callback()
-        def commit_changes(): ...
+        @callback(
+            #            Output() # Alerts
+            Input(f"{self.module_number}-commit-action", "n_clicks"),
+            State(f"{self.module_number}-stored-edits", "data"),
+        )
+        def commit_changes(click, stored_edits):
+            for edit in stored_edits:
+                self.apply_update(edit)
 
         @callback()
         def revert_to_start(): ...
