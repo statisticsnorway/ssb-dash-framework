@@ -79,7 +79,7 @@ class AltinnSupportTable:
                 defaultColDef={"editable": False, "filter": True},
                 dashGridOptions={"enableCellTextSelection": True},
                 id=f"support-table-{self.suptable_id}",
-                style={"height": "600px"},
+                style={"height": "700px"},
             )
         )
 
