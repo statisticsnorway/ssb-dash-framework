@@ -12,6 +12,7 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import callback
+from dash import callback_context as ctx
 from dash import ctx
 from dash import dcc
 from dash import html
@@ -69,6 +70,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         statistics_name: str,
         id_vars: list[str],
         data_source: str,
+        varselector_filtering: bool = True,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
     ) -> None:
@@ -104,6 +106,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         path = Path(data_source)
         self.log_filepath = get_log_path(data_source)
         self.label = path.stem
+        self.varselector_filtering = varselector_filtering
 
         self.log_filepath.parent.mkdir(parents=True, exist_ok=True)
 
@@ -218,7 +221,19 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             dcc.Store(id=f"{self.module_number}-parqueteditor-table-data-store"),
         ]
         return html.Div(
-            [*reason_modal, dag.AgGrid(id=f"{self.module_number}-parqueteditor-table")]
+            [
+                *reason_modal,
+                dag.AgGrid(
+                    id=f"{self.module_number}-parqueteditor-table",
+                    defaultColDef={
+                        "filter": True,
+                        "sortable": True,
+                        "floatingFilter": True,
+                    },
+                    persistence=True,
+                    persisted_props=["filterModel"],
+                ),
+            ]
         )
 
     def layout(self) -> html.Div:
@@ -252,6 +267,36 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
                 columns,
                 data.to_dict(orient="records"),
             )
+
+        if self.varselector_filtering:
+
+            @callback(
+                Output(f"{self.module_number}-parqueteditor-table", "filterModel"),
+                *self.variableselector.get_all_callback_objects(),
+            )
+            def filter_data(*args):
+                logger.debug("Filtering data")
+                triggered_id = ctx.triggered_id
+                options = [
+                    option.id
+                    for option in [
+                        self.variableselector.get_option(selected_variable)
+                        for selected_variable in self.variableselector.selected_variables
+                    ]
+                ]
+                possible_filters = dict(zip(options, args))
+                filter_value = possible_filters[triggered_id]
+                column = triggered_id.replace("var-", "")
+                logger.info(
+                    f"Filtering data on column '{column}' to value '{filter_value}'"
+                )
+                return {
+                    column: {
+                        "filterType": "text",
+                        "type": "contains",
+                        "filter": filter_value,
+                    }
+                }
 
         @callback(
             Output(f"{self.module_number}-pending-edit", "data"),
