@@ -13,7 +13,6 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import callback
 from dash import callback_context as ctx
-from dash import ctx
 from dash import dcc
 from dash import html
 from dash.dependencies import Input
@@ -70,7 +69,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         statistics_name: str,
         id_vars: list[str],
         data_source: str,
-        varselector_filtering: bool = True,
+        varselector_filtering: bool = False,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
     ) -> None:
@@ -80,6 +79,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             statistics_name: The name of the statistic being edited.
             id_vars: A list of columns that together form a unique identifier for a single row in your data.
             data_source: The path to the parquet file you want to edit.
+            varselector_filtering: Decides if the table automatically filters based on updates in the variable selector. Defaults to False.
             output: Columns in your dataframe that should be clickable to output to the variable selector panel.
             output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
         """
@@ -274,7 +274,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
                 Output(f"{self.module_number}-parqueteditor-table", "filterModel"),
                 *self.variableselector.get_all_callback_objects(),
             )
-            def filter_data(*args):
+            def filter_data(*args: list[str]) -> dict[Any, dict[str, Any]]:
                 logger.debug("Filtering data")
                 triggered_id = ctx.triggered_id
                 options = [
@@ -284,7 +284,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
                         for selected_variable in self.variableselector.selected_variables
                     ]
                 ]
-                possible_filters = dict(zip(options, args))
+                possible_filters = dict(zip(options, args, strict=True))
                 filter_value = possible_filters[triggered_id]
                 column = triggered_id.replace("var-", "")
                 logger.info(
