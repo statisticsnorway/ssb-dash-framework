@@ -44,6 +44,7 @@ from .modules import MacroModuleWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
+from .modules import MicroLayoutAIO
 from .modules import MultiModule
 from .modules import MultiModuleTab
 from .modules import MultiModuleWindow
@@ -134,6 +135,7 @@ __all__ = [
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
+    "MicroLayoutAIO",
     "MultiModule",
     "MultiModule",
     "MultiModuleTab",
