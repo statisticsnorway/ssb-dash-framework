@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import zoneinfo
+from collections.abc import Hashable
 from datetime import UTC
 from datetime import datetime
 from io import StringIO
@@ -12,7 +13,7 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import callback
-from dash import ctx
+from dash import callback_context as ctx
 from dash import dcc
 from dash import html
 from dash.dependencies import Input
@@ -28,7 +29,7 @@ from ..utils.module_validation import module_validator
 logger = logging.getLogger(__name__)
 
 
-def check_for_bucket_path(path: str) -> None:
+def check_for_bucket_path(path: str | Path) -> None:
     """Temporary check to make sure users keep to using '/buckets/' paths.
 
     Need to test more with UPath to make sure nothing unexpected happens.
@@ -39,6 +40,8 @@ def check_for_bucket_path(path: str) -> None:
     Raises:
         NotImplementedError: If path doesn't start with '/buckets/'
     """
+    if isinstance(path, Path):
+        path = str(path)
     if not path.startswith("/buckets/"):
         raise NotImplementedError(
             "Due to differences in how files in '/buckets/...' behave compared to files in the cloud buckets this functionality is currently limited to only work with paths that starts with '/buckets/'."
@@ -69,6 +72,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         statistics_name: str,
         id_vars: list[str],
         data_source: str,
+        varselector_filtering: bool = False,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
     ) -> None:
@@ -78,6 +82,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             statistics_name: The name of the statistic being edited.
             id_vars: A list of columns that together form a unique identifier for a single row in your data.
             data_source: The path to the parquet file you want to edit.
+            varselector_filtering: Decides if the table automatically filters based on updates in the variable selector. Defaults to False.
             output: Columns in your dataframe that should be clickable to output to the variable selector panel.
             output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
         """
@@ -104,6 +109,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         path = Path(data_source)
         self.log_filepath = get_log_path(data_source)
         self.label = path.stem
+        self.varselector_filtering = varselector_filtering
 
         self.log_filepath.parent.mkdir(parents=True, exist_ok=True)
 
@@ -218,7 +224,19 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             dcc.Store(id=f"{self.module_number}-parqueteditor-table-data-store"),
         ]
         return html.Div(
-            [*reason_modal, dag.AgGrid(id=f"{self.module_number}-parqueteditor-table")]
+            [
+                *reason_modal,
+                dag.AgGrid(
+                    id=f"{self.module_number}-parqueteditor-table",
+                    defaultColDef={
+                        "filter": True,
+                        "sortable": True,
+                        "floatingFilter": True,
+                    },
+                    persistence=True,
+                    persisted_props=["filterModel"],
+                ),
+            ]
         )
 
     def layout(self) -> html.Div:
@@ -236,7 +254,9 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         )
         def load_data_to_table(
             *args: Any,
-        ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+        ) -> tuple[
+            list[dict[Hashable, Any]], list[dict[str, Any]], list[dict[Hashable, Any]]
+        ]:
             logger.debug("Getting data for module.")
             data = self.get_data()
             columns = [
@@ -252,6 +272,36 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
                 columns,
                 data.to_dict(orient="records"),
             )
+
+        if self.varselector_filtering:
+
+            @callback(
+                Output(f"{self.module_number}-parqueteditor-table", "filterModel"),
+                *self.variableselector.get_all_callback_objects(),
+            )
+            def filter_data(*args: list[str]) -> dict[Any, dict[str, Any]]:
+                logger.debug("Filtering data")
+                triggered_id = ctx.triggered_id
+                options = [
+                    option.id
+                    for option in [
+                        self.variableselector.get_option(selected_variable)
+                        for selected_variable in self.variableselector.selected_variables
+                    ]
+                ]
+                possible_filters = dict(zip(options, args, strict=True))
+                filter_value = possible_filters[triggered_id]
+                column = triggered_id.replace("var-", "")
+                logger.info(
+                    f"Filtering data on column '{column}' to value '{filter_value}'"
+                )
+                return {
+                    column: {
+                        "filterType": "text",
+                        "type": "contains",
+                        "filter": filter_value,
+                    }
+                }
 
         @callback(
             Output(f"{self.module_number}-pending-edit", "data"),
