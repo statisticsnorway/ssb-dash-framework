@@ -29,7 +29,7 @@ from ..utils.module_validation import module_validator
 logger = logging.getLogger(__name__)
 
 
-def check_for_bucket_path(path: str) -> None:
+def check_for_bucket_path(path: str | Path) -> None:
     """Temporary check to make sure users keep to using '/buckets/' paths.
 
     Need to test more with UPath to make sure nothing unexpected happens.
@@ -40,6 +40,8 @@ def check_for_bucket_path(path: str) -> None:
     Raises:
         NotImplementedError: If path doesn't start with '/buckets/'
     """
+    if isinstance(path, Path):
+        path = str(path)
     if not path.startswith("/buckets/"):
         raise NotImplementedError(
             "Due to differences in how files in '/buckets/...' behave compared to files in the cloud buckets this functionality is currently limited to only work with paths that starts with '/buckets/'."
