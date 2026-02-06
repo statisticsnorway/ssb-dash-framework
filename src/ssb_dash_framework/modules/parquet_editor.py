@@ -28,6 +28,8 @@ from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
+DATA_STATES = {"inndata", "klargjorte-data", "statistikk", "utdata"}
+
 
 def check_for_bucket_path(path: str | Path) -> None:
     """Temporary check to make sure users keep to using '/buckets/' paths.
@@ -48,7 +50,7 @@ def check_for_bucket_path(path: str | Path) -> None:
         )
 
 
-class ParquetEditor:  # TODO add validation of dataframe, workshop argument names
+class ParquetEditor:
     """Simple module with the sole purpose of editing a parquet file.
 
     Accomplishes this functionality by writing a processlog in a json lines file and recording any edits in this jsonl file.
@@ -72,6 +74,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         statistics_name: str,
         id_vars: list[str],
         data_source: str,
+        data_period: str,
         varselector_filtering: bool = False,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
@@ -82,6 +85,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             statistics_name: The name of the statistic being edited.
             id_vars: A list of columns that together form a unique identifier for a single row in your data.
             data_source: The path to the parquet file you want to edit.
+            data_period: The period being edited. Data period controlled - eg. year, date, date-time.
             varselector_filtering: Decides if the table automatically filters based on updates in the variable selector. Defaults to False.
             output: Columns in your dataframe that should be clickable to output to the variable selector panel.
             output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
@@ -97,6 +101,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             )
 
         self.statistics_name = statistics_name
+        self.data_period = data_period
         self.output = output
         self.output_varselector_name = output_varselector_name or output
         self.user = os.getenv("DAPLA_USER")
@@ -108,7 +113,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         self.file_path = data_source
         path = Path(data_source)
         self.log_filepath = get_log_path(data_source)
-        self.label = path.stem
+        self.label = f"{self.icon} {path.stem!s}"
         self.varselector_filtering = varselector_filtering
 
         self.log_filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -143,6 +148,7 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             logger.debug("Reading file, no edits to apply.")
             df = pd.read_parquet(self.file_path)
         _raise_if_duplicates(df, self.id_vars)
+        _raise_if_index_wrong(df)
         return df
 
     def _create_layout(self) -> html.Div:
@@ -499,13 +505,13 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
             "statistics_name": self.statistics_name,
             "data_source": [self.file_path],
             "data_target": "data_target_placeholder",
-            "data_period": "",
+            "data_period": self.data_period,  # TODO: Maybe set this based on file name?
             "variable_name": changed_variable,
             "change_event": "M",
             "change_event_reason": reason_category,
             "change_datetime": change_datetime,
             "changed_by": self.user,
-            "data_change_type": "UPD",
+            "data_change_type": "UPD",  # TODO: Make it possible to change when writing to support inserts.
             "change_comment": comment.replace(
                 "\n", ""
             ),  # Not sure what replace does but it was there before.
@@ -592,20 +598,52 @@ def get_log_path(parquet_path: str | Path) -> Path:
     to the corresponding temp folder under /<state>/temp/parqueteditor/.
     If none match, the log file is assumed to be in the same directory as the parquet file.
     """
-    data_states = ["inndata", "klargjorte-data", "statistikk", "utdata"]
-    log_subpath = "temp/parqueteditor"
-
     p = Path(parquet_path)
-    posix = p.as_posix()
+    parts = p.parts
 
-    for state in data_states:
-        token = f"/{state}/"
-        if token in posix:
-            replaced = posix.replace(token, f"/{state}/{log_subpath}/")
-            return Path(replaced).with_suffix(".jsonl")
+    try:
+        state_idx = next(i for i, part in enumerate(parts) if part in DATA_STATES)
+    except StopIteration:
+        print(f"Expecting subfolder {DATA_STATES}. Log file path set to parquet path.")
+        return p.with_suffix(".jsonl")
 
-    print(f"Expecting subfolder {data_states}. Log file path set to parquet path.")
-    return p.with_suffix(".jsonl")
+    bucket_root = Path(*parts[: state_idx + 1])
+    relative = Path(*parts[state_idx + 1 :])
+
+    log_path = bucket_root / "temp" / "parqueteditor" / relative
+
+    return log_path.with_name(f"{log_path.stem}-change-data-log.jsonl")
+
+
+def get_export_log_path(target_path: Path) -> Path:
+    """Derive the correct path to save the exported log file to.
+
+    Args:
+        target_path: The path where the exported data is to be written to.
+
+    Returns:
+        The correct path to save the processlog.
+
+    Raises:
+        ValueError: If a valid data state is not found in the path.
+    """
+    parts = target_path.parts
+
+    try:
+        data_state_idx = next(i for i, part in enumerate(parts) if part in DATA_STATES)
+    except StopIteration as e:
+        logger.debug(f"Encountered error: {e}")
+        raise ValueError(
+            f"Path does not contain a valid data_state: {target_path}"
+        ) from e
+
+    bucket_root = Path(*parts[:data_state_idx])
+
+    relative = Path(*parts[data_state_idx:])
+
+    relative = relative.with_name(f"{relative.stem}-change-data-log.jsonl")
+
+    return bucket_root / "logg" / "prosessdata" / relative
 
 
 def read_jsonl_log(path: str | Path) -> list[Any]:
@@ -746,6 +784,24 @@ def _raise_if_duplicates(df: pd.DataFrame, subset: set[str] | list[str]) -> None
         )
 
 
+def _raise_if_index_wrong(df: pd.DataFrame) -> None:
+    """Raises a ValueError if reset_index(drop=True) needs to be run on dataframe to prevent errors.
+
+    Long term, this should be fixed in a better way. When a dataframe with an altered index was used, it raised a seemingly random assertion error.
+    The issue can most likely be reproduced by finding a dataframe which breaks this the condition being checked and disabling the code that runs this function.
+
+    Args:
+        df: The dataframe to check.
+
+    Raises:
+        ValueError: If resetting the index would change the index.
+    """
+    if not df.index.equals(df.reset_index(drop=True).index):
+        raise ValueError(
+            "In order for ParquetEditor to be able to correctly apply updates to your dataset, you need to reset your dataframe index. Try df = df.reset_index(drop=True)."
+        )
+
+
 def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     """Applies edits from the jsonl log to a parquet file.
 
@@ -770,6 +826,7 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
         data = _apply_change_detail(data, line["change_details"])
     logger.debug(f"id_vars deduced from processlog: {id_vars}")
     _raise_if_duplicates(data, id_vars)
+    _raise_if_index_wrong(data)
     return data
 
 
@@ -800,10 +857,7 @@ def export_from_parqueteditor(
         for entry in processlog:
             if entry.get("data_target") == "data_target_placeholder":
                 entry["data_target"] = data_target
-        data_path = Path(data_target)
-        bucket_root = data_path.parents[1]
-        relative = data_path.relative_to(bucket_root).with_suffix(".jsonl")
-        export_log_path = bucket_root / "logg" / "prosessdata" / relative
+        export_log_path = get_export_log_path(Path(data_target))
         export_log_path.parent.mkdir(parents=True, exist_ok=True)
         logger.debug(f"export_log_path:\n{export_log_path}")
         Path(data_target).parent.mkdir(parents=True, exist_ok=True)
