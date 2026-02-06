@@ -71,6 +71,7 @@ class ParquetEditor:
         statistics_name: str,
         id_vars: list[str],
         data_source: str,
+        data_period: str,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
     ) -> None:
@@ -80,6 +81,7 @@ class ParquetEditor:
             statistics_name: The name of the statistic being edited.
             id_vars: A list of columns that together form a unique identifier for a single row in your data.
             data_source: The path to the parquet file you want to edit.
+            data_period: The period being edited. Data period controlled - eg. year, date, date-time.
             output: Columns in your dataframe that should be clickable to output to the variable selector panel.
             output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
         """
@@ -94,6 +96,7 @@ class ParquetEditor:
             )
 
         self.statistics_name = statistics_name
+        self.data_period = data_period
         self.output = output
         self.output_varselector_name = output_varselector_name or output
         self.user = os.getenv("DAPLA_USER")
@@ -452,7 +455,7 @@ class ParquetEditor:
             "statistics_name": self.statistics_name,
             "data_source": [self.file_path],
             "data_target": "data_target_placeholder",
-            "data_period": "",
+            "data_period": self.data_period,  # TODO: Maybe set this based on file name?
             "variable_name": changed_variable,
             "change_event": "M",
             "change_event_reason": reason_category,
