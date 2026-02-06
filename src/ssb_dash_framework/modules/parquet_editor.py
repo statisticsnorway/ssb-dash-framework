@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import zoneinfo
+from collections.abc import Hashable
 from datetime import UTC
 from datetime import datetime
 from io import StringIO
@@ -251,7 +252,9 @@ class ParquetEditor:  # TODO add validation of dataframe, workshop argument name
         )
         def load_data_to_table(
             *args: Any,
-        ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+        ) -> tuple[
+            list[dict[Hashable, Any]], list[dict[str, Any]], list[dict[Hashable, Any]]
+        ]:
             logger.debug("Getting data for module.")
             data = self.get_data()
             columns = [
