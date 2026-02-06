@@ -447,7 +447,8 @@ class BofInformation(ABC):
             State("tab-bof_foretak-table1", "selectedRows"),
         )
         def ssb_bof_bedrift(
-            n_clicks: int, selected_row: list[dict[str, Any]],
+            n_clicks: int,
+            selected_row: list[dict[str, Any]],
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             logger.debug(
                 "Args:\n" + f"n_clicks: {n_clicks}\n" + f"selected_row: {selected_row}"
@@ -550,7 +551,8 @@ class BofInformation(ABC):
             prevent_initial_call=True,
         )
         def populate_bedrifter(
-            foretaksnr: str, bedrift_or_dummy: str,
+            foretaksnr: str,
+            bedrift_or_dummy: str,
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             logger.debug("Args:\n" + f"foretaksnr: {foretaksnr}")
             if foretaksnr is not None:
