@@ -40,7 +40,7 @@ def parquet_with_log(tmp_path):
         "statistics_name": "TestStat",
         "data_source": [str(data_source)],
         "data_target": "data_target_placeholder",
-        "data_period": "",
+        "data_period": "2024",
         "variable_name": "value",
         "change_event": "M",
         "change_event_reason": "REVIEW",
@@ -121,6 +121,7 @@ def test_changelog_creation_success(monkeypatch) -> None:
         statistics_name="Test",
         id_vars=["aar", "orgnr"],
         data_source="/buckets/eksempelstatistikk/inndata/dummypath.parquet",
+        data_period="2024",
     )
 
     changelog = test._build_process_log_entry(example_change)
