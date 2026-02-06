@@ -17,6 +17,7 @@ import tzlocal
 from ssb_dash_framework.utils import conn_is_ibis
 
 from ...setup.variableselector import VariableSelector
+from ...utils.config_tools import get_connection
 from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
@@ -30,8 +31,8 @@ class AltinnEditorHistory:
     def __init__(
         self,
         time_units: list[str],
-        conn: object,
         variable_selector_instance: VariableSelector,
+        conn: object | None = None,
     ) -> None:
         """Initializes the Altinn Editor History module.
 
@@ -43,10 +44,7 @@ class AltinnEditorHistory:
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
         """
-        # assert hasattr(
-        #     conn, "query_changes"
-        # ), "The database object must have a 'query_changes' method."
-        self.conn = conn
+        self.conn = conn if conn else get_connection()
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"

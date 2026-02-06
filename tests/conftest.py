@@ -4,6 +4,7 @@ import ibis
 import pytest
 
 from ssb_dash_framework import VariableSelector
+from ssb_dash_framework import set_connection
 
 
 @pytest.fixture(autouse=True)
@@ -28,3 +29,10 @@ def ibis_polars_conn():
     # Example: create a DB connection, API client, etc.
     ibis_polars_conn = ibis.polars.connect()
     yield ibis_polars_conn
+
+
+@pytest.fixture(autouse=True, scope="session")
+def set_connection_testing():
+    print("Setting up connection...")
+    # Example: create a DB connection, API client, etc.
+    set_connection(lambda: ibis.polars.connect())

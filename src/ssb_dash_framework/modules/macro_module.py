@@ -1,3 +1,5 @@
+"""Currently hardcoded to fit Nøku data, can be modified later to fit more statistics."""
+
 import logging
 from collections.abc import Hashable
 from typing import Any
@@ -21,6 +23,7 @@ from pandas.core.frame import DataFrame
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
+from ..utils.config_tools import get_connection
 from ..utils.module_validation import module_validator
 
 ibis.options.interactive = True
@@ -166,7 +169,9 @@ class MacroModule:
         ]
     )
 
-    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
+    def __init__(
+        self, time_units: list[str], base_path: str, conn: object | None = None
+    ) -> None:
         """Initializes the MacroModule.
 
         The MacroModule allows viewing macro values and getting micro-level views for selected fields.
@@ -209,7 +214,7 @@ class MacroModule:
         ]
         logger.debug("TIME UNITS ", self.time_units)
 
-        self.conn = conn
+        self.conn = conn if conn else get_connection()
         self.base_path = base_path
         self.parquet_reader = MacroModule_ParquetReader()
 
@@ -1208,7 +1213,9 @@ class MacroModule:
 class MacroModuleTab(TabImplementation, MacroModule):
     """MacroModuleTab is an implementation of the MacroModule module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
+    def __init__(
+        self, time_units: list[str], base_path: str, conn: object | None = None
+    ) -> None:
         """Initializes the MacroModuleTab class."""
         MacroModule.__init__(
             self, time_units=time_units, conn=conn, base_path=base_path
@@ -1219,7 +1226,9 @@ class MacroModuleTab(TabImplementation, MacroModule):
 class MacroModuleWindow(WindowImplementation, MacroModule):
     """MacroModuleWindow is an implementation of the MacroModule module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
+    def __init__(
+        self, time_units: list[str], base_path: str, conn: object | None = None
+    ) -> None:
         """Initializes the MacroModuleWindow class."""
         MacroModule.__init__(
             self, time_units=time_units, conn=conn, base_path=base_path
