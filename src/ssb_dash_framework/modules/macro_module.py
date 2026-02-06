@@ -583,10 +583,9 @@ class MacroModule:
             df["percent_diff"] = df["diff"] / df[f"{aar-1}"]
             tallvisning = "percent_diff" if tallvisning_valg else f"{aar}"
 
-            matrix = (
-                df.pivot(index=category_column, columns="nace", values=tallvisning)
-                .reset_index()
-            )
+            matrix = df.pivot(
+                index=category_column, columns="nace", values=tallvisning
+            ).reset_index()
             matrix[category_column] = matrix[category_column].fillna("UKJENT")
             matrix.iloc[:, 1:] = matrix.iloc[:, 1:].fillna(0)
 
@@ -785,14 +784,18 @@ class MacroModule:
                 col_length: int = MACRO_FILTER_OPTIONS[macro_level]
                 t_curr_filtered = t_curr_filtered.mutate(
                     **{
-                        macro_level: t_curr_filtered.kommune.substr(0, length=col_length)
+                        macro_level: t_curr_filtered.kommune.substr(
+                            0, length=col_length
+                        )
                         .fill_null("UKJENT")
                         .replace("", "UKJENT")
                     }
                 )
                 t_prev_filtered = t_prev_filtered.mutate(
                     **{
-                        macro_level: t_prev_filtered.kommune.substr(0, length=col_length)
+                        macro_level: t_prev_filtered.kommune.substr(
+                            0, length=col_length
+                        )
                         .fill_null("UKJENT")
                         .replace("", "UKJENT")
                     }
@@ -870,7 +873,7 @@ class MacroModule:
                     "orgnr_b": "orgnr_bedrift",
                     "kommune_b": "kommune",
                 }
-                kommune_col = f"kommune_b"
+                kommune_col = "kommune_b"
                 naring_col = "naring_b"
                 merge_keys = ["orgnr_f", "orgnr_b"]
 
@@ -903,14 +906,10 @@ class MacroModule:
             )
 
             merged_df[kommune_col] = (
-                merged_df[kommune_col]
-                .fillna("UKJENT")
-                .replace("", "UKJENT")
+                merged_df[kommune_col].fillna("UKJENT").replace("", "UKJENT")
             )
             merged_df[f"{kommune_col}_x"] = (
-                merged_df[f"{kommune_col}_x"]
-                .fillna("UKJENT")
-                .replace("", "UKJENT")
+                merged_df[f"{kommune_col}_x"].fillna("UKJENT").replace("", "UKJENT")
             )
 
             merged_df["is_new"] = merged_df["_merge"] == "left_only"
@@ -966,7 +965,9 @@ class MacroModule:
                         merged_df[kommune_col] == "UKJENT",
                         merged_df[kommune_col].astype(str).str[:col_length],
                     )
-                    merged_df["macro_prefix_prev"] = merged_df[f"{kommune_col}_x"].where(
+                    merged_df["macro_prefix_prev"] = merged_df[
+                        f"{kommune_col}_x"
+                    ].where(
                         merged_df[f"{kommune_col}_x"] == "UKJENT",
                         merged_df[f"{kommune_col}_x"].astype(str).str[:col_length],
                     )
