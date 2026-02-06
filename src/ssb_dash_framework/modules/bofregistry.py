@@ -445,21 +445,14 @@ class BofInformation(ABC):
             Output("bofregistry-ssb_bedrift-table", "columnDefs"),
             Input("tab-vof-foretak-button2", "n_clicks"),
             State("tab-bof_foretak-table1", "selectedRows"),
-            (
-                State("var-bedrift", "value")
-                if has_bedrift
-                else State("tab-bof_foretak-orgnrcard", "value")
-            ),  # dummy state if no bedrift
         )
         def ssb_bof_bedrift(
-            n_clicks: int, selected_row: list[dict[str, Any]], bedrift_or_dummy: str
+            n_clicks: int,
+            selected_row: list[dict[str, Any]],
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             logger.debug(
                 "Args:\n" + f"n_clicks: {n_clicks}\n" + f"selected_row: {selected_row}"
             )
-            # Extract bedrift if it exists
-            bedrift = bedrift_or_dummy if has_bedrift else None
-
             orgnr = selected_row[0]["orgnr"]
             if n_clicks > 0:
                 conn = sqlite3.connect(SSB_BEDRIFT_PATH)
@@ -467,11 +460,7 @@ class BofInformation(ABC):
                     f"SELECT * FROM ssb_bedrift WHERE orgnr = '{orgnr}'", conn
                 )
                 df = df.melt()
-                if bedrift:
-                    df = df.sort_values(
-                        by="orgnr",
-                        key=lambda x: x.map(lambda v: 0 if v == bedrift else 1),
-                    )
+
                 columns = [
                     {
                         "headerName": col,
@@ -554,10 +543,16 @@ class BofInformation(ABC):
             Output("tab-bof_foretak-table1", "rowData", allow_duplicate=True),
             Output("tab-bof_foretak-table1", "columnDefs", allow_duplicate=True),
             Input("tab-bof_foretak-foretaksnrcard", "value"),
+            (
+                Input("var-bedrift", "value")
+                if has_bedrift
+                else State("tab-bof_foretak-orgnrcard", "value")
+            ),  # dummy state if no bedrift
             prevent_initial_call=True,
         )
         def populate_bedrifter(
             foretaksnr: str,
+            bedrift_or_dummy: str,
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             logger.debug("Args:\n" + f"foretaksnr: {foretaksnr}")
             if foretaksnr is not None:
@@ -568,6 +563,13 @@ class BofInformation(ABC):
                     conn,
                 )
 
+                # Extract bedrift if it exists
+                bedrift = bedrift_or_dummy if has_bedrift else None
+                if bedrift:
+                    df = df.sort_values(
+                        by="orgnr",
+                        key=lambda x: x.map(lambda v: 0 if v == bedrift else 1),
+                    )
                 columns = (
                     [  # col == "bedrifts_nr" results to true if col is bedrifts_nr
                         {
