@@ -78,6 +78,7 @@ class ParquetEditor:
         varselector_filtering: bool = False,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
+        allow_risky_column_names: bool = False,
     ) -> None:
         """Initializes the module and makes a few validation checks before moving on.
 
@@ -94,6 +95,7 @@ class ParquetEditor:
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
         self.icon = "✏️"  # TODO: Make visible
+        self.allow_risky_column_names = allow_risky_column_names
         check_for_bucket_path(data_source)
         if "/inndata/" not in data_source:
             logger.warning(
@@ -149,7 +151,7 @@ class ParquetEditor:
             df = pd.read_parquet(self.file_path)
         _raise_if_duplicates(df, self.id_vars)
         _raise_if_index_wrong(df)
-        _column_name_check(df)
+        _column_name_check(df, allow_risky_column_names=self.allow_risky_column_names)
         return df
 
     def _create_layout(self) -> html.Div:
@@ -803,15 +805,25 @@ def _raise_if_index_wrong(df: pd.DataFrame) -> None:
         )
 
 
-def _column_name_check(df: pd.DataFrame) -> None:
+def _column_name_check(df: pd.DataFrame, allow_risky_column_names=False) -> None:
     """Dash AG Grid can bug out if column names contain special characters.
 
     This function checks for potentially problematic column names and logs a warning.
+
+    Args:
+        df: The dataframe to check.
+        allow_risky_business: Determines if the check raises a ValueError or just logs a warning.
     """
     special_characters = [".", "/"]
 
     for col in df.columns:
         if any(char in col for char in special_characters):
+            if not allow_risky_column_names:
+                raise ValueError(
+                    f"The column '{col}' contains a special character "
+                    f"({', '.join(special_characters)}) that can cause issues in Dash AG Grid. "
+                    "Consider renaming it."
+                )
             logger.warning(
                 f"The column '{col}' contains a special character "
                 f"({', '.join(special_characters)}) that can cause issues in Dash AG Grid. "
@@ -819,7 +831,9 @@ def _column_name_check(df: pd.DataFrame) -> None:
             )
 
 
-def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
+def apply_edits(
+    parquet_path: str | Path, allow_risky_column_names=False
+) -> pd.DataFrame:
     """Applies edits from the jsonl log to a parquet file.
 
     Args:
@@ -844,12 +858,15 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     logger.debug(f"id_vars deduced from processlog: {id_vars}")
     _raise_if_duplicates(data, id_vars)
     _raise_if_index_wrong(data)
-    _column_name_check(data)
+    _column_name_check(data, allow_risky_column_names=allow_risky_column_names)
     return data
 
 
 def export_from_parqueteditor(
-    data_source: str, data_target: str, force_overwrite: bool = False
+    data_source: str,
+    data_target: str,
+    force_overwrite: bool = False,
+    allow_risky_column_names=False,
 ) -> None:
     """Export edited data from parquet editor.
 
@@ -898,7 +915,9 @@ def export_from_parqueteditor(
             f"Target parquet file '{data_target}' already exists. "
             "Use force_overwrite=True to overwrite."
         )
-    updated_data = apply_edits(data_source)
+    updated_data = apply_edits(
+        data_source, allow_risky_column_names=allow_risky_column_names
+    )
     updated_data.to_parquet(data_target)
     print(
         f"Export completed! File now exists at '{data_target}' with processlog at '{export_log_path}'"
