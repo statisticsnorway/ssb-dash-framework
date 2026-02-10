@@ -149,6 +149,7 @@ class ParquetEditor:
             df = pd.read_parquet(self.file_path)
         _raise_if_duplicates(df, self.id_vars)
         _raise_if_index_wrong(df)
+        _column_name_check(df)
         return df
 
     def _create_layout(self) -> html.Div:
@@ -802,6 +803,22 @@ def _raise_if_index_wrong(df: pd.DataFrame) -> None:
         )
 
 
+def _column_name_check(df: pd.DataFrame) -> None:
+    """Dash AG Grid can bug out if column names contain special characters.
+
+    This function checks for potentially problematic column names and logs a warning.
+    """
+    special_characters = [".", "/"]
+
+    for col in df.columns:
+        if any(char in col for char in special_characters):
+            logger.warning(
+                f"The column '{col}' contains a special character "
+                f"({', '.join(special_characters)}) that can cause issues in Dash AG Grid. "
+                "Consider renaming it."
+            )
+
+
 def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     """Applies edits from the jsonl log to a parquet file.
 
@@ -827,6 +844,7 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     logger.debug(f"id_vars deduced from processlog: {id_vars}")
     _raise_if_duplicates(data, id_vars)
     _raise_if_index_wrong(data)
+    _column_name_check(data)
     return data
 
 
