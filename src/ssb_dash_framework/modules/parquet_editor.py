@@ -814,7 +814,7 @@ def _column_name_check(df: pd.DataFrame, allow_risky_column_names=False) -> None
         df: The dataframe to check.
         allow_risky_business: Determines if the check raises a ValueError or just logs a warning.
     """
-    special_characters = [".", "/"]
+    special_characters = [".", "/", "-", " "]
 
     for col in df.columns:
         if any(char in col for char in special_characters):
@@ -827,7 +827,7 @@ def _column_name_check(df: pd.DataFrame, allow_risky_column_names=False) -> None
             logger.warning(
                 f"The column '{col}' contains a special character "
                 f"({', '.join(special_characters)}) that can cause issues in Dash AG Grid. "
-                "Consider renaming it."
+                "Consider renaming it using '_' if you need a separator symbol."
             )
 
 
