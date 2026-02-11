@@ -91,6 +91,7 @@ class ParquetEditor:
             varselector_filtering: Decides if the table automatically filters based on updates in the variable selector. Defaults to False.
             output: Columns in your dataframe that should be clickable to output to the variable selector panel.
             output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
+            allow_risky_column_names: Controls whether or not ParquetEditor allows potentially bug-inducing column names. Defaults to False.
         """
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
@@ -806,14 +807,19 @@ def _raise_if_index_wrong(df: pd.DataFrame) -> None:
         )
 
 
-def _column_name_check(df: pd.DataFrame, allow_risky_column_names=False) -> None:
-    """Dash AG Grid can bug out if column names contain special characters.
+def _column_name_check(
+    df: pd.DataFrame, allow_risky_column_names: bool = False
+) -> None:
+    """This function checks for potentially problematic column names and logs a warning.
 
-    This function checks for potentially problematic column names and logs a warning.
+    Dash AG Grid can bug out if column names contain special characters, this helper function helps prevent that from happening on accident.
 
     Args:
         df: The dataframe to check.
-        allow_risky_business: Determines if the check raises a ValueError or just logs a warning.
+        allow_risky_column_names: Determines if the check raises a ValueError or just logs a warning.
+
+    Raises:
+        ValueError: If any special characters are found in the column names and allow_risky_column_names is False.
     """
     special_characters = [".", "/", "-", " "]
 
@@ -833,12 +839,13 @@ def _column_name_check(df: pd.DataFrame, allow_risky_column_names=False) -> None
 
 
 def apply_edits(
-    parquet_path: str | Path, allow_risky_column_names=False
+    parquet_path: str | Path, allow_risky_column_names: bool = False
 ) -> pd.DataFrame:
     """Applies edits from the jsonl log to a parquet file.
 
     Args:
         parquet_path: The file path for the parquet file.
+        allow_risky_column_names: Controls whether or not the function allows potentially bug-inducing column names. Defaults to False.
 
     Returns:
         A pd.DataFrame with updated data.
@@ -867,7 +874,7 @@ def export_from_parqueteditor(
     data_source: str,
     data_target: str,
     force_overwrite: bool = False,
-    allow_risky_column_names=False,
+    allow_risky_column_names: bool = False,
 ) -> None:
     """Export edited data from parquet editor.
 
@@ -879,6 +886,7 @@ def export_from_parqueteditor(
         data_source: Path to the source parquet file
         data_target: Path where the exported file will be written
         force_overwrite: If True, overwrites existing parquet and jsonl files when exporting. Defaults to False.
+        allow_risky_column_names: Controls whether or not the function allows potentially bug-inducing column names. Defaults to False.
 
     Raises:
         FileNotFoundError: if no log file is found.
