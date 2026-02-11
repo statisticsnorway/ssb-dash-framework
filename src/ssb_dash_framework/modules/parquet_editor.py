@@ -59,6 +59,7 @@ class ParquetEditor:
         >>> id_variabler = ["orgnr", "aar", "kvartal"]
         >>> my_parquet_editor = ParquetEditor(
             statistics_name="Demo",
+            data_period="2024",
             id_vars=id_variabler,
             data_source="/buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet",
         )
@@ -78,6 +79,7 @@ class ParquetEditor:
         varselector_filtering: bool = False,
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
+        allow_risky_column_names: bool = False,
     ) -> None:
         """Initializes the module and makes a few validation checks before moving on.
 
@@ -89,11 +91,13 @@ class ParquetEditor:
             varselector_filtering: Decides if the table automatically filters based on updates in the variable selector. Defaults to False.
             output: Columns in your dataframe that should be clickable to output to the variable selector panel.
             output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
+            allow_risky_column_names: Controls whether or not ParquetEditor allows potentially bug-inducing column names. Defaults to False.
         """
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
         self.icon = "✏️"  # TODO: Make visible
+        self.allow_risky_column_names = allow_risky_column_names
         check_for_bucket_path(data_source)
         if "/inndata/" not in data_source:
             logger.warning(
@@ -149,6 +153,7 @@ class ParquetEditor:
             df = pd.read_parquet(self.file_path)
         _raise_if_duplicates(df, self.id_vars)
         _raise_if_index_wrong(df)
+        _column_name_check(df, allow_risky_column_names=self.allow_risky_column_names)
         return df
 
     def _create_layout(self) -> html.Div:
@@ -802,11 +807,45 @@ def _raise_if_index_wrong(df: pd.DataFrame) -> None:
         )
 
 
-def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
+def _column_name_check(
+    df: pd.DataFrame, allow_risky_column_names: bool = False
+) -> None:
+    """This function checks for potentially problematic column names and logs a warning.
+
+    Dash AG Grid can bug out if column names contain special characters, this helper function helps prevent that from happening on accident.
+
+    Args:
+        df: The dataframe to check.
+        allow_risky_column_names: Determines if the check raises a ValueError or just logs a warning.
+
+    Raises:
+        ValueError: If any special characters are found in the column names and allow_risky_column_names is False.
+    """
+    special_characters = [".", "/", "-", " "]
+
+    for col in df.columns:
+        if any(char in col for char in special_characters):
+            if not allow_risky_column_names:
+                raise ValueError(
+                    f"The column '{col}' contains a special character "
+                    f"({', '.join(special_characters)}) that can cause issues in Dash AG Grid. "
+                    "Consider renaming it."
+                )
+            logger.warning(
+                f"The column '{col}' contains a special character "
+                f"({', '.join(special_characters)}) that can cause issues in Dash AG Grid. "
+                "Consider renaming it using '_' if you need a separator symbol."
+            )
+
+
+def apply_edits(
+    parquet_path: str | Path, allow_risky_column_names: bool = False
+) -> pd.DataFrame:
     """Applies edits from the jsonl log to a parquet file.
 
     Args:
         parquet_path: The file path for the parquet file.
+        allow_risky_column_names: Controls whether or not the function allows potentially bug-inducing column names. Defaults to False.
 
     Returns:
         A pd.DataFrame with updated data.
@@ -827,11 +866,15 @@ def apply_edits(parquet_path: str | Path) -> pd.DataFrame:
     logger.debug(f"id_vars deduced from processlog: {id_vars}")
     _raise_if_duplicates(data, id_vars)
     _raise_if_index_wrong(data)
+    _column_name_check(data, allow_risky_column_names=allow_risky_column_names)
     return data
 
 
 def export_from_parqueteditor(
-    data_source: str, data_target: str, force_overwrite: bool = False
+    data_source: str,
+    data_target: str,
+    force_overwrite: bool = False,
+    allow_risky_column_names: bool = False,
 ) -> None:
     """Export edited data from parquet editor.
 
@@ -843,6 +886,7 @@ def export_from_parqueteditor(
         data_source: Path to the source parquet file
         data_target: Path where the exported file will be written
         force_overwrite: If True, overwrites existing parquet and jsonl files when exporting. Defaults to False.
+        allow_risky_column_names: Controls whether or not the function allows potentially bug-inducing column names. Defaults to False.
 
     Raises:
         FileNotFoundError: if no log file is found.
@@ -880,7 +924,9 @@ def export_from_parqueteditor(
             f"Target parquet file '{data_target}' already exists. "
             "Use force_overwrite=True to overwrite."
         )
-    updated_data = apply_edits(data_source)
+    updated_data = apply_edits(
+        data_source, allow_risky_column_names=allow_risky_column_names
+    )
     updated_data.to_parquet(data_target)
     print(
         f"Export completed! File now exists at '{data_target}' with processlog at '{export_log_path}'"
