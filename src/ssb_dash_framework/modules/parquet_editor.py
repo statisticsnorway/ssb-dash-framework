@@ -59,6 +59,7 @@ class ParquetEditor:
         >>> id_variabler = ["orgnr", "aar", "kvartal"]
         >>> my_parquet_editor = ParquetEditor(
             statistics_name="Demo",
+            data_period="2024",
             id_vars=id_variabler,
             data_source="/buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet",
         )
