@@ -365,11 +365,22 @@ class BofInformation(ABC):
 
         Notes:
             - The `bof_data` callback fetches and updates data in the cards based on the selected foretak.
+            - It also runs a check for "has_bedrift" to be able to sort by the selected bedrift if necessary.
         """
         dynamic_states = [
             self.variableselector.get_all_inputs(),
             self.variableselector.get_all_states(),
         ]
+
+        # check if var-bedrift exists
+        try:
+            self.variableselector.get_option("var-bedrift", search_target="id")
+            has_bedrift = True
+        except ValueError:
+            has_bedrift = False
+            logger.debug(
+                "var-bedrift not available, skipping bedrift sorting in bof module"
+            )
 
         @callback(  # type: ignore[misc]
             Output("bofregistry-modal-ssb_foretak", "is_open"),
@@ -436,7 +447,8 @@ class BofInformation(ABC):
             State("tab-bof_foretak-table1", "selectedRows"),
         )
         def ssb_bof_bedrift(
-            n_clicks: int, selected_row: list[dict[str, Any]]
+            n_clicks: int,
+            selected_row: list[dict[str, Any]],
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             logger.debug(
                 "Args:\n" + f"n_clicks: {n_clicks}\n" + f"selected_row: {selected_row}"
@@ -448,6 +460,7 @@ class BofInformation(ABC):
                     f"SELECT * FROM ssb_bedrift WHERE orgnr = '{orgnr}'", conn
                 )
                 df = df.melt()
+
                 columns = [
                     {
                         "headerName": col,
@@ -530,10 +543,16 @@ class BofInformation(ABC):
             Output("tab-bof_foretak-table1", "rowData", allow_duplicate=True),
             Output("tab-bof_foretak-table1", "columnDefs", allow_duplicate=True),
             Input("tab-bof_foretak-foretaksnrcard", "value"),
+            (
+                Input("var-bedrift", "value")
+                if has_bedrift
+                else State("tab-bof_foretak-orgnrcard", "value")
+            ),  # dummy state if no bedrift
             prevent_initial_call=True,
         )
         def populate_bedrifter(
             foretaksnr: str,
+            bedrift_or_dummy: str,
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             logger.debug("Args:\n" + f"foretaksnr: {foretaksnr}")
             if foretaksnr is not None:
@@ -544,6 +563,13 @@ class BofInformation(ABC):
                     conn,
                 )
 
+                # Extract bedrift if it exists
+                bedrift = bedrift_or_dummy if has_bedrift else None
+                if bedrift:
+                    df = df.sort_values(
+                        by="orgnr",
+                        key=lambda x: x.map(lambda v: 0 if v == bedrift else 1),
+                    )
                 columns = (
                     [  # col == "bedrifts_nr" results to true if col is bedrifts_nr
                         {
@@ -558,36 +584,6 @@ class BofInformation(ABC):
                 return df.to_dict("records"), columns
 
         logger.debug("Generated callbacks")
-
-        try:  # TODO Find better solution to sort - config file?
-            VariableSelector([], []).get_option("var-bedrift", search_target="id")
-
-            @callback(
-                Output("tab-bof_foretak-table1", "rowData"),
-                Output("tab-bof_foretak-table1", "columnDefs"),
-                Input("tab-bof_foretak-table1", "rowData"),
-                Input("tab-bof_foretak-table1", "columnDefs"),
-                State("var-bedrift", "value"),
-                prevent_initial_call=True,
-            )
-            def sort_bedrifter_by_selection(
-                row_data: list[dict[Any, Any]],
-                column_defs: list[dict[str, Any]],
-                bedrift: str,
-            ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
-                """Sort bedrifter table to prioritize selected bedrift."""
-                if not bedrift or not row_data:
-                    return row_data, column_defs
-
-                # Sort directly without DataFrame conversion
-                sorted_data = sorted(
-                    row_data, key=lambda row: 0 if row.get("orgnr") == bedrift else 1
-                )
-
-                return sorted_data, column_defs
-
-        except ValueError:
-            logger.debug("var-bedrift not available, skipping bedrift sorting callback")
 
 
 class BofInformationTab(TabImplementation, BofInformation):

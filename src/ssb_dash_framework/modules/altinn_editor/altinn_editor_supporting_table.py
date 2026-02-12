@@ -39,6 +39,8 @@ class AltinnSupportTable:
         get_data_func: Callable[..., pd.DataFrame],
         editor_inputs: list[str] | None = None,
         variableselector: VariableSelector | None = None,
+        pin_leftmost_column: bool = True,
+        suffix_to_colour_grey: list[str] | None = None,
     ) -> None:
         """Initializes the support table.
 
@@ -47,6 +49,8 @@ class AltinnSupportTable:
             get_data_func: Function that returns data to show in the supporting table.
             editor_inputs: List of inputs from the AltinnSkjemadataEditor to use as arguments in the get_data_func.
             variableselector: VariableSelector instance for adding arguments from the overall variableselector.
+            pin_leftmost_column: Optional. Boolean to pin the leftmost column in the AgGrid (usually the ident-col). Defaults to "True".
+            suffix_to_colour_grey: Optional. List of column-name suffixes to colour light grey in the AgGrid. Defaults to "[_x]".
 
         Note:
             The component is automatically added to the panel inside the modal.
@@ -54,6 +58,8 @@ class AltinnSupportTable:
         self.label = label
         self.inputs = editor_inputs
         self.get_data_func = get_data_func
+        self.pin_leftmost_column = pin_leftmost_column
+        self.suffix_to_colour_grey = suffix_to_colour_grey or ["_x"]
         if variableselector:
             self.variableselector = variableselector
         else:
@@ -78,8 +84,8 @@ class AltinnSupportTable:
             dag.AgGrid(
                 defaultColDef={"editable": False, "filter": True},
                 dashGridOptions={"enableCellTextSelection": True},
-                columnSize="responsiveSizeToFit",
                 id=f"support-table-{self.suptable_id}",
+                style={"height": "700px"},
             )
         )
 
@@ -97,7 +103,17 @@ class AltinnSupportTable:
                 f"Running get_data_func for table '{self.label}' using args: {args}"
             )
             data = self.get_data_func(*args)
-            return data.to_dict("records"), [{"field": col, "filter": True} for col in data.columns]
+            column_defs = []
+            for col in data.columns:
+                col_def: dict[str, Any] = {"field": col, "headerName": col.lower()}
+                if self.suffix_to_colour_grey and col.endswith(
+                    tuple(self.suffix_to_colour_grey)
+                ):
+                    col_def["cellStyle"] = {"backgroundColor": "#e8e9eb"}
+                column_defs.append(col_def)
+            if self.pin_leftmost_column and column_defs:
+                column_defs[0]["pinned"] = "left"
+            return data.to_dict("records"), column_defs
 
     def support_table_layout(self) -> dbc.Tab:
         """Creates the layout."""
