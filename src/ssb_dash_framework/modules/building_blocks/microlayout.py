@@ -1,3 +1,4 @@
+import logging
 import uuid
 from collections.abc import Callable
 from typing import Any
@@ -14,6 +15,8 @@ from dash.exceptions import PreventUpdate
 from klass import get_classification  # Import the utility-function
 from pydantic import BaseModel
 from pydantic import Field
+
+logger = logging.getLogger(__name__)
 
 
 class InputField(BaseModel):
@@ -265,6 +268,9 @@ class MicroLayoutAIO(html.Div):
             horizontal: Should be True if sub elements should stack horizontally instead of vertically
 
         """
+        logger.warning(
+            "This module is under development and might receive larger and/or breaking changes."
+        )
         self.aio_id = aio_id or str(uuid.uuid4())
         if isinstance(layout, Layout):
             model = layout
