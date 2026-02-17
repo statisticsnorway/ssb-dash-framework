@@ -23,6 +23,7 @@ from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils import active_no_duplicates_refnr_list
 from ..utils import conn_is_ibis
+from ..utils.config_tools import get_connection
 from ..utils.eimerdb_helpers import create_partition_select
 from ..utils.module_validation import module_validator
 
@@ -62,7 +63,7 @@ class AggDistPlotter(ABC):
         ]
     )
 
-    def __init__(self, time_units: list[str], conn: object) -> None:
+    def __init__(self, time_units: list[str], conn: object | None = None) -> None:
         """Initializes the AggDistPlotter.
 
         Args:
@@ -91,7 +92,7 @@ class AggDistPlotter(ABC):
         ]
         print("TIME UNITS ", self.time_units)
 
-        self.conn = conn
+        self.conn = conn if conn else get_connection()
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -575,7 +576,7 @@ class AggDistPlotter(ABC):
 class AggDistPlotterTab(TabImplementation, AggDistPlotter):
     """AggDistPlotterTab is an implementation of the AggDistPlotter module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], conn: object) -> None:
+    def __init__(self, time_units: list[str], conn: object | None = None) -> None:
         """Initializes the AggDistPlotterTab class."""
         AggDistPlotter.__init__(self, time_units=time_units, conn=conn)
         TabImplementation.__init__(self)
@@ -584,7 +585,7 @@ class AggDistPlotterTab(TabImplementation, AggDistPlotter):
 class AggDistPlotterWindow(WindowImplementation, AggDistPlotter):
     """AggDistPlotterWindow is an implementation of the AggDistPlotter module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], conn: object) -> None:
+    def __init__(self, time_units: list[str], conn: object | None = None) -> None:
         """Initializes the AggDistPlotterWindow class."""
         AggDistPlotter.__init__(self, time_units=time_units, conn=conn)
         WindowImplementation.__init__(self)

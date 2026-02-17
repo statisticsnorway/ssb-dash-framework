@@ -1,3 +1,5 @@
+"""Currently hardcoded to fit Nøku data, can be modified later to fit more statistics."""
+
 import logging
 from collections.abc import Hashable
 from typing import Any
@@ -21,6 +23,7 @@ from pandas.core.frame import DataFrame
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
+from ..utils.config_tools import get_connection
 from ..utils.module_validation import module_validator
 
 ibis.options.interactive = True
@@ -28,22 +31,22 @@ logger = logging.getLogger(__name__)
 
 HEATMAP_VARIABLES: dict[str, str] = {
     "omsetning": "omsetning",
-    "ts_forbruk": "forbruk",
     "ts_salgsint": "salgsint",
+    "nopost_driftskostnader": "driftskost",
     "sysselsetting_syss": "sysselsatte",
     "sysselsetting_ansatte": "lønnstakere",
     "sysselsetting_arsverk": "årsverk",
     "nopost_lonnskostnader": "lønnskost",
     "nopost_p5000": "lønn",
     "ts_vikarutgifter": "vikarutg",
+    "ts_forbruk": "forbruk",
+    "nopost_p4005": "p4005",
     "produksjonsverdi": "prodv",
     "bearbeidingsverdi": "bearbv",
     "produktinnsats": "prodins",
-    "nopost_driftskostnader": "driftskost",
     "nopost_driftsresultat": "driftsres",
     "brutto_driftsresultat": "brut_driftsres",
     "ts_varehan": "varehandel",
-    "nopost_p4005": "p4005",
     "totkjop": "totalkjøp",
     "ts_anlegg": "anlegg",
     "bruttoinvestering_oslo": "brut_inv_oslo",
@@ -166,7 +169,9 @@ class MacroModule:
         ]
     )
 
-    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
+    def __init__(
+        self, time_units: list[str], base_path: str, conn: object | None = None
+    ) -> None:
         """Initializes the MacroModule.
 
         The MacroModule allows viewing macro values and getting micro-level views for selected fields.
@@ -209,7 +214,7 @@ class MacroModule:
         ]
         logger.debug("TIME UNITS ", self.time_units)
 
-        self.conn = conn
+        self.conn = conn if conn else get_connection()
         self.base_path = base_path
         self.parquet_reader = MacroModule_ParquetReader()
 
@@ -529,10 +534,19 @@ class MacroModule:
                 ]  # kommune, fylke eller sammensatte_variabler
                 col_length: int = MACRO_FILTER_OPTIONS[macro_level]
 
-                # select kommune as 4 digits or substr kommune as fylke
-                t = t.mutate(**{macro_level: t.kommune.substr(0, length=col_length)})
+                t = t.mutate(
+                    **{
+                        macro_level: t.kommune.substr(0, length=col_length)
+                        .fill_null("UKJENT")
+                        .replace("", "UKJENT")
+                    }
+                )
                 t_1 = t_1.mutate(
-                    **{macro_level: t_1.kommune.substr(0, length=col_length)}
+                    **{
+                        macro_level: t_1.kommune.substr(0, length=col_length)
+                        .fill_null("UKJENT")
+                        .replace("", "UKJENT")
+                    }
                 )
 
             t = t.select([*cols, "selected_nace"])
@@ -574,11 +588,11 @@ class MacroModule:
             df["percent_diff"] = df["diff"] / df[f"{aar-1}"]
             tallvisning = "percent_diff" if tallvisning_valg else f"{aar}"
 
-            matrix = (
-                df.pivot(index=category_column, columns="nace", values=tallvisning)
-                .reset_index()
-                .fillna(0)
-            )
+            matrix = df.pivot(
+                index=category_column, columns="nace", values=tallvisning
+            ).reset_index()
+            matrix[category_column] = matrix[category_column].fillna("UKJENT")
+            matrix.iloc[:, 1:] = matrix.iloc[:, 1:].fillna(0)
 
             # decide order of variables
             if category_column == "variabel":
@@ -595,6 +609,8 @@ class MacroModule:
             count_row["id"] = "count_row"
 
             matrix["id"] = matrix.index.astype(dtype=str)
+            matrix[category_column] = matrix[category_column].astype(dtype=str)
+
             row_data: list[dict[str, Any]] | Any = matrix.to_dict("records")
 
             def _generate_tooltips(
@@ -732,6 +748,9 @@ class MacroModule:
             selected_nace = col.replace("_", ".")
             row_idx = int(row_id)
 
+            if not selected_nace:
+                raise PreventUpdate
+
             if macro_level == "sammensatte variabler":
                 selected_filter_val: Any | None = heatmap_row_data[row_idx].get(
                     "variabel"
@@ -741,7 +760,7 @@ class MacroModule:
                 assert macro_level is not None
                 selected_filter_val = heatmap_row_data[row_idx].get(macro_level)
 
-            if not selected_filter_val or not selected_nace:
+            if selected_filter_val is None or pd.isna(selected_filter_val):
                 raise PreventUpdate
 
             # read in every unit in selected nace
@@ -773,6 +792,8 @@ class MacroModule:
                         macro_level: t_curr_filtered.kommune.substr(
                             0, length=col_length
                         )
+                        .fill_null("UKJENT")
+                        .replace("", "UKJENT")
                     }
                 )
                 t_prev_filtered = t_prev_filtered.mutate(
@@ -780,6 +801,8 @@ class MacroModule:
                         macro_level: t_prev_filtered.kommune.substr(
                             0, length=col_length
                         )
+                        .fill_null("UKJENT")
+                        .replace("", "UKJENT")
                     }
                 )
 
@@ -887,6 +910,13 @@ class MacroModule:
                 indicator=True,
             )
 
+            merged_df[kommune_col] = (
+                merged_df[kommune_col].fillna("UKJENT").replace("", "UKJENT")
+            )
+            merged_df[f"{kommune_col}_x"] = (
+                merged_df[f"{kommune_col}_x"].fillna("UKJENT").replace("", "UKJENT")
+            )
+
             merged_df["is_new"] = merged_df["_merge"] == "left_only"
             merged_df["is_exiter"] = merged_df["_merge"] == "right_only"
 
@@ -936,11 +966,15 @@ class MacroModule:
                     kommune_col in merged_df.columns
                     and f"{kommune_col}_x" in merged_df.columns
                 ):
-                    merged_df["macro_prefix_curr"] = (
-                        merged_df[kommune_col].astype(str).str[:col_length]
+                    merged_df["macro_prefix_curr"] = merged_df[kommune_col].where(
+                        merged_df[kommune_col] == "UKJENT",
+                        merged_df[kommune_col].astype(str).str[:col_length],
                     )
-                    merged_df["macro_prefix_prev"] = (
-                        merged_df[f"{kommune_col}_x"].astype(str).str[:col_length]
+                    merged_df["macro_prefix_prev"] = merged_df[
+                        f"{kommune_col}_x"
+                    ].where(
+                        merged_df[f"{kommune_col}_x"] == "UKJENT",
+                        merged_df[f"{kommune_col}_x"].astype(str).str[:col_length],
                     )
 
                     merged_df["in_bucket_curr"] = (
@@ -1179,7 +1213,9 @@ class MacroModule:
 class MacroModuleTab(TabImplementation, MacroModule):
     """MacroModuleTab is an implementation of the MacroModule module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
+    def __init__(
+        self, time_units: list[str], base_path: str, conn: object | None = None
+    ) -> None:
         """Initializes the MacroModuleTab class."""
         MacroModule.__init__(
             self, time_units=time_units, conn=conn, base_path=base_path
@@ -1190,7 +1226,9 @@ class MacroModuleTab(TabImplementation, MacroModule):
 class MacroModuleWindow(WindowImplementation, MacroModule):
     """MacroModuleWindow is an implementation of the MacroModule module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
+    def __init__(
+        self, time_units: list[str], base_path: str, conn: object | None = None
+    ) -> None:
         """Initializes the MacroModuleWindow class."""
         MacroModule.__init__(
             self, time_units=time_units, conn=conn, base_path=base_path
