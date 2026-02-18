@@ -35,4 +35,4 @@ def ibis_polars_conn():
 def set_connection_testing():
     print("Setting up connection...")
     # Example: create a DB connection, API client, etc.
-    set_connection(lambda: ibis.polars.connect())
+    set_connection(lambda: ibis.polars.connect(), pooled_connection=False)
