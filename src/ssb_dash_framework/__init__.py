@@ -85,6 +85,8 @@ from .utils import hb_method
 from .utils import ibis_filter_with_dict
 from .utils import module_validator
 from .utils import set_connection
+from .utils import set_connection_eimerdb
+from .utils import set_connection_postgres
 from .utils import sidebar_button
 
 # from .utils import th_error
@@ -176,6 +178,8 @@ __all__ = [
     "module_validator",
     "register_control",
     "set_connection",
+    "set_connection_eimerdb",
+    "set_connection_postgres",
     "set_variables",
     "sidebar_button",
     #    "hb_method",

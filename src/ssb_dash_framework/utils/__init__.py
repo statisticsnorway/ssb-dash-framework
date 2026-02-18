@@ -5,6 +5,8 @@ from .alert_handler import create_alert
 from .app_logger import enable_app_logging
 from .config_tools import get_connection
 from .config_tools import set_connection
+from .config_tools import set_connection_eimerdb
+from .config_tools import set_connection_postgres
 from .core_query_functions import active_no_duplicates_refnr_list
 from .core_query_functions import conn_is_ibis
 from .core_query_functions import create_filter_dict
@@ -41,6 +43,8 @@ __all__ = [
     "ibis_filter_with_dict",
     "module_validator",
     "set_connection",
+    "set_connection_eimerdb",
+    "set_connection_postgres",
     "sidebar_button",
     # "th_error",
 ]
