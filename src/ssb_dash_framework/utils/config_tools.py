@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Callable
+from urllib.parse import quote_plus
 
 import ibis
 from eimerdb import EimerDBInstance
@@ -19,7 +20,7 @@ def set_connection_postgres(
     host: str,
     port: int,
     database: str,
-    password: str = "",
+    password: str | None = None,
 ) -> None:
     """Sets connection to a postgres connection.
 
@@ -32,11 +33,17 @@ def set_connection_postgres(
     """
     global _IS_POOLED
 
-    engine = create_engine(
-        f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}",
-        pool_size=5,
-        max_overflow=10,
-    )
+    user_enc = quote_plus(user)
+
+    # Build engine URL
+    if password:
+        password_enc = quote_plus(password)
+        engine_url = f"postgresql+psycopg2://{user_enc}:{password_enc}@{host}:{port!s}/{database}"
+    else:
+        engine_url = f"postgresql+psycopg2://{user_enc}@{host}:{port!s}/{database}"
+    # Create engine
+    engine = create_engine(engine_url)
+    print(engine_url)
 
     set_connection(lambda: ibis.postgres.connect(engine), pooled_connection=True)
 
