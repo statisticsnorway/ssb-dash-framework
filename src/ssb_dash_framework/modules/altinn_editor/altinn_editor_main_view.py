@@ -11,7 +11,6 @@ from dash.dependencies import Output
 from eimerdb import EimerDBInstance
 
 from ...setup.variableselector import VariableSelector
-from ...utils.config_tools import get_connection
 from ...utils.core_query_functions import conn_is_ibis
 from .altinn_editor_comment import AltinnEditorComment
 from .altinn_editor_contact import AltinnEditorContact
@@ -46,7 +45,7 @@ class AltinnSkjemadataEditor:
     def __init__(
         self,
         time_units: list[str],
-        conn: object | None = None,
+        conn: object,
         starting_table: str | None = None,
         variable_connection: dict[str, str] | None = None,
         sidepanels: None = None,
@@ -70,8 +69,8 @@ class AltinnSkjemadataEditor:
         self.icon = "🗊"
         self.label = "Data editor"
 
-        add_year_diff_support_table(conn if conn else get_connection())
-        self.conn = conn if conn else get_connection()
+        add_year_diff_support_table(conn)
+        self.conn = conn
         self.variable_connection = variable_connection if variable_connection else {}
 
         self.variableselector = VariableSelector(
@@ -88,16 +87,19 @@ class AltinnSkjemadataEditor:
         if primary_view is None:
             self.primary_table = AltinnEditorPrimaryTable(
                 time_units=time_units,
+                conn=self.conn,
                 variable_selector_instance=self.variableselector,
             )
         if sidepanels is None:
             self.sidepanels: list[AltinnEditorModule] = [
                 AltinnEditorSubmittedForms(
                     time_units=time_units,
+                    conn=self.conn,
                     variable_selector_instance=self.variableselector,
                 ),
                 AltinnEditorUnitDetails(
                     time_units=time_units,
+                    conn=self.conn,
                     variable_connection=self.variable_connection,
                     variable_selector_instance=self.variableselector,
                 ),
@@ -107,17 +109,22 @@ class AltinnSkjemadataEditor:
                 AltinnEditorSupportTables(),
                 AltinnEditorContact(
                     time_units=time_units,
+                    conn=self.conn,
                     variable_selector_instance=self.variableselector,
                 ),
                 AltinnEditorHistory(
                     time_units=time_units,
+                    conn=self.conn,
                     variable_selector_instance=self.variableselector,
                 ),
                 AltinnEditorControl(
                     time_units=time_units,
+                    conn=self.conn,
                     variable_selector_instance=self.variableselector,
                 ),
-                AltinnEditorComment(),
+                AltinnEditorComment(
+                    conn=self.conn,
+                ),
             ]
         self.is_valid()
         self.module_callbacks()
