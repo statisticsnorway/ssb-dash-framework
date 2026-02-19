@@ -20,7 +20,6 @@ from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
 from ...utils import create_alert
-from ...utils.config_tools import get_connection
 from ...utils.eimerdb_helpers import create_partition_select
 from .altinn_editor_utility import AltinnEditorStateTracker
 
@@ -33,8 +32,8 @@ class AltinnEditorSubmittedForms:
     def __init__(
         self,
         time_units: list[str],
+        conn: object,
         variable_selector_instance: VariableSelector,
-        conn: object | None = None,
     ) -> None:
         """Initializes the Altinn Editor submitted forms module.
 
@@ -46,11 +45,11 @@ class AltinnEditorSubmittedForms:
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
         """
-        self.conn = conn if conn else get_connection()
-        if not isinstance(self.conn, EimerDBInstance) and not conn_is_ibis(self.conn):
+        if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
             raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(self.conn)}"
+                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
             )
+        self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
