@@ -3,6 +3,7 @@ from contextlib import contextmanager
 
 import ibis
 from eimerdb import EimerDBInstance
+import ibis
 from ibis.backends.postgres import Backend
 from psycopg_pool import ConnectionPool
 
@@ -26,7 +27,7 @@ def set_eimerdb_connection(  # TODO: Test
     def _eimer_ibis_converter(
         necessary_tables: list[str] | None = None, partition_select=None
     ):
-        global _CONNECTION_INSTANCE
+        global _CONNECTION
         conn = ibis.connect("duckdb://")
         if necessary_tables is None:
             necessary_tables = [
@@ -37,31 +38,31 @@ def set_eimerdb_connection(  # TODO: Test
                 "datatyper",
             ]
         if "enheter" in necessary_tables:
-            enheter = _CONNECTION_INSTANCE.query(
+            enheter = _CONNECTION.query(
                 "SELECT * FROM enheter",
                 partition_select=partition_select,
             )
             conn.create_table("enheter", enheter)
         if "kontaktinfo" in necessary_tables:
-            kontaktinfo = _CONNECTION_INSTANCE.query(
+            kontaktinfo = _CONNECTION.query(
                 "SELECT * FROM kontaktinfo",
                 partition_select=partition_select,
             )
             conn.create_table("kontaktinfo", kontaktinfo)
         if "skjemamottak" in necessary_tables:
-            skjemamottak = _CONNECTION_INSTANCE.query(
+            skjemamottak = _CONNECTION.query(
                 "SELECT * FROM skjemamottak",
                 partition_select=partition_select,
             )
             conn.create_table("skjemamottak", skjemamottak)
         if "skjemadata" in necessary_tables:
-            skjemadata = _CONNECTION_INSTANCE.query(
+            skjemadata = _CONNECTION.query(
                 "SELECT * FROM skjemadata_hoved",
                 partition_select=partition_select,
             )
             conn.create_table("skjemadata_hoved", skjemadata)
         if "datatyper" in necessary_tables:
-            datatyper = _CONNECTION_INSTANCE.query(
+            datatyper = _CONNECTION.query(
                 "SELECT * FROM datatyper",
                 partition_select=partition_select,
             )
