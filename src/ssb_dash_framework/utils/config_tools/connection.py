@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from contextlib import contextmanager
 
+import ibis
 from eimerdb import EimerDBInstance
 from ibis.backends.postgres import Backend
 from psycopg_pool import ConnectionPool
