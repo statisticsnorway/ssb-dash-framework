@@ -207,9 +207,7 @@ class AltinnEditorPrimaryTable:
 
                     # sort by bedrift if available
                     if bedrift and "ident" in t.columns:
-                        t = t.order_by(
-                            [_.ident.cases((bedrift, 0), else_=1), _.radnr]
-                        )
+                        t = t.order_by([_.ident.cases((bedrift, 0), else_=1), _.radnr])
                     else:
                         t = t.order_by(_.radnr)
 
