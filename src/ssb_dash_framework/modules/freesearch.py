@@ -18,7 +18,6 @@ from ssb_dash_framework.utils import conn_is_ibis
 
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
-from ..utils.config_tools import get_connection
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -35,22 +34,19 @@ class FreeSearch(ABC):
 
     _id_number = 0
 
-    def __init__(self, label: str = "Frisøk", conn: object | None = None) -> None:
+    def __init__(self, database: Any, label: str = "Frisøk") -> None:
         """Initialize the FreeSearch module.
 
         Args:
-            conn: Database connection or interface for executing SQL queries.
+            database: Database connection or interface for executing SQL queries.
             label: Label for the module, defaults to "Frisøk".
 
         Raises:
             TypeError: If the connection object is not 'EimerDBInstance' or ibis connection.
         """
-        self.database = conn if conn else get_connection()
-        if not isinstance(self.database, EimerDBInstance) and not conn_is_ibis(
-            self.database
-        ):
+        if not isinstance(database, EimerDBInstance) and not conn_is_ibis(database):
             raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(self.database)}"
+                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(database)}"
             )
         self.module_number = FreeSearch._id_number
         self.module_name = self.__class__.__name__
@@ -58,6 +54,7 @@ class FreeSearch(ABC):
         self.icon = "🔍"
         self.label = label
 
+        self.database = database
         self.module_layout = self._create_layout()
         self.module_callbacks()
         module_validator(self)
@@ -190,26 +187,26 @@ class FreeSearchTab(TabImplementation, FreeSearch):
     specific to the tab interface.
     """
 
-    def __init__(self, conn: object | None = None) -> None:
+    def __init__(self, database: Any) -> None:
         """Initialize the FreeSearchTab with a database connection.
 
         Args:
             database: Database connection or interface used for executing SQL queries.
         """
-        FreeSearch.__init__(self, conn=conn)
+        FreeSearch.__init__(self, database=database)
         TabImplementation.__init__(self)
 
 
 class FreeSearchWindow(WindowImplementation, FreeSearch):
     """FreeSearchWindow is a class that creates a modal based on the FreeSearch module."""
 
-    def __init__(self, conn: object | None = None) -> None:
+    def __init__(self, database: Any) -> None:
         """Initialize the FreeSearchWindow class.
 
         Args:
             database: The database connection or object used for querying.
         """
-        FreeSearch.__init__(self, conn=conn)
+        FreeSearch.__init__(self, database=database)
         WindowImplementation.__init__(
             self,
         )

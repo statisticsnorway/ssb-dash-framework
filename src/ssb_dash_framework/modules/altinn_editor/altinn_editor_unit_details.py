@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Any
 
 import dash_ag_grid as dag
@@ -18,7 +19,6 @@ from ssb_dash_framework.utils import create_filter_dict
 from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
-from ...utils.config_tools import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,9 @@ class AltinnEditorUnitDetails:
     def __init__(
         self,
         time_units: list[str],
+        conn: object,
         variable_selector_instance: VariableSelector,
         variable_connection: dict[str, str],
-        conn: object | None = None,
     ) -> None:
         """Initializes the Altinn Editor Unit Details module.
 
@@ -44,11 +44,11 @@ class AltinnEditorUnitDetails:
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
         """
-        self.conn = conn if conn else get_connection()
-        if not isinstance(self.conn, EimerDBInstance) and not conn_is_ibis(self.conn):
+        if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
             raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(self.conn)}"
+                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
             )
+        self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
@@ -126,6 +126,9 @@ class AltinnEditorUnitDetails:
                     args,
                 )
                 return None, None
+            time.sleep(
+                1
+            )  # TODO: Fix some kind of multithreading to let it query more than one thing at a time.
             try:
                 if isinstance(self.conn, EimerDBInstance):
                     conn = ibis.polars.connect()

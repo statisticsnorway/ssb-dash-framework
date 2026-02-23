@@ -16,7 +16,6 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
-from ..utils.config_tools import get_connection
 from ..utils.functions import sidebar_button
 
 logger = logging.getLogger(__name__)
@@ -25,17 +24,21 @@ logger = logging.getLogger(__name__)
 class VisualizationBuilder:
     """A module for creating and visualizing data queries and graphs interactively."""
 
-    def __init__(self, conn: object) -> None:
+    def __init__(self, database: object) -> None:
         """Initializes the VisualiseringsbyggerModule.
 
         Args:
-            conn: The database connection or interface used for querying data.
+            database: The database connection or interface used for querying data.
+
+        Raises:
+            TypeError: If database object does not have query method.
         """
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
         )
-        self.database = conn if conn else get_connection()
-
+        if not hasattr(database, "query"):
+            raise TypeError("The provided object does not have a 'query' method.")
+        self.database = database
         self.callbacks()
 
     def layout(self) -> html.Div:

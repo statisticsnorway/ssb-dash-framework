@@ -20,7 +20,6 @@ from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils.alert_handler import create_alert
-from ..utils.config_tools import get_connection
 from ..utils.core_query_functions import conn_is_ibis
 from ..utils.module_validation import module_validator
 
@@ -45,7 +44,7 @@ class ControlView(ABC):
         self,
         time_units: list[str],
         control_dict: dict[str, Any],
-        conn: object | None = None,
+        conn: object,
         outputs: list[str] | None = None,
     ) -> None:  # TODO add proper annotation for control_dict value
         """Initializes the ControlView with time units, control dictionary, and database connection.
@@ -76,7 +75,7 @@ class ControlView(ABC):
         self.label = "Kontroll"
 
         self.control_dict = control_dict
-        self.conn = conn if conn else get_connection()
+        self.conn = conn
         self.outputs = outputs
         self._is_valid()
         self.module_layout = self.create_layout()
@@ -486,10 +485,7 @@ class ControlViewTab(TabImplementation, ControlView):
     """ControlView implemented as a tab."""
 
     def __init__(
-        self,
-        time_units: list[str],
-        control_dict: dict[str, Any],
-        conn: object | None = None,
+        self, time_units: list[str], control_dict: dict[str, Any], conn: object
     ) -> None:
         """Initializes the ControlViewTab module."""
         ControlView.__init__(
@@ -505,10 +501,7 @@ class ControlViewWindow(WindowImplementation, ControlView):
     """ControlView implemented as a window."""
 
     def __init__(
-        self,
-        time_units: list[str],
-        control_dict: dict[str, Any],
-        conn: object | None = None,
+        self, time_units: list[str], control_dict: dict[str, Any], conn: object
     ) -> None:
         """Initializes the ControlViewWindow module."""
         ControlView.__init__(
@@ -525,10 +518,7 @@ class AltinnControlViewTab(TabImplementation, ControlView):
     """ControlView implemented as a tab."""
 
     def __init__(
-        self,
-        time_units: list[str],
-        control_dict: dict[str, Any],
-        conn: object | None = None,
+        self, time_units: list[str], control_dict: dict[str, Any], conn: object
     ) -> None:
         """Initializes the ControlViewTab module."""
         warnings.warn(
@@ -550,10 +540,7 @@ class AltinnControlViewWindow(WindowImplementation, ControlView):
     """ControlView implemented as a window."""
 
     def __init__(
-        self,
-        time_units: list[str],
-        control_dict: dict[str, Any],
-        conn: object | None = None,
+        self, time_units: list[str], control_dict: dict[str, Any], conn: object
     ) -> None:
         """Initializes the ControlViewWindow module."""
         warnings.warn(

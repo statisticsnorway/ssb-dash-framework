@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Any
 
 import dash_ag_grid as dag
@@ -17,7 +18,6 @@ from ibis import _
 from ssb_dash_framework.utils import conn_is_ibis
 
 from ...utils import create_alert
-from ...utils.config_tools import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class AltinnEditorComment:
 
     def __init__(
         self,
-        conn: object | None = None,
+        conn: object,
     ) -> None:
         """Initializes the Altinn Editor Comment module.
 
@@ -37,12 +37,11 @@ class AltinnEditorComment:
         Raises:
             TypeError: If the connection object is not 'EimerDBInstance' or ibis connection.
         """
-        self.conn = conn if conn else get_connection()
-        if not isinstance(self.conn, EimerDBInstance) and not conn_is_ibis(self.conn):
+        if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
             raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(self.conn)}"
+                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
             )
-
+        self.conn = conn
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
@@ -164,6 +163,7 @@ class AltinnEditorComment:
                 conn = self.conn
             else:
                 raise TypeError("Connection object is invalid type.")
+            time.sleep(2)
             t = conn.table("skjemamottak")
             df = t.filter(_.ident == ident).filter(_.skjema == skjema).to_pandas()
             columns = [

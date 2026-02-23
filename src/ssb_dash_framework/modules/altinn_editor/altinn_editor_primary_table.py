@@ -18,7 +18,6 @@ from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
 from ...utils.alert_handler import create_alert
-from ...utils.config_tools import get_connection
 from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
@@ -34,8 +33,8 @@ class AltinnEditorPrimaryTable:
     def __init__(
         self,
         time_units: list[str],
+        conn: object,
         variable_selector_instance: VariableSelector,
-        conn: object | None = None,
         cols_to_hide: list[str] | None = None,
     ) -> None:
         """Initializes the Altinn Editor primary table module.
@@ -50,11 +49,11 @@ class AltinnEditorPrimaryTable:
             TypeError: If variable_selector_instance is not an instance of VariableSelector. Or
                 if connection object is neither EimerDBInstance or Ibis connection.
         """
-        self.conn = conn if conn else get_connection()
-        if not isinstance(self.conn, EimerDBInstance) and not conn_is_ibis(self.conn):
+        if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
             raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(self.conn)}"
+                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
             )
+        self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
@@ -208,12 +207,7 @@ class AltinnEditorPrimaryTable:
 
                     # sort by bedrift if available
                     if bedrift and "ident" in t.columns:
-                        t = t.mutate(
-                            sort_priority=ibis.case()
-                            .when(_.ident == bedrift, 0)
-                            .else_(1)
-                            .end()
-                        ).order_by(["sort_priority", _.radnr])
+                        t = t.order_by([_.ident.cases((bedrift, 0), else_=1), _.radnr])
                     else:
                         t = t.order_by(_.radnr)
 
