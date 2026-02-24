@@ -33,7 +33,7 @@ def set_eimerdb_connection(  # TODO: Test
                 "enheter",
                 "kontaktinfo",
                 "skjemamottak",
-                "skjemadata",
+                "skjemadata_hoved",
                 "datatyper",
             ]
         if "enheter" in necessary_tables:
@@ -54,7 +54,7 @@ def set_eimerdb_connection(  # TODO: Test
                 partition_select=partition_select,
             )
             conn.create_table("skjemamottak", skjemamottak)
-        if "skjemadata" in necessary_tables:
+        if "skjemadata_hoved" in necessary_tables:
             skjemadata = _CONNECTION.query(
                 "SELECT * FROM skjemadata_hoved",
                 partition_select=partition_select,
