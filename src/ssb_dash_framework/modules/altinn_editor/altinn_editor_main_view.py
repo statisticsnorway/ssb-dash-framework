@@ -19,7 +19,6 @@ from .altinn_editor_history import AltinnEditorHistory
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 from .altinn_editor_submitted_forms import AltinnEditorSubmittedForms
 from .altinn_editor_supporting_table import AltinnEditorSupportTables
-from .altinn_editor_supporting_table import add_year_diff_support_table
 from .altinn_editor_unit_details import AltinnEditorUnitDetails
 from .altinn_editor_utility import AltinnEditorStateTracker
 
@@ -67,7 +66,6 @@ class AltinnSkjemadataEditor:
         self.icon = "🗊"
         self.label = "Data editor"
 
-        add_year_diff_support_table()
         self.variable_connection = variable_connection if variable_connection else {}
 
         self.variableselector = VariableSelector(
