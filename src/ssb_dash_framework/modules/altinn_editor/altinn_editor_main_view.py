@@ -87,7 +87,6 @@ class AltinnSkjemadataEditor:
         if primary_view is None:
             self.primary_table = AltinnEditorPrimaryTable(
                 time_units=time_units,
-                conn=self.conn,
                 variable_selector_instance=self.variableselector,
             )
         if sidepanels is None:

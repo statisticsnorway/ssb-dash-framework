@@ -3,7 +3,6 @@ from contextlib import contextmanager
 
 import ibis
 from eimerdb import EimerDBInstance
-import ibis
 from ibis.backends.postgres import Backend
 from psycopg_pool import ConnectionPool
 
@@ -81,7 +80,7 @@ def set_postgres_connection(database_url):
     _CONNECTION = pool
 
     @contextmanager
-    def _wrap_ibis_postgres():
+    def _wrap_ibis_postgres(*args, **kwargs):
         with pool.connection() as raw_conn:
             yield Backend.from_connection(raw_conn)
 
