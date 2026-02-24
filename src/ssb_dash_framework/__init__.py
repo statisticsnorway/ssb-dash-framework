@@ -41,6 +41,9 @@ from .modules import HBMethodWindow
 from .modules import MacroModule
 from .modules import MacroModuleTab
 from .modules import MacroModuleWindow
+from .modules import MacroModuleConsolidated
+from .modules import MacroModuleConsolidatedTab
+from .modules import MacroModuleConsolidatedWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
@@ -132,6 +135,9 @@ __all__ = [
     "MacroModule",
     "MacroModuleTab",
     "MacroModuleWindow",
+    "MacroModuleConsolidated",
+    "MacroModuleConsolidatedTab",
+    "MacroModuleConsolidatedWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
