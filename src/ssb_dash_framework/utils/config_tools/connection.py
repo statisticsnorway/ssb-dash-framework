@@ -12,8 +12,7 @@ _CONNECTION_CALLABLE: Callable | None = None
 
 
 def set_eimerdb_connection(  # TODO: Test
-    bucket_name,
-    eimer_name,
+    bucket_name, eimer_name, necessary_tables_default=None
 ):
     global _IS_POOLED, _CONNECTION, _CONNECTION_CALLABLE
     _IS_POOLED = False
@@ -22,20 +21,27 @@ def set_eimerdb_connection(  # TODO: Test
         eimer_name=eimer_name,
     )
 
+    if not necessary_tables_default:
+        necessary_tables_default = [
+            "enheter",
+            "kontaktinfo",
+            "skjemamottak",
+            "skjemadata_hoved",
+            "datatyper",
+        ]
+
     @contextmanager
     def _eimer_ibis_converter(
-        necessary_tables: list[str] | None = None, partition_select=None
+        necessary_tables: list[str] = necessary_tables_default, partition_select=None
     ):
         global _CONNECTION
         conn = ibis.connect("duckdb://")
-        if necessary_tables is None:
-            necessary_tables = [
-                "enheter",
-                "kontaktinfo",
-                "skjemamottak",
-                "skjemadata_hoved",
-                "datatyper",
-            ]
+
+        if not necessary_tables_default:
+            raise ValueError(
+                f"'necessary_tables_default' must be list of strings. Received: {necessary_tables_default}"
+            )
+
         if "enheter" in necessary_tables:
             enheter = _CONNECTION.query(
                 "SELECT * FROM enheter",
