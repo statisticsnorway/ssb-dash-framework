@@ -177,7 +177,6 @@ class AltinnEditorPrimaryTable:
                     long_format = True
                 else:
                     long_format = False
-
                 if long_format:
                     logger.debug("Processing long data")
                     try:
@@ -188,18 +187,11 @@ class AltinnEditorPrimaryTable:
                         logger.debug(
                             f"partition_select:\n{create_partition_select(desired_partitions=self.time_units,skjema=skjema,**partition_args,)}"
                         )
-
-                        t = t.filter(_.refnr == refnr).join(d, "variabel", how="left")
-                        t = t.filter(ibis_filter_with_dict(filter_dict))
-
                         # sort by bedrift if available
                         if bedrift and "ident" in t.columns:
-                            t = t.mutate(
-                                sort_priority=ibis.case()
-                                .when(_.ident == bedrift, 0)
-                                .else_(1)
-                                .end()
-                            ).order_by(["sort_priority", _.radnr])
+                            t = t.order_by(
+                                [_.ident.cases((bedrift, 0), else_=1), _.radnr]
+                            )
                         else:
                             t = t.order_by(_.radnr)
 
@@ -250,6 +242,25 @@ class AltinnEditorPrimaryTable:
                                 key=lambda x: x.map(lambda v: 0 if v == bedrift else 1),
                             )
 
+                        t = t.filter(_.refnr == refnr).join(d, "variabel", how="left")
+                        t = t.filter(ibis_filter_with_dict(filter_dict))
+
+                        # sort by bedrift if available
+                        if bedrift and "ident" in t.columns:
+                            t = t.mutate(
+                                sort_priority=ibis.case()
+                                .when(_.ident == bedrift, 0)
+                                .else_(1)
+                                .end()
+                            ).order_by(["sort_priority", _.radnr])
+                        else:
+                            t = t.order_by(_.radnr)
+
+                        df = t.drop(
+                            [col for col in t.columns if col.endswith("_right")]
+                            + ["datatype", "radnr", "tabell"]
+                        ).to_pandas()
+                        logger.debug(f"resultat dataframe:\n{df.head(2)}")
                         columndefs = [
                             {
                                 "headerName": col,
@@ -262,14 +273,14 @@ class AltinnEditorPrimaryTable:
                                     "skjema",
                                     "refnr",
                                 ],
+                                "flex": 2 if col == "variabel" else 1,
                             }
                             for col in df.columns
                         ]
                         return df.to_dict("records"), columndefs
-
                     except Exception as e:
                         logger.error(
-                            f"Error in hovedside_update_altinnskjema (wide format): {e}",
+                            f"Error in hovedside_update_altinnskjema (long format): {e}",
                             exc_info=True,
                         )
                         return None, None
