@@ -1097,7 +1097,7 @@ class MacroModuleConsolidated:
 
             # fix � decoding issues
             df = df.astype(object)
-            df = df.applymap(
+            df = df.map(
                 lambda x: x.decode("latin-1") if isinstance(x, bytes) else x
             )
             row_data: list[dict[Hashable, Any]] | Any = df.to_dict("records")

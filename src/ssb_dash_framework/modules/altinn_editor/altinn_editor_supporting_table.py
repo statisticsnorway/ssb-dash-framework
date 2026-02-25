@@ -141,7 +141,11 @@ def add_year_diff_support_table(
             connection.create_table("skjemadata_hoved", data)
         else:
             raise TypeError("Wah")  # TODO fix
-        s = connection.table("skjemadata_hoved")
+        try:
+            s = connection.table("skjemadata_hoved")
+        except Exception:
+            # fallback option
+            s = connection.table("core_skjemadata_mapped")
         return s.filter(_.ident == ident).to_pandas()
 
     AltinnSupportTable(
