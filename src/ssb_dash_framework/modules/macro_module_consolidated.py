@@ -44,7 +44,6 @@ HEATMAP_VARIABLES: dict[str, str] = {
     "nopost_driftsresultat": "driftsres",
     "brutto_driftsresultat": "brut_driftsres",
     "ts_varehan": "varehandel",
-    "totkjop": "totalkjøp",
     "ts_anlegg": "anlegg",
     "bruttoinvestering_oslo": "brut_inv_oslo",
     "bruttoinvestering_kvgr": "brut_inv_kvgr",
@@ -111,7 +110,9 @@ class MacroModule_ParquetReader:
 
         Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
         """
-        if aar == 2023 and foretak_or_bedrift == "bedrifter":  # new nedtrekk in Dapla has a specific file path
+        if (
+            aar == 2023 and foretak_or_bedrift == "bedrifter"
+        ):  # new nedtrekk in Dapla has a specific file path
             file_path = f"{base_path}/p{aar}/statistiske_foretak_{foretak_or_bedrift}_v2.parquet"
         else:
             file_path = (
@@ -201,7 +202,7 @@ class MacroModuleConsolidated:
         MacroModuleConsolidated._id_number += 1
 
         self.icon = "🌍"
-        self.label = "Makromodul"
+        self.label = "Makromodul konsolidert"
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
         )
@@ -242,7 +243,13 @@ class MacroModuleConsolidated:
                             className="macromodule-sidebar",
                             children=[
                                 html.H1(
-                                    ["Aggregerte", html.Br(), "næringsendringer"],
+                                    [
+                                        "Aggregerte,",
+                                        html.Br(),
+                                        "konsoliderte,",
+                                        html.Br(),
+                                        "næringsendringer",
+                                    ],
                                 ),
                                 html.Label(
                                     "Velg foretak eller bedrift",
@@ -1088,6 +1095,11 @@ class MacroModuleConsolidated:
                 c for c in DETAIL_GRID_ID_COLS + ordered_value_cols if c in df.columns
             ]
 
+            # fix � decoding issues
+            df = df.astype(object)
+            df = df.applymap(
+                lambda x: x.decode("latin-1") if isinstance(x, bytes) else x
+            )
             row_data: list[dict[Hashable, Any]] | Any = df.to_dict("records")
             if macro_level in ("fylke", "kommune"):
                 for row in row_data:
