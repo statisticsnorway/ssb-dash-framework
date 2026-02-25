@@ -8,8 +8,6 @@ def test_import() -> None:
     assert AltinnSupportTable is not None
 
 
-def test_instantiation(ibis_polars_conn) -> None:
+def test_instantiation() -> None:
     set_variables(["year", "quarter", "refnr", "statistikkvariabel", "ident"])
-    AltinnSkjemadataEditor(
-        time_units=["year", "quarter"], conn=ibis_polars_conn, variable_connection={}
-    )
+    AltinnSkjemadataEditor(time_units=["year", "quarter"], variable_connection={})
