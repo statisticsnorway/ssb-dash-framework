@@ -7,6 +7,8 @@ from .config_tools import get_connection
 from .config_tools import set_connection
 from .config_tools import set_eimerdb_connection
 from .config_tools import set_postgres_connection
+from .config_tools import _get_connection_object
+from .config_tools import _get_connection_callable
 from .core_query_functions import active_no_duplicates_refnr_list
 from .core_query_functions import conn_is_ibis
 from .core_query_functions import create_filter_dict
@@ -26,6 +28,8 @@ from .r_helpers import _get_kostra_r
 from .r_helpers import hb_method
 
 __all__ = [
+    "_get_connection_object",
+    "_get_connection_callable",
     "AlertHandler",
     "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",

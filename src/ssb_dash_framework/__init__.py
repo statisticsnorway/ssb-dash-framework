@@ -88,10 +88,14 @@ from .utils import set_connection
 from .utils import set_eimerdb_connection
 from .utils import set_postgres_connection
 from .utils import sidebar_button
+from .utils import _get_connection_object
+from .utils import _get_connection_callable
 
 # from .utils import th_error
 
 __all__ = [
+    "_get_connection_object",
+    "_get_connection_callable",
     "Aarsregnskap",
     "AarsregnskapTab",
     "AarsregnskapWindow",

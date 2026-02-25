@@ -11,6 +11,48 @@ _CONNECTION: object | None = None
 _CONNECTION_CALLABLE: Callable | None = None
 
 
+def _get_connection_object():
+    global _CONNECTION
+    return _CONNECTION
+
+
+def _get_connection_callable():
+    global _CONNECTION_CALLABLE
+    return _CONNECTION_CALLABLE
+
+
+@contextmanager
+def get_connection(*args, **kwargs):
+    global _IS_POOLED, _CONNECTION_CALLABLE
+    if not _CONNECTION_CALLABLE:
+        raise ValueError("No connection has been set.")
+    with _CONNECTION_CALLABLE(*args, **kwargs) as conn:
+        yield conn
+
+
+def set_connection(connection_func, is_pooled=False):
+    global _IS_POOLED, _CONNECTION, _CONNECTION_CALLABLE
+
+    _IS_POOLED = is_pooled
+
+    _CONNECTION_CALLABLE = connection_func
+
+
+def set_postgres_connection(database_url):
+    global _IS_POOLED, _CONNECTION, _CONNECTION_CALLABLE
+    _IS_POOLED = True
+
+    pool = ConnectionPool(conninfo=database_url, min_size=1, max_size=1)
+    _CONNECTION = pool
+
+    @contextmanager
+    def _wrap_ibis_postgres(*args, **kwargs):
+        with pool.connection() as raw_conn:
+            yield Backend.from_connection(raw_conn)
+
+    set_connection(_wrap_ibis_postgres)
+
+
 def set_eimerdb_connection(  # TODO: Test
     bucket_name, eimer_name, necessary_tables_default=None
 ):
@@ -76,35 +118,3 @@ def set_eimerdb_connection(  # TODO: Test
         yield conn
 
     _CONNECTION_CALLABLE = _eimer_ibis_converter
-
-
-def set_postgres_connection(database_url):
-    global _IS_POOLED, _CONNECTION, _CONNECTION_CALLABLE
-    _IS_POOLED = True
-
-    pool = ConnectionPool(conninfo=database_url, min_size=1, max_size=1)
-    _CONNECTION = pool
-
-    @contextmanager
-    def _wrap_ibis_postgres(*args, **kwargs):
-        with pool.connection() as raw_conn:
-            yield Backend.from_connection(raw_conn)
-
-    set_connection(_wrap_ibis_postgres)
-
-
-@contextmanager
-def get_connection(*args, **kwargs):
-    global _IS_POOLED, _CONNECTION_CALLABLE
-    if not _CONNECTION_CALLABLE:
-        raise ValueError("No connection has been set.")
-    with _CONNECTION_CALLABLE(*args, **kwargs) as conn:
-        yield conn
-
-
-def set_connection(connection_func, is_pooled=False):
-    global _IS_POOLED, _CONNECTION, _CONNECTION_CALLABLE
-
-    _IS_POOLED = is_pooled
-
-    _CONNECTION_CALLABLE = connection_func

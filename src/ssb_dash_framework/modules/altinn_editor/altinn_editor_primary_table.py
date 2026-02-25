@@ -18,7 +18,7 @@ from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
 from ...utils.alert_handler import create_alert
-from ...utils.config_tools.connection import _CONNECTION
+from ...utils.config_tools.connection import _get_connection_object
 from ...utils.config_tools.connection import get_connection
 from ...utils.eimerdb_helpers import create_partition_select
 
@@ -323,7 +323,8 @@ class AltinnEditorPrimaryTable:
                 f"alert_store: {alert_store}\n"
                 f"args: {args}"
             )
-            if isinstance(_CONNECTION, ConnectionPool):
+            connection_object = _get_connection_object()
+            if isinstance(connection_object, ConnectionPool):
                 with get_connection() as conn:
                     period_where = [
                         f"{x} = '{edited[0]['data'][x]}'" for x in self.time_units
@@ -374,10 +375,10 @@ class AltinnEditorPrimaryTable:
                             raise e
                     return alert_store
 
-            elif isinstance(_CONNECTION, EimerDBInstance):
+            elif isinstance(connection_object, EimerDBInstance):
                 partition_args = dict(zip(self.time_units, args, strict=False))
                 tables_editable_dict = {}
-                data_dict = _CONNECTION.tables
+                data_dict = connection_object.tables
 
                 for table, details in data_dict.items():
                     if table.startswith("skjemadata") and "schema" in details:
@@ -390,7 +391,7 @@ class AltinnEditorPrimaryTable:
                 table_editable_dict = tables_editable_dict[tabell]
                 edited_column = edited[0]["colId"]
 
-                schema = _CONNECTION.tables[tabell]["schema"]
+                schema = connection_object.tables[tabell]["schema"]
                 columns = {field["name"] for field in schema}
                 if "variabel" in columns and "verdi" in columns:
                     long_format = True
@@ -404,7 +405,7 @@ class AltinnEditorPrimaryTable:
                     ident = edited[0]["data"]["ident"]
 
                     try:
-                        _CONNECTION.query(
+                        connection_object.query(
                             f"""UPDATE {tabell}
                             SET {edited_column} = '{new_value}'
                             WHERE row_id = '{row_id}'
@@ -456,5 +457,5 @@ class AltinnEditorPrimaryTable:
                     return alert_store
             else:
                 raise TypeError(
-                    f"Conection set by set_connection() is not a valid connection object. Is type: {type(_CONNECTION)}"
+                    f"Conection set by set_connection() is not a valid connection object. Is type: {type(connection_object)}"
                 )

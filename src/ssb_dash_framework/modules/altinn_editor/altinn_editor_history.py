@@ -16,7 +16,7 @@ from ibis import _
 from psycopg_pool import ConnectionPool
 
 from ...setup.variableselector import VariableSelector
-from ...utils.config_tools.connection import _CONNECTION
+from ...utils.config_tools.connection import _get_connection_object
 from ...utils.config_tools.connection import get_connection
 from ...utils.eimerdb_helpers import create_partition_select
 
@@ -147,59 +147,65 @@ class AltinnEditorHistory:
                 f"skjema: {skjema}\n"
                 f"args: {args}"
             )
-            if is_open:
-                refnr = selected_row[0]["refnr"]
-                if isinstance(_CONNECTION, ConnectionPool):
-                    with get_connection() as conn:
-                        t = conn.table("skjemadataendringshistorikk")
-                        df = t.filter(_.refnr == refnr).to_pandas()
-                        df["endret_tid"] = (
-                            pd.to_datetime(df["endret_tid"], utc=True)
-                            .dt.tz_convert(local_tz)
-                            .dt.floor("s")
-                            .dt.tz_localize(None)
-                            .dt.strftime("%Y-%m-%d %H:%M:%S")
-                        )
-                        df = df.sort_values("endret_tid", ascending=False)
-                        columns = [
-                            {
-                                "headerName": col,
-                                "field": col,
-                                "filter": True,
-                                "resizable": True,
-                            }
-                            for col in df.columns
-                        ]
-                        return df.to_dict("records"), columns
-                elif isinstance(_CONNECTION, EimerDBInstance):
-                    try:
-                        partition_args = dict(zip(self.time_units, args, strict=False))
-                        df = _CONNECTION.query_changes(
-                            f"""SELECT * FROM {tabell}
-                            WHERE refnr = '{refnr}'
-                            ORDER BY datetime DESC
-                            """,
-                            partition_select=create_partition_select(
-                                desired_partitions=self.time_units,
-                                skjema=skjema,
-                                **partition_args,
-                            ),
-                        )
-                        if df is None:
-                            df = pd.DataFrame(columns=["ingen", "data"])
-                        columns = [
-                            {
-                                "headerName": col,
-                                "field": col,
-                                "filter": True,
-                                "resizable": True,
-                            }
-                            for col in df.columns
-                        ]
-                        return df.to_dict("records"), columns
-                    except Exception as e:
-                        logger.error(f"Error in historikktabell: {e}", exc_info=True)
-                        return None, None
-            else:
+            if not is_open:
                 logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
+            refnr = selected_row[0]["refnr"]
+            logger.debug(f"Trying to retrieve history for {refnr}")
+            connection_object = _get_connection_object()
+            if isinstance(connection_object, ConnectionPool):
+                logger.debug("Using ConnectionPool logic.")
+                with get_connection() as conn:
+                    t = conn.table("skjemadataendringshistorikk")
+                    df = t.filter(_.refnr == refnr).to_pandas()
+                    df["endret_tid"] = (
+                        pd.to_datetime(df["endret_tid"], utc=True)
+                        .dt.tz_convert(local_tz)
+                        .dt.floor("s")
+                        .dt.tz_localize(None)
+                        .dt.strftime("%Y-%m-%d %H:%M:%S")
+                    )
+                    df = df.sort_values("endret_tid", ascending=False)
+                    columns = [
+                        {
+                            "headerName": col,
+                            "field": col,
+                            "filter": True,
+                            "resizable": True,
+                        }
+                        for col in df.columns
+                    ]
+                    return df.to_dict("records"), columns
+            elif isinstance(connection_object, EimerDBInstance):
+                try:
+                    partition_args = dict(zip(self.time_units, args, strict=False))
+                    df = connection_object.query_changes(
+                        f"""SELECT * FROM {tabell}
+                        WHERE refnr = '{refnr}'
+                        ORDER BY datetime DESC
+                        """,
+                        partition_select=create_partition_select(
+                            desired_partitions=self.time_units,
+                            skjema=skjema,
+                            **partition_args,
+                        ),
+                    )
+                    if df is None:
+                        df = pd.DataFrame(columns=["ingen", "data"])
+                    columns = [
+                        {
+                            "headerName": col,
+                            "field": col,
+                            "filter": True,
+                            "resizable": True,
+                        }
+                        for col in df.columns
+                    ]
+                    return df.to_dict("records"), columns
+                except Exception as e:
+                    logger.error(f"Error in historikktabell: {e}", exc_info=True)
+                    return None, None
+            else:
+                raise NotImplementedError(
+                    f"Connection of type {type(connection_object)} is not currently supported."
+                )
