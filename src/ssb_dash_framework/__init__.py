@@ -73,6 +73,8 @@ from .utils import DebugInspector
 from .utils import DemoDataCreator
 from .utils import TabImplementation
 from .utils import WindowImplementation
+from .utils import _get_connection_callable
+from .utils import _get_connection_object
 from .utils import _get_kostra_r
 from .utils import active_no_duplicates_refnr_list
 from .utils import conn_is_ibis
@@ -88,14 +90,10 @@ from .utils import set_connection
 from .utils import set_eimerdb_connection
 from .utils import set_postgres_connection
 from .utils import sidebar_button
-from .utils import _get_connection_object
-from .utils import _get_connection_callable
 
 # from .utils import th_error
 
 __all__ = [
-    "_get_connection_object",
-    "_get_connection_callable",
     "Aarsregnskap",
     "AarsregnskapTab",
     "AarsregnskapWindow",
@@ -165,6 +163,8 @@ __all__ = [
     "VisualizationBuilder",
     "VisualizationBuilderWindow",
     "WindowImplementation",
+    "_get_connection_callable",
+    "_get_connection_object",
     "active_no_duplicates_refnr_list",
     "app_setup",
     "apply_edits",
