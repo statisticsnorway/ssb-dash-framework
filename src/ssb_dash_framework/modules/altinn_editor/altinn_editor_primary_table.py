@@ -187,6 +187,8 @@ class AltinnEditorPrimaryTable:
                         logger.debug(
                             f"partition_select:\n{create_partition_select(desired_partitions=self.time_units,skjema=skjema,**partition_args,)}"
                         )
+                        t = t.filter(_.refnr == refnr).join(d, "variabel", how="left")
+                        t = t.filter(ibis_filter_with_dict(filter_dict))
                         # sort by bedrift if available
                         if bedrift and "ident" in t.columns:
                             t = t.order_by(

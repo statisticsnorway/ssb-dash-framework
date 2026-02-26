@@ -16,6 +16,7 @@ from ssb_dash_framework.utils import create_filter_dict
 from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
+from ...utils import _get_connection_object
 from ...utils import create_alert
 from ...utils import get_connection
 from ...utils.eimerdb_helpers import create_partition_select
@@ -202,73 +203,52 @@ class AltinnEditorSubmittedForms:
             variabel = edited[0]["colId"]
             new_value = edited[0]["value"]
             refnr = edited[0]["data"]["refnr"]
-            with get_connection() as conn:
-                if variabel == "editert":
-                    try:
-                        conn.query(
-                            f"""
-                            UPDATE skjemamottak
-                            SET editert = {new_value}
-                            WHERE refnr = '{refnr}'
-                            """,
-                            partition_select=create_partition_select(
-                                desired_partitions=self.time_units,
-                                skjema=skjema,
-                                **partition_args,
-                            ),
-                        )
-                        return [
-                            create_alert(
-                                f"Skjema {refnr} sin editeringsstatus er satt til {new_value}.",
-                                "success",
-                                ephemeral=True,
-                            ),
-                            *alert_store,
-                        ]
-                    except Exception:
-                        return [
-                            create_alert(
-                                "En feil skjedde under oppdatering av editeringsstatusen",
-                                "danger",
-                                ephemeral=True,
-                            ),
-                            *alert_store,
-                        ]
-                elif variabel == "aktiv":
-                    try:
-                        conn.query(
-                            f"""
-                            UPDATE skjemamottak
-                            SET aktiv = {new_value}
-                            WHERE refnr = '{refnr}'
-                            """,
-                            partition_select=create_partition_select(
-                                desired_partitions=self.time_units,
-                                skjema=skjema,
-                                **partition_args,
-                            ),
-                        )
-                        return [
-                            create_alert(
-                                f"Skjema {refnr} sin aktivstatus er satt til {new_value}.",
-                                "success",
-                                ephemeral=True,
-                            ),
-                            *alert_store,
-                        ]
-                    except Exception:
-                        return [
-                            create_alert(
-                                "En feil skjedde under oppdatering av aktivstatusen",
-                                "danger",
-                                ephemeral=True,
-                            ),
-                            *alert_store,
-                        ]
-                else:
-                    logger.debug(f"Tried to edit {variabel}, preventing update.")
-                    logger.debug("Raised PreventUpdate")
-                    raise PreventUpdate
+            if variabel not in ["aktiv", "editert"]:
+                raise ValueError(
+                    f"In the submitted forms module only 'aktiv' and 'editert' are editable fields. You tried to edit '{variabel}."
+                )
+
+            query = f"""
+                UPDATE skjemamottak
+                SET {variabel} = {new_value}
+                WHERE refnr = '{refnr}'
+            """
+
+            connection_object = _get_connection_object()
+            try:
+                if isinstance(connection_object, ConnectionPool):
+
+                    with get_connection() as conn:
+                        conn.raw_sql(query)
+
+                elif isinstance(connection_object, EimerDBInstance):
+                    connection_object.query(
+                        query,
+                        partition_select=create_partition_select(
+                            desired_partitions=self.time_units,
+                            skjema=skjema,
+                            **partition_args,
+                        ),
+                    )
+
+                return [
+                    create_alert(
+                        f"Skjema {refnr} sin editeringsstatus er satt til {new_value}.",
+                        "success",
+                        ephemeral=True,
+                    ),
+                    *alert_store,
+                ]
+            except Exception as e:
+                logger.debug(e)
+                return [
+                    create_alert(
+                        "En feil skjedde under oppdatering av editeringsstatusen",
+                        "danger",
+                        ephemeral=True,
+                    ),
+                    *alert_store,
+                ]
 
         @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemaer", "rowData"),
