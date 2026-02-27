@@ -16,13 +16,12 @@ from dash import callback
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils import active_no_duplicates_refnr_list
-from ..utils import conn_is_ibis
+from ..utils import get_connection
 from ..utils.eimerdb_helpers import create_partition_select
 from ..utils.module_validation import module_validator
 
@@ -62,7 +61,9 @@ class AggDistPlotter(ABC):
         ]
     )
 
-    def __init__(self, time_units: list[str], conn: object) -> None:
+    def __init__(
+        self, time_units: list[str], main_table_name="skjemadata_hoved"
+    ) -> None:
         """Initializes the AggDistPlotter.
 
         Args:
@@ -90,8 +91,7 @@ class AggDistPlotter(ABC):
             for x in time_units
         ]
         print("TIME UNITS ", self.time_units)
-
-        self.conn = conn
+        self.main_table_name = main_table_name
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -328,82 +328,60 @@ class AggDistPlotter(ABC):
                 )
             _t_0 = str(time_vars[0])
             _t_1 = str(time_vars[1])
-            if isinstance(self.conn, EimerDBInstance):
-                _t_0 = int(_t_0)
-                _t_1 = int(_t_1)
-                conn = ibis.polars.connect()
 
-                skjemamottak = self.conn.query(
-                    "SELECT * FROM skjemamottak",
-                    partition_select=updated_partition_select,
-                )
-                skjemadata = self.conn.query(
-                    "SELECT * FROM skjemadata_hoved",
-                    partition_select=updated_partition_select,
-                )
-                datatyper = self.conn.query(
-                    "SELECT * FROM datatyper", partition_select=updated_partition_select
-                )
+            with get_connection(  # necessary_tables and partition_select are used for eimerdb connection.
+                necessary_tables=["skjemamottak", "datatyper", self.main_table_name],
+                partition_select=updated_partition_select,
+            ) as conn:
+                skjemadata_tbl = conn.table(self.main_table_name)
+                datatyper_tbl = conn.table("datatyper")
 
-                conn.create_table("skjemamottak", skjemamottak)
-                conn.create_table("skjemadata_hoved", skjemadata)
-                conn.create_table("datatyper", datatyper)
-            elif conn_is_ibis(self.conn):
-                conn = self.conn
-            else:
-                raise NotImplementedError(
-                    f"Connection type '{type(self.conn)}' is currently not implemented."
-                )
+                relevant_refnr = active_no_duplicates_refnr_list(conn, skjema)
 
-            skjemadata_tbl = conn.table("skjemadata_hoved")
-            datatyper_tbl = conn.table("datatyper")
+                skjemadata_tbl = (
+                    skjemadata_tbl.filter(skjemadata_tbl.refnr.isin(relevant_refnr))
+                    .join(
+                        datatyper_tbl.select("variabel", "datatype"),
+                        ["variabel"],
+                        how="inner",
+                    )
+                    .filter(datatyper_tbl.datatype.isin(["number", "int", "float"]))
+                    .cast({"verdi": "float", rullerende_var: "str"})
+                    .cast({"verdi": "int"})
+                    .mutate(verdi=lambda t: t["verdi"].round(0))
+                    .pivot_wider(
+                        id_cols=["variabel"],
+                        names_from=rullerende_var,  # TODO: Tidsenhet
+                        values_from="verdi",
+                        values_agg="sum",
+                    )
+                )
+                if _t_1 in skjemadata_tbl.columns:
+                    logger.debug("Calculating diff from last year.")
+                    skjemadata_tbl.mutate(
+                        diff=lambda t: t[_t_0] - t[_t_1],
+                        pdiff=lambda t: (
+                            (t[_t_0].fill_null(0) - t[_t_1].fill_null(0))
+                            / t[_t_1].fill_null(1)
+                            * 100
+                        ).round(2),
+                    )
+                else:
+                    logger.debug(
+                        f"Didn't find previous period value, no diff calculated. Columns in dataset: {skjemadata_tbl.columns}"
+                    )
 
-            relevant_refnr = active_no_duplicates_refnr_list(conn, skjema)
-
-            skjemadata_tbl = (
-                skjemadata_tbl.filter(skjemadata_tbl.refnr.isin(relevant_refnr))
-                .join(
-                    datatyper_tbl.select("variabel", "datatype"),
-                    ["variabel"],
-                    how="inner",
-                )
-                .filter(datatyper_tbl.datatype.isin(["number", "int", "float"]))
-                .cast({"verdi": "float", rullerende_var: "str"})
-                .cast({"verdi": "int"})
-                .mutate(verdi=lambda t: t["verdi"].round(0))
-                .pivot_wider(
-                    id_cols=["variabel"],
-                    names_from=rullerende_var,  # TODO: Tidsenhet
-                    values_from="verdi",
-                    values_agg="sum",
-                )
-            )
-            if _t_1 in skjemadata_tbl.columns:
-                logger.debug("Calculating diff from last year.")
-                skjemadata_tbl.mutate(
-                    diff=lambda t: t[_t_0] - t[_t_1],
-                    pdiff=lambda t: (
-                        (t[_t_0].fill_null(0) - t[_t_1].fill_null(0))
-                        / t[_t_1].fill_null(1)
-                        * 100
-                    ).round(2),
-                )
-            else:
-                logger.debug(
-                    f"Didn't find previous period value, no diff calculated. Columns in dataset: {skjemadata_tbl.columns}"
-                )
-
-            pandas_table = skjemadata_tbl.to_pandas()
-            columns = [
-                {
-                    "headerName": col,
-                    "field": col,
-                }
-                for col in pandas_table.columns
-            ]
-            columns[0]["checkboxSelection"] = True
-            columns[0]["headerCheckboxSelection"] = True
-            return pandas_table.to_dict("records"), columns
+                pandas_table = skjemadata_tbl.to_pandas()
+                columns = [
+                    {
+                        "headerName": col,
+                        "field": col,
+                    }
+                    for col in pandas_table.columns
+                ]
+                columns[0]["checkboxSelection"] = True
+                columns[0]["headerCheckboxSelection"] = True
+                return pandas_table.to_dict("records"), columns
 
         @callback(  # type: ignore[misc]
             Output("aggdistplotter-graph", "figure"),
@@ -452,111 +430,98 @@ class AggDistPlotter(ABC):
                     **partition_args,
                 )
 
-            if isinstance(self.conn, EimerDBInstance):
-                conn = ibis.polars.connect()
-                skjemamottak = self.conn.query(
-                    "SELECT * FROM skjemamottak", partition_select=partition_select
-                )
-                skjemadata = self.conn.query(
-                    "SELECT * FROM skjemadata_hoved", partition_select=partition_select
-                )
+            with get_connection(
+                necessary_tables=["skjemamottak", self.main_table_name],
+                partition_select=partition_select,
+            ) as conn:
+                skjemamottak_tbl = conn.table("skjemamottak")
+                skjemadata_tbl = conn.table(self.main_table_name)
 
-                conn.create_table("skjemamottak", skjemamottak)
-                conn.create_table("skjemadata_hoved", skjemadata)
-            elif conn_is_ibis(self.conn):
-                conn = self.conn
-            else:
-                raise NotImplementedError(
-                    f"Connection type '{type(self.conn)}' is currently not implemented."
-                )
-            skjemamottak_tbl = conn.table("skjemamottak")
-            skjemadata_tbl = conn.table("skjemadata_hoved")
-
-            skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
-                skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
-                .order_by(ibis.desc(skjemamottak_tbl.dato_mottatt))
-                .distinct(on=[*self.time_units, "ident"], keep="first")
-            )
-
-            relevant_refnr = active_no_duplicates_refnr_list(conn, skjema)
-
-            skjemadata_tbl = (
-                skjemadata_tbl.filter(
-                    [
-                        skjemadata_tbl.refnr.isin(relevant_refnr),
-                        skjemadata_tbl.variabel == variabel,
-                        skjemadata_tbl.verdi.notnull(),
-                    ]
-                )
-                .cast({"verdi": "float"})
-                .cast({"verdi": "int"})
-            )
-
-            df = skjemadata_tbl.to_pandas()
-
-            top5_df = df.nlargest(5, "verdi")
-
-            if graph_type == "box":
-                fig = px.box(
-                    df,
-                    x="variabel",
-                    y="verdi",
-                    hover_data=["ident", "verdi"],
-                    points="all",
-                    title=f"📦 Boksplott for {variabel}, {partition_select!s}.",
-                    template="plotly_dark",
-                )
-            elif graph_type == "fiolin":
-                fig = px.violin(
-                    df,
-                    x="variabel",
-                    y="verdi",
-                    hover_data=["ident", "verdi"],
-                    box=True,
-                    points="all",
-                    title=f"🎻 Fiolinplott for {variabel}, {partition_select!s}.",
-                    template="plotly_dark",
-                )
-            elif graph_type == "bidrag":
-                agg_df = df.groupby("ident", as_index=False)["verdi"].sum()
-                agg_df["verdi"] = (agg_df["verdi"] / agg_df["verdi"].sum() * 100).round(
-                    2
-                )
-                agg_df = agg_df.sort_values("verdi", ascending=False).head(10)
-
-                fig = px.bar(
-                    agg_df,
-                    x="verdi",
-                    y="ident",
-                    orientation="h",
-                    title=f"🥇 Bidragsanalyse - % av total verdi ({variabel})",
-                    template="plotly_dark",
-                    labels={"verdi": "%"},
-                    custom_data=["ident"],
+                skjemamottak_tbl = (  # Get relevant refnr values from skjemamottak
+                    skjemamottak_tbl.filter(skjemamottak_tbl.aktiv)
+                    .order_by(ibis.desc(skjemamottak_tbl.dato_mottatt))
+                    .distinct(on=[*self.time_units, "ident"], keep="first")
                 )
 
-                fig.update_layout(yaxis={"categoryorder": "total ascending"})
+                relevant_refnr = active_no_duplicates_refnr_list(conn, skjema)
 
-            else:
-                fig = go.Figure()
-
-            if graph_type in ["box", "fiolin"]:
-                fig.add_scatter(
-                    x=[variabel] * len(top5_df),
-                    y=top5_df["verdi"],
-                    mode="markers",
-                    marker=dict(
-                        size=13,
-                        color="#00CC96",
-                        symbol="diamond",
-                        line=dict(width=1, color="white"),
-                    ),
-                    name="De fem største",
-                    hovertext=top5_df["ident"],
-                    hoverinfo="text+y",
-                    customdata=top5_df[["ident"]].values,
+                skjemadata_tbl = (
+                    skjemadata_tbl.filter(
+                        [
+                            skjemadata_tbl.refnr.isin(relevant_refnr),
+                            skjemadata_tbl.variabel == variabel,
+                            skjemadata_tbl.verdi.notnull(),
+                        ]
+                    )
+                    .cast({"verdi": "float"})
+                    .cast({"verdi": "int"})
                 )
-            return fig
+
+                df = skjemadata_tbl.to_pandas()
+
+                top5_df = df.nlargest(5, "verdi")
+
+                if graph_type == "box":
+                    fig = px.box(
+                        df,
+                        x="variabel",
+                        y="verdi",
+                        hover_data=["ident", "verdi"],
+                        points="all",
+                        title=f"📦 Boksplott for {variabel}, {partition_select!s}.",
+                        template="plotly_dark",
+                    )
+                elif graph_type == "fiolin":
+                    fig = px.violin(
+                        df,
+                        x="variabel",
+                        y="verdi",
+                        hover_data=["ident", "verdi"],
+                        box=True,
+                        points="all",
+                        title=f"🎻 Fiolinplott for {variabel}, {partition_select!s}.",
+                        template="plotly_dark",
+                    )
+                elif graph_type == "bidrag":
+                    agg_df = df.groupby("ident", as_index=False)["verdi"].sum()
+                    agg_df["verdi"] = (
+                        agg_df["verdi"] / agg_df["verdi"].sum() * 100
+                    ).round(2)
+                    agg_df = agg_df.sort_values("verdi", ascending=False).head(10)
+
+                    fig = px.bar(
+                        agg_df,
+                        x="verdi",
+                        y="ident",
+                        orientation="h",
+                        title=f"🥇 Bidragsanalyse - % av total verdi ({variabel})",
+                        template="plotly_dark",
+                        labels={"verdi": "%"},
+                        custom_data=["ident"],
+                    )
+
+                    fig.update_layout(yaxis={"categoryorder": "total ascending"})
+
+                else:
+                    fig = go.Figure()
+
+                if graph_type in ["box", "fiolin"]:
+                    fig.add_scatter(
+                        x=[variabel] * len(top5_df),
+                        y=top5_df["verdi"],
+                        mode="markers",
+                        marker=dict(
+                            size=13,
+                            color="#00CC96",
+                            symbol="diamond",
+                            line=dict(width=1, color="white"),
+                        ),
+                        name="De fem største",
+                        hovertext=top5_df["ident"],
+                        hoverinfo="text+y",
+                        customdata=top5_df[["ident"]].values,
+                    )
+                return fig
 
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
@@ -575,16 +540,24 @@ class AggDistPlotter(ABC):
 class AggDistPlotterTab(TabImplementation, AggDistPlotter):
     """AggDistPlotterTab is an implementation of the AggDistPlotter module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], conn: object) -> None:
+    def __init__(
+        self, time_units: list[str], main_table_name="skjemadata_hoved"
+    ) -> None:
         """Initializes the AggDistPlotterTab class."""
-        AggDistPlotter.__init__(self, time_units=time_units, conn=conn)
+        AggDistPlotter.__init__(
+            self, time_units=time_units, main_table_name=main_table_name
+        )
         TabImplementation.__init__(self)
 
 
 class AggDistPlotterWindow(WindowImplementation, AggDistPlotter):
     """AggDistPlotterWindow is an implementation of the AggDistPlotter module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], conn: object) -> None:
+    def __init__(
+        self, time_units: list[str], main_table_name="skjemadata_hoved"
+    ) -> None:
         """Initializes the AggDistPlotterWindow class."""
-        AggDistPlotter.__init__(self, time_units=time_units, conn=conn)
+        AggDistPlotter.__init__(
+            self, time_units=time_units, main_table_name=main_table_name
+        )
         WindowImplementation.__init__(self)
