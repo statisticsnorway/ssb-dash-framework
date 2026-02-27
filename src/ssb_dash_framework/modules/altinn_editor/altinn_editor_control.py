@@ -4,17 +4,15 @@ from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-import ibis
 from dash import callback
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
 from ibis import _
 
-from ssb_dash_framework.utils import conn_is_ibis
+from ssb_dash_framework.utils import get_connection
 from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
@@ -28,24 +26,17 @@ class AltinnEditorControl:
     def __init__(
         self,
         time_units: list[str],
-        conn: object,
         variable_selector_instance: VariableSelector,
     ) -> None:
         """Initializes the Altinn Editor Control module.
 
         Args:
             time_units: List of time units to be used in the module.
-            conn: Database connection object that must have a 'query' method.
             variable_selector_instance: An instance of VariableSelector for variable selection.
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
         """
-        if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
-            raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
-            )
-        self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
@@ -152,58 +143,50 @@ class AltinnEditorControl:
                 or any(arg is None for arg in args)
             ):
                 return None, None, None, "Se kontrollutslag"
-            if isinstance(self.conn, EimerDBInstance):
-                conn = ibis.polars.connect()
-                data = self.conn.query("SELECT * FROM kontroller")
-                conn.create_table("kontroller", data)
-                kontrollutslag = self.conn.query("SELECT * FROM kontrollutslag")
-                conn.create_table("kontrollutslag", kontrollutslag)
-            elif conn_is_ibis(self.conn):
-                conn = self.conn
-            else:
-                raise TypeError("Connection object is invalid type.")
-            try:
-                filter_dict = {"aar": "2024"}
-                k = conn.table("kontroller")
-                u = conn.table("kontrollutslag")
-                refnr = selected_row[0]["refnr"]
-                time.sleep(1.5)
-                df = (
-                    u.filter(_.refnr == refnr)
-                    .filter(_.utslag == True)
-                    .filter(ibis_filter_with_dict(filter_dict))
-                    .join(k, "kontrollid", how="left")
-                    .select("kontrollid", "beskrivelse", "utslag")
-                    .to_pandas()
-                )
 
-                # partition_args = dict(zip(self.time_units, args, strict=False))
-                # df = self.conn.query(
-                #     f"""SELECT t1.kontrollid, subquery.beskrivelse, t1.utslag
-                #     FROM kontrollutslag AS t1
-                #     JOIN (
-                #         SELECT t2.kontrollid, t2.beskrivelse
-                #         FROM kontroller AS t2
-                #     ) AS subquery ON t1.kontrollid = subquery.kontrollid
-                #     WHERE refnr = '{refnr}'
-                #     AND utslag = True""",
-                #     partition_select=create_partition_select(
-                #         desired_partitions=self.time_units,
-                #         skjema=skjema,
-                #         **partition_args,
-                #     ),
-                # )
-                columns = [{"headerName": col, "field": col} for col in df.columns]
-                antall_utslag = len(df)
+            with get_connection() as conn:
+                try:
+                    filter_dict = {"aar": "2024"}
+                    k = conn.table("kontroller")
+                    u = conn.table("kontrollutslag")
+                    refnr = selected_row[0]["refnr"]
+                    time.sleep(1.5)
+                    df = (
+                        u.filter(_.refnr == refnr)
+                        .filter(_.utslag == True)
+                        .filter(ibis_filter_with_dict(filter_dict))
+                        .join(k, "kontrollid", how="left")
+                        .select("kontrollid", "beskrivelse", "utslag")
+                        .to_pandas()
+                    )
 
-                if antall_utslag > 0:
-                    style = {"color": "#dc3545", "background-color": "#343a40"}
-                    button_text = f"Se kontrollutslag ({antall_utslag})"
-                else:
-                    style = None
-                    button_text = "Se kontrollutslag"
+                    # partition_args = dict(zip(self.time_units, args, strict=False))
+                    # df = self.conn.query(
+                    #     f"""SELECT t1.kontrollid, subquery.beskrivelse, t1.utslag
+                    #     FROM kontrollutslag AS t1
+                    #     JOIN (
+                    #         SELECT t2.kontrollid, t2.beskrivelse
+                    #         FROM kontroller AS t2
+                    #     ) AS subquery ON t1.kontrollid = subquery.kontrollid
+                    #     WHERE refnr = '{refnr}'
+                    #     AND utslag = True""",
+                    #     partition_select=create_partition_select(
+                    #         desired_partitions=self.time_units,
+                    #         skjema=skjema,
+                    #         **partition_args,
+                    #     ),
+                    # )
+                    columns = [{"headerName": col, "field": col} for col in df.columns]
+                    antall_utslag = len(df)
 
-                return df.to_dict("records"), columns, style, button_text
-            except Exception as e:
-                logger.error(f"Error in kontrollutslagstabell: {e}", exc_info=True)
-                return None, None, None, "Se kontrollutslag"
+                    if antall_utslag > 0:
+                        style = {"color": "#dc3545", "background-color": "#343a40"}
+                        button_text = f"Se kontrollutslag ({antall_utslag})"
+                    else:
+                        style = None
+                        button_text = "Se kontrollutslag"
+
+                    return df.to_dict("records"), columns, style, button_text
+                except Exception as e:
+                    logger.error(f"Error in kontrollutslagstabell: {e}", exc_info=True)
+                    return None, None, None, "Se kontrollutslag"

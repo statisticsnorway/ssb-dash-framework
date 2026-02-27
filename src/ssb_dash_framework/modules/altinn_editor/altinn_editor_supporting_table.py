@@ -6,7 +6,6 @@ from typing import ClassVar
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-import ibis
 import pandas as pd
 from dash import callback
 from dash import html
@@ -14,12 +13,11 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
 from ibis import _
 
 from ssb_dash_framework.setup import VariableSelector
+from ssb_dash_framework.utils import get_connection
 
-from ...utils.core_query_functions import conn_is_ibis
 from .altinn_editor_utility import AltinnEditorStateTracker
 
 logger = logging.getLogger(__name__)
@@ -125,28 +123,20 @@ class AltinnSupportTable:
 
 
 def add_year_diff_support_table(
-    conn: Any,
+    table_to_diff,
 ) -> None:  # TODO make actually return two periods and diff.
     """Adds a table showing difference to previous year."""
 
     def year_diff_support_table_get_data_func(ident: str, year: str) -> pd.DataFrame:
-        if conn_is_ibis(conn):
-            logger.info("Assuming is ibis connection.")
-            connection = conn
-        elif isinstance(conn, EimerDBInstance):
-            connection = ibis.polars.connect()
-            data = conn.query(
-                f"SELECT * FROM skjemadata_hoved WHERE ident = {ident} AND aar = {year}"
-            )
-            connection.create_table("skjemadata_hoved", data)
-        else:
-            raise TypeError("Wah")  # TODO fix
-        try:
-            s = connection.table("skjemadata_hoved")
-        except Exception:
-            # fallback option
-            s = connection.table("core_skjemadata_mapped")
-        return s.filter(_.ident == ident).to_pandas()
+        with get_connection() as conn:
+            try:
+                s = conn.table("skjemadata_hoved")
+            except Exception:
+                # fallback option
+                s = conn.table(
+                    "core_skjemadata_mapped"
+                )  # TODO: Fix? Temporary for nøku use
+            return s.filter(_.ident == ident).to_pandas()
 
     AltinnSupportTable(
         label="Endring fra fjorår",
