@@ -2,7 +2,6 @@ import logging
 from typing import Any
 
 import dash_ag_grid as dag
-import ibis
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -42,13 +41,11 @@ class AltinnEditorPrimaryTable:
 
         Args:
             time_units: List of time units to be used in the module.
-            conn: Database connection object that must have a 'query' method.
             variable_selector_instance: An instance of VariableSelector for variable selection.
             cols_to_hide: A list of columns to ignore. Defaults to ["row_id","row_ids",*self.time_units,"skjema","refnr"].
 
         Raises:
-            TypeError: If variable_selector_instance is not an instance of VariableSelector. Or
-                if connection object is neither EimerDBInstance or Ibis connection.
+            TypeError: If variable_selector_instance is not an instance of VariableSelector.
         """
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
@@ -244,24 +241,6 @@ class AltinnEditorPrimaryTable:
                                 key=lambda x: x.map(lambda v: 0 if v == bedrift else 1),
                             )
 
-                        t = t.filter(_.refnr == refnr).join(d, "variabel", how="left")
-                        t = t.filter(ibis_filter_with_dict(filter_dict))
-
-                        # sort by bedrift if available
-                        if bedrift and "ident" in t.columns:
-                            t = t.mutate(
-                                sort_priority=ibis.case()
-                                .when(_.ident == bedrift, 0)
-                                .else_(1)
-                                .end()
-                            ).order_by(["sort_priority", _.radnr])
-                        else:
-                            t = t.order_by(_.radnr)
-
-                        df = t.drop(
-                            [col for col in t.columns if col.endswith("_right")]
-                            + ["datatype", "radnr", "tabell"]
-                        ).to_pandas()
                         logger.debug(f"resultat dataframe:\n{df.head(2)}")
                         columndefs = [
                             {
