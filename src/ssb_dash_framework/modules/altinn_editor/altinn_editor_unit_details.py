@@ -149,8 +149,7 @@ class AltinnEditorUnitDetails:
                     .filter(ibis_filter_with_dict(filter_dict))
                     .to_pandas()
                 )
-                if "row_id" in df.columns:
-                    df = df.drop(columns=["row_id"])
+                df = df.drop(columns=["row_id", "id", "foretak"], errors="ignore")
                 columns = [{"headerName": col, "field": col} for col in df.columns]
                 return df.to_dict("records"), columns
             except Exception as e:

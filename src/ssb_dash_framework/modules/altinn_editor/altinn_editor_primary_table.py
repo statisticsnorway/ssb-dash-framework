@@ -266,6 +266,7 @@ class AltinnEditorPrimaryTable:
                             in [
                                 "row_id",
                                 "row_ids",
+                                "enhetsinfo_row_ids",
                                 *self.time_units,
                                 "skjema",
                                 "refnr",
