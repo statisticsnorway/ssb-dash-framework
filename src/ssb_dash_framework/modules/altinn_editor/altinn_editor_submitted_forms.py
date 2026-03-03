@@ -278,7 +278,7 @@ class AltinnEditorSubmittedForms:
                         t.filter(ibis_filter_with_dict(filter_dict))
                         .filter(_.ident == ident)
                         .order_by(_.dato_mottatt)
-                        .select("dato_mottatt", "refnr", "editert", "aktiv")
+                        .select("skjema", "dato_mottatt", "refnr", "editert", "aktiv")
                         .to_pandas()
                     )
                     columns = [

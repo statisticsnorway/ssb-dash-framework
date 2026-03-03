@@ -242,8 +242,6 @@ class AltinnEditorPrimaryTable:
                                 by="ident",
                                 key=lambda x: x.map(lambda v: 0 if v == bedrift else 1),
                             )
-
-                        logger.debug(f"resultat dataframe:\n{df.head(2)}")
                         columndefs = [
                             {
                                 "headerName": col,
@@ -252,14 +250,19 @@ class AltinnEditorPrimaryTable:
                                 in [
                                     "row_id",
                                     "row_ids",
+                                    "enhetsinfo_row_ids",
                                     *self.time_units,
                                     "skjema",
                                     "refnr",
                                 ],
-                                "flex": 2 if col == "variabel" else 1,
+                                "flex": (
+                                    2 if col == "variabel" else 1
+                                ),  # What does this do actually?
                             }
                             for col in df.columns
                         ]
+                        logger.debug(f"resultat dataframe:\n{df.head(2)}")
+
                         return df.to_dict("records"), columndefs
                     except Exception as e:
                         logger.error(

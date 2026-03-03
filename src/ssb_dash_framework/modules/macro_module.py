@@ -75,7 +75,7 @@ NACE_LEVEL_OPTIONS: dict[str, int] = {
     "4-siffer": 5,
     "5-siffer": 6,
 }
-HEATMAP_NUMBER_FORMAT: dict[str, bool] = {"Prosentendring": True, "Totalsum": False}
+HEATMAP_NUMBER_FORMAT: dict[str, int] = {"Prosentendring": 1, "Årets totalsum": 2, "Differanse": 3}
 STATUS_CHANGE_DETAIL_GRID: list[str] = [
     "orgnr_f",
     "navn",
@@ -580,8 +580,13 @@ class MacroModule:
             df.columns = df.columns.astype(str)  # set to str in case aar loaded as int
 
             df["diff"] = df[f"{aar}"] - df[f"{aar-1}"]
-            df["percent_diff"] = df["diff"] / df[f"{aar-1}"]
-            tallvisning = "percent_diff" if tallvisning_valg else f"{aar}"
+            df["percent_diff"] = df["diff"] / abs(df[f"{aar-1}"])
+            if tallvisning_valg == 1:
+                tallvisning = "percent_diff"
+            elif tallvisning_valg == 2:
+                tallvisning = f"{aar}"
+            else:
+                tallvisning = "diff"
 
             matrix = df.pivot(
                 index=category_column, columns="nace", values=tallvisning
@@ -660,11 +665,11 @@ class MacroModule:
 
                     if safe_col != category_column:
 
-                        formatter_func = f"MacroModule.formatHeatmapValue(params, {str(tallvisning_valg).lower()})"
+                        formatter_func = f"MacroModule.formatHeatmapValue(params, {tallvisning_valg})"
 
                         style_func = (
                             "MacroModule.displayDiffHeatMap(params)"
-                            if tallvisning_valg
+                            if tallvisning_valg == 1
                             else "MacroModule.displaySimpleHeatMap(params)"
                         )
 
