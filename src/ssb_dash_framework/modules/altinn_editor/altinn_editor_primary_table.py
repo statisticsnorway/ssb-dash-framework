@@ -163,6 +163,8 @@ class AltinnEditorPrimaryTable:
                 logger.info("Returning nothing.")
                 logger.debug(f"Args length: {len(args)}")
                 return [], []
+            if isinstance(_get_connection_object(), EimerDBInstance):
+                args = tuple([int(x) for x in args])
 
             filter_dict = create_filter_dict(
                 self.time_units, args

@@ -1,5 +1,4 @@
 import logging
-import time
 from typing import Any
 
 import dash_ag_grid as dag
@@ -12,10 +11,8 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from ibis import _
 
-from ssb_dash_framework.utils import get_connection
-from ssb_dash_framework.utils import ibis_filter_with_dict
-
 from ...setup.variableselector import VariableSelector
+from ...utils.config_tools.connection import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -144,38 +141,21 @@ class AltinnEditorControl:
             ):
                 return None, None, None, "Se kontrollutslag"
 
-            with get_connection() as conn:
+            with get_connection(
+                necessary_tables=["kontroller", "kontrollutslag"]
+            ) as conn:
                 try:
-                    filter_dict = {"aar": "2024"}
                     k = conn.table("kontroller")
                     u = conn.table("kontrollutslag")
                     refnr = selected_row[0]["refnr"]
-                    time.sleep(1.5)
                     df = (
                         u.filter(_.refnr == refnr)
                         .filter(_.utslag == True)
-                        .filter(ibis_filter_with_dict(filter_dict))
                         .join(k, "kontrollid", how="left")
                         .select("kontrollid", "beskrivelse", "utslag")
                         .to_pandas()
                     )
 
-                    # partition_args = dict(zip(self.time_units, args, strict=False))
-                    # df = self.conn.query(
-                    #     f"""SELECT t1.kontrollid, subquery.beskrivelse, t1.utslag
-                    #     FROM kontrollutslag AS t1
-                    #     JOIN (
-                    #         SELECT t2.kontrollid, t2.beskrivelse
-                    #         FROM kontroller AS t2
-                    #     ) AS subquery ON t1.kontrollid = subquery.kontrollid
-                    #     WHERE refnr = '{refnr}'
-                    #     AND utslag = True""",
-                    #     partition_select=create_partition_select(
-                    #         desired_partitions=self.time_units,
-                    #         skjema=skjema,
-                    #         **partition_args,
-                    #     ),
-                    # )
                     columns = [{"headerName": col, "field": col} for col in df.columns]
                     antall_utslag = len(df)
 

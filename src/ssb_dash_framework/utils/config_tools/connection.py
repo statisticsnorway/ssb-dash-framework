@@ -144,12 +144,14 @@ def set_eimerdb_connection(
     ]
     if tables_default is None:
         necessary_tables_default = DEFAULT_TABLES
+    else:
+        necessary_tables_default = tables_default
 
-    if not isinstance(tables_default, list) or not all(
-        isinstance(item, str) for item in tables_default
+    if not isinstance(necessary_tables_default, list) or not all(
+        isinstance(item, str) for item in necessary_tables_default
     ):
         raise ValueError(
-            f"'tables_default' must be list[str]. Received: {tables_default!r}"
+            f"'tables_default' must be list[str]. Received: {necessary_tables_default!r}"
         )
 
     @contextmanager
@@ -200,6 +202,18 @@ def set_eimerdb_connection(
                 partition_select=partition_select,
             )
             conn.create_table("datatyper", datatyper)
+        if "kontroller" in tables_to_read:
+            kontroller = _CONNECTION.query(
+                "SELECT * FROM kontroller",
+                partition_select=partition_select,
+            )
+            conn.create_table("kontroller", kontroller)
+        if "kontrollutslag" in tables_to_read:
+            kontrollutslag = _CONNECTION.query(
+                "SELECT * FROM kontrollutslag",
+                partition_select=partition_select,
+            )
+            conn.create_table("kontrollutslag", kontrollutslag)
 
         yield conn
 

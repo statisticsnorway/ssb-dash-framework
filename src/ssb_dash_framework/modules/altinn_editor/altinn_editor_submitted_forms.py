@@ -10,7 +10,9 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from eimerdb import EimerDBInstance
 from ibis import _
+from psycopg_pool import ConnectionPool
 
 from ssb_dash_framework.utils import create_filter_dict
 from ssb_dash_framework.utils import ibis_filter_with_dict
@@ -154,6 +156,8 @@ class AltinnEditorSubmittedForms:
             logger.debug(f"Args:\nident: {ident}\nargs: {args}")
             if ident is None or any(arg is None for arg in args):
                 return [], None
+            if isinstance(_get_connection_object(), EimerDBInstance):
+                args = tuple([int(x) for x in args])
             filter_dict = create_filter_dict(self.time_units, args)
 
             with get_connection() as conn:
@@ -264,6 +268,8 @@ class AltinnEditorSubmittedForms:
             print("Varselector: ", self.variableselector.states)
             if skjema is None or ident is None or any(arg is None for arg in args):
                 return None, None
+            if isinstance(_get_connection_object(), EimerDBInstance):
+                args = tuple([int(x) for x in args])
             filter_dict = create_filter_dict(self.variableselector.states, args)
             with get_connection(necessary_tables=["skjemamottak"]) as conn:
                 try:
