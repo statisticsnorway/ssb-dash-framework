@@ -1,9 +1,11 @@
 from collections.abc import Generator
+from contextlib import contextmanager
 
 import ibis
 import pytest
 
 from ssb_dash_framework import VariableSelector
+from ssb_dash_framework import set_connection
 
 
 @pytest.fixture(autouse=True)
@@ -20,6 +22,24 @@ def clear_VariableSelector_variableselectoroptions() -> Generator[None, None, No
     VariableSelector._variableselectoroptions.clear()
     yield
     VariableSelector._variableselectoroptions.clear()
+
+
+@pytest.fixture(autouse=True, scope="session")
+def testing_connection():
+    ibis_polars_conn = ibis.polars.connect()
+
+    @contextmanager
+    def _ibis_polars_cm(*args, **kwargs):
+        yield ibis_polars_conn
+
+    set_connection(_ibis_polars_cm, is_pooled=False)
+
+    yield ibis_polars_conn
+
+    try:
+        ibis_polars_conn.close()
+    except Exception:
+        pass
 
 
 @pytest.fixture(autouse=True, scope="session")

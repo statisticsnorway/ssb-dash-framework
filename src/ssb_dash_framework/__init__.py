@@ -39,11 +39,11 @@ from .modules import FreeSearchWindow
 from .modules import HBMethod
 from .modules import HBMethodWindow
 from .modules import MacroModule
-from .modules import MacroModuleTab
-from .modules import MacroModuleWindow
 from .modules import MacroModuleConsolidated
 from .modules import MacroModuleConsolidatedTab
 from .modules import MacroModuleConsolidatedWindow
+from .modules import MacroModuleTab
+from .modules import MacroModuleWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
@@ -76,6 +76,8 @@ from .utils import DebugInspector
 from .utils import DemoDataCreator
 from .utils import TabImplementation
 from .utils import WindowImplementation
+from .utils import _get_connection_callable
+from .utils import _get_connection_object
 from .utils import _get_kostra_r
 from .utils import active_no_duplicates_refnr_list
 from .utils import conn_is_ibis
@@ -83,9 +85,13 @@ from .utils import create_alert
 from .utils import create_database
 from .utils import create_database_engine
 from .utils import enable_app_logging
+from .utils import get_connection
 from .utils import hb_method
 from .utils import ibis_filter_with_dict
 from .utils import module_validator
+from .utils import set_connection
+from .utils import set_eimerdb_connection
+from .utils import set_postgres_connection
 from .utils import sidebar_button
 
 # from .utils import th_error
@@ -133,11 +139,11 @@ __all__ = [
     "HBMethod",
     "HBMethodWindow",
     "MacroModule",
-    "MacroModuleTab",
-    "MacroModuleWindow",
     "MacroModuleConsolidated",
     "MacroModuleConsolidatedTab",
     "MacroModuleConsolidatedWindow",
+    "MacroModuleTab",
+    "MacroModuleWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
@@ -163,6 +169,8 @@ __all__ = [
     "VisualizationBuilder",
     "VisualizationBuilderWindow",
     "WindowImplementation",
+    "_get_connection_callable",
+    "_get_connection_object",
     "active_no_duplicates_refnr_list",
     "app_setup",
     "apply_edits",
@@ -172,12 +180,16 @@ __all__ = [
     "create_database_engine",
     "enable_app_logging",
     "export_from_parqueteditor",
+    "get_connection",
     "get_export_log_path",
     "get_log_path",
     "ibis_filter_with_dict",
     "main_layout",
     "module_validator",
     "register_control",
+    "set_connection",
+    "set_eimerdb_connection",
+    "set_postgres_connection",
     "set_variables",
     "sidebar_button",
     #    "hb_method",
