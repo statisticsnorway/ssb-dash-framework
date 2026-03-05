@@ -75,7 +75,11 @@ NACE_LEVEL_OPTIONS: dict[str, int] = {
     "4-siffer": 5,
     "5-siffer": 6,
 }
-HEATMAP_NUMBER_FORMAT: dict[str, int] = {"Prosentendring": 1, "Årets totalsum": 2, "Differanse": 3}
+HEATMAP_NUMBER_FORMAT: dict[str, int] = {
+    "Prosentendring": 1,
+    "Årets totalsum": 2,
+    "Differanse": 3,
+}
 STATUS_CHANGE_DETAIL_GRID: list[str] = [
     "sfnr",
     "orgnr_f",
@@ -470,7 +474,7 @@ class MacroModuleConsolidated:
             macro_level: str | None,
             nace_siffer_level: int,
             nace_list: list[str],
-            tallvisning_valg: str,
+            tallvisning_valg: int,
         ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
             """Creates a colour-coordinated matrix heatmap of aggregated values based on their %-change from the previous year."""
             if (
@@ -590,15 +594,12 @@ class MacroModuleConsolidated:
 
             df["diff"] = df[f"{aar}"] - df[f"{aar-1}"]
             df["percent_diff"] = df["diff"] / abs(df[f"{aar-1}"])
-            # tallvisning = "percent_diff" if tallvisning_valg else f"{aar}"
             if tallvisning_valg == 1:
                 tallvisning = "percent_diff"
             elif tallvisning_valg == 2:
                 tallvisning = f"{aar}"
             else:
                 tallvisning = "diff"
-
-
 
             matrix = df.pivot(
                 index=category_column, columns="nace", values=tallvisning
@@ -673,6 +674,7 @@ class MacroModuleConsolidated:
                         "sortable": True,
                         "filter": True,
                         "resizable": True,
+                        "filterParams": {"buttons": ["reset"]},
                     }
 
                     if safe_col != category_column:
@@ -691,6 +693,7 @@ class MacroModuleConsolidated:
                                 "tooltipField": f"{safe_col}_tooltip",
                                 "valueFormatter": {"function": formatter_func},
                                 "cellStyle": {"function": style_func},
+                                "filter": "agNumberColumnFilter",
                             }
                         )
 
@@ -1105,9 +1108,8 @@ class MacroModuleConsolidated:
 
             # fix � decoding issues
             df = df.astype(object)
-            df = df.map(
-                lambda x: x.decode("latin-1") if isinstance(x, bytes) else x
-            )
+            df = df.map(lambda x: x.decode("latin-1") if isinstance(x, bytes) else x)
+
             row_data: list[dict[Hashable, Any]] | Any = df.to_dict("records")
             if macro_level in ("fylke", "kommune"):
                 for row in row_data:
@@ -1117,7 +1119,12 @@ class MacroModuleConsolidated:
 
             column_defs = []
             for col in visible_cols:
-                col_def = {"headerName": col, "field": col, "width": 140}
+                col_def = {
+                    "headerName": col,
+                    "field": col,
+                    "width": 140,
+                    "filterParams": {"buttons": ["reset"]},
+                }
 
                 if col == "orgnr_f" and "giver_fnr_tooltip" in df.columns:
                     col_def["tooltipField"] = "giver_fnr_tooltip"
@@ -1148,6 +1155,9 @@ class MacroModuleConsolidated:
                     col_def["cellStyle"] = {
                         "function": "MacroModule.displayDiffColumnHighlight(params)"
                     }
+
+                if df[col].dtypes == "float":
+                    col_def["filter"] = "agNumberColumnFilter"
 
                 column_defs.append(col_def)
 
