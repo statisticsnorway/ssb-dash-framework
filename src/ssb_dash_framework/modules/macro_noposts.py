@@ -182,7 +182,7 @@ class MacroNspekPostControl:
         self.module_name = self.__class__.__name__
         MacroNspekPostControl._id_number += 1
 
-        self.icon = "🌍"
+        self.icon = "🗹"
         self.label = "Negative NO-poster"
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
@@ -487,6 +487,8 @@ class MacroNspekPostControl:
             #     detail_grid=False,
             # )  # t-1, previous aar
 
+            var_dict = MACRO_FILTER_OPTIONS[macro_level]
+
             # count units
             unit_type: Literal["orgnr_foretak", "orgnr_bedrift"] = (
                 "orgnr_foretak" if foretak_or_bedrift == "foretak" else "orgnr_bedrift"
@@ -510,41 +512,33 @@ class MacroNspekPostControl:
 
             category_column = "nopost"
 
-            cols = [*list(MACRO_FILTER_OPTIONS[macro_level].keys()), "naring", "aar"]
-            print(cols)
-            group_by_filter = [
-                "selected_nace",
-            ]  # kommune, fylke eller sammensatte_variabler
+            cols = [*list(var_dict.keys()), "naring", "aar"]
 
             t = t.select([*cols, "selected_nace"])
             print(t)
             print([t["selected_nace"]])
             print([t["naring"]])
 
-            # cast numerics to float in case of yearly type mismatches
-            for col in MACRO_FILTER_OPTIONS[macro_level].keys():
+            # rename and cast numerics to float in case of yearly type mismatches
+            for col in var_dict.keys():
                 if col in t.columns:
                     t = t.mutate(**{col: t[col].cast("float64")})
 
-            # if macro_level == "sammensatte variabler":
-            #     agg_dict = {
-            #         alias: combined[db_col].sum()
-            #         for db_col, alias in HEATMAP_VARIABLES.items()
-            #     }
-            #     df = combined.group_by(["aar", *group_by_filter]).aggregate(**agg_dict)
-            #     df = df.pivot_longer(
-            #         HEATMAP_VARIABLES.values(), names_to="variabel", values_to="value"
-            #     )
-            #     values_col = "value"
-            #     category_column = "variabel"
-            # else:
-            df = t.group_by([group_by_filter]).aggregate(
-                variabel=t[MACRO_FILTER_OPTIONS[macro_level].keys()].sum()
-            )
-            values_col = "variabel"
-            category_column = macro_level
+            print(t)
+            agg_dict = {
+                    alias: t[db_col].sum()
+                    for db_col, alias in var_dict.items()
+                }
 
-            df = df.pivot_wider(names_from="aar", values_from=values_col)
+            df = t.group_by("selected_nace").aggregate(**agg_dict)
+            print(df)
+
+            df = df.pivot_longer(
+                    var_dict.values(), names_to="nopost", values_to="value"
+                )
+
+            # df = df.pivot_wider(names_from="aar", values_from=values_col)
+            print(df)
 
             df = df.rename(nace="selected_nace").execute()
             df.columns = df.columns.astype(str)  # set to str in case aar loaded as int
@@ -555,8 +549,8 @@ class MacroNspekPostControl:
             matrix[category_column] = matrix[category_column].fillna("UKJENT")
             matrix.iloc[:, 1:] = matrix.iloc[:, 1:].fillna(0)
 
-            custom_order = list(macro_level.values())
-            matrix = matrix.set_index("variabel").loc[custom_order].reset_index()
+            custom_order = list(var_dict.values())
+            matrix = matrix.set_index(category_column).loc[custom_order].reset_index()
             print(matrix)
 
             # safe column names for NACE keys by replacing '.' with '_'
@@ -570,44 +564,45 @@ class MacroNspekPostControl:
 
             matrix["id"] = matrix.index.astype(dtype=str)
             matrix[category_column] = matrix[category_column].astype(dtype=str)
+            print(matrix)
 
             row_data: list[dict[str, Any]] | Any = matrix.to_dict("records")
 
-            def _generate_tooltips(
-                row_data: list[dict[str, Any]],
-                df: pd.DataFrame,
-                category_column: str,
-                safe_cols: list[str],
-                aar: int,
-            ) -> None:
-                """Create tooltips showing the raw data from each year and the diff, so the user can see both the %-diff in the cell and also the raw data when hovering."""
-                for row in row_data:
-                    if row.get("id") == "count_row":
-                        continue
+            # def _generate_tooltips(
+            #     row_data: list[dict[str, Any]],
+            #     df: pd.DataFrame,
+            #     category_column: str,
+            #     safe_cols: list[str],
+            #     aar: int,
+            # ) -> None:
+            #     """Create tooltips showing the raw data from each year and the diff, so the user can see both the %-diff in the cell and also the raw data when hovering."""
+            #     for row in row_data:
+            #         if row.get("id") == "count_row":
+            #             continue
 
-                    for col in safe_cols:
-                        if col not in ["id", category_column]:
-                            prev_year: pd.Series | Any = df.loc[
-                                (df[category_column] == row[category_column])
-                                & (df["nace"] == col.replace("_", ".")),
-                                f"{aar-1}",
-                            ]
-                            current_year: pd.Series | Any = df.loc[
-                                (df[category_column] == row[category_column])
-                                & (df["nace"] == col.replace("_", ".")),
-                                f"{aar}",
-                            ]
-                            val1: float = (
-                                prev_year.values[0] if not prev_year.empty else 0
-                            )
-                            val2: float = (
-                                current_year.values[0] if not current_year.empty else 0
-                            )
-                            diff: float | int = val2 - val1
-                            tooltip: str = (
-                                f"{aar}: {val2:,.0f}\n{aar-1}: {val1:,.0f}\nDiff: {diff:+,.0f}"
-                            )
-                            row[f"{col}_tooltip"] = tooltip
+            #         for col in safe_cols:
+            #             if col not in ["id", category_column]:
+            #                 prev_year: pd.Series | Any = df.loc[
+            #                     (df[category_column] == row[category_column])
+            #                     & (df["nace"] == col.replace("_", ".")),
+            #                     f"{aar-1}",
+            #                 ]
+            #                 current_year: pd.Series | Any = df.loc[
+            #                     (df[category_column] == row[category_column])
+            #                     & (df["nace"] == col.replace("_", ".")),
+            #                     f"{aar}",
+            #                 ]
+            #                 val1: float = (
+            #                     prev_year.values[0] if not prev_year.empty else 0
+            #                 )
+            #                 val2: float = (
+            #                     current_year.values[0] if not current_year.empty else 0
+            #                 )
+            #                 diff: float | int = val2 - val1
+            #                 tooltip: str = (
+            #                     f"{aar}: {val2:,.0f}\n{aar-1}: {val1:,.0f}\nDiff: {diff:+,.0f}"
+            #                 )
+            #                 row[f"{col}_tooltip"] = tooltip
 
             def _create_column_defs(
                 original_cols: list[str], safe_cols: list[str], category_column: str
@@ -626,13 +621,8 @@ class MacroNspekPostControl:
 
                     if safe_col != category_column:
 
-                        formatter_func = f"MacroNspekPostControl.formatHeatmapValue(params, {tallvisning_valg})"
-
-                        style_func = (
-                            "MacroNspekPostControl.displayDiffHeatMap(params)"
-                            if tallvisning_valg == 1
-                            else "MacroNspekPostControl.displaySimpleHeatMap(params)"
-                        )
+                        formatter_func = f"MacroModule.formatHeatmapValue(params, 2)"
+                        style_func = ("MacroModule.displaySimpleHeatMap(params)")
 
                         col_def.update(
                             {
@@ -652,7 +642,7 @@ class MacroNspekPostControl:
 
                 return col_defs
 
-            _generate_tooltips(row_data, df, category_column, safe_cols, aar)
+            # _generate_tooltips(row_data, df, category_column, safe_cols, aar)
             column_defs = _create_column_defs(original_cols, safe_cols, category_column)
 
             return row_data, column_defs, [count_row]
@@ -669,9 +659,9 @@ class MacroNspekPostControl:
             State("var-aar", "value"),
             State("macromodule-nopost-foretak-or-bedrift", "value"),
             State("macromodule-nopost-heatmap-grid", "rowData"),
-            State("macromodule-nopost-filter-velger", "value"),
+            State("macromodule-nopost-filter-velger", "value"), # same som nopost_valg i app-negative-no
             State("macromodule-nopost-nace-siffer-velger", "value"),
-            State("macromodule-nopost-macro-variable", "value"),
+            # State("macromodule-nopost-macro-variable", "value"),
             prevent_initial_call=True,
         )
         def update_detail_table(
@@ -681,7 +671,6 @@ class MacroNspekPostControl:
             heatmap_row_data: list[dict[str, Any]],
             macro_level: str | None,
             nace_siffer_level: int,
-            heatmap_valgt_variabel: str,
         ) -> tuple[
             list[dict[Hashable, Any]],
             list[dict[str, Any]],
@@ -700,11 +689,13 @@ class MacroNspekPostControl:
                 raise PreventUpdate
 
             aar: int = int(variabelvelger_aar)
-            valgt_variabel = HEATMAP_VARIABLES.get(heatmap_valgt_variabel, "")
+            # valgt_variabel = HEATMAP_VARIABLES.get(heatmap_valgt_variabel, "")
 
             col = cell_data.get("colId")
             if col in ["variabel", macro_level]:
                 raise PreventUpdate
+
+            print(f"col: {col}")
 
             assert isinstance(col, str)
             selected_nace = col.replace("_", ".")
@@ -713,95 +704,104 @@ class MacroNspekPostControl:
             if not selected_nace:
                 raise PreventUpdate
 
-            if macro_level == "sammensatte variabler":
-                selected_filter_val: Any | None = heatmap_row_data[row_idx].get(
-                    "variabel"
-                )
-                valgt_variabel: str | None = selected_filter_val
-            else:
-                assert macro_level is not None
-                selected_filter_val = heatmap_row_data[row_idx].get(macro_level)
+            print(f"macro_level: {macro_level}")
+            print(f"cell_data: {cell_data}")
+            print(f"heatmap_row_data: {heatmap_row_data}")
+            # if macro_level == "sammensatte variabler":
+            #     selected_filter_val: Any | None = heatmap_row_data[row_idx].get(
+            #         "variabel"
+            #     )
+            #     valgt_variabel: str | None = selected_filter_val
+            # else:
+            assert macro_level is not None
+
+            var_dict = MACRO_FILTER_OPTIONS[macro_level]
+
+            print(var_dict)
+            selected_filter_val = heatmap_row_data[row_idx].get("nopost")
+
+            print(f"selected_filter_val: {selected_filter_val}")
 
             if selected_filter_val is None or pd.isna(selected_filter_val):
                 raise PreventUpdate
 
             # read in every unit in selected nace
-            t_curr_filtered: ibis.TableExpr = self.parquet_reader._load_year(
+            t_filtered: ibis.TableExpr = self.parquet_reader._load_year(
                 aar,
                 self.base_path,
                 foretak_or_bedrift,
                 [selected_nace],
                 nace_siffer_level,
-                detail_grid=True,
             )
-            t_prev_filtered: ibis.TableExpr = self.parquet_reader._load_year(
-                aar - 1,
-                self.base_path,
-                foretak_or_bedrift,
-                [selected_nace],
-                nace_siffer_level,
-                detail_grid=True,
-            )
+            # t_prev_filtered: ibis.TableExpr = self.parquet_reader._load_year(
+            #     aar - 1,
+            #     self.base_path,
+            #     foretak_or_bedrift,
+            #     [selected_nace],
+            #     nace_siffer_level,
+            #     detail_grid=True,
+            # )
 
             # handle kommune/fylke filters
-            if macro_level != "sammensatte variabler":
+            # if macro_level != "sammensatte variabler":
 
-                assert isinstance(macro_level, str)
+            assert isinstance(macro_level, str)
 
-                col_length: int = MACRO_FILTER_OPTIONS[macro_level]
-                t_curr_filtered = t_curr_filtered.mutate(
-                    **{
-                        macro_level: t_curr_filtered.kommune.substr(
-                            0, length=col_length
-                        )
-                        .fill_null("UKJENT")
-                        .replace("", "UKJENT")
-                    }
-                )
-                t_prev_filtered = t_prev_filtered.mutate(
-                    **{
-                        macro_level: t_prev_filtered.kommune.substr(
-                            0, length=col_length
-                        )
-                        .fill_null("UKJENT")
-                        .replace("", "UKJENT")
-                    }
-                )
+            # col_length: int = MACRO_FILTER_OPTIONS[macro_level]
+            t_filtered = t_filtered.mutate(
+                **{
+                    macro_level: t_filtered.kommune.substr(
+                        0, length=4
+                    )
+                    .fill_null("UKJENT")
+                    .replace("", "UKJENT")
+                }
+            )
+                # t_prev_filtered = t_prev_filtered.mutate(
+                #     **{
+                #         macro_level: t_prev_filtered.kommune.substr(
+                #             0, length=col_length
+                #         )
+                #         .fill_null("UKJENT")
+                #         .replace("", "UKJENT")
+                #     }
+                # )
 
-                t_curr_filtered = t_curr_filtered.filter(
-                    t_curr_filtered[macro_level] == selected_filter_val
-                )
-                t_prev_filtered = t_prev_filtered.filter(
-                    t_prev_filtered[macro_level] == selected_filter_val
-                )
+            # t_filtered = t_filtered.filter(
+            #     t_filtered[macro_level] == selected_filter_val
+            # )
+                # t_prev_filtered = t_prev_filtered.filter(
+                #     t_prev_filtered[macro_level] == selected_filter_val
+                # )
 
             # collect all unique units (orgnr_foretak) from both years
-            units_curr = t_curr_filtered.select("orgnr_foretak").distinct()
-            units_prev = t_prev_filtered.select("orgnr_foretak").distinct()
-            units_all = units_curr.union(units_prev).distinct()
+            # units_curr = t_curr_filtered.select("orgnr_foretak").distinct()
+            # units_prev = t_prev_filtered.select("orgnr_foretak").distinct()
+            # units_all = units_curr.union(units_prev).distinct()
 
-            # reload ALL data (no nace/macro filters) for those units
-            t: ibis.TableExpr = self.parquet_reader._load_year(
-                aar,
-                self.base_path,
-                foretak_or_bedrift,
-                [],  # no nace filter
-                nace_siffer_level,
-                detail_grid=True,
-            )
-            t_1: ibis.TableExpr = self.parquet_reader._load_year(
-                aar - 1,
-                self.base_path,
-                foretak_or_bedrift,
-                [],  # no nace filter
-                nace_siffer_level,
-                detail_grid=True,
-            )
+            # # reload ALL data (no nace/macro filters) for those units
+            # t: ibis.TableExpr = self.parquet_reader._load_year(
+            #     aar,
+            #     self.base_path,
+            #     foretak_or_bedrift,
+            #     [],  # no nace filter
+            #     nace_siffer_level,
+            #     detail_grid=True,
+            # )
+            # t_1: ibis.TableExpr = self.parquet_reader._load_year(
+            #     aar - 1,
+            #     self.base_path,
+            #     foretak_or_bedrift,
+            #     [],  # no nace filter
+            #     nace_siffer_level,
+            #     detail_grid=True,
+            # )
 
-            # filter to only the units we identified
-            t = t.semi_join(units_all, ["orgnr_foretak"])
-            t_1 = t_1.semi_join(units_all, ["orgnr_foretak"])
+            # # filter to only the units we identified
+            # t = t.semi_join(units_all, ["orgnr_foretak"])
+            # t_1 = t_1.semi_join(units_all, ["orgnr_foretak"])
 
+            print("Available columns:", t_filtered.columns)
             select_cols = [
                 "navn",
                 "orgnr_foretak",
@@ -811,16 +811,16 @@ class MacroNspekPostControl:
                 "reg_type_f",
                 "type",
                 "kommune",
-                *HEATMAP_VARIABLES.keys(),
+                *var_dict.keys(),
                 "giver_fnr",
                 "giver_bnr",
                 "aar",
             ]
             if foretak_or_bedrift == "bedrifter":
                 select_cols.append("orgnr_bedrift")
+            print(f"select_cols: {select_cols}")
 
-            t = t.select([c for c in select_cols if c in t.columns])
-            t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
+            t = t_filtered.select([c for c in select_cols if c in t_filtered.columns])
 
             if foretak_or_bedrift == "foretak":
                 rename_mapping = {
@@ -831,7 +831,6 @@ class MacroNspekPostControl:
                 }
                 kommune_col = "kommune_f"
                 naring_col = "naring_f"
-                merge_keys = "orgnr_f"
             elif foretak_or_bedrift == "bedrifter":
                 rename_mapping = {
                     "naring_b": "naring",
@@ -842,131 +841,134 @@ class MacroNspekPostControl:
                 }
                 kommune_col = "kommune_b"
                 naring_col = "naring_b"
-                merge_keys = ["orgnr_f", "orgnr_b"]
 
-            t = t.rename(**rename_mapping)
-            t_1 = t_1.rename(**rename_mapping)
+            t = t_filtered.rename(**rename_mapping)
+            print(t)
+            # t_1 = t_1.rename(**rename_mapping)
 
-            for col in HEATMAP_VARIABLES.keys():
+            for col in var_dict.keys():
                 if col in t.columns:
                     t = t.mutate(**{col: t[col].cast("float64")})
-                if col in t_1.columns:
-                    t_1 = t_1.mutate(**{col: t_1[col].cast("float64")})
+                # if col in t_1.columns:
+                #     t_1 = t_1.mutate(**{col: t_1[col].cast("float64")})
 
-            t_curr = t.filter(t.aar == str(aar))
-            t_prev = t_1.filter(t_1.aar == str(aar - 1))
+            # t = t.filter(t.aar == str(aar))
+            # t_prev = t_1.filter(t_1.aar == str(aar - 1))
 
-            t_curr = t_curr.rename(
-                {v: k for k, v in HEATMAP_VARIABLES.items() if k in t_curr.columns}
+            t = t.rename(
+                {v: k for k, v in var_dict.items() if k in t.columns}
             ).execute()
-            t_prev = t_prev.rename(
-                {v: k for k, v in HEATMAP_VARIABLES.items() if k in t_prev.columns}
-            ).execute()
+
+
+            print(t)
+            # t_prev = t_prev.rename(
+            #     {v: k for k, v in var_dict.items() if k in t_prev.columns}
+            # ).execute()
 
             # use outer to catch units that may only exist in one year due to orgnr_bedrift changes
-            merged_df = t_curr.merge(
-                t_prev,
-                how="outer",
-                on=merge_keys,
-                suffixes=("", "_x"),
-                indicator=True,
-            )
+            # merged_df = t_curr.merge(
+            #     t_prev,
+            #     how="outer",
+            #     on=merge_keys,
+            #     suffixes=("", "_x"),
+            #     indicator=True,
+            # )
 
-            merged_df[kommune_col] = (
-                merged_df[kommune_col].fillna("UKJENT").replace("", "UKJENT")
-            )
-            merged_df[f"{kommune_col}_x"] = (
-                merged_df[f"{kommune_col}_x"].fillna("UKJENT").replace("", "UKJENT")
-            )
+            # merged_df[kommune_col] = (
+            #     merged_df[kommune_col].fillna("UKJENT").replace("", "UKJENT")
+            # )
+            # merged_df[f"{kommune_col}_x"] = (
+            #     merged_df[f"{kommune_col}_x"].fillna("UKJENT").replace("", "UKJENT")
+            # )
 
-            merged_df["is_new"] = merged_df["_merge"] == "left_only"
-            merged_df["is_exiter"] = merged_df["_merge"] == "right_only"
+            # merged_df["is_new"] = merged_df["_merge"] == "left_only"
+            # merged_df["is_exiter"] = merged_df["_merge"] == "right_only"
 
-            # for exiters, fill in key identifying columns from previous year
-            if "navn" in merged_df.columns and "navn_x" in merged_df.columns:
-                merged_df["navn"] = merged_df["navn"].fillna(merged_df["navn_x"])
-            merged_df = merged_df.drop(columns=["_merge"])
+            # # for exiters, fill in key identifying columns from previous year
+            # if "navn" in merged_df.columns and "navn_x" in merged_df.columns:
+            #     merged_df["navn"] = merged_df["navn"].fillna(merged_df["navn_x"])
+            # merged_df = merged_df.drop(columns=["_merge"])
 
-            # 2-siffer nace changes?
-            if (
-                naring_col in merged_df.columns
-                and f"{naring_col}_x" in merged_df.columns
-            ):
-                merged_df["nace_prefix_curr"] = (
-                    merged_df[naring_col].astype(str).str[:nace_siffer_level]
-                )
-                merged_df["nace_prefix_prev"] = (
-                    merged_df[f"{naring_col}_x"].astype(str).str[:nace_siffer_level]
-                )
+            # # 2-siffer nace changes?
+            # if (
+            #     naring_col in merged_df.columns
+            #     and f"{naring_col}_x" in merged_df.columns
+            # ):
+            #     merged_df["nace_prefix_curr"] = (
+            #         merged_df[naring_col].astype(str).str[:nace_siffer_level]
+            #     )
+            #     merged_df["nace_prefix_prev"] = (
+            #         merged_df[f"{naring_col}_x"].astype(str).str[:nace_siffer_level]
+            #     )
 
-                merged_df["is_nace_entrant"] = (  # different nace LAST year
-                    ~merged_df["is_new"]
-                    & (merged_df["nace_prefix_curr"] == selected_nace)
-                    & (merged_df["nace_prefix_prev"] != selected_nace)
-                )
+            #     merged_df["is_nace_entrant"] = (  # different nace LAST year
+            #         ~merged_df["is_new"]
+            #         & (merged_df["nace_prefix_curr"] == selected_nace)
+            #         & (merged_df["nace_prefix_prev"] != selected_nace)
+            #     )
 
-                merged_df["is_nace_exiter"] = (  # different nace THIS year
-                    ~merged_df["is_exiter"]
-                    & (merged_df["nace_prefix_prev"] == selected_nace)
-                    & (merged_df["nace_prefix_curr"] != selected_nace)
-                )
+            #     merged_df["is_nace_exiter"] = (  # different nace THIS year
+            #         ~merged_df["is_exiter"]
+            #         & (merged_df["nace_prefix_prev"] == selected_nace)
+            #         & (merged_df["nace_prefix_curr"] != selected_nace)
+            #     )
 
-                merged_df["nace_same"] = (
-                    merged_df["nace_prefix_curr"] == merged_df["nace_prefix_prev"]
-                ).fillna(False)
+            #     merged_df["nace_same"] = (
+            #         merged_df["nace_prefix_curr"] == merged_df["nace_prefix_prev"]
+            #     ).fillna(False)
 
-                # drop rows/units if it wasn't in bucket this or last year, necessary because of merging on orgnr_foretak
-                mask = (merged_df["nace_prefix_curr"] == selected_nace) | (
-                    merged_df["nace_prefix_prev"] == selected_nace
-                )
-                merged_df = merged_df[mask]
+            #     # drop rows/units if it wasn't in bucket this or last year, necessary because of merging on orgnr_foretak
+            #     mask = (merged_df["nace_prefix_curr"] == selected_nace) | (
+            #         merged_df["nace_prefix_prev"] == selected_nace
+            #     )
+            #     merged_df = merged_df[mask]
 
-            # kommune/fylke change flags
-            if macro_level in ("fylke", "kommune"):
+            # # kommune/fylke change flags
+            # if macro_level in ("fylke", "kommune"):
 
-                if (
-                    kommune_col in merged_df.columns
-                    and f"{kommune_col}_x" in merged_df.columns
-                ):
-                    merged_df["macro_prefix_curr"] = merged_df[kommune_col].where(
-                        merged_df[kommune_col] == "UKJENT",
-                        merged_df[kommune_col].astype(str).str[:col_length],
-                    )
-                    merged_df["macro_prefix_prev"] = merged_df[
-                        f"{kommune_col}_x"
-                    ].where(
-                        merged_df[f"{kommune_col}_x"] == "UKJENT",
-                        merged_df[f"{kommune_col}_x"].astype(str).str[:col_length],
-                    )
+            #     if (
+            #         kommune_col in merged_df.columns
+            #         and f"{kommune_col}_x" in merged_df.columns
+            #     ):
+            #         merged_df["macro_prefix_curr"] = merged_df[kommune_col].where(
+            #             merged_df[kommune_col] == "UKJENT",
+            #             merged_df[kommune_col].astype(str).str[:col_length],
+            #         )
+            #         merged_df["macro_prefix_prev"] = merged_df[
+            #             f"{kommune_col}_x"
+            #         ].where(
+            #             merged_df[f"{kommune_col}_x"] == "UKJENT",
+            #             merged_df[f"{kommune_col}_x"].astype(str).str[:col_length],
+            #         )
 
-                    merged_df["in_bucket_curr"] = (
-                        merged_df["macro_prefix_curr"] == selected_filter_val
-                    ).fillna(False)
-                    merged_df["in_bucket_prev"] = (
-                        merged_df["macro_prefix_prev"] == selected_filter_val
-                    ).fillna(False)
+            #         merged_df["in_bucket_curr"] = (
+            #             merged_df["macro_prefix_curr"] == selected_filter_val
+            #         ).fillna(False)
+            #         merged_df["in_bucket_prev"] = (
+            #             merged_df["macro_prefix_prev"] == selected_filter_val
+            #         ).fillna(False)
 
-                    # drop rows/units if it wasn't in bucket this or last year, necessary because of excess bedrifter when merging on orgnr_foretak
-                    mask = merged_df["in_bucket_curr"] | merged_df["in_bucket_prev"]
-                    merged_df = merged_df[mask]
+            #         # drop rows/units if it wasn't in bucket this or last year, necessary because of excess bedrifter when merging on orgnr_foretak
+            #         mask = merged_df["in_bucket_curr"] | merged_df["in_bucket_prev"]
+            #         merged_df = merged_df[mask]
 
-                    merged_df["is_macro_entrant"] = (
-                        ~merged_df["is_new"]
-                        & merged_df["in_bucket_curr"]
-                        & ~merged_df["in_bucket_prev"]
-                    )
-                    merged_df["is_macro_exiter"] = (
-                        ~merged_df["is_exiter"]
-                        & merged_df["in_bucket_prev"]
-                        & ~merged_df["in_bucket_curr"]
-                    )
-            else:
-                merged_df["in_bucket_curr"] = True
-                merged_df["in_bucket_prev"] = True
-                merged_df["is_macro_entrant"] = False
-                merged_df["is_macro_exiter"] = False
+            #         merged_df["is_macro_entrant"] = (
+            #             ~merged_df["is_new"]
+            #             & merged_df["in_bucket_curr"]
+            #             & ~merged_df["in_bucket_prev"]
+            #         )
+            #         merged_df["is_macro_exiter"] = (
+            #             ~merged_df["is_exiter"]
+            #             & merged_df["in_bucket_prev"]
+            #             & ~merged_df["in_bucket_curr"]
+            #         )
+            # else:
+            #     merged_df["in_bucket_curr"] = True
+            #     merged_df["in_bucket_prev"] = True
+            #     merged_df["is_macro_entrant"] = False
+            #     merged_df["is_macro_exiter"] = False
 
-            df = merged_df.copy()
+            # df = merged_df.copy()
 
             if (
                 "giver_bnr" in df.columns and "giver_fnr" in df.columns
@@ -975,87 +977,86 @@ class MacroNspekPostControl:
                 df["giver_bnr_tooltip"] = "Giverbedrifter: " + df["giver_bnr"].astype(
                     str
                 )
-            for col in STATUS_CHANGE_DETAIL_GRID:
-                if f"{col}_x" in df.columns:
-                    df[f"{col}_tooltip"] = "Fjorårets verdi: " + df[f"{col}_x"].astype(
-                        str
-                    )
+            # for col in STATUS_CHANGE_DETAIL_GRID:
+            #     if f"{col}_x" in df.columns:
+            #         df[f"{col}_tooltip"] = "Fjorårets verdi: " + df[f"{col}_x"].astype(
+            #             str
+            #         )
 
             # adjust values for current and previous contributors and then calculate diff accordingly
-            if valgt_variabel in df.columns and f"{valgt_variabel}_x" in df.columns:
+            # if valgt_variabel in df.columns and f"{valgt_variabel}_x" in df.columns:
 
-                current_contributes = (
-                    ~df["is_exiter"]
-                    & df["in_bucket_curr"]
-                    & (df["nace_prefix_curr"] == selected_nace)
-                )
+            #     current_contributes = (
+            #         ~df["is_exiter"]
+            #         & df["in_bucket_curr"]
+            #         & (df["nace_prefix_curr"] == selected_nace)
+            #     )
 
-                prev_contributes = (
-                    ~df["is_new"]
-                    & df["in_bucket_prev"]
-                    & (df["nace_prefix_prev"] == selected_nace)
-                )
+            #     prev_contributes = (
+            #         ~df["is_new"]
+            #         & df["in_bucket_prev"]
+            #         & (df["nace_prefix_prev"] == selected_nace)
+            #     )
 
-                current_value_adjusted = (
-                    df[valgt_variabel].where(current_contributes, other=0).fillna(0)
-                )
-                prev_value_adjusted = (
-                    df[f"{valgt_variabel}_x"].where(prev_contributes, other=0).fillna(0)
-                )
+            #     current_value_adjusted = (
+            #         df[valgt_variabel].where(current_contributes, other=0).fillna(0)
+            #     )
+            #     prev_value_adjusted = (
+            #         df[f"{valgt_variabel}_x"].where(prev_contributes, other=0).fillna(0)
+            #     )
 
-                df[f"{valgt_variabel}_diff"] = (
-                    current_value_adjusted - prev_value_adjusted
-                )
+            #     df[f"{valgt_variabel}_diff"] = (
+            #         current_value_adjusted - prev_value_adjusted
+            #     )
 
-                df["is_tilgang"] = current_contributes & ~prev_contributes
-                df["is_avgang"] = ~current_contributes & prev_contributes
+            #     df["is_tilgang"] = current_contributes & ~prev_contributes
+            #     df["is_avgang"] = ~current_contributes & prev_contributes
 
-                heatmap_value_change = cell_data.get("value", 0)
-                heatmap_value_change = (
-                    float(heatmap_value_change)
-                    if heatmap_value_change is not None
-                    else 0
-                )
-                ascending_sorting_param: bool = heatmap_value_change < 0
-                df = df.sort_values(
-                    f"{valgt_variabel}_diff", ascending=ascending_sorting_param
-                )
+            #     heatmap_value_change = cell_data.get("value", 0)
+            #     heatmap_value_change = (
+            #         float(heatmap_value_change)
+            #         if heatmap_value_change is not None
+            #         else 0
+            #     )
+            #     ascending_sorting_param: bool = heatmap_value_change < 0
+            #     df = df.sort_values(
+            #         f"{valgt_variabel}_diff", ascending=ascending_sorting_param
+            #     )
 
             # order for columns
-            if valgt_variabel in df.columns:
-                metrics_order = [valgt_variabel]
+            if selected_filter_val in df.columns:
+                metrics_order = [selected_filter_val]
             else:
                 metrics_order = []
             metrics_order += [
-                HEATMAP_VARIABLES.get(v, v)
-                for v in HEATMAP_VARIABLES
-                if HEATMAP_VARIABLES.get(v, v) != valgt_variabel
+                var_dict.get(v, v)
+                for v in var_dict
+                if var_dict.get(v, v) != selected_filter_val 
             ]
 
-            ordered_value_cols = []
-            diff_col = f"{valgt_variabel}_diff"
-            for metric in metrics_order:
-                current_year_col = metric
-                previous_year_col = f"{metric}_x"
+            # ordered_value_cols = []
+            # diff_col = f"{macro_level}_diff"
+            # for metric in metrics_order:
+            #     current_year_col = metric
+            #     previous_year_col = f"{metric}_x"
 
-                if current_year_col in df.columns:
-                    ordered_value_cols.append(current_year_col)
-                if previous_year_col in df.columns:
-                    ordered_value_cols.append(previous_year_col)
+            #     if current_year_col in df.columns:
+            #         ordered_value_cols.append(current_year_col)
+            #     if previous_year_col in df.columns:
+            #         ordered_value_cols.append(previous_year_col)
 
-                if metric == valgt_variabel and diff_col in df.columns:
-                    ordered_value_cols.append(diff_col)
+            #     if metric == valgt_variabel and diff_col in df.columns:
+            #         ordered_value_cols.append(diff_col)
 
             visible_cols = [
-                c for c in DETAIL_GRID_ID_COLS + ordered_value_cols if c in df.columns
+                c for c in DETAIL_GRID_ID_COLS + metrics_order if c in df.columns
             ]
+            # df = df.sort_values(, ascending=True)
 
             row_data: list[dict[Hashable, Any]] | Any = df.to_dict("records")
-            if macro_level in ("fylke", "kommune"):
-                for row in row_data:
-                    row["macro_len"] = MACRO_FILTER_OPTIONS[
-                        macro_level
-                    ]  # for frontend JavaScript
+            # if macro_level in ("fylke", "kommune"):
+            #     for row in row_data:
+            #         row["macro_len"] = var_dict  # for frontend JavaScript
 
             column_defs = []
             for col in visible_cols:
@@ -1075,26 +1076,26 @@ class MacroNspekPostControl:
 
                 if col not in DETAIL_GRID_ID_COLS:
                     col_def["valueFormatter"] = {
-                        "function": "MacroNspekPostControl.formatDetailGridValue(params)"
+                        "function": "MacroModule.formatDetailGridValue(params)"
                     }
                     if col.endswith("_x"):
                         col_def["cellStyle"] = {
                             "backgroundColor": "#e8e9eb"  # light grey for previous year
                         }
 
-                if col in STATUS_CHANGE_DETAIL_GRID:
-                    col_def.update(
-                        {
-                            "cellStyle": {
-                                "function": "MacroNspekPostControl.displayDiffHighlight(params)"
-                            }
-                        }
-                    )
+                # if col in STATUS_CHANGE_DETAIL_GRID:
+                #     col_def.update(
+                #         {
+                #             "cellStyle": {
+                #                 "function": "MacroModule.displayDiffHighlight(params)"
+                #             }
+                #         }
+                #     )
 
-                if col.endswith("_diff") or col in ("orgnr_b", "navn"):
-                    col_def["cellStyle"] = {
-                        "function": "MacroNspekPostControl.displayDiffColumnHighlight(params)"
-                    }
+                # if col.endswith("_diff") or col in ("orgnr_b", "navn"):
+                #     col_def["cellStyle"] = {
+                #         "function": "MacroModule.displayDiffColumnHighlight(params)"
+                #     }
 
                 if df[col].dtypes == "float":
                     col_def["filter"] = "agNumberColumnFilter"
@@ -1105,9 +1106,9 @@ class MacroNspekPostControl:
                 column_defs[0]["pinned"] = "left"
                 column_defs[0]["width"] = 240
 
-            title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace} i {macro_level} {selected_filter_val}"
-            if macro_level == "sammensatte variabler":
-                title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace}"
+            title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace}"
+            # if macro_level == "sammensatte variabler":
+            #     title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace}"
 
             return row_data, column_defs, title, [], True, None, 0
 
@@ -1120,20 +1121,12 @@ class MacroNspekPostControl:
             Input("macromodule-nopost-filter-velger", "value"),
             Input("macromodule-nopost-nace-siffer-velger", "value"),
             Input("macromodule-nopost-naring-velger", "value"),
-            Input("macromodule-nopost-macro-variable", "value"),
+            # Input("macromodule-nopost-macro-variable", "value"),
             prevent_initial_call=True,
         )
         def reset_detail_grid_on_filter_change(*args: Any) -> tuple[list, list, str]:
             """Reset detail grid when any filter changes."""
             return [], [], ""
-
-        @callback(
-            Output("macromodule-nopost-macro-variable", "disabled"),
-            Input("macromodule-nopost-filter-velger", "value"),
-        )
-        def toggle_variabel_dropdown(macro_level: str) -> bool:
-            """Disables macro-variable if sammensatte variabler is selected by user."""
-            return macro_level == "sammensatte variabler"
 
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
