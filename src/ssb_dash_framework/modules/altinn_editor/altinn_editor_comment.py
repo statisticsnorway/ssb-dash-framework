@@ -3,7 +3,6 @@ from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-import ibis
 from dash import callback
 from dash import dcc
 from dash import html
@@ -17,7 +16,7 @@ from ibis import _
 from ssb_dash_framework.utils import conn_is_ibis
 
 from ...utils import create_alert
-from ...utils.config_tools import get_connection
+from ...utils import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,6 @@ class AltinnEditorComment:
 
     def __init__(
         self,
-        conn: object | None = None,
     ) -> None:
         """Initializes the Altinn Editor Comment module.
 
@@ -37,12 +35,6 @@ class AltinnEditorComment:
         Raises:
             TypeError: If the connection object is not 'EimerDBInstance' or ibis connection.
         """
-        self.conn = conn if conn else get_connection()
-        if not isinstance(self.conn, EimerDBInstance) and not conn_is_ibis(self.conn):
-            raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(self.conn)}"
-            )
-
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
@@ -156,24 +148,18 @@ class AltinnEditorComment:
             if n_clicks is None:
                 logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
-            if isinstance(self.conn, EimerDBInstance):
-                conn = ibis.polars.connect()
-                data = self.conn.query("SELECT * FROM skjemamottak")
-                conn.create_table("skjemamottak", data)
-            elif conn_is_ibis(self.conn):
-                conn = self.conn
-            else:
-                raise TypeError("Connection object is invalid type.")
-            t = conn.table("skjemamottak")
-            df = t.filter(_.ident == ident).filter(_.skjema == skjema).to_pandas()
-            columns = [
-                {
-                    "headerName": col,
-                    "field": col,
-                }
-                for col in df.columns
-            ]
-            return df.to_dict("records"), columns
+
+            with get_connection(necessary_tables=["skjemamottak"]) as conn:
+                t = conn.table("skjemamottak")
+                df = t.filter(_.ident == ident).filter(_.skjema == skjema).to_pandas()
+                columns = [
+                    {
+                        "headerName": col,
+                        "field": col,
+                    }
+                    for col in df.columns
+                ]
+                return df.to_dict("records"), columns
 
         @callback(  # type: ignore[misc]
             Output("skjemadata-kommentarmodal-aar-kommentar", "value"),

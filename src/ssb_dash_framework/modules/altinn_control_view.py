@@ -20,8 +20,8 @@ from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils.alert_handler import create_alert
-from ..utils.config_tools import get_connection
-from ..utils.core_query_functions import conn_is_ibis
+from ..utils.config_tools.connection import _get_connection_object
+from ..utils.config_tools.connection import get_connection
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,6 @@ class ControlView(ABC):
         self,
         time_units: list[str],
         control_dict: dict[str, Any],
-        conn: object | None = None,
         outputs: list[str] | None = None,
     ) -> None:  # TODO add proper annotation for control_dict value
         """Initializes the ControlView with time units, control dictionary, and database connection.
@@ -53,21 +52,13 @@ class ControlView(ABC):
         Args:
             time_units: A list of the time units used.
             control_dict: A dictionary with one control class per skjema.
-            conn: The eimerdb connection.
             outputs: Variable selector fields to output to. Defaults to ['ident']
-
-        Raises:
-            TypeError: if conn type is not 'EimerDBInstance' or ibis connection.
         """
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
         )
         if outputs is None:
             outputs = ["ident"]
-        if not conn_is_ibis(conn) and not isinstance(conn, EimerDBInstance):
-            raise TypeError(
-                f"Argument 'conn' must be an 'EimerDBInstance' or Ibis backend. Received: {type(conn)}"
-            )
         self.module_number = ControlView._id_number
         self.module_name = self.__class__.__name__
         ControlView._id_number += 1
@@ -76,7 +67,6 @@ class ControlView(ABC):
         self.label = "Kontroll"
 
         self.control_dict = control_dict
-        self.conn = conn if conn else get_connection()
         self.outputs = outputs
         self._is_valid()
         self.module_layout = self.create_layout()
@@ -227,14 +217,14 @@ class ControlView(ABC):
                 f"rerun: {rerun}\n"
                 f"args: {args}"
             )
-            if isinstance(self.conn, EimerDBInstance):
+
+            if isinstance(_get_connection_object(), EimerDBInstance):
                 args = [int(arg) for arg in args]
             logger.debug(dict(zip(self.time_units, args, strict=False)))
             control_class_instance = self.control_dict[skjema](
                 time_units=self.time_units,
                 applies_to_subset=dict(zip(self.time_units, args, strict=False))
                 | {"skjema": [skjema]},
-                conn=self.conn,
             )
             if (
                 ctx.triggered_id == f"{self.module_number}-kontroll-run-button"
@@ -262,122 +252,84 @@ class ControlView(ABC):
                         raise e
             else:
                 logger.info("Refreshing view without re-running controls.")
+            with get_connection(
+                necessary_tables=["skjemamottak", "kontroller", "kontrollutslag"]
+            ) as conn:
 
-            if isinstance(self.conn, EimerDBInstance):
-                try:
-                    conn = ibis.polars.connect()
-                    skjemamottak = self.conn.query(
-                        "SELECT * FROM skjemamottak"
-                    )  # maybe add something like this?partition_select=self.applies_to_subset
-                    conn.create_table("skjemamottak", skjemamottak)
-                    kontroller = self.conn.query(
-                        "SELECT * FROM kontroller"
-                    )  # maybe add something like this?partition_select=self.applies_to_subset
-                    conn.create_table("kontroller", kontroller)
-                    kontrollutslag = self.conn.query(
-                        "SELECT * FROM kontrollutslag"
-                    )  # maybe add something like this?partition_select=self.applies_to_subset
-                    conn.create_table("kontrollutslag", kontrollutslag)
-                except (
-                    ValueError
-                ) as e:  # TODO permanently fix this. Error caused by running .query on eimerdb table with no contents.
-                    if str(e) == "max() arg is an empty sequence":
-                        logger.warning(
-                            "Did not find any contents in control tables, returning None, None and alert."
-                        )
-                        alert_store = [
-                            create_alert(
-                                "Finner ingen kontroller i dataene, prøv å kjøre kontroller.",
-                                "warning",
-                                ephemeral=True,
-                            ),
-                            *alert_store,
-                        ]
-                        return None, None, alert_store
-                    else:
-                        raise e
-            elif conn_is_ibis(self.conn):
-                conn = self.conn
-            else:
-                raise NotImplementedError(
-                    f"Connection type '{type(self.conn)}' is currently not implemented."
+                skjemamottak = conn.table("skjemamottak")
+                kontroller = conn.table("kontroller")
+                kontrollutslag = conn.table("kontrollutslag")
+
+                utslag = (
+                    kontrollutslag.filter(kontrollutslag.utslag == True)
+                    .group_by(kontrollutslag.kontrollid)
+                    .aggregate(ant_utslag=ibis._.count())
                 )
-            # TODO make sure conn is defined for mypy.
 
-            skjemamottak = conn.table("skjemamottak")
-            kontroller = conn.table("kontroller")
-            kontrollutslag = conn.table("kontrollutslag")
-
-            utslag = (
-                kontrollutslag.filter(kontrollutslag.utslag == True)
-                .group_by(kontrollutslag.kontrollid)
-                .aggregate(ant_utslag=ibis._.count())
-            )
-
-            subq = (
-                skjemamottak.filter(skjemamottak.aktiv == True)
-                .filter(skjemamottak.editert == False)
-                .select("ident", "refnr")
-            )
-
-            uediterte = (
-                kontrollutslag.join(
-                    subq,
-                    (kontrollutslag.ident == subq.ident)
-                    & (kontrollutslag.refnr == subq.refnr),
+                subq = (
+                    skjemamottak.filter(skjemamottak.aktiv == True)
+                    .filter(skjemamottak.editert == False)
+                    .select("ident", "refnr")
                 )
-                .filter(kontrollutslag.utslag == True)
-                .group_by(kontrollutslag.kontrollid)
-                .aggregate(uediterte=ibis._.count())
-                .select("kontrollid", "uediterte")
-            )
 
-            result = (
-                kontroller.join(utslag, kontroller.kontrollid == utslag.kontrollid)
-                .join(uediterte, kontroller.kontrollid == uediterte.kontrollid)
-                .select(
-                    kontroller.skjema,
-                    kontroller.kontrollid,
-                    kontroller.type,
-                    kontroller.beskrivelse,
-                    kontroller.sorting_var,
-                    kontroller.sorting_order,
-                    utslag.ant_utslag,
-                    uediterte.uediterte,
+                uediterte = (
+                    kontrollutslag.join(
+                        subq,
+                        (kontrollutslag.ident == subq.ident)
+                        & (kontrollutslag.refnr == subq.refnr),
+                    )
+                    .filter(kontrollutslag.utslag == True)
+                    .group_by(kontrollutslag.kontrollid)
+                    .aggregate(uediterte=ibis._.count())
+                    .select("kontrollid", "uediterte")
                 )
-            )
-            result = result.to_pandas().sort_values(by="kontrollid", ascending=True)
-            columns = [
-                {
-                    "headerName": col,
-                    "field": col,
-                    "hide": col == "sorting_order",
-                    "flex": 2 if col == "beskrivelse" else 1,
-                    "tooltipField": col if col == "beskrivelse" else None,
-                }
-                for col in result.columns
-            ]
-            columns[0]["checkboxSelection"] = True
-            columns[0]["headerCheckboxSelection"] = True
-            if ctx.triggered_id == f"{self.module_number}-kontroll-run-button":
-                alert_store = [
-                    create_alert(
-                        f"Kontrollkjøring ferdig for kontroller i {control_class_instance.__class__.__name__}",
-                        "info",
-                        ephemeral=True,
-                    ),
-                    *alert_store,
+
+                result = (
+                    kontroller.join(utslag, kontroller.kontrollid == utslag.kontrollid)
+                    .join(uediterte, kontroller.kontrollid == uediterte.kontrollid)
+                    .select(
+                        kontroller.skjema,
+                        kontroller.kontrollid,
+                        kontroller.type,
+                        kontroller.beskrivelse,
+                        kontroller.sorting_var,
+                        kontroller.sorting_order,
+                        utslag.ant_utslag,
+                        uediterte.uediterte,
+                    )
+                )
+                result = result.to_pandas().sort_values(by="kontrollid", ascending=True)
+                columns = [
+                    {
+                        "headerName": col,
+                        "field": col,
+                        "hide": col == "sorting_order",
+                        "flex": 2 if col == "beskrivelse" else 1,
+                        "tooltipField": col if col == "beskrivelse" else None,
+                    }
+                    for col in result.columns
                 ]
-            else:
-                alert_store = [
-                    create_alert(
-                        "Kontrollvisning oppdatert.",
-                        "info",
-                        ephemeral=True,
-                    ),
-                    *alert_store,
-                ]
-            return result.to_dict("records"), columns, alert_store
+                columns[0]["checkboxSelection"] = True
+                columns[0]["headerCheckboxSelection"] = True
+                if ctx.triggered_id == f"{self.module_number}-kontroll-run-button":
+                    alert_store = [
+                        create_alert(
+                            f"Kontrollkjøring ferdig for kontroller i {control_class_instance.__class__.__name__}",
+                            "info",
+                            ephemeral=True,
+                        ),
+                        *alert_store,
+                    ]
+                else:
+                    alert_store = [
+                        create_alert(
+                            "Kontrollvisning oppdatert.",
+                            "info",
+                            ephemeral=True,
+                        ),
+                        *alert_store,
+                    ]
+                return result.to_dict("records"), columns, alert_store
 
         @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-kontrollutslag", "rowData"),
@@ -391,63 +343,50 @@ class ControlView(ABC):
             if current_row is None or len(current_row) == 0:
                 logger.debug("No current_row, raising PreventUpdate.")
                 raise PreventUpdate
-            if isinstance(self.conn, EimerDBInstance):
-                conn = ibis.polars.connect()
-                skjemamottak = self.conn.query(
-                    "SELECT * FROM skjemamottak"
-                )  # maybe add something like this?partition_select=self.applies_to_subset
-                conn.create_table("skjemamottak", skjemamottak)
-                kontrollutslag = self.conn.query(
-                    "SELECT * FROM kontrollutslag"
-                )  # maybe add something like this?partition_select=self.applies_to_subset
-                conn.create_table("kontrollutslag", kontrollutslag)
-            elif conn_is_ibis(self.conn):
-                conn = self.conn
-            else:
-                raise NotImplementedError(
-                    f"Connection type '{type(self.conn)}' is currently not implemented."
-                )
-            kontrollid = current_row[0]["kontrollid"]
-            sorting_var = current_row[0]["sorting_var"]
-            skjema = current_row[0]["skjema"]
-            sorting_order = current_row[0]["sorting_order"]
+            with get_connection(
+                necessary_tables=["skjemamottak", "kontrollutslag"]
+            ) as conn:
+                kontrollid = current_row[0]["kontrollid"]
+                sorting_var = current_row[0]["sorting_var"]
+                skjema = current_row[0]["skjema"]
+                sorting_order = current_row[0]["sorting_order"]
 
-            logger.debug(
-                f"Variables from current_row:\nkontrollid: {kontrollid}\nsorting_var: {sorting_var}\nskjema: {skjema}\nsorting_order: {sorting_order}"
-            )
-            if sorting_order is None:
-                sorting_order = "DESC"
-            skjemamottak = conn.table("skjemamottak")
-            kontrollutslag = conn.table("kontrollutslag")
-            # Subquery: filter active rows in skjemamottak
-            s = skjemamottak.filter(skjemamottak.aktiv == True).select(
-                skjemamottak.refnr,
-                skjemamottak.editert,
-                skjemamottak.ident,
-            )
+                logger.debug(
+                    f"Variables from current_row:\nkontrollid: {kontrollid}\nsorting_var: {sorting_var}\nskjema: {skjema}\nsorting_order: {sorting_order}"
+                )
+                if sorting_order is None:
+                    sorting_order = "DESC"
+                skjemamottak = conn.table("skjemamottak")
+                kontrollutslag = conn.table("kontrollutslag")
+                # Subquery: filter active rows in skjemamottak
+                s = skjemamottak.filter(skjemamottak.aktiv == True).select(
+                    skjemamottak.refnr,
+                    skjemamottak.editert,
+                    skjemamottak.ident,
+                )
 
-            # Main query
-            result = (
-                kontrollutslag.join(
-                    s,
-                    (kontrollutslag.refnr == s.refnr)
-                    & (kontrollutslag.ident == s.ident),
+                # Main query
+                result = (
+                    kontrollutslag.join(
+                        s,
+                        (kontrollutslag.refnr == s.refnr)
+                        & (kontrollutslag.ident == s.ident),
+                    )
+                    .filter(
+                        (kontrollutslag.kontrollid == kontrollid)
+                        & (kontrollutslag.utslag == True)
+                    )
+                    .select(
+                        kontrollutslag.ident,
+                        kontrollutslag.refnr,
+                        kontrollutslag.kontrollid,
+                        kontrollutslag.utslag,
+                        s.editert,
+                        kontrollutslag.verdi,
+                    )
+                    .order_by(s.editert, kontrollutslag.verdi)
                 )
-                .filter(
-                    (kontrollutslag.kontrollid == kontrollid)
-                    & (kontrollutslag.utslag == True)
-                )
-                .select(
-                    kontrollutslag.ident,
-                    kontrollutslag.refnr,
-                    kontrollutslag.kontrollid,
-                    kontrollutslag.utslag,
-                    s.editert,
-                    kontrollutslag.verdi,
-                )
-                .order_by(s.editert, kontrollutslag.verdi)
-            )
-            result = result.to_pandas()
+                result = result.to_pandas()
             columns = [{"headerName": col, "field": col} for col in result.columns]
             columns[0]["checkboxSelection"] = True
             columns[0]["headerCheckboxSelection"] = True
@@ -489,14 +428,12 @@ class ControlViewTab(TabImplementation, ControlView):
         self,
         time_units: list[str],
         control_dict: dict[str, Any],
-        conn: object | None = None,
     ) -> None:
         """Initializes the ControlViewTab module."""
         ControlView.__init__(
             self,
             time_units=time_units,
             control_dict=control_dict,
-            conn=conn,
         )
         TabImplementation.__init__(self)
 
@@ -508,14 +445,12 @@ class ControlViewWindow(WindowImplementation, ControlView):
         self,
         time_units: list[str],
         control_dict: dict[str, Any],
-        conn: object | None = None,
     ) -> None:
         """Initializes the ControlViewWindow module."""
         ControlView.__init__(
             self,
             time_units=time_units,
             control_dict=control_dict,
-            conn=conn,
         )
         WindowImplementation.__init__(self)
 
@@ -524,12 +459,7 @@ class ControlViewWindow(WindowImplementation, ControlView):
 class AltinnControlViewTab(TabImplementation, ControlView):
     """ControlView implemented as a tab."""
 
-    def __init__(
-        self,
-        time_units: list[str],
-        control_dict: dict[str, Any],
-        conn: object | None = None,
-    ) -> None:
+    def __init__(self, time_units: list[str], control_dict: dict[str, Any]) -> None:
         """Initializes the ControlViewTab module."""
         warnings.warn(
             "AltinnControlViewTab is deprecated and will be removed in a future version. "
@@ -541,7 +471,6 @@ class AltinnControlViewTab(TabImplementation, ControlView):
             self,
             time_units=time_units,
             control_dict=control_dict,
-            conn=conn,
         )
         TabImplementation.__init__(self)
 
@@ -553,7 +482,6 @@ class AltinnControlViewWindow(WindowImplementation, ControlView):
         self,
         time_units: list[str],
         control_dict: dict[str, Any],
-        conn: object | None = None,
     ) -> None:
         """Initializes the ControlViewWindow module."""
         warnings.warn(
@@ -566,6 +494,5 @@ class AltinnControlViewWindow(WindowImplementation, ControlView):
             self,
             time_units=time_units,
             control_dict=control_dict,
-            conn=conn,
         )
         WindowImplementation.__init__(self)

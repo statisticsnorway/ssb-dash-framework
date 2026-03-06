@@ -24,7 +24,7 @@ def test_base_class_instantiation(ibis_polars_conn) -> None:
         time_units=["year", "month"],
         label="test",
         database_type="altinn_default",
-        conn=ibis_polars_conn,
+        database=ibis_polars_conn,
     )
 
 
@@ -34,12 +34,7 @@ def test_tab_instantiation(ibis_polars_conn) -> None:
         time_units=["year", "month"],
         label="test",
         database_type="altinn_default",
-    )
-    AltinnDataCaptureTab(
-        time_units=["year", "month"],
-        label="test",
-        database_type="altinn_default",
-        conn=ibis_polars_conn,
+        database=ibis_polars_conn,
     )
 
 
@@ -49,12 +44,7 @@ def test_window_instantiation(ibis_polars_conn) -> None:
         time_units=["year", "month"],
         label="test",
         database_type="altinn_default",
-    )
-    AltinnDataCaptureWindow(
-        time_units=["year", "month"],
-        label="test",
-        database_type="altinn_default",
-        conn=ibis_polars_conn,
+        database=ibis_polars_conn,
     )
 
 

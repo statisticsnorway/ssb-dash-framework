@@ -8,11 +8,10 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
-from eimerdb import EimerDBInstance
+
+from ssb_dash_framework.utils import get_connection
 
 from ...setup.variableselector import VariableSelector
-from ...utils.config_tools import get_connection
-from ...utils.core_query_functions import conn_is_ibis
 from .altinn_editor_comment import AltinnEditorComment
 from .altinn_editor_contact import AltinnEditorContact
 from .altinn_editor_control import AltinnEditorControl
@@ -20,7 +19,6 @@ from .altinn_editor_history import AltinnEditorHistory
 from .altinn_editor_primary_table import AltinnEditorPrimaryTable
 from .altinn_editor_submitted_forms import AltinnEditorSubmittedForms
 from .altinn_editor_supporting_table import AltinnEditorSupportTables
-from .altinn_editor_supporting_table import add_year_diff_support_table
 from .altinn_editor_unit_details import AltinnEditorUnitDetails
 from .altinn_editor_utility import AltinnEditorStateTracker
 
@@ -46,7 +44,6 @@ class AltinnSkjemadataEditor:
     def __init__(
         self,
         time_units: list[str],
-        conn: object | None = None,
         starting_table: str | None = None,
         variable_connection: dict[str, str] | None = None,
         sidepanels: None = None,
@@ -57,7 +54,6 @@ class AltinnSkjemadataEditor:
 
         Args:
             time_units: List of time units to be used in the module.
-            conn: Database connection object that must have a 'query' method.
             starting_table: Table to be selected by default in module. If None, defaults to first table it finds.
             variable_connection: Dict containing the name of characteristics from the dataset as keys and the variable selector name associated with it as value.
             sidepanels: Later might be used for customizing sidepanel modules.
@@ -70,8 +66,6 @@ class AltinnSkjemadataEditor:
         self.icon = "🗊"
         self.label = "Data editor"
 
-        add_year_diff_support_table(conn if conn else get_connection())
-        self.conn = conn if conn else get_connection()
         self.variable_connection = variable_connection if variable_connection else {}
 
         self.variableselector = VariableSelector(
@@ -128,22 +122,11 @@ class AltinnSkjemadataEditor:
 
     def get_skjemadata_table_names(self) -> list[dict[str, str]]:
         """Retrieves the names of all the skjemadata-tables in the eimerdb."""
-        if isinstance(self.conn, EimerDBInstance):
-            all_tables = list(self.conn.tables.keys())
+        with get_connection() as conn:
             skjemadata_tables = [
-                element for element in all_tables if element.startswith("skjemadata")
+                table for table in conn.list_tables() if table.startswith("skjemadata_")
             ]
-        elif conn_is_ibis(self.conn):
-            skjemadata_tables = [
-                table
-                for table in self.conn.list_tables()
-                if table.startswith("skjemadata_")
-            ]
-        else:
-            raise TypeError(
-                f"Connection object conn supplied to 'AltinnSkjemadataEditor' is not supported. Received: {type(self.conn)}"
-            )
-        return [{"label": item, "value": item} for item in skjemadata_tables]
+            return [{"label": item, "value": item} for item in skjemadata_tables]
 
     def skjemadata_table_selector(self) -> dbc.Col:
         """Makes a dropdown for selecting which 'skjemadata' table to view."""

@@ -44,7 +44,6 @@ HEATMAP_VARIABLES: dict[str, str] = {
     "nopost_driftsresultat": "driftsres",
     "brutto_driftsresultat": "brut_driftsres",
     "ts_varehan": "varehandel",
-    "totkjop": "totalkjøp",
     "ts_anlegg": "anlegg",
     "bruttoinvestering_oslo": "brut_inv_oslo",
     "bruttoinvestering_kvgr": "brut_inv_kvgr",
@@ -52,6 +51,7 @@ HEATMAP_VARIABLES: dict[str, str] = {
 # skriv om til å bruke dict som i heatmap_variables og rename til detail_grid_DETAIL_GRID_ID_COLS
 DETAIL_GRID_ID_COLS = [
     "navn",
+    "sfnr",
     "orgnr_f",
     "orgnr_b",
     "naring_f",
@@ -81,6 +81,7 @@ HEATMAP_NUMBER_FORMAT: dict[str, int] = {
     "Differanse": 3,
 }
 STATUS_CHANGE_DETAIL_GRID: list[str] = [
+    "sfnr",
     "orgnr_f",
     "navn",
     "naring_f",
@@ -113,11 +114,13 @@ class MacroModule_ParquetReader:
 
         Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
         """
-        if aar == 2024:  # new nedtrekk in Dapla has a specific file path
-            file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+        if (
+            aar == 2023 and foretak_or_bedrift == "bedrifter"
+        ):  # new nedtrekk in Dapla has a specific file path
+            file_path = f"{base_path}/p{aar}/statistiske_foretak_{foretak_or_bedrift}_v2.parquet"
         else:
             file_path = (
-                f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
+                f"{base_path}/p{aar}/statistiske_foretak_{foretak_or_bedrift}.parquet"
             )
 
         try:
@@ -148,8 +151,8 @@ class MacroModule_ParquetReader:
     #     self.conn.disconnect()
 
 
-class MacroModule:
-    """The MacroModule module lets you view macro values for your variables and directly get a micro view for selected macro field.
+class MacroModuleConsolidated:
+    """The MacroModuleConsolidated module lets you view macro values for your variables and directly get a micro view for selected macro field.
 
     This module requires some adjustment to fit your data structure and requires specific variables defined in the variable selector.
 
@@ -171,9 +174,9 @@ class MacroModule:
     )
 
     def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
-        """Initializes the MacroModule.
+        """Initializes the MacroModuleConsolidated.
 
-        The MacroModule allows viewing macro values and getting micro-level views for selected fields.
+        The MacroModuleConsolidated allows viewing macro values and getting micro-level views for selected fields.
         The base_path is used by _load_year to locate parquet files.
 
         Args:
@@ -198,12 +201,12 @@ class MacroModule:
         # if not isinstance(conn, EimerDBInstance) and conn.__class__.__name__ != "Backend":
         #     raise TypeError("Argument 'conn' must be an 'EimerDBInstance' or Ibis backend. Received: {type(conn)}")
 
-        self.module_number = MacroModule._id_number
+        self.module_number = MacroModuleConsolidated._id_number
         self.module_name = self.__class__.__name__
-        MacroModule._id_number += 1
+        MacroModuleConsolidated._id_number += 1
 
         self.icon = "🌍"
-        self.label = "Makromodul"
+        self.label = "Makromodul konsolidert"
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
         )
@@ -223,16 +226,16 @@ class MacroModule:
         module_validator(self)
 
     def _is_valid(self) -> None:
-        for var in MacroModule._required_variables:
+        for var in MacroModuleConsolidated._required_variables:
             try:
                 self.variableselector.get_option(f"var-{var}", search_target="id")
             except ValueError as e:
                 raise ValueError(
-                    f"MacroModule requires the variable selector option '{var}' to be set."
+                    f"MacroModuleConsolidated requires the variable selector option '{var}' to be set."
                 ) from e
 
     def _create_layout(self) -> html.Div:
-        """Generates the layout for the MacroModule."""
+        """Generates the layout for the MacroModuleConsolidated."""
         layout = html.Div(
             className="macromodule",
             children=[
@@ -244,7 +247,13 @@ class MacroModule:
                             className="macromodule-sidebar",
                             children=[
                                 html.H1(
-                                    ["Aggregerte", html.Br(), "næringsendringer"],
+                                    [
+                                        "Aggregerte,",
+                                        html.Br(),
+                                        "konsoliderte,",
+                                        html.Br(),
+                                        "næringsendringer",
+                                    ],
                                 ),
                                 html.Label(
                                     "Velg foretak eller bedrift",
@@ -427,7 +436,7 @@ class MacroModule:
         return sorted(df["nace2"].astype(str))
 
     def module_callbacks(self) -> None:
-        """Defines the callbacks for the MacroModule module."""
+        """Defines the callbacks for the MacroModuleConsolidated module."""
         # dynamic_states = self.variableselector.get_all_inputs()
 
         @callback(
@@ -848,6 +857,7 @@ class MacroModule:
 
             select_cols = [
                 "navn",
+                "sfnr",
                 "orgnr_foretak",
                 "naring",
                 "naring_f",
@@ -929,6 +939,8 @@ class MacroModule:
             # for exiters, fill in key identifying columns from previous year
             if "navn" in merged_df.columns and "navn_x" in merged_df.columns:
                 merged_df["navn"] = merged_df["navn"].fillna(merged_df["navn_x"])
+            if "sfnr" in merged_df.columns and "sfnr_x" in merged_df.columns:
+                merged_df["sfnr"] = merged_df["sfnr"].fillna(merged_df["sfnr_x"])
             merged_df = merged_df.drop(columns=["_merge"])
 
             # 2-siffer nace changes?
@@ -1094,6 +1106,10 @@ class MacroModule:
                 c for c in DETAIL_GRID_ID_COLS + ordered_value_cols if c in df.columns
             ]
 
+            # fix � decoding issues
+            df = df.astype(object)
+            df = df.map(lambda x: x.decode("latin-1") if isinstance(x, bytes) else x)
+
             row_data: list[dict[Hashable, Any]] | Any = df.to_dict("records")
             if macro_level in ("fylke", "kommune"):
                 for row in row_data:
@@ -1224,23 +1240,23 @@ class MacroModule:
             )
 
 
-class MacroModuleTab(TabImplementation, MacroModule):
-    """MacroModuleTab is an implementation of the MacroModule module as a tab in a Dash application."""
+class MacroModuleConsolidatedTab(TabImplementation, MacroModuleConsolidated):
+    """MacroModuleConsolidatedTab is an implementation of the MacroModuleConsolidated module as a tab in a Dash application."""
 
     def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
-        """Initializes the MacroModuleTab class."""
-        MacroModule.__init__(
+        """Initializes the MacroModuleConsolidatedTab class."""
+        MacroModuleConsolidated.__init__(
             self, time_units=time_units, conn=conn, base_path=base_path
         )
         TabImplementation.__init__(self)
 
 
-class MacroModuleWindow(WindowImplementation, MacroModule):
-    """MacroModuleWindow is an implementation of the MacroModule module as a tab in a Dash application."""
+class MacroModuleConsolidatedWindow(WindowImplementation, MacroModuleConsolidated):
+    """MacroModuleConsolidatedWindow is an implementation of the MacroModuleConsolidated module as a tab in a Dash application."""
 
     def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
-        """Initializes the MacroModuleWindow class."""
-        MacroModule.__init__(
+        """Initializes the MacroModuleConsolidatedWindow class."""
+        MacroModuleConsolidated.__init__(
             self, time_units=time_units, conn=conn, base_path=base_path
         )
         WindowImplementation.__init__(self)

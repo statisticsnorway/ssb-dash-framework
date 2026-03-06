@@ -12,13 +12,10 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
-
-from ssb_dash_framework.utils import conn_is_ibis
 
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
-from ..utils.config_tools import get_connection
+from ..utils import get_connection
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -35,28 +32,22 @@ class FreeSearch(ABC):
 
     _id_number = 0
 
-    def __init__(self, label: str = "Frisøk", conn: object | None = None) -> None:
+    def __init__(self, conn=None, label: str = "Frisøk") -> None:
         """Initialize the FreeSearch module.
 
         Args:
-            conn: Database connection or interface for executing SQL queries.
+            database: Database connection or interface for executing SQL queries.
             label: Label for the module, defaults to "Frisøk".
 
         Raises:
             TypeError: If the connection object is not 'EimerDBInstance' or ibis connection.
         """
-        self.database = conn if conn else get_connection()
-        if not isinstance(self.database, EimerDBInstance) and not conn_is_ibis(
-            self.database
-        ):
-            raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(self.database)}"
-            )
         self.module_number = FreeSearch._id_number
         self.module_name = self.__class__.__name__
         FreeSearch._id_number += 1
         self.icon = "🔍"
         self.label = label
+        self.conn = conn
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -168,8 +159,11 @@ class FreeSearch(ABC):
                 raise PreventUpdate
             if partition is not None:
                 partition = ast.literal_eval(partition)
-
-            df = self.database.query(query, partition_select=partition)
+            if not self.conn:
+                with get_connection(partition_select=partition) as conn:
+                    df = conn.raw_sql(query)
+            else:
+                df = self.conn.raw_sql(query)
             columns = [
                 {
                     "headerName": col,
@@ -190,7 +184,7 @@ class FreeSearchTab(TabImplementation, FreeSearch):
     specific to the tab interface.
     """
 
-    def __init__(self, conn: object | None = None) -> None:
+    def __init__(self, conn: Any | None = None) -> None:
         """Initialize the FreeSearchTab with a database connection.
 
         Args:
@@ -203,7 +197,7 @@ class FreeSearchTab(TabImplementation, FreeSearch):
 class FreeSearchWindow(WindowImplementation, FreeSearch):
     """FreeSearchWindow is a class that creates a modal based on the FreeSearch module."""
 
-    def __init__(self, conn: object | None = None) -> None:
+    def __init__(self, conn: Any | None = None) -> None:
         """Initialize the FreeSearchWindow class.
 
         Args:

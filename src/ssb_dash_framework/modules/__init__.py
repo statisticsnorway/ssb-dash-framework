@@ -45,6 +45,9 @@ from .hb_method import HBMethodWindow
 from .macro_module import MacroModule
 from .macro_module import MacroModuleTab
 from .macro_module import MacroModuleWindow
+from .macro_module_consolidated import MacroModuleConsolidated
+from .macro_module_consolidated import MacroModuleConsolidatedTab
+from .macro_module_consolidated import MacroModuleConsolidatedWindow
 from .nspek import Naeringsspesifikasjon
 from .nspek import NaeringsspesifikasjonTab
 from .nspek import NaeringsspesifikasjonWindow
@@ -101,6 +104,9 @@ __all__ = [
     "MacroModule",
     "MacroModuleTab",
     "MacroModuleWindow",
+    "MacroModuleConsolidated",
+    "MacroModuleConsolidatedTab",
+    "MacroModuleConsolidatedWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",

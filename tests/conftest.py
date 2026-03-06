@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from contextlib import contextmanager
 
 import ibis
 import pytest
@@ -24,15 +25,26 @@ def clear_VariableSelector_variableselectoroptions() -> Generator[None, None, No
 
 
 @pytest.fixture(autouse=True, scope="session")
+def testing_connection():
+    ibis_polars_conn = ibis.polars.connect()
+
+    @contextmanager
+    def _ibis_polars_cm(*args, **kwargs):
+        yield ibis_polars_conn
+
+    set_connection(_ibis_polars_cm, is_pooled=False)
+
+    yield ibis_polars_conn
+
+    try:
+        ibis_polars_conn.close()
+    except Exception:
+        pass
+
+
+@pytest.fixture(autouse=True, scope="session")
 def ibis_polars_conn():
     print("Setting up connection...")
     # Example: create a DB connection, API client, etc.
     ibis_polars_conn = ibis.polars.connect()
     yield ibis_polars_conn
-
-
-@pytest.fixture(autouse=True, scope="session")
-def set_connection_testing():
-    print("Setting up connection...")
-    # Example: create a DB connection, API client, etc.
-    set_connection(lambda: ibis.polars.connect())
