@@ -44,6 +44,9 @@ from .modules import MacroModuleConsolidatedTab
 from .modules import MacroModuleConsolidatedWindow
 from .modules import MacroModuleTab
 from .modules import MacroModuleWindow
+from .modules import MacroNspekPostControl
+from .modules import MacroNspekPostControlTab
+from .modules import MacroNspekPostControlWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
@@ -144,6 +147,9 @@ __all__ = [
     "MacroModuleConsolidatedWindow",
     "MacroModuleTab",
     "MacroModuleWindow",
+    "MacroNspekPostControl",
+    "MacroNspekPostControlTab",
+    "MacroNspekPostControlWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",

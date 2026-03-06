@@ -113,7 +113,7 @@ class MacroModule_ParquetReader:
 
         Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
         """
-        if aar == 2024:  # new nedtrekk in Dapla has a specific file path
+        if aar > 2023:  # new nedtrekk in Dapla has a specific file path
             file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
         else:
             file_path = (
@@ -142,10 +142,6 @@ class MacroModule_ParquetReader:
             t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
 
         return t.mutate(aar=ibis.literal(aar).cast("string"))
-
-    # def __exit__(self, exc_type, exc, tb) -> None:
-    #     """Close the ibis connection."""
-    #     self.conn.disconnect()
 
 
 class MacroModule:
@@ -418,9 +414,13 @@ class MacroModule:
 
     def _get_nace_options(self, base_path: str, aar: str) -> list[str]:
         """Get distinct NACE codes for a given year."""
-        t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(
-            f"{base_path}/p{aar}/statistikkfil_bedrifter_nr.parquet"
-        )
+        if int(aar) > 2023:  # new nedtrekk in Dapla has a specific file path
+            file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_bedrifter_nr.parquet"
+        else:
+            file_path = (
+                f"{base_path}/p{aar}/statistikkfil_bedrifter_nr.parquet"
+            )
+        t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(file_path)
         naring_filter = t.naring.substr(0, length=2).name("nace2")
         t = t.select(naring_filter).distinct()
         df: DataFrame = t.to_pandas()
@@ -434,7 +434,7 @@ class MacroModule:
             Output("macromodule-naring-velger", "options"),
             Input("var-aar", "value"),
         )
-        def _update_nace_options(aar: str) -> list[str] | list[dict[str, str]]:
+        def update_nace_options(aar: str) -> list[str] | list[dict[str, str]]:
             """Populate NACE dropdown with options from selected year."""
             if not aar:
                 return []
@@ -584,13 +584,14 @@ class MacroModule:
             df.columns = df.columns.astype(str)  # set to str in case aar loaded as int
 
             df["diff"] = df[f"{aar}"] - df[f"{aar-1}"]
+            df["differanse"] = df[f"{aar}"].fillna(0) - df[f"{aar-1}"].fillna(0)
             df["percent_diff"] = df["diff"] / abs(df[f"{aar-1}"])
             if tallvisning_valg == 1:
                 tallvisning = "percent_diff"
             elif tallvisning_valg == 2:
                 tallvisning = f"{aar}"
             else:
-                tallvisning = "diff"
+                tallvisning = "differanse"
 
             matrix = df.pivot(
                 index=category_column, columns="nace", values=tallvisning
@@ -1182,7 +1183,7 @@ class MacroModule:
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
             Output("var-bedrift", "value", allow_duplicate=True),
-            Output("altinnedit-option1", "value"),
+            Output("altinnedit-option1", "value", allow_duplicate=True),
             Input("macromodule-detail-grid", "cellClicked"),
             State("macromodule-detail-grid", "rowData"),
             prevent_initial_call=True,

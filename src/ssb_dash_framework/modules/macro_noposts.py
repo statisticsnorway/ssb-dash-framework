@@ -22,36 +22,71 @@ from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils.module_validation import module_validator
+from ..modules.macro_module import MacroModule_ParquetReader
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
-HEATMAP_VARIABLES: dict[str, str] = {
-    "omsetning": "omsetning",
-    "ts_salgsint": "salgsint",
-    "nopost_driftskostnader": "driftskost",
-    "sysselsetting_syss": "sysselsatte",
-    "sysselsetting_ansatte": "lønnstakere",
-    "sysselsetting_arsverk": "årsverk",
-    "nopost_lonnskostnader": "lønnskost",
-    "nopost_p5000": "lønn",
-    "ts_vikarutgifter": "vikarutg",
-    "ts_forbruk": "forbruk",
-    "nopost_p4005": "p4005",
-    "produksjonsverdi": "prodv",
-    "bearbeidingsverdi": "bearbv",
-    "produktinnsats": "prodins",
-    "nopost_driftsresultat": "driftsres",
-    "brutto_driftsresultat": "brut_driftsres",
-    "ts_varehan": "varehandel",
-    "ts_anlegg": "anlegg",
-    "bruttoinvestering_oslo": "brut_inv_oslo",
-    "bruttoinvestering_kvgr": "brut_inv_kvgr",
+# Variables used in the heatmap-grid
+positive_fem_siffer = {
+    # må vere positive på femsiffer nivå
+    "nopost_p3000": "NO3000",
+    "nopost_p3100": "NO3100",
+    "nopost_p3200": "NO3200",
+    "nopost_p3700": "NO3700",
+    "nopost_p3900": "NO3900",
+    "nopost_p4005": "NO4005",
+    "nopost_p4500": "NO4500",
+    "nopost_p5000": "NO5000",
+    "nopost_p6300": "NO6300",
+    "nopost_p6400": "NO6400",
+    "nopost_p6500": "NO6500",
+    "nopost_p6700": "NO6700",
+    "nopost_p6995": "NO6995",
+    "nopost_p7700": "NO7700",
 }
+
+positive_to_siffer = {
+    # må vere positive på tosiffernivå
+    "nopost_p3600": "NO3600",
+    "nopost_p3605": "NO3605",
+    "nopost_p3650": "NO3650",
+    "nopost_p3695": "NO3695",
+    "nopost_p5300": "NO5300",
+    "nopost_p5400": "NO5400",
+    "nopost_p5420": "NO5420",
+    "nopost_p5900": "NO5900",
+    "nopost_p6100": "NO6100",
+    "nopost_p6200": "NO6200",
+    "nopost_p6340": "NO6340",
+    "nopost_p6395": "NO6395",
+    "nopost_p6600": "NO6600",
+    "nopost_p6695": "NO6695",
+    "nopost_p7000": "NO7000",
+    "nopost_p7020": "NO7020",
+    "nopost_p7040": "NO7040",
+    "nopost_p7080": "NO7080",
+    "nopost_p7098": "NO7098",
+    "nopost_p7155": "NO7155",
+    "nopost_p7165": "NO7165",
+    "nopost_p7295": "NO7295",
+    "nopost_p7330": "NO7330",
+    "nopost_p7350": "NO7350",
+    "nopost_p7370": "NO7370",
+    "nopost_p7490": "NO7490",
+    "nopost_p7495": "NO7495",
+    "nopost_p7500": "NO7500",
+    "nopost_p7565": "NO7565",
+    "nopost_p7600": "NO7600",
+}
+
+variabel_valg = {**positive_fem_siffer, **positive_to_siffer}
+# Sorter liste med stigende NOPOST
+HEATMAP_VARIABLES = dict(sorted(variabel_valg.items(), key=lambda item: int(item[0][-4:])))
+
 # skriv om til å bruke dict som i heatmap_variables og rename til detail_grid_DETAIL_GRID_ID_COLS
 DETAIL_GRID_ID_COLS = [
     "navn",
-    "sfnr",
     "orgnr_f",
     "orgnr_b",
     "naring_f",
@@ -65,9 +100,9 @@ DETAIL_GRID_ID_COLS = [
 
 FORETAK_OR_BEDRIFT: dict[str, str] = {"Foretak": "foretak", "Bedrifter": "bedrifter"}
 MACRO_FILTER_OPTIONS: dict[str, Any] = {
-    "fylke": 2,
-    "kommune": 4,
-    "sammensatte variabler": HEATMAP_VARIABLES,
+    "Se samlet": HEATMAP_VARIABLES,
+    "Må være positive på 2-siffer": positive_to_siffer,
+    "Må være positive på 5-siffer": positive_fem_siffer,
 }
 NACE_LEVEL_OPTIONS: dict[str, int] = {
     "2-siffer": 2,
@@ -75,80 +110,26 @@ NACE_LEVEL_OPTIONS: dict[str, int] = {
     "4-siffer": 5,
     "5-siffer": 6,
 }
-HEATMAP_NUMBER_FORMAT: dict[str, int] = {
-    "Prosentendring": 1,
-    "Årets totalsum": 2,
-    "Differanse": 3,
-}
-STATUS_CHANGE_DETAIL_GRID: list[str] = [
-    "sfnr",
-    "orgnr_f",
-    "navn",
-    "naring_f",
-    "naring_b",
-    "type",
-    "reg_type_f",
-    "reg_type_b",
-    "kommune_f",
-    "kommune_b",
-]  # gets tooltip + colour change per year if changed (should be categorical col)
+# HEATMAP_NUMBER_FORMAT: dict[str, int] = {
+#     "Prosentendring": 1,
+#     "Årets totalsum": 2,
+#     "Differanse": 3,
+# }
+# STATUS_CHANGE_DETAIL_GRID: list[str] = [
+#     "orgnr_f",
+#     "navn",
+#     "naring_f",
+#     "naring_b",
+#     "type",
+#     "reg_type_f",
+#     "reg_type_b",
+#     "kommune_f",
+#     "kommune_b",
+# ]  # gets tooltip + colour change per year if changed (should be categorical col)
 
 
-class MacroModuleConsolidated_ParquetReader:
-    """Helper class for reading and querying Parquet files with ibis."""
-
-    def __init__(self) -> None:
-        """Initialize a persistent DuckDB connection."""
-        self.conn: BaseBackend = ibis.connect("duckdb://")
-
-    def _load_year(
-        self,
-        aar: int,
-        base_path: str,
-        foretak_or_bedrift: str,
-        nace_list: list[str],
-        nace_siffer_level: int,
-        detail_grid: bool = False,
-    ) -> Table:
-        """Used to read parquet files, picking between foretak or bedrift level. Then filtering on chosen naring, and setting "aar" to a str column.
-
-        Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
-        """
-        if (
-            aar == 2023 and foretak_or_bedrift == "bedrifter"
-        ):  # new nedtrekk in Dapla has a specific file path
-            file_path = f"{base_path}/p{aar}/statistiske_foretak_{foretak_or_bedrift}_v2.parquet"
-        else:
-            file_path = (
-                f"{base_path}/p{aar}/statistiske_foretak_{foretak_or_bedrift}.parquet"
-            )
-
-        try:
-            t: ibis.TableExpr = self.conn.read_parquet(file_path)
-        except Exception as e:
-            print(
-                f"Failed to read parquet file at {file_path}: {e}. "
-                "Did you put in a valid year into the variabelvelger?"
-            )
-            raise PreventUpdate from None
-
-        if detail_grid:
-            if nace_list:
-                t = t.filter(
-                    t.naring.substr(0, length=nace_siffer_level).isin(nace_list)
-                )
-
-        else:
-            # for å loade fleire næringar ved innlasting
-            nace_2_siffer_liste = [n.split(".")[0][:2] for n in nace_list]
-            t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
-            t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
-
-        return t.mutate(aar=ibis.literal(aar).cast("string"))
-
-
-class MacroModuleConsolidated:
-    """The MacroModuleConsolidated module lets you view macro values for your variables and directly get a micro view for selected macro field.
+class MacroNspekPostControl:
+    """The MacroNspekPostControl module lets you view macro values for your variables and directly get a micro view for selected macro field.
 
     This module requires some adjustment to fit your data structure and requires specific variables defined in the variable selector.
 
@@ -170,9 +151,9 @@ class MacroModuleConsolidated:
     )
 
     def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
-        """Initializes the MacroModuleConsolidated.
+        """Initializes the MacroNspekPostControl.
 
-        The MacroModuleConsolidated allows viewing macro values and getting micro-level views for selected fields.
+        The MacroNspekPostControl allows viewing macro values and getting micro-level views for selected fields.
         The base_path is used by _load_year to locate parquet files.
 
         Args:
@@ -197,12 +178,12 @@ class MacroModuleConsolidated:
         # if not isinstance(conn, EimerDBInstance) and conn.__class__.__name__ != "Backend":
         #     raise TypeError("Argument 'conn' must be an 'EimerDBInstance' or Ibis backend. Received: {type(conn)}")
 
-        self.module_number = MacroModuleConsolidated._id_number
+        self.module_number = MacroNspekPostControl._id_number
         self.module_name = self.__class__.__name__
-        MacroModuleConsolidated._id_number += 1
+        MacroNspekPostControl._id_number += 1
 
         self.icon = "🌍"
-        self.label = "Makromodul konsolidert"
+        self.label = "Negative NO-poster"
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
         )
@@ -214,7 +195,7 @@ class MacroModuleConsolidated:
 
         self.conn = conn
         self.base_path = base_path
-        self.parquet_reader = MacroModuleConsolidated_ParquetReader()
+        self.parquet_reader = MacroModule_ParquetReader()
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -222,16 +203,16 @@ class MacroModuleConsolidated:
         module_validator(self)
 
     def _is_valid(self) -> None:
-        for var in MacroModuleConsolidated._required_variables:
+        for var in MacroNspekPostControl._required_variables:
             try:
                 self.variableselector.get_option(f"var-{var}", search_target="id")
             except ValueError as e:
                 raise ValueError(
-                    f"MacroModuleConsolidated requires the variable selector option '{var}' to be set."
+                    f"MacroNspekPostControl requires the variable selector option '{var}' to be set."
                 ) from e
 
     def _create_layout(self) -> html.Div:
-        """Generates the layout for the MacroModuleConsolidated."""
+        """Generates the layout for the MacroNspekPostControl."""
         layout = html.Div(
             className="macromodule",
             children=[
@@ -243,20 +224,14 @@ class MacroModuleConsolidated:
                             className="macromodule-sidebar",
                             children=[
                                 html.H1(
-                                    [
-                                        "Aggregerte,",
-                                        html.Br(),
-                                        "konsoliderte,",
-                                        html.Br(),
-                                        "næringsendringer",
-                                    ],
+                                    ["Aggregerte", html.Br(), "næringsoppgaveposter"],
                                 ),
                                 html.Label(
                                     "Velg foretak eller bedrift",
                                     className="macromodule-label",
                                 ),
                                 dcc.RadioItems(
-                                    id="macromodule-foretak-or-bedrift",
+                                    id="macromodule-nopost-foretak-or-bedrift",
                                     className="macromodule-radio-buttons",
                                     options=[
                                         {"label": k, "value": v}
@@ -265,7 +240,7 @@ class MacroModuleConsolidated:
                                     value=FORETAK_OR_BEDRIFT["Bedrifter"],
                                 ),
                                 html.Label(
-                                    "Velg kategori-inndeling",
+                                    "Velg NO-oversikt",
                                     className="macromodule-label",
                                 ),
                                 dcc.Dropdown(
@@ -274,31 +249,31 @@ class MacroModuleConsolidated:
                                         {"label": k, "value": k}
                                         for k in MACRO_FILTER_OPTIONS.keys()
                                     ],
-                                    value="sammensatte variabler",
-                                    id="macromodule-filter-velger",
+                                    value="Må være positive på 2-siffer",
+                                    id="macromodule-nopost-filter-velger",
                                 ),
-                                html.Label(
-                                    "Velg variabel",
-                                    className="macromodule-label",
-                                ),
-                                dcc.Dropdown(
-                                    className="macromodule-dropdown",
-                                    options=[
-                                        {
-                                            "label": HEATMAP_VARIABLES.get(v, v),
-                                            "value": v,
-                                        }
-                                        for v in HEATMAP_VARIABLES
-                                    ],
-                                    value="produksjonsverdi",
-                                    id="macromodule-macro-variable",
-                                ),
+                                # html.Label(
+                                #     "Velg variabel",
+                                #     className="macromodule-label",
+                                # ),
+                                # dcc.Dropdown(
+                                #     className="macromodule-dropdown",
+                                #     options=[
+                                #         {
+                                #             "label": HEATMAP_VARIABLES.get(v, v),
+                                #             "value": v,
+                                #         }
+                                #         for v in HEATMAP_VARIABLES
+                                #     ],
+                                #     value="produksjonsverdi",
+                                #     id="macromodule-macro-variable",
+                                # ),
                                 html.Label(
                                     "Velg næring(er)",
                                     className="macromodule-label",
                                 ),
                                 dcc.Dropdown(
-                                    id="macromodule-naring-velger",
+                                    id="macromodule-nopost-naring-velger",
                                     className="macromodule-naring-dropdown",
                                     options=[],
                                     multi=True,
@@ -311,7 +286,7 @@ class MacroModuleConsolidated:
                                     className="macromodule-label",
                                 ),
                                 dcc.RadioItems(
-                                    id="macromodule-nace-siffer-velger",
+                                    id="macromodule-nopost-nace-siffer-velger",
                                     className="macromodule-radio-buttons",
                                     options=[
                                         {"label": k, "value": v}
@@ -319,19 +294,19 @@ class MacroModuleConsolidated:
                                     ],
                                     value=NACE_LEVEL_OPTIONS["2-siffer"],
                                 ),
-                                html.Label(
-                                    "Velg tallvisning",
-                                    className="macromodule-label",
-                                ),
-                                dcc.RadioItems(
-                                    id="macromodule-tall-visning-velger",
-                                    className="macromodule-radio-buttons",
-                                    options=[
-                                        {"label": k, "value": v}
-                                        for k, v in HEATMAP_NUMBER_FORMAT.items()
-                                    ],
-                                    value=HEATMAP_NUMBER_FORMAT["Prosentendring"],
-                                ),
+                                # html.Label(
+                                #     "Velg tallvisning",
+                                #     className="macromodule-label",
+                                # ),
+                                # dcc.RadioItems(
+                                #     id="macromodule-tall-visning-velger",
+                                #     className="macromodule-radio-buttons",
+                                #     options=[
+                                #         {"label": k, "value": v}
+                                #         for k, v in HEATMAP_NUMBER_FORMAT.items()
+                                #     ],
+                                #     value=HEATMAP_NUMBER_FORMAT["Prosentendring"],
+                                # ),
                             ],
                         ),
                         # Right column: AG Grid table container
@@ -339,7 +314,7 @@ class MacroModuleConsolidated:
                             className="macromodule-heatmap-grid-container",
                             children=[
                                 AgGrid(
-                                    id="macromodule-heatmap-grid",
+                                    id="macromodule-nopost-heatmap-grid",
                                     getRowId="params.data.id",  # Add id to each row
                                     defaultColDef={
                                         "sortable": True,
@@ -364,13 +339,13 @@ class MacroModuleConsolidated:
                 html.Div(
                     className="macromodule-detail-grid-container",
                     children=[
-                        html.H5(id="macromodule-detail-grid-title"),
+                        html.H5(id="macromodule-nopost-detail-grid-title"),
                         dcc.Loading(
                             type="circle",
                             color="#454545",
                             children=[
                                 AgGrid(
-                                    id="macromodule-detail-grid",
+                                    id="macromodule-nopost-detail-grid",
                                     defaultColDef={
                                         "sortable": True,
                                         "filter": True,
@@ -379,11 +354,11 @@ class MacroModuleConsolidated:
                                     columnSize=None,
                                     rowData=[],
                                     columnDefs=[],
-                                    rowClassRules={
-                                        "macromodule-naring-mismatch": {
-                                            "function": "MacroModule.displayNaringRowMismatch(params)"
-                                        }
-                                    },
+                                    # rowClassRules={
+                                    #     "macromodule-naring-mismatch": {
+                                    #         "function": "MacroNspekPostControl.displayNaringRowMismatch(params)"
+                                    #     }
+                                    # },
                                     dashGridOptions={
                                         "enableCellTextSelection": True,
                                         "pagination": True,
@@ -424,12 +399,10 @@ class MacroModuleConsolidated:
     def _get_nace_options(self, base_path: str, aar: str) -> list[str]:
         """Get distinct NACE codes for a given year."""
         if int(aar) > 2023:  # new nedtrekk in Dapla has a specific file path
-            file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistiske_foretak_bedrifter.parquet"
-        elif int(aar) == 2023:
-            file_path = f"{base_path}/p{aar}/statistiske_foretak_bedrifter_v2.parquet"
+            file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_bedrifter_nr.parquet"
         else:
             file_path = (
-                f"{base_path}/p{aar}/statistiske_foretak_bedrifter.parquet"
+                f"{base_path}/p{aar}/statistikkfil_bedrifter_nr.parquet"
             )
         t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(file_path)
         naring_filter = t.naring.substr(0, length=2).name("nace2")
@@ -438,11 +411,11 @@ class MacroModuleConsolidated:
         return sorted(df["nace2"].astype(str))
 
     def module_callbacks(self) -> None:
-        """Defines the callbacks for the MacroModuleConsolidated module."""
+        """Defines the callbacks for the MacroNspekPostControl module."""
         # dynamic_states = self.variableselector.get_all_inputs()
 
         @callback(
-            Output("macromodule-naring-velger", "options"),
+            Output("macromodule-nopost-naring-velger", "options"),
             Input("var-aar", "value"),
         )
         def _update_nace_options(aar: str) -> list[str] | list[dict[str, str]]:
@@ -457,31 +430,30 @@ class MacroModuleConsolidated:
                 return []
 
         @callback(
-            Output("macromodule-heatmap-grid", "rowData"),
-            Output("macromodule-heatmap-grid", "columnDefs"),
-            Output("macromodule-heatmap-grid", "pinnedTopRowData"),
+            Output("macromodule-nopost-heatmap-grid", "rowData"),
+            Output("macromodule-nopost-heatmap-grid", "columnDefs"),
+            Output("macromodule-nopost-heatmap-grid", "pinnedTopRowData"),
             Input("var-aar", "value"),
-            Input("macromodule-foretak-or-bedrift", "value"),
-            Input("macromodule-macro-variable", "value"),
-            Input("macromodule-filter-velger", "value"),
-            Input("macromodule-nace-siffer-velger", "value"),
-            Input("macromodule-naring-velger", "value"),
-            Input("macromodule-tall-visning-velger", "value"),
+            Input("macromodule-nopost-foretak-or-bedrift", "value"),
+            # Input("macromodule-macro-variable", "value"),
+            Input("macromodule-nopost-filter-velger", "value"),
+            Input("macromodule-nopost-nace-siffer-velger", "value"),
+            Input("macromodule-nopost-naring-velger", "value"),
+            # Input("macromodule-nopost-tall-visning-velger", "value"),
             allow_duplicate=True,
         )
         def update_graph(
             variabelvelger_aar: str,
             foretak_or_bedrift: str,
-            variabel: str,
-            macro_level: str | None,
+            # variabel: str,
+            macro_level: str,
             nace_siffer_level: int,
             nace_list: list[str],
-            tallvisning_valg: int,
+            # tallvisning_valg: int,
         ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
             """Creates a colour-coordinated matrix heatmap of aggregated values based on their %-change from the previous year."""
             if (
                 not nace_list
-                or not variabel
                 or not macro_level
                 or not variabelvelger_aar
             ):
@@ -491,6 +463,10 @@ class MacroModuleConsolidated:
                 raise TypeError(
                     f"'var-aar' must be str, got: {type(variabelvelger_aar)}"
                 )
+
+            print(f"macro_level: {macro_level}")
+            print(f"nace_siffer_level: {nace_siffer_level}")
+            print(f"nace_list: {nace_list}")
 
             aar: int = int(variabelvelger_aar)
 
@@ -502,14 +478,14 @@ class MacroModuleConsolidated:
                 nace_siffer_level,
                 detail_grid=False,
             )  # t, current aar
-            t_1: ibis.TableExpr = self.parquet_reader._load_year(
-                aar - 1,
-                self.base_path,
-                foretak_or_bedrift,
-                nace_list,
-                nace_siffer_level,
-                detail_grid=False,
-            )  # t-1, previous aar
+            # t_1: ibis.TableExpr = self.parquet_reader._load_year(
+            #     aar - 1,
+            #     self.base_path,
+            #     foretak_or_bedrift,
+            #     nace_list,
+            #     nace_siffer_level,
+            #     detail_grid=False,
+            # )  # t-1, previous aar
 
             # count units
             unit_type: Literal["orgnr_foretak", "orgnr_bedrift"] = (
@@ -532,88 +508,56 @@ class MacroModuleConsolidated:
                 for col in [row["selected_nace"]]
             }
 
-            if macro_level == "sammensatte variabler":
-                cols = [*list(HEATMAP_VARIABLES.keys()), "naring", "aar"]
-                group_by_filter = ["selected_nace"]
+            category_column = "nopost"
 
-            else:
-                cols = [variabel, macro_level, "naring", "aar"]
-                group_by_filter = [
-                    "selected_nace",
-                    macro_level,
-                ]  # kommune, fylke eller sammensatte_variabler
-                col_length: int = MACRO_FILTER_OPTIONS[macro_level]
-
-                t = t.mutate(
-                    **{
-                        macro_level: t.kommune.substr(0, length=col_length)
-                        .fill_null("UKJENT")
-                        .replace("", "UKJENT")
-                    }
-                )
-                t_1 = t_1.mutate(
-                    **{
-                        macro_level: t_1.kommune.substr(0, length=col_length)
-                        .fill_null("UKJENT")
-                        .replace("", "UKJENT")
-                    }
-                )
+            cols = [*list(MACRO_FILTER_OPTIONS[macro_level].keys()), "naring", "aar"]
+            print(cols)
+            group_by_filter = [
+                "selected_nace",
+            ]  # kommune, fylke eller sammensatte_variabler
 
             t = t.select([*cols, "selected_nace"])
-            t_1 = t_1.select([*cols, "selected_nace"])
+            print(t)
+            print([t["selected_nace"]])
+            print([t["naring"]])
 
             # cast numerics to float in case of yearly type mismatches
-            for col in HEATMAP_VARIABLES.keys():
+            for col in MACRO_FILTER_OPTIONS[macro_level].keys():
                 if col in t.columns:
                     t = t.mutate(**{col: t[col].cast("float64")})
-                if col in t_1.columns:
-                    t_1 = t_1.mutate(**{col: t_1[col].cast("float64")})
 
-            combined = t.union(t_1)
-
-            if macro_level == "sammensatte variabler":
-                agg_dict = {
-                    alias: combined[db_col].sum()
-                    for db_col, alias in HEATMAP_VARIABLES.items()
-                }
-                df = combined.group_by(["aar", *group_by_filter]).aggregate(**agg_dict)
-                df = df.pivot_longer(
-                    HEATMAP_VARIABLES.values(), names_to="variabel", values_to="value"
-                )
-                values_col = "value"
-                category_column = "variabel"
-            else:
-                df = combined.group_by(["aar", *group_by_filter]).aggregate(
-                    variabel=combined[variabel].sum()
-                )
-                values_col = "variabel"
-                category_column = macro_level
+            # if macro_level == "sammensatte variabler":
+            #     agg_dict = {
+            #         alias: combined[db_col].sum()
+            #         for db_col, alias in HEATMAP_VARIABLES.items()
+            #     }
+            #     df = combined.group_by(["aar", *group_by_filter]).aggregate(**agg_dict)
+            #     df = df.pivot_longer(
+            #         HEATMAP_VARIABLES.values(), names_to="variabel", values_to="value"
+            #     )
+            #     values_col = "value"
+            #     category_column = "variabel"
+            # else:
+            df = t.group_by([group_by_filter]).aggregate(
+                variabel=t[MACRO_FILTER_OPTIONS[macro_level].keys()].sum()
+            )
+            values_col = "variabel"
+            category_column = macro_level
 
             df = df.pivot_wider(names_from="aar", values_from=values_col)
 
             df = df.rename(nace="selected_nace").execute()
             df.columns = df.columns.astype(str)  # set to str in case aar loaded as int
 
-            df["diff"] = df[f"{aar}"] - df[f"{aar-1}"]
-            df["differanse"] = df[f"{aar}"].fillna(0) - df[f"{aar-1}"].fillna(0)
-            df["percent_diff"] = df["diff"] / abs(df[f"{aar-1}"])
-            if tallvisning_valg == 1:
-                tallvisning = "percent_diff"
-            elif tallvisning_valg == 2:
-                tallvisning = f"{aar}"
-            else:
-                tallvisning = "differanse"
-
             matrix = df.pivot(
-                index=category_column, columns="nace", values=tallvisning
+                index=category_column, columns="nace", values="value"
             ).reset_index()
             matrix[category_column] = matrix[category_column].fillna("UKJENT")
             matrix.iloc[:, 1:] = matrix.iloc[:, 1:].fillna(0)
 
-            # decide order of variables
-            if category_column == "variabel":
-                custom_order = list(HEATMAP_VARIABLES.values())
-                matrix = matrix.set_index("variabel").loc[custom_order].reset_index()
+            custom_order = list(macro_level.values())
+            matrix = matrix.set_index("variabel").loc[custom_order].reset_index()
+            print(matrix)
 
             # safe column names for NACE keys by replacing '.' with '_'
             original_cols: list[str] = matrix.columns.astype(str).tolist()
@@ -682,12 +626,12 @@ class MacroModuleConsolidated:
 
                     if safe_col != category_column:
 
-                        formatter_func = f"MacroModule.formatHeatmapValue(params, {tallvisning_valg})"
+                        formatter_func = f"MacroNspekPostControl.formatHeatmapValue(params, {tallvisning_valg})"
 
                         style_func = (
-                            "MacroModule.displayDiffHeatMap(params)"
+                            "MacroNspekPostControl.displayDiffHeatMap(params)"
                             if tallvisning_valg == 1
-                            else "MacroModule.displaySimpleHeatMap(params)"
+                            else "MacroNspekPostControl.displaySimpleHeatMap(params)"
                         )
 
                         col_def.update(
@@ -714,20 +658,20 @@ class MacroModuleConsolidated:
             return row_data, column_defs, [count_row]
 
         @callback(
-            Output("macromodule-detail-grid", "rowData"),
-            Output("macromodule-detail-grid", "columnDefs"),
-            Output("macromodule-detail-grid-title", "children"),
-            Output("macromodule-detail-grid", "columnState"),
-            Output("macromodule-detail-grid", "resetColumnState"),
-            Output("macromodule-detail-grid", "filterModel"),
-            Output("macromodule-detail-grid", "paginationGoTo"),
-            Input("macromodule-heatmap-grid", "cellClicked"),
+            Output("macromodule-nopost-detail-grid", "rowData"),
+            Output("macromodule-nopost-detail-grid", "columnDefs"),
+            Output("macromodule-nopost-detail-grid-title", "children"),
+            Output("macromodule-nopost-detail-grid", "columnState"),
+            Output("macromodule-nopost-detail-grid", "resetColumnState"),
+            Output("macromodule-nopost-detail-grid", "filterModel"),
+            Output("macromodule-nopost-detail-grid", "paginationGoTo"),
+            Input("macromodule-nopost-heatmap-grid", "cellClicked"),
             State("var-aar", "value"),
-            State("macromodule-foretak-or-bedrift", "value"),
-            State("macromodule-heatmap-grid", "rowData"),
-            State("macromodule-filter-velger", "value"),
-            State("macromodule-nace-siffer-velger", "value"),
-            State("macromodule-macro-variable", "value"),
+            State("macromodule-nopost-foretak-or-bedrift", "value"),
+            State("macromodule-nopost-heatmap-grid", "rowData"),
+            State("macromodule-nopost-filter-velger", "value"),
+            State("macromodule-nopost-nace-siffer-velger", "value"),
+            State("macromodule-nopost-macro-variable", "value"),
             prevent_initial_call=True,
         )
         def update_detail_table(
@@ -860,7 +804,6 @@ class MacroModuleConsolidated:
 
             select_cols = [
                 "navn",
-                "sfnr",
                 "orgnr_foretak",
                 "naring",
                 "naring_f",
@@ -942,8 +885,6 @@ class MacroModuleConsolidated:
             # for exiters, fill in key identifying columns from previous year
             if "navn" in merged_df.columns and "navn_x" in merged_df.columns:
                 merged_df["navn"] = merged_df["navn"].fillna(merged_df["navn_x"])
-            if "sfnr" in merged_df.columns and "sfnr_x" in merged_df.columns:
-                merged_df["sfnr"] = merged_df["sfnr"].fillna(merged_df["sfnr_x"])
             merged_df = merged_df.drop(columns=["_merge"])
 
             # 2-siffer nace changes?
@@ -1109,10 +1050,6 @@ class MacroModuleConsolidated:
                 c for c in DETAIL_GRID_ID_COLS + ordered_value_cols if c in df.columns
             ]
 
-            # fix � decoding issues
-            df = df.astype(object)
-            df = df.map(lambda x: x.decode("latin-1") if isinstance(x, bytes) else x)
-
             row_data: list[dict[Hashable, Any]] | Any = df.to_dict("records")
             if macro_level in ("fylke", "kommune"):
                 for row in row_data:
@@ -1138,7 +1075,7 @@ class MacroModuleConsolidated:
 
                 if col not in DETAIL_GRID_ID_COLS:
                     col_def["valueFormatter"] = {
-                        "function": "MacroModule.formatDetailGridValue(params)"
+                        "function": "MacroNspekPostControl.formatDetailGridValue(params)"
                     }
                     if col.endswith("_x"):
                         col_def["cellStyle"] = {
@@ -1149,14 +1086,14 @@ class MacroModuleConsolidated:
                     col_def.update(
                         {
                             "cellStyle": {
-                                "function": "MacroModule.displayDiffHighlight(params)"
+                                "function": "MacroNspekPostControl.displayDiffHighlight(params)"
                             }
                         }
                     )
 
                 if col.endswith("_diff") or col in ("orgnr_b", "navn"):
                     col_def["cellStyle"] = {
-                        "function": "MacroModule.displayDiffColumnHighlight(params)"
+                        "function": "MacroNspekPostControl.displayDiffColumnHighlight(params)"
                     }
 
                 if df[col].dtypes == "float":
@@ -1175,15 +1112,15 @@ class MacroModuleConsolidated:
             return row_data, column_defs, title, [], True, None, 0
 
         @callback(
-            Output("macromodule-detail-grid", "rowData", allow_duplicate=True),
-            Output("macromodule-detail-grid", "columnDefs", allow_duplicate=True),
-            Output("macromodule-detail-grid-title", "children", allow_duplicate=True),
+            Output("macromodule-nopost-detail-grid", "rowData", allow_duplicate=True),
+            Output("macromodule-nopost-detail-grid", "columnDefs", allow_duplicate=True),
+            Output("macromodule-nopost-detail-grid-title", "children", allow_duplicate=True),
             Input("var-aar", "value"),
-            Input("macromodule-foretak-or-bedrift", "value"),
-            Input("macromodule-filter-velger", "value"),
-            Input("macromodule-nace-siffer-velger", "value"),
-            Input("macromodule-naring-velger", "value"),
-            Input("macromodule-macro-variable", "value"),
+            Input("macromodule-nopost-foretak-or-bedrift", "value"),
+            Input("macromodule-nopost-filter-velger", "value"),
+            Input("macromodule-nopost-nace-siffer-velger", "value"),
+            Input("macromodule-nopost-naring-velger", "value"),
+            Input("macromodule-nopost-macro-variable", "value"),
             prevent_initial_call=True,
         )
         def reset_detail_grid_on_filter_change(*args: Any) -> tuple[list, list, str]:
@@ -1191,8 +1128,8 @@ class MacroModuleConsolidated:
             return [], [], ""
 
         @callback(
-            Output("macromodule-macro-variable", "disabled"),
-            Input("macromodule-filter-velger", "value"),
+            Output("macromodule-nopost-macro-variable", "disabled"),
+            Input("macromodule-nopost-filter-velger", "value"),
         )
         def toggle_variabel_dropdown(macro_level: str) -> bool:
             """Disables macro-variable if sammensatte variabler is selected by user."""
@@ -1201,9 +1138,9 @@ class MacroModuleConsolidated:
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
             Output("var-bedrift", "value", allow_duplicate=True),
-            Output("altinnedit-option1", "value", allow_duplicate=True),
-            Input("macromodule-detail-grid", "cellClicked"),
-            State("macromodule-detail-grid", "rowData"),
+            Output("altinnedit-option1", "value"),
+            Input("macromodule-nopost-detail-grid", "cellClicked"),
+            State("macromodule-nopost-detail-grid", "rowData"),
             prevent_initial_call=True,
         )
         def output_to_variabelvelger(
@@ -1243,23 +1180,23 @@ class MacroModuleConsolidated:
             )
 
 
-class MacroModuleConsolidatedTab(TabImplementation, MacroModuleConsolidated):
-    """MacroModuleConsolidatedTab is an implementation of the MacroModuleConsolidated module as a tab in a Dash application."""
+class MacroNspekPostControlTab(TabImplementation, MacroNspekPostControl):
+    """MacroNspekPostControlTab is an implementation of the MacroNspekPostControl module as a tab in a Dash application."""
 
     def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
-        """Initializes the MacroModuleConsolidatedTab class."""
-        MacroModuleConsolidated.__init__(
+        """Initializes the MacroNspekPostControlTab class."""
+        MacroNspekPostControl.__init__(
             self, time_units=time_units, conn=conn, base_path=base_path
         )
         TabImplementation.__init__(self)
 
 
-class MacroModuleConsolidatedWindow(WindowImplementation, MacroModuleConsolidated):
-    """MacroModuleConsolidatedWindow is an implementation of the MacroModuleConsolidated module as a tab in a Dash application."""
+class MacroNspekPostControlWindow(WindowImplementation, MacroNspekPostControl):
+    """MacroNspekPostControlWindow is an implementation of the MacroNspekPostControl module as a tab in a Dash application."""
 
     def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
-        """Initializes the MacroModuleConsolidatedWindow class."""
-        MacroModuleConsolidated.__init__(
+        """Initializes the MacroNspekPostControlWindow class."""
+        MacroNspekPostControl.__init__(
             self, time_units=time_units, conn=conn, base_path=base_path
         )
         WindowImplementation.__init__(self)
