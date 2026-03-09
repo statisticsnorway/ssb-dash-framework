@@ -20,7 +20,7 @@ else:
 from ssb_dash_framework import app_setup
 from ssb_dash_framework import main_layout
 from ssb_dash_framework import set_variables
-from ssb_dash_framework.modules.data_editor.core import DataEditor
+from ssb_dash_framework.experimental.modules.data_editor.core import DataEditor
 
 set_variables(
     [

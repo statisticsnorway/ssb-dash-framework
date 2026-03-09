@@ -16,9 +16,8 @@ from dash import callback
 from dash import dcc
 from dash import html
 
-from ssb_dash_framework.modules.data_editor.registry import DataEditorRegistry
-
-from ...utils.config_tools.connection import get_connection
+from ....utils.config_tools.connection import get_connection
+from .registry import DataEditorRegistry
 
 logger = logging.getLogger(__name__)
 
