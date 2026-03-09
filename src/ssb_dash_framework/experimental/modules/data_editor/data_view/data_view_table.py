@@ -1,10 +1,14 @@
+import logging
+
 import dash_ag_grid as dag
 from dash import Input
 from dash import Output
+from dash import State
 from dash import callback
 from dash import html
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
+from psycopg_pool import ConnectionPool
 
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
 from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
@@ -12,7 +16,10 @@ from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.connection import get_connection
+from .....utils.core_models import UpdateSkjemadata
 from ..core import DataEditorDataView
+
+logger = logging.getLogger(__name__)
 
 
 class DataEditorTable(DataEditorDataView):
@@ -65,7 +72,7 @@ class DataEditorTable(DataEditorDataView):
             Input("dataeditortableselector", "value"),
             self.variable_selector.get_all_callback_objects(),
         )
-        def update_table(value, *args: list[str]):
+        def read_table(value, *args: list[str]):
             # Prevent unneccessary callbacks
             if value not in self.applies_to_table:
                 raise PreventUpdate
@@ -102,3 +109,36 @@ class DataEditorTable(DataEditorDataView):
                 for col in df.columns
             ]
             return df.to_dict("records"), columndefs
+
+        @callback(
+            Output("alert_store", "data", allow_duplicate=True),
+            Input(f"dataeditor-table-{self._id_number}-aggrid", "cellValueChanged"),
+            State("dataeditortableselector", "value"),
+            State(f"dataeditor-table-{self._id_number}-aggrid", "columnDefs"),
+            prevent_initial_call=True,
+        )
+        def update_table(edited, table, columndefs):
+            logger.info("Attempting to update data.")
+            columns = [col["field"] for col in columndefs]
+            if "variabel" in columns and "verdi" in columns:
+                long = True
+            else:
+                long = False
+            long_variabel = edited[0]["data"]["variabel"]
+            update = UpdateSkjemadata(
+                table=table,
+                long=long,
+                refnr=edited[0]["data"]["refnr"],
+                column=edited[0]["colId"],
+                variable=long_variabel if long else edited[0]["colId"],
+                value=edited[0]["value"],
+                old_value=edited[0]["oldValue"],
+            )
+            logger.info(update)
+            if isinstance(_get_connection_object(), EimerDBInstance):
+                logger.debug("Attempting to update using eimerdb logic.")
+                feedback = update.update_eimer(long)
+            elif isinstance(_get_connection_object(), ConnectionPool):
+                logger.debug("Attempting to update using ibis logic.")
+                feedback = update.update_ibis()
+            return feedback
