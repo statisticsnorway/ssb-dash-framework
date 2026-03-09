@@ -17,10 +17,22 @@ else:
         "Demo currently only works inside of SSB's Dapla Prod environment using the 'Dapla felles' buckets."
     )
 
+test = _get_connection_object().query(
+    "SELECT * FROM skjemamottak WHERE aar = 2024 and refnr = 3"
+)
+print(test)
+test = _get_connection_object().query(
+    "SELECT * FROM skjemadata_hoved WHERE aar = 2024 and refnr = 3"
+)
+print(test)
+
 from ssb_dash_framework import app_setup
 from ssb_dash_framework import main_layout
 from ssb_dash_framework import set_variables
 from ssb_dash_framework.experimental.modules.data_editor.core import DataEditor
+from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_table import (
+    DataEditorTable,
+)
 
 set_variables(
     [
@@ -33,16 +45,22 @@ set_variables(
     ]
 )
 
+default_values = {"aar": "2024", "refnr": "3"}
 
 port = 8070
 service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
 domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
 app = app_setup(port, service_prefix, "lumen", logging_level="debug", log_to_file=True)
 
+DataEditorTable(
+    applies_to_table=["skjemadata_hoved"],
+)
+
 tab_list = [DataEditor()]
 window_list = []
 
-app.layout = main_layout(window_list, tab_list)
+app.layout = main_layout(window_list, tab_list, default_values=default_values)
 
 if __name__ == "__main__":
+    print("Running app!")
     app.run(debug=True, port=port, jupyter_server_url=domain, jupyter_mode="tab")

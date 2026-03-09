@@ -38,12 +38,16 @@ class DataEditor:
         DataEditor._id_number += 1
 
         if enable_table_selector:
+            self.enable_table_selector = True
             DataEditorTableSelector(starting_table=starting_table)
+        else:
+            self.enable_table_selector = False
 
         self.icon = "🗊"
         self.label = "Data editor"
 
         self.gather_components()
+        self.module_callbacks()
 
     def gather_components(self):
         self.info_row = html.Div()
@@ -51,7 +55,15 @@ class DataEditor:
         self.sidebar = html.Div(
             [module.layout() for module in DataEditorRegistry.sidebar_modules]
         )
-        self.main_view = html.Div(id=f"{self.module_number}")
+        self.main_view = html.Div(
+            id=f"{self.module_number}",
+            children=[
+                *{
+                    value["instance"].layout()
+                    for key, value in DataEditorRegistry.main_views.items()
+                }
+            ],
+        )
 
     def _create_layout(self):
 
@@ -70,19 +82,15 @@ class DataEditor:
 
     def module_callbacks(self):
         @callback(
-            Output(f"{self.module_number}", "children"),
+            *[
+                Output(DataEditorRegistry.main_views[main_view]["divname"], "style")
+                for main_view in DataEditorRegistry.main_views
+            ],
             Input("dataeditortableselector", "value"),
         )
         def update_main_view(selected_table):
             # Maybe more efficient to create all and then hide-unused?
-            found_view = DataEditorRegistry.main_views.get(selected_table)
-            if found_view:
-                return found_view
-            logger.debug(
-                f"Noe specific view made for table '{selected_table}', creating default view."
-            )
-            DefaultDataEditorDataView(table_name=selected_table)
-            return DataEditorRegistry.main_views.get(selected_table)
+            logger.debug(f"Selected table: {selected_table}")
 
 
 class DataEditorTableSelector:
@@ -160,9 +168,22 @@ class DataEditorHelperSidebar(ABC):
 
 class DataEditorDataView(ABC):
 
-    def __init__(self, applies_to_table: str) -> None:
-
-        DataEditorRegistry.main_views.update({applies_to_table: self})
+    def __init__(self, applies_to_table: str | list[str]) -> None:
+        if isinstance(applies_to_table, str):
+            applies_to_table = [applies_to_table]
+        self.applies_to_table = applies_to_table
+        for table in self.applies_to_table:
+            DataEditorRegistry.main_views.update(
+                {
+                    table: {
+                        "divname": self.divname,
+                        "name": self.module_name,
+                        "number": self.module_number,
+                        "instance": self,
+                    }
+                }
+            )
+        print(DataEditorRegistry.main_views)
 
     @abstractmethod
     def _create_layout(self):
