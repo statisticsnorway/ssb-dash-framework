@@ -33,19 +33,25 @@ from ssb_dash_framework.experimental.modules.data_editor.core import DataEditor
 from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_table import (
     DataEditorTable,
 )
+from ssb_dash_framework.utils.config_tools.set_variables import TimeUnitType
+from ssb_dash_framework.utils.config_tools.set_variables import VariableSelectorConfig
+
+VariableSelectorConfig(
+    refnr="refnr",
+    ident="ident",
+    time_units={"aar": TimeUnitType.YEAR},
+    # grouping_variables=["komm_nr"]
+)
 
 set_variables(
     [
-        "aar",
-        "ident",
         "variabel",
         "altinnskjema",
         "valgt_tabell",
-        "refnr",
     ]
 )
 
-default_values = {"aar": "2024", "refnr": "3"}
+default_values = {"aar": "2024", "refnr": "20243"}
 
 port = 8070
 service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
