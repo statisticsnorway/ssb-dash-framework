@@ -18,11 +18,11 @@ else:
     )
 
 test = _get_connection_object().query(
-    "SELECT * FROM skjemamottak WHERE aar = 2024 and refnr = 3"
+    "SELECT * FROM skjemamottak WHERE aar = 2024 and refnr = 20243"
 )
 print(test)
 test = _get_connection_object().query(
-    "SELECT * FROM skjemadata_hoved WHERE aar = 2024 and refnr = 3"
+    "SELECT * FROM skjemadata_hoved WHERE aar = 2024 and refnr = 20243"
 )
 print(test)
 
@@ -51,7 +51,7 @@ set_variables(
     ]
 )
 
-default_values = {"aar": "2024", "refnr": "20243"}
+default_values = {"aar": "2024", "refnr": "20243", "altinnskjema": "RA-7357"}
 
 port = 8070
 service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
@@ -59,7 +59,8 @@ domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
 app = app_setup(port, service_prefix, "lumen", logging_level="debug", log_to_file=True)
 
 DataEditorTable(
-    applies_to_table=["skjemadata_hoved"],
+    applies_to_tables=["skjemadata_hoved"],
+    applies_to_forms=["RA-7357"]
 )
 
 tab_list = [DataEditor()]

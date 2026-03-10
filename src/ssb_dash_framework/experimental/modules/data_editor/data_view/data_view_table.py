@@ -28,18 +28,25 @@ class DataEditorTable(DataEditorDataView):
 
     _id_number = 0
 
-    def __init__(self, applies_to_table) -> None:
+    def __init__(self, applies_to_tables, applies_to_forms) -> None:
         self.module_number = DataEditorTable._id_number
         self.module_name = self.__class__.__name__
         DataEditorTable._id_number += 1
         self.time_units = ["aar"]  # TODO fix, make set/get time_units functions
         self.refnr = "refnr"  # TODO fix, maybe make set/get for refnr?
         self.variable_selector = VariableSelector(
-            selected_inputs=[*self.time_units, "refnr"], selected_states=[]
+            selected_inputs=[
+                "altinnskjema",
+                "refnr",
+                *self.time_units,
+            ],  # Order of inputs is not random!
+            selected_states=[],
         )
         self.divname = f"{self.module_name}-{self.module_number}"
         self.module_callbacks()
-        super().__init__(applies_to_table=applies_to_table)
+        super().__init__(
+            applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
+        )
 
     def _create_layout(self):
         return html.Div(
@@ -75,7 +82,7 @@ class DataEditorTable(DataEditorDataView):
         )
         def read_table(value, *args: list[str]):
             # Prevent unneccessary callbacks
-            if value not in self.applies_to_table:
+            if value not in self.applies_to_table or args[0] not in self.applies_to_forms:
                 raise PreventUpdate
 
             if isinstance(_get_connection_object(), EimerDBInstance):

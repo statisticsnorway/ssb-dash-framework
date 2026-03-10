@@ -15,7 +15,6 @@ from dash import Output
 from dash import callback
 from dash import dcc
 from dash import html
-
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
 
@@ -83,8 +82,8 @@ class DataEditor:
     def module_callbacks(self):
         @callback(
             *[
-                Output(DataEditorRegistry.main_views[main_view]["divname"], "style")
-                for main_view in DataEditorRegistry.main_views
+                Output(DataEditorRegistry.main_views_tables[main_view]["divname"], "style")
+                for main_view in DataEditorRegistry.main_views_tables
             ],
             Input("dataeditortableselector", "value"),
         )
@@ -168,12 +167,16 @@ class DataEditorHelperSidebar(ABC):
 
 class DataEditorDataView(ABC):
 
-    def __init__(self, applies_to_table: str | list[str]) -> None:
-        if isinstance(applies_to_table, str):
-            applies_to_table = [applies_to_table]
-        self.applies_to_table = applies_to_table
-        for table in self.applies_to_table:
-            DataEditorRegistry.main_views.update(
+    def __init__(self, applies_to_tables: str | list[str], applies_to_forms: str | list[str]) -> None:
+        if isinstance(applies_to_tables, str):
+            applies_to_tables = [applies_to_tables]
+        self.applies_to_tables = applies_to_tables
+        if isinstance(applies_to_forms, str):
+            applies_to_forms = [applies_to_forms]
+        self.applies_to_forms = applies_to_forms
+
+        for table in self.applies_to_tables:
+            DataEditorRegistry.main_views_tables.update(
                 {
                     table: {
                         "divname": self.divname,
@@ -183,7 +186,17 @@ class DataEditorDataView(ABC):
                     }
                 }
             )
-        print(DataEditorRegistry.main_views)
+        for form in self.applies_to_forms:
+            DataEditorRegistry.main_views_forms.update(
+                {
+                    form: {
+                        "divname": self.divname,
+                        "name": self.module_name,
+                        "number": self.module_number,
+                        "instance": self,
+                    }
+                }
+            )
 
     @abstractmethod
     def _create_layout(self):
