@@ -4,4 +4,3 @@ class DataEditorRegistry:
     sidebar_modules = []
     main_views_tables = dict()
     main_views_forms = dict()
-    

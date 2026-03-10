@@ -82,7 +82,10 @@ class DataEditorTable(DataEditorDataView):
         )
         def read_table(value, *args: list[str]):
             # Prevent unneccessary callbacks
-            if value not in self.applies_to_table or args[0] not in self.applies_to_forms:
+            if (
+                value not in self.applies_to_table
+                or args[0] not in self.applies_to_forms
+            ):
                 raise PreventUpdate
 
             if isinstance(_get_connection_object(), EimerDBInstance):

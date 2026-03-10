@@ -58,10 +58,7 @@ service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
 domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
 app = app_setup(port, service_prefix, "lumen", logging_level="debug", log_to_file=True)
 
-DataEditorTable(
-    applies_to_tables=["skjemadata_hoved"],
-    applies_to_forms=["RA-7357"]
-)
+DataEditorTable(applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"])
 
 tab_list = [DataEditor()]
 window_list = []

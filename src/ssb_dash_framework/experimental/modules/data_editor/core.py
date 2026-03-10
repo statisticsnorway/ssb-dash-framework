@@ -15,6 +15,7 @@ from dash import Output
 from dash import callback
 from dash import dcc
 from dash import html
+
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
 
@@ -82,7 +83,9 @@ class DataEditor:
     def module_callbacks(self):
         @callback(
             *[
-                Output(DataEditorRegistry.main_views_tables[main_view]["divname"], "style")
+                Output(
+                    DataEditorRegistry.main_views_tables[main_view]["divname"], "style"
+                )
                 for main_view in DataEditorRegistry.main_views_tables
             ],
             Input("dataeditortableselector", "value"),
@@ -167,7 +170,9 @@ class DataEditorHelperSidebar(ABC):
 
 class DataEditorDataView(ABC):
 
-    def __init__(self, applies_to_tables: str | list[str], applies_to_forms: str | list[str]) -> None:
+    def __init__(
+        self, applies_to_tables: str | list[str], applies_to_forms: str | list[str]
+    ) -> None:
         if isinstance(applies_to_tables, str):
             applies_to_tables = [applies_to_tables]
         self.applies_to_tables = applies_to_tables
