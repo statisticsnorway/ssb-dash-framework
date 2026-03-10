@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from .alert_handler import create_alert
 from .config_tools.connection import _get_connection_object
+from .config_tools.connection import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -93,5 +94,24 @@ class UpdateSkjemadata(BaseModel):
             )
             return self.to_alert(long, success=False)
 
-    def update_ibis():
-        pass
+    def update_ibis(self, long):
+        query = f"""
+            UPDATE {self.table}
+            SET {self.column} = '{self.value}'
+            WHERE refnr = '{self.refnr}'
+        """
+        if long:
+            query = query + f" AND variabel = '{self.variable}'"
+        try:
+            with get_connection() as conn:
+                conn.raw_sql(query)
+            logger.info(
+                f"Successfully updated '{self.column}' from '{self.old_value}' to '{self.value}'"
+            )
+            return self.to_alert(long, success=True)
+        except Exception as e:
+            logger.error(
+                f"Update feilet! Kunne ikke oppdatere {self.refnr} - '{self.variable if long else self.column} til '{self.value}'. Feilmelding: \n{e}",
+                exc_info=True,
+            )
+            return self.to_alert(long, success=False)

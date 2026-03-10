@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 import dash_ag_grid as dag
 from dash import Input
@@ -115,9 +116,10 @@ class DataEditorTable(DataEditorDataView):
             Input(f"dataeditor-table-{self._id_number}-aggrid", "cellValueChanged"),
             State("dataeditortableselector", "value"),
             State(f"dataeditor-table-{self._id_number}-aggrid", "columnDefs"),
+            State("alert_store", "data"),
             prevent_initial_call=True,
         )
-        def update_table(edited, table, columndefs):
+        def update_table(edited, table, columndefs, alert_store):
             logger.info("Attempting to update data.")
             columns = [col["field"] for col in columndefs]
             if "variabel" in columns and "verdi" in columns:
@@ -140,5 +142,31 @@ class DataEditorTable(DataEditorDataView):
                 feedback = update.update_eimer(long)
             elif isinstance(_get_connection_object(), ConnectionPool):
                 logger.debug("Attempting to update using ibis logic.")
-                feedback = update.update_ibis()
-            return feedback
+                feedback = update.update_ibis(long)
+            return [feedback, *alert_store]
+
+        @callback(  # type: ignore[misc]
+            self.variable_selector.get_output_object("variabel"),
+            Input(f"dataeditor-table-{self._id_number}-aggrid", "cellClicked"),
+            State(f"dataeditor-table-{self._id_number}-aggrid", "rowData"),
+            prevent_initial_call=True,
+        )
+        def send_variabel_to_variableselector(
+            click: dict[str, Any], row_data: list[dict[str, Any]]
+        ) -> str:
+            logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")
+
+            if not click or not row_data:
+                raise PreventUpdate
+
+            columns = list(row_data[0].keys())
+
+            long_format = "variabel" in columns and "verdi" in columns
+            if long_format:
+                return str(row_data[click["rowIndex"]]["variabel"])
+
+            column = click.get("colId")  # wide format
+            if column in ("aar", "ident", "skjema", "refnr", "tabell"):
+                raise PreventUpdate
+
+            return str(column)
