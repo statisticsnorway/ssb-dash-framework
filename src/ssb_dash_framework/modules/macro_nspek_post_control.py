@@ -82,7 +82,9 @@ positive_to_siffer = {
 
 variabel_valg = {**positive_fem_siffer, **positive_to_siffer}
 # sort descending by nopost for nice UI
-HEATMAP_VARIABLES = dict(sorted(variabel_valg.items(), key=lambda item: int(item[0][-4:])))
+HEATMAP_VARIABLES = dict(
+    sorted(variabel_valg.items(), key=lambda item: int(item[0][-4:]))
+)
 
 DETAIL_GRID_ID_COLS = [
     "navn",
@@ -110,6 +112,7 @@ NACE_LEVEL_OPTIONS: dict[str, int] = {
     "4-siffer": 5,
     "5-siffer": 6,
 }
+
 
 class MacroNspekPostControl:
     """The MacroNspekPostControl module lets you view macro values for your variables and directly get a micro view for selected macro field.
@@ -207,7 +210,11 @@ class MacroNspekPostControl:
                             className="macromodule-sidebar",
                             children=[
                                 html.H1(
-                                    ["Sjekk aggregerte", html.Br(), "næringsoppgaveposter"],
+                                    [
+                                        "Sjekk aggregerte",
+                                        html.Br(),
+                                        "næringsoppgaveposter",
+                                    ],
                                 ),
                                 html.Label(
                                     "Velg foretak eller bedrift",
@@ -355,9 +362,7 @@ class MacroNspekPostControl:
         if int(aar) > 2023:  # new nedtrekk in Dapla has a specific file path
             file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_bedrifter_nr.parquet"
         else:
-            file_path = (
-                f"{base_path}/p{aar}/statistikkfil_bedrifter_nr.parquet"
-            )
+            file_path = f"{base_path}/p{aar}/statistikkfil_bedrifter_nr.parquet"
         t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(file_path)
         naring_filter = t.naring.substr(0, length=2).name("nace2")
         t = t.select(naring_filter).distinct()
@@ -402,11 +407,7 @@ class MacroNspekPostControl:
             nace_list: list[str],
         ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
             """Creates a colour-coordinated matrix heatmap of aggregated values based on their %-change from the previous year."""
-            if (
-                not nace_list
-                or not macro_level
-                or not variabelvelger_aar
-            ):
+            if not nace_list or not macro_level or not variabelvelger_aar:
                 return [], [], []
 
             if not isinstance(variabelvelger_aar, str):
@@ -459,16 +460,13 @@ class MacroNspekPostControl:
                 if col in t.columns:
                     t = t.mutate(**{col: t[col].cast("float64")})
 
-            agg_dict = {
-                    alias: t[db_col].sum()
-                    for db_col, alias in var_dict.items()
-                }
+            agg_dict = {alias: t[db_col].sum() for db_col, alias in var_dict.items()}
 
             df = t.group_by("selected_nace").aggregate(**agg_dict)
 
             df = df.pivot_longer(
-                    var_dict.values(), names_to="nopost", values_to="value"
-                )
+                var_dict.values(), names_to="nopost", values_to="value"
+            )
 
             df = df.rename(nace="selected_nace").execute()
             df.columns = df.columns.astype(str)  # set to str in case aar loaded as int
@@ -514,7 +512,7 @@ class MacroNspekPostControl:
                     if safe_col != category_column:
 
                         formatter_func = f"MacroModule.formatHeatmapValue(params, 2)"
-                        style_func = ("MacroModule.displaySimpleHeatMap(params)")
+                        style_func = "MacroModule.displaySimpleHeatMap(params)"
 
                         col_def.update(
                             {
@@ -605,16 +603,14 @@ class MacroNspekPostControl:
                 foretak_or_bedrift,
                 [selected_nace],
                 nace_siffer_level,
-                detail_grid=True
+                detail_grid=True,
             )
 
             assert isinstance(macro_level, str)
 
             t_filtered = t_filtered.mutate(
                 **{
-                    macro_level: t_filtered.kommune.substr(
-                        0, length=4
-                    )
+                    macro_level: t_filtered.kommune.substr(0, length=4)
                     .fill_null("UKJENT")
                     .replace("", "UKJENT")
                 }
@@ -636,7 +632,9 @@ class MacroNspekPostControl:
             ]
             if foretak_or_bedrift == "bedrifter":
                 select_cols.append("orgnr_bedrift")
-            t_filtered = t_filtered.select([c for c in select_cols if c in t_filtered.columns])
+            t_filtered = t_filtered.select(
+                [c for c in select_cols if c in t_filtered.columns]
+            )
 
             if foretak_or_bedrift == "foretak":
                 rename_mapping = {
@@ -684,7 +682,7 @@ class MacroNspekPostControl:
             metrics_order += [
                 var_dict.get(v, v)
                 for v in var_dict
-                if var_dict.get(v, v) != selected_filter_val 
+                if var_dict.get(v, v) != selected_filter_val
             ]
 
             visible_cols = [
@@ -730,8 +728,12 @@ class MacroNspekPostControl:
 
         @callback(
             Output("macromodule-nopost-detail-grid", "rowData", allow_duplicate=True),
-            Output("macromodule-nopost-detail-grid", "columnDefs", allow_duplicate=True),
-            Output("macromodule-nopost-detail-grid-title", "children", allow_duplicate=True),
+            Output(
+                "macromodule-nopost-detail-grid", "columnDefs", allow_duplicate=True
+            ),
+            Output(
+                "macromodule-nopost-detail-grid-title", "children", allow_duplicate=True
+            ),
             Input("var-aar", "value"),
             Input("macromodule-nopost-foretak-or-bedrift", "value"),
             Input("macromodule-nopost-filter-velger", "value"),
