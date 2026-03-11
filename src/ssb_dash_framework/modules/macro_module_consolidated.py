@@ -101,7 +101,7 @@ class MacroModuleConsolidated_ParquetReader:
         """Initialize a persistent DuckDB connection."""
         self.conn: BaseBackend = ibis.connect("duckdb://")
 
-    def _load_year(
+    def load_year(
         self,
         aar: int,
         base_path: str,
@@ -173,7 +173,7 @@ class MacroModuleConsolidated:
         """Initializes the MacroModuleConsolidated.
 
         The MacroModuleConsolidated allows viewing macro values and getting micro-level views for selected fields.
-        The base_path is used by _load_year to locate parquet files.
+        The base_path is used by load_year to locate parquet files.
 
         Args:
             time_units: Your time variables used in the variable selector. Example year, quarter, month, etc.
@@ -431,7 +431,7 @@ class MacroModuleConsolidated:
             file_path = (
                 f"{base_path}/p{aar}/statistiske_foretak_bedrifter.parquet"
             )
-        t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(file_path)
+        t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(file_path).select("naring")
         naring_filter = t.naring.substr(0, length=2).name("nace2")
         t = t.select(naring_filter).distinct()
         df: DataFrame = t.to_pandas()
@@ -494,7 +494,7 @@ class MacroModuleConsolidated:
 
             aar: int = int(variabelvelger_aar)
 
-            t: ibis.TableExpr = self.parquet_reader._load_year(
+            t: ibis.TableExpr = self.parquet_reader.load_year(
                 aar,
                 self.base_path,
                 foretak_or_bedrift,
@@ -502,7 +502,7 @@ class MacroModuleConsolidated:
                 nace_siffer_level,
                 detail_grid=False,
             )  # t, current aar
-            t_1: ibis.TableExpr = self.parquet_reader._load_year(
+            t_1: ibis.TableExpr = self.parquet_reader.load_year(
                 aar - 1,
                 self.base_path,
                 foretak_or_bedrift,
@@ -782,7 +782,7 @@ class MacroModuleConsolidated:
                 raise PreventUpdate
 
             # read in every unit in selected nace
-            t_curr_filtered: ibis.TableExpr = self.parquet_reader._load_year(
+            t_curr_filtered: ibis.TableExpr = self.parquet_reader.load_year(
                 aar,
                 self.base_path,
                 foretak_or_bedrift,
@@ -790,7 +790,7 @@ class MacroModuleConsolidated:
                 nace_siffer_level,
                 detail_grid=True,
             )
-            t_prev_filtered: ibis.TableExpr = self.parquet_reader._load_year(
+            t_prev_filtered: ibis.TableExpr = self.parquet_reader.load_year(
                 aar - 1,
                 self.base_path,
                 foretak_or_bedrift,
@@ -837,7 +837,7 @@ class MacroModuleConsolidated:
             units_all = units_curr.union(units_prev).distinct()
 
             # reload ALL data (no nace/macro filters) for those units
-            t: ibis.TableExpr = self.parquet_reader._load_year(
+            t: ibis.TableExpr = self.parquet_reader.load_year(
                 aar,
                 self.base_path,
                 foretak_or_bedrift,
@@ -845,7 +845,7 @@ class MacroModuleConsolidated:
                 nace_siffer_level,
                 detail_grid=True,
             )
-            t_1: ibis.TableExpr = self.parquet_reader._load_year(
+            t_1: ibis.TableExpr = self.parquet_reader.load_year(
                 aar - 1,
                 self.base_path,
                 foretak_or_bedrift,
