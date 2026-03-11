@@ -22,14 +22,14 @@ from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils.module_validation import module_validator
-from ..modules.macro_module import MacroModule_ParquetReader
+from ..modules.macro_module_consolidated import MacroModuleConsolidated_ParquetReader
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
-# Variables used in the heatmap-grid
+# variables used in the heatmap-grid
 positive_fem_siffer = {
-    # må vere positive på femsiffer nivå
+    # må vere positive på femsiffer nivå, frå leverandøravtalen med nasjonalregnskapet
     "nopost_p3000": "NO3000",
     "nopost_p3100": "NO3100",
     "nopost_p3200": "NO3200",
@@ -47,7 +47,7 @@ positive_fem_siffer = {
 }
 
 positive_to_siffer = {
-    # må vere positive på tosiffernivå
+    # må vere positive på tosiffernivå, frå leverandøravtalen med nasjonalregnskapet
     "nopost_p3600": "NO3600",
     "nopost_p3605": "NO3605",
     "nopost_p3650": "NO3650",
@@ -81,12 +81,12 @@ positive_to_siffer = {
 }
 
 variabel_valg = {**positive_fem_siffer, **positive_to_siffer}
-# Sorter liste med stigende NOPOST
+# sort descending by nopost for nice UI
 HEATMAP_VARIABLES = dict(sorted(variabel_valg.items(), key=lambda item: int(item[0][-4:])))
 
-# skriv om til å bruke dict som i heatmap_variables og rename til detail_grid_DETAIL_GRID_ID_COLS
 DETAIL_GRID_ID_COLS = [
     "navn",
+    "sfnr",
     "orgnr_f",
     "orgnr_b",
     "naring_f",
@@ -100,7 +100,7 @@ DETAIL_GRID_ID_COLS = [
 
 FORETAK_OR_BEDRIFT: dict[str, str] = {"Foretak": "foretak", "Bedrifter": "bedrifter"}
 MACRO_FILTER_OPTIONS: dict[str, Any] = {
-    "Se samlet": HEATMAP_VARIABLES,
+    "Se valgene under, samlet": HEATMAP_VARIABLES,
     "Må være positive på 2-siffer": positive_to_siffer,
     "Må være positive på 5-siffer": positive_fem_siffer,
 }
@@ -110,23 +110,6 @@ NACE_LEVEL_OPTIONS: dict[str, int] = {
     "4-siffer": 5,
     "5-siffer": 6,
 }
-# HEATMAP_NUMBER_FORMAT: dict[str, int] = {
-#     "Prosentendring": 1,
-#     "Årets totalsum": 2,
-#     "Differanse": 3,
-# }
-# STATUS_CHANGE_DETAIL_GRID: list[str] = [
-#     "orgnr_f",
-#     "navn",
-#     "naring_f",
-#     "naring_b",
-#     "type",
-#     "reg_type_f",
-#     "reg_type_b",
-#     "kommune_f",
-#     "kommune_b",
-# ]  # gets tooltip + colour change per year if changed (should be categorical col)
-
 
 class MacroNspekPostControl:
     """The MacroNspekPostControl module lets you view macro values for your variables and directly get a micro view for selected macro field.
@@ -168,8 +151,8 @@ class MacroNspekPostControl:
         #         f"'base_path' must be str and refer to the start of your parquet file path, got: {type(base_path)}"
         #     )
 
-        # if time_units != ["aar"]:
-        #     raise ValueError(f"'time-units' must be ['aar'], got: {time_units}")
+        if time_units != ["aar"]:
+            raise ValueError(f"'time-units' must be ['aar'], got: {time_units}")
 
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
@@ -195,7 +178,7 @@ class MacroNspekPostControl:
 
         self.conn = conn
         self.base_path = base_path
-        self.parquet_reader = MacroModule_ParquetReader()
+        self.parquet_reader = MacroModuleConsolidated_ParquetReader()
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -224,7 +207,7 @@ class MacroNspekPostControl:
                             className="macromodule-sidebar",
                             children=[
                                 html.H1(
-                                    ["Aggregerte", html.Br(), "næringsoppgaveposter"],
+                                    ["Sjekk aggregerte", html.Br(), "næringsoppgaveposter"],
                                 ),
                                 html.Label(
                                     "Velg foretak eller bedrift",
@@ -252,22 +235,6 @@ class MacroNspekPostControl:
                                     value="Må være positive på 2-siffer",
                                     id="macromodule-nopost-filter-velger",
                                 ),
-                                # html.Label(
-                                #     "Velg variabel",
-                                #     className="macromodule-label",
-                                # ),
-                                # dcc.Dropdown(
-                                #     className="macromodule-dropdown",
-                                #     options=[
-                                #         {
-                                #             "label": HEATMAP_VARIABLES.get(v, v),
-                                #             "value": v,
-                                #         }
-                                #         for v in HEATMAP_VARIABLES
-                                #     ],
-                                #     value="produksjonsverdi",
-                                #     id="macromodule-macro-variable",
-                                # ),
                                 html.Label(
                                     "Velg næring(er)",
                                     className="macromodule-label",
@@ -294,19 +261,6 @@ class MacroNspekPostControl:
                                     ],
                                     value=NACE_LEVEL_OPTIONS["2-siffer"],
                                 ),
-                                # html.Label(
-                                #     "Velg tallvisning",
-                                #     className="macromodule-label",
-                                # ),
-                                # dcc.RadioItems(
-                                #     id="macromodule-tall-visning-velger",
-                                #     className="macromodule-radio-buttons",
-                                #     options=[
-                                #         {"label": k, "value": v}
-                                #         for k, v in HEATMAP_NUMBER_FORMAT.items()
-                                #     ],
-                                #     value=HEATMAP_NUMBER_FORMAT["Prosentendring"],
-                                # ),
                             ],
                         ),
                         # Right column: AG Grid table container
@@ -354,11 +308,11 @@ class MacroNspekPostControl:
                                     columnSize=None,
                                     rowData=[],
                                     columnDefs=[],
-                                    # rowClassRules={
-                                    #     "macromodule-naring-mismatch": {
-                                    #         "function": "MacroNspekPostControl.displayNaringRowMismatch(params)"
-                                    #     }
-                                    # },
+                                    rowClassRules={
+                                        "macromodule-naring-mismatch": {
+                                            "function": "MacroModule.displayNaringRowMismatch(params)"
+                                        }
+                                    },
                                     dashGridOptions={
                                         "enableCellTextSelection": True,
                                         "pagination": True,
@@ -435,21 +389,17 @@ class MacroNspekPostControl:
             Output("macromodule-nopost-heatmap-grid", "pinnedTopRowData"),
             Input("var-aar", "value"),
             Input("macromodule-nopost-foretak-or-bedrift", "value"),
-            # Input("macromodule-macro-variable", "value"),
             Input("macromodule-nopost-filter-velger", "value"),
             Input("macromodule-nopost-nace-siffer-velger", "value"),
             Input("macromodule-nopost-naring-velger", "value"),
-            # Input("macromodule-nopost-tall-visning-velger", "value"),
             allow_duplicate=True,
         )
         def update_graph(
             variabelvelger_aar: str,
             foretak_or_bedrift: str,
-            # variabel: str,
             macro_level: str,
             nace_siffer_level: int,
             nace_list: list[str],
-            # tallvisning_valg: int,
         ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
             """Creates a colour-coordinated matrix heatmap of aggregated values based on their %-change from the previous year."""
             if (
@@ -464,10 +414,6 @@ class MacroNspekPostControl:
                     f"'var-aar' must be str, got: {type(variabelvelger_aar)}"
                 )
 
-            print(f"macro_level: {macro_level}")
-            print(f"nace_siffer_level: {nace_siffer_level}")
-            print(f"nace_list: {nace_list}")
-
             aar: int = int(variabelvelger_aar)
 
             t: ibis.TableExpr = self.parquet_reader._load_year(
@@ -477,15 +423,7 @@ class MacroNspekPostControl:
                 nace_list,
                 nace_siffer_level,
                 detail_grid=False,
-            )  # t, current aar
-            # t_1: ibis.TableExpr = self.parquet_reader._load_year(
-            #     aar - 1,
-            #     self.base_path,
-            #     foretak_or_bedrift,
-            #     nace_list,
-            #     nace_siffer_level,
-            #     detail_grid=False,
-            # )  # t-1, previous aar
+            )
 
             var_dict = MACRO_FILTER_OPTIONS[macro_level]
 
@@ -515,30 +453,22 @@ class MacroNspekPostControl:
             cols = [*list(var_dict.keys()), "naring", "aar"]
 
             t = t.select([*cols, "selected_nace"])
-            print(t)
-            print([t["selected_nace"]])
-            print([t["naring"]])
 
             # rename and cast numerics to float in case of yearly type mismatches
             for col in var_dict.keys():
                 if col in t.columns:
                     t = t.mutate(**{col: t[col].cast("float64")})
 
-            print(t)
             agg_dict = {
                     alias: t[db_col].sum()
                     for db_col, alias in var_dict.items()
                 }
 
             df = t.group_by("selected_nace").aggregate(**agg_dict)
-            print(df)
 
             df = df.pivot_longer(
                     var_dict.values(), names_to="nopost", values_to="value"
                 )
-
-            # df = df.pivot_wider(names_from="aar", values_from=values_col)
-            print(df)
 
             df = df.rename(nace="selected_nace").execute()
             df.columns = df.columns.astype(str)  # set to str in case aar loaded as int
@@ -551,7 +481,6 @@ class MacroNspekPostControl:
 
             custom_order = list(var_dict.values())
             matrix = matrix.set_index(category_column).loc[custom_order].reset_index()
-            print(matrix)
 
             # safe column names for NACE keys by replacing '.' with '_'
             original_cols: list[str] = matrix.columns.astype(str).tolist()
@@ -564,45 +493,8 @@ class MacroNspekPostControl:
 
             matrix["id"] = matrix.index.astype(dtype=str)
             matrix[category_column] = matrix[category_column].astype(dtype=str)
-            print(matrix)
 
             row_data: list[dict[str, Any]] | Any = matrix.to_dict("records")
-
-            # def _generate_tooltips(
-            #     row_data: list[dict[str, Any]],
-            #     df: pd.DataFrame,
-            #     category_column: str,
-            #     safe_cols: list[str],
-            #     aar: int,
-            # ) -> None:
-            #     """Create tooltips showing the raw data from each year and the diff, so the user can see both the %-diff in the cell and also the raw data when hovering."""
-            #     for row in row_data:
-            #         if row.get("id") == "count_row":
-            #             continue
-
-            #         for col in safe_cols:
-            #             if col not in ["id", category_column]:
-            #                 prev_year: pd.Series | Any = df.loc[
-            #                     (df[category_column] == row[category_column])
-            #                     & (df["nace"] == col.replace("_", ".")),
-            #                     f"{aar-1}",
-            #                 ]
-            #                 current_year: pd.Series | Any = df.loc[
-            #                     (df[category_column] == row[category_column])
-            #                     & (df["nace"] == col.replace("_", ".")),
-            #                     f"{aar}",
-            #                 ]
-            #                 val1: float = (
-            #                     prev_year.values[0] if not prev_year.empty else 0
-            #                 )
-            #                 val2: float = (
-            #                     current_year.values[0] if not current_year.empty else 0
-            #                 )
-            #                 diff: float | int = val2 - val1
-            #                 tooltip: str = (
-            #                     f"{aar}: {val2:,.0f}\n{aar-1}: {val1:,.0f}\nDiff: {diff:+,.0f}"
-            #                 )
-            #                 row[f"{col}_tooltip"] = tooltip
 
             def _create_column_defs(
                 original_cols: list[str], safe_cols: list[str], category_column: str
@@ -642,7 +534,6 @@ class MacroNspekPostControl:
 
                 return col_defs
 
-            # _generate_tooltips(row_data, df, category_column, safe_cols, aar)
             column_defs = _create_column_defs(original_cols, safe_cols, category_column)
 
             return row_data, column_defs, [count_row]
@@ -659,9 +550,8 @@ class MacroNspekPostControl:
             State("var-aar", "value"),
             State("macromodule-nopost-foretak-or-bedrift", "value"),
             State("macromodule-nopost-heatmap-grid", "rowData"),
-            State("macromodule-nopost-filter-velger", "value"), # same som nopost_valg i app-negative-no
+            State("macromodule-nopost-filter-velger", "value"),
             State("macromodule-nopost-nace-siffer-velger", "value"),
-            # State("macromodule-nopost-macro-variable", "value"),
             prevent_initial_call=True,
         )
         def update_detail_table(
@@ -688,14 +578,9 @@ class MacroNspekPostControl:
             if row_id == "count_row":
                 raise PreventUpdate
 
-            aar: int = int(variabelvelger_aar)
-            # valgt_variabel = HEATMAP_VARIABLES.get(heatmap_valgt_variabel, "")
-
             col = cell_data.get("colId")
             if col in ["variabel", macro_level]:
                 raise PreventUpdate
-
-            print(f"col: {col}")
 
             assert isinstance(col, str)
             selected_nace = col.replace("_", ".")
@@ -704,26 +589,14 @@ class MacroNspekPostControl:
             if not selected_nace:
                 raise PreventUpdate
 
-            print(f"macro_level: {macro_level}")
-            print(f"cell_data: {cell_data}")
-            print(f"heatmap_row_data: {heatmap_row_data}")
-            # if macro_level == "sammensatte variabler":
-            #     selected_filter_val: Any | None = heatmap_row_data[row_idx].get(
-            #         "variabel"
-            #     )
-            #     valgt_variabel: str | None = selected_filter_val
-            # else:
             assert macro_level is not None
-
             var_dict = MACRO_FILTER_OPTIONS[macro_level]
 
-            print(var_dict)
             selected_filter_val = heatmap_row_data[row_idx].get("nopost")
-
-            print(f"selected_filter_val: {selected_filter_val}")
-
             if selected_filter_val is None or pd.isna(selected_filter_val):
                 raise PreventUpdate
+
+            aar: int = int(variabelvelger_aar)
 
             # read in every unit in selected nace
             t_filtered: ibis.TableExpr = self.parquet_reader._load_year(
@@ -732,22 +605,11 @@ class MacroNspekPostControl:
                 foretak_or_bedrift,
                 [selected_nace],
                 nace_siffer_level,
+                detail_grid=True
             )
-            # t_prev_filtered: ibis.TableExpr = self.parquet_reader._load_year(
-            #     aar - 1,
-            #     self.base_path,
-            #     foretak_or_bedrift,
-            #     [selected_nace],
-            #     nace_siffer_level,
-            #     detail_grid=True,
-            # )
-
-            # handle kommune/fylke filters
-            # if macro_level != "sammensatte variabler":
 
             assert isinstance(macro_level, str)
 
-            # col_length: int = MACRO_FILTER_OPTIONS[macro_level]
             t_filtered = t_filtered.mutate(
                 **{
                     macro_level: t_filtered.kommune.substr(
@@ -757,53 +619,10 @@ class MacroNspekPostControl:
                     .replace("", "UKJENT")
                 }
             )
-                # t_prev_filtered = t_prev_filtered.mutate(
-                #     **{
-                #         macro_level: t_prev_filtered.kommune.substr(
-                #             0, length=col_length
-                #         )
-                #         .fill_null("UKJENT")
-                #         .replace("", "UKJENT")
-                #     }
-                # )
 
-            # t_filtered = t_filtered.filter(
-            #     t_filtered[macro_level] == selected_filter_val
-            # )
-                # t_prev_filtered = t_prev_filtered.filter(
-                #     t_prev_filtered[macro_level] == selected_filter_val
-                # )
-
-            # collect all unique units (orgnr_foretak) from both years
-            # units_curr = t_curr_filtered.select("orgnr_foretak").distinct()
-            # units_prev = t_prev_filtered.select("orgnr_foretak").distinct()
-            # units_all = units_curr.union(units_prev).distinct()
-
-            # # reload ALL data (no nace/macro filters) for those units
-            # t: ibis.TableExpr = self.parquet_reader._load_year(
-            #     aar,
-            #     self.base_path,
-            #     foretak_or_bedrift,
-            #     [],  # no nace filter
-            #     nace_siffer_level,
-            #     detail_grid=True,
-            # )
-            # t_1: ibis.TableExpr = self.parquet_reader._load_year(
-            #     aar - 1,
-            #     self.base_path,
-            #     foretak_or_bedrift,
-            #     [],  # no nace filter
-            #     nace_siffer_level,
-            #     detail_grid=True,
-            # )
-
-            # # filter to only the units we identified
-            # t = t.semi_join(units_all, ["orgnr_foretak"])
-            # t_1 = t_1.semi_join(units_all, ["orgnr_foretak"])
-
-            print("Available columns:", t_filtered.columns)
             select_cols = [
                 "navn",
+                "sfnr",
                 "orgnr_foretak",
                 "naring",
                 "naring_f",
@@ -814,13 +633,10 @@ class MacroNspekPostControl:
                 *var_dict.keys(),
                 "giver_fnr",
                 "giver_bnr",
-                "aar",
             ]
             if foretak_or_bedrift == "bedrifter":
                 select_cols.append("orgnr_bedrift")
-            print(f"select_cols: {select_cols}")
-
-            t = t_filtered.select([c for c in select_cols if c in t_filtered.columns])
+            t_filtered = t_filtered.select([c for c in select_cols if c in t_filtered.columns])
 
             if foretak_or_bedrift == "foretak":
                 rename_mapping = {
@@ -843,132 +659,14 @@ class MacroNspekPostControl:
                 naring_col = "naring_b"
 
             t = t_filtered.rename(**rename_mapping)
-            print(t)
-            # t_1 = t_1.rename(**rename_mapping)
 
             for col in var_dict.keys():
                 if col in t.columns:
                     t = t.mutate(**{col: t[col].cast("float64")})
-                # if col in t_1.columns:
-                #     t_1 = t_1.mutate(**{col: t_1[col].cast("float64")})
 
-            # t = t.filter(t.aar == str(aar))
-            # t_prev = t_1.filter(t_1.aar == str(aar - 1))
-
-            t = t.rename(
+            df = t.rename(
                 {v: k for k, v in var_dict.items() if k in t.columns}
             ).execute()
-
-
-            print(t)
-            # t_prev = t_prev.rename(
-            #     {v: k for k, v in var_dict.items() if k in t_prev.columns}
-            # ).execute()
-
-            # use outer to catch units that may only exist in one year due to orgnr_bedrift changes
-            # merged_df = t_curr.merge(
-            #     t_prev,
-            #     how="outer",
-            #     on=merge_keys,
-            #     suffixes=("", "_x"),
-            #     indicator=True,
-            # )
-
-            # merged_df[kommune_col] = (
-            #     merged_df[kommune_col].fillna("UKJENT").replace("", "UKJENT")
-            # )
-            # merged_df[f"{kommune_col}_x"] = (
-            #     merged_df[f"{kommune_col}_x"].fillna("UKJENT").replace("", "UKJENT")
-            # )
-
-            # merged_df["is_new"] = merged_df["_merge"] == "left_only"
-            # merged_df["is_exiter"] = merged_df["_merge"] == "right_only"
-
-            # # for exiters, fill in key identifying columns from previous year
-            # if "navn" in merged_df.columns and "navn_x" in merged_df.columns:
-            #     merged_df["navn"] = merged_df["navn"].fillna(merged_df["navn_x"])
-            # merged_df = merged_df.drop(columns=["_merge"])
-
-            # # 2-siffer nace changes?
-            # if (
-            #     naring_col in merged_df.columns
-            #     and f"{naring_col}_x" in merged_df.columns
-            # ):
-            #     merged_df["nace_prefix_curr"] = (
-            #         merged_df[naring_col].astype(str).str[:nace_siffer_level]
-            #     )
-            #     merged_df["nace_prefix_prev"] = (
-            #         merged_df[f"{naring_col}_x"].astype(str).str[:nace_siffer_level]
-            #     )
-
-            #     merged_df["is_nace_entrant"] = (  # different nace LAST year
-            #         ~merged_df["is_new"]
-            #         & (merged_df["nace_prefix_curr"] == selected_nace)
-            #         & (merged_df["nace_prefix_prev"] != selected_nace)
-            #     )
-
-            #     merged_df["is_nace_exiter"] = (  # different nace THIS year
-            #         ~merged_df["is_exiter"]
-            #         & (merged_df["nace_prefix_prev"] == selected_nace)
-            #         & (merged_df["nace_prefix_curr"] != selected_nace)
-            #     )
-
-            #     merged_df["nace_same"] = (
-            #         merged_df["nace_prefix_curr"] == merged_df["nace_prefix_prev"]
-            #     ).fillna(False)
-
-            #     # drop rows/units if it wasn't in bucket this or last year, necessary because of merging on orgnr_foretak
-            #     mask = (merged_df["nace_prefix_curr"] == selected_nace) | (
-            #         merged_df["nace_prefix_prev"] == selected_nace
-            #     )
-            #     merged_df = merged_df[mask]
-
-            # # kommune/fylke change flags
-            # if macro_level in ("fylke", "kommune"):
-
-            #     if (
-            #         kommune_col in merged_df.columns
-            #         and f"{kommune_col}_x" in merged_df.columns
-            #     ):
-            #         merged_df["macro_prefix_curr"] = merged_df[kommune_col].where(
-            #             merged_df[kommune_col] == "UKJENT",
-            #             merged_df[kommune_col].astype(str).str[:col_length],
-            #         )
-            #         merged_df["macro_prefix_prev"] = merged_df[
-            #             f"{kommune_col}_x"
-            #         ].where(
-            #             merged_df[f"{kommune_col}_x"] == "UKJENT",
-            #             merged_df[f"{kommune_col}_x"].astype(str).str[:col_length],
-            #         )
-
-            #         merged_df["in_bucket_curr"] = (
-            #             merged_df["macro_prefix_curr"] == selected_filter_val
-            #         ).fillna(False)
-            #         merged_df["in_bucket_prev"] = (
-            #             merged_df["macro_prefix_prev"] == selected_filter_val
-            #         ).fillna(False)
-
-            #         # drop rows/units if it wasn't in bucket this or last year, necessary because of excess bedrifter when merging on orgnr_foretak
-            #         mask = merged_df["in_bucket_curr"] | merged_df["in_bucket_prev"]
-            #         merged_df = merged_df[mask]
-
-            #         merged_df["is_macro_entrant"] = (
-            #             ~merged_df["is_new"]
-            #             & merged_df["in_bucket_curr"]
-            #             & ~merged_df["in_bucket_prev"]
-            #         )
-            #         merged_df["is_macro_exiter"] = (
-            #             ~merged_df["is_exiter"]
-            #             & merged_df["in_bucket_prev"]
-            #             & ~merged_df["in_bucket_curr"]
-            #         )
-            # else:
-            #     merged_df["in_bucket_curr"] = True
-            #     merged_df["in_bucket_prev"] = True
-            #     merged_df["is_macro_entrant"] = False
-            #     merged_df["is_macro_exiter"] = False
-
-            # df = merged_df.copy()
 
             if (
                 "giver_bnr" in df.columns and "giver_fnr" in df.columns
@@ -977,51 +675,6 @@ class MacroNspekPostControl:
                 df["giver_bnr_tooltip"] = "Giverbedrifter: " + df["giver_bnr"].astype(
                     str
                 )
-            # for col in STATUS_CHANGE_DETAIL_GRID:
-            #     if f"{col}_x" in df.columns:
-            #         df[f"{col}_tooltip"] = "Fjorårets verdi: " + df[f"{col}_x"].astype(
-            #             str
-            #         )
-
-            # adjust values for current and previous contributors and then calculate diff accordingly
-            # if valgt_variabel in df.columns and f"{valgt_variabel}_x" in df.columns:
-
-            #     current_contributes = (
-            #         ~df["is_exiter"]
-            #         & df["in_bucket_curr"]
-            #         & (df["nace_prefix_curr"] == selected_nace)
-            #     )
-
-            #     prev_contributes = (
-            #         ~df["is_new"]
-            #         & df["in_bucket_prev"]
-            #         & (df["nace_prefix_prev"] == selected_nace)
-            #     )
-
-            #     current_value_adjusted = (
-            #         df[valgt_variabel].where(current_contributes, other=0).fillna(0)
-            #     )
-            #     prev_value_adjusted = (
-            #         df[f"{valgt_variabel}_x"].where(prev_contributes, other=0).fillna(0)
-            #     )
-
-            #     df[f"{valgt_variabel}_diff"] = (
-            #         current_value_adjusted - prev_value_adjusted
-            #     )
-
-            #     df["is_tilgang"] = current_contributes & ~prev_contributes
-            #     df["is_avgang"] = ~current_contributes & prev_contributes
-
-            #     heatmap_value_change = cell_data.get("value", 0)
-            #     heatmap_value_change = (
-            #         float(heatmap_value_change)
-            #         if heatmap_value_change is not None
-            #         else 0
-            #     )
-            #     ascending_sorting_param: bool = heatmap_value_change < 0
-            #     df = df.sort_values(
-            #         f"{valgt_variabel}_diff", ascending=ascending_sorting_param
-            #     )
 
             # order for columns
             if selected_filter_val in df.columns:
@@ -1034,29 +687,12 @@ class MacroNspekPostControl:
                 if var_dict.get(v, v) != selected_filter_val 
             ]
 
-            # ordered_value_cols = []
-            # diff_col = f"{macro_level}_diff"
-            # for metric in metrics_order:
-            #     current_year_col = metric
-            #     previous_year_col = f"{metric}_x"
-
-            #     if current_year_col in df.columns:
-            #         ordered_value_cols.append(current_year_col)
-            #     if previous_year_col in df.columns:
-            #         ordered_value_cols.append(previous_year_col)
-
-            #     if metric == valgt_variabel and diff_col in df.columns:
-            #         ordered_value_cols.append(diff_col)
-
             visible_cols = [
                 c for c in DETAIL_GRID_ID_COLS + metrics_order if c in df.columns
             ]
-            # df = df.sort_values(, ascending=True)
 
+            df = df.sort_values(selected_filter_val, ascending=True)
             row_data: list[dict[Hashable, Any]] | Any = df.to_dict("records")
-            # if macro_level in ("fylke", "kommune"):
-            #     for row in row_data:
-            #         row["macro_len"] = var_dict  # for frontend JavaScript
 
             column_defs = []
             for col in visible_cols:
@@ -1078,24 +714,6 @@ class MacroNspekPostControl:
                     col_def["valueFormatter"] = {
                         "function": "MacroModule.formatDetailGridValue(params)"
                     }
-                    if col.endswith("_x"):
-                        col_def["cellStyle"] = {
-                            "backgroundColor": "#e8e9eb"  # light grey for previous year
-                        }
-
-                # if col in STATUS_CHANGE_DETAIL_GRID:
-                #     col_def.update(
-                #         {
-                #             "cellStyle": {
-                #                 "function": "MacroModule.displayDiffHighlight(params)"
-                #             }
-                #         }
-                #     )
-
-                # if col.endswith("_diff") or col in ("orgnr_b", "navn"):
-                #     col_def["cellStyle"] = {
-                #         "function": "MacroModule.displayDiffColumnHighlight(params)"
-                #     }
 
                 if df[col].dtypes == "float":
                     col_def["filter"] = "agNumberColumnFilter"
@@ -1107,8 +725,6 @@ class MacroNspekPostControl:
                 column_defs[0]["width"] = 240
 
             title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace}"
-            # if macro_level == "sammensatte variabler":
-            #     title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace}"
 
             return row_data, column_defs, title, [], True, None, 0
 

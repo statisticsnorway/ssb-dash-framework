@@ -48,9 +48,9 @@ from .macro_module import MacroModuleWindow
 from .macro_module_consolidated import MacroModuleConsolidated
 from .macro_module_consolidated import MacroModuleConsolidatedTab
 from .macro_module_consolidated import MacroModuleConsolidatedWindow
-from .macro_noposts import MacroNspekPostControl
-from .macro_noposts import MacroNspekPostControlTab
-from .macro_noposts import MacroNspekPostControlWindow
+from .macro_nspek_post_control import MacroNspekPostControl
+from .macro_nspek_post_control import MacroNspekPostControlTab
+from .macro_nspek_post_control import MacroNspekPostControlWindow
 from .nspek import Naeringsspesifikasjon
 from .nspek import NaeringsspesifikasjonTab
 from .nspek import NaeringsspesifikasjonWindow
