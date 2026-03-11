@@ -752,7 +752,7 @@ class MacroNspekPostControl:
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
             Output("var-bedrift", "value", allow_duplicate=True),
-            Output("altinnedit-option1", "value"),
+            Output("altinnedit-option1", "value", allow_duplicate=True),
             Input("macromodule-nopost-detail-grid", "cellClicked"),
             State("macromodule-nopost-detail-grid", "rowData"),
             prevent_initial_call=True,
