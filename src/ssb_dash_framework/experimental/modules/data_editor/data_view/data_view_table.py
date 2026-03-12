@@ -36,9 +36,9 @@ class DataEditorTable(DataEditorDataView):
         self.refnr = "refnr"  # TODO fix, maybe make set/get for refnr?
         self.variable_selector = VariableSelector(
             selected_inputs=[
+                *self.time_units,
                 "altinnskjema",
                 "refnr",
-                *self.time_units,
             ],  # Order of inputs is not random!
             selected_states=[],
         )
@@ -83,25 +83,28 @@ class DataEditorTable(DataEditorDataView):
         def read_table(value, *args: list[str]):
             # Prevent unneccessary callbacks
             if (
-                value not in self.applies_to_table
-                or args[0] not in self.applies_to_forms
+                value not in self.applies_to_tables
+                or args[len(self.time_units)] not in self.applies_to_forms
             ):
+                logger.info("Preventing update.")
                 raise PreventUpdate
 
             if isinstance(_get_connection_object(), EimerDBInstance):
                 N = len(self.time_units)
                 args = list(args)
-                args = [int(x) for x in args[:N]] + args[N:]
+                args[:N] = map(int, args[:N])
 
             filter_dict = create_filter_dict(
-                variables=[*self.time_units, "refnr"], values=args
+                variables=[*self.time_units, "skjema", "refnr"], values=args
             )
 
-            print(filter_dict)
+            logger.debug(f"Filterdict: {filter_dict}")
 
             with get_connection() as conn:
                 t = conn.table(value)
                 df = t.filter(ibis_filter_with_dict(filter_dict)).to_pandas()
+
+            logger.debug(f"Results from query:\n{df.head()}")
 
             columndefs = [
                 {
@@ -140,6 +143,7 @@ class DataEditorTable(DataEditorDataView):
             update = UpdateSkjemadata(
                 table=table,
                 long=long,
+                ident=edited[0]["data"]["ident"],
                 refnr=edited[0]["data"]["refnr"],
                 column=edited[0]["colId"],
                 variable=long_variabel if long else edited[0]["colId"],

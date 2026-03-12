@@ -16,6 +16,8 @@ from dash import callback
 from dash import dcc
 from dash import html
 
+from ssb_dash_framework import VariableSelector
+
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
 
@@ -55,14 +57,31 @@ class DataEditor:
         self.sidebar = html.Div(
             [module.layout() for module in DataEditorRegistry.sidebar_modules]
         )
+        _existing_views = []
+        main_views = []
+        for divname, info in DataEditorRegistry.main_views.items():
+            logger.debug(
+                f"Adding '{divname}' to main_views. Applies to:\ntables: '{info["tables"]}'\nforms: {info["forms"]}"
+            )
+            try:
+                if divname not in _existing_views:
+                    main_views.append(info["instance"].layout())
+                    _existing_views.append(divname)
+                    logger.debug(f"Added '{divname}' to main_views.")
+                else:
+                    logger.debug(
+                        f"Not adding {divname} due to it already existing. Existing views: {_existing_views}"
+                    )
+            except Exception as e:
+                logger.error(
+                    f"Encountered error '{e}' when adding main_view '{divname}' with configuration:\n{info}",
+                    exc_info=True,
+                )
+                raise e
+
         self.main_view = html.Div(
             id=f"{self.module_number}",
-            children=[
-                *{
-                    value["instance"].layout()
-                    for key, value in DataEditorRegistry.main_views.items()
-                }
-            ],
+            children=[view for view in main_views],
         )
 
     def _create_layout(self):
@@ -83,16 +102,36 @@ class DataEditor:
     def module_callbacks(self):
         @callback(
             *[
-                Output(
-                    DataEditorRegistry.main_views_tables[main_view]["divname"], "style"
-                )
-                for main_view in DataEditorRegistry.main_views_tables
+                Output(main_view, "style")
+                for main_view in DataEditorRegistry.main_views
             ],
             Input("dataeditortableselector", "value"),
+            VariableSelector([], []).get_input("altinnskjema"),
         )
-        def update_main_view(selected_table):
+        def update_main_view(selected_table, selected_form):
             # Maybe more efficient to create all and then hide-unused?
             logger.debug(f"Selected table: {selected_table}")
+            styles = []
+            for divname in DataEditorRegistry.main_views:
+                if (
+                    selected_table in DataEditorRegistry.main_views[divname]["tables"]
+                    and selected_form in DataEditorRegistry.main_views[divname]["forms"]
+                ):
+                    styles.append({"display": "block"})
+                else:
+                    styles.append({"display": "none"})
+            if all(style == {"display": "none"} for style in styles):
+                message = f"No main_view defined for {selected_table} - {selected_form}"
+                logger.error(message)
+                raise ValueError(message)
+            if len(DataEditorRegistry.main_views) == 1:
+                logger.debug(
+                    "Returning a single dict due to only one main_view being defined"
+                )
+                styles = styles[
+                    0
+                ]  # Dash expects a single value when there is just one output.
+            return styles
 
 
 class DataEditorTableSelector:
@@ -180,28 +219,17 @@ class DataEditorDataView(ABC):
             applies_to_forms = [applies_to_forms]
         self.applies_to_forms = applies_to_forms
 
-        for table in self.applies_to_tables:
-            DataEditorRegistry.main_views_tables.update(
-                {
-                    table: {
-                        "divname": self.divname,
-                        "name": self.module_name,
-                        "number": self.module_number,
-                        "instance": self,
-                    }
+        DataEditorRegistry.main_views.update(
+            {
+                self.divname: {
+                    "tables": self.applies_to_tables,
+                    "forms": self.applies_to_forms,
+                    "name": self.module_name,
+                    "number": self.module_number,
+                    "instance": self,
                 }
-            )
-        for form in self.applies_to_forms:
-            DataEditorRegistry.main_views_forms.update(
-                {
-                    form: {
-                        "divname": self.divname,
-                        "name": self.module_name,
-                        "number": self.module_number,
-                        "instance": self,
-                    }
-                }
-            )
+            }
+        )
 
     @abstractmethod
     def _create_layout(self):

@@ -15,6 +15,7 @@ class UpdateSkjemadata(BaseModel):
 
     Args:
         table (str): Name of the table being updated.
+        ident (str): Identity of unit being updated.
         refnr (str): Reference number identifying the row.
         column (str): Column that will be updated.
         variable (str): Variable associated with the column. Note, this is identical to column if the table is not in the long format.
@@ -24,6 +25,7 @@ class UpdateSkjemadata(BaseModel):
     """
 
     table: str
+    ident: str
     refnr: str
     column: str
     variable: str
@@ -36,6 +38,7 @@ class UpdateSkjemadata(BaseModel):
             "Update to apply:\n"
             f"  Table     : {self.table}\n"
             f"  Table Type: {'long' if self.long else 'wide'}\n"
+            f"  Ident     : {self.ident}"
             f"  RefNr     : {self.refnr}\n"
             f"  Column    : {self.column}\n"
             f"  Variable  : {self.variable}\n"
