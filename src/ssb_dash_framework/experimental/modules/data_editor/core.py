@@ -59,7 +59,10 @@ class DataEditor:
             [module.layout() for module in DataEditorRegistry.helper_modules]
         )
         self.sidebar = html.Div(
-            [module.layout() for module in DataEditorRegistry.sidebar_modules]
+            [
+                dbc.Card(dbc.CardBody(module.layout()))
+                for module in DataEditorRegistry.sidebar_modules
+            ]
         )
         _existing_views = []
         main_views = []

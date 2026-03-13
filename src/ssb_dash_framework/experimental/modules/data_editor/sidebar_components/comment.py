@@ -44,6 +44,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
     def _create_layout(self):
         return html.Div(
             [
+                dbc.Row("Intern kommentar"),
                 dbc.Row(
                     [
                         dbc.Col(
@@ -59,9 +60,11 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                         ),
                     ]
                 ),
-                dcc.Textarea(
-                    id=f"{self.module_name}-{self.module_number}-comment-text",
-                    className="dataeditorsidebar-comment-textarea",
+                dbc.Row(
+                    dcc.Textarea(
+                        id=f"{self.module_name}-{self.module_number}-comment-text",
+                        className="dataeditorsidebar-comment-textarea",  # TODO: Style in the css
+                    )
                 ),
             ]
         )
