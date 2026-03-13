@@ -10,6 +10,47 @@ from .config_tools.connection import get_connection
 logger = logging.getLogger(__name__)
 
 
+class UpdateSkjemamottakKommentar(BaseModel):
+    refnr: str
+    comment: str
+
+    def __str__(self) -> str:
+        return (
+            "Update to apply:\n"
+            f"  Table   : {self.refnr}\n"
+            f"  comment : {self.comment}\n"
+        )
+
+    def to_alert(self, success):
+        if success:
+            return create_alert(
+                f"Oppdaterte kommentar for {self.refnr}",
+                "success",
+                ephemeral=True,
+            )
+        else:
+            return create_alert(
+                f"Feilet oppdatering av kommentar for {self.refnr}",
+                "danger",
+                ephemeral=True,
+            )
+
+    def update_eimer(self):
+        query = f"""UPDATE skjemamottak SET kommentar = '{self.comment}' WHERE refnr = '{self.refnr}'"""
+        logger.debug(f"Running query: {query}")
+        try:
+            _get_connection_object().query(query)
+            logger.info(f"Oppdaterte kommentar for {self.refnr}")
+            alert = self.to_alert(success=True)
+        except Exception as e:
+            logger.error(
+                f"Update feilet! Kunne ikke oppdatere kommentar for {self.refnr}. Feilmelding: \n{e}",
+                exc_info=True,
+            )
+            alert = self.to_alert(success=False)
+        return alert
+
+
 class UpdateSkjemadata(BaseModel):
     """Model to centralize logic for updating data.
 

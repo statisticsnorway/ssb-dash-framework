@@ -39,6 +39,9 @@ from ssb_dash_framework.experimental.modules.data_editor.helper_buttons.supporti
 from ssb_dash_framework.experimental.modules.data_editor.helper_buttons.supporting_table import (
     DataEditorSupportTables,
 )
+from ssb_dash_framework.experimental.modules.data_editor.sidebar_components.comment import (
+    DataEditorSidebarComment,
+)
 from ssb_dash_framework.utils.config_tools.set_variables import TimeUnitType
 from ssb_dash_framework.utils.config_tools.set_variables import VariableSelectorConfig
 
@@ -57,7 +60,12 @@ set_variables(
     ]
 )
 
-default_values = {"aar": "2024", "refnr": "20243", "altinnskjema": "RA-7357"}
+default_values = {
+    "aar": "2024",
+    "refnr": "20243",
+    "ident": "969744066",
+    "altinnskjema": "RA-7357",
+}
 
 port = 8070
 service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
@@ -78,7 +86,7 @@ DataEditorSupportTable(
 )
 
 DataEditorSupportTables()
-
+DataEditorSidebarComment()
 DataEditorTable(applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"])
 
 tab_list = [DataEditor()]

@@ -157,7 +157,7 @@ class DataEditorTableSelector:
 
         self.starting_table = starting_table
 
-        DataEditorRegistry.sidebar_modules.append(self)
+        DataEditorRegistry.sidebar_modules.insert(0, self)
 
     def _create_layout(self):
         with get_connection() as conn:
