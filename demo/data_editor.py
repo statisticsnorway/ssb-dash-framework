@@ -33,6 +33,12 @@ from ssb_dash_framework.experimental.modules.data_editor.core import DataEditor
 from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_table import (
     DataEditorTable,
 )
+from ssb_dash_framework.experimental.modules.data_editor.helper_buttons.supporting_table import (
+    DataEditorSupportTable,
+)
+from ssb_dash_framework.experimental.modules.data_editor.helper_buttons.supporting_table import (
+    DataEditorSupportTables,
+)
 from ssb_dash_framework.utils.config_tools.set_variables import TimeUnitType
 from ssb_dash_framework.utils.config_tools.set_variables import VariableSelectorConfig
 
@@ -57,6 +63,21 @@ port = 8070
 service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
 domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
 app = app_setup(port, service_prefix, "lumen", logging_level="debug", log_to_file=True)
+
+
+def support_table_get_data(aar, skjema):
+    return _get_connection_object().query(
+        f"SELECT * FROM skjemadata_hoved WHERE aar = {aar} and skjema ='{skjema}'"
+    )
+
+
+DataEditorSupportTable(
+    label="Demo",
+    get_data_func=support_table_get_data,
+    inputs=["aar", "altinnskjema"],
+)
+
+DataEditorSupportTables()
 
 DataEditorTable(applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"])
 

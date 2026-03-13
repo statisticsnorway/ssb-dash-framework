@@ -12,9 +12,11 @@ from abc import abstractmethod
 import dash_bootstrap_components as dbc
 from dash import Input
 from dash import Output
+from dash import State
 from dash import callback
 from dash import dcc
 from dash import html
+from dash.exceptions import PreventUpdate
 
 from ssb_dash_framework import VariableSelector
 
@@ -53,7 +55,9 @@ class DataEditor:
 
     def gather_components(self):
         self.info_row = html.Div()
-        self.helper_row = html.Div()
+        self.helper_row = html.Div(
+            [module.layout() for module in DataEditorRegistry.helper_modules]
+        )
         self.sidebar = html.Div(
             [module.layout() for module in DataEditorRegistry.sidebar_modules]
         )
@@ -89,8 +93,12 @@ class DataEditor:
         return dbc.Container(
             [
                 dbc.Row(self.info_row),
-                dbc.Row(self.helper_row),
-                dbc.Row([dbc.Col(self.sidebar, width=2), dbc.Col(self.main_view)]),
+                dbc.Row(
+                    [
+                        dbc.Col(self.sidebar, width=2),
+                        dbc.Col([dbc.Row(self.helper_row), dbc.Row(self.main_view)]),
+                    ]
+                ),
             ],
             fluid=True,
         )
@@ -187,7 +195,53 @@ class DataEditorTableSelector:
 class DataEditorInfoRow: ...
 
 
-class DataEditorHelperButton: ...
+class DataEditorHelperButton(ABC):
+    _id_number = 0
+
+    def __init__(self, label) -> None:
+        self.module_number = DataEditorHelperButton._id_number
+        self.module_name = self.__class__.__name__
+        DataEditorHelperButton._id_number += 1
+        self.label = label
+        self.button_callbacks()
+        DataEditorRegistry.helper_modules.append(self)
+
+    def layout(self):
+        if not hasattr(self, "modal_body"):
+            raise AttributeError("Lacking 'modal_body' attribute.")
+        return html.Div(
+            [
+                dbc.Button(
+                    self.label, id=f"{self.module_name}-{self.module_number}-button"
+                ),
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle(self.label)),
+                        dbc.ModalBody(self.modal_body),
+                    ],
+                    id=f"{self.module_name}-{self.module_number}-modal",
+                    is_open=False,
+                    className="dataeditor-helper-button-modal",
+                ),
+            ]
+        )
+
+    def button_callbacks(self) -> None:
+        """Registers the callbacks for the DataEditor Support Tables module."""
+
+        @callback(  # type: ignore[misc]
+            Output(f"{self.module_name}-{self.module_number}-modal", "is_open"),
+            Input(f"{self.module_name}-{self.module_number}-button", "n_clicks"),
+            State(f"{self.module_name}-{self.module_number}-modal", "is_open"),
+        )
+        def toggle_hjelpetabellmodal(n_clicks: None | int, is_open: bool) -> bool:
+            logger.debug(f"Args:\nn_clicks: {n_clicks}\nis_open: {is_open}")
+            if n_clicks is None:
+                logger.debug("Raised PreventUpdate")
+                raise PreventUpdate
+            if not is_open:
+                return True
+            return False
 
 
 class DataEditorHelperSidebar(ABC):
