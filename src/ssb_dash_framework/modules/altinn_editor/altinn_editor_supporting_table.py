@@ -128,8 +128,14 @@ def add_year_diff_support_table(
     """Adds a table showing difference to previous year."""
 
     def year_diff_support_table_get_data_func(ident: str, year: str) -> pd.DataFrame:
-        with get_connection(necessary_tables=[table_to_diff]) as conn:
-            s = conn.table(table_to_diff)
+        with get_connection() as conn:
+            try:
+                s = conn.table("skjemadata_hoved")
+            except Exception:
+                # fallback option
+                s = conn.table(
+                    "core_skjemadata_mapped"
+                )  # TODO: Fix? Temporary for nøku use
             return s.filter(_.ident == ident).to_pandas()
 
     AltinnSupportTable(

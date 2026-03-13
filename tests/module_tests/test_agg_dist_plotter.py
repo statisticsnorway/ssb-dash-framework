@@ -10,7 +10,7 @@ def test_import() -> None:
     assert AggDistPlotterWindow is not None
 
 
-def test_instantiation(ibis_polars_conn) -> None:
+def test_instantiation() -> None:
     set_variables(
         [
             "aar",
@@ -20,5 +20,5 @@ def test_instantiation(ibis_polars_conn) -> None:
             "altinnskjema",  # Required by the module itself
         ]
     )
-    AggDistPlotterTab(time_units=["aar", "maaned"], conn=ibis_polars_conn)
-    AggDistPlotterWindow(time_units=["aar", "maaned"], conn=ibis_polars_conn)
+    AggDistPlotterTab(time_units=["aar", "maaned"])
+    AggDistPlotterWindow(time_units=["aar", "maaned"])

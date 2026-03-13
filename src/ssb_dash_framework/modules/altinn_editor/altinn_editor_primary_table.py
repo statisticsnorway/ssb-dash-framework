@@ -2,7 +2,6 @@ import logging
 from typing import Any
 
 import dash_ag_grid as dag
-import ibis
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -42,13 +41,11 @@ class AltinnEditorPrimaryTable:
 
         Args:
             time_units: List of time units to be used in the module.
-            conn: Database connection object that must have a 'query' method.
             variable_selector_instance: An instance of VariableSelector for variable selection.
             cols_to_hide: A list of columns to ignore. Defaults to ["row_id","row_ids",*self.time_units,"skjema","refnr"].
 
         Raises:
-            TypeError: If variable_selector_instance is not an instance of VariableSelector. Or
-                if connection object is neither EimerDBInstance or Ibis connection.
+            TypeError: If variable_selector_instance is not an instance of VariableSelector.
         """
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
@@ -166,6 +163,8 @@ class AltinnEditorPrimaryTable:
                 logger.info("Returning nothing.")
                 logger.debug(f"Args length: {len(args)}")
                 return [], []
+            if isinstance(_get_connection_object(), EimerDBInstance):
+                args = tuple([int(x) for x in args])
 
             filter_dict = create_filter_dict(
                 self.time_units, args
@@ -177,7 +176,6 @@ class AltinnEditorPrimaryTable:
                     long_format = True
                 else:
                     long_format = False
-
                 if long_format:
                     logger.debug("Processing long data")
                     try:
@@ -188,18 +186,13 @@ class AltinnEditorPrimaryTable:
                         logger.debug(
                             f"partition_select:\n{create_partition_select(desired_partitions=self.time_units,skjema=skjema,**partition_args,)}"
                         )
-
                         t = t.filter(_.refnr == refnr).join(d, "variabel", how="left")
                         t = t.filter(ibis_filter_with_dict(filter_dict))
-
                         # sort by bedrift if available
                         if bedrift and "ident" in t.columns:
-                            t = t.mutate(
-                                sort_priority=ibis.case()
-                                .when(_.ident == bedrift, 0)
-                                .else_(1)
-                                .end()
-                            ).order_by(["sort_priority", _.radnr])
+                            t = t.order_by(
+                                [_.ident.cases((bedrift, 0), else_=1), _.radnr]
+                            )
                         else:
                             t = t.order_by(_.radnr)
 
@@ -249,7 +242,6 @@ class AltinnEditorPrimaryTable:
                                 by="ident",
                                 key=lambda x: x.map(lambda v: 0 if v == bedrift else 1),
                             )
-
                         columndefs = [
                             {
                                 "headerName": col,
@@ -258,18 +250,23 @@ class AltinnEditorPrimaryTable:
                                 in [
                                     "row_id",
                                     "row_ids",
+                                    "enhetsinfo_row_ids",
                                     *self.time_units,
                                     "skjema",
                                     "refnr",
                                 ],
+                                "flex": (
+                                    2 if col == "variabel" else 1
+                                ),  # What does this do actually?
                             }
                             for col in df.columns
                         ]
-                        return df.to_dict("records"), columndefs
+                        logger.debug(f"resultat dataframe:\n{df.head(2)}")
 
+                        return df.to_dict("records"), columndefs
                     except Exception as e:
                         logger.error(
-                            f"Error in hovedside_update_altinnskjema (wide format): {e}",
+                            f"Error in hovedside_update_altinnskjema (long format): {e}",
                             exc_info=True,
                         )
                         return None, None

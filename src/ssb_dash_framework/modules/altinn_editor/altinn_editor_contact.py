@@ -10,11 +10,8 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from ibis import _
 
-from ssb_dash_framework.utils import create_filter_dict
-from ssb_dash_framework.utils import get_connection
-from ssb_dash_framework.utils import ibis_filter_with_dict
-
 from ...setup.variableselector import VariableSelector
+from ...utils.config_tools.connection import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +194,6 @@ class AltinnEditorContact:
                 t = conn.table("kontaktinfo")
                 df_skjemainfo = (
                     t.filter(_.refnr == refnr)
-                    .filter(ibis_filter_with_dict(filter_dict))
                     .select(
                         [
                             "kontaktperson",

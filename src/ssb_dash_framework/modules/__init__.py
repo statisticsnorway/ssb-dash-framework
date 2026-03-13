@@ -34,6 +34,7 @@ from .building_blocks import FigureDisplayWindow
 from .building_blocks import MapDisplay
 from .building_blocks import MapDisplayTab
 from .building_blocks import MapDisplayWindow
+from .building_blocks import MicroLayoutAIO
 from .building_blocks import MultiModule
 from .building_blocks import MultiModuleTab
 from .building_blocks import MultiModuleWindow
@@ -45,6 +46,12 @@ from .hb_method import HBMethodWindow
 from .macro_module import MacroModule
 from .macro_module import MacroModuleTab
 from .macro_module import MacroModuleWindow
+from .macro_module_consolidated import MacroModuleConsolidated
+from .macro_module_consolidated import MacroModuleConsolidatedTab
+from .macro_module_consolidated import MacroModuleConsolidatedWindow
+from .macro_nspek_post_control import MacroNspekPostControl
+from .macro_nspek_post_control import MacroNspekPostControlTab
+from .macro_nspek_post_control import MacroNspekPostControlWindow
 from .nspek import Naeringsspesifikasjon
 from .nspek import NaeringsspesifikasjonTab
 from .nspek import NaeringsspesifikasjonWindow
@@ -101,9 +108,16 @@ __all__ = [
     "MacroModule",
     "MacroModuleTab",
     "MacroModuleWindow",
+    "MacroModuleConsolidated",
+    "MacroModuleConsolidatedTab",
+    "MacroModuleConsolidatedWindow",
+    "MacroNspekPostControl",
+    "MacroNspekPostControlTab",
+    "MacroNspekPostControlWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
+    "MicroLayoutAIO",
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",

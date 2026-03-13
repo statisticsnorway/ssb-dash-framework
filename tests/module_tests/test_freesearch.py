@@ -9,6 +9,11 @@ def test_import_freesearch() -> None:
     assert FreeSearchWindow is not None, "FreeSearchWindow is not importable"
 
 
-def test_instantiation(ibis_polars_conn) -> None:
-    FreeSearchTab(database=ibis_polars_conn)
-    FreeSearchWindow(database=ibis_polars_conn)
+def test_instantiation_default_connection() -> None:
+    FreeSearchTab()
+    FreeSearchWindow()
+
+
+def test_instantiation_custom_conn(ibis_polars_conn) -> None:
+    FreeSearchTab(conn=ibis_polars_conn)
+    FreeSearchWindow(conn=ibis_polars_conn)

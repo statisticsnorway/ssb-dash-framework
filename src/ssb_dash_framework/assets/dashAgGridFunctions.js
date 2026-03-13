@@ -4,7 +4,7 @@ window.dashAgGridFunctions = window.dashAgGridFunctions || {};
 window.dashAgGridFunctions.MacroModule = {
 
     // === Function formatHeatmapValue (Format values based on row type) ===
-    formatHeatmapValue(params, isPercentage) {
+    formatHeatmapValue(params, tallvisning) {
         const value = params.value;
 
         if (value === null || value === undefined) {
@@ -20,7 +20,7 @@ window.dashAgGridFunctions.MacroModule = {
         }
 
         // Regular cells - format as percentage or number
-        if (isPercentage) {
+        if (tallvisning === 1) {
             return value.toLocaleString('nb-NO', {
                 style: 'percent',
                 minimumFractionDigits: 1,
