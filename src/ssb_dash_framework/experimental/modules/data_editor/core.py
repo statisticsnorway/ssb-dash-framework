@@ -66,6 +66,9 @@ class DataEditor:
         )
         _existing_views = []
         main_views = []
+        logger.debug(
+            f"Existing main views at gathering of components:\n{DataEditorRegistry.main_views}"
+        )
         for divname, info in DataEditorRegistry.main_views.items():
             logger.debug(
                 f"Adding '{divname}' to main_views. Applies to:\ntables: '{info["tables"]}'\nforms: {info["forms"]}"

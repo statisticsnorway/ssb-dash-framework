@@ -1,18 +1,125 @@
-class DataViewCustom:
-    def __init__(self) -> None:
-        pass
+import logging
+
+import dash_bootstrap_components as dbc
+from dash import Input
+from dash import Output
+from dash import callback
+from dash import dcc
+from dash import html
+from dash.exceptions import PreventUpdate
+
+from ssb_dash_framework.setup import VariableSelector
+from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
+from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
+
+from ..core import DataEditorDataView
+
+logger = logging.getLogger(__name__)
 
 
-class DataViewCustomFigureGeneric:
-    def __init__(self) -> None:
-        pass
+class DataViewCustomFigure:
+    _id_number = 0
+
+    def __init__(self, label, figure_func, applies_to_tables, applies_to_forms) -> None:
+        self.module_number = DataViewCustomFigure._id_number
+        self.module_name = self.__class__.__name__
+        DataViewCustomFigure._id_number += 1
+        self.variableselector = VariableSelector([], [])
+        self.label = label
+        self.figure_func = figure_func
+        self.applies_to_tables = applies_to_tables
+        self.applies_to_forms = applies_to_forms
+        self.figure_func()
+        self.module_callbacks()
+
+    def content(self):
+        return html.Div(
+            children=[
+                self.label,
+                dcc.Graph(id=f"{self.module_name}-{self.module_number}-figure"),
+            ]
+        )
+
+    def module_callbacks(self) -> None:
+        @callback(
+            Output(f"{self.module_name}-{self.module_number}-figure", "figure"),
+            Input("dataeditortableselector", "value"),
+            self.variableselector.get_input("altinnskjema"),
+            self.variableselector.get_input(get_refnr()),
+            *[self.variableselector.get_input(unit) for unit in get_time_units()],
+        )
+        def make_figure(selected_table, selected_form, refnr, *args):
+            if (
+                selected_table not in self.applies_to_tables
+                or selected_form not in self.applies_to_forms
+            ):
+                logger.info("Preventing update.")
+                raise PreventUpdate
+            return self.figure_func()
 
 
-class DataViewCustomTableGeneric:
-    def __init__(self) -> None:
-        pass
+class DataViewCustomTable: ...
 
 
-class DataViewCustomMikrolayout:
-    def __init__(self) -> None:
+class DataViewCustom(DataEditorDataView):
+    _id_number = 0
+
+    def __init__(
+        self,
+        applies_to_tables: str | list[str],
+        applies_to_forms: str | list[str],
+        layout,
+    ) -> None:
+        self.module_number = DataViewCustom._id_number
+        self.module_name = self.__class__.__name__
+        DataViewCustom._id_number += 1
+        self.divname = f"{self.module_name}-{self.module_number}"
+
+        self.applies_to_tables = applies_to_tables
+        self.applies_to_forms = applies_to_forms
+
+        self.created_layout = self.build_layout(layout)
+        self.module_callbacks()
+        super().__init__(
+            applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
+        )
+
+    def build_layout(self, layout: dict | list) -> list:
+        components = []
+
+        if isinstance(layout, list):
+            for item in layout:
+                components.extend(self.build_layout(item))
+            return components
+
+        for key, value in layout.items():
+            if key == "row":
+                children = self.build_layout(value)
+                components.append(dbc.Row(children))
+
+            elif key == "col":
+                children = self.build_layout(value)
+                components.append(dbc.Col(children))
+
+            elif key == "figure":
+                figure = DataViewCustomFigure(
+                    label=value["label"],
+                    figure_func=value["figure_func"],
+                    applies_to_tables=self.applies_to_tables,
+                    applies_to_forms=self.applies_to_forms,
+                )
+                components.append(figure.content())
+
+            else:
+                components.extend(self.build_layout(value))
+
+        return components
+
+    def _create_layout(self):
+        return html.Div(id=self.divname, children=self.created_layout)
+
+    def layout(self):
+        return self._create_layout()
+
+    def module_callbacks(self):
         pass

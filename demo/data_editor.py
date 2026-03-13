@@ -1,5 +1,8 @@
 import os
 
+import plotly.express as px
+from ibis import _
+
 if os.getenv("DAPLA_ENVIRONMENT", None) == "PROD":
     from ssb_dash_framework import _get_connection_object
     from ssb_dash_framework import set_eimerdb_connection
@@ -27,20 +30,12 @@ test = _get_connection_object().query(
 print(test)
 
 from ssb_dash_framework import app_setup
+from ssb_dash_framework import get_connection
 from ssb_dash_framework import main_layout
 from ssb_dash_framework import set_variables
 from ssb_dash_framework.experimental.modules.data_editor.core import DataEditor
-from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_table import (
-    DataEditorTable,
-)
-from ssb_dash_framework.experimental.modules.data_editor.helper_buttons.supporting_table import (
-    DataEditorSupportTable,
-)
-from ssb_dash_framework.experimental.modules.data_editor.helper_buttons.supporting_table import (
-    DataEditorSupportTables,
-)
-from ssb_dash_framework.experimental.modules.data_editor.sidebar_components.comment import (
-    DataEditorSidebarComment,
+from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_custom import (
+    DataViewCustom,
 )
 from ssb_dash_framework.utils.config_tools.set_variables import TimeUnitType
 from ssb_dash_framework.utils.config_tools.set_variables import VariableSelectorConfig
@@ -73,21 +68,47 @@ domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
 app = app_setup(port, service_prefix, "lumen", logging_level="debug", log_to_file=True)
 
 
+# Doodle for custom layout
+def make_fig():
+    with get_connection() as conn:
+        t = conn.table("skjemadata_hoved")
+        df = t.filter(_.aar == 2024).to_pandas()
+    df["verdi"] = df["verdi"].astype(int)
+    df = df.groupby("variabel", as_index=False).agg({"verdi": "sum"})
+    fig = px.bar(df, x="variabel", y="verdi")
+    return fig
+
+
+def make_table(): ...
+
+
+layout = {
+    "row": [
+        {"col": {"table": {"label": "Oversiktstabell", "figure_func": make_fig}}},
+        {"col": {"figure": {"label": "Eksempelfigur", "figure_func": make_fig}}},
+    ]
+}
+
+
+DataViewCustom(
+    applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"], layout=layout
+)
+
+
 def support_table_get_data(aar, skjema):
     return _get_connection_object().query(
         f"SELECT * FROM skjemadata_hoved WHERE aar = {aar} and skjema ='{skjema}'"
     )
 
 
-DataEditorSupportTable(
-    label="Demo",
-    get_data_func=support_table_get_data,
-    inputs=["aar", "altinnskjema"],
-)
-
-DataEditorSupportTables()
-DataEditorSidebarComment()
-DataEditorTable(applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"])
+# DataEditorSupportTable(
+#     label="Demo",
+#     get_data_func=support_table_get_data,
+#     inputs=["aar", "altinnskjema"],
+# )
+# DataEditorSupportTables()
+# DataEditorSidebarComment()
+# DataEditorTable(applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"])
 
 tab_list = [DataEditor()]
 window_list = []

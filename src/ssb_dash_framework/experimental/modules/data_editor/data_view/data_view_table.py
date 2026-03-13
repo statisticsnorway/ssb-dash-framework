@@ -80,10 +80,10 @@ class DataEditorTable(DataEditorDataView):
             Input("dataeditortableselector", "value"),
             self.variable_selector.get_all_callback_objects(),
         )
-        def read_table(value, *args: list[str]):
+        def read_table(selected_table, *args: list[str]):
             # Prevent unneccessary callbacks
             if (
-                value not in self.applies_to_tables
+                selected_table not in self.applies_to_tables
                 or args[len(self.time_units)] not in self.applies_to_forms
             ):
                 logger.info("Preventing update.")
@@ -101,7 +101,7 @@ class DataEditorTable(DataEditorDataView):
             logger.debug(f"Filterdict: {filter_dict}")
 
             with get_connection() as conn:
-                t = conn.table(value)
+                t = conn.table(selected_table)
                 df = t.filter(ibis_filter_with_dict(filter_dict)).to_pandas()
 
             logger.debug(f"Results from query:\n{df.head()}")
