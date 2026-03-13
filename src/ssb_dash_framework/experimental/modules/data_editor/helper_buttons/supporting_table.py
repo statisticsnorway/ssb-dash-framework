@@ -68,7 +68,7 @@ class DataEditorSupportTable:
     def support_table_callbacks(self) -> None:
         """Adds necessary callbacks."""
 
-        @callback(
+        @callback( # TODO: Prevent update if table is not needed for current table and form
             Output(f"support-table-{self.suptable_id}", "rowData"),
             Output(f"support-table-{self.suptable_id}", "columnDefs"),
             *self.variableselector.get_all_callback_objects(),
@@ -124,6 +124,9 @@ class DataEditorSupportTables(DataEditorHelperButton):
                 ),
             ],
         )
+    
+    # TODO: Add callback for hiding irrelevant tables based on selected table and form
+
 
     # def add_default_tables(self, tables_to_add: list[str], conn: Any) -> None:
     #     """Adds specified default supporting tables to view."""
