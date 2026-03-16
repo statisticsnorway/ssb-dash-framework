@@ -69,30 +69,82 @@ app = app_setup(port, service_prefix, "lumen", logging_level="debug", log_to_fil
 
 
 # Doodle for custom layout
-def make_fig():
+def make_fig_bar():
     with get_connection() as conn:
         t = conn.table("skjemadata_hoved")
         df = t.filter(_.aar == 2024).to_pandas()
-    df["verdi"] = df["verdi"].astype(int)
+    df["verdi"] = df["verdi"].astype(float).astype(int)
     df = df.groupby("variabel", as_index=False).agg({"verdi": "sum"})
     fig = px.bar(df, x="variabel", y="verdi")
     return fig
 
 
-def make_table(): ...
+def make_fig_scatter():
+    refnr = "20243"
+    skjema = "RA-7357"
+
+    with get_connection() as conn:
+        from ssb_dash_framework import active_no_duplicates_refnr_list
+
+        relevant_refnr = active_no_duplicates_refnr_list(conn, skjema)
+        t = conn.table("skjemadata_hoved")
+        df = (
+            t.filter(_.refnr.isin(relevant_refnr))
+            .filter(_.variabel.isin(["fulldyrket", "totalareal"]))
+            .to_pandas()
+        )
+        df["verdi"] = df["verdi"].astype(float).astype(int)
+        df = df.pivot_table(
+            index="ident", columns="variabel", values="verdi"
+        ).reset_index()
+        df["highlight"] = df["ident"].isin(
+            t.filter(_.refnr == refnr).select(_.ident).to_pandas()["ident"]
+        )
+    fig = px.scatter(
+        df,
+        x="fulldyrket",
+        y="totalareal",
+        hover_name="ident",
+        color="highlight",
+        color_discrete_map={True: "crimson", False: "steelblue"},
+    )
+    return fig
 
 
-layout = {
-    "row": [
-        {"col": {"table": {"label": "Oversiktstabell", "figure_func": make_fig}}},
-        {"col": {"figure": {"label": "Eksempelfigur", "figure_func": make_fig}}},
-    ]
-}
+def make_table(tabell, skjema, refnr, *time_units):
+
+    with get_connection() as conn:
+        t = conn.table(tabell)
+        return t.filter(_.refnr == refnr).filter(_.skjema == skjema).to_pandas()
+
+
+layout = [
+    {
+        "row": [
+            {"col": {"table": {"label": "Oversiktstabell", "table_func": make_table}}},
+            {"col": {"figure": {"label": "Barplot", "figure_func": make_fig_bar}}},
+        ]
+    },
+    {
+        "row": [
+            {
+                "col": {
+                    "figure": {
+                        "label": "Scatterplot fulldyrket - totalareal",
+                        "figure_func": make_fig_scatter,
+                    }
+                }
+            }
+        ]
+    },
+]
 
 
 DataViewCustom(
     applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"], layout=layout
 )
+
+tab_list = [DataEditor()]
 
 
 def support_table_get_data(aar, skjema):
@@ -110,7 +162,7 @@ def support_table_get_data(aar, skjema):
 # DataEditorSidebarComment()
 # DataEditorTable(applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"])
 
-tab_list = [DataEditor()]
+
 window_list = []
 
 app.layout = main_layout(window_list, tab_list, default_values=default_values)

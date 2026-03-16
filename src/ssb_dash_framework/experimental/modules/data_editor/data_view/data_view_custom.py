@@ -1,5 +1,6 @@
 import logging
 
+import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import Input
 from dash import Output
@@ -29,7 +30,6 @@ class DataViewCustomFigure:
         self.figure_func = figure_func
         self.applies_to_tables = applies_to_tables
         self.applies_to_forms = applies_to_forms
-        self.figure_func()
         self.module_callbacks()
 
     def content(self):
@@ -58,7 +58,46 @@ class DataViewCustomFigure:
             return self.figure_func()
 
 
-class DataViewCustomTable: ...
+class DataViewCustomTable:
+
+    def __init__(self, label, table_func, applies_to_tables, applies_to_forms) -> None:
+        self.module_number = DataViewCustomFigure._id_number
+        self.module_name = self.__class__.__name__
+        DataViewCustomFigure._id_number += 1
+        self.variableselector = VariableSelector([], [])
+        self.label = label
+        self.table_func = table_func
+        self.applies_to_tables = applies_to_tables
+        self.applies_to_forms = applies_to_forms
+        self.module_callbacks()
+
+    def content(self):
+        return html.Div(
+            [
+                self.label,
+                dag.AgGrid(id=f"{self.module_name}-{self.module_number}-table"),
+            ]
+        )
+
+    def module_callbacks(self) -> None:
+        @callback(
+            Output(f"{self.module_name}-{self.module_number}-table", "rowData"),
+            Output(f"{self.module_name}-{self.module_number}-table", "columnDefs"),
+            Input("dataeditortableselector", "value"),
+            self.variableselector.get_input("altinnskjema"),
+            self.variableselector.get_input(get_refnr()),
+            *[self.variableselector.get_input(unit) for unit in get_time_units()],
+        )
+        def make_figure(selected_table, selected_form, refnr, *args):
+            if (
+                selected_table not in self.applies_to_tables
+                or selected_form not in self.applies_to_forms
+            ):
+                logger.info("Preventing update.")
+                raise PreventUpdate
+
+            data = self.table_func(selected_table, selected_form, refnr, *args)
+            return data.to_dict("records"), [{"field": x} for x in data.columns]
 
 
 class DataViewCustom(DataEditorDataView):
@@ -91,7 +130,7 @@ class DataViewCustom(DataEditorDataView):
             for item in layout:
                 components.extend(self.build_layout(item))
             return components
-
+        print(layout)
         for key, value in layout.items():
             if key == "row":
                 children = self.build_layout(value)
@@ -109,7 +148,14 @@ class DataViewCustom(DataEditorDataView):
                     applies_to_forms=self.applies_to_forms,
                 )
                 components.append(figure.content())
-
+            elif key == "table":
+                table = DataViewCustomTable(
+                    label=value["label"],
+                    table_func=value["table_func"],
+                    applies_to_tables=self.applies_to_tables,
+                    applies_to_forms=self.applies_to_forms,
+                )
+                components.append(table.content())
             else:
                 components.extend(self.build_layout(value))
 
