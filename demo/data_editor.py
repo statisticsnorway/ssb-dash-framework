@@ -3,6 +3,19 @@ import os
 import plotly.express as px
 from ibis import _
 
+from ssb_dash_framework.experimental.modules.data_editor.helper_buttons.supporting_table import (
+    DataEditorSupportTable,
+)
+from ssb_dash_framework.experimental.modules.data_editor.helper_buttons.supporting_table import (
+    DataEditorSupportTables,
+)
+from ssb_dash_framework.experimental.modules.data_editor.sidebar_components.comment import (
+    DataEditorSidebarComment,
+)
+from ssb_dash_framework.experimental.modules.data_editor.sidebar_components.editing_status import (
+    DataEditorSidebarEditingStatus,
+)
+
 if os.getenv("DAPLA_ENVIRONMENT", None) == "PROD":
     from ssb_dash_framework import _get_connection_object
     from ssb_dash_framework import set_eimerdb_connection
@@ -144,8 +157,6 @@ DataViewCustom(
     applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"], layout=layout
 )
 
-tab_list = [DataEditor()]
-
 
 def support_table_get_data(aar, skjema):
     return _get_connection_object().query(
@@ -153,15 +164,17 @@ def support_table_get_data(aar, skjema):
     )
 
 
-# DataEditorSupportTable(
-#     label="Demo",
-#     get_data_func=support_table_get_data,
-#     inputs=["aar", "altinnskjema"],
-# )
-# DataEditorSupportTables()
-# DataEditorSidebarComment()
+DataEditorSupportTable(
+    label="Demo",
+    get_data_func=support_table_get_data,
+    inputs=["aar", "altinnskjema"],
+)
+DataEditorSupportTables()
+DataEditorSidebarComment()
+DataEditorSidebarEditingStatus()
 # DataEditorTable(applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"])
 
+tab_list = [DataEditor()]
 
 window_list = []
 

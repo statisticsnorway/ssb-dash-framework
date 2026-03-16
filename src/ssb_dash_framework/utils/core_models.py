@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -10,45 +11,63 @@ from .config_tools.connection import get_connection
 logger = logging.getLogger(__name__)
 
 
-class UpdateSkjemamottakKommentar(BaseModel):
+class UpdateSkjemamottak(BaseModel):
     refnr: str
-    comment: str
+    column: str
+    value: str | bool
 
     def __str__(self) -> str:
         return (
             "Update to apply:\n"
-            f"  Table   : {self.refnr}\n"
-            f"  comment : {self.comment}\n"
+            f"  refnr  : {self.refnr}\n"
+            f"  value  : {self.value}\n"
+            f"  column : {self.column}\n"
         )
 
     def to_alert(self, success):
         if success:
             return create_alert(
-                f"Oppdaterte kommentar for {self.refnr}",
+                f"Oppdaterte {self.column} for {self.refnr} til {self.value}",
                 "success",
                 ephemeral=True,
             )
         else:
             return create_alert(
-                f"Feilet oppdatering av kommentar for {self.refnr}",
+                f"Feilet oppdatering av {self.column} for {self.refnr}",
                 "danger",
                 ephemeral=True,
             )
 
     def update_eimer(self):
-        query = f"""UPDATE skjemamottak SET kommentar = '{self.comment}' WHERE refnr = '{self.refnr}'"""
+        query = f"""UPDATE skjemamottak SET {self.column} = '{self.value}' WHERE refnr = '{self.refnr}'"""
         logger.debug(f"Running query: {query}")
         try:
             _get_connection_object().query(query)
-            logger.info(f"Oppdaterte kommentar for {self.refnr}")
+            logger.info(f"Oppdaterte {self.column} for {self.refnr}")
             alert = self.to_alert(success=True)
         except Exception as e:
             logger.error(
-                f"Update feilet! Kunne ikke oppdatere kommentar for {self.refnr}. Feilmelding: \n{e}",
+                f"Update feilet! Kunne ikke oppdatere {self.column} for {self.refnr}. Feilmelding: \n{e}",
                 exc_info=True,
             )
             alert = self.to_alert(success=False)
         return alert
+
+
+class UpdateSkjemamottakStatus(UpdateSkjemamottak):
+    value: Literal["Ikke påbegynt", "Under arbeid", "Ferdig"]
+    column: Literal["status"] = "status"
+
+
+class UpdateSkjemamottakAktiv(UpdateSkjemamottak):
+    value: bool
+    column: Literal["aktiv"] = "aktiv"
+
+
+class UpdateSkjemamottakKommentar(BaseModel):
+    refnr: str
+    value: str
+    column: Literal["kommentar"] = "kommentar"
 
 
 class UpdateSkjemadata(BaseModel):

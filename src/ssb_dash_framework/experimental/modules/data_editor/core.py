@@ -90,7 +90,7 @@ class DataEditor:
                 raise e
 
         self.main_view = html.Div(
-            id=f"{self.module_number}",
+            id=f"{self.module_name}-{self.module_number}-div",
             children=[view for view in main_views],
         )
 
@@ -98,11 +98,18 @@ class DataEditor:
 
         return dbc.Container(
             [
+                dbc.Row(html.H1(id=f"{self.module_name}-{self.module_number}-header")),
                 dbc.Row(self.info_row),
                 dbc.Row(
                     [
                         dbc.Col(self.sidebar, width=2),
-                        dbc.Col([dbc.Row(self.helper_row), dbc.Row(self.main_view)]),
+                        dbc.Col(
+                            [
+                                dbc.Row(dbc.Card(dbc.CardBody(self.helper_row))),
+                                dbc.Row(dbc.Card(dbc.CardBody(self.main_view))),
+                            ],
+                            width=10,
+                        ),
                     ]
                 ),
             ],
@@ -146,6 +153,14 @@ class DataEditor:
                     0
                 ]  # Dash expects a single value when there is just one output.
             return styles
+
+        @callback(
+            Output(f"{self.module_name}-{self.module_number}-header", "children"),
+            Input("dataeditortableselector", "value"),
+            VariableSelector([], []).get_input("altinnskjema"),
+        )
+        def update_header(selected_table, selected_form):
+            return f"Viser data for {selected_form} fra tabell {selected_table}"
 
 
 class DataEditorTableSelector:
