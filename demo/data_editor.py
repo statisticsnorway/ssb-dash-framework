@@ -131,6 +131,17 @@ def make_table(tabell, skjema, refnr, *time_units):
         return t.filter(_.refnr == refnr).filter(_.skjema == skjema).to_pandas()
 
 
+def populate_microlayout(table, form, refnr, *args, **kwargs):
+    with get_connection() as conn:
+        t = conn.table(table)
+        data = t.filter(_.skjema == form).filter(_.refnr == refnr).to_pandas()
+
+    totalareal = data.loc[data["variabel"] == "totalareal"]["verdi"].item()
+    fulldyrket = data.loc[data["variabel"] == "fulldyrket"]["verdi"].item()
+    innmarksbeite = data.loc[data["variabel"] == "innmarksbeite"]["verdi"].item()
+    return totalareal, fulldyrket, innmarksbeite
+
+
 layout = [
     {
         "row": [
@@ -142,12 +153,26 @@ layout = [
         "row": [
             {
                 "col": {
+                    "microlayout": {
+                        "label": "Test mikrolayout",
+                        "layout": [
+                            {"type": "input", "label": "Totalareal", "value": ""},
+                            {"type": "input", "label": "Fulldyrket", "value": ""},
+                            {"type": "input", "label": "Innmarksbeite", "value": ""},
+                        ],
+                        "get_data_func": populate_microlayout,
+                    },
+                    "kwargs": {"width": 1},
+                }
+            },
+            {
+                "col": {
                     "figure": {
                         "label": "Scatterplot fulldyrket - totalareal",
                         "figure_func": make_fig_scatter,
-                    }
+                    },
                 }
-            }
+            },
         ]
     },
 ]
@@ -170,8 +195,8 @@ DataEditorSupportTable(
     inputs=["aar", "altinnskjema"],
 )
 DataEditorSupportTables()
-DataEditorSidebarComment()
 DataEditorSidebarEditingStatus()
+DataEditorSidebarComment()
 # DataEditorTable(applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"])
 
 tab_list = [DataEditor()]

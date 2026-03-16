@@ -7,6 +7,7 @@ from dash import callback
 from dash import callback_context as ctx
 from dash import dcc
 from dash import html
+from dash import no_update
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
 from ibis import _
@@ -110,29 +111,30 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             Output(
                 f"{self.module_name}-{self.module_number}-refnr-text-row", "children"
             ),
-            self.variableselector.get_input("refnr"),
-        )
-        def set_initial_values(refnr):
-            with get_connection() as conn:
-                t = conn.table("skjemamottak")
-                data = t.filter(_.refnr == refnr).to_pandas()
-
-            return (
-                ["Aktiv"] if data["aktiv"].item() else [],
-                "Ferdig" if data["editert"].item() else "Ikke påbegynt",
-                f"Viser for {refnr}",
-            )
-
-        @callback(
             Output("alert_store", "data", allow_duplicate=True),
+            self.variableselector.get_input("refnr"),
             Input(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             Input(f"{self.module_name}-{self.module_number}-radioitems", "value"),
-            self.variableselector.get_state("refnr"),
             State("alert_store", "data"),
             prevent_initial_call=True,
         )
-        def update_status(aktiv_status, status_code, refnr, alert_store):
+        def set_initial_values_and_update_status(
+            refnr, aktiv_status, status_code, alert_store
+        ):
             triggered_id = ctx.triggered_id
+            refnr_input_id = self.variableselector.get_input("refnr").component_id
+
+            if triggered_id == refnr_input_id:
+                with get_connection() as conn:
+                    t = conn.table("skjemamottak")
+                    data = t.filter(_.refnr == refnr).to_pandas()
+                return (
+                    ["Aktiv"] if data["aktiv"].item() else [],
+                    "Ferdig" if data["editert"].item() else "Ikke påbegynt",
+                    f"Viser for {refnr}",
+                    no_update,
+                )
+
             if triggered_id == f"{self.module_name}-{self.module_number}-checkbox":
                 update_to_apply = UpdateSkjemamottakAktiv(
                     refnr=refnr, value=True if aktiv_status else False
@@ -141,9 +143,11 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 update_to_apply = UpdateSkjemamottakStatus(
                     refnr=refnr, value=status_code
                 )
+
             if isinstance(_get_connection_object(), EimerDBInstance):
                 feedback = update_to_apply.update_eimer()
-            return [feedback, *alert_store]
+
+            return no_update, no_update, no_update, [feedback, *alert_store]
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-form-table", "rowData"),

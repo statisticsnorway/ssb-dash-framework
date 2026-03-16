@@ -13,6 +13,8 @@ from ssb_dash_framework.setup import VariableSelector
 from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
+from .....modules.building_blocks.microlayout import Layout
+from .....modules.building_blocks.microlayout import create_html_layout
 from ..core import DataEditorDataView
 
 logger = logging.getLogger(__name__)
@@ -100,6 +102,51 @@ class DataViewCustomTable:
             return data.to_dict("records"), [{"field": x} for x in data.columns]
 
 
+class DataViewCustomMicroLayout:
+    _id_number = 0
+
+    def __init__(
+        self, label, microlayout, get_data_func, applies_to_tables, applies_to_forms
+    ) -> None:
+        self.module_number = DataViewCustomMicroLayout._id_number
+        self.module_name = self.__class__.__name__
+        DataViewCustomMicroLayout._id_number += 1
+        self.variableselector = VariableSelector([], [])
+        self.label = label
+
+        self.layout_model = Layout(layout=microlayout)
+        self.get_data_func = get_data_func
+        self.build_html_layout()
+
+        self.applies_to_tables = applies_to_tables
+        self.applies_to_forms = applies_to_forms
+
+        self.module_callbacks()
+
+    def build_html_layout(self):
+        self.layout, self.ids = create_html_layout(self.layout_model)
+
+    def content(self):
+        return html.Div(self.layout)
+
+    def module_callbacks(self):
+        @callback(
+            *[Output(x, "value") for x in self.ids if x is not None],
+            Input("dataeditortableselector", "value"),
+            self.variableselector.get_input("altinnskjema"),
+            self.variableselector.get_input("refnr"),
+            *[Input(x, "value") for x in self.ids if x is not None],
+        )
+        def handle_update(selected_table, selected_form, refnr, *args):
+            if (
+                selected_table not in self.applies_to_tables
+                or selected_form not in self.applies_to_forms
+            ):
+                logger.info("Preventing update.")
+                raise PreventUpdate
+            return self.get_data_func(selected_table, selected_form, refnr, args)
+
+
 class DataViewCustom(DataEditorDataView):
     _id_number = 0
 
@@ -131,14 +178,22 @@ class DataViewCustom(DataEditorDataView):
                 components.extend(self.build_layout(item))
             return components
         print(layout)
+
         for key, value in layout.items():
+            if key == "kwargs":
+                continue
+            if isinstance(value, dict):
+                kwargs = value.get("kwargs", None)
+            else:
+                kwargs = None
+
             if key == "row":
                 children = self.build_layout(value)
-                components.append(dbc.Row(children))
+                components.append(dbc.Row(children, **kwargs if kwargs else {}))
 
             elif key == "col":
                 children = self.build_layout(value)
-                components.append(dbc.Col(children))
+                components.append(dbc.Col(children, **kwargs if kwargs else {}))
 
             elif key == "figure":
                 figure = DataViewCustomFigure(
@@ -156,6 +211,15 @@ class DataViewCustom(DataEditorDataView):
                     applies_to_forms=self.applies_to_forms,
                 )
                 components.append(table.content())
+            elif key == "microlayout":
+                microlayout = DataViewCustomMicroLayout(
+                    label=value["label"],
+                    microlayout=value["layout"],
+                    get_data_func=value["get_data_func"],
+                    applies_to_tables=self.applies_to_tables,
+                    applies_to_forms=self.applies_to_forms,
+                )
+                components.append(microlayout.content())
             else:
                 components.extend(self.build_layout(value))
 
