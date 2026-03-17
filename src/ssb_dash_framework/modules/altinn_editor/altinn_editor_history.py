@@ -157,7 +157,11 @@ class AltinnEditorHistory:
                 logger.debug("Using ConnectionPool logic.")
                 with get_connection() as conn:
                     t = conn.table("skjemadataendringshistorikk")
-                    df = t.filter(_.refnr == refnr).to_pandas()
+                    df = (
+                        t.filter(_.refnr == refnr)
+                        .order_by(_.endret_tid.desc())
+                        .to_pandas()
+                    )
                     df["endret_tid"] = (
                         pd.to_datetime(df["endret_tid"], utc=True)
                         .dt.tz_convert(local_tz)
@@ -165,7 +169,6 @@ class AltinnEditorHistory:
                         .dt.tz_localize(None)
                         .dt.strftime("%Y-%m-%d %H:%M:%S")
                     )
-                    df = df.sort_values("endret_tid", ascending=False)
                     columns = [
                         {
                             "headerName": col,
