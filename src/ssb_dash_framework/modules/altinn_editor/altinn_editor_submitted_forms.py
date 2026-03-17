@@ -13,6 +13,7 @@ from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
 from ibis import _
 from psycopg_pool import ConnectionPool
+import tzlocal
 
 from ssb_dash_framework.utils import create_filter_dict
 from ssb_dash_framework.utils import ibis_filter_with_dict
@@ -25,6 +26,8 @@ from ...utils.eimerdb_helpers import create_partition_select
 from .altinn_editor_utility import AltinnEditorStateTracker
 
 logger = logging.getLogger(__name__)
+
+local_tz = tzlocal.get_localzone()
 
 
 class AltinnEditorSubmittedForms:
@@ -277,9 +280,15 @@ class AltinnEditorSubmittedForms:
                     df = (
                         t.filter(ibis_filter_with_dict(filter_dict))
                         .filter(_.ident == ident)
-                        .order_by(_.dato_mottatt)
+                        .order_by(_.dato_mottatt.desc())
                         .select("skjema", "dato_mottatt", "refnr", "editert", "aktiv")
                         .to_pandas()
+                    )
+                    df["dato_mottatt"] = (
+                        df["dato_mottatt"]
+                        .dt.tz_convert(local_tz)
+                        .dt.tz_localize(None)
+                        .dt.strftime("%Y-%m-%d %H:%M:%S")
                     )
                     columns = [
                         (
