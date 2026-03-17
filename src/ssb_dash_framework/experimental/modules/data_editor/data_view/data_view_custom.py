@@ -8,7 +8,9 @@ from dash import callback
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
+from ibis import _
 
+from ssb_dash_framework import get_connection
 from ssb_dash_framework.setup import VariableSelector
 from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
@@ -123,6 +125,18 @@ class DataViewCustomMicroLayout:
 
         self.module_callbacks()
 
+    def make_default_get_data_func(self, layout: list):
+        vars = [item["variable"] for item in layout]
+
+        def populate_microlayout(table, form, refnr, *args, **kwargs):
+            with get_connection() as conn:
+                t = conn.table(table)
+                data = t.filter(_.skjema == form).filter(_.refnr == refnr).to_pandas()
+
+            return tuple(data.loc[data["variabel"] == v]["verdi"].item() for v in vars)
+
+        return populate_microlayout
+
     def build_html_layout(self):
         self.layout, self.ids = create_html_layout(self.layout_model)
 
@@ -212,10 +226,17 @@ class DataViewCustom(DataEditorDataView):
                 )
                 components.append(table.content())
             elif key == "microlayout":
+
                 microlayout = DataViewCustomMicroLayout(
                     label=value["label"],
                     microlayout=value["layout"],
-                    get_data_func=value["get_data_func"],
+                    get_data_func=(
+                        value["get_data_func"]
+                        if value["get_data_func"] != "default"
+                        else DataViewCustomMicroLayout.make_default_get_data_func(
+                            value["layout"]
+                        )
+                    ),
                     applies_to_tables=self.applies_to_tables,
                     applies_to_forms=self.applies_to_forms,
                 )

@@ -156,11 +156,23 @@ layout = [
                     "microlayout": {
                         "label": "Test mikrolayout",
                         "layout": [
-                            {"type": "input", "label": "Totalareal", "value": ""},
-                            {"type": "input", "label": "Fulldyrket", "value": ""},
-                            {"type": "input", "label": "Innmarksbeite", "value": ""},
+                            {
+                                "type": "input",
+                                "label": "Totalareal",
+                                "variable": "totalareal",
+                            },
+                            {
+                                "type": "input",
+                                "label": "Fulldyrket",
+                                "variable": "fulldyrket",
+                            },
+                            {
+                                "type": "input",
+                                "label": "Innmarksbeite",
+                                "variable": "innmarksbeite",
+                            },
                         ],
-                        "get_data_func": populate_microlayout,
+                        "get_data_func": "default",
                     },
                     "kwargs": {"width": 1},
                 }
