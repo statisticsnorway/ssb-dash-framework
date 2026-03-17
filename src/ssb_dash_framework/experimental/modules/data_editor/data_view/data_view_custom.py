@@ -104,6 +104,10 @@ class DataViewCustomTable:
             return data.to_dict("records"), [{"field": x} for x in data.columns]
 
 
+def _safe_get(data, v):
+    rows = data.loc[data["variabel"] == v]["verdi"]
+    return rows.item() if not rows.empty else None
+
 class DataViewCustomMicroLayout:
     _id_number = 0
 
@@ -125,15 +129,17 @@ class DataViewCustomMicroLayout:
 
         self.module_callbacks()
 
-    def make_default_get_data_func(self, layout: list):
+    @staticmethod
+    def make_default_get_data_func(layout: list):
         vars = [item["variable"] for item in layout]
 
         def populate_microlayout(table, form, refnr, *args, **kwargs):
             with get_connection() as conn:
                 t = conn.table(table)
                 data = t.filter(_.skjema == form).filter(_.refnr == refnr).to_pandas()
+                print(data)
 
-            return tuple(data.loc[data["variabel"] == v]["verdi"].item() for v in vars)
+            return tuple(_safe_get(data, v) for v in vars)
 
         return populate_microlayout
 
@@ -158,7 +164,10 @@ class DataViewCustomMicroLayout:
             ):
                 logger.info("Preventing update.")
                 raise PreventUpdate
-            return self.get_data_func(selected_table, selected_form, refnr, args)
+            logger.debug(f"selected_table: {selected_table}\nselected_form: {selected_form}\nrefnr: {refnr}\nargs: {args}")
+            to_return = self.get_data_func(selected_table, selected_form, refnr, args)
+            logger.debug(f"to_return:\{to_return}")
+            return to_return
 
 
 class DataViewCustom(DataEditorDataView):

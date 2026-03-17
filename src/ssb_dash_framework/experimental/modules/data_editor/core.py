@@ -71,7 +71,7 @@ class DataEditor:
         )
         for divname, info in DataEditorRegistry.main_views.items():
             logger.debug(
-                f"Adding '{divname}' to main_views. Applies to:\ntables: '{info["tables"]}'\nforms: {info["forms"]}"
+                f"Adding '{divname}' to main_views. Applies to:\ntables: '{info['tables']}'\nforms: {info['forms']}"
             )
             try:
                 if divname not in _existing_views:
