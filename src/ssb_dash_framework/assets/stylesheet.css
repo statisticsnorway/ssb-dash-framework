@@ -437,6 +437,6 @@ Tables
 ParquetEditor
 */
 
-[class$="-parqueteditor-table"] {
+[id$="-parqueteditor-table"] {
     height: 100%;
 }
