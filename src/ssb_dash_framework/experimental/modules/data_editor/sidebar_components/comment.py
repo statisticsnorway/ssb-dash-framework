@@ -22,6 +22,7 @@ from .....utils.config_tools.set_variables import get_ident
 from .....utils.config_tools.set_variables import get_time_units
 from .....utils.core_models import UpdateSkjemamottakKommentar
 from ..core import DataEditorHelperSidebar
+from psycopg_pool import ConnectionPool
 
 logger = logging.getLogger(__name__)
 
@@ -135,9 +136,14 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 logger.info("Preventing update")
                 raise PreventUpdate
 
-            comment_update = UpdateSkjemamottakKommentar(refnr=refnr, comment=value)
+            comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=value)
             logger.info(comment_update)
             if isinstance(_get_connection_object(), EimerDBInstance):
                 feedback = comment_update.update_eimer()
+            elif isinstance(_get_connection_object(), ConnectionPool):
+                logger.debug("Attempting to update using ibis logic.")
+                feedback = comment_update.update_ibis()
+            else:
+                raise NotImplementedError(f"Connection of type '{type(_get_connection_object())}' is not implemented yet.")
 
             return [feedback, *alert_store]

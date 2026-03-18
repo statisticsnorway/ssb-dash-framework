@@ -122,6 +122,7 @@ class DataEditorTable(DataEditorDataView):
                 }
                 for col in df.columns
             ]
+            logger.debug(f"Returning:\n{df.head()}")
             return df.to_dict("records"), columndefs
 
         @callback(

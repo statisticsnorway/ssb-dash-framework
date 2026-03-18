@@ -23,7 +23,11 @@ from .....utils.config_tools.set_variables import get_time_units
 from .....utils.core_models import UpdateSkjemamottakAktiv
 from .....utils.core_models import UpdateSkjemamottakStatus
 from ..core import DataEditorHelperSidebar
+import logging
+from psycopg_pool import ConnectionPool
 
+
+logger = logging.getLogger(__name__)
 
 class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
     _id_number = 0
@@ -37,11 +41,11 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             selected_inputs=[], selected_states=[get_ident(), *get_time_units().keys()]
         )
 
-        self.status_options = (
-            status_options
-            if status_options
-            else ["Ikke påbegynt", "Under arbeid", "Ferdig"]
-        )
+        self.status_options = status_options if status_options else [
+            {"label": "Ubehandlet", "value": "UBEHANDLET"},
+            {"label": "Under arbeid", "value": "UNDER_ARBEID"},
+            {"label": "Ferdig", "value": "FERDIG"}
+        ]
 
         self.module_callbacks()
         super().__init__()
@@ -146,6 +150,11 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
 
             if isinstance(_get_connection_object(), EimerDBInstance):
                 feedback = update_to_apply.update_eimer()
+            elif isinstance(_get_connection_object(), ConnectionPool):
+                logger.debug("Attempting to update using ibis logic.")
+                feedback = update_to_apply.update_ibis()
+            else:
+                raise NotImplementedError(f"Connection of type '{type(_get_connection_object())}' is not implemented yet.")
 
             return no_update, no_update, no_update, [feedback, *alert_store]
 

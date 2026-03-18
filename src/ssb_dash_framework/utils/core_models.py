@@ -52,10 +52,30 @@ class UpdateSkjemamottak(BaseModel):
             )
             alert = self.to_alert(success=False)
         return alert
+    
+    def update_ibis(self):
+        query = f"""
+            UPDATE skjemamottak
+            SET {self.column} = '{self.value}'
+            WHERE refnr = '{self.refnr}'
+        """
+        try:
+            with get_connection() as conn:
+                conn.raw_sql(query)
+            logger.info(
+                f"Successfully updated '{self.column}' to '{self.value}'"
+            )
+            return self.to_alert(success=True)
+        except Exception as e:
+            logger.error(
+                f"Update feilet! Kunne ikke oppdatere {self.refnr} - '{self.column} til '{self.value}'. Feilmelding: \n{e}",
+                exc_info=True,
+            )
+            return self.to_alert(success=False)
 
 
 class UpdateSkjemamottakStatus(UpdateSkjemamottak):
-    value: Literal["Ikke påbegynt", "Under arbeid", "Ferdig"]
+    value: Literal["UBEHANDLET", "UNDER_ARBEID", "FERDIG"]
     column: Literal["status"] = "status"
 
 
@@ -64,9 +84,7 @@ class UpdateSkjemamottakAktiv(UpdateSkjemamottak):
     column: Literal["aktiv"] = "aktiv"
 
 
-class UpdateSkjemamottakKommentar(BaseModel):
-    refnr: str
-    value: str
+class UpdateSkjemamottakKommentar(UpdateSkjemamottak):
     column: Literal["kommentar"] = "kommentar"
 
 
