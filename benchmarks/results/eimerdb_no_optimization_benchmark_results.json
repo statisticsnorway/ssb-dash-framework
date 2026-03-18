@@ -1,0 +1,17 @@
+{
+    "benchmark_active_no_duplicates_refnr_list": {
+        "min": 9.652504764399964,
+        "max": 10.340795204400091,
+        "mean": 9.875396989660002
+    },
+    "benchmark_get_refnr_skjemamottak": {
+        "min": 9.192440383999928,
+        "max": 9.559692096599974,
+        "mean": 9.356792399439946
+    },
+    "benchmark_get_refnr_skjemadata_hoved": {
+        "min": 9.096103845200014,
+        "max": 9.580001568399894,
+        "mean": 9.215379471080015
+    }
+}
