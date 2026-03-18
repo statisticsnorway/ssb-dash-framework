@@ -9,10 +9,10 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
 from ibis import _
 
 from ssb_dash_framework.utils import create_filter_dict
+from ssb_dash_framework.utils import get_connection
 from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector

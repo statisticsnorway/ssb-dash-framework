@@ -10,7 +10,6 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
 from ibis import _
 from psycopg_pool import ConnectionPool
 import tzlocal

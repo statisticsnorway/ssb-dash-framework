@@ -10,9 +10,8 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from ibis import _
 
-from ssb_dash_framework.utils import get_connection
-
 from ...setup.variableselector import VariableSelector
+from ...utils.config_tools.connection import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +185,7 @@ class AltinnEditorContact:
                 f"skjema: {skjema}\n"
                 f"args: {args}"
             )
+            filter_dict = create_filter_dict(self.time_units, args)
 
             with get_connection(  # necessary_tables and partition_select are used for eimerdb connection.
                 necessary_tables=["kontaktinfo"],
