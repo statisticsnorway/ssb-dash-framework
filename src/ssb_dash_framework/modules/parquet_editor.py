@@ -80,6 +80,7 @@ class ParquetEditor:
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
         allow_risky_column_names: bool = False,
+        height: str = "400px",  # Default value of AgGrid
     ) -> None:
         """Initializes the module and makes a few validation checks before moving on.
 
@@ -92,12 +93,15 @@ class ParquetEditor:
             output: Columns in your dataframe that should be clickable to output to the variable selector panel.
             output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
             allow_risky_column_names: Controls whether or not ParquetEditor allows potentially bug-inducing column names. Defaults to False.
+            height: AgGrid defaults to 400px height. This argument allows us to specify other params for height.
         """
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
         self.icon = "✏️"  # TODO: Make visible
         self.allow_risky_column_names = allow_risky_column_names
+        self._height = height
+
         check_for_bucket_path(data_source)
         if "/inndata/" not in data_source:
             logger.warning(
@@ -247,7 +251,10 @@ class ParquetEditor:
                     persistence=True,
                     persisted_props=["filterModel"],
                 ),
-            ]
+            ],
+            style={
+                "height": self._height
+            },  # This is an exception. Styles should be in stylesheet.css
         )
 
     def layout(self) -> html.Div:
