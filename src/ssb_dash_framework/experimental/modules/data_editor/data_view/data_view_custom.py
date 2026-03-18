@@ -5,6 +5,7 @@ import dash_bootstrap_components as dbc
 from dash import Input
 from dash import Output
 from dash import callback
+from dash import callback_context as ctx
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
@@ -17,6 +18,7 @@ from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
 from .....modules.building_blocks.microlayout import Layout
 from .....modules.building_blocks.microlayout import create_html_layout
+from .....utils.core_models import UpdateSkjemadata
 from ..core import DataEditorDataView
 
 logger = logging.getLogger(__name__)
@@ -108,11 +110,18 @@ def _safe_get(data, v):
     rows = data.loc[data["variabel"] == v]["verdi"]
     return rows.item() if not rows.empty else None
 
+
 class DataViewCustomMicroLayout:
     _id_number = 0
 
     def __init__(
-        self, label, microlayout, get_data_func, applies_to_tables, applies_to_forms
+        self,
+        label,
+        microlayout,
+        get_data_func,
+        update_func,
+        applies_to_tables,
+        applies_to_forms,
     ) -> None:
         self.module_number = DataViewCustomMicroLayout._id_number
         self.module_name = self.__class__.__name__
@@ -122,6 +131,7 @@ class DataViewCustomMicroLayout:
 
         self.layout_model = Layout(layout=microlayout)
         self.get_data_func = get_data_func
+        self.update_func = update_func
         self.build_html_layout()
 
         self.applies_to_tables = applies_to_tables
@@ -131,7 +141,7 @@ class DataViewCustomMicroLayout:
 
     @staticmethod
     def make_default_get_data_func(layout: list):
-        vars = [item["variable"] for item in layout]
+        _vars = [item["variable"] for item in layout]
 
         def populate_microlayout(table, form, refnr, *args, **kwargs):
             with get_connection() as conn:
@@ -139,9 +149,39 @@ class DataViewCustomMicroLayout:
                 data = t.filter(_.skjema == form).filter(_.refnr == refnr).to_pandas()
                 print(data)
 
-            return tuple(_safe_get(data, v) for v in vars)
+            return tuple(_safe_get(data, v) for v in _vars)
 
         return populate_microlayout
+
+    @staticmethod
+    def make_default_update_data_func(layout: list):
+        _vars = [item["variable"] for item in layout]
+
+        def update_microlayout(
+            table, form, refnr, triggered_id, ids, new_values, *args, **kwargs
+        ):
+            triggered_index = ids.index(triggered_id)
+            triggered_var = _vars[triggered_index]
+            new_value = new_values[triggered_index]
+
+            with get_connection() as conn:
+                t = conn.table(table)
+                data = t.filter(_.skjema == form).filter(_.refnr == refnr).to_pandas()
+
+            old_value = _safe_get(data, triggered_var)
+
+            return UpdateSkjemadata(
+                table=table,
+                ident=form,
+                refnr=refnr,
+                column=triggered_var,
+                variable=triggered_var,
+                value=new_value,
+                old_value=old_value,
+                long=True,
+            )
+
+        return update_microlayout
 
     def build_html_layout(self):
         self.layout, self.ids = create_html_layout(self.layout_model)
@@ -164,13 +204,23 @@ class DataViewCustomMicroLayout:
             ):
                 logger.info("Preventing update.")
                 raise PreventUpdate
-            logger.debug(f"selected_table: {selected_table}\nselected_form: {selected_form}\nrefnr: {refnr}\nargs: {args}")
+            logger.debug(
+                f"selected_table: {selected_table}\nselected_form: {selected_form}\nrefnr: {refnr}\nargs: {args}"
+            )
+            if ctx.triggered_id in self.ids:
+                logger.debug("Updating value.")
+                self.update_func(
+                    *args, *extra_args
+                )  # TODO: maybe extra_args are kinda pointless
+                raise PreventUpdate
             to_return = self.get_data_func(selected_table, selected_form, refnr, args)
             logger.debug(f"to_return:\{to_return}")
             return to_return
 
 
 class DataViewCustom(DataEditorDataView):
+    """DataView with a very flexible layout made to be tailored to specific needs."""
+
     _id_number = 0
 
     def __init__(
@@ -179,6 +229,12 @@ class DataViewCustom(DataEditorDataView):
         applies_to_forms: str | list[str],
         layout,
     ) -> None:
+        """Initializes and registers the custom data view for selected tables and forms.
+
+        Args:
+            applies_to_tables: A list of tables that the module should apply to.
+            applies_to_forms: A list of forms that the module should apply to.
+        """
         self.module_number = DataViewCustom._id_number
         self.module_name = self.__class__.__name__
         DataViewCustom._id_number += 1
@@ -194,6 +250,7 @@ class DataViewCustom(DataEditorDataView):
         )
 
     def build_layout(self, layout: dict | list) -> list:
+        """Builds the layout for the custom view."""
         components = []
 
         if isinstance(layout, list):
@@ -246,6 +303,13 @@ class DataViewCustom(DataEditorDataView):
                             value["layout"]
                         )
                     ),
+                    update_data_func=(
+                        value["update_data_func"]
+                        if value["update_data_func"] != "default"
+                        else DataViewCustomMicroLayout.make_default_update_data_func(
+                            value["layout"]
+                        )
+                    ),
                     applies_to_tables=self.applies_to_tables,
                     applies_to_forms=self.applies_to_forms,
                 )
@@ -255,11 +319,13 @@ class DataViewCustom(DataEditorDataView):
 
         return components
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
         return html.Div(id=self.divname, children=self.created_layout)
 
     def layout(self):
+        """Returns the layout of the module."""
         return self._create_layout()
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
+        """Registers the module callbacks."""
         pass

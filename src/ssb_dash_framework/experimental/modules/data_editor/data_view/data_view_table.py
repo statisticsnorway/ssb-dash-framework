@@ -28,7 +28,15 @@ class DataEditorTable(DataEditorDataView):
 
     _id_number = 0
 
-    def __init__(self, applies_to_tables, applies_to_forms) -> None:
+    def __init__(
+        self, applies_to_tables: list[str], applies_to_forms: list[str]
+    ) -> None:
+        """Initializes a DataEditorTable for selected tables and forms.
+
+        Args:
+            applies_to_tables: A list of tables that the module should apply to.
+            applies_to_forms: A list of forms that the module should apply to.
+        """
         self.module_number = DataEditorTable._id_number
         self.module_name = self.__class__.__name__
         DataEditorTable._id_number += 1
@@ -48,7 +56,7 @@ class DataEditorTable(DataEditorDataView):
             applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
         )
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
         return html.Div(
             id=f"{self.divname}",
             style={
@@ -73,15 +81,17 @@ class DataEditorTable(DataEditorDataView):
             ],
         )
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
+        """Registers the necessary callbacks."""
+
         @callback(
             Output(f"dataeditor-table-{self._id_number}-aggrid", "rowData"),
             Output(f"dataeditor-table-{self._id_number}-aggrid", "columnDefs"),
             Input("dataeditortableselector", "value"),
             self.variable_selector.get_all_callback_objects(),
         )
-        def read_table(selected_table, *args: list[str]):
-            # Prevent unneccessary callbacks
+        def read_table(selected_table: str, *args: list[str]):
+            """Populate the table view with data."""
             if (
                 selected_table not in self.applies_to_tables
                 or args[len(self.time_units)] not in self.applies_to_forms
@@ -133,7 +143,8 @@ class DataEditorTable(DataEditorDataView):
             State("alert_store", "data"),
             prevent_initial_call=True,
         )
-        def update_table(edited, table, columndefs, alert_store):
+        def update_table(edited, table: str, columndefs, alert_store):
+            """Updates the data in the backend."""
             logger.info("Attempting to update data.")
             columns = [col["field"] for col in columndefs]
             if "variabel" in columns and "verdi" in columns:
@@ -169,6 +180,7 @@ class DataEditorTable(DataEditorDataView):
         def send_variabel_to_variableselector(
             click: dict[str, Any], row_data: list[dict[str, Any]]
         ) -> str:
+            """Make it possible to click the table and affect the VariableSelector."""
             logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")
 
             if not click or not row_data:

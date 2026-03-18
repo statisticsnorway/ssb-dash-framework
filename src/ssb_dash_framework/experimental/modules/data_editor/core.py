@@ -27,12 +27,38 @@ logger = logging.getLogger(__name__)
 
 
 class DataEditor:
+    """A module designed as a modular catch-all for micro-focused tasks.
+
+    Intended to be tailored to specific needs, the module is almost a mini-framework within the framework.
+
+    It has a few different types of components that can be added to it.
+
+    DataViews are to view data on a micro level, and can be tailored to have a specific view of specific parts of the data.
+
+    Sidebar components are components added to the sidebar on the left side of the module.
+    These add functionality or contextual information about what the dataview is showing.
+
+    Helper buttons add functionality by adding a button that opens / activates the functionality in a row above the data view.
+
+    Info row provide a way to show some key information about the specific unit / form that is currently selected.
+    """
 
     _id_number = 0
 
     def __init__(
-        self, enable_table_selector=True, starting_table="skjemadata_hoved"
+        self,
+        enable_table_selector: bool = True,
+        starting_table: str = "skjemadata_hoved",
     ) -> None:
+        """Initializes the DataEditor module.
+
+        Args:
+            enable_table_selector: Decides if the DataEditorTableSelector component should be activated or not, strongly recommended to leave it enabled.
+            starting_table: Sets the default value of the DataEditorTableSelector dropdown.
+
+        Note:
+            This module needs to be initialized last, as components need to already be registered in order to be collected.
+        """
         if DataEditor._id_number != 0:
             raise NotImplementedError(
                 "Currently DataEditor can only be initialized once in your layout.\nMultiple of the module cannot exist in the same app."
@@ -54,6 +80,7 @@ class DataEditor:
         self.module_callbacks()
 
     def gather_components(self):
+        """Using the DataEditorRegistry, this method assembles the DataEditor module with currently enabled components."""
         self.info_row = html.Div()
         self.helper_row = html.Div(
             [module.layout() for module in DataEditorRegistry.helper_modules]
@@ -117,10 +144,12 @@ class DataEditor:
         )
 
     def layout(self):
-        """Generates the layout for the Data Editor tab."""
+        """Generates the layout for the DataEditor."""
         return self._create_layout()
 
     def module_callbacks(self):
+        """Registers the callbacks for the DataEditor."""
+
         @callback(
             *[
                 Output(main_view, "style")
@@ -164,10 +193,16 @@ class DataEditor:
 
 
 class DataEditorTableSelector:
+    """Default module to select datasource table to show data for."""
 
     _id_number = 0
 
     def __init__(self, starting_table: str = "skjemadata_hoved") -> None:
+        """Initializes the table selector component.
+
+        Args:
+            starting_table: Sets the default value of the DataEditorTableSelector dropdown.
+        """
         if DataEditorTableSelector._id_number != 0:
             raise NotImplementedError(
                 "Currently DataEditorTableSelector can only be initialized once in your layout.\nMultiple of the module cannot exist in the same app."
@@ -217,9 +252,16 @@ class DataEditorInfoRow: ...
 
 
 class DataEditorHelperButton(ABC):
+    """Base class for defining a helper button component."""
+
     _id_number = 0
 
-    def __init__(self, label) -> None:
+    def __init__(self, label: str) -> None:
+        """Core functionality to register the component and make the button functional.
+
+        Args:
+            label: The label to put on the button.
+        """
         self.module_number = DataEditorHelperButton._id_number
         self.module_name = self.__class__.__name__
         DataEditorHelperButton._id_number += 1
@@ -266,8 +308,10 @@ class DataEditorHelperButton(ABC):
 
 
 class DataEditorHelperSidebar(ABC):
+    """Base class for defining a helper sidebar component."""
 
     def __init__(self) -> None:
+        """Registers the component to the DataEditorRegistry."""
         DataEditorRegistry.sidebar_modules.append(self)
 
     @abstractmethod
@@ -283,6 +327,7 @@ class DataEditorHelperSidebar(ABC):
 
 
 class DataEditorDataView(ABC):
+    """Base class for defining a data view."""
 
     def __init__(
         self, applies_to_tables: str | list[str], applies_to_forms: str | list[str]
@@ -316,29 +361,3 @@ class DataEditorDataView(ABC):
     @abstractmethod
     def module_callbacks(self):
         pass
-
-
-class DefaultDataEditorDataView:
-
-    def __init__(self, table_name: str) -> None:
-        self.table_name = table_name
-
-    def get_data(self):
-        with get_connection() as conn:
-            data = conn.table(self.table_name).to_pandas()
-        columndefs = [
-            {
-                "headerName": col,
-                "field": col,
-                "hide": col
-                in [
-                    "row_id",
-                    "row_ids",
-                    "skjema",
-                    "refnr",
-                ],
-                "flex": 2 if col == "variabel" else 1,
-            }
-            for col in data.columns
-        ]
-        return data.to_dict("records"), columndefs
