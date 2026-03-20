@@ -210,8 +210,8 @@ class DataViewCustomMicroLayout:
             if ctx.triggered_id in self.ids:
                 logger.debug("Updating value.")
                 self.update_func(
-                    *args, *extra_args
-                )  # TODO: maybe extra_args are kinda pointless
+                    *args
+                )
                 raise PreventUpdate
             to_return = self.get_data_func(selected_table, selected_form, refnr, args)
             logger.debug(f"to_return:\{to_return}")
@@ -303,9 +303,9 @@ class DataViewCustom(DataEditorDataView):
                             value["layout"]
                         )
                     ),
-                    update_data_func=(
-                        value["update_data_func"]
-                        if value["update_data_func"] != "default"
+                    update_func=(
+                        value["update_func"]
+                        if value["update_func"] != "default"
                         else DataViewCustomMicroLayout.make_default_update_data_func(
                             value["layout"]
                         )
