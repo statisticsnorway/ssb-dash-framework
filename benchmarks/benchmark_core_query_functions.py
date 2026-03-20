@@ -17,21 +17,21 @@ from ssb_dash_framework.utils.core_query_functions import (
     active_no_duplicates_refnr_list,
 )
 
-user = (
-    "strukt-naering-developers@dapla-group-sa-p-ye.iam"
-    if os.getenv("DAPLA_ENVIRONMENT") == "PROD"
-    else "strukt-naering-developers@dapla-group-sa-t-57.iam"
-)
-encoded_user = quote_plus(user)
-conn_url = "host=localhost port=5432 dbname=strukt-naering user=strukt-naering-developers@dapla-group-sa-p-ye.iam options=-csearch_path=naringer"
-set_postgres_connection(database_url=conn_url)
-
-# from ssb_dash_framework import set_eimerdb_connection
-
-# set_eimerdb_connection(
-#     bucket_name="ssb-dapla-felles-data-produkt-prod",
-#     eimer_name="produksjonstilskudd_altinn3",
+# user = (
+#     "strukt-naering-developers@dapla-group-sa-p-ye.iam"
+#     if os.getenv("DAPLA_ENVIRONMENT") == "PROD"
+#     else "strukt-naering-developers@dapla-group-sa-t-57.iam"
 # )
+# encoded_user = quote_plus(user)
+# conn_url = "host=localhost port=5432 dbname=strukt-naering user=strukt-naering-developers@dapla-group-sa-p-ye.iam options=-csearch_path=naringer"
+# set_postgres_connection(database_url=conn_url)
+
+from ssb_dash_framework import set_eimerdb_connection
+
+set_eimerdb_connection(
+    bucket_name="ssb-dapla-felles-data-produkt-prod",
+    eimer_name="produksjonstilskudd_altinn3",
+)
 
 # for table in _get_connection_object().tables:
 #     _get_connection_object().combine_inserts(table, raw=False)
@@ -68,17 +68,28 @@ def benchmark_active_no_duplicates_refnr_list():
 
 def benchmark_get_active_data_execute():
     with get_connection(necessary_tables = ["skjemamottak", "skjemadata_hoved"], partition_select={"aar": [2018]}) as conn:
-        t = conn.table("core_skjemadata")
+        t = conn.table("skjemadata_hoved")
         relevant_refnr = active_no_duplicates_refnr_list(conn)
         return t.filter(t.refnr.isin(relevant_refnr)).execute()
 
 
 def benchmark_get_active_data_pandas():
     with get_connection(necessary_tables = ["skjemamottak", "skjemadata_hoved"], partition_select={"aar": [2018]}) as conn:
-        t = conn.table("core_skjemadata")
+        t = conn.table("skjemadata_hoved")
         relevant_refnr = active_no_duplicates_refnr_list(conn)
         return t.filter(t.refnr.isin(relevant_refnr)).to_pandas()
 
+# 
+
+def benchmark_get_specific_refnr_skjemamottak_pandas():
+    with get_connection(necessary_tables = ["skjemamottak"], partition_select={"aar": [2018]}) as conn:
+        t = conn.table("skjemamottak")
+        return t.filter(t.refnr == test_refnr).to_pandas()
+
+def benchmark_get_specific_refnr_skjemadata_pandas():
+    with get_connection(necessary_tables = ["skjemadata_hoved"], partition_select={"aar": [2018]}) as conn:
+        t = conn.table("skjemadata_hoved")
+        return t.filter(t.refnr == test_refnr).to_pandas()
 
 ###########################
 #  Code for benchmarking  #
@@ -202,6 +213,8 @@ ALL_BENCHMARKS = [
     benchmark_active_no_duplicates_refnr_list,
     benchmark_get_active_data_execute,
     benchmark_get_active_data_pandas,
+    benchmark_get_specific_refnr_skjemamottak_pandas,
+    benchmark_get_specific_refnr_skjemadata_pandas,
 ]
 from pathlib import Path
 RESULTS_DIR = Path("/home/onyxia/work/ssb-dash-framework/benchmarks/results")
