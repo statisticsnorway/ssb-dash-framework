@@ -23,7 +23,7 @@ from dash.exceptions import PreventUpdate
 from ibis import _
 from ssb_dash_framework import VariableSelector
 from ssb_dash_framework.setup import VariableSelectorOption, variableselector
-from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
+from ssb_dash_framework.utils.config_tools.set_variables import get_ident, get_refnr
 
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
@@ -302,14 +302,15 @@ class DataEditorInfoRow:
 
         @callback(
             [Output(f"info-var-field-{info_var}", "children") for info_var in self.info_variables],
-            variableselector.get_input(get_refnr()),
+            variableselector.get_input(get_ident()),
         )
-        def get_data_for_info_row_fields(refnr):
+        def get_data_for_info_row_fields(ident):
             info_values = []
 
             for info_var in self.info_variables:
-                with get_connection() as conn:
-                    value = conn.table(self.info_variables[info_var['source']]).filter(_.refnr == refnr).filter(_.variabel == info_var['variable_name']).to_pandas()["variabel"].item()
+                with get_connection(necessary_tables = ["enhetsinfo"]) as conn:
+                    t = conn.table(self.info_variables[info_var]['source'])
+                    value = t.filter(_.ident == ident).filter(_.variabel == self.info_variables[info_var]['variable_name']).to_pandas()["variabel"].item()
                 info_values.append(value)
             print("info_values: ", info_values)
             if len(self.info_variables) == 1:
