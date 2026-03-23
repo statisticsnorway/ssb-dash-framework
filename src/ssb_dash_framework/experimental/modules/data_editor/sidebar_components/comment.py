@@ -46,7 +46,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
 
         super().__init__()
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
         return html.Div(
             [
                 dbc.Row("Intern kommentar"),
@@ -86,7 +86,9 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             self.variableselector.get_input("altinnskjema"),
             self.variableselector.get_all_callback_objects(),
         )
-        def find_refnrs(refnr: str, skjema: str, *args: list[Any]):
+        def find_refnrs(
+            refnr: str, skjema: str, *args: list[Any]
+        ) -> tuple[str, list[dict[str, str]]]:
             """Collect relevant refnrs."""  # TODO Check what it actually does and needs to do.
             if isinstance(_get_connection_object(), EimerDBInstance):
                 args_before_timeunits = 1
@@ -114,7 +116,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             Output(f"{self.module_name}-{self.module_number}-comment-text", "value"),
             Input(f"{self.module_name}-{self.module_number}-dropdown-refnr", "value"),
         )
-        def get_comment(refnr: str):
+        def get_comment(refnr: str) -> str:
             """Gets the comment for the selected 'refnr'."""
             with get_connection() as conn:
                 s = conn.table("skjemamottak")

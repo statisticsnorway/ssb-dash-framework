@@ -27,8 +27,8 @@ class DataEditorSupportTable:
         self,
         label: str,
         get_data_func: Callable[..., pd.DataFrame],
-        inputs,
-        states=None,
+        inputs: list[str],
+        states: list[str] | None=None,
         pin_leftmost_column: bool = True,
         suffix_to_colour_grey: list[str] | None = None,
     ) -> None:
@@ -110,7 +110,7 @@ class DataEditorSupportTables(DataEditorHelperButton):
 
     support_components: ClassVar[list[DataEditorSupportTable]] = []
 
-    def __init__(self, applies_to_tables=None, applies_to_forms=None) -> None:
+    def __init__(self, applies_to_tables: list[str] | None=None, applies_to_forms: list[str] | None=None) -> None:
         """Initializes the DataEditorEditorSupportTables module."""
         self.modal_body = self._create_modal_body()
         super().__init__(label="Hjelpetabeller")

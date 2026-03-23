@@ -5,6 +5,9 @@
 - dataview
 """
 
+from typing import Any
+from dash.html.Div import Div
+from dash.html.Div import Div
 import logging
 from abc import ABC
 from abc import abstractmethod
@@ -79,7 +82,7 @@ class DataEditor:
         self.gather_components()
         self.module_callbacks()
 
-    def gather_components(self):
+    def gather_components(self) -> None:
         """Using the DataEditorRegistry, this method assembles the DataEditor module with currently enabled components."""
         self.info_row = html.Div()
         self.helper_row = html.Div(
@@ -121,7 +124,7 @@ class DataEditor:
             children=[view for view in main_views],
         )
 
-    def _create_layout(self):
+    def _create_layout(self) -> dbc.Container:
 
         return dbc.Container(
             [
@@ -143,11 +146,11 @@ class DataEditor:
             fluid=True,
         )
 
-    def layout(self):
+    def layout(self) -> dbc.Container:
         """Generates the layout for the DataEditor."""
         return self._create_layout()
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor."""
 
         @callback(
@@ -158,10 +161,10 @@ class DataEditor:
             Input("dataeditortableselector", "value"),
             VariableSelector([], []).get_input("altinnskjema"),
         )
-        def update_main_view(selected_table, selected_form):
+        def update_main_view(selected_table: str, selected_form: str) -> dict[str, Any] | list[dict[str, Any]]:
             # Maybe more efficient to create all and then hide-unused?
             logger.debug(f"Selected table: {selected_table}")
-            styles = []
+            styles: list[dict[str, Any]] = []
             for divname in DataEditorRegistry.main_views:
                 if (
                     selected_table in DataEditorRegistry.main_views[divname]["tables"]
@@ -178,17 +181,18 @@ class DataEditor:
                 logger.debug(
                     "Returning a single dict due to only one main_view being defined"
                 )
-                styles = styles[
+                return styles[
                     0
                 ]  # Dash expects a single value when there is just one output.
-            return styles
+            else:
+                return styles
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-header", "children"),
             Input("dataeditortableselector", "value"),
             VariableSelector([], []).get_input("altinnskjema"),
         )
-        def update_header(selected_table, selected_form):
+        def update_header(selected_table: str, selected_form: str) -> str:
             return f"Viser data for {selected_form} fra tabell {selected_table}"
 
 
@@ -215,7 +219,7 @@ class DataEditorTableSelector:
 
         DataEditorRegistry.sidebar_modules.insert(0, self)
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
         with get_connection() as conn:
             skjemadata_tables = [
                 table for table in conn.list_tables() if table.startswith("skjemadata_")
@@ -239,12 +243,12 @@ class DataEditorTableSelector:
             ]
         )
 
-    def layout(self):
+    def layout(self) -> html.Div:
         return self._create_layout()
 
     def module_callbacks(
         self,
-    ):  # TODO Add a way to connect selected table to variable selector?
+    ) -> None:  # TODO Add a way to connect selected table to variable selector?
         pass
 
 
@@ -269,7 +273,7 @@ class DataEditorHelperButton(ABC):
         self.button_callbacks()
         DataEditorRegistry.helper_modules.append(self)
 
-    def layout(self):
+    def layout(self) -> html.Div:
         if not hasattr(self, "modal_body"):
             raise AttributeError("Lacking 'modal_body' attribute.")
         return html.Div(
@@ -315,19 +319,41 @@ class DataEditorHelperSidebar(ABC):
         DataEditorRegistry.sidebar_modules.append(self)
 
     @abstractmethod
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
         pass
 
-    def layout(self):
+    def layout(self) -> html.Div:
         return self._create_layout()
 
     @abstractmethod
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
         pass
 
 
 class DataEditorDataView(ABC):
     """Base class for defining a data view."""
+
+    @property
+    @abstractmethod
+    def module_number(self) -> int:
+        """Subclasses must define a unique module number."""
+        pass
+
+    @property
+    @abstractmethod
+    def module_name(self) -> str:
+        """Subclasses must define a module name. Normally by using 'self.__class__.__name__'."""
+        pass
+
+    @property
+    @abstractmethod
+    def divname(self) -> str:
+        """Subclasses must define a name for its html.Div(id=self.divname). 
+        
+        Example:
+            self.divname = f'{self.module_name}-{self.module_number}'
+        """
+        pass
 
     def __init__(
         self, applies_to_tables: str | list[str], applies_to_forms: str | list[str]
@@ -352,12 +378,12 @@ class DataEditorDataView(ABC):
         )
 
     @abstractmethod
-    def _create_layout(self):
+    def _create_layout(self) -> None:
         pass
 
-    def layout(self):
+    def layout(self) -> None:
         return self._create_layout()
 
     @abstractmethod
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
         pass

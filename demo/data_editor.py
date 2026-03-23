@@ -173,6 +173,7 @@ layout = [
                             },
                         ],
                         "get_data_func": "default",
+                        "update_func": "default",
                     },
                     "kwargs": {"width": 1},
                 }
