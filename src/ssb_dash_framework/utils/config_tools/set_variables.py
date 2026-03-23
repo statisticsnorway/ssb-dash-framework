@@ -73,7 +73,7 @@ def get_refnr() -> str:
 
 def set_refnr(refnr_variable_name: str) -> None:
     global REFNR
-    if not isinstance(REFNR, str):
+    if not isinstance(refnr_variable_name, str):
         raise TypeError(f"Invalid type for 'refnr_variable_name'. Expected type 'str'. Received '{type(refnr_variable_name)}'.")
     VariableSelectorOption(refnr_variable_name)
     REFNR = refnr_variable_name
@@ -120,7 +120,7 @@ def get_ident() -> str:
 
 def set_ident(ident: str) -> None:
     global IDENT
-    if not isinstance(IDENT, str):
+    if not isinstance(ident, str):
         raise TypeError(f"Invalid type for 'ident'. Expected type 'str'. Received '{type(ident)}'.")
     VariableSelectorOption(ident)
     IDENT = ident

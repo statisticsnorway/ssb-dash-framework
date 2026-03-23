@@ -20,8 +20,10 @@ from dash import callback
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
-
+from ibis import _
 from ssb_dash_framework import VariableSelector
+from ssb_dash_framework.setup import VariableSelectorOption, variableselector
+from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
@@ -84,7 +86,16 @@ class DataEditor:
 
     def gather_components(self) -> None:
         """Using the DataEditorRegistry, this method assembles the DataEditor module with currently enabled components."""
-        self.info_row = html.Div()
+        self.info_view = html.Div(
+            dbc.Card(
+                dbc.CardBody(
+                    html.Div(
+                        [module.layout() for module in DataEditorRegistry.info_fields],
+                        className="dataeditor-info-view",
+                    )
+                )
+            )
+        )
         self.helper_row = html.Div(
             [module.layout() for module in DataEditorRegistry.helper_modules]
         )
@@ -129,7 +140,7 @@ class DataEditor:
         return dbc.Container(
             [
                 dbc.Row(html.H1(id=f"{self.module_name}-{self.module_number}-header")),
-                dbc.Row(self.info_row),
+                dbc.Row(self.info_view),
                 dbc.Row(
                     [
                         dbc.Col(self.sidebar, width=2),
@@ -161,7 +172,9 @@ class DataEditor:
             Input("dataeditortableselector", "value"),
             VariableSelector([], []).get_input("altinnskjema"),
         )
-        def update_main_view(selected_table: str, selected_form: str) -> dict[str, Any] | list[dict[str, Any]]:
+        def update_main_view(
+            selected_table: str, selected_form: str
+        ) -> dict[str, Any] | list[dict[str, Any]]:
             # Maybe more efficient to create all and then hide-unused?
             logger.debug(f"Selected table: {selected_table}")
             styles: list[dict[str, Any]] = []
@@ -252,7 +265,58 @@ class DataEditorTableSelector:
         pass
 
 
-class DataEditorInfoRow: ...
+class DataEditorInfoRow:
+
+    _id_number = 0
+
+    def __init__(self, variables_dict: dict[str, Any]) -> None:
+        self.module_number = DataEditorInfoRow._id_number
+        self.module_name = self.__class__.__name__
+        DataEditorInfoRow._id_number += 1
+
+        self.info_variables = variables_dict
+        self.module_callbacks()
+
+        DataEditorRegistry.info_fields.append(self)
+
+    def _create_layout(self):
+        info_fields = []
+        for info_var in self.info_variables:
+            print(info_var)
+            print(self.info_variables[info_var])
+            info_fields.append(
+                dbc.Stack(
+                    [
+                        html.H4(id=f"info-var-label-{info_var}", children=info_var),
+                        html.P(id=f"info-var-field-{info_var}"),
+                    ]
+                )
+            )
+        return dbc.Row(html.Div(info_fields))
+
+    def layout(self):
+        return self._create_layout()
+
+    def module_callbacks(self):
+        variableselector = VariableSelector(selected_inputs=[], selected_states=[])
+
+        @callback(
+            [Output(f"info-var-field-{info_var}", "children") for info_var in self.info_variables],
+            variableselector.get_input(get_refnr()),
+        )
+        def get_data_for_info_row_fields(refnr):
+            info_values = []
+
+            for info_var in self.info_variables:
+                with get_connection() as conn:
+                    value = conn.table(self.info_variables[info_var['source']]).filter(_.refnr == refnr).filter(_.variabel == info_var['variable_name']).to_pandas()["variabel"].item()
+                info_values.append(value)
+            print("info_values: ", info_values)
+            if len(self.info_variables) == 1:
+                return info_values[0]
+            else:
+                return info_values
+            
 
 
 class DataEditorHelperButton(ABC):
@@ -333,27 +397,27 @@ class DataEditorHelperSidebar(ABC):
 class DataEditorDataView(ABC):
     """Base class for defining a data view."""
 
-    @property
-    @abstractmethod
-    def module_number(self) -> int:
-        """Subclasses must define a unique module number."""
-        pass
+    # @property
+    # @abstractmethod
+    # def module_number(self) -> int:
+    #     """Subclasses must define a unique module number."""
+    #     pass
 
-    @property
-    @abstractmethod
-    def module_name(self) -> str:
-        """Subclasses must define a module name. Normally by using 'self.__class__.__name__'."""
-        pass
+    # @property
+    # @abstractmethod
+    # def module_name(self) -> str:
+    #     """Subclasses must define a module name. Normally by using 'self.__class__.__name__'."""
+    #     pass
 
-    @property
-    @abstractmethod
-    def divname(self) -> str:
-        """Subclasses must define a name for its html.Div(id=self.divname). 
-        
-        Example:
-            self.divname = f'{self.module_name}-{self.module_number}'
-        """
-        pass
+    # @property
+    # @abstractmethod
+    # def divname(self) -> str:
+    #     """Subclasses must define a name for its html.Div(id=self.divname).
+
+    #     Example:
+    #         self.divname = f'{self.module_name}-{self.module_number}'
+    #     """
+    #     pass
 
     def __init__(
         self, applies_to_tables: str | list[str], applies_to_forms: str | list[str]
