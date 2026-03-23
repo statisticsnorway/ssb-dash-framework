@@ -11,11 +11,13 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from ibis import _
+import ibis.selectors as s
 from psycopg_pool import ConnectionPool
 import tzlocal
 
 from ssb_dash_framework.utils import create_filter_dict
 from ssb_dash_framework.utils import ibis_filter_with_dict
+from eimerdb import EimerDBInstance
 
 from ...setup.variableselector import VariableSelector
 from ...utils import _get_connection_object
@@ -198,6 +200,7 @@ class AltinnEditorSubmittedForms:
             logger.debug(
                 f"Args:\n"
                 f"edited: {edited}\n"
+                f"status: {status}\n"
                 f"skjema: {skjema}\n"
                 f"alert_store: {alert_store}\n"
                 f"args: {args}"
@@ -209,9 +212,9 @@ class AltinnEditorSubmittedForms:
             variabel = edited[0]["colId"]
             new_value = edited[0]["value"]
             refnr = edited[0]["data"]["refnr"]
-            if variabel not in ["aktiv", "editert"]:
+            if variabel not in ["aktiv", "editert", "status"]:
                 raise ValueError(
-                    f"In the submitted forms module only 'aktiv' and 'editert' are editable fields. You tried to edit '{variabel}."
+                    f"In the submitted forms module only 'aktiv' and 'editert'/'status' are editable fields. You tried to edit '{variabel}."
                 )
 
             query = f"""
@@ -280,7 +283,13 @@ class AltinnEditorSubmittedForms:
                         t.filter(ibis_filter_with_dict(filter_dict))
                         .filter(_.ident == ident)
                         .order_by(_.dato_mottatt.desc())
-                        .select("skjema", "dato_mottatt", "refnr", "editert", "aktiv")
+                        .select(
+                            "skjema",
+                            "dato_mottatt",
+                            "refnr",
+                            s.matches(r"^(editert|status)$"),
+                            "aktiv",
+                        )
                         .to_pandas()
                     )
                     df["dato_mottatt"] = (
@@ -292,7 +301,7 @@ class AltinnEditorSubmittedForms:
                     columns = [
                         (
                             {"headerName": col, "field": col, "editable": True}
-                            if col in ["editert", "aktiv"]
+                            if col in ["editert", "status", "aktiv"]
                             else {"headerName": col, "field": col}
                         )
                         for col in df.columns
