@@ -46,9 +46,6 @@ from .hb_method import HBMethodWindow
 from .macro_module import MacroModule
 from .macro_module import MacroModuleTab
 from .macro_module import MacroModuleWindow
-from .macro_module_consolidated import MacroModuleConsolidated
-from .macro_module_consolidated import MacroModuleConsolidatedTab
-from .macro_module_consolidated import MacroModuleConsolidatedWindow
 from .macro_nspek_post_control import MacroNspekPostControl
 from .macro_nspek_post_control import MacroNspekPostControlTab
 from .macro_nspek_post_control import MacroNspekPostControlWindow
@@ -108,9 +105,6 @@ __all__ = [
     "MacroModule",
     "MacroModuleTab",
     "MacroModuleWindow",
-    "MacroModuleConsolidated",
-    "MacroModuleConsolidatedTab",
-    "MacroModuleConsolidatedWindow",
     "MacroNspekPostControl",
     "MacroNspekPostControlTab",
     "MacroNspekPostControlWindow",
