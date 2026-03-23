@@ -12,6 +12,7 @@ from ibis import _
 
 from ...setup.variableselector import VariableSelector
 from ...utils.config_tools.connection import get_connection
+from ...utils.core_query_functions import create_filter_dict
 
 logger = logging.getLogger(__name__)
 
