@@ -2,7 +2,6 @@ import logging
 from typing import Any
 
 import dash_ag_grid as dag
-import ibis
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -11,13 +10,15 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
 from ibis import _
+from psycopg_pool import ConnectionPool
 
-from ssb_dash_framework.utils import conn_is_ibis
 from ssb_dash_framework.utils import create_filter_dict
 from ssb_dash_framework.utils import ibis_filter_with_dict
 
 from ...setup.variableselector import VariableSelector
 from ...utils.alert_handler import create_alert
+from ...utils.config_tools.connection import _get_connection_object
+from ...utils.config_tools.connection import get_connection
 from ...utils.eimerdb_helpers import create_partition_select
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,6 @@ class AltinnEditorPrimaryTable:
     def __init__(
         self,
         time_units: list[str],
-        conn: object,
         variable_selector_instance: VariableSelector,
         cols_to_hide: list[str] | None = None,
     ) -> None:
@@ -41,19 +41,12 @@ class AltinnEditorPrimaryTable:
 
         Args:
             time_units: List of time units to be used in the module.
-            conn: Database connection object that must have a 'query' method.
             variable_selector_instance: An instance of VariableSelector for variable selection.
             cols_to_hide: A list of columns to ignore. Defaults to ["row_id","row_ids",*self.time_units,"skjema","refnr"].
 
         Raises:
-            TypeError: If variable_selector_instance is not an instance of VariableSelector. Or
-                if connection object is neither EimerDBInstance or Ibis connection.
+            TypeError: If variable_selector_instance is not an instance of VariableSelector.
         """
-        if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
-            raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
-            )
-        self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
@@ -118,19 +111,41 @@ class AltinnEditorPrimaryTable:
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the module."""
+        # check if var-bedrift exists
+        try:
+            self.variableselector.get_option("var-bedrift", search_target="id")
+            has_bedrift = True
+        except ValueError:
+            has_bedrift = False
+            logger.debug("var-bedrift not available, skipping bedrift sorting")
 
         @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemadata", "rowData", allow_duplicate=True),
             Output("altinnedit-table-skjemadata", "columnDefs", allow_duplicate=True),
             Input("altinnedit-refnr", "value"),
             Input("altinnedit-option1", "value"),
+            Input("var-ident", "value"),
             State("altinnedit-skjemaer", "value"),
+            (
+                State("var-bedrift", "value")
+                if has_bedrift
+                else State("altinnedit-refnr", "value")
+            ),  # Dummy state if no bedrift
             self.variableselector.get_all_states(),
             prevent_initial_call=True,
         )
         def hovedside_update_altinnskjema(
-            refnr: str, tabell: str, skjema: str, *args: Any
+            refnr: str,
+            tabell: str,
+            ident: str,
+            skjema: str,
+            bedrift_or_dummy: str,
+            *args: Any,
         ) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
+
+            # extract bedrift if it exists
+            bedrift = bedrift_or_dummy if has_bedrift else None
+
             logger.debug(
                 f"Args:\n"
                 f"refnr: {refnr}\n"
@@ -148,135 +163,113 @@ class AltinnEditorPrimaryTable:
                 logger.info("Returning nothing.")
                 logger.debug(f"Args length: {len(args)}")
                 return [], []
-            if isinstance(self.conn, EimerDBInstance):
-                conn = ibis.polars.connect()
-                data = self.conn.query(f"SELECT * FROM {tabell}")
-                conn.create_table(tabell, data)
-                datatyper = self.conn.query("SELECT * FROM datatyper")
-                conn.create_table("datatyper", datatyper)
-                filter_dict = create_filter_dict(
-                    self.time_units, [int(x) for x in args]
-                )
-            elif conn_is_ibis(self.conn):
-                conn = self.conn
-                filter_dict = create_filter_dict(self.time_units, args)
-            else:
-                raise TypeError("Connection object is invalid type.")
-            columns = conn.table(tabell).columns
-            if "variabel" in columns and "verdi" in columns:
-                long_format = True
-            else:
-                long_format = False
+            if isinstance(_get_connection_object(), EimerDBInstance):
+                args = tuple([int(x) for x in args])
 
-            if long_format:
-                logger.debug("Processing long data")
-                try:
-                    t = conn.table(tabell)
-                    d = conn.table("datatyper")
-                    d = d.filter(ibis_filter_with_dict(filter_dict))
-                    partition_args = dict(zip(self.time_units, args, strict=False))
-                    logger.debug(
-                        f"partition_select:\n{create_partition_select(desired_partitions=self.time_units,skjema=skjema,**partition_args,)}"
-                    )
+            filter_dict = create_filter_dict(
+                self.time_units, args
+            )  # May need args to be ints for eimerdb?
 
-                    t = (
-                        t.filter(_.refnr == refnr)
-                        .join(d, "variabel", how="left")
-                        .order_by(_.radnr)
-                    )
-                    t = t.filter(ibis_filter_with_dict(filter_dict))
-                    df = t.drop(
-                        [col for col in t.columns if col.endswith("_right")]
-                        + ["datatype", "radnr", "tabell"]
-                    ).to_pandas()
-                    logger.debug(f"resultat dataframe:\n{df.head(2)}")
-                    columndefs = [
-                        {
-                            "headerName": col,
-                            "field": col,
-                            "hide": col
-                            in [
-                                "row_id",
-                                "row_ids",
-                                *self.time_units,
-                                "skjema",
-                                "refnr",
-                            ],
-                            "flex": 2 if col == "variabel" else 1,
-                        }
-                        for col in df.columns
-                    ]
-                    return df.to_dict("records"), columndefs
-                except Exception as e:
-                    logger.error(
-                        f"Error in hovedside_update_altinnskjema (long format): {e}",
-                        exc_info=True,
-                    )
-                    return None, None
-            else:
-                logger.debug("Processing wide data")
-                try:
-                    partition_args = dict(zip(self.time_units, args, strict=False))
-                    t = conn.table(tabell)
+            with get_connection(necessary_tables=[tabell, "datatyper"]) as conn:
+                columns = conn.table(tabell).columns
+                if "variabel" in columns and "verdi" in columns:
+                    long_format = True
+                else:
+                    long_format = False
+                if long_format:
+                    logger.debug("Processing long data")
+                    try:
+                        t = conn.table(tabell)
+                        d = conn.table("datatyper")
+                        d = d.filter(ibis_filter_with_dict(filter_dict))
+                        partition_args = dict(zip(self.time_units, args, strict=False))
+                        logger.debug(
+                            f"partition_select:\n{create_partition_select(desired_partitions=self.time_units,skjema=skjema,**partition_args,)}"
+                        )
+                        t = t.filter(_.refnr == refnr).join(d, "variabel", how="left")
+                        t = t.filter(ibis_filter_with_dict(filter_dict))
+                        # sort by bedrift if available
+                        if bedrift and "ident" in t.columns:
+                            t = t.order_by(
+                                [_.ident.cases((bedrift, 0), else_=1), _.radnr]
+                            )
+                        else:
+                            t = t.order_by(_.radnr)
 
-                    df = (
-                        t.filter(ibis_filter_with_dict(filter_dict))
-                        .filter(_.refnr == refnr)
-                        .to_pandas()
-                    )
+                        df = t.drop(
+                            [col for col in t.columns if col.endswith("_right")]
+                            + ["datatype", "radnr", "tabell"]
+                        ).to_pandas()
+                        logger.debug(f"resultat dataframe:\n{df.head(2)}")
+                        columndefs = [
+                            {
+                                "headerName": col,
+                                "field": col,
+                                "hide": col
+                                in [
+                                    "row_id",
+                                    "row_ids",
+                                    *self.time_units,
+                                    "skjema",
+                                    "refnr",
+                                ],
+                                "flex": 2 if col == "variabel" else 1,
+                            }
+                            for col in df.columns
+                        ]
+                        return df.to_dict("records"), columndefs
+                    except Exception as e:
+                        logger.error(
+                            f"Error in hovedside_update_altinnskjema (long format): {e}",
+                            exc_info=True,
+                        )
+                        return None, None
+                else:
+                    logger.debug("Processing wide data")
+                    try:
+                        partition_args = dict(zip(self.time_units, args, strict=False))
+                        t = conn.table(tabell)
 
-                    columndefs = [
-                        {
-                            "headerName": col,
-                            "field": col,
-                            "hide": col
-                            in [
-                                "row_id",
-                                "row_ids",
-                                *self.time_units,
-                                "skjema",
-                                "refnr",
-                            ],
-                        }
-                        for col in df.columns
-                    ]
-                    return df.to_dict("records"), columndefs
+                        df = (
+                            t.filter(ibis_filter_with_dict(filter_dict))
+                            .filter(_.refnr == refnr)
+                            .to_pandas()
+                        )
 
-                except Exception as e:
-                    logger.error(
-                        f"Error in hovedside_update_altinnskjema (wide format): {e}",
-                        exc_info=True,
-                    )
-                    return None, None
+                        # sort by bedrift if it exists
+                        if bedrift and "ident" in df.columns:
+                            df = df.sort_values(
+                                by="ident",
+                                key=lambda x: x.map(lambda v: 0 if v == bedrift else 1),
+                            )
+                        columndefs = [
+                            {
+                                "headerName": col,
+                                "field": col,
+                                "hide": col
+                                in [
+                                    "row_id",
+                                    "row_ids",
+                                    "enhetsinfo_row_ids",
+                                    *self.time_units,
+                                    "skjema",
+                                    "refnr",
+                                ],
+                                "flex": (
+                                    2 if col == "variabel" else 1
+                                ),  # What does this do actually?
+                            }
+                            for col in df.columns
+                        ]
+                        logger.debug(f"resultat dataframe:\n{df.head(2)}")
 
-        try:  # TODO Find better solution to sort - config file?
-            self.variableselector.get_option("var-bedrift", search_target="id")
-
-            @callback(
-                Output("altinnedit-table-skjemadata", "rowData"),
-                Output("altinnedit-table-skjemadata", "columnDefs"),
-                Input("altinnedit-table-skjemadata", "rowData"),
-                Input("altinnedit-table-skjemadata", "columnDefs"),
-                State("var-bedrift", "value"),
-                prevent_initial_call=True,
-            )
-            def sort_by_bedrift(
-                row_data: list[dict[str, Any]],
-                column_defs: list[dict[str, Any]],
-                bedrift: str,
-            ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-                """Sort table to prioritize selected bedrift."""
-                if not bedrift or not row_data:
-                    return row_data, column_defs
-
-                sorted_data = sorted(
-                    row_data, key=lambda row: 0 if row.get("ident") == bedrift else 1
-                )
-
-                return sorted_data, column_defs
-
-        except ValueError:
-            logger.debug("var-bedrift not available, skipping bedrift sorting callback")
+                        return df.to_dict("records"), columndefs
+                    except Exception as e:
+                        logger.error(
+                            f"Error in hovedside_update_altinnskjema (long format): {e}",
+                            exc_info=True,
+                        )
+                        return None, None
 
         @callback(  # type: ignore[misc]
             Output("var-statistikkvariabel", "value"),
@@ -287,9 +280,21 @@ class AltinnEditorPrimaryTable:
             click: dict[str, Any], row_data: list[dict[str, Any]]
         ) -> str:
             logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")
-            if not click:
+
+            if not click or not row_data:
                 raise PreventUpdate
-            return str(row_data[click["rowIndex"]]["variabel"])
+
+            columns = list(row_data[0].keys())
+
+            long_format = "variabel" in columns and "verdi" in columns
+            if long_format:
+                return str(row_data[click["rowIndex"]]["variabel"])
+
+            column = click.get("colId")  # wide format
+            if column in ("aar", "ident", "skjema", "refnr", "tabell"):
+                raise PreventUpdate
+
+            return str(column)
 
         @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
@@ -315,60 +320,62 @@ class AltinnEditorPrimaryTable:
                 f"alert_store: {alert_store}\n"
                 f"args: {args}"
             )
-            if conn_is_ibis(self.conn):
-                period_where = [
-                    f"{x} = '{edited[0]['data'][x]}'" for x in self.time_units
-                ]
-                ident = edited[0]["data"]["ident"]
-                refnr = edited[0]["data"]["refnr"]
-                value = edited[0]["value"]
-                old_value = edited[0]["oldValue"]
-                condition_str = " AND ".join(period_where)
-                columns = self.conn.table(tabell).columns
-                if "variabel" in columns and "verdi" in columns:
-                    try:
-                        variable = edited[0]["data"]["variabel"]
-                        query = f"""
-                            UPDATE {tabell}
-                            SET verdi = '{value}'
-                            WHERE variabel = '{variable}' AND ident = '{ident}' AND refnr = '{refnr}' AND {condition_str}
-                        """
-                        self.conn.raw_sql(query)
-                        alert_store = [
-                            create_alert(
-                                f"ident: {ident}, variabel: {variable} er oppdatert fra {old_value} til {value}!",
-                                "success",
-                                ephemeral=True,
-                            ),
-                            *alert_store,
-                        ]
-                    except Exception as e:
-                        raise e
-                else:
-                    try:
-                        variable = edited[0]["colId"]
-                        query = f"""
-                            UPDATE {tabell}
-                            SET {variable} = '{value}'
-                            WHERE ident = '{ident}' AND refnr = '{refnr}' AND {condition_str}
-                        """
-                        self.conn.raw_sql(query)
-                        alert_store = [
-                            create_alert(
-                                f"ident: {ident}, {variable} er oppdatert fra {old_value} til {value}!",
-                                "success",
-                                ephemeral=True,
-                            ),
-                            *alert_store,
-                        ]
-                    except Exception as e:
-                        raise e
-                return alert_store
+            connection_object = _get_connection_object()
+            if isinstance(connection_object, ConnectionPool):
+                with get_connection() as conn:
+                    period_where = [
+                        f"{x} = '{edited[0]['data'][x]}'" for x in self.time_units
+                    ]
+                    ident = edited[0]["data"]["ident"]
+                    refnr = edited[0]["data"]["refnr"]
+                    value = edited[0]["value"]
+                    old_value = edited[0]["oldValue"]
+                    condition_str = " AND ".join(period_where)
+                    columns = conn.table(tabell).columns
+                    if "variabel" in columns and "verdi" in columns:
+                        try:
+                            variable = edited[0]["data"]["variabel"]
+                            query = f"""
+                                UPDATE {tabell}
+                                SET verdi = '{value}'
+                                WHERE variabel = '{variable}' AND ident = '{ident}' AND refnr = '{refnr}' AND {condition_str}
+                            """
+                            conn.raw_sql(query)
+                            alert_store = [
+                                create_alert(
+                                    f"ident: {ident}, variabel: {variable} er oppdatert fra {old_value} til {value}!",
+                                    "success",
+                                    ephemeral=True,
+                                ),
+                                *alert_store,
+                            ]
+                        except Exception as e:
+                            raise e
+                    else:
+                        try:
+                            variable = edited[0]["colId"]
+                            query = f"""
+                                UPDATE {tabell}
+                                SET {variable} = '{value}'
+                                WHERE ident = '{ident}' AND refnr = '{refnr}' AND {condition_str}
+                            """
+                            conn.raw_sql(query)
+                            alert_store = [
+                                create_alert(
+                                    f"ident: {ident}, {variable} er oppdatert fra {old_value} til {value}!",
+                                    "success",
+                                    ephemeral=True,
+                                ),
+                                *alert_store,
+                            ]
+                        except Exception as e:
+                            raise e
+                    return alert_store
 
-            elif isinstance(self.conn, EimerDBInstance):
+            elif isinstance(connection_object, EimerDBInstance):
                 partition_args = dict(zip(self.time_units, args, strict=False))
                 tables_editable_dict = {}
-                data_dict = self.conn.tables
+                data_dict = connection_object.tables
 
                 for table, details in data_dict.items():
                     if table.startswith("skjemadata") and "schema" in details:
@@ -381,7 +388,7 @@ class AltinnEditorPrimaryTable:
                 table_editable_dict = tables_editable_dict[tabell]
                 edited_column = edited[0]["colId"]
 
-                schema = self.conn.tables[tabell]["schema"]
+                schema = connection_object.tables[tabell]["schema"]
                 columns = {field["name"] for field in schema}
                 if "variabel" in columns and "verdi" in columns:
                     long_format = True
@@ -395,7 +402,7 @@ class AltinnEditorPrimaryTable:
                     ident = edited[0]["data"]["ident"]
 
                     try:
-                        self.conn.query(
+                        connection_object.query(
                             f"""UPDATE {tabell}
                             SET {edited_column} = '{new_value}'
                             WHERE row_id = '{row_id}'
@@ -447,5 +454,5 @@ class AltinnEditorPrimaryTable:
                     return alert_store
             else:
                 raise TypeError(
-                    f"Conection 'self.conn' is not a valid connection object. Is type: {type(self.conn)}"
+                    f"Conection set by set_connection() is not a valid connection object. Is type: {type(connection_object)}"
                 )

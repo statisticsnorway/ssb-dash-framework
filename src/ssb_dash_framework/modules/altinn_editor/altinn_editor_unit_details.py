@@ -1,24 +1,24 @@
 import logging
-import time
 from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-import ibis
 from dash import callback
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
 from ibis import _
 
-from ssb_dash_framework.utils import conn_is_ibis
 from ssb_dash_framework.utils import create_filter_dict
+from ssb_dash_framework.utils import get_connection
 from ssb_dash_framework.utils import ibis_filter_with_dict
+from eimerdb import EimerDBInstance
 
 from ...setup.variableselector import VariableSelector
+from ...utils.config_tools.connection import _get_connection_object
+from ...utils.config_tools.connection import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,6 @@ class AltinnEditorUnitDetails:
     def __init__(
         self,
         time_units: list[str],
-        conn: object,
         variable_selector_instance: VariableSelector,
         variable_connection: dict[str, str],
     ) -> None:
@@ -37,18 +36,12 @@ class AltinnEditorUnitDetails:
 
         Args:
             time_units: List of time units to be used in the module.
-            conn: Database connection object that must have a 'query' method.
             variable_selector_instance: An instance of VariableSelector for variable selection.
             variable_connection: Dict containing the name of characteristics from the dataset as keys and the variable selector name associated with it as value.
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
         """
-        if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
-            raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
-            )
-        self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
@@ -126,33 +119,21 @@ class AltinnEditorUnitDetails:
                     args,
                 )
                 return None, None
-            time.sleep(
-                1
-            )  # TODO: Fix some kind of multithreading to let it query more than one thing at a time.
             try:
-                if isinstance(self.conn, EimerDBInstance):
-                    conn = ibis.polars.connect()
-                    data = self.conn.query("SELECT * FROM enhetsinfo")
-                    conn.create_table("enhetsinfo", data)
-                    filter_dict = create_filter_dict(
-                        self.time_units, [int(x) for x in args]
+                if isinstance(_get_connection_object(), EimerDBInstance):
+                    args = tuple([int(x) for x in args])
+                filter_dict = create_filter_dict(self.time_units, args)
+                with get_connection(necessary_tables=["enhetsinfo"]) as conn:
+                    t = conn.table("enhetsinfo")
+                    df = (
+                        t.filter(_.ident == ident)
+                        .filter(ibis_filter_with_dict(filter_dict))
+                        .to_pandas()
                     )
-                elif conn_is_ibis(self.conn):
-                    conn = self.conn
-                    filter_dict = create_filter_dict(self.time_units, args)
-                else:
-                    raise TypeError("Connection object is invalid type.")
-                print(filter_dict)
-                t = conn.table("enhetsinfo")
-                df = (
-                    t.filter(_.ident == ident)
-                    .filter(ibis_filter_with_dict(filter_dict))
-                    .to_pandas()
-                )
-                if "row_id" in df.columns:
-                    df = df.drop(columns=["row_id"])
-                columns = [{"headerName": col, "field": col} for col in df.columns]
-                return df.to_dict("records"), columns
+                    df = df.drop(columns=["row_id", "id", "foretak"], errors="ignore")
+                    columns = [{"headerName": col, "field": col} for col in df.columns]
+                    return df.to_dict("records"), columns
+
             except Exception as e:
                 logger.error(f"Error in update_enhetsinfotabell: {e}", exc_info=True)
                 return None, None

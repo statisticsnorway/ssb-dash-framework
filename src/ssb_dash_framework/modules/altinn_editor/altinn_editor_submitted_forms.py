@@ -3,7 +3,6 @@ from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-import ibis
 from dash import callback
 from dash import dcc
 from dash import html
@@ -11,18 +10,25 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
 from ibis import _
+import ibis.selectors as s
+from psycopg_pool import ConnectionPool
+import tzlocal
 
-from ssb_dash_framework.utils import conn_is_ibis
 from ssb_dash_framework.utils import create_filter_dict
 from ssb_dash_framework.utils import ibis_filter_with_dict
+from eimerdb import EimerDBInstance
 
 from ...setup.variableselector import VariableSelector
+from ...utils import _get_connection_object
 from ...utils import create_alert
+from ...utils import get_connection
 from ...utils.eimerdb_helpers import create_partition_select
+from .altinn_editor_utility import AltinnEditorStateTracker
 
 logger = logging.getLogger(__name__)
+
+local_tz = tzlocal.get_localzone()
 
 
 class AltinnEditorSubmittedForms:
@@ -31,24 +37,17 @@ class AltinnEditorSubmittedForms:
     def __init__(
         self,
         time_units: list[str],
-        conn: object,
         variable_selector_instance: VariableSelector,
     ) -> None:
         """Initializes the Altinn Editor submitted forms module.
 
         Args:
             time_units: List of time units to be used in the module.
-            conn: Database connection object that must have a 'query' method.
             variable_selector_instance: An instance of VariableSelector for variable selection.
 
         Raises:
             TypeError: If variable_selector_instance is not an instance of VariableSelector.
         """
-        if not isinstance(conn, EimerDBInstance) and not conn_is_ibis(conn):
-            raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(conn)}"
-            )
-        self.conn = conn
         if not isinstance(variable_selector_instance, VariableSelector):
             raise TypeError(
                 "variable_selector_instance must be an instance of VariableSelector"
@@ -59,6 +58,10 @@ class AltinnEditorSubmittedForms:
             for x in time_units
         ]
         self._is_valid()
+
+        AltinnEditorStateTracker.register_option("altinnedit-refnr")
+        AltinnEditorStateTracker.register_option("altinnedit-skjemaer")
+
         self.module_layout = self._create_layout()
         self.module_callbacks()
 
@@ -157,36 +160,28 @@ class AltinnEditorSubmittedForms:
             logger.debug(f"Args:\nident: {ident}\nargs: {args}")
             if ident is None or any(arg is None for arg in args):
                 return [], None
-            if isinstance(self.conn, EimerDBInstance):
-                conn = ibis.polars.connect()
-                data = self.conn.query("SELECT * FROM enheter")
-                conn.create_table("enheter", data)
-                filter_dict = create_filter_dict(
-                    self.time_units, [int(x) for x in args]
-                )
-            elif conn_is_ibis(self.conn):
-                conn = self.conn
-                filter_dict = create_filter_dict(self.time_units, args)
-            else:
-                raise TypeError("Connection object is invalid type.")
-            print(filter_dict)
-            try:
-                t = conn.table("enheter")
-                skjemaer = (
-                    t.filter(ibis_filter_with_dict(filter_dict))
-                    .filter(_.ident == ident)
-                    .select("skjema")
-                    .distinct(on="skjema")
-                    .to_pandas()["skjema"]
-                    .to_list()
-                )
+            if isinstance(_get_connection_object(), EimerDBInstance):
+                args = tuple([int(x) for x in args])
+            filter_dict = create_filter_dict(self.time_units, args)
 
-                options = [{"label": item, "value": item} for item in skjemaer]
-                value = options[0]["value"]
-                return options, value
-            except Exception as e:
-                logger.error(f"Error in update_skjemaer: {e}", exc_info=True)
-                return [], None
+            with get_connection() as conn:
+                try:
+                    t = conn.table("enheter")
+                    skjemaer = (
+                        t.filter(ibis_filter_with_dict(filter_dict))
+                        .filter(_.ident == ident)
+                        .select("skjema")
+                        .distinct(on="skjema")
+                        .to_pandas()["skjema"]
+                        .to_list()
+                    )
+
+                    options = [{"label": item, "value": item} for item in skjemaer]
+                    value = options[0]["value"]
+                    return options, value
+                except Exception as e:
+                    logger.error(f"Error in update_skjemaer: {e}", exc_info=True)
+                    return [], None
 
         @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
@@ -205,6 +200,7 @@ class AltinnEditorSubmittedForms:
             logger.debug(
                 f"Args:\n"
                 f"edited: {edited}\n"
+                f"status: {status}\n"
                 f"skjema: {skjema}\n"
                 f"alert_store: {alert_store}\n"
                 f"args: {args}"
@@ -216,73 +212,52 @@ class AltinnEditorSubmittedForms:
             variabel = edited[0]["colId"]
             new_value = edited[0]["value"]
             refnr = edited[0]["data"]["refnr"]
+            if variabel not in ["aktiv", "editert", "status"]:
+                raise ValueError(
+                    f"In the submitted forms module only 'aktiv' and 'editert'/'status' are editable fields. You tried to edit '{variabel}."
+                )
 
-            if variabel == "editert":
-                try:
-                    self.conn.query(
-                        f"""
-                        UPDATE skjemamottak
-                        SET editert = {new_value}
-                        WHERE refnr = '{refnr}'
-                        """,
+            query = f"""
+                UPDATE skjemamottak
+                SET {variabel} = {new_value}
+                WHERE refnr = '{refnr}'
+            """
+
+            connection_object = _get_connection_object()
+            try:
+                if isinstance(connection_object, ConnectionPool):
+
+                    with get_connection() as conn:
+                        conn.raw_sql(query)
+
+                elif isinstance(connection_object, EimerDBInstance):
+                    connection_object.query(
+                        query,
                         partition_select=create_partition_select(
                             desired_partitions=self.time_units,
                             skjema=skjema,
                             **partition_args,
                         ),
                     )
-                    return [
-                        create_alert(
-                            f"Skjema {refnr} sin editeringsstatus er satt til {new_value}.",
-                            "success",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-                except Exception:
-                    return [
-                        create_alert(
-                            "En feil skjedde under oppdatering av editeringsstatusen",
-                            "danger",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-            elif variabel == "aktiv":
-                try:
-                    self.conn.query(
-                        f"""
-                        UPDATE skjemamottak
-                        SET aktiv = {new_value}
-                        WHERE refnr = '{refnr}'
-                        """,
-                        partition_select=create_partition_select(
-                            desired_partitions=self.time_units,
-                            skjema=skjema,
-                            **partition_args,
-                        ),
-                    )
-                    return [
-                        create_alert(
-                            f"Skjema {refnr} sin aktivstatus er satt til {new_value}.",
-                            "success",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-                except Exception:
-                    return [
-                        create_alert(
-                            "En feil skjedde under oppdatering av aktivstatusen",
-                            "danger",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-            else:
-                logger.debug(f"Tried to edit {variabel}, preventing update.")
-                logger.debug("Raised PreventUpdate")
-                raise PreventUpdate
+
+                return [
+                    create_alert(
+                        f"Skjema {refnr} sin editeringsstatus er satt til {new_value}.",
+                        "success",
+                        ephemeral=True,
+                    ),
+                    *alert_store,
+                ]
+            except Exception as e:
+                logger.debug(e)
+                return [
+                    create_alert(
+                        "En feil skjedde under oppdatering av editeringsstatusen",
+                        "danger",
+                        ephemeral=True,
+                    ),
+                    *alert_store,
+                ]
 
         @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemaer", "rowData"),
@@ -298,38 +273,44 @@ class AltinnEditorSubmittedForms:
             print("Varselector: ", self.variableselector.states)
             if skjema is None or ident is None or any(arg is None for arg in args):
                 return None, None
-            if isinstance(self.conn, EimerDBInstance):
-                conn = ibis.polars.connect()
-                data = self.conn.query("SELECT * FROM skjemamottak")
-                conn.create_table("skjemamottak", data)
-                filter_dict = create_filter_dict(
-                    self.variableselector.states, [int(x) for x in args]
-                )
-            elif conn_is_ibis(self.conn):
-                conn = self.conn
-                filter_dict = create_filter_dict(self.variableselector.states, args)
-            try:
-                t = conn.table("skjemamottak")
-                df = (
-                    t.filter(ibis_filter_with_dict(filter_dict))
-                    .filter(_.ident == ident)
-                    .order_by(_.dato_mottatt)
-                    .select("dato_mottatt", "refnr", "editert", "aktiv")
-                    .to_pandas()
-                )
-                columns = [
-                    (
-                        {"headerName": col, "field": col, "editable": True}
-                        if col in ["editert", "aktiv"]
-                        else {"headerName": col, "field": col}
+            if isinstance(_get_connection_object(), EimerDBInstance):
+                args = tuple([int(x) for x in args])
+            filter_dict = create_filter_dict(self.variableselector.states, args)
+            with get_connection(necessary_tables=["skjemamottak"]) as conn:
+                try:
+                    t = conn.table("skjemamottak")
+                    df = (
+                        t.filter(ibis_filter_with_dict(filter_dict))
+                        .filter(_.ident == ident)
+                        .order_by(_.dato_mottatt.desc())
+                        .select(
+                            "skjema",
+                            "dato_mottatt",
+                            "refnr",
+                            s.matches(r"^(editert|status)$"),
+                            "aktiv",
+                        )
+                        .to_pandas()
                     )
-                    for col in df.columns
-                ]
-                print("Test: ", df)
-                return df.to_dict("records"), columns
-            except Exception as e:
-                logger.error(f"Error in update_sidebar_table: {e}", exc_info=True)
-                return None, None
+                    df["dato_mottatt"] = (
+                        df["dato_mottatt"]
+                        .dt.tz_convert(local_tz)
+                        .dt.tz_localize(None)
+                        .dt.strftime("%Y-%m-%d %H:%M:%S")
+                    )
+                    columns = [
+                        (
+                            {"headerName": col, "field": col, "editable": True}
+                            if col in ["editert", "status", "aktiv"]
+                            else {"headerName": col, "field": col}
+                        )
+                        for col in df.columns
+                    ]
+                    print("Test: ", df)
+                    return df.to_dict("records"), columns
+                except Exception as e:
+                    logger.error(f"Error in update_sidebar_table: {e}", exc_info=True)
+                    return None, None
 
         @callback(  # type: ignore[misc]
             Output("altinnedit-table-skjemaer", "selectedRows"),

@@ -8,6 +8,7 @@ from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 
 from ssb_dash_framework import ParquetEditor
 from ssb_dash_framework import export_from_parqueteditor
+from ssb_dash_framework import get_export_log_path
 from ssb_dash_framework import get_log_path
 from ssb_dash_framework import set_variables
 
@@ -39,7 +40,7 @@ def parquet_with_log(tmp_path):
         "statistics_name": "TestStat",
         "data_source": [str(data_source)],
         "data_target": "data_target_placeholder",
-        "data_period": "",
+        "data_period": "2024",
         "variable_name": "value",
         "change_event": "M",
         "change_event_reason": "REVIEW",
@@ -60,6 +61,31 @@ def parquet_with_log(tmp_path):
 
     data_target = bucket_root / "utdata" / "exported.parquet"
     return str(data_source), str(data_target), bucket_root
+
+
+def test_get_log_path():
+    cases = {  # Key should be input, values should be expected output.
+        "/buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/inndata/temp/parqueteditor/test_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/inndata/temp/test_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/inndata/temp/parqueteditor/temp/test_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/klargjorte-data/temp/subfolder/another_subfolder/editeres_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/klargjorte-data/temp/parqueteditor/temp/subfolder/another_subfolder/editeres_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/kirkekostra/klargjorte-data/temp/mindre/min-kirkefil_p2024_v1.parquet": "/buckets/produkt/kirkekostra/klargjorte-data/temp/parqueteditor/temp/mindre/min-kirkefil_p2024_v1-change-data-log.jsonl",
+    }
+    for given_input, expected in cases.items():
+        assert str(get_log_path(given_input)) == expected
+
+
+def test_get_export_log_path():
+    cases = {  # Key should be input, values should be expected output.
+        "/buckets/produkt/editering-eksempel/inndata/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/prosessdata/inndata/editert_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/inndata/temp/subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/prosessdata/inndata/temp/subfolder/editert_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/inndata/temp/subfolder/another_subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/prosessdata/inndata/temp/subfolder/another_subfolder/editert_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/klargjorte-data/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/prosessdata/klargjorte-data/editert_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/klargjorte-data/temp/subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/prosessdata/klargjorte-data/temp/subfolder/editert_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/editering-eksempel/klargjorte-data/temp/subfolder/another_subfolder/editert_p2024_v1.parquet": "/buckets/produkt/editering-eksempel/logg/prosessdata/klargjorte-data/temp/subfolder/another_subfolder/editert_p2024_v1-change-data-log.jsonl",
+        "/buckets/produkt/kirkekostra/klargjorte-data/temp/mindre/min-kirkefil_p2024_v1.parquet": "/buckets/produkt/kirkekostra/logg/prosessdata/klargjorte-data/temp/mindre/min-kirkefil_p2024_v1-change-data-log.jsonl",
+    }
+    for given_input, expected in cases.items():
+        assert str(get_export_log_path(Path(given_input))) == expected
 
 
 def test_changelog_creation_success(monkeypatch) -> None:
@@ -95,6 +121,7 @@ def test_changelog_creation_success(monkeypatch) -> None:
         statistics_name="Test",
         id_vars=["aar", "orgnr"],
         data_source="/buckets/eksempelstatistikk/inndata/dummypath.parquet",
+        data_period="2024",
     )
 
     changelog = test._build_process_log_entry(example_change)
@@ -102,7 +129,7 @@ def test_changelog_creation_success(monkeypatch) -> None:
 
 
 def test_export_from_parqueteditor_success(parquet_with_log):
-    data_source, data_target, bucket_root = parquet_with_log
+    data_source, data_target, _ = parquet_with_log
 
     export_from_parqueteditor(
         data_source=data_source,
@@ -116,7 +143,7 @@ def test_export_from_parqueteditor_success(parquet_with_log):
     assert exported_df.loc[0, "value"] == 20
 
     # ---- process log exported ----
-    export_log_path = bucket_root / "logg" / "prosessdata" / "utdata" / "exported.jsonl"
+    export_log_path = get_export_log_path(Path(data_target))
     assert export_log_path.exists()
 
     with open(export_log_path, encoding="utf-8") as f:
@@ -157,10 +184,10 @@ def test_export_from_parqueteditor_existing_target(parquet_with_log):
 
 
 def test_export_from_parqueteditor_existing_processlog(parquet_with_log):
-    data_source, data_target, bucket_root = parquet_with_log
+    data_source, data_target, _ = parquet_with_log
 
     # Pre-create exported process log
-    export_log_path = bucket_root / "logg" / "prosessdata" / "utdata" / "exported.jsonl"
+    export_log_path = get_export_log_path(Path(data_target))
     export_log_path.parent.mkdir(parents=True, exist_ok=True)
     export_log_path.write_text("existing log")
 

@@ -231,6 +231,19 @@ Altinn Editor History
 
 
 /*
+Altinn Editor Support Tables
+*/
+.hjelpetabeller-modal .modal-dialog {
+    max-width: 90vw !important;
+    width: 90vw !important;
+}
+
+.hjelpetabeller-modal .modal-content {
+    height: 80vh !important;
+    overflow: hidden;
+}
+
+/*
 MacroModule
 */
 
@@ -321,7 +334,7 @@ MacroModule
 }
 
 .macromodule-heatmap-grid-container {
-    height: 900px;
+    height: 980px;
     overflow: hidden;
 }
 
@@ -418,4 +431,12 @@ Tables
 .editingtable-aggrid-style {
     height: 100% !important; /* For some reason this needed !important to work. */
     width: 100%;
+}
+
+/*
+ParquetEditor
+*/
+
+[id$="-parqueteditor-table"] {
+    height: 100% !important;
 }

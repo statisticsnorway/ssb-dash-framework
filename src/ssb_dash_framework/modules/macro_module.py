@@ -51,22 +51,22 @@ def get_nace_groups(aar) -> dict[str, str]:
 # Variables used in the heatmap-grid
 HEATMAP_VARIABLES: dict[str, str] = {
     "omsetning": "omsetning",
-    "ts_forbruk": "forbruk",
     "ts_salgsint": "salgsint",
+    "nopost_driftskostnader": "driftskost",
     "sysselsetting_syss": "sysselsatte",
     "sysselsetting_ansatte": "lønnstakere",
     "sysselsetting_arsverk": "årsverk",
     "nopost_lonnskostnader": "lønnskost",
     "nopost_p5000": "lønn",
     "ts_vikarutgifter": "vikarutg",
+    "ts_forbruk": "forbruk",
+    "nopost_p4005": "p4005",
     "produksjonsverdi": "prodv",
     "bearbeidingsverdi": "bearbv",
     "produktinnsats": "prodins",
-    "nopost_driftskostnader": "driftskost",
     "nopost_driftsresultat": "driftsres",
     "brutto_driftsresultat": "brut_driftsres",
     "ts_varehan": "varehandel",
-    "nopost_p4005": "p4005",
     "totkjop": "totalkjøp",
     "ts_anlegg": "anlegg",
     "bruttoinvestering_oslo": "brut_inv_oslo",
@@ -93,6 +93,8 @@ DETAIL_GRID_ID_COLS_ORDERED = [
     "reg_type_f",
     "reg_type_b",
     "type",
+    "kommune_f",
+    "kommune_b",
 ]
 
 ALL_RELEVANT_COLS: list[str] = [ # all relevant cols needed for this app aside from 'kommune'
@@ -114,9 +116,11 @@ NACE_LEVEL_OPTIONS: dict[str, int] = {
     "4-siffer": 5,
     "5-siffer": 6,
 }
-HEATMAP_NUMBER_FORMAT: dict[str, bool] = {"Prosentendring": True, "Totalsum": False}
-
-# TODO: Legg til absolutt endring som eit valg: HEATMAP_NUMBER_FORMAT: dict[str, bool] = {"Prosentendring": True, "Absolutt endring": False, "Totalsum": False}
+HEATMAP_NUMBER_FORMAT: dict[str, int] = {
+    "Prosentendring": 1,
+    "Årets totalsum": 2,
+    "Differanse": 3,
+}
 STATUS_CHANGE_DETAIL_GRID: list[str] = [
     "orgnr_f",
     "navn",
@@ -125,6 +129,8 @@ STATUS_CHANGE_DETAIL_GRID: list[str] = [
     "type",
     "reg_type_f",
     "reg_type_b",
+    "kommune_f",
+    "kommune_b",
 ]  # gets tooltip + colour change per year if changed (should be categorical col)
 
 
@@ -135,137 +141,20 @@ class MacroModule_ParquetReader:
         """Initialize a persistent DuckDB connection."""
         self.conn: BaseBackend = ibis.connect("duckdb://")
 
-    # def _load_year(
-    #     self,
-    #     aar: int,
-    #     base_path: str,
-    #     foretak_or_bedrift: str,
-    #     nace_list: list[str],
-    #     nace_siffer_level: int,
-    #     detail_grid: bool = False,
-    #     nace_groups_from_klass: bool = True,
-    # ) -> Table:
-    #     """Used to read parquet files, picking between foretak or bedrift level. 
-    #     Then filtering on chosen naring, and setting "aar" to a str column.
-
-    #     Can be used for both the heatmap-grid and the detail-grid. If used for the prior, 
-    #     only filters on the first 2 naring digits (like "45", "88"), whereas for the latter 
-    #     it selects at specified nace_siffer_level.
-
-    #     Now supports letter codes (e.g., 'G') which represent groups of NACE codes.
-    #     nace_groups_from_klass: If True, enables NACE group-values from SSB Klass library.
-    #     """
-    #     if aar >= 2024:
-    #         file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-    #     else:
-    #         file_path = f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
-
-    #     try:
-    #         t: ibis.TableExpr = self.conn.read_parquet(file_path).select([*ALL_RELEVANT_COLS, "kommune"])
-    #     except Exception as e:
-    #         print(
-    #             f"Failed to read parquet file at {file_path}: {e}. "
-    #             "Did you put in a valid year into the variabelvelger?"
-    #         )
-    #         raise PreventUpdate from None
-        
-    #     if not nace_groups_from_klass:
-    #         # Simple mode: no letter grouping support
-    #         if detail_grid:
-    #             if nace_list:
-    #                 t = t.filter(
-    #                     t.naring.substr(0, length=nace_siffer_level).isin(nace_list)
-    #                 )
-    #         else:
-    #             # for å loade fleire næringar ved innlasting
-    #             nace_2_siffer_liste = [n.split(".")[0][:2] for n in nace_list]
-    #             t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
-    #             t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
-        
-    #     else:
-    #         # Advanced mode: support letter codes from Klass
-    #         # Parse nace_list to separate letters from numbers and build mappings
-    #         nace_groups = get_nace_groups(aar)
-    #         expanded_nace_list = []
-    #         nace_to_categories = {}  # Maps each 2-digit NACE to list of categories it belongs to
-            
-    #         for item in nace_list:
-    #             if item.isalpha() and item in nace_groups:
-    #                 # Letter code: add all its NACE codes
-    #                 for nace_code in nace_groups[item]:
-    #                     expanded_nace_list.append(nace_code)
-    #                     nace_to_categories.setdefault(nace_code, []).append(item)
-    #             else:
-    #                 # Numeric code
-    #                 nace_2_digit = item.split(".")[0][:2]
-    #                 expanded_nace_list.append(item)
-    #                 nace_to_categories.setdefault(nace_2_digit, []).append(item)
-
-    #         if detail_grid:
-    #             if expanded_nace_list:
-    #                 t = t.filter(
-    #                     t.naring.substr(0, length=nace_siffer_level).isin(expanded_nace_list)
-    #                 )
-    #         else:
-    #             # Filter to relevant NACE codes
-    #             nace_2_siffer_liste = [n.split(".")[0][:2] for n in expanded_nace_list]
-    #             t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
-                
-    #             # Duplicate rows for codes that belong to multiple categories
-    #             nace_2_digit = t.naring.substr(0, length=2)
-    #             tables_to_union = []
-                
-    #             for nace_code, categories in nace_to_categories.items():
-    #                 for category in categories:
-    #                     t_filtered = t.filter(nace_2_digit == nace_code)
-                        
-    #                     # Assign the category as selected_nace
-    #                     if category.isalpha():
-    #                         # Letter code: use the letter
-    #                         t_filtered = t_filtered.mutate(selected_nace=ibis.literal(category))
-    #                     else:
-    #                         # Numeric code: truncate to siffer level
-    #                         t_filtered = t_filtered.mutate(
-    #                             selected_nace=t_filtered.naring.substr(0, length=nace_siffer_level)
-    #                         )
-                        
-    #                     tables_to_union.append(t_filtered)
-                
-    #             # Union all filtered tables
-    #             if tables_to_union:
-    #                 t = tables_to_union[0]
-    #                 for table in tables_to_union[1:]:
-    #                     t = t.union(table)
-
-    #     return t.mutate(aar=ibis.literal(aar).cast("string")) ############################## old version failing on counting rows for antall enheter, overcounts for groups
-    
-    
-    ########################################## newer simpler version so aggregation needs to be handled in the rest of the code, perhaps better? needs testing
     def _load_year(
-    self,
-    aar: int,
-    base_path: str,
-    foretak_or_bedrift: str,
-    nace_list: list[str],
-    nace_siffer_level: int,
-    detail_grid: bool = False,
-    nace_groups_from_klass: bool = True,
-    ) -> tuple[Table, dict[str, list[str]]]:
-        """Used to read parquet files, picking between foretak or bedrift level. 
-        Then filtering on chosen naring, and setting "aar" to a str column.
+        self,
+        aar: int,
+        base_path: str,
+        foretak_or_bedrift: str,
+        nace_list: list[str],
+        nace_siffer_level: int,
+        detail_grid: bool = False,
+    ) -> Table:
+        """Used to read parquet files, picking between foretak or bedrift level. Then filtering on chosen naring, and setting "aar" to a str column.
 
-        Can be used for both the heatmap-grid and the detail-grid. If used for the prior, 
-        only filters on the first 2 naring digits (like "45", "88"), whereas for the latter 
-        it selects at specified nace_siffer_level.
-
-        Now supports letter codes (e.g., 'G') which represent groups of NACE codes.
-        nace_groups_from_klass: If True, enables NACE group-values from SSB Klass library.
-        
-        Returns:
-            Table with data
-            Dictionary mapping categories to their NACE codes (for handling overlaps in aggregation)
+        Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
         """
-        if aar >= 2024:
+        if aar > 2023:  # new nedtrekk in Dapla has a specific file path
             file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_{foretak_or_bedrift}_nr.parquet"
         else:
             file_path = f"{base_path}/p{aar}/statistikkfil_{foretak_or_bedrift}_nr.parquet"
@@ -278,65 +167,20 @@ class MacroModule_ParquetReader:
                 "Did you put in a valid year into the variabelvelger?"
             )
             raise PreventUpdate from None
-        
-        category_to_nace = {}  # Maps categories (letters or numbers) to their NACE codes
-        
-        if not nace_groups_from_klass:
-            # Simple mode: no letter grouping support
-            if detail_grid:
-                if nace_list:
-                    t = t.filter(
-                        t.naring.substr(0, length=nace_siffer_level).isin(nace_list)
-                    )
-            else:
-                # for å loade fleire næringar ved innlasting
-                nace_2_siffer_liste = [n.split(".")[0][:2] for n in nace_list]
-                t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
-                t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
-                
-                # Build simple mapping
-                for item in nace_list:
-                    nace_2_digit = item.split(".")[0][:2]
-                    category_to_nace[item] = [nace_2_digit]
-        
+
+        if detail_grid:
+            if nace_list:
+                t = t.filter(
+                    t.naring.substr(0, length=nace_siffer_level).isin(nace_list)
+                )
+
         else:
-            # Advanced mode: support letter codes from Klass
-            nace_groups = get_nace_groups(aar)
-            expanded_nace_list = []
-            
-            for item in nace_list:
-                if item.isalpha() and item in nace_groups:
-                    # Letter code: add all its NACE codes
-                    nace_codes = nace_groups[item]
-                    expanded_nace_list.extend(nace_codes)
-                    category_to_nace[item] = nace_codes
-                else:
-                    # Numeric code
-                    nace_2_digit = item.split(".")[0][:2]
-                    expanded_nace_list.append(item)
-                    category_to_nace[item] = [nace_2_digit]
+            # for å loade fleire næringar ved innlasting
+            nace_2_siffer_liste = [n.split(".")[0][:2] for n in nace_list]
+            t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
+            t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
 
-            if detail_grid:
-                if expanded_nace_list:
-                    t = t.filter(
-                        t.naring.substr(0, length=nace_siffer_level).isin(expanded_nace_list)
-                    )
-            else:
-                # Filter to relevant NACE codes (no duplication)
-                nace_2_siffer_liste = [n.split(".")[0][:2] for n in expanded_nace_list]
-                t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
-                
-                # Add a basic selected_nace column at the specified siffer level
-                # The actual grouping will be handled in the callback
-                t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
-
-            print(category_to_nace)
-
-        return t.mutate(aar=ibis.literal(aar).cast("string")), category_to_nace
-
-    # def __exit__(self, exc_type, exc, tb) -> None:
-    #     """Close the ibis connection."""
-    #     self.conn.disconnect()
+        return t.mutate(aar=ibis.literal(aar).cast("string"))
 
 
 class MacroModule:
@@ -365,7 +209,7 @@ class MacroModule:
         """Initializes the MacroModule.
 
         The MacroModule allows viewing macro values and getting micro-level views for selected fields.
-        The base_path is used by _load_year to locate parquet files.
+        The base_path is used by load_year to locate parquet files.
 
         Args:
             time_units: Your time variables used in the variable selector. Example year, quarter, month, etc.
@@ -503,7 +347,7 @@ class MacroModule:
                                         {"label": k, "value": v}
                                         for k, v in NACE_LEVEL_OPTIONS.items()
                                     ],
-                                    value=NACE_LEVEL_OPTIONS["3-siffer"],
+                                    value=NACE_LEVEL_OPTIONS["2-siffer"],
                                 ),
                                 html.Label(
                                     "Velg tallvisning",
@@ -609,9 +453,13 @@ class MacroModule:
 
     def _get_nace_options(self, base_path: str, aar: str) -> list[str]:
         """Get distinct NACE codes for a given year."""
-        t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(
-            f"{base_path}/p{aar}/statistikkfil_bedrifter_nr.parquet"
-        )
+        if int(aar) > 2023:  # new nedtrekk in Dapla has a specific file path
+            file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistikkfil_bedrifter_nr.parquet"
+        else:
+            file_path = (
+                f"{base_path}/p{aar}/statistikkfil_bedrifter_nr.parquet"
+            )
+        t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(file_path).select("naring")
         naring_filter = t.naring.substr(0, length=2).name("nace2")
         t = t.select(naring_filter).distinct()
         df: DataFrame = t.to_pandas()
@@ -627,7 +475,7 @@ class MacroModule:
             Output("macromodule-naring-velger", "options"),
             Input("var-aar", "value"),
         )
-        def _update_nace_options(aar: str) -> list[str] | list[dict[str, str]]:
+        def update_nace_options(aar: str) -> list[str] | list[dict[str, str]]:
             """Populate NACE dropdown with options from selected year."""
             if not aar:
                 return []
@@ -658,7 +506,7 @@ class MacroModule:
             macro_level: str | None,
             nace_siffer_level: int,
             nace_list: list[str],
-            tallvisning_valg: str,
+            tallvisning_valg: int,
         ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
             """Creates a colour-coordinated matrix heatmap of aggregated values based on their %-change from the previous year."""
             if (
@@ -676,7 +524,7 @@ class MacroModule:
 
             aar: int = int(variabelvelger_aar)
 
-            t: ibis.TableExpr = self.parquet_reader._load_year(
+            t: ibis.TableExpr = self.parquet_reader.load_year(
                 aar,
                 self.base_path,
                 foretak_or_bedrift,
@@ -684,7 +532,7 @@ class MacroModule:
                 nace_siffer_level,
                 detail_grid=False,
             )  # t, current aar
-            t_1: ibis.TableExpr = self.parquet_reader._load_year(
+            t_1: ibis.TableExpr = self.parquet_reader.load_year(
                 aar - 1,
                 self.base_path,
                 foretak_or_bedrift,
@@ -726,10 +574,19 @@ class MacroModule:
                 ]  # kommune, fylke eller sammensatte_variabler
                 col_length: int = MACRO_FILTER_OPTIONS[macro_level]
 
-                # select kommune as 4 digits or substr kommune as fylke
-                t = t.mutate(**{macro_level: t.kommune.substr(0, length=col_length)})
+                t = t.mutate(
+                    **{
+                        macro_level: t.kommune.substr(0, length=col_length)
+                        .fill_null("UKJENT")
+                        .replace("", "UKJENT")
+                    }
+                )
                 t_1 = t_1.mutate(
-                    **{macro_level: t_1.kommune.substr(0, length=col_length)}
+                    **{
+                        macro_level: t_1.kommune.substr(0, length=col_length)
+                        .fill_null("UKJENT")
+                        .replace("", "UKJENT")
+                    }
                 )
 
             t = t.select([*cols, "selected_nace"])
@@ -768,14 +625,20 @@ class MacroModule:
             df.columns = df.columns.astype(str)  # set to str in case aar loaded as int
 
             df["diff"] = df[f"{aar}"] - df[f"{aar-1}"]
-            df["percent_diff"] = df["diff"] / df[f"{aar-1}"]
-            tallvisning = "percent_diff" if tallvisning_valg else f"{aar}"
+            df["differanse"] = df[f"{aar}"].fillna(0) - df[f"{aar-1}"].fillna(0)
+            df["percent_diff"] = df["diff"] / abs(df[f"{aar-1}"])
+            if tallvisning_valg == 1:
+                tallvisning = "percent_diff"
+            elif tallvisning_valg == 2:
+                tallvisning = f"{aar}"
+            else:
+                tallvisning = "differanse"
 
-            matrix = (
-                df.pivot(index=category_column, columns="nace", values=tallvisning)
-                .reset_index()
-                .fillna(0)
-            )
+            matrix = df.pivot(
+                index=category_column, columns="nace", values=tallvisning
+            ).reset_index()
+            matrix[category_column] = matrix[category_column].fillna("UKJENT")
+            matrix.iloc[:, 1:] = matrix.iloc[:, 1:].fillna(0)
 
             # decide order of variables
             if category_column == "variabel":
@@ -792,6 +655,8 @@ class MacroModule:
             count_row["id"] = "count_row"
 
             matrix["id"] = matrix.index.astype(dtype=str)
+            matrix[category_column] = matrix[category_column].astype(dtype=str)
+
             row_data: list[dict[str, Any]] | Any = matrix.to_dict("records")
 
             def _generate_tooltips(
@@ -842,15 +707,16 @@ class MacroModule:
                         "sortable": True,
                         "filter": True,
                         "resizable": True,
+                        "filterParams": {"buttons": ["reset"]},
                     }
 
                     if safe_col != category_column:
 
-                        formatter_func = f"MacroModule.formatHeatmapValue(params, {str(tallvisning_valg).lower()})"
+                        formatter_func = f"MacroModule.formatHeatmapValue(params, {tallvisning_valg})"
 
                         style_func = (
                             "MacroModule.displayDiffHeatMap(params)"
-                            if tallvisning_valg
+                            if tallvisning_valg == 1
                             else "MacroModule.displaySimpleHeatMap(params)"
                         )
 
@@ -860,6 +726,7 @@ class MacroModule:
                                 "tooltipField": f"{safe_col}_tooltip",
                                 "valueFormatter": {"function": formatter_func},
                                 "cellStyle": {"function": style_func},
+                                "filter": "agNumberColumnFilter",
                             }
                         )
 
@@ -881,6 +748,9 @@ class MacroModule:
             Output("macromodule-detail-grid", "columnDefs"),
             Output("macromodule-detail-grid-title", "children"),
             Output("macromodule-detail-grid", "columnState"),
+            Output("macromodule-detail-grid", "resetColumnState"),
+            Output("macromodule-detail-grid", "filterModel"),
+            Output("macromodule-detail-grid", "paginationGoTo"),
             Input("macromodule-heatmap-grid", "cellClicked"),
             State("var-aar", "value"),
             State("macromodule-foretak-or-bedrift", "value"),
@@ -903,6 +773,9 @@ class MacroModule:
             list[dict[str, Any]],
             str,
             list[dict[str, Any]],
+            bool,
+            None,
+            int,
         ]:
             """Table with foretak & bedrift-level details which updates when user selects a cell in heatmap-grid."""
             if not cell_data or not variabelvelger_aar:
@@ -923,6 +796,9 @@ class MacroModule:
             selected_nace = col.replace("_", ".")
             row_idx = int(row_id)
 
+            if not selected_nace:
+                raise PreventUpdate
+
             if macro_level == "sammensatte variabler":
                 selected_filter_val: Any | None = heatmap_row_data[row_idx].get(
                     "variabel"
@@ -932,10 +808,11 @@ class MacroModule:
                 assert macro_level is not None
                 selected_filter_val = heatmap_row_data[row_idx].get(macro_level)
 
-            if not selected_filter_val or not selected_nace:
+            if selected_filter_val is None or pd.isna(selected_filter_val):
                 raise PreventUpdate
 
-            t: ibis.TableExpr = self.parquet_reader._load_year(
+            # read in every unit in selected nace
+            t_curr_filtered: ibis.TableExpr = self.parquet_reader.load_year(
                 aar,
                 self.base_path,
                 foretak_or_bedrift,
@@ -943,35 +820,90 @@ class MacroModule:
                 nace_siffer_level,
                 detail_grid=True,
             )
-            t_1: ibis.TableExpr = self.parquet_reader._load_year(
+            t_prev_filtered: ibis.TableExpr = self.parquet_reader.load_year(
                 aar - 1,
                 self.base_path,
                 foretak_or_bedrift,
-                [],
+                [selected_nace],
                 nace_siffer_level,
                 detail_grid=True,
             )
-            # må finne ut om vi vil inkludere tala frå fjoråret om dei ikkje inngår i denne næringa. blir vanskeleg å filtrere på diff då i så fall. kan evt berre legge på ei markering på dei som hadde ei anna bedriftsnæring i fjor.
-            id_col: Literal["orgnr_foretak", "orgnr_bedrift"] = (
-                "orgnr_foretak" if foretak_or_bedrift == "foretak" else "orgnr_bedrift"
-            )
-            t_1 = t_1.filter(t_1[id_col].isin(t[id_col]))
 
-            # Apply macro-level truncation if needed
-            if macro_level not in ("sammensatte variabler",):
+            # handle kommune/fylke filters
+            if macro_level != "sammensatte variabler":
+
                 assert isinstance(macro_level, str)
+
                 col_length: int = MACRO_FILTER_OPTIONS[macro_level]
-                t = t.mutate(**{macro_level: t.kommune.substr(0, length=col_length)})
-                t = t.filter(t[macro_level] == selected_filter_val)
-                t_1 = t_1.mutate(
-                    **{macro_level: t_1.kommune.substr(0, length=col_length)}
+                t_curr_filtered = t_curr_filtered.mutate(
+                    **{
+                        macro_level: t_curr_filtered.kommune.substr(
+                            0, length=col_length
+                        )
+                        .fill_null("UKJENT")
+                        .replace("", "UKJENT")
+                    }
                 )
-                t_1 = t_1.filter(t_1[macro_level] == selected_filter_val)
+                t_prev_filtered = t_prev_filtered.mutate(
+                    **{
+                        macro_level: t_prev_filtered.kommune.substr(
+                            0, length=col_length
+                        )
+                        .fill_null("UKJENT")
+                        .replace("", "UKJENT")
+                    }
+                )
+
+                t_curr_filtered = t_curr_filtered.filter(
+                    t_curr_filtered[macro_level] == selected_filter_val
+                )
+                t_prev_filtered = t_prev_filtered.filter(
+                    t_prev_filtered[macro_level] == selected_filter_val
+                )
+
+            # collect all unique units (orgnr_foretak) from both years
+            units_curr = t_curr_filtered.select("orgnr_foretak").distinct()
+            units_prev = t_prev_filtered.select("orgnr_foretak").distinct()
+            units_all = units_curr.union(units_prev).distinct()
+
+            # reload ALL data (no nace/macro filters) for those units
+            t: ibis.TableExpr = self.parquet_reader.load_year(
+                aar,
+                self.base_path,
+                foretak_or_bedrift,
+                [],  # no nace filter
+                nace_siffer_level,
+                detail_grid=True,
+            )
+            t_1: ibis.TableExpr = self.parquet_reader.load_year(
+                aar - 1,
+                self.base_path,
+                foretak_or_bedrift,
+                [],  # no nace filter
+                nace_siffer_level,
+                detail_grid=True,
+            )
+
+            # filter to only the units we identified
+            t = t.semi_join(units_all, ["orgnr_foretak"])
+            t_1 = t_1.semi_join(units_all, ["orgnr_foretak"])
 
             select_cols = [
-                *ALL_RELEVANT_COLS,
+                "navn",
+                "orgnr_foretak",
+                "naring",
+                "naring_f",
+                "reg_type",
+                "reg_type_f",
+                "type",
+                "kommune",
+                *HEATMAP_VARIABLES.keys(),
+                "giver_fnr",
+                "giver_bnr",
                 "aar",
             ]
+            if foretak_or_bedrift == "bedrifter":
+                select_cols.append("orgnr_bedrift")
 
             t = t.select([c for c in select_cols if c in t.columns])
             t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
@@ -981,50 +913,146 @@ class MacroModule:
                     "naring_f": "naring",
                     "reg_type_f": "reg_type",
                     "orgnr_f": "orgnr_foretak",
+                    "kommune_f": "kommune",
                 }
+                kommune_col = "kommune_f"
+                naring_col = "naring_f"
+                merge_keys = "orgnr_f"
             elif foretak_or_bedrift == "bedrifter":
                 rename_mapping = {
                     "naring_b": "naring",
                     "reg_type_b": "reg_type",
                     "orgnr_f": "orgnr_foretak",
                     "orgnr_b": "orgnr_bedrift",
+                    "kommune_b": "kommune",
                 }
+                kommune_col = "kommune_b"
+                naring_col = "naring_b"
+                merge_keys = ["orgnr_f", "orgnr_b"]
 
             t = t.rename(**rename_mapping)
             t_1 = t_1.rename(**rename_mapping)
 
-            # cast numerics to float in case of yearly type mismatches
             for col in HEATMAP_VARIABLES.keys():
                 if col in t.columns:
                     t = t.mutate(**{col: t[col].cast("float64")})
                 if col in t_1.columns:
                     t_1 = t_1.mutate(**{col: t_1[col].cast("float64")})
 
-            combined = t.union(t_1)
+            t_curr = t.filter(t.aar == str(aar))
+            t_prev = t_1.filter(t_1.aar == str(aar - 1))
 
-            # rename cols to chosen variable names
-            rename_map = {
-                v: k for k, v in HEATMAP_VARIABLES.items() if k in combined.columns
-            }
+            t_curr = t_curr.rename(
+                {v: k for k, v in HEATMAP_VARIABLES.items() if k in t_curr.columns}
+            ).execute()
+            t_prev = t_prev.rename(
+                {v: k for k, v in HEATMAP_VARIABLES.items() if k in t_prev.columns}
+            ).execute()
 
-            combined = combined.rename(**rename_map)
-            df = combined.execute()
-
-            df_current = df[df["aar"] == str(aar)].copy()
-            df_previous = df[df["aar"] == str(aar - 1)].copy()
-
-            df_previous.drop(columns="aar", inplace=True)
-            df_current.drop(columns="aar", inplace=True)
-
-            merge_keys = [
-                c
-                for c in ["orgnr_f", "orgnr_b"]
-                if c in df_current.columns and c in df_previous.columns
-            ]
-            df_merged = df_current.merge(
-                df_previous, on=merge_keys, how="left", suffixes=("", "_x")
+            # use outer to catch units that may only exist in one year due to orgnr_bedrift changes
+            merged_df = t_curr.merge(
+                t_prev,
+                how="outer",
+                on=merge_keys,
+                suffixes=("", "_x"),
+                indicator=True,
             )
-            df = df_merged.copy()
+
+            merged_df[kommune_col] = (
+                merged_df[kommune_col].fillna("UKJENT").replace("", "UKJENT")
+            )
+            merged_df[f"{kommune_col}_x"] = (
+                merged_df[f"{kommune_col}_x"].fillna("UKJENT").replace("", "UKJENT")
+            )
+
+            merged_df["is_new"] = merged_df["_merge"] == "left_only"
+            merged_df["is_exiter"] = merged_df["_merge"] == "right_only"
+
+            # for exiters, fill in key identifying columns from previous year
+            if "navn" in merged_df.columns and "navn_x" in merged_df.columns:
+                merged_df["navn"] = merged_df["navn"].fillna(merged_df["navn_x"])
+            merged_df = merged_df.drop(columns=["_merge"])
+
+            # 2-siffer nace changes?
+            if (
+                naring_col in merged_df.columns
+                and f"{naring_col}_x" in merged_df.columns
+            ):
+                merged_df["nace_prefix_curr"] = (
+                    merged_df[naring_col].astype(str).str[:nace_siffer_level]
+                )
+                merged_df["nace_prefix_prev"] = (
+                    merged_df[f"{naring_col}_x"].astype(str).str[:nace_siffer_level]
+                )
+
+                merged_df["is_nace_entrant"] = (  # different nace LAST year
+                    ~merged_df["is_new"]
+                    & (merged_df["nace_prefix_curr"] == selected_nace)
+                    & (merged_df["nace_prefix_prev"] != selected_nace)
+                )
+
+                merged_df["is_nace_exiter"] = (  # different nace THIS year
+                    ~merged_df["is_exiter"]
+                    & (merged_df["nace_prefix_prev"] == selected_nace)
+                    & (merged_df["nace_prefix_curr"] != selected_nace)
+                )
+
+                merged_df["nace_same"] = (
+                    merged_df["nace_prefix_curr"] == merged_df["nace_prefix_prev"]
+                ).fillna(False)
+
+                # drop rows/units if it wasn't in bucket this or last year, necessary because of merging on orgnr_foretak
+                mask = (merged_df["nace_prefix_curr"] == selected_nace) | (
+                    merged_df["nace_prefix_prev"] == selected_nace
+                )
+                merged_df = merged_df[mask]
+
+            # kommune/fylke change flags
+            if macro_level in ("fylke", "kommune"):
+
+                if (
+                    kommune_col in merged_df.columns
+                    and f"{kommune_col}_x" in merged_df.columns
+                ):
+                    merged_df["macro_prefix_curr"] = merged_df[kommune_col].where(
+                        merged_df[kommune_col] == "UKJENT",
+                        merged_df[kommune_col].astype(str).str[:col_length],
+                    )
+                    merged_df["macro_prefix_prev"] = merged_df[
+                        f"{kommune_col}_x"
+                    ].where(
+                        merged_df[f"{kommune_col}_x"] == "UKJENT",
+                        merged_df[f"{kommune_col}_x"].astype(str).str[:col_length],
+                    )
+
+                    merged_df["in_bucket_curr"] = (
+                        merged_df["macro_prefix_curr"] == selected_filter_val
+                    ).fillna(False)
+                    merged_df["in_bucket_prev"] = (
+                        merged_df["macro_prefix_prev"] == selected_filter_val
+                    ).fillna(False)
+
+                    # drop rows/units if it wasn't in bucket this or last year, necessary because of excess bedrifter when merging on orgnr_foretak
+                    mask = merged_df["in_bucket_curr"] | merged_df["in_bucket_prev"]
+                    merged_df = merged_df[mask]
+
+                    merged_df["is_macro_entrant"] = (
+                        ~merged_df["is_new"]
+                        & merged_df["in_bucket_curr"]
+                        & ~merged_df["in_bucket_prev"]
+                    )
+                    merged_df["is_macro_exiter"] = (
+                        ~merged_df["is_exiter"]
+                        & merged_df["in_bucket_prev"]
+                        & ~merged_df["in_bucket_curr"]
+                    )
+            else:
+                merged_df["in_bucket_curr"] = True
+                merged_df["in_bucket_prev"] = True
+                merged_df["is_macro_entrant"] = False
+                merged_df["is_macro_exiter"] = False
+
+            df = merged_df.copy()
 
             if (
                 "giver_bnr" in df.columns and "giver_fnr" in df.columns
@@ -1039,22 +1067,34 @@ class MacroModule:
                         str
                     )
 
+            # adjust values for current and previous contributors and then calculate diff accordingly
             if valgt_variabel in df.columns and f"{valgt_variabel}_x" in df.columns:
-                naring_prev: Literal["naring_b", "naring_f"] = (
-                    "naring_b" if "naring_b" in df.columns else "naring_f"
-                )
-                same_prefix = (
-                    df[f"{naring_prev}_x"].str[:nace_siffer_level]
-                    == df[naring_prev].str[:nace_siffer_level]
-                )
-                prev_value_adjusted = (
-                    df[f"{valgt_variabel}_x"].where(same_prefix, other=0).fillna(0)
+
+                current_contributes = (
+                    ~df["is_exiter"]
+                    & df["in_bucket_curr"]
+                    & (df["nace_prefix_curr"] == selected_nace)
                 )
 
-                # to correctly calculate diffs per naring for bedrifter/foretak that have changed naring
-                df[f"{valgt_variabel}_diff"] = (
-                    df[valgt_variabel].fillna(0) - prev_value_adjusted
+                prev_contributes = (
+                    ~df["is_new"]
+                    & df["in_bucket_prev"]
+                    & (df["nace_prefix_prev"] == selected_nace)
                 )
+
+                current_value_adjusted = (
+                    df[valgt_variabel].where(current_contributes, other=0).fillna(0)
+                )
+                prev_value_adjusted = (
+                    df[f"{valgt_variabel}_x"].where(prev_contributes, other=0).fillna(0)
+                )
+
+                df[f"{valgt_variabel}_diff"] = (
+                    current_value_adjusted - prev_value_adjusted
+                )
+
+                df["is_tilgang"] = current_contributes & ~prev_contributes
+                df["is_avgang"] = ~current_contributes & prev_contributes
 
                 heatmap_value_change = cell_data.get("value", 0)
                 heatmap_value_change = (
@@ -1095,11 +1135,22 @@ class MacroModule:
             visible_cols = [
                 c for c in [*DETAIL_GRID_ID_COLS_ORDERED, *ordered_value_cols] if c in df.columns
             ]
+
             row_data: list[dict[Hashable, Any]] | Any = df.to_dict("records")
+            if macro_level in ("fylke", "kommune"):
+                for row in row_data:
+                    row["macro_len"] = MACRO_FILTER_OPTIONS[
+                        macro_level
+                    ]  # for frontend JavaScript
 
             column_defs = []
             for col in visible_cols:
-                col_def = {"headerName": col, "field": col, "width": 140}
+                col_def = {
+                    "headerName": col,
+                    "field": col,
+                    "width": 140,
+                    "filterParams": {"buttons": ["reset"]},
+                }
 
                 if col == "orgnr_f" and "giver_fnr_tooltip" in df.columns:
                     col_def["tooltipField"] = "giver_fnr_tooltip"
@@ -1126,6 +1177,14 @@ class MacroModule:
                         }
                     )
 
+                if col.endswith("_diff") or col in ("orgnr_b", "navn"):
+                    col_def["cellStyle"] = {
+                        "function": "MacroModule.displayDiffColumnHighlight(params)"
+                    }
+
+                if df[col].dtypes == "float":
+                    col_def["filter"] = "agNumberColumnFilter"
+
                 column_defs.append(col_def)
 
             if column_defs:
@@ -1136,7 +1195,7 @@ class MacroModule:
             if macro_level == "sammensatte variabler":
                 title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace}"
 
-            return row_data, column_defs, title, []
+            return row_data, column_defs, title, [], True, None, 0
 
         @callback(
             Output("macromodule-detail-grid", "rowData", allow_duplicate=True),
@@ -1164,16 +1223,15 @@ class MacroModule:
 
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
-            Output("var-foretak", "value"),
-            Output("var-bedrift", "value"),
-            Output("altinnedit-option1", "value"),
+            Output("var-bedrift", "value", allow_duplicate=True),
+            Output("altinnedit-option1", "value", allow_duplicate=True),
             Input("macromodule-detail-grid", "cellClicked"),
             State("macromodule-detail-grid", "rowData"),
             prevent_initial_call=True,
         )
         def output_to_variabelvelger(
             clickdata: dict | None, rowdata: list[dict[str, Any]]
-        ) -> tuple[str, str, str, str]:
+        ) -> tuple[str, str, str]:
             """Handle cell clicks in detail grid and update variable selector in the Dash app."""
             if not clickdata:
                 raise PreventUpdate
@@ -1181,7 +1239,7 @@ class MacroModule:
             row_id = clickdata.get("rowId")
             col_id = clickdata.get("colId")
 
-            if row_id is None:
+            if row_id is None or col_id not in ("orgnr_f", "orgnr_b", "navn"):
                 raise PreventUpdate
 
             row_idx = int(row_id)
@@ -1189,11 +1247,9 @@ class MacroModule:
                 raise PreventUpdate
 
             clicked_row = rowdata[row_idx]
-            ident = clicked_row.get("orgnr_f", "")
-            foretak = ident
+            bedrift = ""
 
             if col_id in ("orgnr_f", "navn"):
-                bedrift = ""
                 tabell = "skjemadata_foretak"
             elif col_id == "orgnr_b":
                 bedrift = clicked_row.get("orgnr_b", "")
@@ -1201,12 +1257,13 @@ class MacroModule:
             else:
                 raise PreventUpdate
 
-            ident = str(ident) if ident else ""
-            foretak = str(foretak) if foretak else ""
-            bedrift = str(bedrift) if bedrift else ""
-            tabell = str(tabell) if tabell else ""
+            ident = clicked_row.get("orgnr_f", "")
 
-            return ident, foretak, bedrift, tabell
+            return (
+                str(ident) if ident else "",
+                str(bedrift) if bedrift else "",
+                str(tabell) if tabell else "",
+            )
 
 
 class MacroModuleTab(TabImplementation, MacroModule):

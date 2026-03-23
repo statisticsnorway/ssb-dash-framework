@@ -15,6 +15,7 @@ from .altinn_data_capture import AltinnDataCapture
 from .altinn_data_capture import AltinnDataCaptureTab
 from .altinn_data_capture import AltinnDataCaptureWindow
 from .altinn_editor import AltinnSkjemadataEditor
+from .altinn_editor import AltinnSupportTable
 from .bedriftstabell import Bedriftstabell
 from .bedriftstabell import BedriftstabellTab
 from .bedriftstabell import BedriftstabellWindow
@@ -33,6 +34,7 @@ from .building_blocks import FigureDisplayWindow
 from .building_blocks import MapDisplay
 from .building_blocks import MapDisplayTab
 from .building_blocks import MapDisplayWindow
+from .building_blocks import MicroLayoutAIO
 from .building_blocks import MultiModule
 from .building_blocks import MultiModuleTab
 from .building_blocks import MultiModuleWindow
@@ -44,10 +46,20 @@ from .hb_method import HBMethodWindow
 from .macro_module import MacroModule
 from .macro_module import MacroModuleTab
 from .macro_module import MacroModuleWindow
+from .macro_module_consolidated import MacroModuleConsolidated
+from .macro_module_consolidated import MacroModuleConsolidatedTab
+from .macro_module_consolidated import MacroModuleConsolidatedWindow
+from .macro_nspek_post_control import MacroNspekPostControl
+from .macro_nspek_post_control import MacroNspekPostControlTab
+from .macro_nspek_post_control import MacroNspekPostControlWindow
+from .nspek import Naeringsspesifikasjon
+from .nspek import NaeringsspesifikasjonTab
+from .nspek import NaeringsspesifikasjonWindow
 from .parquet_editor import ParquetEditor
 from .parquet_editor import ParquetEditorChangelog
 from .parquet_editor import apply_edits
 from .parquet_editor import export_from_parqueteditor
+from .parquet_editor import get_export_log_path
 from .parquet_editor import get_log_path
 from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
@@ -69,6 +81,7 @@ __all__ = [
     "AltinnDataCaptureTab",
     "AltinnDataCaptureWindow",
     "AltinnSkjemadataEditor",
+    "AltinnSupportTable",
     "Bedriftstabell",
     "BedriftstabellTab",
     "BedriftstabellWindow",
@@ -95,12 +108,22 @@ __all__ = [
     "MacroModule",
     "MacroModuleTab",
     "MacroModuleWindow",
+    "MacroModuleConsolidated",
+    "MacroModuleConsolidatedTab",
+    "MacroModuleConsolidatedWindow",
+    "MacroNspekPostControl",
+    "MacroNspekPostControlTab",
+    "MacroNspekPostControlWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
+    "MicroLayoutAIO",
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",
+    "Naeringsspesifikasjon",
+    "NaeringsspesifikasjonTab",
+    "NaeringsspesifikasjonWindow",
     "ParquetEditor",
     "ParquetEditorChangelog",
     "PimemorizerTab",
@@ -111,5 +134,6 @@ __all__ = [
     "VisualizationBuilderWindow",
     "apply_edits",
     "export_from_parqueteditor",
+    "get_export_log_path",
     "get_log_path",
 ]
