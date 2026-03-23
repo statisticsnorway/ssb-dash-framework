@@ -23,7 +23,8 @@ from dash.exceptions import PreventUpdate
 from ibis import _
 from ssb_dash_framework import VariableSelector
 from ssb_dash_framework.setup import VariableSelectorOption, variableselector
-from ssb_dash_framework.utils.config_tools.set_variables import get_ident, get_refnr
+from ssb_dash_framework.utils.config_tools.set_variables import get_ident, get_refnr, get_time_units
+from ssb_dash_framework.utils.core_query_functions import create_filter_dict, ibis_filter_with_dict
 
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
@@ -87,15 +88,9 @@ class DataEditor:
     def gather_components(self) -> None:
         """Using the DataEditorRegistry, this method assembles the DataEditor module with currently enabled components."""
         self.info_view = html.Div(
-            dbc.Card(
-                dbc.CardBody(
-                    html.Div(
                         [module.layout() for module in DataEditorRegistry.info_fields],
                         className="dataeditor-info-view",
                     )
-                )
-            )
-        )
         self.helper_row = html.Div(
             [module.layout() for module in DataEditorRegistry.helper_modules]
         )
@@ -284,15 +279,25 @@ class DataEditorInfoRow:
         for info_var in self.info_variables:
             print(info_var)
             print(self.info_variables[info_var])
+
             info_fields.append(
-                dbc.Stack(
+                dbc.Card(
                     [
-                        html.H4(id=f"info-var-label-{info_var}", children=info_var),
-                        html.P(id=f"info-var-field-{info_var}"),
+                        dbc.CardHeader(id=f"info-var-label-{info_var}", children=info_var),
+                        dbc.CardBody(id=f"info-var-field-{info_var}")
                     ]
                 )
             )
-        return dbc.Row(html.Div(info_fields))
+
+            # info_fields.append(
+            #     dbc.Stack(
+            #         [
+            #             html.H4(id=f"info-var-label-{info_var}", children=info_var),
+            #             html.H5(id=f"info-var-field-{info_var}"),
+            #         ]
+            #     )
+            # )
+        return dbc.Row(dbc.CardGroup(info_fields))
 
     def layout(self):
         return self._create_layout()
@@ -303,20 +308,25 @@ class DataEditorInfoRow:
         @callback(
             [Output(f"info-var-field-{info_var}", "children") for info_var in self.info_variables],
             variableselector.get_input(get_ident()),
+            *[variableselector.get_input(unit) for unit in get_time_units().keys()]
         )
-        def get_data_for_info_row_fields(ident):
+        def get_data_for_info_row_fields(ident, *time_units):
             info_values = []
-
-            for info_var in self.info_variables:
-                with get_connection(necessary_tables = ["enhetsinfo"]) as conn:
+            filter_dict = create_filter_dict(get_time_units(), time_units)            
+            with get_connection(necessary_tables = ["enhetsinfo"]) as conn:                
+                for info_var in self.info_variables:
                     t = conn.table(self.info_variables[info_var]['source'])
-                    value = t.filter(_.ident == ident).filter(_.variabel == self.info_variables[info_var]['variable_name']).to_pandas()["variabel"].item()
-                info_values.append(value)
-            print("info_values: ", info_values)
-            if len(self.info_variables) == 1:
-                return info_values[0]
-            else:
-                return info_values
+                    t = t.filter(_.ident == ident).filter(ibis_filter_with_dict(filter_dict))
+                    data = t.filter(_.variabel == self.info_variables[info_var]['variable_name']).to_pandas()
+                    logger.debug(data)
+                    value = data["verdi"].item()
+                    info_values.append(value)
+                    logger.debug("info_values: ", info_values)
+
+            # if len(self.info_variables) == 1:
+            #     return info_values[0]
+            # else:
+            return info_values
             
 
 
