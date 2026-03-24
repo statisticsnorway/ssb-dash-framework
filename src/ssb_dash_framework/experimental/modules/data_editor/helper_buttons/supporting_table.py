@@ -107,11 +107,14 @@ class DataEditorSupportTables(DataEditorHelperButton):
     Note:
         Adding your own supporting tables is not supported at this time.
     """
-
+    _id_number = 0
     support_components: ClassVar[list[DataEditorSupportTable]] = []
 
     def __init__(self, applies_to_tables: list[str] | None=None, applies_to_forms: list[str] | None=None) -> None:
         """Initializes the DataEditorEditorSupportTables module."""
+        self.module_number = DataEditorSupportTables._id_number
+        self.module_name = self.__class__.__name__
+        DataEditorSupportTables._id_number += 1
         self.modal_body = self._create_modal_body()
         super().__init__(label="Hjelpetabeller")
 
@@ -126,14 +129,3 @@ class DataEditorSupportTables(DataEditorHelperButton):
         )
     
     # TODO: Add callback for hiding irrelevant tables based on selected table and form
-
-
-    # def add_default_tables(self, tables_to_add: list[str], conn: Any) -> None:
-    #     """Adds specified default supporting tables to view."""
-    #     for table in tables_to_add:
-    #         if table == "aar_til_fjoraar":
-    #             add_year_diff_support_table(conn)
-    #         else:
-    #             raise ValueError(
-    #                 f"Table named '{table}' not among available default tables."
-    #             )

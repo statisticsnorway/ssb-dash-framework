@@ -98,8 +98,8 @@ class DataEditor:
             [module.layout() for module in DataEditorRegistry.info_fields],
             className="dataeditor-info-view",
         )
-        self.helper_row = html.Div(
-            [module.layout() for module in DataEditorRegistry.helper_modules]
+        self.helper_row = dbc.Row(
+            [dbc.Col(module.layout()) for module in DataEditorRegistry.helper_modules]
         )
         self.sidebar = html.Div(
             [
@@ -360,9 +360,6 @@ class DataEditorHelperButton(ABC):
         Args:
             label: The label to put on the button.
         """
-        self.module_number = DataEditorHelperButton._id_number
-        self.module_name = self.__class__.__name__
-        DataEditorHelperButton._id_number += 1
         self.label = label
         self.button_callbacks()
         DataEditorRegistry.helper_modules.append(self)
