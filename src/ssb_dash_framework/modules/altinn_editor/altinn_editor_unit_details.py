@@ -14,6 +14,7 @@ from ibis import _
 from ssb_dash_framework.utils import create_filter_dict
 from ssb_dash_framework.utils import get_connection
 from ssb_dash_framework.utils import ibis_filter_with_dict
+from eimerdb import EimerDBInstance
 
 from ...setup.variableselector import VariableSelector
 from ...utils.config_tools.connection import _get_connection_object
