@@ -243,6 +243,15 @@ Altinn Editor Support Tables
     overflow: hidden;
 }
 
+.dataeditor-helper-button-modal .modal-dialog {
+    max-width: 90vw !important;
+    width: 90vw !important;
+}
+
+.dataeditor-helper-button-modal .modal-content {
+    height: 80vh !important;
+    overflow: hidden;
+}
 /*
 MacroModule
 */
