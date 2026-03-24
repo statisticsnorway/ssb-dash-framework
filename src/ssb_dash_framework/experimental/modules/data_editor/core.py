@@ -23,8 +23,15 @@ from dash.exceptions import PreventUpdate
 from ibis import _
 from ssb_dash_framework import VariableSelector
 from ssb_dash_framework.setup import VariableSelectorOption, variableselector
-from ssb_dash_framework.utils.config_tools.set_variables import get_ident, get_refnr, get_time_units
-from ssb_dash_framework.utils.core_query_functions import create_filter_dict, ibis_filter_with_dict
+from ssb_dash_framework.utils.config_tools.set_variables import (
+    get_ident,
+    get_refnr,
+    get_time_units,
+)
+from ssb_dash_framework.utils.core_query_functions import (
+    create_filter_dict,
+    ibis_filter_with_dict,
+)
 
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
@@ -88,9 +95,9 @@ class DataEditor:
     def gather_components(self) -> None:
         """Using the DataEditorRegistry, this method assembles the DataEditor module with currently enabled components."""
         self.info_view = html.Div(
-                        [module.layout() for module in DataEditorRegistry.info_fields],
-                        className="dataeditor-info-view",
-                    )
+            [module.layout() for module in DataEditorRegistry.info_fields],
+            className="dataeditor-info-view",
+        )
         self.helper_row = html.Div(
             [module.layout() for module in DataEditorRegistry.helper_modules]
         )
@@ -277,57 +284,69 @@ class DataEditorInfoRow:
     def _create_layout(self):
         info_fields = []
         for info_var in self.info_variables:
-            print(info_var)
-            print(self.info_variables[info_var])
-
             info_fields.append(
                 dbc.Card(
                     [
-                        dbc.CardHeader(id=f"info-var-label-{info_var}", children=info_var),
-                        dbc.CardBody(id=f"info-var-field-{info_var}")
+                        dbc.CardHeader(
+                            id=f"info-var-label-{info_var}", children=info_var
+                        ),
+                        dbc.CardBody(id=f"info-var-field-{info_var}"),
                     ]
                 )
             )
 
-            # info_fields.append(
-            #     dbc.Stack(
-            #         [
-            #             html.H4(id=f"info-var-label-{info_var}", children=info_var),
-            #             html.H5(id=f"info-var-field-{info_var}"),
-            #         ]
-            #     )
-            # )
         return dbc.Row(dbc.CardGroup(info_fields))
 
     def layout(self):
         return self._create_layout()
 
     def module_callbacks(self):
-        variableselector = VariableSelector(selected_inputs=[], selected_states=[])
+        variableselector = VariableSelector(
+            selected_inputs=[],
+            selected_states=[
+                self.info_variables[x]["variable_name"]
+                for x in self.info_variables
+                if self.info_variables[x]["source"] == "variableselector"
+            ],
+        )
 
         @callback(
-            [Output(f"info-var-field-{info_var}", "children") for info_var in self.info_variables],
+            [
+                Output(f"info-var-field-{info_var}", "children")
+                for info_var in self.info_variables
+            ],
             variableselector.get_input(get_ident()),
-            *[variableselector.get_input(unit) for unit in get_time_units().keys()]
+            *[variableselector.get_input(unit) for unit in get_time_units().keys()],
+            *[variableselector.get_all_states()],
         )
-        def get_data_for_info_row_fields(ident, *time_units):
+        def get_data_for_info_row_fields(ident, *args):
+            logger.debug(f"ident: {ident}\nargs: {args}")
             info_values = []
-            filter_dict = create_filter_dict(get_time_units(), time_units)            
-            with get_connection(necessary_tables = ["enhetsinfo"]) as conn:                
+            time_unit_list = [x for x in get_time_units().keys()]
+            time_units = args[: len(time_unit_list)]
+            collected_states = 0
+            states = args[len(time_unit_list) :]
+            filter_dict = create_filter_dict(time_unit_list, time_units)
+            with get_connection(necessary_tables=["enhetsinfo"]) as conn:
                 for info_var in self.info_variables:
-                    t = conn.table(self.info_variables[info_var]['source'])
-                    t = t.filter(_.ident == ident).filter(ibis_filter_with_dict(filter_dict))
-                    data = t.filter(_.variabel == self.info_variables[info_var]['variable_name']).to_pandas()
-                    logger.debug(data)
-                    value = data["verdi"].item()
+                    logger.debug(f"{info_var}\n{self.info_variables[info_var]}")
+                    if self.info_variables[info_var]["source"] == "variableselector":
+                        value = states[collected_states]
+                        collected_states += 1
+                    else:
+                        t = conn.table(self.info_variables[info_var]["source"])
+                        t = t.filter(_.ident == ident).filter(
+                            ibis_filter_with_dict(filter_dict)
+                        )
+                        data = t.filter(
+                            _.variabel == self.info_variables[info_var]["variable_name"]
+                        ).to_pandas()
+                        logger.debug(data)
+                        value = data["verdi"].item()
                     info_values.append(value)
                     logger.debug("info_values: ", info_values)
 
-            # if len(self.info_variables) == 1:
-            #     return info_values[0]
-            # else:
             return info_values
-            
 
 
 class DataEditorHelperButton(ABC):
