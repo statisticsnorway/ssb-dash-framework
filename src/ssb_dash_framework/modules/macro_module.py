@@ -1,3 +1,6 @@
+from pandas.core.frame import DataFrame
+
+
 import logging
 from collections.abc import Hashable
 from typing import Any
@@ -30,17 +33,26 @@ ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
 
-def get_nace_groups(aar) -> dict[str, str]:
+def get_nace_values_from_group(aar: int, klass_gruppekode: str, sn2007: bool = False) -> dict[str, str]:
     """
     Uses Klass to get the current letter codes and NACE values in said group.
+    Setting sn2007 to True forces the code to pick up the SN2007-Klass version instead. This param can be used when comparing SN2007 to SN2025.
+
+    Example usage: 
+        get_nace_values_from_group(2024, "G")
+    Output: 
+        {'G': ['45', '46', '47']}
     """
+    if sn2007:
+        aar = 2023
     standard_for_naeringsgruppering = KlassClassification(6)
     df = standard_for_naeringsgruppering.get_codes(
-        f"{aar}-10-01"
-    ).data  # selected 1st of Oct to determine per year
+        f"{aar+1}-01-01"
+    ).data
 
-    # Get group and naringskoder
+    # Get group and naringskoder for specified group
     df = df[df["level"].isin(["2"])][["code", "parentCode"]]
+    df = df[df["parentCode"]==klass_gruppekode]
 
     # Create a dictionary with "group": ["codes"]
     strukt_naering_gruppekoder = {}
@@ -51,6 +63,20 @@ def get_nace_groups(aar) -> dict[str, str]:
         else:
             strukt_naering_gruppekoder[gruppe].append(naring)
     return strukt_naering_gruppekoder
+
+
+def get_nace_groups(aar: int) -> list[str]:
+    """
+    Uses Klass to get the existing letter codes in 'Standard for næringsgruppering' for specified year.
+    """
+    standard_for_naeringsgruppering = KlassClassification(6)
+    df: DataFrame = standard_for_naeringsgruppering.get_codes(
+        f"{aar+1}-01-01"
+    ).data
+
+    # Get group and naringskoder
+    df = df[df["level"].isin(["2"])][["code", "parentCode"]]
+    return df["parentCode"].unique().tolist()
 
 
 DETAIL_GRID_ID_COLS = {
@@ -100,6 +126,9 @@ class MacroModule_ParquetReader:
         Can be used for both the heatmap-grid and the detail-grid. If used for the prior, only filters on the first 2 naring digits (like "45", "88"), whereas for the latter it selects at specified nace_siffer_level.
         """
         file_path = file_path_resolver(aar, foretak_or_bedrift)
+
+        # letter_groups = {n for n in nace_list if not n[0].isdigit()}
+        # only_nace_codes = {n.split(".")[0][:2] for n in nace_list if n[0].isdigit()}
 
         try:
             t: ibis.TableExpr = self.conn.read_parquet(file_path)
@@ -310,7 +339,7 @@ class MacroModule:
                                         }
                                         for v in self.heatmap_variables
                                     ],
-                                    value="produksjonsverdi",
+                                    value=list(self.heatmap_variables.keys())[0],
                                     id="macromodule-macro-variable",
                                 ),
                                 html.Label(
@@ -453,7 +482,8 @@ class MacroModule:
         t = t.select(naring_filter).distinct()
         df: DataFrame = t.to_pandas()
         nace_numbers: list[str] = sorted(df["nace2"].astype(str))
-        nace_groups: list[str] = list(get_nace_groups(aar).keys())
+        # nace_groups: list[str] = list(get_nace_groups(int(aar)))
+        nace_groups = []
         return [*nace_numbers, *nace_groups]
 
     def module_callbacks(self) -> None:
