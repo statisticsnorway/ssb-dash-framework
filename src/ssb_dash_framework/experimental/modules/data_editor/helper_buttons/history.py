@@ -1,18 +1,21 @@
 import logging
-from dash import Input, Output, callback, html
-from psycopg_pool import ConnectionPool
-from eimerdb import EimerDBInstance
-import tzlocal
-import pandas as pd
-import dash_ag_grid as dag
-from ssb_dash_framework import VariableSelector
-from ssb_dash_framework.utils.config_tools.set_variables import (
-    get_refnr,
-    get_time_units,
-)
-from ibis import _
-from .....utils.config_tools.connection import _get_connection_object, get_connection
 
+import dash_ag_grid as dag
+import pandas as pd
+import tzlocal
+from dash import Input
+from dash import Output
+from dash import callback
+from dash import html
+from ibis import _
+from psycopg_pool import ConnectionPool
+
+from ssb_dash_framework import VariableSelector
+from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
+from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
+
+from .....utils.config_tools.connection import _get_connection_object
+from .....utils.config_tools.connection import get_connection
 from ..core import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)
@@ -28,7 +31,9 @@ class DataEditorHistory(DataEditorHelperButton):
     Note:
         Adding your own supporting tables is not supported at this time.
     """
+
     _id_number = 0
+
     def __init__(
         self,
         applies_to_tables: list[str] | None = None,
@@ -43,7 +48,7 @@ class DataEditorHistory(DataEditorHelperButton):
             selected_states=[get_refnr(), *[x for x in get_time_units().keys()]],
         )
         self.modal_body = self._create_modal_body()
-        
+
         super().__init__(label="Historikk")
 
         self.module_callbacks()
@@ -70,7 +75,9 @@ class DataEditorHistory(DataEditorHelperButton):
                     t = conn.table("skjemadataendringshistorikk")
                     df = (
                         t.filter(_.refnr == refnr)
-                        .filter(_.process_type != "Altinn3") # Filtering here to not show the original insert in the history table as the original data will be visible as "old value" in the changelog.
+                        .filter(
+                            _.process_type != "Altinn3"
+                        )  # Filtering here to not show the original insert in the history table as the original data will be visible as "old value" in the changelog.
                         .order_by(_.endret_tid.desc())
                         .to_pandas()
                     )

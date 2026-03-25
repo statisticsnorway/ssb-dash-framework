@@ -56,14 +56,14 @@ class DataEditorTable(DataEditorDataView):
             applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
         )
         print(self)
-    
+
     def __str__(self):
         return (
-        f"{self.module_name}(#{self.module_number})\n"
-        f"  tables : {self.applies_to_tables}\n"
-        f"  forms  : {self.applies_to_forms}\n"
-        f"  divname: {self.divname}\n"
-    )
+            f"{self.module_name}(#{self.module_number})\n"
+            f"  tables : {self.applies_to_tables}\n"
+            f"  forms  : {self.applies_to_forms}\n"
+            f"  divname: {self.divname}\n"
+        )
 
     def _create_layout(self) -> html.Div:
         return html.Div(
@@ -146,7 +146,9 @@ class DataEditorTable(DataEditorDataView):
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
-            Input(f"{self.module_name}-{self.module_number}-aggrid", "cellValueChanged"),
+            Input(
+                f"{self.module_name}-{self.module_number}-aggrid", "cellValueChanged"
+            ),
             State("dataeditortableselector", "value"),
             State(f"{self.module_name}-{self.module_number}-aggrid", "columnDefs"),
             State("alert_store", "data"),

@@ -28,7 +28,7 @@ class DataEditorSupportTable:
         label: str,
         get_data_func: Callable[..., pd.DataFrame],
         inputs: list[str],
-        states: list[str] | None=None,
+        states: list[str] | None = None,
         pin_leftmost_column: bool = True,
         suffix_to_colour_grey: list[str] | None = None,
     ) -> None:
@@ -68,7 +68,7 @@ class DataEditorSupportTable:
     def support_table_callbacks(self) -> None:
         """Adds necessary callbacks."""
 
-        @callback( # TODO: Prevent update if table is not needed for current table and form
+        @callback(  # TODO: Prevent update if table is not needed for current table and form
             Output(f"support-table-{self.suptable_id}", "rowData"),
             Output(f"support-table-{self.suptable_id}", "columnDefs"),
             *self.variableselector.get_all_callback_objects(),
@@ -107,10 +107,15 @@ class DataEditorSupportTables(DataEditorHelperButton):
     Note:
         Adding your own supporting tables is not supported at this time.
     """
+
     _id_number = 0
     support_components: ClassVar[list[DataEditorSupportTable]] = []
 
-    def __init__(self, applies_to_tables: list[str] | None=None, applies_to_forms: list[str] | None=None) -> None:
+    def __init__(
+        self,
+        applies_to_tables: list[str] | None = None,
+        applies_to_forms: list[str] | None = None,
+    ) -> None:
         """Initializes the DataEditorEditorSupportTables module."""
         self.module_number = DataEditorSupportTables._id_number
         self.module_name = self.__class__.__name__
@@ -127,5 +132,5 @@ class DataEditorSupportTables(DataEditorHelperButton):
                 ),
             ],
         )
-    
+
     # TODO: Add callback for hiding irrelevant tables based on selected table and form

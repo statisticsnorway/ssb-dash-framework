@@ -5,12 +5,10 @@
 - dataview
 """
 
-from typing import Any
-from dash.html.Div import Div
-from dash.html.Div import Div
 import logging
 from abc import ABC
 from abc import abstractmethod
+from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import Input
@@ -21,17 +19,12 @@ from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
 from ibis import _
+
 from ssb_dash_framework import VariableSelector
-from ssb_dash_framework.setup import VariableSelectorOption, variableselector
-from ssb_dash_framework.utils.config_tools.set_variables import (
-    get_ident,
-    get_refnr,
-    get_time_units,
-)
-from ssb_dash_framework.utils.core_query_functions import (
-    create_filter_dict,
-    ibis_filter_with_dict,
-)
+from ssb_dash_framework.utils.config_tools.set_variables import get_ident
+from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
+from ssb_dash_framework.utils.core_query_functions import create_filter_dict
+from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
 
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
@@ -115,7 +108,7 @@ class DataEditor:
         logger.debug(
             f"Existing main views at gathering of components:\n{DataEditorRegistry.main_views}"
         )
-        
+
         for divname, info in DataEditorRegistry.main_views.items():
             logger.debug(
                 f"Adding '{divname}' to main_views. Applies to:\ntables: '{info['tables']}'\nforms: {info['forms']}"
@@ -146,25 +139,27 @@ class DataEditor:
             t = t.select("skjema").distinct().execute()
 
             with_view = set(DataEditorRegistry._table_form_covered)
-            
+
             undefined_view: dict[str, list] = {}
-            for table in [table for table in conn.list_tables() if table.startswith("skjemadata_")]:
+            for table in [
+                table for table in conn.list_tables() if table.startswith("skjemadata_")
+            ]:
                 for form in t["skjema"].unique():
                     if (table, form) not in with_view:
                         undefined_view.setdefault(table, []).append(form)
 
-
-
         try:
-            from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_table import DataEditorTable
+            from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_table import (
+                DataEditorTable,
+            )
+
             for table in undefined_view:
-                test = DataEditorTable(applies_to_tables = [table], applies_to_forms = undefined_view[table])
+                test = DataEditorTable(
+                    applies_to_tables=[table], applies_to_forms=undefined_view[table]
+                )
         except Exception as e:
             logger.error("Error during creation of default view.", exc_info=True)
             raise e
-
-
-
 
     def _create_layout(self) -> dbc.Container:
 

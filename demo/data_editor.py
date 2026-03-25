@@ -46,7 +46,8 @@ from ssb_dash_framework import app_setup
 from ssb_dash_framework import get_connection
 from ssb_dash_framework import main_layout
 from ssb_dash_framework import set_variables
-from ssb_dash_framework.experimental.modules.data_editor.core import DataEditor, DataEditorInfoRow
+from ssb_dash_framework.experimental.modules.data_editor.core import DataEditor
+from ssb_dash_framework.experimental.modules.data_editor.core import DataEditorInfoRow
 from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_custom import (
     DataViewCustom,
 )
@@ -191,12 +192,7 @@ layout = [
 ]
 
 DataEditorInfoRow(
-    variables_dict = {
-        "Navn": {
-            "source": "enhetsinfo",
-            "variable_name": "orgnavn"
-        }
-    }
+    variables_dict={"Navn": {"source": "enhetsinfo", "variable_name": "orgnavn"}}
 )
 
 DataViewCustom(

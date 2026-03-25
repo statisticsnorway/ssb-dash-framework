@@ -74,7 +74,9 @@ def get_refnr() -> str:
 def set_refnr(refnr_variable_name: str) -> None:
     global REFNR
     if not isinstance(refnr_variable_name, str):
-        raise TypeError(f"Invalid type for 'refnr_variable_name'. Expected type 'str'. Received '{type(refnr_variable_name)}'.")
+        raise TypeError(
+            f"Invalid type for 'refnr_variable_name'. Expected type 'str'. Received '{type(refnr_variable_name)}'."
+        )
     VariableSelectorOption(refnr_variable_name)
     REFNR = refnr_variable_name
 
@@ -85,7 +87,9 @@ TIME_UNITS: dict[str, TimeUnitType] | None = None
 def get_time_units() -> dict[str, TimeUnitType]:
     global TIME_UNITS
     if not TIME_UNITS:
-        raise RuntimeError("Time_units has not been defined through 'set_time_units()'.")
+        raise RuntimeError(
+            "Time_units has not been defined through 'set_time_units()'."
+        )
     return TIME_UNITS
 
 
@@ -121,7 +125,9 @@ def get_ident() -> str:
 def set_ident(ident: str) -> None:
     global IDENT
     if not isinstance(ident, str):
-        raise TypeError(f"Invalid type for 'ident'. Expected type 'str'. Received '{type(ident)}'.")
+        raise TypeError(
+            f"Invalid type for 'ident'. Expected type 'str'. Received '{type(ident)}'."
+        )
     VariableSelectorOption(ident)
     IDENT = ident
 
@@ -132,7 +138,9 @@ SECONDARY_IDENTS: list[str] | None = None
 def get_secondary_idents() -> list[str]:
     global SECONDARY_IDENTS
     if not SECONDARY_IDENTS:
-        raise RuntimeError("secondary_idents has not been defined through 'set_secondary_idents()'.")
+        raise RuntimeError(
+            "secondary_idents has not been defined through 'set_secondary_idents()'."
+        )
     return SECONDARY_IDENTS
 
 
@@ -153,7 +161,9 @@ GROUPINGVARIABLES: list[str] | None = None
 def get_groupingvariables() -> list[str]:
     global GROUPINGVARIABLES
     if not GROUPINGVARIABLES:
-        raise RuntimeError("Groupingvariables has not been defined through 'set_groupingvariables()'.")
+        raise RuntimeError(
+            "Groupingvariables has not been defined through 'set_groupingvariables()'."
+        )
     return GROUPINGVARIABLES
 
 
