@@ -1,0 +1,68 @@
+app_settings:
+  logging_level: debug
+  log_to_file: True
+VariableSelectorConfig:
+  refnr: refnr
+  ident: ident
+  time_units:
+    aar: YEAR
+  # grouping_variables:
+  #   - komm_nr
+  other:
+    - variabel
+    - valgt_tabell
+    - altinnskjema
+  default_values:
+    aar: "2024"
+    refnr: "20243"
+    ident: "969744066"
+    altinnskjema: "RA-7357"
+
+modules:
+  DataEditor:
+    - InfoRow:
+      - label: Navn
+        source: enhetsinfo
+        variable_name: orgnavn
+    - DataEditorSidebarComment
+    - SidebarEditingStatus
+    - SupportTables:
+      - label: Demo
+        get_data_func: importpath.support_table_get_data
+        inputs:
+          - aar
+          - altinnskjema
+    - CustomView:
+      applies_to_tables:
+        - skjemadata_hoved
+      applies_to_forms:
+        - RA-7357
+      layout:
+        - rows:
+            - cols:
+                table:
+                  label: Oversiktstabell
+                  table_func: importpath.make_table
+                figure:
+                  label: Barplot
+                  figure_func: importpath.make_fig_bar
+        - rows:
+            - cols:
+                microlayout:
+                  label: Test mikrolayout
+                  layout:
+                    - type: input
+                      label: Totalareal
+                      variable: totalareal
+                    - type: input
+                      label: Fulldyrket
+                      variable: fulldyrket
+                    - type: input
+                      label: Innmarksbeite
+                      variable: innmarksbeite
+                  get_data_func: default
+                  update_func: importpath.my_update_func
+                  width: 1
+                figure:
+                  label: Scatterplot fulldyrket - totalareal
+                  figure_func: importpath.make_fig_scatter
