@@ -109,9 +109,13 @@ class DataEditor:
         )
         _existing_views = []
         main_views = []
+
+        self.make_default_view()
+
         logger.debug(
             f"Existing main views at gathering of components:\n{DataEditorRegistry.main_views}"
         )
+        
         for divname, info in DataEditorRegistry.main_views.items():
             logger.debug(
                 f"Adding '{divname}' to main_views. Applies to:\ntables: '{info['tables']}'\nforms: {info['forms']}"
@@ -131,11 +135,38 @@ class DataEditor:
                     exc_info=True,
                 )
                 raise e
-
         self.main_view = html.Div(
             id=f"{self.module_name}-{self.module_number}-div",
             children=[view for view in main_views],
         )
+
+    def make_default_view(self):
+        with get_connection() as conn:
+            t = conn.table("skjemamottak")
+            t = t.select("skjema").distinct().execute()
+
+            with_view = set(DataEditorRegistry._table_form_covered)
+            
+            undefined_view: dict[str, list] = {}
+            for table in [table for table in conn.list_tables() if table.startswith("skjemadata_")]:
+                for form in t["skjema"].unique():
+                    if (table, form) not in with_view:
+                        undefined_view.setdefault(table, []).append(form)
+
+
+
+        # try:
+        from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_table import DataEditorTable
+        for table in undefined_view:
+            print(table, undefined_view[table])
+            test = DataEditorTable(applies_to_tables = [table], applies_to_forms = undefined_view[table])
+            print(test)
+        # except Exception as e:
+        #     logger.error("Error during creation of default view.", exc_info=True)
+        #     raise e
+
+
+
 
     def _create_layout(self) -> dbc.Container:
 
@@ -467,6 +498,9 @@ class DataEditorDataView(ABC):
                 }
             }
         )
+        for table in self.applies_to_tables:
+            for form in self.applies_to_forms:
+                DataEditorRegistry._table_form_covered.append(tuple((table, form)))
 
     @abstractmethod
     def _create_layout(self) -> None:

@@ -55,6 +55,15 @@ class DataEditorTable(DataEditorDataView):
         super().__init__(
             applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
         )
+        print(self)
+    
+    def __str__(self):
+        return (
+        f"{self.module_name}(#{self.module_number})\n"
+        f"  tables : {self.applies_to_tables}\n"
+        f"  forms  : {self.applies_to_forms}\n"
+        f"  divname: {self.divname}\n"
+    )
 
     def _create_layout(self) -> html.Div:
         return html.Div(
@@ -65,7 +74,7 @@ class DataEditorTable(DataEditorDataView):
             },
             children=[
                 dag.AgGrid(
-                    id=f"dataeditor-table-{self._id_number}-aggrid",
+                    id=f"{self.module_name}-{self.module_number}-aggrid",
                     className="ag-theme-alpine header-style-on-filter",
                     style={"width": "100%", "height": "90vh"},
                     defaultColDef={
@@ -85,8 +94,8 @@ class DataEditorTable(DataEditorDataView):
         """Registers the necessary callbacks."""
 
         @callback(
-            Output(f"dataeditor-table-{self._id_number}-aggrid", "rowData"),
-            Output(f"dataeditor-table-{self._id_number}-aggrid", "columnDefs"),
+            Output(f"{self.module_name}-{self.module_number}-aggrid", "rowData"),
+            Output(f"{self.module_name}-{self.module_number}-aggrid", "columnDefs"),
             Input("dataeditortableselector", "value"),
             self.variable_selector.get_all_callback_objects(),
         )
@@ -137,9 +146,9 @@ class DataEditorTable(DataEditorDataView):
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
-            Input(f"dataeditor-table-{self._id_number}-aggrid", "cellValueChanged"),
+            Input(f"{self.module_name}-{self.module_number}-aggrid", "cellValueChanged"),
             State("dataeditortableselector", "value"),
-            State(f"dataeditor-table-{self._id_number}-aggrid", "columnDefs"),
+            State(f"{self.module_name}-{self.module_number}-aggrid", "columnDefs"),
             State("alert_store", "data"),
             prevent_initial_call=True,
         )
@@ -173,8 +182,8 @@ class DataEditorTable(DataEditorDataView):
 
         @callback(  # type: ignore[misc]
             self.variable_selector.get_output_object("variabel"),
-            Input(f"dataeditor-table-{self._id_number}-aggrid", "cellClicked"),
-            State(f"dataeditor-table-{self._id_number}-aggrid", "rowData"),
+            Input(f"{self.module_name}-{self.module_number}-aggrid", "cellClicked"),
+            State(f"{self.module_name}-{self.module_number}-aggrid", "rowData"),
             prevent_initial_call=True,
         )
         def send_variabel_to_variableselector(
