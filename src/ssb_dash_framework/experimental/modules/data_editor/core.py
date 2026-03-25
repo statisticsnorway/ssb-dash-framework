@@ -155,15 +155,13 @@ class DataEditor:
 
 
 
-        # try:
-        from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_table import DataEditorTable
-        for table in undefined_view:
-            print(table, undefined_view[table])
-            test = DataEditorTable(applies_to_tables = [table], applies_to_forms = undefined_view[table])
-            print(test)
-        # except Exception as e:
-        #     logger.error("Error during creation of default view.", exc_info=True)
-        #     raise e
+        try:
+            from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_table import DataEditorTable
+            for table in undefined_view:
+                test = DataEditorTable(applies_to_tables = [table], applies_to_forms = undefined_view[table])
+        except Exception as e:
+            logger.error("Error during creation of default view.", exc_info=True)
+            raise e
 
 
 
