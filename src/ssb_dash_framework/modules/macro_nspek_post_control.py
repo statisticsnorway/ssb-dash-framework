@@ -3,6 +3,7 @@ from collections.abc import Hashable
 from typing import Any
 from typing import ClassVar
 from typing import Literal
+from typing import Callable
 
 import ibis
 import pandas as pd
@@ -22,7 +23,7 @@ from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils.module_validation import module_validator
-from ..modules.macro_module_consolidated import MacroModuleConsolidated_ParquetReader
+from ..modules.macro_module import MacroModule_ParquetReader
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
@@ -82,7 +83,7 @@ positive_to_siffer = {
 
 variabel_valg = {**positive_fem_siffer, **positive_to_siffer}
 # sort descending by nopost for nice UI
-HEATMAP_VARIABLES = dict(
+heatmap_variables = dict(
     sorted(variabel_valg.items(), key=lambda item: int(item[0][-4:]))
 )
 
@@ -102,7 +103,7 @@ DETAIL_GRID_ID_COLS = [
 
 FORETAK_OR_BEDRIFT: dict[str, str] = {"Foretak": "foretak", "Bedrifter": "bedrifter"}
 MACRO_FILTER_OPTIONS: dict[str, Any] = {
-    "Se valgene under, samlet": HEATMAP_VARIABLES,
+    "Se valgene under, samlet": heatmap_variables,
     "Må være positive på 2-siffer": positive_to_siffer,
     "Må være positive på 5-siffer": positive_fem_siffer,
 }
@@ -136,11 +137,17 @@ class MacroNspekPostControl:
         ]
     )
 
-    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
+    def __init__(
+        self,
+        time_units: list[str],
+        conn: object,
+        file_path_resolver: Callable[[int, str], str],
+        consolidated: bool = False,
+    ) -> None:
         """Initializes the MacroNspekPostControl.
 
         The MacroNspekPostControl allows viewing macro values and getting micro-level views for selected fields.
-        The base_path is used by load_year to locate parquet files.
+        The base_path is used by _load_year to locate parquet files.
 
         Args:
             time_units: Your time variables used in the variable selector. Example year, quarter, month, etc.
@@ -170,6 +177,7 @@ class MacroNspekPostControl:
 
         self.icon = "🗹"
         self.label = "Negative NO-poster"
+        self.consolidated = consolidated
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
         )
@@ -180,8 +188,8 @@ class MacroNspekPostControl:
         logger.debug("TIME UNITS ", self.time_units)
 
         self.conn = conn
-        self.base_path = base_path
-        self.parquet_reader = MacroModuleConsolidated_ParquetReader()
+        self.file_path_resolver = file_path_resolver
+        self.parquet_reader = MacroModule_ParquetReader()
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -357,17 +365,12 @@ class MacroNspekPostControl:
         logger.debug(f"Returning: {partition_dict}")
         return partition_dict
 
-    def _get_nace_options(self, base_path: str, aar: str) -> list[str]:
+    def _get_nace_options(self,file_path_resolver: Callable[[int, str], str], aar: str) -> list[str]:
         """Get distinct NACE codes for a given year."""
-        if int(aar) > 2023:  # new nedtrekk in Dapla has a specific file path
-            file_path = f"{base_path}/p{aar}/temp/nedtrekk_dapla/statistiske_foretak_bedrifter.parquet"
-        elif int(aar) == 2023:
-            file_path = f"{base_path}/p{aar}/statistiske_foretak_bedrifter_v2.parquet"
-        else:
-            file_path = (
-                f"{base_path}/p{aar}/statistiske_foretak_bedrifter.parquet"
-            )
-        t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(file_path).select("naring")
+        file_path = file_path_resolver(int(aar), "bedrifter")
+        t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(file_path).select(
+            "naring"
+        )
         naring_filter = t.naring.substr(0, length=2).name("nace2")
         t = t.select(naring_filter).distinct()
         df: DataFrame = t.to_pandas()
@@ -386,7 +389,7 @@ class MacroNspekPostControl:
             if not aar:
                 return []
             try:
-                nace_options = self._get_nace_options(self.base_path, aar)
+                nace_options = self._get_nace_options(self.file_path_resolver, aar)
                 return [{"label": n, "value": n} for n in nace_options]
             except Exception as e:
                 logger.error(f"Error loading NACE options: {e}")
@@ -421,9 +424,9 @@ class MacroNspekPostControl:
 
             aar: int = int(variabelvelger_aar)
 
-            t: ibis.TableExpr = self.parquet_reader.load_year(
+            t: ibis.TableExpr = self.parquet_reader._load_year(
                 aar,
-                self.base_path,
+                self.file_path_resolver,
                 foretak_or_bedrift,
                 nace_list,
                 nace_siffer_level,
@@ -601,9 +604,9 @@ class MacroNspekPostControl:
             aar: int = int(variabelvelger_aar)
 
             # read in every unit in selected nace
-            t_filtered: ibis.TableExpr = self.parquet_reader.load_year(
+            t_filtered: ibis.TableExpr = self.parquet_reader._load_year(
                 aar,
-                self.base_path,
+                self.file_path_resolver,
                 foretak_or_bedrift,
                 [selected_nace],
                 nace_siffer_level,
@@ -797,10 +800,20 @@ class MacroNspekPostControl:
 class MacroNspekPostControlTab(TabImplementation, MacroNspekPostControl):
     """MacroNspekPostControlTab is an implementation of the MacroNspekPostControl module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
+    def __init__(
+        self,
+        time_units: list[str],
+        conn: object,
+        file_path_resolver: Callable[[int, str], str],
+        consolidated: bool = False,
+    ) -> None:
         """Initializes the MacroNspekPostControlTab class."""
         MacroNspekPostControl.__init__(
-            self, time_units=time_units, conn=conn, base_path=base_path
+            self,
+            time_units=time_units,
+            conn=conn,
+            file_path_resolver=file_path_resolver,
+            consolidated=consolidated,
         )
         TabImplementation.__init__(self)
 
@@ -808,9 +821,19 @@ class MacroNspekPostControlTab(TabImplementation, MacroNspekPostControl):
 class MacroNspekPostControlWindow(WindowImplementation, MacroNspekPostControl):
     """MacroNspekPostControlWindow is an implementation of the MacroNspekPostControl module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], conn: object, base_path: str) -> None:
+    def __init__(
+        self,
+        time_units: list[str],
+        conn: object,
+        file_path_resolver: Callable[[int, str], str],
+        consolidated: bool = False,
+    ) -> None:
         """Initializes the MacroNspekPostControlWindow class."""
         MacroNspekPostControl.__init__(
-            self, time_units=time_units, conn=conn, base_path=base_path
+            self,
+            time_units=time_units,
+            conn=conn,
+            file_path_resolver=file_path_resolver,
+            consolidated=consolidated,
         )
         WindowImplementation.__init__(self)
