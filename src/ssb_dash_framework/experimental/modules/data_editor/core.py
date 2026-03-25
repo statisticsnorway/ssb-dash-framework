@@ -5,6 +5,9 @@
 - dataview
 """
 
+from typing import Any
+from dash.html.Div import Div
+from dash.html.Div import Div
 import logging
 from abc import ABC
 from abc import abstractmethod
@@ -17,8 +20,18 @@ from dash import callback
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
-
+from ibis import _
 from ssb_dash_framework import VariableSelector
+from ssb_dash_framework.setup import VariableSelectorOption, variableselector
+from ssb_dash_framework.utils.config_tools.set_variables import (
+    get_ident,
+    get_refnr,
+    get_time_units,
+)
+from ssb_dash_framework.utils.core_query_functions import (
+    create_filter_dict,
+    ibis_filter_with_dict,
+)
 
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
@@ -79,9 +92,12 @@ class DataEditor:
         self.gather_components()
         self.module_callbacks()
 
-    def gather_components(self):
+    def gather_components(self) -> None:
         """Using the DataEditorRegistry, this method assembles the DataEditor module with currently enabled components."""
-        self.info_row = html.Div()
+        self.info_view = html.Div(
+            [module.layout() for module in DataEditorRegistry.info_fields],
+            className="dataeditor-info-view",
+        )
         self.helper_row = html.Div(
             [module.layout() for module in DataEditorRegistry.helper_modules]
         )
@@ -121,12 +137,12 @@ class DataEditor:
             children=[view for view in main_views],
         )
 
-    def _create_layout(self):
+    def _create_layout(self) -> dbc.Container:
 
         return dbc.Container(
             [
                 dbc.Row(html.H1(id=f"{self.module_name}-{self.module_number}-header")),
-                dbc.Row(self.info_row),
+                dbc.Row(self.info_view),
                 dbc.Row(
                     [
                         dbc.Col(self.sidebar, width=2),
@@ -143,11 +159,11 @@ class DataEditor:
             fluid=True,
         )
 
-    def layout(self):
+    def layout(self) -> dbc.Container:
         """Generates the layout for the DataEditor."""
         return self._create_layout()
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor."""
 
         @callback(
@@ -158,10 +174,12 @@ class DataEditor:
             Input("dataeditortableselector", "value"),
             VariableSelector([], []).get_input("altinnskjema"),
         )
-        def update_main_view(selected_table, selected_form):
+        def update_main_view(
+            selected_table: str, selected_form: str
+        ) -> dict[str, Any] | list[dict[str, Any]]:
             # Maybe more efficient to create all and then hide-unused?
             logger.debug(f"Selected table: {selected_table}")
-            styles = []
+            styles: list[dict[str, Any]] = []
             for divname in DataEditorRegistry.main_views:
                 if (
                     selected_table in DataEditorRegistry.main_views[divname]["tables"]
@@ -178,17 +196,18 @@ class DataEditor:
                 logger.debug(
                     "Returning a single dict due to only one main_view being defined"
                 )
-                styles = styles[
+                return styles[
                     0
                 ]  # Dash expects a single value when there is just one output.
-            return styles
+            else:
+                return styles
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-header", "children"),
             Input("dataeditortableselector", "value"),
             VariableSelector([], []).get_input("altinnskjema"),
         )
-        def update_header(selected_table, selected_form):
+        def update_header(selected_table: str, selected_form: str) -> str:
             return f"Viser data for {selected_form} fra tabell {selected_table}"
 
 
@@ -215,7 +234,7 @@ class DataEditorTableSelector:
 
         DataEditorRegistry.sidebar_modules.insert(0, self)
 
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
         with get_connection() as conn:
             skjemadata_tables = [
                 table for table in conn.list_tables() if table.startswith("skjemadata_")
@@ -239,16 +258,95 @@ class DataEditorTableSelector:
             ]
         )
 
-    def layout(self):
+    def layout(self) -> html.Div:
         return self._create_layout()
 
     def module_callbacks(
         self,
-    ):  # TODO Add a way to connect selected table to variable selector?
+    ) -> None:  # TODO Add a way to connect selected table to variable selector?
         pass
 
 
-class DataEditorInfoRow: ...
+class DataEditorInfoRow:
+
+    _id_number = 0
+
+    def __init__(self, variables_dict: dict[str, Any]) -> None:
+        self.module_number = DataEditorInfoRow._id_number
+        self.module_name = self.__class__.__name__
+        DataEditorInfoRow._id_number += 1
+
+        self.info_variables = variables_dict
+        self.module_callbacks()
+
+        DataEditorRegistry.info_fields.append(self)
+
+    def _create_layout(self):
+        info_fields = []
+        for info_var in self.info_variables:
+            info_fields.append(
+                dbc.Card(
+                    [
+                        dbc.CardHeader(
+                            id=f"info-var-label-{info_var}", children=info_var
+                        ),
+                        dbc.CardBody(id=f"info-var-field-{info_var}"),
+                    ]
+                )
+            )
+
+        return dbc.Row(dbc.CardGroup(info_fields))
+
+    def layout(self):
+        return self._create_layout()
+
+    def module_callbacks(self):
+        variableselector = VariableSelector(
+            selected_inputs=[],
+            selected_states=[
+                self.info_variables[x]["variable_name"]
+                for x in self.info_variables
+                if self.info_variables[x]["source"] == "variableselector"
+            ],
+        )
+
+        @callback(
+            [
+                Output(f"info-var-field-{info_var}", "children")
+                for info_var in self.info_variables
+            ],
+            variableselector.get_input(get_ident()),
+            *[variableselector.get_input(unit) for unit in get_time_units().keys()],
+            *[variableselector.get_all_states()],
+        )
+        def get_data_for_info_row_fields(ident, *args):
+            logger.debug(f"ident: {ident}\nargs: {args}")
+            info_values = []
+            time_unit_list = [x for x in get_time_units().keys()]
+            time_units = args[: len(time_unit_list)]
+            collected_states = 0
+            states = args[len(time_unit_list) :]
+            filter_dict = create_filter_dict(time_unit_list, time_units)
+            with get_connection(necessary_tables=["enhetsinfo"]) as conn:
+                for info_var in self.info_variables:
+                    logger.debug(f"{info_var}\n{self.info_variables[info_var]}")
+                    if self.info_variables[info_var]["source"] == "variableselector":
+                        value = states[collected_states]
+                        collected_states += 1
+                    else:
+                        t = conn.table(self.info_variables[info_var]["source"])
+                        t = t.filter(_.ident == ident).filter(
+                            ibis_filter_with_dict(filter_dict)
+                        )
+                        data = t.filter(
+                            _.variabel == self.info_variables[info_var]["variable_name"]
+                        ).to_pandas()
+                        logger.debug(data)
+                        value = data["verdi"].item()
+                    info_values.append(value)
+                    logger.debug("info_values: ", info_values)
+
+            return info_values
 
 
 class DataEditorHelperButton(ABC):
@@ -269,7 +367,7 @@ class DataEditorHelperButton(ABC):
         self.button_callbacks()
         DataEditorRegistry.helper_modules.append(self)
 
-    def layout(self):
+    def layout(self) -> html.Div:
         if not hasattr(self, "modal_body"):
             raise AttributeError("Lacking 'modal_body' attribute.")
         return html.Div(
@@ -315,19 +413,41 @@ class DataEditorHelperSidebar(ABC):
         DataEditorRegistry.sidebar_modules.append(self)
 
     @abstractmethod
-    def _create_layout(self):
+    def _create_layout(self) -> html.Div:
         pass
 
-    def layout(self):
+    def layout(self) -> html.Div:
         return self._create_layout()
 
     @abstractmethod
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
         pass
 
 
 class DataEditorDataView(ABC):
     """Base class for defining a data view."""
+
+    # @property
+    # @abstractmethod
+    # def module_number(self) -> int:
+    #     """Subclasses must define a unique module number."""
+    #     pass
+
+    # @property
+    # @abstractmethod
+    # def module_name(self) -> str:
+    #     """Subclasses must define a module name. Normally by using 'self.__class__.__name__'."""
+    #     pass
+
+    # @property
+    # @abstractmethod
+    # def divname(self) -> str:
+    #     """Subclasses must define a name for its html.Div(id=self.divname).
+
+    #     Example:
+    #         self.divname = f'{self.module_name}-{self.module_number}'
+    #     """
+    #     pass
 
     def __init__(
         self, applies_to_tables: str | list[str], applies_to_forms: str | list[str]
@@ -352,12 +472,12 @@ class DataEditorDataView(ABC):
         )
 
     @abstractmethod
-    def _create_layout(self):
+    def _create_layout(self) -> None:
         pass
 
-    def layout(self):
+    def layout(self) -> None:
         return self._create_layout()
 
     @abstractmethod
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
         pass

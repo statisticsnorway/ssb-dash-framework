@@ -75,7 +75,7 @@ class UpdateSkjemamottak(BaseModel):
 
 
 class UpdateSkjemamottakStatus(UpdateSkjemamottak):
-    value: Literal["UBEHANDLET", "UNDER_ARBEID", "FERDIG"]
+    value: Literal["Ubehandlet", "Under arbeid", "Ferdig"]
     column: Literal["status"] = "status"
 
 
