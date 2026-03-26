@@ -1,0 +1,22 @@
+app_settings:
+  logging_level: debug
+  log_to_file: true
+VariableSelectorConfig:
+  refnr: refnr
+  ident: ident
+  time_units:
+    aar: YEAR
+  # grouping_variables:
+  #   - komm_nr
+  extra_variables:
+    - variabel
+    - valgt_tabell
+    - altinnskjema
+  default_values:
+    aar: "2024"
+    refnr: "20243"
+    ident: "969744066"
+    altinnskjema: "RA-7357"
+
+modules:
+  !include data_editor.yaml

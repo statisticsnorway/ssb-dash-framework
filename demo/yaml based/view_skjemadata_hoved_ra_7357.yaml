@@ -1,0 +1,36 @@
+CustomView:
+  applies_to_tables:
+    - skjemadata_hoved
+  applies_to_forms:
+    - RA-7357
+  layout:
+    - row:
+        - col:
+            type: table
+            label: Oversiktstabell
+            table_func: importpath.make_table
+        - col:
+            type: figure
+            label: Barplot
+            figure_func: importpath.make_fig_bar
+    - row:
+        - col:
+            width: 1
+            type: microlayout
+            label: Test mikrolayout
+            layout:
+              - type: input
+                label: Totalareal
+                variable: totalareal
+              - type: input
+                label: Fulldyrket
+                variable: fulldyrket
+              - type: input
+                label: Innmarksbeite
+                variable: innmarksbeite
+            get_data_func: default # Optional, should be possible to parse without it being defined.
+            update_func: importpath.my_update_func # Optional if get_data_func is default as well, should be possible to parse without it being defined.
+        - col:
+            type: figure
+            label: Scatterplot fulldyrket - totalareal
+            figure_func: importpath.make_fig_scatter
