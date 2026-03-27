@@ -15,6 +15,7 @@ from ssb_dash_framework.experimental.modules.data_editor.sidebar_components.comm
 from ssb_dash_framework.experimental.modules.data_editor.sidebar_components.editing_status import (
     DataEditorSidebarEditingStatus,
 )
+from ssb_dash_framework.modules.building_blocks.microlayout_components.models import EditableField
 
 if os.getenv("DAPLA_ENVIRONMENT", None) == "PROD":
     from ssb_dash_framework import _get_connection_object
@@ -131,63 +132,54 @@ def make_table(tabell, skjema, refnr, *time_units):
         return t.filter(_.refnr == refnr).filter(_.skjema == skjema).to_pandas()
 
 
-def populate_microlayout(table, form, refnr, *args, **kwargs):
-    with get_connection() as conn:
-        t = conn.table(table)
-        data = t.filter(_.skjema == form).filter(_.refnr == refnr).to_pandas()
 
-    totalareal = data.loc[data["variabel"] == "totalareal"]["verdi"].item()
-    fulldyrket = data.loc[data["variabel"] == "fulldyrket"]["verdi"].item()
-    innmarksbeite = data.loc[data["variabel"] == "innmarksbeite"]["verdi"].item()
-    return totalareal, fulldyrket, innmarksbeite
+# layout = [
+#     {
+#         "row": [
+#             {"col": {"table": {"label": "Oversiktstabell", "table_func": make_table}}},
+#             {"col": {"figure": {"label": "Barplot", "figure_func": make_fig_bar}}},
+#         ]
+#     },
+#     {
+#         "row": [
+#             {
+#                 "col": {
+#                     "microlayout": {
+#                         "label": "Test mikrolayout",
+#                         "layout": [
+#                             {
+#                                 "type": "input",
+#                                 "label": "Totalareal",
+#                                 "variable": "totalareal",
+#                             },
+#                             {
+#                                 "type": "input",
+#                                 "label": "Fulldyrket",
+#                                 "variable": "fulldyrket",
+#                             },
+#                             {
+#                                 "type": "input",
+#                                 "label": "Innmarksbeite",
+#                                 "variable": "innmarksbeite",
+#                             },
+#                         ],
+#                         "get_data_func": "default",
+#                     },
+#                     "kwargs": {"width": 1},
+#                 }
+#             },
+#             {
+#                 "col": {
+#                     "figure": {
+#                         "label": "Scatterplot fulldyrket - totalareal",
+#                         "figure_func": make_fig_scatter,
+#                     },
+#                 }
+#             },
+#         ]
+#     },
+# ]
 
-
-layout = [
-    {
-        "row": [
-            {"col": {"table": {"label": "Oversiktstabell", "table_func": make_table}}},
-            {"col": {"figure": {"label": "Barplot", "figure_func": make_fig_bar}}},
-        ]
-    },
-    {
-        "row": [
-            {
-                "col": {
-                    "microlayout": {
-                        "label": "Test mikrolayout",
-                        "layout": [
-                            {
-                                "type": "input",
-                                "label": "Totalareal",
-                                "variable": "totalareal",
-                            },
-                            {
-                                "type": "input",
-                                "label": "Fulldyrket",
-                                "variable": "fulldyrket",
-                            },
-                            {
-                                "type": "input",
-                                "label": "Innmarksbeite",
-                                "variable": "innmarksbeite",
-                            },
-                        ],
-                        "get_data_func": "default",
-                    },
-                    "kwargs": {"width": 1},
-                }
-            },
-            {
-                "col": {
-                    "figure": {
-                        "label": "Scatterplot fulldyrket - totalareal",
-                        "figure_func": make_fig_scatter,
-                    },
-                }
-            },
-        ]
-    },
-]
 
 
 DataViewCustom(
