@@ -142,53 +142,7 @@ def populate_microlayout(table, form, refnr, *args, **kwargs):
     return totalareal, fulldyrket, innmarksbeite
 
 
-layout = [
-    {
-        "row": [
-            {"col": {"table": {"label": "Oversiktstabell", "table_func": make_table}}},
-            {"col": {"figure": {"label": "Barplot", "figure_func": make_fig_bar}}},
-        ]
-    },
-    {
-        "row": [
-            {
-                "col": {
-                    "microlayout": {
-                        "label": "Test mikrolayout",
-                        "layout": [
-                            {
-                                "type": "input",
-                                "label": "Totalareal",
-                                "variable": "totalareal",
-                            },
-                            {
-                                "type": "input",
-                                "label": "Fulldyrket",
-                                "variable": "fulldyrket",
-                            },
-                            {
-                                "type": "input",
-                                "label": "Innmarksbeite",
-                                "variable": "innmarksbeite",
-                            },
-                        ],
-                        "get_data_func": "default",
-                        "update_func": "default",
-                    },
-                    "kwargs": {"width": 1},
-                }
-            },
-            {
-                "col": {
-                    "figure": {
-                        "label": "Scatterplot fulldyrket - totalareal",
-                        "figure_func": make_fig_scatter,
-                    },
-                }
-            },
-        ]
-    },
-]
+
 
 DataEditorInfoRow(
     variables_dict = {
@@ -199,10 +153,59 @@ DataEditorInfoRow(
     }
 )
 
-DataViewCustom(
-    applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"], layout=layout
-)
+# layout = [
+#     {
+#         "row": [
+#             {"col": {"table": {"label": "Oversiktstabell", "table_func": make_table}}},
+#             {"col": {"figure": {"label": "Barplot", "figure_func": make_fig_bar}}},
+#         ]
+#     },
+#     {
+#         "row": [
+#             {
+#                 "col": {
+#                     "microlayout": {
+#                         "label": "Test mikrolayout",
+#                         "layout": [
+#                             {
+#                                 "type": "input",
+#                                 "label": "Totalareal",
+#                                 "variable": "totalareal",
+#                             },
+#                             {
+#                                 "type": "input",
+#                                 "label": "Fulldyrket",
+#                                 "variable": "fulldyrket",
+#                             },
+#                             {
+#                                 "type": "input",
+#                                 "label": "Innmarksbeite",
+#                                 "variable": "innmarksbeite",
+#                             },
+#                         ],
+#                         "get_data_func": "default",
+#                         "update_func": "default",
+#                     },
+#                     "kwargs": {"width": 1},
+#                 }
+#             },
+#             {
+#                 "col": {
+#                     "figure": {
+#                         "label": "Scatterplot fulldyrket - totalareal",
+#                         "figure_func": make_fig_scatter,
+#                     },
+#                 }
+#             },
+#         ]
+#     },
+# ]
 
+# DataViewCustom(
+#     applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"], layout=layout
+# )
+
+DataViewCustom.from_yaml("/home/onyxia/work/ssb-dash-framework/demo/yaml based/view_skjemadata_hoved_ra_7357.yaml", dict_key="CustomView")
 
 def support_table_get_data(aar, skjema):
     return _get_connection_object().query(

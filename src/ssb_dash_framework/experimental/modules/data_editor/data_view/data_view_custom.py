@@ -1,5 +1,6 @@
 import logging
-
+from pathlib import Path
+import yaml
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import Input
@@ -141,6 +142,7 @@ class DataViewCustomMicroLayout:
 
     @staticmethod
     def make_default_get_data_func(layout: list):
+        print(layout)
         _vars = [item["variable"] for item in layout]
 
         def populate_microlayout(table, form, refnr, *args, **kwargs):
@@ -148,7 +150,6 @@ class DataViewCustomMicroLayout:
             with get_connection() as conn:
                 t = conn.table(table)
                 data = t.filter(_.skjema == form).filter(_.refnr == refnr).to_pandas()
-                print(data)
             
 
             return tuple(_safe_get(data, v) for v in _vars)
@@ -251,6 +252,52 @@ class DataViewCustom(DataEditorDataView):
         super().__init__(
             applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
         )
+    
+    @classmethod
+    def from_yaml(cls, path: str | Path, dict_key: None | str | list[str]):
+        with open(path) as f:
+            config = yaml.safe_load(f)
+        if isinstance(dict_key, str):
+            config = config[dict_key]
+        elif isinstance(dict_key, list):
+            raise NotImplementedError("List support not yet implemented")
+        logger.debug(config)
+        return cls.from_dict(config)
+
+    @classmethod
+    def from_dict(cls, config: dict):
+        return cls(
+            applies_to_tables=config["applies_to_tables"],
+            applies_to_forms=config["applies_to_forms"],
+            layout=cls._normalize_layout(config["layout"]),
+        )
+
+    @classmethod
+    def _normalize_layout(cls, layout):
+        """Convert type-discriminator style to key-style expected by build_layout."""
+        if isinstance(layout, list):
+            return [cls._normalize_layout(item) for item in layout]
+
+        if not isinstance(layout, dict):
+            return layout
+
+        # Already in key-style (no "type" key) — recurse into values
+        if "type" not in layout:
+            return {k: cls._normalize_layout(v) for k, v in layout.items()}
+
+        # type-discriminator style — restructure
+        component_type = layout["type"]
+        rest = {k: v for k, v in layout.items() if k != "type"}
+
+        # Recurse into col/row children if present
+        if component_type == "row":
+            return {"row": cls._normalize_layout(rest.get("children", rest))}
+        if component_type == "col":
+            content = {k: cls._normalize_layout(v) for k, v in rest.items()}
+            return {"col": content}
+
+        # Leaf components: figure, table, microlayout
+        return {component_type: {k: cls._normalize_layout(v) for k, v in rest.items()}}
 
     def build_layout(self, layout: dict | list) -> list:
         """Builds the layout for the custom view."""
@@ -260,11 +307,11 @@ class DataViewCustom(DataEditorDataView):
             for item in layout:
                 components.extend(self.build_layout(item))
             return components
-        print(layout)
+        logger.debug(layout)
 
         for key, value in layout.items():
-            print("key: ", key)
-            print("value: ", value)
+            logger.debug("key: ", key)
+            logger.debug("value: ", value)
             if key == "kwargs":
                 continue
             if isinstance(value, dict):
