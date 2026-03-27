@@ -55,12 +55,15 @@ class DataEditor:
         self,
         enable_table_selector: bool = True,
         starting_table: str = "skjemadata_hoved",
+        table_list: list[str] | None = None,
     ) -> None:
         """Initializes the DataEditor module.
 
         Args:
             enable_table_selector: Decides if the DataEditorTableSelector component should be activated or not, strongly recommended to leave it enabled.
             starting_table: Sets the default value of the DataEditorTableSelector dropdown.
+            table_list: A list of tables that will show up in the dropdown menu.
+                Defaults to None, which will try to find all tables with the 'skjemadata_' prefix.
 
         Note:
             This module needs to be initialized last, as components need to already be registered in order to be collected.
@@ -75,7 +78,9 @@ class DataEditor:
 
         if enable_table_selector:
             self.enable_table_selector = True
-            DataEditorTableSelector(starting_table=starting_table)
+            DataEditorTableSelector(
+                starting_table=starting_table, table_list=table_list
+            )
         else:
             self.enable_table_selector = False
 
@@ -240,7 +245,11 @@ class DataEditorTableSelector:
 
     _id_number = 0
 
-    def __init__(self, starting_table: str = "skjemadata_hoved") -> None:
+    def __init__(
+        self,
+        starting_table: str = "skjemadata_hoved",
+        table_list: list[str] | None = None,
+    ) -> None:
         """Initializes the table selector component.
 
         Args:
@@ -253,30 +262,30 @@ class DataEditorTableSelector:
         self.module_number = DataEditorTableSelector._id_number
         self.module_name = self.__class__.__name__
         DataEditorTableSelector._id_number += 1
+        if not table_list:
+            with get_connection() as conn:
+                table_list = [
+                    table
+                    for table in conn.list_tables()
+                    if table.startswith("skjemadata_")
+                ]
+        self.table_options = [{"label": item, "value": item} for item in table_list]
 
+        if starting_table not in table_list:
+            raise ValueError(
+                f"Selected starting table not found in data source.\nExpected one of: '{table_list}'.\nReceived: '{self.starting_table}'"
+            )
         self.starting_table = starting_table
 
         DataEditorRegistry.sidebar_modules.insert(0, self)
 
     def _create_layout(self) -> html.Div:
-        with get_connection() as conn:
-            skjemadata_tables = [
-                table for table in conn.list_tables() if table.startswith("skjemadata_")
-            ]
-            if self.starting_table not in skjemadata_tables:
-                raise ValueError(
-                    f"Selected starting table not found in data source.\nExpected one of: '{skjemadata_tables}'.\nReceived: '{self.starting_table}'"
-                )
-            table_options = [
-                {"label": item, "value": item} for item in skjemadata_tables
-            ]
-
         return html.Div(
             [
                 dbc.Label("Tabellvelger"),
                 dcc.Dropdown(
                     id="dataeditortableselector",
-                    options=table_options,
+                    options=self.table_options,
                     value=self.starting_table,
                 ),
             ]
