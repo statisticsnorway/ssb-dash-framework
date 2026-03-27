@@ -33,6 +33,8 @@ class MicroLayoutAIO(html.Div):
         form_reference_number_column: str = "refnr",
         form_data_field_name_column: str = "feltnavn",
         formdata_field_value_column_name: str = "verdi",
+        table_selector_id: str | None = None,
+        form_selector_id: str | None = None,
     ) -> None:
         logger.warning(
             "This module is under development and might receive larger and/or breaking changes."
@@ -53,6 +55,8 @@ class MicroLayoutAIO(html.Div):
             form_reference_number_column=form_reference_number_column,
             formdata_fieldname_column=form_data_field_name_column,
             formdata_field_value_column_name=formdata_field_value_column_name,
+            table_selector_id=table_selector_id,
+            form_selector_id=form_selector_id,
         )
         html_layout = model.build(
             settings=common_settings,
