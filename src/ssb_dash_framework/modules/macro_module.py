@@ -47,7 +47,7 @@ def get_nace_values_from_group(aar: int, klass_gruppekode: str, sn2007: bool = F
         aar = 2023
     standard_for_naeringsgruppering = KlassClassification(6)
     df = standard_for_naeringsgruppering.get_codes(
-        f"{aar+1}-01-01"
+        f"{aar}-12-31"
     ).data
 
     # Get group and naringskoder for specified group
@@ -71,7 +71,7 @@ def get_nace_groups(aar: int) -> list[str]:
     """
     standard_for_naeringsgruppering = KlassClassification(6)
     df: DataFrame = standard_for_naeringsgruppering.get_codes(
-        f"{aar+1}-01-01"
+        f"{aar}-12-31"
     ).data
 
     # Get group and naringskoder
@@ -127,8 +127,26 @@ class MacroModule_ParquetReader:
         """
         file_path = file_path_resolver(aar, foretak_or_bedrift)
 
-        # letter_groups = {n for n in nace_list if not n[0].isdigit()}
-        # only_nace_codes = {n.split(".")[0][:2] for n in nace_list if n[0].isdigit()}
+        letter_groups: set[str] = {n for n in nace_list if not n[0].isdigit()}
+        print(letter_groups)
+        only_nace_codes: set[str] = {n.split(".")[0][:2] for n in nace_list if n[0].isdigit()}
+        print(only_nace_codes)
+
+        # plan
+        # if letter_groups, use the function get_nace_values_from_group for each letter to fetch a list of nace values
+        # then make a dict of that like "G": ["45", "46", "47"]
+        # and add the letter codes to only_nace_codes if it doesn't already have them (a set?)
+        # then read in data for those nærings
+
+        # check the data output for this
+        # make a loop for each letter:
+        # use the dict to copy rows from the specified nærings, and rename the copied rows' naring value to the letter name
+        # the result should be all the necessary data, with the naring column containing both G, and 45, 46 etc
+
+        # [x] in the heatmap and detail grid: letter shouldn't be affected by nace_level
+        # [x] if someone clicks a letter code, we could just set the nace_siffer_level to 5?
+
+        # [x] for the detail grid, when it's a letter, if nace_list = a letter, use get_nace_values_from_group to update nace_list
 
         try:
             t: ibis.TableExpr = self.conn.read_parquet(file_path)
@@ -141,15 +159,46 @@ class MacroModule_ParquetReader:
 
         if detail_grid:
             if nace_list:
-                t = t.filter(
-                    t.naring.substr(0, length=nace_siffer_level).isin(nace_list)
-                )
+                if letter_groups:
+                    klass_group: str = nace_list[0]
+                    group_and_nace_values = get_nace_values_from_group(aar, klass_group)
+                    t = t.filter(
+                        t.naring.substr(0, length=2).isin(group_and_nace_values.get(klass_group))
+                    )
+                else:
+                    t = t.filter(
+                        t.naring.substr(0, length=nace_siffer_level).isin(nace_list)
+                    )
 
         else:
-            # for å loade fleire næringar ved innlasting
-            nace_2_siffer_liste = [n.split(".")[0][:2] for n in nace_list]
-            t = t.filter(t.naring.substr(0, length=2).isin(nace_2_siffer_liste))
-            t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
+            if letter_groups:
+                # regular nace values
+                t_only_nace = t.filter(t.naring.substr(0, length=2).isin(only_nace_codes))
+
+                klass_dataframes = []
+                group_nace_values = set()
+                for letter in letter_groups:
+                    nace_group = get_nace_values_from_group(aar, letter)
+                    nace_values: list[str] | None = nace_group.get(letter)
+                    assert nace_values is not None
+                    group_nace_values.update(nace_values)
+
+                    # rename these per letter to the letter name
+                    t_klass = t.filter(t.naring.substr(0, length=2).isin(group_nace_values))
+                    # set naring = letter
+                    t_klass = t_klass.mutate(naring=ibis.literal(letter).cast("string"))
+
+                    # add df to klass_dataframes
+                    klass_dataframes.append(t_klass)
+
+                # merge/join klass_dataframes with t_only_nace
+                t_unioned = ibis.union(t_only_nace, *klass_dataframes)
+                t_unioned = t_unioned.mutate(selected_nace=t_unioned.naring.substr(0, length=nace_siffer_level))
+                return t_unioned.mutate(aar=ibis.literal(aar).cast("string"))
+
+            else:
+                t = t.filter(t.naring.substr(0, length=2).isin(only_nace_codes))
+                t = t.mutate(selected_nace=t.naring.substr(0, length=nace_siffer_level))
 
         return t.mutate(aar=ibis.literal(aar).cast("string"))
 
@@ -482,8 +531,7 @@ class MacroModule:
         t = t.select(naring_filter).distinct()
         df: DataFrame = t.to_pandas()
         nace_numbers: list[str] = sorted(df["nace2"].astype(str))
-        # nace_groups: list[str] = list(get_nace_groups(int(aar)))
-        nace_groups = []
+        nace_groups: list[str] = list(get_nace_groups(int(aar)))
         return [*nace_numbers, *nace_groups]
 
     def module_callbacks(self) -> None:
@@ -814,7 +862,13 @@ class MacroModule:
                 raise PreventUpdate
 
             assert isinstance(col, str)
-            selected_nace = col.replace("_", ".")
+            if col[0].isdigit():
+                nace_letter_code = False
+                selected_nace = col.replace("_", ".")
+            else:
+                nace_letter_code = True
+                selected_nace = col
+                nace_siffer_level = 2
             row_idx = int(row_id)
 
             if not selected_nace:
@@ -925,8 +979,6 @@ class MacroModule:
                 "giver_bnr",
                 "aar",
             ]
-            # if foretak_or_bedrift == "bedrifter":
-            #     select_cols.append("orgnr_bedrift")
 
             t = t.select([c for c in select_cols if c in t.columns])
             t_1 = t_1.select([c for c in select_cols if c in t_1.columns])
@@ -1227,10 +1279,14 @@ class MacroModule:
             if column_defs:
                 column_defs[0]["pinned"] = "left"
                 column_defs[0]["width"] = 240
-
-            title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace} i {macro_level} {selected_filter_val}"
+            
+            if nace_letter_code:
+                nace_definition = "næringsgruppe"
+            else:
+                nace_definition = "næring"
+            title = f"{foretak_or_bedrift.capitalize()} i {nace_definition} {selected_nace} i {macro_level} {selected_filter_val}"
             if macro_level == "sammensatte variabler":
-                title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace}"
+                title = f"{foretak_or_bedrift.capitalize()} i {nace_definition} {selected_nace}"
 
             return row_data, column_defs, title, [], True, None, 0
 
