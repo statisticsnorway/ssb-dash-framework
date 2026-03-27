@@ -64,9 +64,9 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             status_options
             if status_options
             else [
-                {"label": "Ubehandlet", "value": "UBEHANDLET"},
-                {"label": "Under arbeid", "value": "UNDER_ARBEID"},
-                {"label": "Ferdig", "value": "FERDIG"},
+                {"label": "Ubehandlet", "value": "Ubehandlet"},
+                {"label": "Under arbeid", "value": "Under arbeid"},
+                {"label": "Ferdig", "value": "Ferdig"},
             ]
         )
 

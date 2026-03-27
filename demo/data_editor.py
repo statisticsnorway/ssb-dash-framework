@@ -47,6 +47,7 @@ from ssb_dash_framework import get_connection
 from ssb_dash_framework import main_layout
 from ssb_dash_framework import set_variables
 from ssb_dash_framework.experimental.modules.data_editor.core import DataEditor
+from ssb_dash_framework.experimental.modules.data_editor.core import DataEditorInfoRow
 from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_custom import (
     DataViewCustom,
 )
@@ -173,6 +174,7 @@ layout = [
                             },
                         ],
                         "get_data_func": "default",
+                        "update_func": "default",
                     },
                     "kwargs": {"width": 1},
                 }
@@ -189,6 +191,9 @@ layout = [
     },
 ]
 
+DataEditorInfoRow(
+    variables_dict={"Navn": {"source": "enhetsinfo", "variable_name": "orgnavn"}}
+)
 
 DataViewCustom(
     applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"], layout=layout
