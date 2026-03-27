@@ -62,7 +62,7 @@ class DataEditor:
         self,
         enable_table_selector: bool = True,
         starting_table: str = "skjemadata_hoved",
-        table_list: list[str] | None = None
+        table_list: list[str] | None = None,
     ) -> None:
         """Initializes the DataEditor module.
 
@@ -85,7 +85,9 @@ class DataEditor:
 
         if enable_table_selector:
             self.enable_table_selector = True
-            DataEditorTableSelector(starting_table=starting_table, table_list = table_list)
+            DataEditorTableSelector(
+                starting_table=starting_table, table_list=table_list
+            )
         else:
             self.enable_table_selector = False
 
@@ -219,7 +221,11 @@ class DataEditorTableSelector:
 
     _id_number = 0
 
-    def __init__(self, starting_table: str = "skjemadata_hoved", table_list: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        starting_table: str = "skjemadata_hoved",
+        table_list: list[str] | None = None,
+    ) -> None:
         """Initializes the table selector component.
 
         Args:
@@ -235,12 +241,12 @@ class DataEditorTableSelector:
         if not table_list:
             with get_connection() as conn:
                 table_list = [
-                    table for table in conn.list_tables() if table.startswith("skjemadata_")
+                    table
+                    for table in conn.list_tables()
+                    if table.startswith("skjemadata_")
                 ]
-        self.table_options = [
-            {"label": item, "value": item} for item in table_list
-        ]
-        
+        self.table_options = [{"label": item, "value": item} for item in table_list]
+
         if starting_table not in table_list:
             raise ValueError(
                 f"Selected starting table not found in data source.\nExpected one of: '{table_list}'.\nReceived: '{self.starting_table}'"
