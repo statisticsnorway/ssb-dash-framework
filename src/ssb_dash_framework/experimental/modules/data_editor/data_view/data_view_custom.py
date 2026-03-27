@@ -1,8 +1,9 @@
 import logging
+from typing import Callable
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-from dash import Input
+from dash import Input, State
 from dash import Output
 from dash import callback
 from dash import callback_context as ctx
@@ -16,8 +17,7 @@ from ssb_dash_framework.setup import VariableSelector
 from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
-from .....modules.building_blocks.microlayout import Layout
-from .....modules.building_blocks.microlayout import create_html_layout
+from .....modules.building_blocks.microlayout import Layout, MicroLayoutAIO
 from .....utils.core_models import UpdateSkjemadata
 from ..core import DataEditorDataView
 
@@ -111,111 +111,46 @@ def _safe_get(data, v):
     return rows.item() if not rows.empty else None
 
 
-class DataViewCustomMicroLayout:
+class DataViewCustomMicroLayout(MicroLayoutAIO):
     _id_number = 0
 
     def __init__(
         self,
-        label,
-        microlayout,
-        get_data_func,
-        update_func,
-        applies_to_tables,
-        applies_to_forms,
+        layout: list[dict] | Layout,
+        getter_func: Callable[..., tuple],
+        update_func: Callable[..., tuple | None],
+        form_reference_input_id: str,
+        inputs: list[Input] | None = None,
+        states: list[State] | None = None,
+        getter_args: None | list = None,
+        aio_id: str | None = None,
+        horizontal: bool = False,
+        form_data_table: str = "skjemadata",
+        form_reference_number_column: str = "refnr",
+        form_data_field_name_column: str = "feltnavn",
+        formdata_field_value_column_name: str = "verdi",
+        table_selector_id: str | None = "dataeditortableselector",
+        form_selector_id: str | None = "var-altinnskjema",
     ) -> None:
-        self.module_number = DataViewCustomMicroLayout._id_number
-        self.module_name = self.__class__.__name__
-        DataViewCustomMicroLayout._id_number += 1
-        self.variableselector = VariableSelector([], [])
-        self.label = label
-
-        self.layout_model = Layout(layout=microlayout)
-        self.get_data_func = get_data_func
-        self.update_func = update_func
-        self.build_html_layout()
-
-        self.applies_to_tables = applies_to_tables
-        self.applies_to_forms = applies_to_forms
-
-        self.module_callbacks()
-
-    @staticmethod
-    def make_default_get_data_func(layout: list):
-        _vars = [item["variable"] for item in layout]
-
-        def populate_microlayout(table, form, refnr, *args, **kwargs):
-            with get_connection() as conn:
-                t = conn.table(table)
-                data = t.filter(_.skjema == form).filter(_.refnr == refnr).to_pandas()
-                print(data)
-
-            return tuple(_safe_get(data, v) for v in _vars)
-
-        return populate_microlayout
-
-    @staticmethod
-    def make_default_update_data_func(layout: list):
-        _vars = [item["variable"] for item in layout]
-
-        def update_microlayout(
-            table, form, refnr, triggered_id, ids, new_values, *args, **kwargs
-        ):
-            triggered_index = ids.index(triggered_id)
-            triggered_var = _vars[triggered_index]
-            new_value = new_values[triggered_index]
-
-            with get_connection() as conn:
-                t = conn.table(table)
-                data = t.filter(_.skjema == form).filter(_.refnr == refnr).to_pandas()
-
-            old_value = _safe_get(data, triggered_var)
-
-            return UpdateSkjemadata(
-                table=table,
-                ident=form,
-                refnr=refnr,
-                column=triggered_var,
-                variable=triggered_var,
-                value=new_value,
-                old_value=old_value,
-                long=True,
-            )
-
-        return update_microlayout
-
-    def build_html_layout(self):
-        self.layout, self.ids = create_html_layout(self.layout_model)
-
-    def content(self):
-        return html.Div(self.layout)
-
-    def module_callbacks(self):
-        @callback(
-            *[Output(x, "value") for x in self.ids if x is not None],
-            Input("dataeditortableselector", "value"),
-            self.variableselector.get_input("altinnskjema"),
-            self.variableselector.get_input("refnr"),
-            *[Input(x, "value") for x in self.ids if x is not None],
+        super().__init__(
+            layout = layout,
+            getter_func=getter_func,
+            update_func= update_func,
+            form_reference_input_id= form_reference_input_id,
+            inputs=inputs,
+            states=states,
+            getter_args=getter_args,
+            aio_id=aio_id,
+            horizontal=horizontal,
+            form_data_table=form_data_table,
+            form_reference_number_column=form_reference_number_column,
+            form_data_field_name_column=form_data_field_name_column,
+            formdata_field_value_column_name=formdata_field_value_column_name,
+            table_selector_id=table_selector_id,
+            form_selector_id=form_selector_id,
         )
-        def handle_update(selected_table, selected_form, refnr, *args):
-            if (
-                selected_table not in self.applies_to_tables
-                or selected_form not in self.applies_to_forms
-            ):
-                logger.info("Preventing update.")
-                raise PreventUpdate
-            logger.debug(
-                f"selected_table: {selected_table}\nselected_form: {selected_form}\nrefnr: {refnr}\nargs: {args}"
-            )
-            if ctx.triggered_id in self.ids:
-                logger.debug("Updating value.")
-                self.update_func(
-                    *args, *extra_args
-                )  # TODO: maybe extra_args are kinda pointless
-                raise PreventUpdate
-            to_return = self.get_data_func(selected_table, selected_form, refnr, args)
-            logger.debug(f"to_return:\{to_return}")
-            return to_return
+
+    def 
 
 
 class DataViewCustom(DataEditorDataView):
@@ -249,6 +184,8 @@ class DataViewCustom(DataEditorDataView):
             applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
         )
 
+
+
     def build_layout(self, layout: dict | list) -> list:
         """Builds the layout for the custom view."""
         components = []
@@ -257,7 +194,6 @@ class DataViewCustom(DataEditorDataView):
             for item in layout:
                 components.extend(self.build_layout(item))
             return components
-        print(layout)
 
         for key, value in layout.items():
             if key == "kwargs":
@@ -292,28 +228,9 @@ class DataViewCustom(DataEditorDataView):
                 )
                 components.append(table.content())
             elif key == "microlayout":
+                DataViewCustomMicroLayout(
 
-                microlayout = DataViewCustomMicroLayout(
-                    label=value["label"],
-                    microlayout=value["layout"],
-                    get_data_func=(
-                        value["get_data_func"]
-                        if value["get_data_func"] != "default"
-                        else DataViewCustomMicroLayout.make_default_get_data_func(
-                            value["layout"]
-                        )
-                    ),
-                    update_data_func=(
-                        value["update_data_func"]
-                        if value["update_data_func"] != "default"
-                        else DataViewCustomMicroLayout.make_default_update_data_func(
-                            value["layout"]
-                        )
-                    ),
-                    applies_to_tables=self.applies_to_tables,
-                    applies_to_forms=self.applies_to_forms,
                 )
-                components.append(microlayout.content())
             else:
                 components.extend(self.build_layout(value))
 
