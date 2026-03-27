@@ -144,12 +144,13 @@ class DataViewCustomMicroLayout:
         _vars = [item["variable"] for item in layout]
 
         def populate_microlayout(table, form, refnr, *args, **kwargs):
-            logger.debug(f"Trying to populate microlayout. Args:\ntable: {table}\nform: {form}\nrefnr: {refnr}\nArgs: {args}\n Kwargs: {kwargs}")
+            logger.debug(
+                f"Trying to populate microlayout. Args:\ntable: {table}\nform: {form}\nrefnr: {refnr}\nArgs: {args}\n Kwargs: {kwargs}"
+            )
             with get_connection() as conn:
                 t = conn.table(table)
                 data = t.filter(_.skjema == form).filter(_.refnr == refnr).to_pandas()
                 print(data)
-            
 
             return tuple(_safe_get(data, v) for v in _vars)
 
@@ -211,9 +212,7 @@ class DataViewCustomMicroLayout:
             )
             if ctx.triggered_id in self.ids:
                 logger.debug("Updating value.")
-                self.update_func(
-                    *args
-                )
+                self.update_func(*args)
                 logger.info("Raising PreventUpdate after running update_func.")
                 raise PreventUpdate
             to_return = self.get_data_func(selected_table, selected_form, refnr, args)

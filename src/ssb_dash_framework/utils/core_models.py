@@ -52,7 +52,7 @@ class UpdateSkjemamottak(BaseModel):
             )
             alert = self.to_alert(success=False)
         return alert
-    
+
     def update_ibis(self):
         query = f"""
             UPDATE skjemamottak
@@ -62,9 +62,7 @@ class UpdateSkjemamottak(BaseModel):
         try:
             with get_connection() as conn:
                 conn.raw_sql(query)
-            logger.info(
-                f"Successfully updated '{self.column}' to '{self.value}'"
-            )
+            logger.info(f"Successfully updated '{self.column}' to '{self.value}'")
             return self.to_alert(success=True)
         except Exception as e:
             logger.error(

@@ -5,12 +5,10 @@
 - dataview
 """
 
-from typing import Any
-from dash.html.Div import Div
-from dash.html.Div import Div
 import logging
 from abc import ABC
 from abc import abstractmethod
+from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import Input
@@ -21,17 +19,12 @@ from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
 from ibis import _
+
 from ssb_dash_framework import VariableSelector
-from ssb_dash_framework.setup import VariableSelectorOption, variableselector
-from ssb_dash_framework.utils.config_tools.set_variables import (
-    get_ident,
-    get_refnr,
-    get_time_units,
-)
-from ssb_dash_framework.utils.core_query_functions import (
-    create_filter_dict,
-    ibis_filter_with_dict,
-)
+from ssb_dash_framework.utils.config_tools.set_variables import get_ident
+from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
+from ssb_dash_framework.utils.core_query_functions import create_filter_dict
+from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
 
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
@@ -103,8 +96,8 @@ class DataEditor:
             [module.layout() for module in DataEditorRegistry.info_fields],
             className="dataeditor-info-view",
         )
-        self.helper_row = html.Div(
-            [module.layout() for module in DataEditorRegistry.helper_modules]
+        self.helper_row = dbc.Row(
+            [dbc.Col(module.layout()) for module in DataEditorRegistry.helper_modules]
         )
         self.sidebar = html.Div(
             [
@@ -114,9 +107,13 @@ class DataEditor:
         )
         _existing_views = []
         main_views = []
+
+        self.make_default_view()
+
         logger.debug(
             f"Existing main views at gathering of components:\n{DataEditorRegistry.main_views}"
         )
+
         for divname, info in DataEditorRegistry.main_views.items():
             logger.debug(
                 f"Adding '{divname}' to main_views. Applies to:\ntables: '{info['tables']}'\nforms: {info['forms']}"
@@ -136,11 +133,38 @@ class DataEditor:
                     exc_info=True,
                 )
                 raise e
-
         self.main_view = html.Div(
             id=f"{self.module_name}-{self.module_number}-div",
             children=[view for view in main_views],
         )
+
+    def make_default_view(self):
+        with get_connection() as conn:
+            t = conn.table("skjemamottak")
+            t = t.select("skjema").distinct().execute()
+
+            with_view = set(DataEditorRegistry._table_form_covered)
+
+            undefined_view: dict[str, list] = {}
+            for table in [
+                table for table in conn.list_tables() if table.startswith("skjemadata_")
+            ]:
+                for form in t["skjema"].unique():
+                    if (table, form) not in with_view:
+                        undefined_view.setdefault(table, []).append(form)
+
+        try:
+            from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_table import (
+                DataEditorTable,
+            )
+
+            for table in undefined_view:
+                test = DataEditorTable(
+                    applies_to_tables=[table], applies_to_forms=undefined_view[table]
+                )
+        except Exception as e:
+            logger.error("Error during creation of default view.", exc_info=True)
+            raise e
 
     def _create_layout(self) -> dbc.Container:
 
@@ -369,9 +393,6 @@ class DataEditorHelperButton(ABC):
         Args:
             label: The label to put on the button.
         """
-        self.module_number = DataEditorHelperButton._id_number
-        self.module_name = self.__class__.__name__
-        DataEditorHelperButton._id_number += 1
         self.label = label
         self.button_callbacks()
         DataEditorRegistry.helper_modules.append(self)
@@ -479,6 +500,9 @@ class DataEditorDataView(ABC):
                 }
             }
         )
+        for table in self.applies_to_tables:
+            for form in self.applies_to_forms:
+                DataEditorRegistry._table_form_covered.append(tuple((table, form)))
 
     @abstractmethod
     def _create_layout(self) -> None:
