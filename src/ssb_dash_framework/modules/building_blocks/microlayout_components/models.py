@@ -30,6 +30,40 @@ class BaseNode(BaseModel):
         raise NotImplementedError
 
 
+    def __str__(self, prefix: str = "", is_last: bool = True) -> str:
+        branch = "└─ " if is_last else "├─ "
+        node_name = self.type.upper()
+
+        # Container node (has children)
+        if hasattr(self, "children") and isinstance(self.children, list):
+            lines = [f"{prefix}{branch}{node_name}:"]
+            child_prefix = prefix + ("    " if is_last else "│   ")
+            for i, child in enumerate(self.children):
+                lines.append(child.__str__(prefix=child_prefix, is_last=(i == len(self.children) - 1)))
+            return "\n".join(lines)
+
+        # Leaf node — dynamically include info
+        info_parts = []
+
+        # Label if exists
+        if hasattr(self, "label"):
+            info_parts.append(f"{self.label}")
+
+        # field_path for InputField or similar
+        if hasattr(self, "field_settings") and hasattr(self.field_settings, "field_path"):
+            info_parts.append(f"path={self.field_settings.field_path}")
+
+        # klass_code for KlassDropdown/KlassChecklist
+        if hasattr(self, "klass_code"):
+            info_parts.append(f"klass_code={self.klass_code}")
+
+        # size for Header
+        if hasattr(self, "size"):
+            info_parts.append(f"size={self.size}")
+
+        info_str = " (" + ", ".join(info_parts) + ")" if info_parts else ""
+        return f"{prefix}{branch}{node_name}{info_str}"
+
 class ContainerNode(BaseNode):
     # Recursive children: a list of Nodes (defined later via Union)
     children: List["Node"] = Field(default_factory=list)
@@ -385,3 +419,10 @@ class Layout:
             layout = node.create(settings, inputs, states, getter_args)
             layout_list.append(layout)
         return layout_list
+    
+    
+    def __str__(self) -> str:
+        lines = ["LAYOUT:"]
+        for i, node in enumerate(self.nodes):
+            lines.append(node.__str__(prefix="", is_last=(i == len(self.nodes) - 1)))
+        return "\n".join(lines)
