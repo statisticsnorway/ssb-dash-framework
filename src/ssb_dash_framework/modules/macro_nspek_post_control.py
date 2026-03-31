@@ -24,6 +24,7 @@ from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils.module_validation import module_validator
 from ..modules.macro_module import MacroModule_ParquetReader
+from ..modules.macro_module import get_nace_values_from_group, get_nace_groups, format_nace_range
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
@@ -374,7 +375,9 @@ class MacroNspekPostControl:
         naring_filter = t.naring.substr(0, length=2).name("nace2")
         t = t.select(naring_filter).distinct()
         df: DataFrame = t.to_pandas()
-        return sorted(df["nace2"].astype(str))
+        nace_numbers: list[str] = sorted(df["nace2"].astype(str))
+        nace_groups: list[str] = list(get_nace_groups(int(aar)))
+        return [*nace_numbers, *nace_groups]
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the MacroNspekPostControl module."""
@@ -583,12 +586,21 @@ class MacroNspekPostControl:
             if row_id == "count_row":
                 raise PreventUpdate
 
+            aar: int = int(variabelvelger_aar)
+
             col = cell_data.get("colId")
             if col in ["variabel", macro_level]:
                 raise PreventUpdate
 
             assert isinstance(col, str)
-            selected_nace = col.replace("_", ".")
+            if col[0].isdigit():
+                nace_letter_code = None
+                selected_nace = [col.replace("_", ".")]
+            else:
+                nace_letter_code = col
+                nace_values = get_nace_values_from_group(aar=aar, klass_gruppekode=nace_letter_code)
+                selected_nace = nace_values.get(nace_letter_code, [])
+                nace_siffer_level = 2
             row_idx = int(row_id)
 
             if not selected_nace:
@@ -601,14 +613,12 @@ class MacroNspekPostControl:
             if selected_filter_val is None or pd.isna(selected_filter_val):
                 raise PreventUpdate
 
-            aar: int = int(variabelvelger_aar)
-
             # read in every unit in selected nace
             t_filtered: ibis.TableExpr = self.parquet_reader._load_year(
                 aar,
                 self.file_path_resolver,
                 foretak_or_bedrift,
-                [selected_nace],
+                [*selected_nace],
                 nace_siffer_level,
                 detail_grid=True,
             )
@@ -728,8 +738,14 @@ class MacroNspekPostControl:
             if column_defs:
                 column_defs[0]["pinned"] = "left"
                 column_defs[0]["width"] = 240
+            
+            if nace_letter_code:
+                nace_display = format_nace_range(selected_nace)
+                nace_definition = f"næringsgruppe {nace_letter_code} ({nace_display})"
+            else:
+                nace_definition = f"næring {selected_nace}"
 
-            title = f"{foretak_or_bedrift.capitalize()} i næring {selected_nace}"
+            title = f"{foretak_or_bedrift.capitalize()} i {nace_definition}"
 
             return row_data, column_defs, title, [], True, None, 0
 
