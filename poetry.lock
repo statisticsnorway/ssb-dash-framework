@@ -1652,7 +1652,7 @@ grpcio-status = [
 ]
 proto-plus = [
     {version = ">=1.25.0,<2.0.0", markers = "python_version >= \"3.13\""},
-    {version = ">=1.22.3,<2.0.0", markers = "python_version < \"3.13\""},
+    {version = ">=1.22.3,<2.0.0"},
 ]
 protobuf = ">=4.25.8,<7.0.0"
 requests = ">=2.20.0,<3.0.0"
@@ -1778,7 +1778,7 @@ grpcio = [
 ]
 proto-plus = [
     {version = ">=1.25.0,<2.0.0", markers = "python_version >= \"3.13\""},
-    {version = ">=1.22.3,<2.0.0"},
+    {version = ">=1.22.3,<2.0.0", markers = "python_version < \"3.13\""},
 ]
 protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<7.0.0"
 
@@ -5335,20 +5335,20 @@ files = [
 
 [[package]]
 name = "rpy2"
-version = "3.6.6"
+version = "3.6.5"
 description = "Python interface to the R language (embedded R)"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "rpy2-3.6.6-py3-none-any.whl", hash = "sha256:c9a2124c8d7411ba230b9f25d0bd69f7e9a392d934fa18917dc5e11e12e676b7"},
-    {file = "rpy2-3.6.6.tar.gz", hash = "sha256:e82cd2d29e440f362c641dd56d2d9b9a1ce60c518ce0b21487d1929b79980bdc"},
+    {file = "rpy2-3.6.5-py3-none-any.whl", hash = "sha256:1e7a0572895e98f9c38c5ec6cee424503eb812cacfa3fe07fdb9d3b72e82ff76"},
+    {file = "rpy2-3.6.5.tar.gz", hash = "sha256:826fc0fabd71cca49b692fac9afc3815ea6c34935844aaefe424da5b76dd68e6"},
 ]
 
 [package.dependencies]
 packaging = {version = "*", markers = "platform_system == \"Windows\""}
-rpy2-rinterface = ">=3.6.5"
-rpy2-robjects = ">=3.6.4"
+rpy2-rinterface = ">=3.6.4"
+rpy2-robjects = ">=3.6.3"
 
 [package.extras]
 all = ["rpy2-rinterface[all]", "rpy2-robjects[all]"]
@@ -7218,4 +7218,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "fb006db98f8c127438ced2e9da0bfa01eeb35760956ab635e04956ba18e91cfe"
+content-hash = "a6777b314260035e08932b5aa65ed8ac582367be72d8779af986a78550ca23c5"
