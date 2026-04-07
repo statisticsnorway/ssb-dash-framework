@@ -32,15 +32,16 @@ from ..utils.module_validation import module_validator
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
+
 def format_nace_range(codes: list[str]) -> str:
     """Formats a list of NACE codes into a compact range string.
-    
+
     Example:
         ["10", "11", "12", "13", "25", "26", "28", "29", "30"] -> "10-13, 25-26, 28-30"
     """
     if not codes:
         return ""
-    
+
     sorted_codes = sorted(codes, key=lambda x: int(x))
     ranges = []
     start = sorted_codes[0]
@@ -122,7 +123,7 @@ class MacroModule_ParquetReader:
         """Initialize a persistent DuckDB connection."""
         self.conn: BaseBackend = ibis.connect("duckdb://")
         self._loaded_tables: dict[str, ibis.TableExpr] = {}
-    
+
     def _get_table(self, file_path: str) -> ibis.Table:
         """
         Stores a parquet file as a named view so DuckDB can reuse it without reading in the whole file into memory again.
@@ -199,10 +200,8 @@ class MacroModule_ParquetReader:
                     nace_group: dict[str, str] = get_nace_values_from_group(aar, letter)
                     nace_values: list[str] = nace_group.get(letter)
                     assert nace_values is not None
-                
-                    t_klass = t.filter(
-                        t.naring.substr(0, length=2).isin(nace_values)
-                    )
+
+                    t_klass = t.filter(t.naring.substr(0, length=2).isin(nace_values))
                     # set naring = letter
                     t_klass = t_klass.mutate(naring=ibis.literal(letter).cast("string"))
                     klass_dataframes.append(t_klass)
@@ -542,9 +541,7 @@ class MacroModule:
     ) -> list[str]:
         """Get distinct NACE codes for a given year."""
         file_path = file_path_resolver(int(aar), "bedrifter")
-        t: ibis.TableExpr = self.parquet_reader._get_table(file_path).select(
-            "naring"
-        )
+        t: ibis.TableExpr = self.parquet_reader._get_table(file_path).select("naring")
         naring_filter = t.naring.substr(0, length=2).name("nace2")
         t = t.select(naring_filter).distinct()
         df: DataFrame = t.to_pandas()
@@ -884,7 +881,9 @@ class MacroModule:
                 selected_nace = [col.replace("_", ".")]
             else:
                 nace_letter_code = col
-                nace_values = get_nace_values_from_group(aar=aar, klass_gruppekode=nace_letter_code)
+                nace_values = get_nace_values_from_group(
+                    aar=aar, klass_gruppekode=nace_letter_code
+                )
                 selected_nace = nace_values.get(nace_letter_code, [])
                 nace_siffer_level = 2
             row_idx = int(row_id)

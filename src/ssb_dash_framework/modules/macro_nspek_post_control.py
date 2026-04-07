@@ -24,7 +24,11 @@ from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils.module_validation import module_validator
 from ..modules.macro_module import MacroModule_ParquetReader
-from ..modules.macro_module import get_nace_values_from_group, get_nace_groups, format_nace_range
+from ..modules.macro_module import (
+    get_nace_values_from_group,
+    get_nace_groups,
+    format_nace_range,
+)
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
@@ -366,12 +370,12 @@ class MacroNspekPostControl:
         logger.debug(f"Returning: {partition_dict}")
         return partition_dict
 
-    def _get_nace_options(self,file_path_resolver: Callable[[int, str], str], aar: str) -> list[str]:
+    def _get_nace_options(
+        self, file_path_resolver: Callable[[int, str], str], aar: str
+    ) -> list[str]:
         """Get distinct NACE codes for a given year."""
         file_path = file_path_resolver(int(aar), "bedrifter")
-        t: ibis.TableExpr = self.parquet_reader._get_table(file_path).select(
-            "naring"
-        )
+        t: ibis.TableExpr = self.parquet_reader._get_table(file_path).select("naring")
         naring_filter = t.naring.substr(0, length=2).name("nace2")
         t = t.select(naring_filter).distinct()
         df: DataFrame = t.to_pandas()
@@ -598,7 +602,9 @@ class MacroNspekPostControl:
                 selected_nace = [col.replace("_", ".")]
             else:
                 nace_letter_code = col
-                nace_values = get_nace_values_from_group(aar=aar, klass_gruppekode=nace_letter_code)
+                nace_values = get_nace_values_from_group(
+                    aar=aar, klass_gruppekode=nace_letter_code
+                )
                 selected_nace = nace_values.get(nace_letter_code, [])
                 nace_siffer_level = 2
             row_idx = int(row_id)
@@ -738,7 +744,7 @@ class MacroNspekPostControl:
             if column_defs:
                 column_defs[0]["pinned"] = "left"
                 column_defs[0]["width"] = 240
-            
+
             if nace_letter_code:
                 nace_display = format_nace_range(selected_nace)
                 nace_definition = f"næringsgruppe {nace_letter_code} ({nace_display})"
