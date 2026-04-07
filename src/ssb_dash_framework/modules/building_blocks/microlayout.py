@@ -35,6 +35,8 @@ class MicroLayoutAIO(html.Div):
         formdata_field_value_column_name: str = "verdi",
         table_selector_id: str | None = None,
         form_selector_id: str | None = None,
+        applies_to_tables: str | list[str] | None = None,
+        applies_to_forms: str | list[str] | None = None,
     ) -> None:
         logger.warning(
             "This module is under development and might receive larger and/or breaking changes."
@@ -44,7 +46,6 @@ class MicroLayoutAIO(html.Div):
             model = layout
         else:
             model = Layout(layout)
-
         if getter_args:
             extra_args = getter_args
         else:
