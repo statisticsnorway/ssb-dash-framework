@@ -27,8 +27,10 @@ HEATMAP_VARIABLES: dict[str, str] = {
     "bruttoinvestering_kvgr": "brut_inv_kvgr",
 }
 
+
 def dummy_file_path_resolver(aar: int, foretak_or_bedrift: str) -> str:
     return f"/dummy/path/p{aar}/statistikkfil_{foretak_or_bedrift}.parquet"
+
 
 def test_import() -> None:
     assert MacroModule is not None
@@ -54,7 +56,7 @@ def test_tab_instantiation(ibis_polars_conn) -> None:
         conn=ibis_polars_conn,
         heatmap_variables=HEATMAP_VARIABLES,
         file_path_resolver=dummy_file_path_resolver,
-        consolidated=True
+        consolidated=True,
     )
 
 
