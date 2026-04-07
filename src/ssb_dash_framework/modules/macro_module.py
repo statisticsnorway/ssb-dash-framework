@@ -7,6 +7,7 @@ from typing import ClassVar
 from typing import Literal
 from typing import Callable
 
+import os
 import ibis
 import pandas as pd
 from dash import Input
@@ -123,13 +124,24 @@ class MacroModule_ParquetReader:
         self._loaded_tables: dict[str, ibis.TableExpr] = {}
     
     def _get_table(self, file_path: str) -> ibis.Table:
-        if file_path not in self._loaded_tables:
+        """
+        Stores a parquet file as a named view so DuckDB can reuse it without reading in the whole file into memory again.
+        Saved as a dict with table name and its modification timestamp (in GC).
+        If the file changes (modification timestamp) on disk, it'll reload the file automatically.
+        """
+        last_modified = os.path.getmtime(file_path)
+
+        cached = self._loaded_tables.get(file_path)
+        if cached is None or cached["last_modified"] != last_modified:
             t = self.conn.read_parquet(file_path)
             # register as a named view so DuckDB can reuse it
             table_name = file_path.replace("/", "_").replace(".", "_")
             self.conn.create_view(table_name, t, overwrite=True)
-            self._loaded_tables[file_path] = self.conn.table(table_name)
-        return self._loaded_tables[file_path]
+            self._loaded_tables[file_path] = {
+                "table": self.conn.table(table_name),
+                "last_modified": last_modified,
+            }
+        return self._loaded_tables[file_path]["table"]
 
     def _load_year(
         self,
@@ -187,15 +199,12 @@ class MacroModule_ParquetReader:
                     nace_group: dict[str, str] = get_nace_values_from_group(aar, letter)
                     nace_values: list[str] = nace_group.get(letter)
                     assert nace_values is not None
-                    
-                    # rename these per letter to the letter name
+                
                     t_klass = t.filter(
                         t.naring.substr(0, length=2).isin(nace_values)
                     )
                     # set naring = letter
                     t_klass = t_klass.mutate(naring=ibis.literal(letter).cast("string"))
-
-                    # add df to klass_dataframes
                     klass_dataframes.append(t_klass)
 
                 # merge/join klass_dataframes with t_only_nace
@@ -533,7 +542,7 @@ class MacroModule:
     ) -> list[str]:
         """Get distinct NACE codes for a given year."""
         file_path = file_path_resolver(int(aar), "bedrifter")
-        t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(file_path).select(
+        t: ibis.TableExpr = self.parquet_reader._get_table(file_path).select(
             "naring"
         )
         naring_filter = t.naring.substr(0, length=2).name("nace2")
@@ -545,7 +554,6 @@ class MacroModule:
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the MacroModule module."""
-        # dynamic_states = self.variableselector.get_all_inputs()
 
         @callback(
             Output("macromodule-naring-velger", "options"),
@@ -1075,23 +1083,6 @@ class MacroModule:
                 merged_df["nace_prefix_prev"] = (
                     merged_df[f"{naring_col}_x"].astype(str).str[:nace_siffer_level]
                 )
-
-                merged_df["is_nace_entrant"] = (  # different nace LAST year
-                    ~merged_df["is_new"]
-                    & (merged_df["nace_prefix_curr"].isin(selected_nace))
-                    & ~(merged_df["nace_prefix_prev"].isin(selected_nace))
-                )
-
-                merged_df["is_nace_exiter"] = (  # different nace THIS year
-                    ~merged_df["is_exiter"]
-                    & (merged_df["nace_prefix_prev"].isin(selected_nace))
-                    & ~(merged_df["nace_prefix_curr"].isin(selected_nace))
-                )
-
-                merged_df["nace_same"] = (
-                    merged_df["nace_prefix_curr"] == merged_df["nace_prefix_prev"]
-                ).fillna(False)
-
                 # drop rows/units if it wasn't in bucket this or last year, necessary because of merging on orgnr_foretak
                 mask = (merged_df["nace_prefix_curr"].isin(selected_nace)) | (
                     merged_df["nace_prefix_prev"].isin(selected_nace)
@@ -1127,21 +1118,9 @@ class MacroModule:
                     mask = merged_df["in_bucket_curr"] | merged_df["in_bucket_prev"]
                     merged_df = merged_df[mask]
 
-                    merged_df["is_macro_entrant"] = (
-                        ~merged_df["is_new"]
-                        & merged_df["in_bucket_curr"]
-                        & ~merged_df["in_bucket_prev"]
-                    )
-                    merged_df["is_macro_exiter"] = (
-                        ~merged_df["is_exiter"]
-                        & merged_df["in_bucket_prev"]
-                        & ~merged_df["in_bucket_curr"]
-                    )
             else:
                 merged_df["in_bucket_curr"] = True
                 merged_df["in_bucket_prev"] = True
-                merged_df["is_macro_entrant"] = False
-                merged_df["is_macro_exiter"] = False
 
             df = merged_df.copy()
 
@@ -1294,7 +1273,7 @@ class MacroModule:
                 nace_display = format_nace_range(selected_nace)
                 nace_definition = f"næringsgruppe {nace_letter_code} ({nace_display})"
             else:
-                nace_definition = f"næring {selected_nace}"
+                nace_definition = f"næring {selected_nace[0]}"
             title = f"{foretak_or_bedrift.capitalize()} i {nace_definition} i {macro_level} {selected_filter_val}"
             if macro_level == "sammensatte variabler":
                 title = f"{foretak_or_bedrift.capitalize()} i {nace_definition}"

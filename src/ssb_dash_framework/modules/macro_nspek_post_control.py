@@ -369,7 +369,7 @@ class MacroNspekPostControl:
     def _get_nace_options(self,file_path_resolver: Callable[[int, str], str], aar: str) -> list[str]:
         """Get distinct NACE codes for a given year."""
         file_path = file_path_resolver(int(aar), "bedrifter")
-        t: ibis.TableExpr = self.parquet_reader.conn.read_parquet(file_path).select(
+        t: ibis.TableExpr = self.parquet_reader._get_table(file_path).select(
             "naring"
         )
         naring_filter = t.naring.substr(0, length=2).name("nace2")
@@ -743,7 +743,7 @@ class MacroNspekPostControl:
                 nace_display = format_nace_range(selected_nace)
                 nace_definition = f"næringsgruppe {nace_letter_code} ({nace_display})"
             else:
-                nace_definition = f"næring {selected_nace}"
+                nace_definition = f"næring {selected_nace[0]}"
 
             title = f"{foretak_or_bedrift.capitalize()} i {nace_definition}"
 
