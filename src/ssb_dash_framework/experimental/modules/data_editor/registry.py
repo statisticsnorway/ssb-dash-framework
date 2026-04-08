@@ -9,3 +9,4 @@ class DataEditorRegistry:
     helper_modules: ClassVar[list[Any]] = []
     sidebar_modules: ClassVar[list[Any]] = []
     main_views: ClassVar[dict[Any, Any]] = dict()
+    _table_form_covered: ClassVar[list[tuple[str, str]]] = []

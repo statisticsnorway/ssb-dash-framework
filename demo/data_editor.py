@@ -48,6 +48,7 @@ from ssb_dash_framework import get_connection
 from ssb_dash_framework import main_layout
 from ssb_dash_framework import set_variables
 from ssb_dash_framework.experimental.modules.data_editor.core import DataEditor
+from ssb_dash_framework.experimental.modules.data_editor.core import DataEditorInfoRow
 from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_custom import (
     DataViewCustom,
 )
@@ -132,55 +133,57 @@ def make_table(tabell, skjema, refnr, *time_units):
         return t.filter(_.refnr == refnr).filter(_.skjema == skjema).to_pandas()
 
 
+layout = [
+    {
+        "row": [
+            {"col": {"table": {"label": "Oversiktstabell", "table_func": make_table}}},
+            {"col": {"figure": {"label": "Barplot", "figure_func": make_fig_bar}}},
+        ]
+    },
+    {
+        "row": [
+            {
+                "col": {
+                    "microlayout": {
+                        "label": "Test mikrolayout",
+                        "layout": [
+                            {
+                                "type": "input",
+                                "label": "Totalareal",
+                                "variable": "totalareal",
+                            },
+                            {
+                                "type": "input",
+                                "label": "Fulldyrket",
+                                "variable": "fulldyrket",
+                            },
+                            {
+                                "type": "input",
+                                "label": "Innmarksbeite",
+                                "variable": "innmarksbeite",
+                            },
+                        ],
+                        "get_data_func": "default",
+                        "update_func": "default",
+                    },
+                    "kwargs": {"width": 1},
+                }
+            },
+            {
+                "col": {
+                    "figure": {
+                        "label": "Scatterplot fulldyrket - totalareal",
+                        "figure_func": make_fig_scatter,
+                    },
+                }
+            },
+        ]
+    },
+]
 
-# layout = [
-#     {
-#         "row": [
-#             {"col": {"table": {"label": "Oversiktstabell", "table_func": make_table}}},
-#             {"col": {"figure": {"label": "Barplot", "figure_func": make_fig_bar}}},
-#         ]
-#     },
-#     {
-#         "row": [
-#             {
-#                 "col": {
-#                     "microlayout": {
-#                         "label": "Test mikrolayout",
-#                         "layout": [
-#                             {
-#                                 "type": "input",
-#                                 "label": "Totalareal",
-#                                 "variable": "totalareal",
-#                             },
-#                             {
-#                                 "type": "input",
-#                                 "label": "Fulldyrket",
-#                                 "variable": "fulldyrket",
-#                             },
-#                             {
-#                                 "type": "input",
-#                                 "label": "Innmarksbeite",
-#                                 "variable": "innmarksbeite",
-#                             },
-#                         ],
-#                         "get_data_func": "default",
-#                     },
-#                     "kwargs": {"width": 1},
-#                 }
-#             },
-#             {
-#                 "col": {
-#                     "figure": {
-#                         "label": "Scatterplot fulldyrket - totalareal",
-#                         "figure_func": make_fig_scatter,
-#                     },
-#                 }
-#             },
-#         ]
-#     },
-# ]
-
-
+DataEditorInfoRow(
+    variables_dict={"Navn": {"source": "enhetsinfo", "variable_name": "orgnavn"}}
+)
 
 DataViewCustom(
     applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"], layout=layout

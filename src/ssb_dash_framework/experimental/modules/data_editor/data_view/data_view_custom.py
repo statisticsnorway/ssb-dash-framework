@@ -230,6 +230,8 @@ class DataViewCustom(DataEditorDataView):
             return components
         
         for key, value in layout.items():
+            print("key: ", key)
+            print("value: ", value)
             if key == "kwargs":
                 continue
             if isinstance(value, dict):
