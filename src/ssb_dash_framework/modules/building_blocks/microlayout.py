@@ -41,6 +41,23 @@ class MicroLayoutAIO(html.Div):
         logger.warning(
             "This module is under development and might receive larger and/or breaking changes."
         )
+        # The below is just for the __str__ dunder
+        self._form_data_table = form_data_table
+        self._form_reference_number_column = form_reference_number_column
+        self._form_data_field_name_column = form_data_field_name_column
+        self._formdata_field_value_column_name = formdata_field_value_column_name
+        self._form_reference_input_id = form_reference_input_id
+        self._table_selector_id = table_selector_id
+        self._form_selector_id = form_selector_id
+        self._applies_to_tables = applies_to_tables
+        self._applies_to_forms = applies_to_forms
+        self._horizontal = horizontal
+        self._getter_func = getter_func
+        self._update_func = update_func
+        self._getter_args = getter_args
+        self._model = model
+        # The above is just for the __str__ dunder
+
         self.aio_id = aio_id or str(uuid.uuid4())
         if isinstance(layout, Layout):
             model = layout
@@ -72,3 +89,24 @@ class MicroLayoutAIO(html.Div):
 
         super().__init__(html_layout, id=f"{self.aio_id}-klass", style=styles)
 
+    def __str__(self) -> str:
+        lines = [
+            "MicroLayoutAIO",
+            f"  aio_id:               {self.aio_id}",
+            f"  form_data_table:      {self._form_data_table}",
+            f"  form_reference_col:   {self._form_reference_number_column}",
+            f"  field_name_col:       {self._form_data_field_name_column}",
+            f"  field_value_col:      {self._formdata_field_value_column_name}",
+            f"  form_reference_id:    {self._form_reference_input_id}",
+            f"  table_selector_id:    {self._table_selector_id}",
+            f"  form_selector_id:     {self._form_selector_id}",
+            f"  applies_to_tables:    {self._applies_to_tables}",
+            f"  applies_to_forms:     {self._applies_to_forms}",
+            f"  horizontal:           {self._horizontal}",
+            f"  getter_func:          {self._getter_func.__name__}",
+            f"  update_func:          {self._update_func.__name__}",
+            f"  getter_args:          {self._getter_args}",
+            "",
+            str(self._model),
+        ]
+        return "\n".join(lines)
