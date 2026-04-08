@@ -40,6 +40,7 @@ def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args
             .as_scalar()
             .to_pandas()
         )
+    logger.debug(f"Returning:\n{res}")
     return res
 
 
@@ -107,6 +108,7 @@ class EditableField(BaseModel):
             real_args = args[:-n_guard] if n_guard else args
 
             if not self._check_guard(settings, *guard_values):
+                logger.debug("Preventing update")
                 raise PreventUpdate
 
             return self.getter_func(
