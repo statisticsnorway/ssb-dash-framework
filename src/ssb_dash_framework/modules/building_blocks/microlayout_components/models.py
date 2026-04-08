@@ -1,15 +1,21 @@
 from __future__ import annotations
+
 import uuid
-from typing import Annotated, Dict, List, Literal, Optional, Union, Any
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from typing import Annotated
+from typing import Literal
+
+import dash_bootstrap_components as dbc
 from dash import Input
-from dash import Output
 from dash import State
 from dash import html
-import dash_bootstrap_components as dbc
-
 from klass import get_classification
-from .editable_field_model import EditableField, CallbackSettings
+from pydantic import BaseModel
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import TypeAdapter
+
+from .editable_field_model import CallbackSettings
+from .editable_field_model import EditableField
 
 
 # ---------- Base + shared ----------
@@ -29,7 +35,6 @@ class BaseNode(BaseModel):
     ) -> html.Div | html.H1 | html.H2 | html.H3 | dbc.Row | dbc.Col:
         raise NotImplementedError
 
-
     def __str__(self, prefix: str = "", is_last: bool = True) -> str:
         branch = "└─ " if is_last else "├─ "
         node_name = self.type.upper()
@@ -39,7 +44,11 @@ class BaseNode(BaseModel):
             lines = [f"{prefix}{branch}{node_name}:"]
             child_prefix = prefix + ("    " if is_last else "│   ")
             for i, child in enumerate(self.children):
-                lines.append(child.__str__(prefix=child_prefix, is_last=(i == len(self.children) - 1)))
+                lines.append(
+                    child.__str__(
+                        prefix=child_prefix, is_last=(i == len(self.children) - 1)
+                    )
+                )
             return "\n".join(lines)
 
         # Leaf node — dynamically include info
@@ -50,7 +59,9 @@ class BaseNode(BaseModel):
             info_parts.append(f"{self.label}")
 
         # field_path for InputField or similar
-        if hasattr(self, "field_settings") and hasattr(self.field_settings, "field_path"):
+        if hasattr(self, "field_settings") and hasattr(
+            self.field_settings, "field_path"
+        ):
             info_parts.append(f"path={self.field_settings.field_path}")
 
         # klass_code for KlassDropdown/KlassChecklist
@@ -64,9 +75,10 @@ class BaseNode(BaseModel):
         info_str = " (" + ", ".join(info_parts) + ")" if info_parts else ""
         return f"{prefix}{branch}{node_name}{info_str}"
 
+
 class ContainerNode(BaseNode):
     # Recursive children: a list of Nodes (defined later via Union)
-    children: List["Node"] = Field(default_factory=list)
+    children: list[Node] = Field(default_factory=list)
 
     def create(
         self,
@@ -152,7 +164,7 @@ class Header(BaseNode):
 class InputField(BaseNode):
     type: Literal["input"]
     label: str
-    value: Optional[str] = ""
+    value: str | None = ""
     field_settings: EditableField
 
     def create(
@@ -177,6 +189,7 @@ class InputField(BaseNode):
                 dbc.Input(style={"width": "100%"}, id=_id, debounce=True),
             ]
         )
+
 
 class DropdownComponent(BaseNode):
     """A class describing the dropdown type."""
@@ -210,6 +223,7 @@ class DropdownComponent(BaseNode):
                 ),  # pyright: ignore
             ]
         )
+
 
 class ChecklistComponent(BaseNode):
     """A class describing the checklist type."""
@@ -246,7 +260,6 @@ class ChecklistComponent(BaseNode):
         )
 
 
-
 class KlassDropdown(BaseNode):
     type: Literal["klass-dropdown"]
     klass_code: str
@@ -268,24 +281,23 @@ class KlassDropdown(BaseNode):
             options.append({"label": value, "value": key})
 
         return DropdownComponent(
-                type="dropdown",
-                label=self.label,
-                options=options,
-                field_settings=self.field_settings,
-            ).create(
-                settings,
-                inputs,
-                states,
-                getter_args,
-            )
-
+            type="dropdown",
+            label=self.label,
+            options=options,
+            field_settings=self.field_settings,
+        ).create(
+            settings,
+            inputs,
+            states,
+            getter_args,
+        )
 
 
 # (Optional) If you plan to use these later, keep them here for completeness
 class Textarea(BaseNode):
     type: Literal["textarea"]
     label: str
-    value: Optional[str] = ""
+    value: str | None = ""
     field_settings: EditableField
 
     def create(
@@ -357,7 +369,6 @@ class KlassChecklist(BaseNode):
             )
 
 
-
 """class ChecklistOption(BaseModel):
     label: str
     value: str
@@ -371,17 +382,15 @@ class Checklist(BaseNode):
 """
 # ---------- Discriminated union (by 'type') ----------
 Node = Annotated[
-    Union[
-        Row,
-        Col,
-        Header,
-        InputField,
-        KlassDropdown,
-        Textarea,
-        KlassChecklist,
-        ChecklistComponent,
-        DropdownComponent
-    ],
+    Row
+    | Col
+    | Header
+    | InputField
+    | KlassDropdown
+    | Textarea
+    | KlassChecklist
+    | ChecklistComponent
+    | DropdownComponent,
     Field(discriminator="type"),
 ]
 
@@ -395,16 +404,16 @@ for m in (
     Textarea,
     KlassChecklist,
     ChecklistComponent,
-    DropdownComponent
+    DropdownComponent,
 ):
     m.model_rebuild()
 
-NodeListAdapter = TypeAdapter(List[Node])
+NodeListAdapter = TypeAdapter(list[Node])
 
 
 class Layout:
     def __init__(self, data: list) -> None:
-        parsed_nodes: List[Node] = NodeListAdapter.validate_python(data)
+        parsed_nodes: list[Node] = NodeListAdapter.validate_python(data)
         self.nodes = parsed_nodes
 
     def build(
@@ -419,8 +428,7 @@ class Layout:
             layout = node.create(settings, inputs, states, getter_args)
             layout_list.append(layout)
         return layout_list
-    
-    
+
     def __str__(self) -> str:
         lines = ["LAYOUT:"]
         for i, node in enumerate(self.nodes):

@@ -6,10 +6,11 @@ from dash import Input
 from dash import State
 from dash import html
 
-from ibis import _
 from .microlayout_components.editable_field_model import CallbackSettings
 from .microlayout_components.models import Layout
+
 logger = logging.getLogger(__name__)
+
 
 class MicroLayoutAIO(html.Div):
     """A class for generating a dash layout and callbacks without interacting with Dash.
@@ -55,7 +56,6 @@ class MicroLayoutAIO(html.Div):
         self._getter_func = getter_func
         self._update_func = update_func
         self._getter_args = getter_args
-        self._model = model
         # The above is just for the __str__ dunder
 
         self.aio_id = aio_id or str(uuid.uuid4())
@@ -63,6 +63,8 @@ class MicroLayoutAIO(html.Div):
             model = layout
         else:
             model = Layout(layout)
+        self._model = model  # Just for __str__ dunder
+
         if getter_args:
             extra_args = getter_args
         else:
@@ -80,7 +82,7 @@ class MicroLayoutAIO(html.Div):
             settings=common_settings,
             inputs=inputs,
             states=states,
-            getter_args=extra_args
+            getter_args=extra_args,
         )
         styles = {}
 
@@ -91,7 +93,7 @@ class MicroLayoutAIO(html.Div):
 
     def __str__(self) -> str:
         lines = [
-            "MicroLayoutAIO",
+            self.__class__.__name__,
             f"  aio_id:               {self.aio_id}",
             f"  form_data_table:      {self._form_data_table}",
             f"  form_reference_col:   {self._form_reference_number_column}",

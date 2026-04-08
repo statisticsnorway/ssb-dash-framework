@@ -7,10 +7,11 @@ from dash import State
 from dash import callback
 from dash import ctx
 from dash.exceptions import PreventUpdate
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import Field
+
 from ....utils.config_tools.connection import get_connection
-from ibis import _
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,9 @@ def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args
     return res
 
 
-def default_updater(value, refnr: str, settings: CallbackSettings, field_path: str, *args):
+def default_updater(
+    value, refnr: str, settings: CallbackSettings, field_path: str, *args
+):
     with get_connection() as conn:
         query = f"""
             UPDATE {settings.form_data_table}
@@ -53,6 +56,7 @@ def default_updater(value, refnr: str, settings: CallbackSettings, field_path: s
         """
         conn.raw_sql(query)
         logger.info(query)
+
 
 class EditableField(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -154,4 +158,3 @@ class EditableField(BaseModel):
                 *getter_args if getter_args else [],
             )
             raise PreventUpdate
-
