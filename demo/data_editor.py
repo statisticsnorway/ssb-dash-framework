@@ -15,7 +15,6 @@ from ssb_dash_framework.experimental.modules.data_editor.sidebar_components.comm
 from ssb_dash_framework.experimental.modules.data_editor.sidebar_components.editing_status import (
     DataEditorSidebarEditingStatus,
 )
-from ssb_dash_framework.modules.building_blocks.microlayout_components.models import EditableField
 
 if os.getenv("DAPLA_ENVIRONMENT", None) == "PROD":
     from ssb_dash_framework import _get_connection_object

@@ -1,0 +1,26 @@
+- type: CustomView
+  applies_to_tables:
+    - skjemadata_foretak
+  applies_to_forms:
+    - RA-0481
+  layout:
+    - row:
+        - col:
+            type: microlayout
+            label: Omsetning og driftskostnad
+            form_data_table: skjemadata_foretak
+            form_data_field_name_column: variabel
+            layout:
+            - type: row
+              children:
+              - type: col
+                children:
+                - type: input
+                  label: "Totalareal"
+                  variable: totalareal
+                - type: input
+                  label: "Fulldyrket"
+                  variable: fulldyrket
+                - type: input
+                  label: "Innmarksbeite"
+                  variable: innmarksbeite

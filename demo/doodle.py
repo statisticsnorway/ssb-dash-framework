@@ -1,9 +1,21 @@
-from ssb_dash_framework.modules.building_blocks.microlayout_components.models import (
-    EditableField, Layout,Row, Col, InputField, Node
-)
+from pathlib import Path
 
 import yaml
-from pathlib import Path
+
+from ssb_dash_framework.modules.building_blocks.microlayout_components.models import Col
+from ssb_dash_framework.modules.building_blocks.microlayout_components.models import (
+    EditableField,
+)
+from ssb_dash_framework.modules.building_blocks.microlayout_components.models import (
+    InputField,
+)
+from ssb_dash_framework.modules.building_blocks.microlayout_components.models import (
+    Layout,
+)
+from ssb_dash_framework.modules.building_blocks.microlayout_components.models import (
+    Node,
+)
+from ssb_dash_framework.modules.building_blocks.microlayout_components.models import Row
 
 
 class IncludeLoader(yaml.SafeLoader):
@@ -65,12 +77,11 @@ target = [
     }
 ]
 
-from typing import Any, Dict, List
+from typing import Any
 
 
-def build_node_from_dict(d: Dict[str, Any]) -> Node:
+def build_node_from_dict(d: dict[str, Any]) -> Node:
     """Recursively build a Node from a dictionary."""
-    
     # Handle container nodes first
     if "row" in d:
         children = [build_node_from_dict(child) for child in d["row"]]
@@ -78,7 +89,7 @@ def build_node_from_dict(d: Dict[str, Any]) -> Node:
     elif "col" in d:
         children = [build_node_from_dict(child) for child in d["col"]]
         return Col(type="col", children=children)
-    
+
     # Handle input fields (you can extend this for other leaf types)
     elif d.get("type") == "input":
         field_path = d.get("field_path", "")
@@ -90,16 +101,18 @@ def build_node_from_dict(d: Dict[str, Any]) -> Node:
             value=d.get("value", ""),
             field_settings=field_settings,
         )
-    
+
     else:
         raise ValueError(f"Unsupported node type: {d}")
 
-def build_layout_from_list(data: List[Dict[str, Any]]) -> Layout:
+
+def build_layout_from_list(data: list[dict[str, Any]]) -> Layout:
     """Build a Layout object from a list of node dicts."""
     nodes = [build_node_from_dict(d) for d in data]
     # Convert nodes to serializable dicts for Layout initialization
     node_dicts = [node.model_dump() for node in nodes]
     return Layout(node_dicts)
+
 
 if __name__ == "__main__":
 
@@ -113,7 +126,7 @@ if __name__ == "__main__":
 
     layout = list()
 
-    print(config["microlayout"]["layout"])    
+    print(config["microlayout"]["layout"])
 
     layout = build_layout_from_list(config["microlayout"]["layout"])
 
