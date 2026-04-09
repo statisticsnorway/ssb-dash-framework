@@ -343,7 +343,7 @@ class AltinnEditorPrimaryTable:
                             conn.raw_sql(query)
                             alert_store = [
                                 create_alert(
-                                    f"ident: {ident}, variabel: {variable} er oppdatert fra {old_value} til {value}!",
+                                    f"ident: {ident}, variabel: {variable} er oppdatert fra **{old_value}** til **{value}**!",
                                     "success",
                                     ephemeral=True,
                                 ),
@@ -362,7 +362,7 @@ class AltinnEditorPrimaryTable:
                             conn.raw_sql(query)
                             alert_store = [
                                 create_alert(
-                                    f"ident: {ident}, {variable} er oppdatert fra {old_value} til {value}!",
+                                    f"ident: {ident}, {variable} er oppdatert fra **{old_value}** til **{value}**!",
                                     "success",
                                     ephemeral=True,
                                 ),
@@ -417,7 +417,7 @@ class AltinnEditorPrimaryTable:
                             variabel = edited[0]["data"]["variabel"]
                             alert_store = [
                                 create_alert(
-                                    f"ident: {ident}, variabel: {variabel} er oppdatert fra {old_value} til {new_value}!",
+                                    f"ident: {ident}, variabel: {variabel} er oppdatert fra **{old_value}** til **{new_value}**!",
                                     "success",
                                     ephemeral=True,
                                 ),
@@ -426,7 +426,7 @@ class AltinnEditorPrimaryTable:
                         else:
                             alert_store = [
                                 create_alert(
-                                    f"ident: {ident}, {edited_column} er oppdatert fra {old_value} til {new_value}!",
+                                    f"ident: {ident}, {edited_column} er oppdatert fra **{old_value}** til **{new_value}**!",
                                     "success",
                                     ephemeral=True,
                                 ),

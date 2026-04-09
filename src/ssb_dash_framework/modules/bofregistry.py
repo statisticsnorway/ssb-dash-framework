@@ -18,6 +18,7 @@ from sqlalchemy.util.typing import NoneType
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
+from ..utils import create_alert
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -452,19 +453,33 @@ class BofInformation(ABC):
         @callback(  # type: ignore[misc]
             Output("bofregistry-ssb_bedrift-table", "rowData"),
             Output("bofregistry-ssb_bedrift-table", "columnDefs"),
+            Output("alert_store", "data", allow_duplicate=True),
             Input("tab-vof-foretak-button2", "n_clicks"),
             State("tab-bof_foretak-table1", "selectedRows"),
+            State("alert_store", "data"),
+            prevent_initial_call=True,
         )
         def ssb_bof_bedrift(
             n_clicks: int | None,
             selected_row: list[dict[str, Any]],
-        ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
+            alert_store: list[dict[str, Any]],
+        ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
             logger.debug(
                 "Args:\n" + f"n_clicks: {n_clicks}\n" + f"selected_row: {selected_row}"
             )
             if n_clicks is None or not selected_row:
                 logger.debug("Raised PreventUpdate")
-                raise PreventUpdate
+                alert_store = [
+                            create_alert(
+                                "Velg en bedrift fra bedriftslisten under for å hente BoF bedriftsinfo.",
+                                "info",
+                                position="center",
+                                duration=6,
+                                ephemeral=True,
+                            ),
+                            *alert_store,
+                ]
+                return [], [], alert_store
 
             orgnr = selected_row[0]["orgnr"]
             with sqlite3.connect(SSB_BEDRIFT_PATH) as conn:
@@ -480,7 +495,7 @@ class BofInformation(ABC):
                 }
                 for col in df.columns
             ]
-            return df.to_dict("records"), columns
+            return df.to_dict("records"), columns, []
 
         @callback(  # type: ignore[misc]
             Output("tab-bof_foretak-orgnrcard", "value"),

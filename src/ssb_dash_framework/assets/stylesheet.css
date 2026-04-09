@@ -44,8 +44,94 @@ Alert handler
 .alert-container {
     position: fixed;
     z-index: 2000;
+    pointer-events: none;
+}
+
+.alert-container .alert {
+    pointer-events: auto; /* but actual alerts are still clickable/dismissable */
+}
+
+.alert-toast,
+.alert-modal-item {
+    padding: 10px 10px !important;
+    min-width: 500px;
+    max-width: 900px;
+}
+
+.alert-icon {
+    font-size: 1.5rem;
+    filter: brightness(6);
+}
+
+.alert-message {
+    font-size: 1rem;
+    font-weight: 500;
+}
+.alert-message p {
+    margin: 0;
+}
+
+.alert-timestamp {
+    font-size: 1rem;
+}
+
+.alert-container.bottom-left {
     bottom: 10px;
     left: 10px;
+}
+
+.alert-container.bottom-left .alert.alert-toast {
+    animation: slideInLeft 0.2s ease-out;
+    border-radius: 8px;
+    border: 1px solid var(--bs-alert-border-color);
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(-110%); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+}
+
+.alert-container.top-right {
+    top: 10px;
+    right: 10px;
+}
+
+.alert-container.center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3000;
+}
+
+.alert-container.center .alert.alert-toast {
+    animation: fadeIn 0.3s ease-out;
+    border-radius: 12px;
+    border: 1px solid var(--bs-alert-border-color);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.alert-container.top-right .alert.alert-toast {
+    animation: slideInRight 0.2s ease-out;
+    border-radius: 8px;
+    border: 1px solid var(--bs-alert-border-color);
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(110%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+
+.alert-container .alert.alert-toast.alert-dying {
+    animation: fadeOut 0.4s ease-in forwards;
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
 }
 
 /*
