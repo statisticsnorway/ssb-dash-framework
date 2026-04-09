@@ -59,7 +59,6 @@ class MicroLayoutAIO(html.Div):
         # The above is just for the __str__ dunder
 
         self.aio_id = aio_id or str(uuid.uuid4())
-        print(layout)
         if isinstance(layout, Layout):
             model = layout
         else:
