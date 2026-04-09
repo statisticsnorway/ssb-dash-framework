@@ -1,11 +1,15 @@
 """"""
 
+import logging
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel
 from pydantic import Field
 
 from ...setup.variableselector import VariableSelectorOption
+
+logger = logging.getLogger(__name__)
 
 
 class TimeUnitType(Enum):
@@ -39,11 +43,40 @@ class VariableSelectorConfig(BaseModel):  # TODO Add default templates?
         default=None, description="Variables used for grouping operations"
     )
 
-    def model_post_init(self, __context):
+    def model_post_init(self, __context: Any) -> None:
         apply_config(self)
 
+    @classmethod
+    def from_yaml(cls, yaml_path: str) -> "VariableSelectorConfig":
+        import yaml
 
-def apply_config(config: VariableSelectorConfig):
+        with open(yaml_path) as f:
+            config = yaml.safe_load(f)
+        for unit in config["time_units"]:
+            if config["time_units"][unit] == "year":
+                config["time_units"][unit] = TimeUnitType.YEAR
+        return cls(**config)
+
+    def __str__(self) -> str:
+        lines = [
+            "VariableSelectorConfig",
+            f"  refnr:                {self.refnr or '(not set)'}",
+            f"  ident:                {self.ident or '(not set)'}",
+            f"  secondary_idents:     {', '.join(self.secondary_idents) if self.secondary_idents else '(not set)'}",
+            f"  grouping_variables:   {', '.join(self.grouping_variables) if self.grouping_variables else '(not set)'}",
+        ]
+
+        if self.time_units:
+            lines.append("  time_units:")
+            for var, unit_type in self.time_units.items():
+                lines.append(f"    {var:<30} {unit_type}")
+        else:
+            lines.append("  time_units:           (not set)")
+
+        return "\n".join(lines)
+
+
+def apply_config(config: VariableSelectorConfig) -> None:
     if config.refnr:
         set_refnr(config.refnr)
 
@@ -63,13 +96,19 @@ def apply_config(config: VariableSelectorConfig):
 REFNR: str | None = None
 
 
-def get_refnr():
+def get_refnr() -> str:
     global REFNR
+    if not REFNR:
+        raise RuntimeError("Refnr has not been defined through 'set_refnr()'.")
     return REFNR
 
 
-def set_refnr(refnr_variable_name: str):
+def set_refnr(refnr_variable_name: str) -> None:
     global REFNR
+    if not isinstance(refnr_variable_name, str):
+        raise TypeError(
+            f"Invalid type for 'refnr_variable_name'. Expected type 'str'. Received '{type(refnr_variable_name)}'."
+        )
     VariableSelectorOption(refnr_variable_name)
     REFNR = refnr_variable_name
 
@@ -77,7 +116,12 @@ def set_refnr(refnr_variable_name: str):
 TIME_UNITS: dict[str, TimeUnitType] | None = None
 
 
-def get_time_units() -> dict[str, TimeUnitType] | None:
+def get_time_units() -> dict[str, TimeUnitType]:
+    global TIME_UNITS
+    if not TIME_UNITS:
+        raise RuntimeError(
+            "Time_units has not been defined through 'set_time_units()'."
+        )
     return TIME_UNITS
 
 
@@ -103,13 +147,19 @@ def set_time_units(time_units: dict[str, TimeUnitType]) -> None:
 IDENT: str | None = None
 
 
-def get_ident() -> str | None:
+def get_ident() -> str:
     global IDENT
+    if not IDENT:
+        raise RuntimeError("Ident has not been defined through 'set_ident()'.")
     return IDENT
 
 
 def set_ident(ident: str) -> None:
     global IDENT
+    if not isinstance(ident, str):
+        raise TypeError(
+            f"Invalid type for 'ident'. Expected type 'str'. Received '{type(ident)}'."
+        )
     VariableSelectorOption(ident)
     IDENT = ident
 
@@ -117,12 +167,16 @@ def set_ident(ident: str) -> None:
 SECONDARY_IDENTS: list[str] | None = None
 
 
-def get_secondary_idents():
+def get_secondary_idents() -> list[str]:
     global SECONDARY_IDENTS
+    if not SECONDARY_IDENTS:
+        raise RuntimeError(
+            "secondary_idents has not been defined through 'set_secondary_idents()'."
+        )
     return SECONDARY_IDENTS
 
 
-def set_secondary_idents(secondary_idents):
+def set_secondary_idents(secondary_idents: list[str]) -> None:
     global SECONDARY_IDENTS
     for secondary_ident_name in secondary_idents:
         if not isinstance(secondary_ident_name, str):
@@ -136,8 +190,12 @@ def set_secondary_idents(secondary_idents):
 GROUPINGVARIABLES: list[str] | None = None
 
 
-def get_groupingvariables() -> list[str] | None:
+def get_groupingvariables() -> list[str]:
     global GROUPINGVARIABLES
+    if not GROUPINGVARIABLES:
+        raise RuntimeError(
+            "Groupingvariables has not been defined through 'set_groupingvariables()'."
+        )
     return GROUPINGVARIABLES
 
 

@@ -1,24 +1,28 @@
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-from dash import Input, State
+from dash import Input
 from dash import Output
+from dash import State
 from dash import callback
-from dash import callback_context as ctx
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
-from ibis import _
 
-from ssb_dash_framework import get_connection
 from ssb_dash_framework.setup import VariableSelector
 from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
-from .....modules.building_blocks.microlayout import Layout, MicroLayoutAIO
-from .....utils.core_models import UpdateSkjemadata
+from .....modules.building_blocks.microlayout import MicroLayoutAIO
+from .....modules.building_blocks.microlayout_components.editable_field_model import (
+    default_updater,
+)
+from .....modules.building_blocks.microlayout_components.editable_field_model import (
+    defult_getter,
+)
+from .....modules.building_blocks.microlayout_components.models import Layout
 from ..core import DataEditorDataView
 
 logger = logging.getLogger(__name__)
@@ -63,6 +67,16 @@ class DataViewCustomFigure:
                 raise PreventUpdate
             return self.figure_func()
 
+    def __str__(self) -> str:
+        lines = [
+            f"DataViewCustomFigure #{self.module_number}",
+            f"  label:              {self.label}",
+            f"  figure_func:        {self.figure_func.__name__}",
+            f"  applies_to_tables:  {self.applies_to_tables}",
+            f"  applies_to_forms:   {self.applies_to_forms}",
+        ]
+        return "\n".join(lines)
+
 
 class DataViewCustomTable:
 
@@ -105,6 +119,16 @@ class DataViewCustomTable:
             data = self.table_func(selected_table, selected_form, refnr, *args)
             return data.to_dict("records"), [{"field": x} for x in data.columns]
 
+    def __str__(self) -> str:
+        lines = [
+            f"DataViewCustomTable #{self.module_number}",
+            f"  label:              {self.label}",
+            f"  table_func:         {self.table_func.__name__}",
+            f"  applies_to_tables:  {self.applies_to_tables}",
+            f"  applies_to_forms:   {self.applies_to_forms}",
+        ]
+        return "\n".join(lines)
+
 
 def _safe_get(data, v):
     rows = data.loc[data["variabel"] == v]["verdi"]
@@ -116,10 +140,13 @@ class DataViewCustomMicroLayout(MicroLayoutAIO):
 
     def __init__(
         self,
-        layout: list[dict] | Layout,
+        applies_to_tables: list[str],
+        applies_to_forms: list[str],
         getter_func: Callable[..., tuple],
         update_func: Callable[..., tuple | None],
-        form_reference_input_id: str,
+        layout: list[dict] | Layout | None = None,
+        layout_yaml_path: str | None = None,
+        form_reference_input_id: str | None = None,
         inputs: list[Input] | None = None,
         states: list[State] | None = None,
         getter_args: None | list = None,
@@ -132,11 +159,24 @@ class DataViewCustomMicroLayout(MicroLayoutAIO):
         table_selector_id: str | None = "dataeditortableselector",
         form_selector_id: str | None = "var-altinnskjema",
     ) -> None:
+        if not layout and not layout_yaml_path:
+            raise ValueError("Either 'layout' or 'layout_yaml_path' must be defined.")
+        if layout_yaml_path:
+            if layout:
+                raise ValueError(
+                    "When 'layout_yaml_path' is defined, 'layout' must be None"
+                )
+            layout = self.from_yaml(layout_yaml_path)
+
         super().__init__(
-            layout = layout,
+            applies_to_tables=applies_to_tables,
+            applies_to_forms=applies_to_forms,
+            layout=layout,
             getter_func=getter_func,
-            update_func= update_func,
-            form_reference_input_id= form_reference_input_id,
+            update_func=update_func,
+            form_reference_input_id=(
+                form_reference_input_id if form_reference_input_id else "var-refnr"
+            ),
             inputs=inputs,
             states=states,
             getter_args=getter_args,
@@ -150,7 +190,36 @@ class DataViewCustomMicroLayout(MicroLayoutAIO):
             form_selector_id=form_selector_id,
         )
 
-    def 
+    def __str__(self) -> str:
+        base = super().__str__()
+        lines = [
+            base,
+            f"  applies_to_tables:  {self._applies_to_tables}",
+            f"  applies_to_forms:   {self._applies_to_forms}",
+        ]
+        return "\n".join(lines)
+
+    def convert_node(self, node: dict) -> dict:
+
+        if "label" in node:
+            node["label"] = node["label"]
+
+        if "variable" in node:
+            node["field_settings"] = {"field_path": node["variable"]}
+
+        if "children" in node:
+            node["children"] = [self.convert_node(child) for child in node["children"]]
+
+        return node
+
+    def from_yaml(self, yaml_path: str) -> list[dict]:
+        import yaml
+
+        with open(yaml_path) as f:
+            yaml_layout = yaml.safe_load(f)["layout"]
+        layout_from_yaml = Layout([self.convert_node(node) for node in yaml_layout])
+        logger.debug(layout_from_yaml)
+        return layout_from_yaml
 
 
 class DataViewCustom(DataEditorDataView):
@@ -184,12 +253,9 @@ class DataViewCustom(DataEditorDataView):
             applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
         )
 
-
-
     def build_layout(self, layout: dict | list) -> list:
         """Builds the layout for the custom view."""
         components = []
-
         if isinstance(layout, list):
             for item in layout:
                 components.extend(self.build_layout(item))
@@ -228,9 +294,18 @@ class DataViewCustom(DataEditorDataView):
                 )
                 components.append(table.content())
             elif key == "microlayout":
-                DataViewCustomMicroLayout(
-
+                microlayout = DataViewCustomMicroLayout(
+                    applies_to_tables=self.applies_to_tables,
+                    applies_to_forms=self.applies_to_forms,
+                    layout=value["layout"],
+                    getter_func=value.get("getter_func", defult_getter),
+                    update_func=value.get("update_func", default_updater),
+                    form_data_table=value.get("form_data_table"),
+                    form_data_field_name_column=value.get(
+                        "form_data_field_name_column"
+                    ),
                 )
+                components.append(microlayout)
             else:
                 components.extend(self.build_layout(value))
 
@@ -246,3 +321,96 @@ class DataViewCustom(DataEditorDataView):
     def module_callbacks(self) -> None:
         """Registers the module callbacks."""
         pass
+
+    @classmethod
+    def convert_typed_to_keyed(cls, node):
+        if isinstance(node, list):
+            return [cls.convert_typed_to_keyed(item) for item in node]
+
+        if isinstance(node, dict):
+            if node.get("type") == "microlayout":
+                inner = {k: v for k, v in node.items() if k != "type"}
+                if "layout" in inner:
+                    inner["layout"] = [
+                        convert_node(child)
+                        for child in cls.convert_typed_to_keyed(inner["layout"])
+                    ]
+                if "children" in inner:
+                    inner["children"] = cls.convert_typed_to_keyed(inner["children"])
+                return {"microlayout": inner}
+
+            return {k: cls.convert_typed_to_keyed(v) for k, v in node.items()}
+
+        return node
+
+    @classmethod
+    def from_yaml(cls, yaml_path: str) -> "DataViewCustom":
+        import yaml
+
+        with open(yaml_path) as f:
+            config = yaml.safe_load(f)
+
+        # Handle both a top-level dict and a single-item list
+        if isinstance(config, list):
+            config = config[0]
+
+        config["layout"] = cls.convert_typed_to_keyed(config["layout"])
+
+        return cls(
+            applies_to_tables=config["applies_to_tables"],
+            applies_to_forms=config["applies_to_forms"],
+            layout=config["layout"],
+        )
+
+    def __str__(self) -> str:
+        lines = [
+            f"DataViewCustom #{self.module_number}",
+            f"  divname:            {self.divname}",
+            f"  applies_to_tables:  {self.applies_to_tables}",
+            f"  applies_to_forms:   {self.applies_to_forms}",
+            f"  components:         {len(self.created_layout)} top-level component(s)",
+            "",
+        ]
+        for component in self.created_layout:
+            lines.extend(self._str_component(component, indent=2))
+        return "\n".join(lines)
+
+    def _str_component(self, component, indent: int = 0) -> list[str]:
+        prefix = "  " * indent
+        lines = []
+
+        # Our own classes with rich __str__
+        if isinstance(
+            component,
+            (DataViewCustomMicroLayout, DataViewCustomFigure, DataViewCustomTable),
+        ):
+            for line in str(component).splitlines():
+                lines.append(f"{prefix}{line}")
+            return lines
+
+        # Generic Dash component — show type and recurse into children
+        lines.append(f"{prefix}{type(component).__name__}")
+        children = getattr(component, "children", None)
+        if children is None:
+            pass
+        elif isinstance(children, list):
+            for child in children:
+                lines.extend(self._str_component(child, indent=indent + 1))
+        else:
+            lines.extend(self._str_component(children, indent=indent + 1))
+
+        return lines
+
+
+def convert_node(node: dict) -> dict:
+
+    if "label" in node:
+        node["label"] = node["label"]
+
+    if "variable" in node:
+        node["field_settings"] = {"field_path": node["variable"]}
+
+    if "children" in node:
+        node["children"] = [convert_node(child) for child in node["children"]]
+
+    return node

@@ -39,9 +39,6 @@ from .modules import FreeSearchWindow
 from .modules import HBMethod
 from .modules import HBMethodWindow
 from .modules import MacroModule
-from .modules import MacroModuleConsolidated
-from .modules import MacroModuleConsolidatedTab
-from .modules import MacroModuleConsolidatedWindow
 from .modules import MacroModuleTab
 from .modules import MacroModuleWindow
 from .modules import MacroNspekPostControl
@@ -143,9 +140,6 @@ __all__ = [
     "HBMethod",
     "HBMethodWindow",
     "MacroModule",
-    "MacroModuleConsolidated",
-    "MacroModuleConsolidatedTab",
-    "MacroModuleConsolidatedWindow",
     "MacroModuleTab",
     "MacroModuleWindow",
     "MacroNspekPostControl",
