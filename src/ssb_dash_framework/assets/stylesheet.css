@@ -53,9 +53,11 @@ Alert handler
 
 .alert-toast,
 .alert-modal-item {
-    padding: 10px 10px !important;
+    padding: 10px !important;
     min-width: 500px;
     max-width: 900px;
+    border-radius: 8px;
+    border: 1px solid var(--bs-alert-border-color);
 }
 
 .alert-icon {
@@ -80,17 +82,6 @@ Alert handler
     left: 10px;
 }
 
-.alert-container.bottom-left .alert.alert-toast {
-    animation: slideInLeft 0.2s ease-out;
-    border-radius: 8px;
-    border: 1px solid var(--bs-alert-border-color);
-}
-
-@keyframes slideInLeft {
-    from { transform: translateX(-110%); opacity: 0; }
-    to   { transform: translateX(0);     opacity: 1; }
-}
-
 .alert-container.top-right {
     top: 10px;
     right: 10px;
@@ -103,10 +94,14 @@ Alert handler
     z-index: 3000;
 }
 
-.alert-container.center .alert.alert-toast {
-    animation: fadeIn 0.3s ease-out;
-    border-radius: 12px;
-    border: 1px solid var(--bs-alert-border-color);
+@keyframes slideInLeft {
+    from { transform: translateX(-110%); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(110%); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes fadeIn {
@@ -114,24 +109,29 @@ Alert handler
     to   { opacity: 1; }
 }
 
-.alert-container.top-right .alert.alert-toast {
-    animation: slideInRight 0.2s ease-out;
-    border-radius: 8px;
-    border: 1px solid var(--bs-alert-border-color);
-}
-
-@keyframes slideInRight {
-    from { transform: translateX(110%); opacity: 0; }
-    to   { transform: translateX(0);    opacity: 1; }
-}
-
-.alert-container .alert.alert-toast.alert-dying {
-    animation: fadeOut 0.4s ease-in forwards;
-}
-
 @keyframes fadeOut {
     from { opacity: 1; }
     to   { opacity: 0; }
+}
+
+/* Left */
+.alert-container.bottom-left .alert.alert-toast {
+    animation: slideInLeft 0.2s ease-out;
+}
+
+/* Right */
+.alert-container.top-right .alert.alert-toast {
+    animation: slideInRight 0.2s ease-out;
+}
+
+/* Center */
+.alert-container.center .alert.alert-toast {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Exit animation */
+.alert-container .alert.alert-toast.alert-dying {
+    animation: fadeOut 0.4s ease-in forwards;
 }
 
 /*
@@ -307,8 +307,8 @@ Bofregistry
 Altinn Editor History
 */
 .history-modal .modal-dialog {
-    max-width: 70vw !important;
-    width: 80vw !important;
+    max-width: 90vw !important;
+    width: 90vw !important;
 }
 
 .history-modal .modal-content {
@@ -319,6 +319,7 @@ Altinn Editor History
 /*
 Altinn Editor Support Tables
 */
+
 .hjelpetabeller-modal .modal-dialog {
     max-width: 90vw !important;
     width: 90vw !important;

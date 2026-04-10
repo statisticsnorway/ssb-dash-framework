@@ -175,6 +175,12 @@ class AltinnEditorHistory:
                             "field": col,
                             "filter": True,
                             "resizable": True,
+                            "hide": col
+                                in [
+                                    *self.time_units,
+                                    "skjema",
+                                    "refnr",
+                                ],
                         }
                         for col in df.columns
                     ]
@@ -201,6 +207,12 @@ class AltinnEditorHistory:
                             "field": col,
                             "filter": True,
                             "resizable": True,
+                            "hide": col
+                                in [
+                                    *self.time_units,
+                                    "skjema",
+                                    "refnr",
+                                ],
                         }
                         for col in df.columns
                     ]
