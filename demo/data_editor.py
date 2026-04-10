@@ -132,17 +132,6 @@ def make_table(tabell, skjema, refnr, *time_units):
         return t.filter(_.refnr == refnr).filter(_.skjema == skjema).to_pandas()
 
 
-def populate_microlayout(table, form, refnr, *args, **kwargs):
-    with get_connection() as conn:
-        t = conn.table(table)
-        data = t.filter(_.skjema == form).filter(_.refnr == refnr).to_pandas()
-
-    totalareal = data.loc[data["variabel"] == "totalareal"]["verdi"].item()
-    fulldyrket = data.loc[data["variabel"] == "fulldyrket"]["verdi"].item()
-    innmarksbeite = data.loc[data["variabel"] == "innmarksbeite"]["verdi"].item()
-    return totalareal, fulldyrket, innmarksbeite
-
-
 layout = [
     {
         "row": [
