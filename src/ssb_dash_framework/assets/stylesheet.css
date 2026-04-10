@@ -48,7 +48,8 @@ Alert handler
 }
 
 .alert-container .alert {
-    pointer-events: auto; /* but actual alerts are still clickable/dismissable */
+    pointer-events: auto;
+    /* but actual alerts are still clickable/dismissable */
 }
 
 .alert-toast,
@@ -69,6 +70,7 @@ Alert handler
     font-size: 1rem;
     font-weight: 500;
 }
+
 .alert-message p {
     margin: 0;
 }
@@ -95,23 +97,47 @@ Alert handler
 }
 
 @keyframes slideInLeft {
-    from { transform: translateX(-110%); opacity: 0; }
-    to   { transform: translateX(0); opacity: 1; }
+    from {
+        transform: translateX(-110%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 @keyframes slideInRight {
-    from { transform: translateX(110%); opacity: 0; }
-    to   { transform: translateX(0); opacity: 1; }
+    from {
+        transform: translateX(110%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes fadeOut {
-    from { opacity: 1; }
-    to   { opacity: 0; }
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
 }
 
 /* Left */
@@ -256,9 +282,7 @@ AltinnDataCapture
     width: 100%;
 }
 
-.altinn-data-capture-loading {
-
-}
+.altinn-data-capture-loading {}
 
 /*
 Bofregistry
@@ -339,6 +363,7 @@ Altinn Editor Support Tables
     height: 80vh !important;
     overflow: hidden;
 }
+
 /*
 MacroModule
 */
@@ -475,12 +500,12 @@ Figuredisplay
 */
 
 .figuredisplay {
-    height:100%;
+    height: 100%;
     width: 100%;
 }
 
 .figuredisplay-graph {
-    height:100%;
+    height: 100%;
     width: 100%;
 }
 
@@ -525,7 +550,8 @@ Tables
 }
 
 .editingtable-aggrid-style {
-    height: 100% !important; /* For some reason this needed !important to work. */
+    height: 100% !important;
+    /* For some reason this needed !important to work. */
     width: 100%;
 }
 

@@ -31,7 +31,12 @@ _DEFAULT_ICONS = {
 
 
 def create_alert(
-    message: str, color: str | None = "info", ephemeral: bool | None = False, position: str | None = "bottom-left", duration: int | None = 5, icon: str | None = None,
+    message: str,
+    color: str | None = "info",
+    ephemeral: bool | None = False,
+    position: str | None = "bottom-left",
+    duration: int | None = 5,
+    icon: str | None = None,
 ) -> dict[str, Any]:
     """Creates a standardized alert record.
 
@@ -110,9 +115,17 @@ class AlertHandler:
                     id="alert_store", data=[create_alert("Application started", "info")]
                 ),
                 dcc.Store(id="alert_filter", data="all"),
-                html.Div(id="alert-container-bottom-left", className="alert-container bottom-left"),
-                html.Div(id="alert-container-center", className="alert-container center"),
-                html.Div(id="alert-container-top-right", className="alert-container top-right"),
+                html.Div(
+                    id="alert-container-bottom-left",
+                    className="alert-container bottom-left",
+                ),
+                html.Div(
+                    id="alert-container-center", className="alert-container center"
+                ),
+                html.Div(
+                    id="alert-container-top-right",
+                    className="alert-container top-right",
+                ),
                 dcc.Interval(
                     id="alert_ephemeral_interval", interval=1000, n_intervals=0
                 ),  # Unsure of performance, check if maybe it should update less often.
@@ -137,7 +150,8 @@ class AlertHandler:
                                         ),
                                         dbc.Col(
                                             dbc.Button(
-                                                "Vis kun editeringer", id="alert_filter_success"
+                                                "Vis kun editeringer",
+                                                id="alert_filter_success",
                                             ),
                                             width="auto",
                                         ),
@@ -213,7 +227,11 @@ class AlertHandler:
             prevent_initial_call=True,
         )
         def set_filter(
-            _: int | None, __: int | None, ___: int | None, ____: int | None, _____: int | None
+            _: int | None,
+            __: int | None,
+            ___: int | None,
+            ____: int | None,
+            _____: int | None,
         ) -> str:
             """Updates the alert filter based on the clicked filter button.
 
@@ -266,18 +284,29 @@ class AlertHandler:
 
             components = []
             for i, alert_data in enumerate(alerts):
-                icon = html.I(className=f"{alert_data['icon']} me-3 alert-icon") if alert_data.get("icon") else None
+                icon = (
+                    html.I(className=f"{alert_data['icon']} me-3 alert-icon")
+                    if alert_data.get("icon")
+                    else None
+                )
                 components.append(
                     dbc.Alert(
                         [
                             html.Div(
                                 [
                                     icon,
-                                    html.Small(alert_data["timestamp"], className="alert-timestamp me-3"),
-                                    dcc.Markdown(alert_data["message"], className="alert-message", style={"display": "inline-block"}),
+                                    html.Small(
+                                        alert_data["timestamp"],
+                                        className="alert-timestamp me-3",
+                                    ),
+                                    dcc.Markdown(
+                                        alert_data["message"],
+                                        className="alert-message",
+                                        style={"display": "inline-block"},
+                                    ),
                                 ],
                                 className="d-flex align-items-center",
-                            ), 
+                            ),
                         ],
                         color=alert_data["color"],
                         dismissable=True,
@@ -296,7 +325,9 @@ class AlertHandler:
             prevent_initial_call=True,
         )
         def remove_dismissed_alerts(
-            is_open_list: list[dbc.Alert], current_alerts: list[dict[str, Any]], current_filter
+            is_open_list: list[dbc.Alert],
+            current_alerts: list[dict[str, Any]],
+            current_filter,
         ) -> list[dict[str, Any]]:
             """Removes alerts that have been dismissed by the user.
 
@@ -314,13 +345,17 @@ class AlertHandler:
 
             # Reproduce the same filtered view the modal used
             filtered = [
-            (i, a) for i, a in enumerate(current_alerts)
+                (i, a)
+                for i, a in enumerate(current_alerts)
                 if current_filter == "all" or a["color"] == current_filter
             ]
 
             to_remove = set()
             for display_index, (original_index, _) in enumerate(filtered):
-                if display_index < len(is_open_list) and not is_open_list[display_index]:
+                if (
+                    display_index < len(is_open_list)
+                    and not is_open_list[display_index]
+                ):
                     to_remove.add(original_index)
 
             return [a for i, a in enumerate(current_alerts) if i not in to_remove]
@@ -354,13 +389,18 @@ class AlertHandler:
             ephemeral_alerts = [
                 a
                 for a in alerts
-                if a.get("ephemeral", False) and (now - a["created_at"] < a.get("duration", 5))
+                if a.get("ephemeral", False)
+                and (now - a["created_at"] < a.get("duration", 5))
             ]
 
             def make_alert(a):
                 now = time.time()
                 dying = (now - a["created_at"]) > (a.get("duration", 6) - 0.8)
-                icon = html.I(className=f"{a['icon']} me-2 alert-icon") if a.get("icon") else None
+                icon = (
+                    html.I(className=f"{a['icon']} me-2 alert-icon")
+                    if a.get("icon")
+                    else None
+                )
 
                 return dbc.Alert(
                     [
@@ -377,8 +417,18 @@ class AlertHandler:
                     className=f"mb-2 alert-toast {'alert-dying' if dying else ''}",
                 )
 
-            bottom_left = [make_alert(a) for a in ephemeral_alerts if a.get("position", "bottom-left") == "bottom-left"]
-            center      = [make_alert(a) for a in ephemeral_alerts if a.get("position") == "center"]
-            top_right   = [make_alert(a) for a in ephemeral_alerts if a.get("position") == "top-right"]
+            bottom_left = [
+                make_alert(a)
+                for a in ephemeral_alerts
+                if a.get("position", "bottom-left") == "bottom-left"
+            ]
+            center = [
+                make_alert(a) for a in ephemeral_alerts if a.get("position") == "center"
+            ]
+            top_right = [
+                make_alert(a)
+                for a in ephemeral_alerts
+                if a.get("position") == "top-right"
+            ]
 
             return bottom_left, center, top_right

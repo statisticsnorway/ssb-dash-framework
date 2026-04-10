@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 SSB_FORETAK_PATH = "/buckets/shared/vof/oracle-hns/ssb_foretak.db"
 SSB_BEDRIFT_PATH = "/buckets/shared/vof/oracle-hns/ssb_bedrift.db"
 
+
 def ssb_foretak_modal() -> dbc.Modal:
     """Create a modal for displaying bof data.
 
@@ -434,7 +435,7 @@ class BofInformation(ABC):
             if n_clicks is None:
                 logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
-                
+
             with sqlite3.connect(SSB_FORETAK_PATH) as conn:
                 df = pd.read_sql_query(
                     f"SELECT * FROM ssb_foretak WHERE orgnr = '{orgnr}'", conn
@@ -470,14 +471,14 @@ class BofInformation(ABC):
             if n_clicks is None or not selected_row:
                 logger.debug("Raised PreventUpdate")
                 alert_store = [
-                            create_alert(
-                                "Velg en bedrift fra bedriftslisten under for å hente BoF bedriftsinfo.",
-                                "info",
-                                position="center",
-                                duration=6,
-                                ephemeral=True,
-                            ),
-                            *alert_store,
+                    create_alert(
+                        "Velg en bedrift fra bedriftslisten under for å hente BoF bedriftsinfo.",
+                        "info",
+                        position="center",
+                        duration=6,
+                        ephemeral=True,
+                    ),
+                    *alert_store,
                 ]
                 return [], [], alert_store
 

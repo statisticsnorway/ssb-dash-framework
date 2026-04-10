@@ -278,7 +278,9 @@ class AltinnEditorPrimaryTable:
             State("var-statistikkvariabel", "value"),
         )
         def select_variabel(
-            click: dict[str, Any], row_data: list[dict[str, Any]], statistikkvariabel: str
+            click: dict[str, Any],
+            row_data: list[dict[str, Any]],
+            statistikkvariabel: str,
         ) -> str:
             logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")
 
@@ -297,7 +299,7 @@ class AltinnEditorPrimaryTable:
             column = click.get("colId")  # wide format
             if column == statistikkvariabel:
                 raise PreventUpdate
-            
+
             if column in ("aar", "ident", "skjema", "refnr", "tabell"):
                 raise PreventUpdate
 
@@ -393,15 +395,15 @@ class AltinnEditorPrimaryTable:
                     else:
                         # wide format
                         if edited_column in ILLEGAL_COLUMNS:
-                                alert_store = [
-                                    create_alert(
-                                        f"Kolonnen {edited_column} kan ikke editeres!",
-                                        "danger",
-                                        ephemeral=True,
-                                    ),
-                                    *alert_store,
-                                ]
-                                return alert_store
+                            alert_store = [
+                                create_alert(
+                                    f"Kolonnen {edited_column} kan ikke editeres!",
+                                    "danger",
+                                    ephemeral=True,
+                                ),
+                                *alert_store,
+                            ]
+                            return alert_store
                         try:
                             query = f"""
                                 UPDATE {tabell}
