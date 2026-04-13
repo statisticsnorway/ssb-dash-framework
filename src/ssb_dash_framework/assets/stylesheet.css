@@ -44,8 +44,120 @@ Alert handler
 .alert-container {
     position: fixed;
     z-index: 2000;
+    pointer-events: none;
+}
+
+.alert-container .alert {
+    pointer-events: auto;
+    /* but actual alerts are still clickable/dismissable */
+}
+
+.alert-toast,
+.alert-modal-item {
+    padding: 10px !important;
+    min-width: 500px;
+    max-width: 1000px;
+    border-radius: 8px;
+    border: 1px solid var(--bs-alert-border-color);
+}
+
+.alert-icon {
+    font-size: 1.5rem;
+    filter: brightness(6);
+}
+
+.alert-message {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.alert-message p {
+    margin: 0;
+}
+
+.alert-timestamp {
+    font-size: 1rem;
+}
+
+.alert-container.bottom-left {
     bottom: 10px;
     left: 10px;
+}
+
+.alert-container.top-right {
+    top: 10px;
+    right: 10px;
+}
+
+.alert-container.center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3000;
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-110%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(110%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+/* Left */
+.alert-container.bottom-left .alert.alert-toast {
+    animation: slideInLeft 0.2s ease-out;
+}
+
+/* Right */
+.alert-container.top-right .alert.alert-toast {
+    animation: slideInRight 0.2s ease-out;
+}
+
+/* Center */
+.alert-container.center .alert.alert-toast {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Exit animation */
+.alert-container .alert.alert-toast.alert-dying {
+    animation: fadeOut 0.4s ease-in forwards;
 }
 
 /*
@@ -170,9 +282,7 @@ AltinnDataCapture
     width: 100%;
 }
 
-.altinn-data-capture-loading {
-
-}
+.altinn-data-capture-loading {}
 
 /*
 Bofregistry
@@ -221,8 +331,8 @@ Bofregistry
 Altinn Editor History
 */
 .history-modal .modal-dialog {
-    max-width: 70vw !important;
-    width: 80vw !important;
+    max-width: 90vw !important;
+    width: 90vw !important;
 }
 
 .history-modal .modal-content {
@@ -233,6 +343,7 @@ Altinn Editor History
 /*
 Altinn Editor Support Tables
 */
+
 .hjelpetabeller-modal .modal-dialog {
     max-width: 90vw !important;
     width: 90vw !important;
@@ -252,6 +363,7 @@ Altinn Editor Support Tables
     height: 80vh !important;
     overflow: hidden;
 }
+
 /*
 MacroModule
 */
@@ -388,12 +500,12 @@ Figuredisplay
 */
 
 .figuredisplay {
-    height:100%;
+    height: 100%;
     width: 100%;
 }
 
 .figuredisplay-graph {
-    height:100%;
+    height: 100%;
     width: 100%;
 }
 
@@ -438,7 +550,8 @@ Tables
 }
 
 .editingtable-aggrid-style {
-    height: 100% !important; /* For some reason this needed !important to work. */
+    height: 100% !important;
+    /* For some reason this needed !important to work. */
     width: 100%;
 }
 

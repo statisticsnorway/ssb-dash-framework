@@ -13,10 +13,12 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from sqlalchemy.util.typing import NoneType
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
+from ..utils import create_alert
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -146,16 +148,16 @@ class BofInformation(ABC):
             )
 
     def _check_connection(self) -> None:
-        conn = sqlite3.connect(SSB_FORETAK_PATH)
-        df = pd.read_sql_query("SELECT * FROM ssb_foretak LIMIT 1", conn)
+        with sqlite3.connect(SSB_FORETAK_PATH) as conn:
+            df = pd.read_sql_query("SELECT * FROM ssb_foretak LIMIT 1", conn)
         if df.empty:
             raise Exception(
                 "Data from ssb_bedrift is empty, check that you can connect to the database. You need to add the oracle-hns bucket to your Dapla Lab."
             )
         conn.close()
 
-        conn = sqlite3.connect(SSB_BEDRIFT_PATH)
-        df = pd.read_sql_query("SELECT * FROM ssb_bedrift LIMIT 1", conn)
+        with sqlite3.connect(SSB_BEDRIFT_PATH) as conn:
+            df = pd.read_sql_query("SELECT * FROM ssb_bedrift LIMIT 1", conn)
         if df.empty:
             raise Exception(
                 "Data from ssb_bedrift is empty, check that you can connect to the database."
@@ -198,7 +200,7 @@ class BofInformation(ABC):
                     [
                         dbc.Col(
                             self.generate_card(
-                                "Orgnr",
+                                "orgnr",
                                 "tab-bof_foretak-orgnrcard",
                                 "text",
                             ),
@@ -206,11 +208,19 @@ class BofInformation(ABC):
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Navn",
+                                "foretaks_nr",
+                                "tab-bof_foretak-foretaksnrcard",
+                                "text",
+                            ),
+                            width=2,
+                        ),
+                        dbc.Col(
+                            self.generate_card(
+                                "navn",
                                 "tab-bof_foretak-navncard",
                                 "text",
                             ),
-                            width=10,
+                            width=8,
                         ),
                     ],
                     className="mb-2",
@@ -219,32 +229,44 @@ class BofInformation(ABC):
                     [
                         dbc.Col(
                             self.generate_card(
-                                "foretaks_nr",
-                                "tab-bof_foretak-foretaksnrcard",
+                                "nace (SN) 2007",
+                                "tab-bof_foretak-nace-sn07-card",
                                 "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Nace",
-                                "tab-bof_foretak-nacecard",
+                                "nace (SN) 2025",
+                                "tab-bof_foretak-nace-sn25-card",
                                 "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Statuskode",
+                                "statuskode",
                                 "tab-bof_foretak-statuscard",
                                 "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Sektor 2014",
+                                "sektor 2014",
                                 "tab-bof_foretak-sektorcard",
                                 "text",
                             ),
                         ),
+                        dbc.Col(
+                            self.generate_card(
+                                "organisasjonsform",
+                                "tab-bof_foretak-orgformcard",
+                                "text",
+                            ),
+                        ),
+                    ],
+                    className="mb-2",
+                ),
+                dbc.Row(
+                    [
                         dbc.Col(
                             self.generate_card(
                                 "omsetning",
@@ -252,42 +274,30 @@ class BofInformation(ABC):
                                 "text",
                             ),
                         ),
-                    ],
-                    className="mb-2",
-                ),
-                dbc.Row(
-                    [
                         dbc.Col(
                             self.generate_card(
-                                "Organisasjonsform",
-                                "tab-bof_foretak-orgformcard",
-                                "text",
-                            ),
-                        ),
-                        dbc.Col(
-                            self.generate_card(
-                                "Ansatte",
+                                "ansatte",
                                 "tab-bof_foretak-ansattecard",
                                 "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Ansatte tot.",
+                                "ansatte tot.",
                                 "tab-bof_foretak-totansattecard",
                                 "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Kommunenummer",
+                                "kommunenummer",
                                 "tab-bof_foretak-kommunecard",
                                 "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "Type",
+                                "type",
                                 "tab-bof_foretak-typecard",
                                 "text",
                             ),
@@ -387,16 +397,15 @@ class BofInformation(ABC):
             Input("tab-vof-foretak-button1", "n_clicks"),
             State("bofregistry-modal-ssb_foretak", "is_open"),
         )
-        def toggle_bof_modal(n_clicks: int, is_open: bool) -> bool:
+        def toggle_bof_modal(n_clicks: int | None, is_open: bool) -> bool:
             logger.debug("Args:\n" + f"n_clicks: {n_clicks}\n" + f"is_open: {is_open}")
-            if n_clicks > 0:
-                if is_open:
-                    return False
-                else:
-                    return True
-            else:
+            if n_clicks is None:
                 logger.debug("Raised PreventUpdate")
                 raise PreventUpdate
+            if is_open:
+                return False
+            else:
+                return True
 
         @callback(  # type: ignore[misc]
             Output("bofregistry-modal-ssb_bedrift", "is_open"),
@@ -405,13 +414,13 @@ class BofInformation(ABC):
         )
         def toggle_bedrift_modal(n_clicks: int, is_open: bool) -> bool:
             logger.debug("Args:\n" + f"n_clicks: {n_clicks}\n" + f"is_open: {is_open}")
-            if n_clicks > 0:
-                if is_open:
-                    return False
-                else:
-                    return True
-            logger.debug("Raised PreventUpdate")
-            raise PreventUpdate
+            if n_clicks is None:
+                logger.debug("Raised PreventUpdate")
+                raise PreventUpdate
+            if is_open:
+                return False
+            else:
+                return True
 
         @callback(  # type: ignore[misc]
             Output("bofregistry-ssb_foretak-table", "rowData"),
@@ -420,62 +429,80 @@ class BofInformation(ABC):
             State("tab-bof_foretak-orgnrcard", "value"),
         )
         def ssb_bof_foretak(
-            n_clicks: int, orgnr: str
+            n_clicks: int | None, orgnr: str
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             logger.debug("Args:\n" + f"n_clicks: {n_clicks}\n" + f"orgnr: {orgnr}")
-            if n_clicks > 0:
-                conn = sqlite3.connect(SSB_FORETAK_PATH)
+            if n_clicks is None:
+                logger.debug("Raised PreventUpdate")
+                raise PreventUpdate
+
+            with sqlite3.connect(SSB_FORETAK_PATH) as conn:
                 df = pd.read_sql_query(
                     f"SELECT * FROM ssb_foretak WHERE orgnr = '{orgnr}'", conn
                 )
-                df = df.melt()
-                columns = [
-                    {
-                        "headerName": col,
-                        "field": col,
-                    }
-                    for col in df.columns
-                ]
-                return df.to_dict("records"), columns
-            logger.debug("Raised PreventUpdate")
-            raise PreventUpdate
+                print(df.head())
+            df = df.melt()
+            columns = [
+                {
+                    "headerName": col,
+                    "field": col,
+                }
+                for col in df.columns
+            ]
+            return df.to_dict("records"), columns
 
         @callback(  # type: ignore[misc]
             Output("bofregistry-ssb_bedrift-table", "rowData"),
             Output("bofregistry-ssb_bedrift-table", "columnDefs"),
+            Output("alert_store", "data", allow_duplicate=True),
             Input("tab-vof-foretak-button2", "n_clicks"),
             State("tab-bof_foretak-table1", "selectedRows"),
+            State("alert_store", "data"),
+            prevent_initial_call=True,
         )
         def ssb_bof_bedrift(
-            n_clicks: int,
+            n_clicks: int | None,
             selected_row: list[dict[str, Any]],
-        ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
+            alert_store: list[dict[str, Any]],
+        ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
             logger.debug(
                 "Args:\n" + f"n_clicks: {n_clicks}\n" + f"selected_row: {selected_row}"
             )
+            if n_clicks is None or not selected_row:
+                logger.debug("Raised PreventUpdate")
+                alert_store = [
+                    create_alert(
+                        "Velg en bedrift fra bedriftslisten under for å hente BoF bedriftsinfo.",
+                        "info",
+                        position="center",
+                        duration=6,
+                        ephemeral=True,
+                    ),
+                    *alert_store,
+                ]
+                return [], [], alert_store
+
             orgnr = selected_row[0]["orgnr"]
-            if n_clicks > 0:
-                conn = sqlite3.connect(SSB_BEDRIFT_PATH)
+            with sqlite3.connect(SSB_BEDRIFT_PATH) as conn:
                 df = pd.read_sql_query(
                     f"SELECT * FROM ssb_bedrift WHERE orgnr = '{orgnr}'", conn
                 )
-                df = df.melt()
+            df = df.melt()
 
-                columns = [
-                    {
-                        "headerName": col,
-                        "field": col,
-                    }
-                    for col in df.columns
-                ]
-                return df.to_dict("records"), columns
-            logger.debug("Raised PreventUpdate")
-            raise PreventUpdate
+            columns = [
+                {
+                    "headerName": col,
+                    "field": col,
+                }
+                for col in df.columns
+            ]
+            return df.to_dict("records"), columns, []
 
         @callback(  # type: ignore[misc]
             Output("tab-bof_foretak-orgnrcard", "value"),
             Output("tab-bof_foretak-navncard", "value"),
-            Output("tab-bof_foretak-nacecard", "value"),
+            Output("tab-bof_foretak-nace-sn07-card", "value"),
+            Output("tab-bof_foretak-nace-sn25-card", "value"),
             Output("tab-bof_foretak-statuscard", "value"),
             Output("tab-bof_foretak-ansattecard", "value"),
             Output("tab-bof_foretak-sektorcard", "value"),
@@ -489,7 +516,7 @@ class BofInformation(ABC):
         )
         def bof_data(
             orgf: str,
-        ) -> tuple[str, str, str, str, int, str, str, str, str, int, str, str]:
+        ) -> tuple[str, str, str, str, str, int, str, str, str, str, int, str, str]:
             """Fetch BoF Foretak data based on the selected organization number.
 
             Args:
@@ -504,17 +531,18 @@ class BofInformation(ABC):
             """
             logger.debug("Args:\n" + f"orgf: {orgf}")
             if orgf is not None:
-                conn = sqlite3.connect(SSB_FORETAK_PATH)
-                df = pd.read_sql_query(
-                    f"SELECT * FROM ssb_foretak WHERE orgnr = '{orgf}'",
-                    conn,
-                )
+                with sqlite3.connect(SSB_FORETAK_PATH) as conn:
+                    df = pd.read_sql_query(
+                        f"SELECT * FROM ssb_foretak WHERE orgnr = '{orgf}'",
+                        conn,
+                    )
 
                 df["ansatte_totalt"] = df["ansatte_totalt"].fillna(0)
 
                 orgnr = df["orgnr"][0]
                 navn = df["navn"][0]
-                nace = df["sn07_1"][0]
+                nace_07 = df["sn07_1"][0]
+                nace_2025 = df["sn2025_1"][0]
                 statuskode = df["statuskode"][0]
                 ansatte = df["antall_ansatte"][0]
                 sektor = df["sektor_2014"][0]
@@ -527,7 +555,8 @@ class BofInformation(ABC):
                 return (
                     orgnr,
                     navn,
-                    nace,
+                    nace_07,
+                    nace_2025,
                     statuskode,
                     ansatte,
                     sektor,
@@ -556,12 +585,12 @@ class BofInformation(ABC):
         ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             logger.debug("Args:\n" + f"foretaksnr: {foretaksnr}")
             if foretaksnr is not None:
-                conn = sqlite3.connect(SSB_BEDRIFT_PATH)
-                df = pd.read_sql_query(
-                    f"""SELECT bedrifts_nr, orgnr, navn, sn07_1, org_form, sysselsatte, ansatte_totalt, omsetning, statuskode, sb_type, statuskode_gdato, statuskode_rdato
-                    FROM ssb_bedrift WHERE foretaks_nr = '{foretaksnr}';""",
-                    conn,
-                )
+                with sqlite3.connect(SSB_BEDRIFT_PATH) as conn:
+                    df = pd.read_sql_query(
+                        f"""SELECT bedrifts_nr, orgnr, navn, sn07_1, sn2025_1, org_form, sysselsatte, ansatte_totalt, omsetning, statuskode, sb_type, statuskode_gdato, statuskode_rdato
+                        FROM ssb_bedrift WHERE foretaks_nr = '{foretaksnr}';""",
+                        conn,
+                    )
 
                 # Extract bedrift if it exists
                 bedrift = bedrift_or_dummy if has_bedrift else None
