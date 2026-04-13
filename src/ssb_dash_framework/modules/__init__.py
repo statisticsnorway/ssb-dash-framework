@@ -49,6 +49,9 @@ from .macro_module import MacroModuleWindow
 from .macro_nspek_post_control import MacroNspekPostControl
 from .macro_nspek_post_control import MacroNspekPostControlTab
 from .macro_nspek_post_control import MacroNspekPostControlWindow
+from .meldingsbasen import Meldingsbasen
+from .meldingsbasen import MeldingsbasenTab
+from .meldingsbasen import MeldingsbasenWindow
 from .nspek import Naeringsspesifikasjon
 from .nspek import NaeringsspesifikasjonTab
 from .nspek import NaeringsspesifikasjonWindow
@@ -111,6 +114,9 @@ __all__ = [
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
+    "Meldingsbasen",
+    "MeldingsbasenTab",
+    "MeldingsbasenWindow",
     "MicroLayoutAIO",
     "MultiModule",
     "MultiModuleTab",

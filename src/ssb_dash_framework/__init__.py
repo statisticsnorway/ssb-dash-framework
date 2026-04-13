@@ -47,6 +47,9 @@ from .modules import MacroNspekPostControlWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
+from .modules import Meldingsbasen
+from .modules import MeldingsbasenTab
+from .modules import MeldingsbasenWindow
 from .modules import MicroLayoutAIO
 from .modules import MultiModule
 from .modules import MultiModuleTab
@@ -148,6 +151,9 @@ __all__ = [
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
+    "Meldingsbasen",
+    "MeldingsbasenTab",
+    "MeldingsbasenWindow",
     "MicroLayoutAIO",
     "MultiModule",
     "MultiModule",
