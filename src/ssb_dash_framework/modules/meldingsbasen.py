@@ -8,6 +8,7 @@ from dash.exceptions import PreventUpdate
 from datetime import datetime, date
 import pandas as pd
 import ibis
+from ibis import _
 from ibis.backends import BaseBackend
 import logging
 from typing import Any
@@ -28,6 +29,7 @@ ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
 SHOW_COLUMNS: dict[str, bool] = {"skjemadata": True, "skjemadata_fjor": True, "enhetsinfo": False, "enhetsinfo_fjor": False}
+SELECT_COLUMNS = ["orgnr", "org_form", "navn", "sn07_1", "sn2025_1", "kilde", "fritekst"]
 
 class Meldingsbasen:
     """
@@ -83,7 +85,7 @@ class Meldingsbasen:
                 # buttons and options
                 html.Div(
                     children=[
-                        dcc.RadioItems(
+                        dcc.Checklist(
                                     id="meldingsbasen-vis-kolonner",
                                     options=[
                                         {"label": "Skjemadata (i år)", "value": "skjemadata"},
@@ -172,6 +174,9 @@ class Meldingsbasen:
             vis_kolonner
             ):
 
+            if not aar or not orgnr_foretak:
+                raise PreventUpdate
+
             skjemadata      = "skjemadata"      in vis_kolonner
             skjemadata_fjor = "skjemadata_fjor" in vis_kolonner
             enhetsinfo      = "enhetsinfo"      in vis_kolonner
@@ -179,8 +184,9 @@ class Meldingsbasen:
 
             with sqlite3.connect(SSB_FORETAK_PATH) as conn:
                 df = pd.read_sql_query(
-                    f"SELECT * FROM ssb_foretak WHERE orgnr = '{orgnr_foretak}'", conn
+                    f"SELECT orgnr, navn, sn07_1, sn2025_1, org_form FROM ssb_foretak WHERE orgnr = '{orgnr_foretak}'", conn
                 )
+            print(f"foretaksdata df: {df}")
 
             if skjemadata:
                 s = self.conn.table("core_skjemadata_mapped")
@@ -191,8 +197,8 @@ class Meldingsbasen:
                     .filter(_.variabel == "naeringskode")
                     .select(["ident", "refnr", "verdi"]).to_pandas()
                 )
-                s = s.rename(columns={"ident": "orgnr", "verdi": "sn07_1"})
-                print(s)
+                s = s.rename(columns={"ident": "orgnr", "verdi": "naeringskode"})
+                print(f"foretak skjemadata: {s}")
 
                 df = df.merge(s, how="left", on="orgnr")
             
@@ -204,32 +210,53 @@ class Meldingsbasen:
                     .filter(_.variabel == "nace_2007")
                     .select(["ident", "verdi"]).to_pandas()
                 )
-                e = e.rename(columns={"ident": "orgnr", "verdi": "sn07_1"})
-                print(e)
+                e = e.rename(columns={"ident": "orgnr", "verdi": "nace_2007"})
+                print(f"foretak enhetsinfo: {e}")
 
                 df = df.merge(e, how="left", on="orgnr")
 
-            orgnr = df["orgnr"][0]
-            orgform = df["org_form"][0]
-            navn = df["navn"][0]
-            nace_07 = df["sn07_1"][0]
-            nace_2025 = df["sn2025_1"][0]
-            kilde = df["kilde"].astype(str)
-            fritekst = df["fritekst"].astype(str)
+            df["kilde"] = ""
+            df["fritekst"] = ""
 
+            if "sn07_1" not in df.columns:
+                df["sn07_1"] = None
+            if "sn2025_1" not in df.columns:
+                df["sn2025_1"] = None
+
+            cols = SELECT_COLUMNS.copy()
+            if skjemadata:   
+                cols.append("naeringskode")
+            if enhetsinfo:   
+                cols.append("nace_2007")
+            cols = [c for c in cols if c in df.columns]
+            df = df[cols]
+            
+            df = df.reset_index().rename(columns={"index": "id"})
             row_data = df.to_dict("records")
-            column_defs = [
-                {
-                    "field": col, 
-                    "headerName": col,
-                    "sortable": True,
-                    "filter": True,
-                    "resizable": True,
-                    "editable": True,
-                    
-                }
-                for col in df.columns
+
+            bof_children = [
+                {"field": "orgnr",    "headerName": "orgnr"},
+                {"field": "org_form", "headerName": "org_form"},
+                {"field": "navn",     "headerName": "navn"},
+                {"field": "sn07_1",   "headerName": "sn07_1"},   # always from BoF SQLite
+                {"field": "sn2025_1", "headerName": "sn2025_1"},
+                {"field": "kilde",    "headerName": "kilde",    "editable": True},
+                {"field": "fritekst", "headerName": "fritekst", "editable": True},
             ]
+
+            column_defs = [{"headerName": "BoF", "children": bof_children}]
+
+            if skjemadata:
+                column_defs.append({
+                    "headerName": "Altinn3 skjemadata",
+                    "children": [{"field": "naeringskode", "headerName": "naeringskode"}]
+                })
+
+            if enhetsinfo:
+                column_defs.append({
+                    "headerName": "Enhetsinfo",
+                    "children": [{"field": "nace_2007", "headerName": "nace_2007"}]
+                })
 
             return row_data, column_defs
         
@@ -239,29 +266,42 @@ class Meldingsbasen:
             Input("var-aar", "value"),
             Input("var-foretak", "value"),
             Input("var-bedrift", "value"),
-            Input("meldingsbasen-vis-kolonner", "value")
+            Input("meldingsbasen-vis-kolonner", "value"),
+            State("meldingsbasen-foretak-grid", "rowData")
         )
         def show_bedrift_data(
             aar: str, 
             orgnr_foretak: str,
             orgnr_bedrift: str,
             vis_kolonner,
+            foretaksdata,
             ):
+
+            if not aar or not foretaksdata:
+                raise PreventUpdate
+
+            with sqlite3.connect(SSB_BEDRIFT_PATH) as conn:
+                print(pd.read_sql_query("SELECT * FROM ssb_bedrift LIMIT 3", conn).columns.tolist())
 
             skjemadata      = "skjemadata"      in vis_kolonner
             skjemadata_fjor = "skjemadata_fjor" in vis_kolonner
             enhetsinfo      = "enhetsinfo"      in vis_kolonner
             enhetsinfo_fjor = "enhetsinfo_fjor" in vis_kolonner
 
-            if orgnr_foretak is not None:
+            refnr = foretaksdata[0].get("refnr", "")
+            print(f"refnr: {refnr}")
+
+
+            if orgnr_foretak:
                 with sqlite3.connect(SSB_BEDRIFT_PATH) as conn:
                     df = pd.read_sql_query(
-                        f"""SELECT bedrifts_nr, orgnr, navn, sn07_1, sn2025_1, org_form
-                        FROM ssb_bedrift WHERE foretaks_nr = '{orgnr_foretak}';""",
+                        f"""SELECT orgnr, navn, sn07_1, sn2025_1, org_form FROM ssb_bedrift WHERE foretaks_nr = '{orgnr_foretak}';""",
                         conn,
                     )
 
-            if skjemadata:
+            print(f"bedriftsdata df: {df}")
+
+            if skjemadata and refnr != "":
                 s = self.conn.table("core_skjemadata_mapped")
                 s = (
                     s.filter(_.aar == aar)
@@ -270,10 +310,10 @@ class Meldingsbasen:
                     .filter(_.variabel == "virkNaeringskode")
                     .select(["ident", "verdi"]).to_pandas()
                 )
-                print(s)
-                s = s.rename(columns={"ident": "orgnr", "verdi": "sn07_1"})
+                print(f"bedrift skjemadata: {s}")
+                s = s.rename(columns={"ident": "orgnr", "verdi": "virkNaeringskode"})
                 df = df.merge(s, how="left", on="orgnr")
-                print(df)
+                print(f"bedrift skjemadata etter merge: {df}")
             
             if enhetsinfo:
                 e = self.conn.table("enhetsinfo")
@@ -283,35 +323,61 @@ class Meldingsbasen:
                     .filter(_.variabel == "nace_2007")
                     .select(["ident", "verdi"]).to_pandas()
                 )
-                print(e)
-                e = e.rename(columns={"ident": "orgnr", "verdi": "sn07_1"})
+                print(f"bedrift enhetsinfo: {e}")
+                e = e.rename(columns={"ident": "orgnr", "verdi": "nace_2007"})
 
                 df = df.merge(e, how="left", on="orgnr")
-                print(df)
+                print(f"bedrift enhetsinfo etter merge: {df}")
 
-            df["kilde"] = df["kilde"].astype(str)
-            df["fritekst"] = df["fritekst"].astype(str)
+            df["kilde"] = ""
+            df["fritekst"] = ""
 
             if orgnr_bedrift != "":
                 df = df.sort_values(
                         by="orgnr",
                         key=lambda x: x.map(lambda v: 0 if v == orgnr_bedrift else 1),
                     )
+
+            if "sn07_1" not in df.columns:
+                df["sn07_1"] = None
+            if "sn2025_1" not in df.columns:
+                df["sn2025_1"] = None
+
+            cols = SELECT_COLUMNS.copy()
+            if skjemadata:   
+                cols.append("virkNaeringskode")
+            if enhetsinfo:   
+                cols.append("nace_2007")
+            cols = [c for c in cols if c in df.columns]
+            df = df[cols]
+
+            df = df.reset_index().rename(columns={"index": "id"})
             
             row_data = df.to_dict("records")
 
-            column_defs = [
-                {
-                    "field": col, 
-                    "headerName": col,
-                    "sortable": True,
-                    "filter": True,
-                    "resizable": True,
-                    "editable": True,
-                    
-                }
-                for col in df.columns
+            bof_children = [
+                {"field": "orgnr",    "headerName": "orgnr"},
+                {"field": "org_form", "headerName": "org_form"},
+                {"field": "navn",     "headerName": "navn"},
+                {"field": "sn07_1",   "headerName": "sn07_1"},   # always from BoF SQLite
+                {"field": "sn2025_1", "headerName": "sn2025_1"},
+                {"field": "kilde",    "headerName": "kilde",    "editable": True},
+                {"field": "fritekst", "headerName": "fritekst", "editable": True},
             ]
+
+            column_defs = [{"headerName": "BoF", "children": bof_children}]
+
+            if skjemadata:
+                column_defs.append({
+                    "headerName": "Altinn3 skjemadata",
+                    "children": [{"field": "virkNaeringskode", "headerName": "virkNaeringskode"}]
+                })
+
+            if enhetsinfo:
+                column_defs.append({
+                    "headerName": "Enhetsinfo",
+                    "children": [{"field": "nace_2007", "headerName": "nace_2007"}]
+                })
 
             return row_data, column_defs
 
