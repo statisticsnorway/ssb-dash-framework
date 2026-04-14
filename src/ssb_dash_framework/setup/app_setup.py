@@ -92,7 +92,7 @@ def app_setup(
         requests_pathname_prefix=(
             f"{service_prefix}proxy/{port}/" if service_prefix else None
         ),
-        external_stylesheets=[theme_map[stylesheet], dbc_css],
+        external_stylesheets=[theme_map[stylesheet], dbc_css, dbc.icons.BOOTSTRAP],
         assets_folder="../assets",
     )
 
