@@ -120,7 +120,7 @@ class AltinnEditorContact:
                     is_open=False,
                     placement="end",
                     backdrop=False,
-                    scrollable=True
+                    scrollable=True,
                     style={"width": "25%", "height": "100%"},
                 ),
             ]
