@@ -18,7 +18,11 @@ window.dashAgGridFunctions = window.dashAgGridFunctions || {};
         var el = document.createElement('div');
         el.className = 'alert alert-info mb-2';
         el.setAttribute('role', 'alert');
-        el.innerHTML = '<small class="text-muted">' + ts + ': </small>Kopiert: ' + value;
+        var small = document.createElement('small');
+        small.className = 'text-muted';
+        small.textContent = ts + ': ';
+        el.appendChild(small);
+        el.appendChild(document.createTextNode('Kopiert: ' + value));
         container.appendChild(el);
         setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 4000);
     }
