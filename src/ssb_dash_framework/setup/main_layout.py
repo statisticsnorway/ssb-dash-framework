@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 import dash_bootstrap_components as dbc
+from dash import dcc
 from dash import html
 
 from ..utils.alert_handler import AlertHandler
@@ -64,7 +65,28 @@ def main_layout(
     varvelger_toggle = [
         html.Div([sidebar_button("🛆", "Vis variabler", "sidebar-varvelger-button")])
     ]
-    window_modules_list = varvelger_toggle + window_modules_list
+    theme_toggle = html.Div(
+
+        [
+                    html.Div(
+                        dbc.Button( 
+                            [
+            html.Span("🌙", id="theme-icon", className="sidebar-button-icon-spot"),
+            html.Span("Tema", className="sidebar-button-label-spot"),
+                ],
+            id="theme-toggle-button",
+            className="sidebar-button-button",
+                )
+            ),
+            dcc.Store(id="theme-store", data=True),
+        ],
+        style={"marginTop": "auto"},
+
+
+
+
+    )
+    window_modules_list = varvelger_toggle + window_modules_list + [theme_toggle]
     selected_tab_list = [
         (tab if isinstance(tab, dbc.Tab) else dbc.Tab(tab.layout(), label=tab.label))
         for tab in tab_list

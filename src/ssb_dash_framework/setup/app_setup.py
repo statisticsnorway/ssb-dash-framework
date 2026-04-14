@@ -81,7 +81,7 @@ def app_setup(
                 "Writing log file to work/app.log. DO NOT ADD 'app.log' FILE TO GIT REPO!"
             )
     template = theme_map[stylesheet]
-    load_figure_template([template])
+    load_figure_template([stylesheet, "darkly"])
 
     dbc_css = (
         "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
@@ -152,5 +152,29 @@ def app_setup(
         </body>
     </html>
     """
+
+    app.clientside_callback(
+        """
+        function(n_clicks) {
+            if (!n_clicks) return [true, "🌙"];
+            const is_light = n_clicks % 2 === 0;
+            const lumen = "https://cdn.jsdelivr.net/npm/bootswatch@5.3.6/dist/lumen/bootstrap.min.css";
+            const darkly = "https://cdn.jsdelivr.net/npm/bootswatch@5.3.6/dist/darkly/bootstrap.min.css";
+            const newUrl = is_light ? lumen : darkly;
+            const links = document.querySelectorAll("link[rel='stylesheet']");
+            for (const link of links) {
+                if (link.href.includes('/lumen/') || link.href.includes('/darkly/')) {
+                    link.href = newUrl;
+                    break;
+                }
+            }
+            return [is_light, is_light ? "🌙" : "☀️"];
+        }
+        """,
+        Output("theme-store", "data"),
+        Output("theme-icon", "children"),
+        Input("theme-toggle-button", "n_clicks"),
+    )
+
 
     return app
