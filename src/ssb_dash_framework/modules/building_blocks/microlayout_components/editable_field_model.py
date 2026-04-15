@@ -28,6 +28,7 @@ class CallbackSettings(BaseModel):
 
 
 def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args):
+    print(f"Getting {field_path} for refnr: {refnr}")
     with get_connection() as conn:
         t = conn.table(settings.form_data_table)
         res = (
@@ -48,6 +49,7 @@ def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args
 def default_updater(
     value, refnr: str, settings: CallbackSettings, field_path: str, *args
 ):
+    print(f"Updating {field_path}")
     with get_connection() as conn:
         query = f"""
             UPDATE {settings.form_data_table}
@@ -67,12 +69,27 @@ class EditableField(BaseModel):
     applies_to_tables: list[str] = Field(default_factory=list)
     applies_to_forms: list[str] = Field(default_factory=list)
 
+    def __str__(self) -> str:
+        parts = [f"EditableField(path='{self.field_path}')"]
+
+        # Functions
+        parts.append(f"getter={getattr(self.getter_func, '__name__', str(self.getter_func))}")
+        parts.append(f"updater={getattr(self.update_func, '__name__', str(self.update_func))}")
+
+        # Guards
+        if self.applies_to_tables or self.applies_to_forms:
+            parts.append(f"applies to tables={self.applies_to_tables}")
+            parts.append(f"applies to forms={self.applies_to_forms}")
+
+        return " | ".join(parts)
+
     def _build_guard_states(self, settings: CallbackSettings) -> list[State]:
         guard_states = []
         if settings.table_selector_id:
             guard_states.append(State(settings.table_selector_id, "value"))
         if settings.form_selector_id:
             guard_states.append(State(settings.form_selector_id, "value"))
+        print(f"guard_states: {guard_states}")
         return guard_states
 
     def _check_guard(self, settings: CallbackSettings, *guard_values):
@@ -80,11 +97,14 @@ class EditableField(BaseModel):
         idx = 0
         if settings.table_selector_id and self.applies_to_tables:
             if guard_values[idx] not in self.applies_to_tables:
+                print("Returning False")
                 return False
             idx += 1
         if settings.form_selector_id and self.applies_to_forms:
             if guard_values[idx] not in self.applies_to_forms:
+                print("Returning False")
                 return False
+        print("Returning True")
         return True
 
     def create_callback(
@@ -110,7 +130,6 @@ class EditableField(BaseModel):
             n_guard = len(guard_states)
             guard_values = args[-n_guard:] if n_guard else ()
             real_args = args[:-n_guard] if n_guard else args
-
             if not self._check_guard(settings, *guard_values):
                 logger.debug("Preventing update")
                 raise PreventUpdate
