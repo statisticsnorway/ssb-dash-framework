@@ -305,7 +305,7 @@ class DataViewCustom(DataEditorDataView):
                         "form_data_field_name_column"
                     ),
                 )
-                print(f"Built microlayout:\n{microlayout}")
+                logger.debug(f"Built microlayout:\n{microlayout}")
                 components.append(microlayout)
             else:
                 components.extend(self.build_layout(value))
@@ -327,7 +327,7 @@ class DataViewCustom(DataEditorDataView):
     def convert_typed_to_keyed(
         cls, node, applies_to_tables=None, applies_to_forms=None
     ):
-        print(f"inputs: {node}, {applies_to_tables}, {applies_to_forms}")
+        logger.debug(f"inputs: {node}, {applies_to_tables}, {applies_to_forms}")
         if isinstance(node, list):
             return [
                 cls.convert_typed_to_keyed(item, applies_to_tables, applies_to_forms)
@@ -430,7 +430,9 @@ def convert_node_build_field_settings(node, attribute, value):
 
 
 def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> dict:
-    print(f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}")
+    logger.debug(
+        f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
+    )
     if applies_to_tables is None:
         applies_to_tables = []
     if applies_to_forms is None:
@@ -445,6 +447,13 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
         )
 
     if "children" in node:
-        node["children"] = [convert_node(child, applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms) for child in node["children"]]
+        node["children"] = [
+            convert_node(
+                child,
+                applies_to_tables=applies_to_tables,
+                applies_to_forms=applies_to_forms,
+            )
+            for child in node["children"]
+        ]
 
     return node
