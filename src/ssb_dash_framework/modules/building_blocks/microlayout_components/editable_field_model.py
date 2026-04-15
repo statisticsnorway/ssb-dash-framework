@@ -43,6 +43,7 @@ def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args
             .to_pandas()
         )
     logger.debug(f"Returning:\n{res}")
+    print(f"Returning:\n{res}")
     return res
 
 
@@ -51,6 +52,21 @@ def default_updater(
 ):
     print(f"Updating {field_path}")
     with get_connection() as conn:
+        t = conn.table(settings.form_data_table)
+        res = (
+            t.filter(
+                [
+                    t[settings.form_reference_number_column] == refnr,
+                    t[settings.formdata_fieldname_column] == field_path,
+                ]
+            )
+            .select(settings.formdata_field_value_column_name)
+            .as_scalar()
+            .to_pandas()
+        )
+        if value == res:
+            print(f"Preventing update due to new value '{value}' being identical to old value '{res}'")
+            raise PreventUpdate
         query = f"""
             UPDATE {settings.form_data_table}
             SET {settings.formdata_field_value_column_name} = '{value}'
