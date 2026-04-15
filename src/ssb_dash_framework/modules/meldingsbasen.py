@@ -29,7 +29,8 @@ ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
 SHOW_COLUMNS: dict[str, bool] = {"skjemadata": True, "skjemadata_fjor": True, "enhetsinfo": False, "enhetsinfo_fjor": False}
-SELECT_COLUMNS = ["orgnr", "org_form", "navn", "sn07_1", "sn2025_1", "kilde", "fritekst"]
+SELECT_COLUMNS_FORETAK = ["foretaks_nr", "orgnr", "org_form", "navn", "sn07_1", "sn2025_1", "kilde", "fritekst"]
+SELECT_COLUMNS_BEDRIFT  = ["orgnr", "org_form", "navn", "sn07_1", "sn2025_1", "kilde", "fritekst"]
 
 class Meldingsbasen:
     """
@@ -81,78 +82,79 @@ class Meldingsbasen:
         Generates the layout for the meldingsbasen module.
         """
         layout = html.Div(
+            className="meldingsbasen",
             children=[
-                # buttons and options
+                # Top bar with button
                 html.Div(
+                    className="meldingsbasen-topbar",
                     children=[
-                        dcc.Checklist(
+                        dbc.Button(
+                            "Send oppdateringer",
+                            id="meldingsbasen-save-edits-button1",
+                        ),
+                    ]
+                ),
+                # Main content: sidebar + grids side by side
+                html.Div(
+                    className="meldingsbasen-container",
+                    children=[
+                        # Left: slim sidebar with checklist
+                        html.Div(
+                            className="meldingsbasen-sidebar",
+                            children=[
+                                dcc.Checklist(
                                     id="meldingsbasen-vis-kolonner",
                                     options=[
-                                        {"label": "Skjemadata (i år)", "value": "skjemadata"},
+                                        {"label": "Skjemadata (i år)",   "value": "skjemadata"},
                                         {"label": "Skjemadata (i fjor)", "value": "skjemadata_fjor"},
-                                        {"label": "Enhetsinfo (i år)", "value": "enhetsinfo"},
+                                        {"label": "Enhetsinfo (i år)",   "value": "enhetsinfo"},
                                         {"label": "Enhetsinfo (i fjor)", "value": "enhetsinfo_fjor"},
                                     ],
                                     value=["skjemadata", "skjemadata_fjor"],
                                 ),
-                    
-                        dbc.Row(
+                            ]
+                        ),
+                        # Right: grids stacked vertically
+                        html.Div(
+                            className="meldingsbasen-grid-container",
                             children=[
-                                dbc.Col(
-                                    dbc.Button(
-                                        "Send oppdateringer",
-                                        id="meldingsbasen-save-edits-button1",
-                                    ),
-                                    width="auto",
+                                html.Div(
+                                    className="meldingsbasen-foretak-grid-container",
+                                    children=[
+                                        html.Label("Foretak", className="meldingsbasen-label"),
+                                        AgGrid(
+                                            id="meldingsbasen-foretak-grid",
+                                            getRowId="params.data.id",
+                                            defaultColDef={"sortable": True, "filter": True, "resizable": True},
+                                            columnSize="responsiveSizeToFit",
+                                            rowData=[],
+                                            columnDefs=[],
+                                            dashGridOptions={"rowSelection": "single", "enableCellTextSelection": True},
+                                            style={"height": "100%", "width": "100%"},
+                                        )
+                                    ]
                                 ),
-                            ],
-                        )
-                    ]),
-                # data grids
-                html.Div(
-                    # Dropdown with option as foretak, which if True shows a foretak AgGrid. Default True.
-                    AgGrid(
-                                    id="meldingsbasen-foretak-grid",
-                                    getRowId="params.data.id",  # Add id to each row
-                                    defaultColDef={
-                                        "sortable": True,
-                                        "filter": True,
-                                        "resizable": True,
-                                    },
-                                    columnSize=None,
-                                    rowData=[],
-                                    columnDefs=[],
-                                    dashGridOptions={
-                                        "rowSelection": "single",
-                                        "enableCellTextSelection": True,
-                                        "enableBrowserTooltips": True,
-                                    },
-                                    style={"height": "100%", "width": "100%"},
-                                )
+                                html.Div(
+                                    className="meldingsbasen-bedrift-grid-container",
+                                    children=[
+                                        html.Label("Bedrifter", className="meldingsbasen-label"),
+                                        AgGrid(
+                                            id="meldingsbasen-bedrift-grid",
+                                            getRowId="params.data.id",
+                                            defaultColDef={"sortable": True, "filter": True, "resizable": True},
+                                            columnSize="responsiveSizeToFit",
+                                            rowData=[],
+                                            columnDefs=[],
+                                            dashGridOptions={"rowSelection": "single", "enableCellTextSelection": True},
+                                            style={"height": "100%", "width": "100%"},
+                                        )
+                                    ]
+                                ),
+                            ]
+                        ),
+                    ]
                 ),
-
-                html.Div(
-                    # Dropdown with option as bedrift, which if True shows a foretak AgGrid. Default False
-                    AgGrid(
-                                    id="meldingsbasen-bedrift-grid",
-                                    getRowId="params.data.id",  # Add id to each row
-                                    defaultColDef={
-                                        "sortable": True,
-                                        "filter": True,
-                                        "resizable": True,
-                                    },
-                                    columnSize=None,
-                                    rowData=[],
-                                    columnDefs=[],
-                                    dashGridOptions={
-                                        "rowSelection": "single",
-                                        "enableCellTextSelection": True,
-                                        "enableBrowserTooltips": True,
-                                    },
-                                    style={"height": "100%", "width": "100%"},
-                                )
-                ),
-            ],
+            ]
         )
 
         return layout
@@ -184,7 +186,7 @@ class Meldingsbasen:
 
             with sqlite3.connect(SSB_FORETAK_PATH) as conn:
                 df = pd.read_sql_query(
-                    f"SELECT orgnr, navn, sn07_1, sn2025_1, org_form FROM ssb_foretak WHERE orgnr = '{orgnr_foretak}'", conn
+                    f"SELECT foretaks_nr, orgnr, navn, sn07_1, sn2025_1, org_form FROM ssb_foretak WHERE orgnr = '{orgnr_foretak}'", conn
                 )
             print(f"foretaksdata df: {df}")
 
@@ -223,7 +225,7 @@ class Meldingsbasen:
             if "sn2025_1" not in df.columns:
                 df["sn2025_1"] = None
 
-            cols = SELECT_COLUMNS.copy()
+            cols = SELECT_COLUMNS_FORETAK.copy()
             if skjemadata:   
                 cols.append("naeringskode")
             if enhetsinfo:   
@@ -235,6 +237,7 @@ class Meldingsbasen:
             row_data = df.to_dict("records")
 
             bof_children = [
+                # {"field": "foretaks_nr", "headerName": "foretaks_nr"},
                 {"field": "orgnr",    "headerName": "orgnr"},
                 {"field": "org_form", "headerName": "org_form"},
                 {"field": "navn",     "headerName": "navn"},
@@ -243,6 +246,16 @@ class Meldingsbasen:
                 {"field": "kilde",    "headerName": "kilde",    "editable": True},
                 {"field": "fritekst", "headerName": "fritekst", "editable": True},
             ]
+            #             bof_children = [
+            #     # {"field": "foretaks_nr", "headerName": "foretaks_nr"},
+            #     {"field": "orgnr",    "headerName": "orgnr", "width": 105},
+            #     {"field": "org_form", "headerName": "org_form", "width": 110},
+            #     {"field": "navn",     "headerName": "navn"},
+            #     {"field": "sn07_1",   "headerName": "sn07_1", "width": 100},   # always from BoF SQLite
+            #     {"field": "sn2025_1", "headerName": "sn2025_1", "width": 125},
+            #     {"field": "kilde",    "headerName": "kilde",    "editable": True},
+            #     {"field": "fritekst", "headerName": "fritekst", "editable": True},
+            # ]
 
             column_defs = [{"headerName": "BoF", "children": bof_children}]
 
@@ -281,7 +294,7 @@ class Meldingsbasen:
                 raise PreventUpdate
 
             with sqlite3.connect(SSB_BEDRIFT_PATH) as conn:
-                print(pd.read_sql_query("SELECT * FROM ssb_bedrift LIMIT 3", conn).columns.tolist())
+                print(pd.read_sql_query("SELECT orgnr, foretaks_nr FROM ssb_bedrift LIMIT 3", conn))
 
             skjemadata      = "skjemadata"      in vis_kolonner
             skjemadata_fjor = "skjemadata_fjor" in vis_kolonner
@@ -289,13 +302,14 @@ class Meldingsbasen:
             enhetsinfo_fjor = "enhetsinfo_fjor" in vis_kolonner
 
             refnr = foretaksdata[0].get("refnr", "")
+            foretaks_nr = foretaksdata[0].get("foretaks_nr", "")
             print(f"refnr: {refnr}")
-
+            print(f"foretaks_nr: {foretaks_nr}")
 
             if orgnr_foretak:
                 with sqlite3.connect(SSB_BEDRIFT_PATH) as conn:
                     df = pd.read_sql_query(
-                        f"""SELECT orgnr, navn, sn07_1, sn2025_1, org_form FROM ssb_bedrift WHERE foretaks_nr = '{orgnr_foretak}';""",
+                        f"""SELECT orgnr, navn, sn07_1, sn2025_1, org_form FROM ssb_bedrift WHERE foretaks_nr = '{foretaks_nr}';""",
                         conn,
                     )
 
@@ -305,7 +319,7 @@ class Meldingsbasen:
                 s = self.conn.table("core_skjemadata_mapped")
                 s = (
                     s.filter(_.aar == aar)
-                    .filter(_.ident != orgnr_foretak)
+                    # .filter(_.ident != orgnr_foretak)
                     .filter(_.refnr == refnr) # fetch from table above
                     .filter(_.variabel == "virkNaeringskode")
                     .select(["ident", "verdi"]).to_pandas()
@@ -343,7 +357,7 @@ class Meldingsbasen:
             if "sn2025_1" not in df.columns:
                 df["sn2025_1"] = None
 
-            cols = SELECT_COLUMNS.copy()
+            cols = SELECT_COLUMNS_BEDRIFT.copy()
             if skjemadata:   
                 cols.append("virkNaeringskode")
             if enhetsinfo:   

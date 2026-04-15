@@ -473,6 +473,85 @@ MacroModule
     opacity: 0.5 !important;
 }
 
+/* 
+Meldingsbasen 
+*/
+
+/* test start */
+.meldingsbasen {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    padding: 8px;
+}
+
+.meldingsbasen-topbar {
+    display: flex;
+    justify-content: flex-end;
+    padding-bottom: 8px;
+}
+
+.meldingsbasen-container {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    gap: 12px;
+    min-height: 0;
+}
+
+.meldingsbasen-sidebar {
+    width: 180px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.meldingsbasen-grid-container {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.meldingsbasen-foretak-grid-container,
+.meldingsbasen-bedrift-grid-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.meldingsbasen-label {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+/* test end */
+
+/* .meldingsbasen-label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 6px;
+    margin-top: 30px;
+} */
+
+/* .meldingsbasen-foretak-grid-container {
+    max-height: 300px;
+}
+
+.meldingsbasen-bedrift-grid-container {
+    min-height: 500px;
+} */
+
+/*
+.meldingsbasen-foretak-grid-container,
+.meldingsbasen-bedrift-grid-container {
+    min-width: 1200px;
+    display: flex;
+    flex-direction: column;
+} */
+
 /*
 canvas
 */
