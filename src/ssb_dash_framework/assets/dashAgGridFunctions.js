@@ -306,5 +306,10 @@ window.dashAgGridFunctions.MacroModule = {
 
         return {};
     }
-
 };
+
+// Track last mouse click position so the popup can be anchored to the clicked cell
+document.addEventListener('click', function(e) {
+    window._macroModuleLastClickX = e.clientX;
+    window._macroModuleLastClickY = e.clientY;
+});

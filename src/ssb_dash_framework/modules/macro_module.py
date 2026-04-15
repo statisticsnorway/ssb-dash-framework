@@ -14,6 +14,7 @@ from dash import Input
 from dash import Output
 from dash import State
 from dash import callback
+from dash import clientside_callback
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
@@ -509,8 +510,28 @@ class MacroModule:
                                 )
                             ],
                         ),
+                        # Confirmation popup — absolute-positioned inside this container
+                        # so it scrolls with the page rather than floating over it.
+                        html.Div(
+                            id="macromodule-click-popup",
+                            className="macromodule-click-popup",
+                            style={"display": "none"},
+                            children=[
+                                html.Span(
+                                    id="macromodule-click-popup-label",
+                                    className="macromodule-click-popup-label",
+                                ),
+                                html.Button(
+                                    "Bruk",
+                                    id="macromodule-bruk-button",
+                                    className="macromodule-bruk-button",
+                                    n_clicks=0,
+                                ),
+                            ],
+                        ),
                     ],
                 ),
+                dcc.Store(id="macromodule-pending-click-store"),
             ],
         )
         logger.debug("Layout generated.")
@@ -1283,6 +1304,7 @@ class MacroModule:
             Output("macromodule-detail-grid", "rowData", allow_duplicate=True),
             Output("macromodule-detail-grid", "columnDefs", allow_duplicate=True),
             Output("macromodule-detail-grid-title", "children", allow_duplicate=True),
+            Output("macromodule-pending-click-store", "data", allow_duplicate=True),
             Input("var-aar", "value"),
             Input("macromodule-foretak-or-bedrift", "value"),
             Input("macromodule-filter-velger", "value"),
@@ -1291,9 +1313,9 @@ class MacroModule:
             Input("macromodule-macro-variable", "value"),
             prevent_initial_call=True,
         )
-        def reset_detail_grid_on_filter_change(*args: Any) -> tuple[list, list, str]:
-            """Reset detail grid when any filter changes."""
-            return [], [], ""
+        def reset_detail_grid_on_filter_change(*args: Any) -> tuple[list, list, str, None]:
+            """Reset detail grid and dismiss popup when any filter changes."""
+            return [], [], "", None
 
         @callback(
             Output("macromodule-macro-variable", "disabled"),
@@ -1303,32 +1325,96 @@ class MacroModule:
             """Disables macro-variable if sammensatte variabler is selected by user."""
             return macro_level == "sammensatte variabler"
 
+        clientside_callback(
+            """
+            function(cellClicked, rowData) {
+                var noShow = [null, '', {display: 'none'}];
+                if (!cellClicked || !rowData) return noShow;
+
+                var colId = cellClicked.colId;
+                var rowId = cellClicked.rowId;
+                if (rowId == null || ['orgnr_f', 'orgnr_b', 'navn'].indexOf(colId) === -1) {
+                    return noShow;
+                }
+
+                var rowIdx = parseInt(rowId);
+                if (isNaN(rowIdx) || rowIdx >= rowData.length) return noShow;
+
+                var row = rowData[rowIdx];
+                var navn = row.navn || '';
+                var label;
+                if (colId === 'orgnr_b') {
+                    label = 'Bedrift: ' + navn + ' (' + (row.orgnr_b || '') + ')';
+                } else {
+                    label = 'Foretak: ' + navn + ' (' + (row.orgnr_f || '') + ')';
+                }
+
+                var pendingData = {rowId: rowId, colId: colId, rowData: row};
+
+                // Position relative to the detail grid container so the popup
+                // scrolls with the page instead of floating over it.
+                var containerEl = document.querySelector('.macromodule-detail-grid-container');
+                var style;
+                if (containerEl) {
+                    var rect = containerEl.getBoundingClientRect();
+                    var relX = (window._macroModuleLastClickX || 0) - rect.left;
+                    var relY = (window._macroModuleLastClickY || 0) - rect.top;
+                    style = {
+                        display: 'flex',
+                        position: 'absolute',
+                        top: (relY + 12) + 'px',
+                        left: relX + 'px',
+                        zIndex: '9999'
+                    };
+                } else {
+                    style = {
+                        display: 'flex',
+                        position: 'fixed',
+                        top: ((window._macroModuleLastClickY || 0) + 12) + 'px',
+                        left: (window._macroModuleLastClickX || 0) + 'px',
+                        zIndex: '9999'
+                    };
+                }
+                return [pendingData, label, style];
+            }
+            """,
+            Output("macromodule-pending-click-store", "data"),
+            Output("macromodule-click-popup-label", "children"),
+            Output("macromodule-click-popup", "style"),
+            Input("macromodule-detail-grid", "cellClicked"),
+            State("macromodule-detail-grid", "rowData"),
+        )
+
+        clientside_callback(
+            """
+            function(pendingData) {
+                if (!pendingData) return {display: 'none'};
+                return window.dash_clientside.no_update;
+            }
+            """,
+            Output("macromodule-click-popup", "style", allow_duplicate=True),
+            Input("macromodule-pending-click-store", "data"),
+            prevent_initial_call=True,
+        )
+
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
             Output("var-bedrift", "value", allow_duplicate=True),
             Output("altinnedit-option1", "value", allow_duplicate=True),
-            Input("macromodule-detail-grid", "cellClicked"),
-            State("macromodule-detail-grid", "rowData"),
+            Output("macromodule-pending-click-store", "data", allow_duplicate=True),
+            Input("macromodule-bruk-button", "n_clicks"),
+            State("macromodule-pending-click-store", "data"),
             prevent_initial_call=True,
         )
         def output_to_variabelvelger(
-            clickdata: dict | None, rowdata: list[dict[str, Any]]
-        ) -> tuple[str, str, str]:
-            """Handle cell clicks in detail grid and update variable selector in the Dash app."""
-            if not clickdata:
+            n_clicks: int | None, pending_data: dict | None
+        ) -> tuple[str, str, str, None]:
+            """Apply pending cell selection to variable selector when user clicks Bruk."""
+            if not n_clicks or not pending_data:
                 raise PreventUpdate
 
-            row_id = clickdata.get("rowId")
-            col_id = clickdata.get("colId")
-
-            if row_id is None or col_id not in ("orgnr_f", "orgnr_b", "navn"):
-                raise PreventUpdate
-
-            row_idx = int(row_id)
-            if row_idx >= len(rowdata):
-                raise PreventUpdate
-
-            clicked_row = rowdata[row_idx]
+            col_id = pending_data.get("colId")
+            clicked_row = pending_data.get("rowData", {})
             bedrift = ""
 
             if col_id in ("orgnr_f", "navn"):
@@ -1345,6 +1431,7 @@ class MacroModule:
                 str(ident) if ident else "",
                 str(bedrift) if bedrift else "",
                 str(tabell) if tabell else "",
+                None,
             )
 
 
