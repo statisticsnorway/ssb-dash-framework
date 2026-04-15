@@ -168,6 +168,7 @@ def app_setup(
                     break;
                 }
             }
+            document.body.classList.toggle('dark-mode', !is_light);
             return [is_light, is_light ? "🌙" : "☀️"];
         }
         """,

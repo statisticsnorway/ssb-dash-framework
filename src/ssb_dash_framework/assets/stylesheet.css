@@ -579,4 +579,87 @@ ParquetEditor
     height: 100% !important;
 }
 
+/*
+Dark mode — ag-grid table overrides
+All tables use ag-theme-alpine which is light-only by default.
+When .dark-mode is on the body we override the ag-grid CSS variables
+to match the darkly Bootstrap theme.
+*/
+
+.dark-mode .ag-theme-alpine {
+    --ag-background-color: #303030;
+    --ag-foreground-color: #fff;
+    --ag-header-background-color: #222;
+    --ag-header-foreground-color: #fff;
+    --ag-odd-row-background-color: #3a3a3a;
+    --ag-border-color: rgba(255, 255, 255, 0.15);
+    --ag-row-hover-color: rgba(255, 255, 255, 0.08);
+    --ag-selected-row-background-color: rgba(55, 90, 127, 0.5);
+    --ag-range-selection-background-color: rgba(55, 90, 127, 0.3);
+    --ag-cell-horizontal-border: solid rgba(255, 255, 255, 0.08);
+    --ag-header-column-separator-color: rgba(255, 255, 255, 0.15);
+    --ag-input-focus-border-color: #375a7f;
+    --ag-chip-background-color: rgba(255, 255, 255, 0.1);
+    --ag-input-background-color: #3a3a3a;
+    --ag-disabled-foreground-color: rgba(255, 255, 255, 0.5);
+    --ag-modal-overlay-background-color: rgba(0, 0, 0, 0.5);
+    --ag-panel-background-color: #303030;
+    --ag-tool-panel-background-color: #2a2a2a;
+    --ag-filter-tool-panel-group-title-bar-background-color: #2a2a2a;
+    --ag-subheader-background-color: #272727;
+    --ag-subheader-toolbar-background-color: #272727;
+    --ag-control-panel-background-color: #2a2a2a;
+    --ag-side-panel-border-color: rgba(255, 255, 255, 0.15);
+}
+
+/*
+Dark mode — disabled inputs and textareas (e.g. se kontaktinfo)
+and enabled inputs in the variable selector offcanvas.
+Match the primary blue used by Bootstrap darkly tabs.
+*/
+
+.dark-mode .form-control:disabled,
+.dark-mode .form-control[readonly],
+.dark-mode textarea:disabled,
+.dark-mode textarea[readonly] {
+    background-color: #375a7f !important;
+    color: #fff !important;
+    border-color: #4a6fa5 !important;
+    opacity: 1 !important;
+}
+
+.dark-mode #variable-selector-offcanvas .form-control {
+    background-color: #375a7f !important;
+    color: #fff !important;
+    border-color: #4a6fa5 !important;
+}
+
+/*
+Dark mode — MacroModule radio buttons and multi-select dropdown
+Hard-coded light colors replaced with darkly-compatible equivalents.
+*/
+
+.dark-mode .macromodule-radio-buttons label {
+    border-color: #555;
+    color: #fff;
+}
+
+.dark-mode .macromodule-radio-buttons label:has(input[type="radio"]:checked) {
+    background-color: #375a7f;
+    color: #fff;
+    border-color: #375a7f;
+}
+
+.dark-mode .macromodule-naring-dropdown .Select-value {
+    background-color: #375a7f !important;
+}
+
+.dark-mode .macromodule-naring-dropdown .Select-value-label {
+    color: #fff !important;
+}
+
+.dark-mode .macromodule-naring-dropdown .Select-value-icon {
+    color: #fff !important;
+}
+
 
