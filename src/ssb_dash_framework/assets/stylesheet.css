@@ -398,9 +398,26 @@ MacroModule
 }
 
 .macromodule-label {
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 16px;
+    font-weight: 510;
     margin-bottom: 6px;
+    color: #3f3f3f;
+}
+
+.macromodule-module-title {
+    font-size: 22px;
+    font-weight: 505;
+    color: #303030;
+    line-height: 1.1;
+    margin-bottom: -15;
+}
+
+.macromodule-module-subtitle {
+    font-size: 20px;
+    font-weight: 500;
+    color: #616161;
+    margin-bottom: 35px;
+    margin-top: -10px;
 }
 
 .macromodule-dropdown,
@@ -477,7 +494,6 @@ MacroModule
 Meldingsbasen 
 */
 
-/* test start */
 .meldingsbasen {
     display: flex;
     flex-direction: column;
@@ -492,6 +508,14 @@ Meldingsbasen
     padding-bottom: 8px;
 }
 
+.meldingsbasen-checklist {
+    font-size: 13;
+    align-items: center;
+    display: flex;
+    padding-left: 20px;
+    padding-bottom: 40px;
+}
+
 .meldingsbasen-container {
     display: flex;
     flex-direction: row;
@@ -500,20 +524,12 @@ Meldingsbasen
     min-height: 0;
 }
 
-.meldingsbasen-sidebar {
-    width: 180px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
 .meldingsbasen-grid-container {
     flex: 1;
-    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 20px;
+    padding-left: 20px;
 }
 
 .meldingsbasen-foretak-grid-container,
@@ -521,36 +537,48 @@ Meldingsbasen
     flex: 1;
     display: flex;
     flex-direction: column;
+}
+
+.meldingsbasen-foretak-grid-container {
+    min-height: 190px;
+}
+
+.meldingsbasen-bedrift-grid-container {
+    min-height: 500px;
 }
 
 .meldingsbasen-label {
     font-weight: 600;
     margin-bottom: 4px;
+    align-items: center;
 }
-/* test end */
+.meldingsbasen-checklist .form-check-input {
+    width: 2.5em;
+    height: 1.4em;
+    cursor: pointer;
+    vertical-align: middle;
+}
 
-/* .meldingsbasen-label {
+.meldingsbasen-checklist .form-check-label {
     font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 6px;
-    margin-top: 30px;
-} */
-
-/* .meldingsbasen-foretak-grid-container {
-    max-height: 300px;
+    color: #000000;
+    padding-left: 8px;
+    cursor: pointer;
+    vertical-align: middle;
 }
 
-.meldingsbasen-bedrift-grid-container {
-    min-height: 500px;
-} */
-
-/*
-.meldingsbasen-foretak-grid-container,
-.meldingsbasen-bedrift-grid-container {
-    min-width: 1200px;
+.meldingsbasen-checklist {
+    font-size: 16px;
     display: flex;
     flex-direction: column;
-} */
+    gap: 6px;
+    align-items: flex-start;
+}
+
+.meldingsbasen-button-update {
+    margin-top: 20px;
+    margin-right: 10px;
+}
 
 /*
 canvas

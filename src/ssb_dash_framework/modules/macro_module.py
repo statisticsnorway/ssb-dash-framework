@@ -281,7 +281,7 @@ class MacroModule:
 
         self.icon = "🌍"
         self.consolidated = consolidated
-        self.label = "Makromodul konsolidert" if consolidated else "Makromodul"
+        self.label = "Makromodul"
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
         )
@@ -357,14 +357,17 @@ class MacroModule:
                                 html.H1(
                                     [
                                         "Aggregerte",
-                                        *(
-                                            [html.Br(), "konsoliderte,"]
-                                            if self.consolidated
-                                            else []
-                                        ),
+                                        
                                         html.Br(),
                                         "næringsendringer",
                                     ],
+                                    className="macromodule-module-title"
+                                ),
+                                html.H3(
+                                    children=[
+                                        "Konsoliderte tall" if self.consolidated else "",
+                                    ],
+                                    className="macromodule-module-subtitle"
                                 ),
                                 html.Label(
                                     "Velg foretak eller bedrift",
