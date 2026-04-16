@@ -24,13 +24,14 @@ from ..utils import WindowImplementation
 from ..utils.module_validation import module_validator
 from ..modules.bofregistry import SSB_BEDRIFT_PATH, SSB_FORETAK_PATH
 from ..utils import active_no_duplicates_refnr_list
+from ..utils.alert_handler import create_alert
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
 SHOW_COLUMNS: dict[str, bool] = {"skjemadata": True, "skjemadata_fjor": True, "enhetsinfo": False, "enhetsinfo_fjor": False}
-SELECT_COLUMNS_FORETAK = ["foretaks_nr", "orgnr", "org_form", "navn", "sn07_1", "sn2025_1", "kilde", "fritekst"]
-SELECT_COLUMNS_BEDRIFT  = ["orgnr", "org_form", "navn", "sn07_1", "sn2025_1", "kilde", "fritekst"]
+SELECT_COLUMNS_FORETAK = ["foretaks_nr", "orgnr", "org_form", "navn", "sn07_1", "sn07_et", "sn2025_1", "sn25_et", "sn2025_1_gdato", "fritekst"]
+SELECT_COLUMNS_BEDRIFT  = ["orgnr", "org_form", "navn", "sn07_1", "sn07_et", "sn2025_1", "sn25_et", "sn2025_1_gdato", "fritekst"]
 
 class Meldingsbasen:
     """
@@ -179,7 +180,7 @@ class Meldingsbasen:
 
             with sqlite3.connect(SSB_FORETAK_PATH) as conn:
                 df = pd.read_sql_query(
-                    f"SELECT foretaks_nr, orgnr, navn, sn07_1, sn2025_1, org_form FROM ssb_foretak WHERE orgnr = '{orgnr_foretak}'", conn
+                    f"SELECT foretaks_nr, orgnr, navn, sn07_1, sn07_1_rdato, sn07_1_gdato, sn2025_1, sn2025_1_rdato, sn2025_1_gdato, org_form, omsetning, antall_ansatte FROM ssb_foretak WHERE orgnr = '{orgnr_foretak}'", conn
                 )
 
             s = self.conn.table("core_skjemadata_mapped")
@@ -203,10 +204,12 @@ class Meldingsbasen:
             e = e.rename(columns={"ident": "orgnr", "verdi": "nace_2007"})
             df = df.merge(e, how="left", on="orgnr")
 
-            df["kilde"] = ""
+            df["sn07_et"] = None
+            df["sn25_et"] = None
             df["fritekst"] = ""
             if "sn07_1" not in df.columns:   df["sn07_1"] = None
             if "sn2025_1" not in df.columns: df["sn2025_1"] = None
+            if "sn2025_1_gdato" not in df.columns:   df["sn2025_1_gdato"] = None
             if "naeringskode" not in df.columns: df["naeringskode"] = None
             if "nace_2007" not in df.columns:    df["nace_2007"] = None
 
@@ -241,8 +244,20 @@ class Meldingsbasen:
                 {"field": "org_form", "headerName": "org_form"},
                 {"field": "navn",     "headerName": "navn"},
                 {"field": "sn07_1",   "headerName": "sn07_1"},
-                {"field": "sn2025_1", "headerName": "sn2025_1"},
-                {"field": "kilde",    "headerName": "kilde",    "editable": True},
+                {"field": "sn07_et", "headerName": "endring_sn07", "editable": True},
+                {"field": "sn2025_1", "headerName": "sn2025_1", "editable": True},
+                {
+                    "field": "sn25_et",
+                    "headerName": "endring_sn25",
+                    "editable": True,
+                    "cellRenderer": "DropdownRenderer",
+                    "cellRendererParams": {
+                        "values": ["endring", "korreksjon"]
+                    },
+                },
+                {"field": "sn2025_1_gdato", "headerName": "sn2025_1_gdato", "editable": True,
+                    "cellEditor": "agDateCellEditor",
+                    },
                 {"field": "fritekst", "headerName": "fritekst", "editable": True},
             ]
             column_defs = [{"headerName": "BoF", "children": bof_children}]
@@ -271,7 +286,7 @@ class Meldingsbasen:
 
             with sqlite3.connect(SSB_BEDRIFT_PATH) as conn:
                 df = pd.read_sql_query(
-                    f"""SELECT orgnr, navn, sn07_1, sn2025_1, org_form FROM ssb_bedrift WHERE foretaks_nr = '{foretaks_nr}';""",
+                    f"""SELECT orgnr, navn, sn07_1, sn07_1_rdato, sn07_1_gdato, sn2025_1, sn2025_1_rdato, sn2025_1_gdato, org_form, omsetning, antall_ansatte FROM ssb_bedrift WHERE foretaks_nr = '{foretaks_nr}';""",
                     conn,
                 )
             print(f"bedrift df: {df.head()}")
@@ -300,10 +315,12 @@ class Meldingsbasen:
             print(f"bedrift e: {e}")
             df = df.merge(e, how="left", on="orgnr")
 
-            df["kilde"] = ""
+            df["sn07_et"] = None
+            df["sn25_et"] = None
             df["fritekst"] = ""
             if "sn07_1" not in df.columns:          df["sn07_1"] = None
             if "sn2025_1" not in df.columns:        df["sn2025_1"] = None
+            if "sn2025_1_gdato" not in df.columns:   df["sn2025_1_gdato"] = None
             if "virkNaeringskode" not in df.columns: df["virkNaeringskode"] = None
             if "nace_2007" not in df.columns:        df["nace_2007"] = None
 
@@ -344,8 +361,20 @@ class Meldingsbasen:
                 {"field": "org_form", "headerName": "org_form"},
                 {"field": "navn",     "headerName": "navn"},
                 {"field": "sn07_1",   "headerName": "sn07_1"},
-                {"field": "sn2025_1", "headerName": "sn2025_1"},
-                {"field": "kilde",    "headerName": "kilde",    "editable": True},
+                {"field": "sn07_et", "headerName": "endring_sn07", "editable": True},
+                {"field": "sn2025_1", "headerName": "sn2025_1", "editable": True},
+                {
+                    "field": "sn25_et",
+                    "headerName": "endring_sn25",
+                    "editable": True,
+                    "cellRenderer": "DropdownRenderer",
+                    "cellRendererParams": {
+                        "values": ["endring", "korreksjon"]
+                    },
+                },
+                {"field": "sn2025_1_gdato", "headerName": "sn2025_1_gdato", "editable": True,
+                "cellEditor": "agDateCellEditor",
+                },
                 {"field": "fritekst", "headerName": "fritekst", "editable": True},
             ]
             column_defs = [{"headerName": "BoF", "children": bof_children}]
@@ -355,6 +384,60 @@ class Meldingsbasen:
                 column_defs.append({"headerName": "Enhetsinfo", "children": [{"field": "nace_2007",        "headerName": "nace_2007"}]})
 
             return df.to_dict("records"), column_defs
+
+        # @callback(
+        #     Output("alert_store", "data", allow_duplicate=True),
+        #     Output("meldingsbasen-bedrift-grid", "rowData"),
+        #     Output("meldingsbasen-bedrift-grid", "columnDefs"),
+        #     Input("meldingsbasen-bedrift-grid", "cellValueChanged"),
+        #     State("alert_store", "data"),
+        #     prevent_initial_call=True,
+        # )
+
+        # def edit_bedrift(edited):
+        #     # change colour of edited cell
+
+        #     # if type of edit changed between korrigering/endring -> update which date is shown. for endring, allow user to edit date cell, korreksjon not?
+
+        #     # alert triggered to show nace has been edited
+
+        #     # when nace has been changed in sn2025_1 -> change sn07_1 accordingly. 
+        #     #   if antall_ansatte > 9 and omsetning > 5 mill, -> fetch nace code from klass. 
+        #     #       if 1-1 nace match -> put the correct nace into the sn07_1 (maybe have a row where you can see the nace label?)
+        #     #       else: dropdown for the user to select nace code
+        #     #   else:
+        #     #       leave sn07_1 blank
+
+        #     # allow full
+        #     #    
+        #     return df.to_dict("records"), column_defs  
+
+        # @callback(
+        #     Output("alert_store", "data", allow_duplicate=True),
+        #     Output("meldingsbasen-foretak-grid", "rowData"),
+        #     Output("meldingsbasen-foretak-grid", "columnDefs"),
+        #     Input("meldingsbasen-foretak-grid", "cellValueChanged"),
+        #     State("alert_store", "data"),
+        #     prevent_initial_call=True,
+        # )
+
+        # def edit_foretak(edited):
+        #     # change colour of edited cell
+
+        #     # if type of edit changed between korrigering/endring -> update which date is shown. for endring, allow user to edit date cell, korreksjon not?
+
+        #     # alert triggered to show nace has been edited
+
+        #     # when nace has been changed in sn2025_1 -> change sn07_1 accordingly. 
+        #     #   if antall_ansatte > 9 and omsetning > 5 mill, -> fetch nace code from klass. 
+        #     #       if 1-1 nace match -> put the correct nace into the sn07_1 (maybe have a row where you can see the nace label?)
+        #     #       else: dropdown for the user to select nace code
+        #     #   else:
+        #     #       leave sn07_1 blank
+        #     #       
+        #     return df.to_dict("records"), column_defs
+
+
 
 
 class MeldingsbasenTab(TabImplementation, Meldingsbasen):

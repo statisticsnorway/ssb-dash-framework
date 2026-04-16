@@ -365,7 +365,7 @@ class MacroModule:
                                 ),
                                 html.H3(
                                     children=[
-                                        "Konsoliderte tall" if self.consolidated else "",
+                                        "(Konsoliderte tall)" if self.consolidated else "",
                                     ],
                                     className="macromodule-module-subtitle"
                                 ),
