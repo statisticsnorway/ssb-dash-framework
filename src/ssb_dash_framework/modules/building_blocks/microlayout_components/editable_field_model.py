@@ -28,6 +28,7 @@ class CallbackSettings(BaseModel):
 
 
 def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args):
+    logger.debug(f"Getting {field_path} for refnr: {refnr}")
     with get_connection() as conn:
         t = conn.table(settings.form_data_table)
         res = (
@@ -48,7 +49,25 @@ def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args
 def default_updater(
     value, refnr: str, settings: CallbackSettings, field_path: str, *args
 ):
-    with get_connection() as conn:
+    logger.debug(f"Updating {field_path}")
+    with get_connection() as conn: # TODO: Fix this probably unnecessary roundtrip to the database
+        t = conn.table(settings.form_data_table)
+        res = (
+            t.filter(
+                [
+                    t[settings.form_reference_number_column] == refnr,
+                    t[settings.formdata_fieldname_column] == field_path,
+                ]
+            )
+            .select(settings.formdata_field_value_column_name)
+            .as_scalar()
+            .to_pandas()
+        )
+        if value == res:
+            logger.debug(
+                f"Preventing update due to new value '{value}' being identical to old value '{res}'"
+            )
+            raise PreventUpdate
         query = f"""
             UPDATE {settings.form_data_table}
             SET {settings.formdata_field_value_column_name} = '{value}'
@@ -66,6 +85,24 @@ class EditableField(BaseModel):
     # applies_to_... is used for compatibility with DataEditorDataViewCustom
     applies_to_tables: list[str] = Field(default_factory=list)
     applies_to_forms: list[str] = Field(default_factory=list)
+
+    def __str__(self) -> str:
+        parts = [f"EditableField(path='{self.field_path}')"]
+
+        # Functions
+        parts.append(
+            f"getter={getattr(self.getter_func, '__name__', str(self.getter_func))}"
+        )
+        parts.append(
+            f"updater={getattr(self.update_func, '__name__', str(self.update_func))}"
+        )
+
+        # Guards
+        if self.applies_to_tables or self.applies_to_forms:
+            parts.append(f"applies to tables={self.applies_to_tables}")
+            parts.append(f"applies to forms={self.applies_to_forms}")
+
+        return " | ".join(parts)
 
     def _build_guard_states(self, settings: CallbackSettings) -> list[State]:
         guard_states = []
@@ -110,7 +147,6 @@ class EditableField(BaseModel):
             n_guard = len(guard_states)
             guard_values = args[-n_guard:] if n_guard else ()
             real_args = args[:-n_guard] if n_guard else args
-
             if not self._check_guard(settings, *guard_values):
                 logger.debug("Preventing update")
                 raise PreventUpdate
@@ -139,7 +175,7 @@ class EditableField(BaseModel):
             prevent_initial_call="duplicate",
         )
         def update_field(value, refnr, *args):
-            if ctx.triggered_id != id:
+            if ctx.triggered_id != id: # TODO: Make sure it only triggers on a true update, not just on loading data.
                 raise PreventUpdate
 
             n_guard = len(guard_states)
