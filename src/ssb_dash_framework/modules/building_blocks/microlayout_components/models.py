@@ -59,10 +59,8 @@ class BaseNode(BaseModel):
             info_parts.append(f"{self.label}")
 
         # field_path for InputField or similar
-        if hasattr(self, "field_settings") and hasattr(
-            self.field_settings, "field_path"
-        ):
-            info_parts.append(f"path={self.field_settings.field_path}")
+        if hasattr(self, "field_settings"):
+            info_parts.append(f"path={self.field_settings}")
 
         # klass_code for KlassDropdown/KlassChecklist
         if hasattr(self, "klass_code"):

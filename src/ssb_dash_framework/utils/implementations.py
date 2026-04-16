@@ -252,6 +252,7 @@ class WindowImplementation:
 
         @callback(  # type: ignore[misc]
             Output(f"{self._window_n}-{self.module_name}-modal", "fullscreen"),
+            Output(f"{self._window_n}-{self.module_name}-modal-fullscreen", "children"),
             Input(f"{self._window_n}-{self.module_name}-modal-fullscreen", "n_clicks"),
             State(f"{self._window_n}-{self.module_name}-modal", "fullscreen"),
         )
