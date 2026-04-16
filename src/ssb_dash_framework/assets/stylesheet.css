@@ -496,19 +496,15 @@ MacroModule
 }
 
 .macromodule-bruk-button {
-    background-color: #1a4d7e;
-    color: #ffffff;
-    border: none;
+    color: #2c2c2c !important;
+    background-color: #d4d4d4 !important;
+    border-color: #000 !important;
     padding: 5px 16px;
     border-radius: 4px;
     cursor: pointer;
     font-size: 13px;
     font-weight: bold;
     flex-shrink: 0;
-}
-
-.macromodule-bruk-button:hover {
-    background-color: #255f9a;
 }
 
 /*

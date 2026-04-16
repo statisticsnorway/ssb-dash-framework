@@ -522,7 +522,7 @@ class MacroModule:
                                     className="macromodule-click-popup-label",
                                 ),
                                 html.Button(
-                                    "Bruk",
+                                    "Velg",
                                     id="macromodule-bruk-button",
                                     className="macromodule-bruk-button",
                                     n_clicks=0,
@@ -1328,54 +1328,9 @@ class MacroModule:
         clientside_callback(
             """
             function(cellClicked, rowData) {
-                var noShow = [null, '', {display: 'none'}];
-                if (!cellClicked || !rowData) return noShow;
-
-                var colId = cellClicked.colId;
-                var rowId = cellClicked.rowId;
-                if (rowId == null || ['orgnr_f', 'orgnr_b', 'navn'].indexOf(colId) === -1) {
-                    return noShow;
-                }
-
-                var rowIdx = parseInt(rowId);
-                if (isNaN(rowIdx) || rowIdx >= rowData.length) return noShow;
-
-                var row = rowData[rowIdx];
-                var navn = row.navn || '';
-                var label;
-                if (colId === 'orgnr_b') {
-                    label = 'Bedrift: ' + navn + ' (' + (row.orgnr_b || '') + ')';
-                } else {
-                    label = 'Foretak: ' + navn + ' (' + (row.orgnr_f || '') + ')';
-                }
-
-                var pendingData = {rowId: rowId, colId: colId, rowData: row};
-
-                // Position relative to the detail grid container so the popup
-                // scrolls with the page instead of floating over it.
-                var containerEl = document.querySelector('.macromodule-detail-grid-container');
-                var style;
-                if (containerEl) {
-                    var rect = containerEl.getBoundingClientRect();
-                    var relX = (window._macroModuleLastClickX || 0) - rect.left;
-                    var relY = (window._macroModuleLastClickY || 0) - rect.top;
-                    style = {
-                        display: 'flex',
-                        position: 'absolute',
-                        top: (relY + 12) + 'px',
-                        left: relX + 'px',
-                        zIndex: '9999'
-                    };
-                } else {
-                    style = {
-                        display: 'flex',
-                        position: 'fixed',
-                        top: ((window._macroModuleLastClickY || 0) + 12) + 'px',
-                        left: (window._macroModuleLastClickX || 0) + 'px',
-                        zIndex: '9999'
-                    };
-                }
-                return [pendingData, label, style];
+                return window.dashAgGridFunctions.MacroModule.showClickPopup(
+                    cellClicked, rowData, 'orgnr_f', 'orgnr_b', 'navn'
+                );
             }
             """,
             Output("macromodule-pending-click-store", "data"),
@@ -1386,12 +1341,7 @@ class MacroModule:
         )
 
         clientside_callback(
-            """
-            function(pendingData) {
-                if (!pendingData) return {display: 'none'};
-                return window.dash_clientside.no_update;
-            }
-            """,
+            "window.dashAgGridFunctions.MacroModule.hidePopupOnClear",
             Output("macromodule-click-popup", "style", allow_duplicate=True),
             Input("macromodule-pending-click-store", "data"),
             prevent_initial_call=True,
