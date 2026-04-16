@@ -462,6 +462,7 @@ MacroModule
 .macromodule-detail-grid-container {
     margin-top: 20px;
     height: 750px;
+    position: relative;
 }
 
 .macromodule-detail-grid-container h5 {
@@ -471,6 +472,39 @@ MacroModule
 /* Row styling */
 .macromodule-naring-mismatch {
     opacity: 0.5 !important;
+}
+
+/* Detail grid click-confirmation popup */
+.macromodule-click-popup {
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    border: 1px solid #b0b0b0;
+    border-radius: 5px;
+    padding: 7px 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+    white-space: nowrap;
+    pointer-events: auto;
+}
+
+.macromodule-click-popup-label {
+    color: #333;
+    font-size: 13px;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.macromodule-bruk-button {
+    color: #2c2c2c !important;
+    background-color: #d4d4d4 !important;
+    border-color: #000 !important;
+    padding: 5px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    flex-shrink: 0;
 }
 
 /*

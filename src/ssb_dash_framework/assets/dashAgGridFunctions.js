@@ -273,6 +273,64 @@ window.dashAgGridFunctions.MacroModule = {
         return prefixB !== prefixF;
     },
 
+    // === Function showClickPopup (Show confirmation popup when a name/orgnr cell is clicked in the detail grid) ===
+    showClickPopup(cellClicked, rowData, orgnrFCol, orgnrBCol, namedCol) {
+        var noShow = [null, '', {display: 'none'}];
+        if (!cellClicked || !rowData) return noShow;
+
+        var colId = cellClicked.colId;
+        var rowId = cellClicked.rowId;
+        if (rowId == null || [orgnrFCol, orgnrBCol, namedCol].indexOf(colId) === -1) {
+            return noShow;
+        }
+
+        var rowIdx = parseInt(rowId);
+        if (isNaN(rowIdx) || rowIdx >= rowData.length) return noShow;
+
+        var row = rowData[rowIdx];
+        var navn = row[namedCol] || '';
+        var label;
+        if (colId === orgnrBCol) {
+            label = 'Bedrift: ' + navn + ' (' + (row[orgnrBCol] || '') + ')';
+        } else {
+            label = 'Foretak: ' + navn + ' (' + (row[orgnrFCol] || '') + ')';
+        }
+
+        var pendingData = {rowId: rowId, colId: colId, rowData: row};
+
+        // Position relative to the detail grid container so the popup
+        // scrolls with the page instead of floating over it.
+        var containerEl = document.querySelector('.macromodule-detail-grid-container');
+        var style;
+        if (containerEl) {
+            var rect = containerEl.getBoundingClientRect();
+            var relX = (window._macroModuleLastClickX || 0) - rect.left;
+            var relY = (window._macroModuleLastClickY || 0) - rect.top;
+            style = {
+                display: 'flex',
+                position: 'absolute',
+                top: (relY + 12) + 'px',
+                left: relX + 'px',
+                zIndex: '9999'
+            };
+        } else {
+            style = {
+                display: 'flex',
+                position: 'fixed',
+                top: ((window._macroModuleLastClickY || 0) + 12) + 'px',
+                left: (window._macroModuleLastClickX || 0) + 'px',
+                zIndex: '9999'
+            };
+        }
+        return [pendingData, label, style];
+    },
+
+    // === Function hidePopupOnClear (Hide the confirmation popup when pending data is cleared) ===
+    hidePopupOnClear(pendingData) {
+        if (!pendingData) return {display: 'none'};
+        return window.dash_clientside.no_update;
+    },
+
     // === Function displayDiffColumnHighlight (Mark tilgang & avgang on the diff-column) ===
     displayDiffColumnHighlight(props) {
         if (!props.data) return {};
@@ -306,5 +364,10 @@ window.dashAgGridFunctions.MacroModule = {
 
         return {};
     }
-
 };
+
+// Track last mouse click position so the popup can be anchored to the clicked cell
+document.addEventListener('click', function(e) {
+    window._macroModuleLastClickX = e.clientX;
+    window._macroModuleLastClickY = e.clientY;
+});
