@@ -1,5 +1,55 @@
 window.dashAgGridFunctions = window.dashAgGridFunctions || {};
 
+/* -----------------------------------------------------------------------
+ * Right-click → copy cell value for all AG Grid tables in the app.
+ * Applies globally.
+ * ----------------------------------------------------------------------- */
+(function () {
+    function showCopyNotification(value) {
+        var container = document.getElementById('alert_ephemeral_container');
+        if (!container) return;
+        var now = new Date();
+        var ts = now.getFullYear() + '-' +
+            String(now.getMonth() + 1).padStart(2, '0') + '-' +
+            String(now.getDate()).padStart(2, '0') + ' ' +
+            String(now.getHours()).padStart(2, '0') + ':' +
+            String(now.getMinutes()).padStart(2, '0') + ':' +
+            String(now.getSeconds()).padStart(2, '0');
+        var el = document.createElement('div');
+        el.className = 'alert alert-info mb-2';
+        el.setAttribute('role', 'alert');
+        var small = document.createElement('small');
+        small.className = 'text-muted';
+        small.textContent = ts + ': ';
+        el.appendChild(small);
+        el.appendChild(document.createTextNode('Kopiert: ' + value));
+        container.appendChild(el);
+        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 4000);
+    }
+
+    document.addEventListener('contextmenu', function (e) {
+        if (typeof e.target.closest !== 'function') return;
+        var cell = e.target.closest('.ag-cell') || e.target.closest('[col-id]');
+        if (!cell) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var valueEl = cell.querySelector('.ag-cell-value') || cell;
+        var value = (valueEl.textContent || '').trim();
+        navigator.clipboard.writeText(value).catch(function () {
+            var ta = document.createElement('textarea');
+            ta.value = value;
+            ta.style.cssText = 'position:fixed;opacity:0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        });
+        showCopyNotification(value);
+    }, true);
+
+    console.log('[ag-grid copy] context menu listener registered');
+}());
+
 // MacroModule
 window.dashAgGridFunctions.MacroModule = {
 
