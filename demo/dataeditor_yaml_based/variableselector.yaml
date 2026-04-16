@@ -2,3 +2,6 @@ refnr: refnr
 ident: ident
 time_units:
   aar: year
+grouping_variables:
+  - altinnskjema
+  - variabel
