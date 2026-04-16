@@ -103,6 +103,7 @@ def main_layout(
                                         is_open=False,
                                         placement="end",
                                         backdrop=False,
+                                        scrollable=True,
                                     ),
                                 ],
                             ),
