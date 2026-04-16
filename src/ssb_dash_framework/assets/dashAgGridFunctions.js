@@ -102,10 +102,10 @@ window.dashAgGridFunctions.MacroModule = {
     // === Function displayDiffHeatMap (Heatmap colouring for a matrix-table with +/- 30% diff threshold) ===
     displayDiffHeatMap(props) {
 
-        // Special handling for count row
+        // Special handling for count row — inherit color so dark mode works
         if (props.data && props.data.id === 'count_row') {
             return {
-                color: 'black',
+                color: 'inherit',
             };
         }
 
@@ -162,10 +162,10 @@ window.dashAgGridFunctions.MacroModule = {
     // === Function displaySimpleHeatMap (Simple 2-choice (cold/warm for neg/pos) heatmap) ===
     displaySimpleHeatMap(props) {
 
-        // Special handling for count row
+        // Special handling for count row — inherit color so dark mode works
         if (props.data && props.data.id === 'count_row') {
             return {
-                color: 'black',
+                color: 'inherit',
             };
         }
 
