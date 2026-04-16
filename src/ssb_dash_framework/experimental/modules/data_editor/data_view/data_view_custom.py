@@ -305,6 +305,7 @@ class DataViewCustom(DataEditorDataView):
                         "form_data_field_name_column"
                     ),
                 )
+                logger.debug(f"Built microlayout:\n{microlayout}")
                 components.append(microlayout)
             else:
                 components.extend(self.build_layout(value))
@@ -323,23 +324,36 @@ class DataViewCustom(DataEditorDataView):
         pass
 
     @classmethod
-    def convert_typed_to_keyed(cls, node):
+    def convert_typed_to_keyed(
+        cls, node, applies_to_tables=None, applies_to_forms=None
+    ):
+        logger.debug(f"inputs: {node}, {applies_to_tables}, {applies_to_forms}")
         if isinstance(node, list):
-            return [cls.convert_typed_to_keyed(item) for item in node]
+            return [
+                cls.convert_typed_to_keyed(item, applies_to_tables, applies_to_forms)
+                for item in node
+            ]
 
         if isinstance(node, dict):
             if node.get("type") == "microlayout":
                 inner = {k: v for k, v in node.items() if k != "type"}
                 if "layout" in inner:
                     inner["layout"] = [
-                        convert_node(child)
-                        for child in cls.convert_typed_to_keyed(inner["layout"])
+                        convert_node(child, applies_to_tables, applies_to_forms)
+                        for child in cls.convert_typed_to_keyed(
+                            inner["layout"], applies_to_tables, applies_to_forms
+                        )
                     ]
                 if "children" in inner:
-                    inner["children"] = cls.convert_typed_to_keyed(inner["children"])
+                    inner["children"] = cls.convert_typed_to_keyed(
+                        inner["children"], applies_to_tables, applies_to_forms
+                    )
                 return {"microlayout": inner}
 
-            return {k: cls.convert_typed_to_keyed(v) for k, v in node.items()}
+            return {
+                k: cls.convert_typed_to_keyed(v, applies_to_tables, applies_to_forms)
+                for k, v in node.items()
+            }
 
         return node
 
@@ -354,7 +368,11 @@ class DataViewCustom(DataEditorDataView):
         if isinstance(config, list):
             config = config[0]
 
-        config["layout"] = cls.convert_typed_to_keyed(config["layout"])
+        config["layout"] = cls.convert_typed_to_keyed(
+            config["layout"],
+            applies_to_tables=config["applies_to_tables"],
+            applies_to_forms=config["applies_to_forms"],
+        )
 
         return cls(
             applies_to_tables=config["applies_to_tables"],
@@ -402,15 +420,40 @@ class DataViewCustom(DataEditorDataView):
         return lines
 
 
-def convert_node(node: dict) -> dict:
+def convert_node_build_field_settings(node, attribute, value):
+    logger.debug(f"node: {node}\nattribute: {attribute}\nvalue: {value}")
+    if "field_settings" not in node:
+        node["field_settings"] = {}
+    node["field_settings"].update({attribute: value})
+    logger.debug(node, attribute, value)
+    return node
 
-    if "label" in node:
-        node["label"] = node["label"]
 
+def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> dict:
+    logger.debug(
+        f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
+    )
+    if applies_to_tables is None:
+        applies_to_tables = []
+    if applies_to_forms is None:
+        applies_to_forms = []
     if "variable" in node:
-        node["field_settings"] = {"field_path": node["variable"]}
+        node = convert_node_build_field_settings(node, "field_path", node["variable"])
+        node = convert_node_build_field_settings(
+            node, "applies_to_tables", applies_to_tables
+        )
+        node = convert_node_build_field_settings(
+            node, "applies_to_forms", applies_to_forms
+        )
 
     if "children" in node:
-        node["children"] = [convert_node(child) for child in node["children"]]
+        node["children"] = [
+            convert_node(
+                child,
+                applies_to_tables=applies_to_tables,
+                applies_to_forms=applies_to_forms,
+            )
+            for child in node["children"]
+        ]
 
     return node
