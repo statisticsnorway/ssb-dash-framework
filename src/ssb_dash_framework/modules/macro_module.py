@@ -1242,7 +1242,8 @@ class MacroModule:
                     }
                     if col.endswith("_x"):
                         col_def["cellStyle"] = {
-                            "backgroundColor": "#e8e9eb"  # light grey for previous year
+                            "backgroundColor": "#e8e9eb",  # light grey for previous year
+                            "color": "black",
                         }
 
                 if col in self.status_change_detail_grid:

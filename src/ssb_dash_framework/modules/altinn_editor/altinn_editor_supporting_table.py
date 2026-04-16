@@ -107,7 +107,7 @@ class AltinnSupportTable:
                 if self.suffix_to_colour_grey and col.endswith(
                     tuple(self.suffix_to_colour_grey)
                 ):
-                    col_def["cellStyle"] = {"backgroundColor": "#e8e9eb"}
+                    col_def["cellStyle"] = {"backgroundColor": "#e8e9eb", "color": "black"}
                 column_defs.append(col_def)
             if self.pin_leftmost_column and column_defs:
                 column_defs[0]["pinned"] = "left"
