@@ -6,7 +6,7 @@ window.dashAgGridFunctions = window.dashAgGridFunctions || {};
  * ----------------------------------------------------------------------- */
 (function () {
     function showCopyNotification(value) {
-        var container = document.getElementById('alert_ephemeral_container');
+        var container = document.getElementById('alert-container-bottom-left');
         if (!container) return;
         var now = new Date();
         var ts = now.getFullYear() + '-' +
