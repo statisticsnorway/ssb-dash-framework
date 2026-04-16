@@ -50,7 +50,7 @@ def default_updater(
     value, refnr: str, settings: CallbackSettings, field_path: str, *args
 ):
     logger.debug(f"Updating {field_path}")
-    with get_connection() as conn:
+    with get_connection() as conn: # TODO: Fix this probably unnecessary roundtrip to the database
         t = conn.table(settings.form_data_table)
         res = (
             t.filter(
@@ -175,7 +175,7 @@ class EditableField(BaseModel):
             prevent_initial_call="duplicate",
         )
         def update_field(value, refnr, *args):
-            if ctx.triggered_id != id:
+            if ctx.triggered_id != id: # TODO: Make sure it only triggers on a true update, not just on loading data.
                 raise PreventUpdate
 
             n_guard = len(guard_states)
