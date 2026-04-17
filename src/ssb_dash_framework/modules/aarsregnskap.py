@@ -4,8 +4,8 @@ from abc import ABC
 from abc import abstractmethod
 from typing import ClassVar
 
+import gcsfs
 import dash_bootstrap_components as dbc
-from dapla import FileClient
 from dash import callback
 from dash import html
 from dash.dependencies import Input
@@ -204,7 +204,7 @@ class Aarsregnskap(ABC):
             path_to_file = f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/bildefil/g{aar}/{orgnr}_{aar}.pdf"
             logger.debug(f"Trying to open file: {path_to_file}")
             try:
-                fs = FileClient.get_gcs_file_system()
+                fs = gcsfs.GCSFileSystem()
                 with fs.open(
                     path_to_file,
                     "rb",
