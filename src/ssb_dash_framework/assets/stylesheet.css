@@ -417,13 +417,12 @@ MacroModule
     font-size: 16px;
     font-weight: 510;
     margin-bottom: 6px;
-    color: #3f3f3f;
 }
 
 .macromodule-module-title {
     font-size: 22px;
     font-weight: bold;
-    color: #666666;
+    opacity: 0.85 !important;
     line-height: 1.1;
     margin-bottom: -15;
 }
@@ -431,7 +430,7 @@ MacroModule
 .macromodule-module-subtitle {
     font-size: 20px;
     font-weight: bold;
-    color: #616161;
+    opacity: 0.85 !important;
     margin-bottom: 35px;
     margin-top: -10px;
 }

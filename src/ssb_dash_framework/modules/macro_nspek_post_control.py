@@ -224,10 +224,13 @@ class MacroNspekPostControl:
                             children=[
                                 html.H1(
                                     [
-                                        "Sjekk aggregerte",
+                                        "Aggregerte",
                                         html.Br(),
-                                        "næringsoppgaveposter",
+                                        "næringsoppgave",
+                                        html.Br(),
+                                        "-poster"
                                     ],
+                                    className="macromodule-module-title"
                                 ),
                                 html.Label(
                                     "Velg foretak eller bedrift",
