@@ -12,6 +12,7 @@ from dash import html
 from dash.exceptions import PreventUpdate
 
 from ssb_dash_framework.setup import VariableSelector
+from ssb_dash_framework.utils.config_tools.config_file_handler import config_parser_yaml
 from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
@@ -359,10 +360,9 @@ class DataViewCustom(DataEditorDataView):
 
     @classmethod
     def from_yaml(cls, yaml_path: str) -> "DataViewCustom":
-        import yaml
 
-        with open(yaml_path) as f:
-            config = yaml.safe_load(f)
+        
+        config = config_parser_yaml(yaml_path)
 
         # Handle both a top-level dict and a single-item list
         if isinstance(config, list):

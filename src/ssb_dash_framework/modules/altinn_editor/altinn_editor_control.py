@@ -86,6 +86,7 @@ class AltinnEditorControl:
                     is_open=False,
                     placement="end",
                     backdrop=False,
+                    scrollable=True,
                     style={"width": "50%", "height": "100%"},
                 ),
             ]

@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap");
+
 /*
 The idea with this file is to have all the style rules that are used in the SSB Dash Framework in one place.
 
@@ -5,6 +7,20 @@ Creating a css class for each component used instead of using inline styles keep
 
 Another upside is that updating the stylesheet.css instantly makes visible the changes you've made in the running app, making it easier to develop and nitpick.
 */
+
+/*
+Theme consistency — normalize dark theme to match light (Lumen) standards
+*/
+
+body {
+    font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    font-weight: 400 !important;
+}
+
+.nav-link {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
 
 /*
 Main layout
@@ -462,6 +478,7 @@ MacroModule
 .macromodule-detail-grid-container {
     margin-top: 20px;
     height: 750px;
+    position: relative;
 }
 
 .macromodule-detail-grid-container h5 {
@@ -471,6 +488,39 @@ MacroModule
 /* Row styling */
 .macromodule-naring-mismatch {
     opacity: 0.5 !important;
+}
+
+/* Detail grid click-confirmation popup */
+.macromodule-click-popup {
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    border: 1px solid #b0b0b0;
+    border-radius: 5px;
+    padding: 7px 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+    white-space: nowrap;
+    pointer-events: auto;
+}
+
+.macromodule-click-popup-label {
+    color: #333;
+    font-size: 13px;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.macromodule-bruk-button {
+    color: #2c2c2c !important;
+    background-color: #d4d4d4 !important;
+    border-color: #000 !important;
+    padding: 5px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    flex-shrink: 0;
 }
 
 /*
@@ -562,3 +612,88 @@ ParquetEditor
 [id$="-parqueteditor-table"] {
     height: 100% !important;
 }
+
+/*
+Dark mode — ag-grid table overrides
+All tables use ag-theme-alpine which is light-only by default.
+When .dark-mode is on the body we override the ag-grid CSS variables
+to match the darkly Bootstrap theme.
+*/
+
+.dark-mode .ag-theme-alpine {
+    --ag-background-color: #303030;
+    --ag-foreground-color: #fff;
+    --ag-header-background-color: #222;
+    --ag-header-foreground-color: #fff;
+    --ag-odd-row-background-color: #3a3a3a;
+    --ag-border-color: rgba(255, 255, 255, 0.15);
+    --ag-row-hover-color: rgba(255, 255, 255, 0.08);
+    --ag-selected-row-background-color: rgba(55, 90, 127, 0.5);
+    --ag-range-selection-background-color: rgba(55, 90, 127, 0.3);
+    --ag-cell-horizontal-border: solid rgba(255, 255, 255, 0.08);
+    --ag-header-column-separator-color: rgba(255, 255, 255, 0.15);
+    --ag-input-focus-border-color: #375a7f;
+    --ag-chip-background-color: rgba(255, 255, 255, 0.1);
+    --ag-input-background-color: #3a3a3a;
+    --ag-disabled-foreground-color: rgba(255, 255, 255, 0.5);
+    --ag-modal-overlay-background-color: rgba(0, 0, 0, 0.5);
+    --ag-panel-background-color: #303030;
+    --ag-tool-panel-background-color: #2a2a2a;
+    --ag-filter-tool-panel-group-title-bar-background-color: #2a2a2a;
+    --ag-subheader-background-color: #272727;
+    --ag-subheader-toolbar-background-color: #272727;
+    --ag-control-panel-background-color: #2a2a2a;
+    --ag-side-panel-border-color: rgba(255, 255, 255, 0.15);
+}
+
+/*
+Dark mode — disabled inputs and textareas (e.g. se kontaktinfo)
+and enabled inputs in the variable selector offcanvas.
+Match the primary blue used by Bootstrap darkly tabs.
+*/
+
+.dark-mode .form-control:disabled,
+.dark-mode .form-control[readonly],
+.dark-mode textarea:disabled,
+.dark-mode textarea[readonly] {
+    background-color: #375a7f !important;
+    color: #fff !important;
+    border-color: #4a6fa5 !important;
+    opacity: 1 !important;
+}
+
+.dark-mode #variable-selector-offcanvas .form-control {
+    background-color: #375a7f !important;
+    color: #fff !important;
+    border-color: #4a6fa5 !important;
+}
+
+/*
+Dark mode — MacroModule radio buttons and multi-select dropdown
+Hard-coded light colors replaced with darkly-compatible equivalents.
+*/
+
+.dark-mode .macromodule-radio-buttons label {
+    border-color: #555;
+    color: #fff;
+}
+
+.dark-mode .macromodule-radio-buttons label:has(input[type="radio"]:checked) {
+    background-color: #375a7f;
+    color: #fff;
+    border-color: #375a7f;
+}
+
+.dark-mode .macromodule-naring-dropdown .Select-value {
+    background-color: #375a7f !important;
+}
+
+.dark-mode .macromodule-naring-dropdown .Select-value-label {
+    color: #fff !important;
+}
+
+.dark-mode .macromodule-naring-dropdown .Select-value-icon {
+    color: #fff !important;
+}
+
+
