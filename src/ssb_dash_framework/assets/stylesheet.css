@@ -804,4 +804,28 @@ Hard-coded light colors replaced with darkly-compatible equivalents.
     color: #fff !important;
 }
 
+/*
+Dark mode — raised tabs effect
+Darkly does not include Lumen's nav-tabs raise/hover animation,
+so replicate it here using darkly's own CSS variables.
+*/
+
+.dark-mode .nav-tabs .nav-link,
+.dark-mode .nav-tabs .nav-link.disabled,
+.dark-mode .nav-tabs .nav-link.disabled:focus,
+.dark-mode .nav-tabs .nav-link.disabled:hover {
+    margin-top: 6px;
+    border-color: var(--bs-border-color);
+    transition: padding-bottom .2s ease-in-out, margin-top .2s ease-in-out, border-bottom .2s ease-in-out;
+}
+
+.dark-mode .nav-tabs .nav-link.active,
+.dark-mode .nav-tabs .nav-link:not(.disabled):focus,
+.dark-mode .nav-tabs .nav-link:not(.disabled):hover {
+    padding-bottom: calc(.5rem + 6px);
+    margin-top: 0;
+    color: var(--bs-body-color);
+    border-bottom-color: transparent;
+}
+
 
