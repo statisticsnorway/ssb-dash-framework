@@ -21,7 +21,7 @@ dagcomponentfuncs.DropdownRenderer = function(props) {
 
     function onChange(e) {
         const val = e.target.value === "" ? null : e.target.value;
-        props.setValue(val);
+        props.node.setDataValue(props.colDef.field, val);  // triggers cellValueChanged
     }
 
     return React.createElement(

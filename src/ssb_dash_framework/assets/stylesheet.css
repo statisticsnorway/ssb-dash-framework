@@ -12,6 +12,7 @@ Another upside is that updating the stylesheet.css instantly makes visible the c
 Theme consistency — normalize dark theme to match light (Lumen) standards
 */
 
+
 body {
     font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
     font-weight: 400 !important;
@@ -589,14 +590,28 @@ Meldingsbasen
 }
 
 .meldingsbasen-foretak-grid-container {
-    min-height: 190px;
-    max-height: 200px;
+    min-height: 200px;
+    max-height: 270px;
 }
 
 .meldingsbasen-bedrift-grid-container {
     min-height: 190px;
     max-height: 600px;
 }
+
+.meldingsbasen-foretak-grid-container .ag-header-cell-label,
+.meldingsbasen-bedrift-grid-container .ag-header-cell-label,
+.meldingsbasen-foretak-grid-container .ag-cell,
+.meldingsbasen-bedrift-grid-container .ag-cell {
+    line-height: 1.3;
+    white-space: normal;
+    justify-content: center;
+    display: flex; 
+    align-items: center;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
 
 .meldingsbasen-label {
     font-weight: 600;

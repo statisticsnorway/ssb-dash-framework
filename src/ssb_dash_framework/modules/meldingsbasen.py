@@ -11,7 +11,7 @@ import ibis
 from ibis import _
 from ibis.backends import BaseBackend
 import logging
-from typing import Any
+from typing import Any, Literal
 from typing import ClassVar
 from typing import Literal
 from ibis.expr.types.relations import Table
@@ -47,7 +47,7 @@ SELECT_COLUMNS_FORETAK = [
     "fritekst",
     "antall_ansatte",
     "omsetning",
-    "sn07_options"
+    "sn07_options",
 ]
 SELECT_COLUMNS_BEDRIFT = [
     "orgnr",
@@ -63,7 +63,7 @@ SELECT_COLUMNS_BEDRIFT = [
     "fritekst",
     "antall_ansatte",
     "omsetning",
-    "sn07_options"
+    "sn07_options",
 ]
 
 
@@ -82,36 +82,13 @@ def klass_korrespondanse_naring(naring: str) -> dict[str, Any]:
         - sn2007_options: list of {code, name} dicts (1 = auto-fill, >1 = user selects)
         - needs_selection: bool
     """
-    # korr = KlassCorrespondence(correspondence_id=2749)
-
-    # sn_2025_df = KlassVersion(version_id="3218").data
-    # sn_2007_df = KlassVersion(version_id="30").data
-    # sn_2025_naring = sn_2025_df[sn_2025_df.code == naring_sjekk][
-    #     ["code", "name"]
-    # ].reset_index(drop=True)
-    # sn_2007_naring = sn_2007_df[sn_2007_df.code == naring_sjekk][
-    #     ["code", "name"]
-    # ].reset_index(drop=True)
-
-    # korr_df = korr.data
-    # korr_df = korr_df[korr_df.source_code == naring]
-
-    # if korr_df.empty:
-    #     # df["sn07_1"] = df["sn2025_1"]
-    #     return sn_2025_naring.code[0], sn_2025_naring.name[0]
-    # else:
-    #     korr_naring = korr_df[korr_df.sourceCode == naring_sjekk]
-    #     if len(korr_naring) > 1:
-    #         # dropdown selection for user
-    #         options = korr_naring[["targetCode", "targetName"]].drop_duplicates()
-    #         return test["targetCode"], test["targetName"]
-    #     else:
-    #         return korr_naring.targetCode[0], korr_naring.targetName[0]
     korr = KlassCorrespondence(correspondence_id=2749)
     sn_2025_df = KlassVersion(version_id="3218").data
     sn_2007_df = KlassVersion(version_id="30").data
 
-    sn2025_row = sn_2025_df[sn_2025_df.code == naring][["code", "name"]].reset_index(drop=True)
+    sn2025_row = sn_2025_df[sn_2025_df.code == naring][["code", "name"]].reset_index(
+        drop=True
+    )
     sn2025_name = sn2025_row.name[0] if not sn2025_row.empty else ""
 
     korr_df = korr.data
@@ -127,7 +104,9 @@ def klass_korrespondanse_naring(naring: str) -> dict[str, Any]:
         }
 
     options = korr_df[["targetCode", "targetName"]].drop_duplicates()
-    sn2007_options = [{"code": r.targetCode, "name": r.targetName} for _, r in options.iterrows()]
+    sn2007_options = [
+        {"code": r.targetCode, "name": r.targetName} for _, r in options.iterrows()
+    ]
 
     return {
         "sn2025_code": naring,
@@ -285,6 +264,26 @@ class Meldingsbasen:
 
         return layout
 
+    def _enrich_naring_names(self, df: pd.DataFrame) -> pd.DataFrame:
+        df["sn07_navn"] = None
+        df["sn2025_navn"] = None
+        
+        sn_2025_df = KlassVersion(version_id="3218").data
+        sn_2007_df = KlassVersion(version_id="30").data
+        
+        for idx, row in df.iterrows():
+            if pd.notna(row.get("sn07_1")) and row["sn07_1"]:
+                match = sn_2007_df[sn_2007_df.code == row["sn07_1"]]
+                if not match.empty:
+                    df.at[idx, "sn07_navn"] = match.iloc[0]["name"]
+            
+            if pd.notna(row.get("sn2025_1")) and row["sn2025_1"]:
+                match = sn_2025_df[sn_2025_df.code == row["sn2025_1"]]
+                if not match.empty:
+                    df.at[idx, "sn2025_navn"] = match.iloc[0]["name"]
+        
+        return df
+
     def _handle_naring_edit(self, edited, rows, column_defs, alert_store):
         """
         Shared logic for handling sn2025_1 edits in both foretak and bedrift grids.
@@ -326,20 +325,33 @@ class Meldingsbasen:
                 df.loc[df["orgnr"] == orgnr, "sn07_navn"] = sn07["name"]
 
                 alert_store = [
-                    create_alert(f"sn2025_1 for {orgnr} oppdatert til {new_naring} - {sn07_name}, og sn07_1 endret til {sn07_code} - {sn07_name}", "success", ephemeral=True, duration=6),
+                    create_alert(
+                        f"sn2025_1 for {orgnr} endret til {new_naring}, og sn07_1 endret til {sn07_code}!",
+                        "success",
+                        ephemeral=True,
+                        duration=6,
+                    ),
                     *alert_store,
                 ]
             else:
                 # Multiple options — put them in sn07_1 cell as dropdown options
                 options = [o["code"] for o in result["sn2007_options"]]
-                option_labels = [f"{o['code']} {o['name']}" for o in result["sn2007_options"]]
+                option_labels = [
+                    f"{o['code']} {o['name']}" for o in result["sn2007_options"]
+                ]
 
                 if "sn07_options" not in df.columns:
                     df["sn07_options"] = None
-                
+
                 # Mark the cell as needing selection — store options in a separate col
                 df.loc[df["orgnr"] == orgnr, "sn07_1"] = None
-                df.at[df[df["orgnr"] == orgnr].index[0], "sn07_options"] = result["sn2007_options"]  # store for JS renderer
+                df.at[df[df["orgnr"] == orgnr].index[0], "sn07_options"] = [
+                    {"code": str(o["code"]), "name": str(o["name"])}
+                    for o in result["sn2007_options"]
+                ]
+                # df.at[df[df["orgnr"] == orgnr].index[0], "sn07_options"] = result[
+                #     "sn2007_options"
+                # ]  # store for JS renderer
 
                 # Update column def for sn07_1 to use dropdown with these specific options
                 for col_group in column_defs:
@@ -350,11 +362,16 @@ class Meldingsbasen:
                             child["cellRendererParams"] = {
                                 "optionsField": "sn07_options",
                                 "valueField": "code",
-                                "labelField": "name"
+                                "labelField": "name",
                             }
 
                 alert_store = [
-                    create_alert(f"sn2025_1 for {orgnr} oppdatert til {new_naring}! sn07_1 må velges manuelt.", "success", ephemeral=True, duration=6),
+                    create_alert(
+                        f"sn2025_1 for {orgnr} endret til {new_naring}! sn07_1 må velges manuelt.",
+                        "success",
+                        ephemeral=True,
+                        duration=6,
+                    ),
                     *alert_store,
                 ]
 
@@ -364,39 +381,112 @@ class Meldingsbasen:
         df.loc[df["orgnr"] == orgnr, "sn07_1"] = None
         df.loc[df["orgnr"] == orgnr, "sn07_et"] = None
         sn25_name = result["sn2025_name"]
-        
+
         alert_store = [
-            create_alert(f"sn2025_1 for {orgnr} endret til {new_naring} - {sn25_name},\nog sn07_1 endret til blank (liten enhet, oms < 5 mil og/eller antall ansatte < 9)", "success", ephemeral=True, duration=8),
+            create_alert(
+                f"sn2025_1 for {orgnr} endret til {new_naring}, og sn07_1 endret til blank (liten enhet, oms < 5 mil og/eller antall ansatte < 9)",
+                "success",
+                ephemeral=True,
+                duration=8,
+            ),
             *alert_store,
         ]
         return df.to_dict("records"), column_defs, alert_store
 
-    def _split_sn07_selection(self, edited, rows, alert_store):
+    def _split_sn07_selection(self, edited, rows, column_defs, alert_store):
+        """
+        After user has selected an SN value in sn07_1, it splits the code from the name/label into their separate columns.
+        The code is moved to the "sn07_1" column, and the name to the "sn07_navn" column.
+        Example input:
+            sn07_1 (from "edited" data): "01.190 Dyrking av ettårige vekster ellers"
+        Output:
+            sn07_1 -> "01.190"
+            sn07_navn -> "Dyrking av ettårige vekster ellers"
+        """
         if not edited or edited[0].get("colId") != "sn07_1":
             raise PreventUpdate
 
         selected = edited[0]["data"]["sn07_1"]
-        selected_code = selected[:6] # fetch sn-code
+        # selected_code = selected[:6]  # fetch sn-code
         orgnr = edited[0]["data"]["orgnr"]
 
         df = pd.DataFrame(rows)
         row_idx = df[df["orgnr"] == orgnr].index[0]
-        sn07_options = df.at[row_idx, "sn07_options"]
-
+        
+        # Look up name from stored options
         name = ""
-        if sn07_options:
-            match = next((o for o in sn07_options if o["code"] == selected), None)
-            if match:
-                name = match["name"]
+        if "sn07_options" in df.columns:
+            sn07_options = df.at[row_idx, "sn07_options"]
+            if sn07_options and isinstance(sn07_options, list):
+                match = next((o for o in sn07_options if o["code"] == selected), None)
+                if match:
+                    name = match["name"]
+                    selected = match["code"]  # ensure only code is stored
 
-        df.at[row_idx, "sn07_1"] = selected_code
+        df.at[row_idx, "sn07_1"] = selected
         df.at[row_idx, "sn07_navn"] = name
+        df.at[row_idx, "sn07_options"] = None  # clear options after selection
+
+        # Reset sn07_1 column def back to plain text
+        for col_group in column_defs:
+            for child in col_group.get("children", []):
+                if child["field"] == "sn07_1":
+                    child.pop("cellRenderer", None)
+                    child.pop("cellRendererParams", None)
+                    child["editable"] = True
+
 
         alert_store = [
-                    create_alert(f"sn07_1 for {orgnr} oppdatert til {selected_code} - {name}!", "success", ephemeral=True, duration=6),
-                    *alert_store,
-                ]
-        return df.to_dict("records"), alert_store
+            create_alert(
+                f"sn07_1 for {orgnr} oppdatert til {selected}!",
+                "success",
+                ephemeral=True,
+                duration=6,
+            ),
+            *alert_store,
+        ]
+        return df.to_dict("records"), column_defs, alert_store
+
+    def _check_sn_input(self, edited, alert_store) -> tuple[Literal[bool], list[Any]]:
+        """
+        Logical checks for the sn2025_1 column to make sure the user puts in a valid value.
+        """
+        edit = edited[0]["data"]["sn2025_1"]
+        old_value = edited[0]["oldValue"]
+        print(f"blank_before: {old_value}")
+        if not edit and old_value != None:
+            return False, alert_store
+
+        orgnr: Any = edited[0]["data"]["orgnr"]
+
+        if not isinstance(edit, str) or len(edit) != 6 or "." not in edit:
+            alert_store = [
+                create_alert(
+                    f"Invalid format for {orgnr}: You wrote: {edit}, expected: xx.xxx. Example: 01.190.",
+                    "error",
+                    ephemeral=True,
+                    duration=10,
+                    position="center",
+                ),
+                *alert_store,
+            ]
+            return False, alert_store
+
+        sn_klass_check = klass_korrespondanse_naring(edit)
+        if sn_klass_check["sn2025_name"] == "" or sn_klass_check["sn2007_options"][0]["name"] == "":
+            alert_store = [
+                create_alert(
+                    f"{edit} is not a valid SN code",
+                    "error",
+                    ephemeral=True,
+                    duration=10,
+                    position="center",
+                ),
+                *alert_store,
+            ]
+            return False, alert_store
+
+        return True, alert_store
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the Meldingsbasen module."""
@@ -456,6 +546,8 @@ class Meldingsbasen:
             if "nace_2007" not in df.columns:
                 df["nace_2007"] = None
 
+            df = self._enrich_naring_names(df)
+
             return df.to_dict("records")
 
         # 2. Display foretak grid - fires on store change OR checklist change (no data fetching)
@@ -488,11 +580,19 @@ class Meldingsbasen:
                 {"field": "org_form", "headerName": "org_form"},
                 {"field": "navn", "headerName": "navn"},
                 {"field": "sn07_1", "headerName": "sn07_1"},
-                {"field": "sn07_navn",   "headerName": "sn07 navn",   "editable": False},
-                
+                {"field": "sn07_navn", "headerName": "sn07 navn", "editable": False, "wrapText": True,
+    "autoHeight": True,
+    "cellStyle": {"whiteSpace": "normal"}},
                 {"field": "sn07_et", "headerName": "endring_sn07", "editable": True},
                 {"field": "sn2025_1", "headerName": "sn2025_1", "editable": True},
-                {"field": "sn2025_navn", "headerName": "sn2025 navn", "editable": False},
+                {
+                    "field": "sn2025_navn",
+                    "headerName": "sn2025 navn",
+                    "editable": False,
+                    "wrapText": True,
+    "autoHeight": True,
+    "cellStyle": {"whiteSpace": "normal"}
+                },
                 {
                     "field": "sn25_et",
                     "headerName": "endring_sn25",
@@ -506,7 +606,9 @@ class Meldingsbasen:
                     "editable": True,
                     "cellEditor": "agDateCellEditor",
                 },
-                {"field": "fritekst", "headerName": "fritekst", "editable": True},
+                {"field": "fritekst", "headerName": "fritekst", "editable": True, "wrapText": True,
+    "autoHeight": True,
+    "cellStyle": {"whiteSpace": "normal"}},
             ]
             column_defs = [{"headerName": "BoF", "children": bof_children}]
             if skjemadata:
@@ -593,6 +695,8 @@ class Meldingsbasen:
                     key=lambda x: x.map(lambda v: 0 if v == orgnr_bedrift else 1),
                 )
 
+            df = self._enrich_naring_names(df)
+
             return df.to_dict("records")
 
         # 4. Display bedrift grid - fires on store change OR checklist change (no data fetching)
@@ -625,10 +729,19 @@ class Meldingsbasen:
                 {"field": "org_form", "headerName": "org_form"},
                 {"field": "navn", "headerName": "navn"},
                 {"field": "sn07_1", "headerName": "sn07_1"},
-                {"field": "sn07_navn",   "headerName": "sn07 navn",   "editable": False},
+                {"field": "sn07_navn", "headerName": "sn07 navn", "editable": False, "wrapText": True,
+    "autoHeight": True,
+    "cellStyle": {"whiteSpace": "normal"}},
                 {"field": "sn07_et", "headerName": "endring_sn07", "editable": True},
                 {"field": "sn2025_1", "headerName": "sn2025_1", "editable": True},
-                {"field": "sn2025_navn", "headerName": "sn2025 navn", "editable": False},
+                {
+                    "field": "sn2025_navn",
+                    "headerName": "sn2025 navn",
+                    "editable": False,
+                    "wrapText": True,
+    "autoHeight": True,
+    "cellStyle": {"whiteSpace": "normal"}
+                },
                 {
                     "field": "sn25_et",
                     "headerName": "endring_sn25",
@@ -642,7 +755,9 @@ class Meldingsbasen:
                     "editable": True,
                     "cellEditor": "agDateCellEditor",
                 },
-                {"field": "fritekst", "headerName": "fritekst", "editable": True},
+                {"field": "fritekst", "headerName": "fritekst", "editable": True, "wrapText": True,
+    "autoHeight": True,
+    "cellStyle": {"whiteSpace": "normal"}},
             ]
             column_defs = [{"headerName": "BoF", "children": bof_children}]
             if skjemadata:
@@ -678,14 +793,42 @@ class Meldingsbasen:
             prevent_initial_call=True,
         )
         def edit_bedrift(edited, rows, column_defs, alert_store):
-            if edited[0]["colId"] == "sn2025_1":
-                row_data, column_defs, alert_store = self._handle_naring_edit(edited, rows, column_defs, alert_store)
-                return row_data, column_defs, alert_store
-            elif edited[0]["colId"] == "sn07_1":
-                row_data, alert_store = self._split_sn07_selection(edited, rows, alert_store)
-                return row_data, column_defs, alert_store
-            raise PreventUpdate
+            alert_store = alert_store or []
+            edited_col = edited[0]["colId"]
+            if edited_col not in ("sn2025_1", "sn07_1"):
+                raise PreventUpdate
 
+            valid_check, alert_store = self._check_sn_input(edited, alert_store)
+            if valid_check == False:
+                changed = edited[0]
+                orgnr = changed["data"]["orgnr"]
+                df = pd.DataFrame(rows)
+                df.loc[df["orgnr"] == orgnr, "sn2025_1"] = changed["oldValue"]
+                return df.to_dict("records"), column_defs, alert_store
+
+            if edited_col == "sn2025_1":
+                row_data, column_defs, alert_store = self._handle_naring_edit(
+                    edited, rows, column_defs, alert_store
+                )
+                return row_data, column_defs, alert_store
+            elif edited_col == "sn07_1":
+                row_data, column_defs, alert_store = self._split_sn07_selection(
+                    edited, rows, column_defs, alert_store
+                )
+                return row_data, column_defs, alert_store
+                # orgnr = edited[0]["data"]["orgnr"]
+                # selected = edited[0]["data"]["sn07_1"]
+                # alert_store = [
+                #     create_alert(
+                #         f"sn07_1 for {orgnr} endret til {selected}!",
+                #         "success",
+                #         ephemeral=True,
+                #         duration=6,
+                #     ),
+                #     *alert_store,
+                # ]
+                # return rows, column_defs, alert_store
+            raise PreventUpdate
 
         @callback(
             Output("meldingsbasen-foretak-grid", "rowData", allow_duplicate=True),
@@ -698,12 +841,41 @@ class Meldingsbasen:
             prevent_initial_call=True,
         )
         def edit_foretak(edited, rows, column_defs, alert_store):
-            if edited[0]["colId"] == "sn2025_1":
-                row_data, column_defs, alert_store = self._handle_naring_edit(edited, rows, column_defs, alert_store)
+            alert_store = alert_store or []
+            edited_col = edited[0]["colId"]
+            if edited_col not in ("sn2025_1", "sn07_1"):
+                raise PreventUpdate
+
+            valid_check, alert_store = self._check_sn_input(edited, alert_store)
+            if valid_check == False:
+                changed = edited[0]
+                orgnr = changed["data"]["orgnr"]
+                df = pd.DataFrame(rows)
+                df.loc[df["orgnr"] == orgnr, "sn2025_1"] = changed["oldValue"]
+                return df.to_dict("records"), column_defs, alert_store
+
+            if edited_col == "sn2025_1":
+                row_data, column_defs, alert_store = self._handle_naring_edit(
+                    edited, rows, column_defs, alert_store
+                )
                 return row_data, column_defs, alert_store
-            elif edited[0]["colId"] == "sn07_1":
-                row_data, alert_store = self._split_sn07_selection(edited, rows, alert_store)
+            elif edited_col == "sn07_1":
+                row_data, column_defs, alert_store = self._split_sn07_selection(
+                    edited, rows, column_defs, alert_store
+                )
                 return row_data, column_defs, alert_store
+                # orgnr = edited[0]["data"]["orgnr"]
+                # selected = edited[0]["data"]["sn07_1"]
+                # alert_store = [
+                #     create_alert(
+                #         f"sn07_1 for {orgnr} endret til {selected}!",
+                #         "success",
+                #         ephemeral=True,
+                #         duration=6,
+                #     ),
+                #     *alert_store,
+                # ]
+                return rows, column_defs, alert_store
             raise PreventUpdate
 
 
