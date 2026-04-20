@@ -5,20 +5,18 @@ description = "SSB Dash Framework"
 authors = [{ name = "Magnus Theodor Engh", email = "dor@ssb.no" }]
 license = "GPL-3.0"
 readme = "README.md"
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.12"
 dynamic = ["classifiers"]
 # TODO: fix rpy2 dependencies.
 # Note that rpy2, rpy2-rinterface and rpy2-robjects are temporarily locked to specific versions.
 dependencies = [
     "click>=8.0.1",
-    "dapla-toolbelt (>=2.0.8, <5.0.0)",  # Used for reading pdf's
     "mpmath>=1.3.0", # Pimemorizer uses this
     "orjson (>=3.10.16,<4.0.0)",
     "ipykernel (>=6.29.5,<7.0.0)",
     "geopandas (>=1.1.1,<2.0.0)",
-    "ssb-eimerdb (>=0.2.6,<0.3.0)",
+#    "ssb-eimerdb (>=0.2.6,<0.3.0)",
     "sqlalchemy (>=2.0.43,<3.0.0)",
-    "rwrapr (>=0.9.1,<0.10.0)",
     "dash-ag-grid (>=32.3.2,<33.0.0)",
     "dash (>=3.3.0,<4.0.0)",
     "dash-bootstrap-components (>=2.0.4,<3.0.0)",
@@ -26,13 +24,14 @@ dependencies = [
     "pandas (>=2.3.1)",
     "ibis-framework[polars,postgres] (>=11.0.0)",
     "duckdb (>=1.3.2)",
-    "ssb-poc-statlog-model (>=1.0.0,<2.0.0)",
     "pydantic (>=2.12.5,<3.0.0)",
     "ssb-klass-python (>=1.0.6,<2.0.0)",
     "psycopg[pool] (>=3.3.3,<4.0.0)",
     "rpy2 (==3.6.5)",
     "rpy2-rinterface (==3.6.5)",
     "rpy2-robjects (==3.6.4)",
+    "ssb-poc-statlog-model (>=2.0.0,<3.0.0)",
+    "ssb-eimerdb (>=0.2.7,<0.3.0)",
 ]
 
 [project.urls]
@@ -44,34 +43,47 @@ Changelog = "https://github.com/statisticsnorway/ssb-dash-framework/releases"
 [project.scripts]
 ssb-dash-framework = "ssb_dash_framework.__main__:main"
 
+[dependency-groups]
+lint = [
+    "black[jupyter]>=25.11.0",
+    "pre-commit>=4.4.0",
+    "pre-commit-hooks>=6.0.0",
+    "pydoclint>=0.8.3",
+    "ruff>=0.14.5",
+]
+doc = [
+    "furo>=2025.9.25",
+    "myst-parser>=4.0.1",
+    "sphinx>=8.2.3",
+    "sphinx-autobuild>=2025.8.25",
+    "sphinx-autodoc-typehints>=3.5.2",
+    "sphinx-click>=6.1.0",
+]
+
+# Type hint stubs should be placed in the dev dependency group
+dev = [
+    {include-group = "lint"},
+    {include-group = "doc"},
+    "coverage[toml]>=7.11.3",
+    "deptry>=0.24.0; python_version < '4.0'",
+    "mypy>=1.18.2",
+    "pygments>=2.19.0",
+    "pytest>=9.0.0",
+    "typeguard>=2.13.3",
+    "xdoctest[colors]>=1.3.0",
+]
+
 [tool.poetry]
 classifiers = ["Development Status :: 4 - Beta"]
-requires-poetry = ">=2.0"
+requires-poetry = ">=2.3"
 
-[tool.poetry.group.dev.dependencies]
-pygments = ">=2.10.0"
-black = { extras = ["jupyter"], version = ">=23.1.0" }
-coverage = { extras = ["toml"], version = ">=6.2" }
-furo = ">=2021.11.12"
-mypy = ">=0.930"
-pre-commit = ">=2.16.0"
-pre-commit-hooks = ">=4.1.0"
-ruff = ">=0.0.284"
-pytest = ">=6.2.5"
-sphinx = ">=6.2.1"
-sphinx-autobuild = ">=2021.3.14"
-sphinx-autodoc-typehints = ">=1.24.0"
-sphinx-click = ">=3.0.2"
-typeguard = ">=2.13.3"
-xdoctest = { extras = ["colors"], version = ">=0.15.10" }
-myst-parser = { version = ">=0.16.1" }
-deptry = ">=0.23.0"
-pydoclint = ">=0.8.3"
-pandas-stubs = ">=2.3.1"
+# [tool.poetry.group.dev.dependencies]
+# pandas-stubs = ">=2.3.1"
 
 [tool.poetry.requires-plugins]
 poetry-plugin-export = ">=1.9"
 
+[tool.poetry.dependencies]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 
@@ -106,14 +118,13 @@ arg-type-hints-in-docstring = false
 check-return-types = false
 check-yield-types = false
 allow-init-docstring = true
-# native-mode-noqa-location = "definition"
 quiet = true
 
 [tool.ruff]
 force-exclude = true  # Apply excludes to pre-commit
 show-fixes = true
 src = ["src", "tests"]
-target-version = "py311"  # Minimum Python version supported
+target-version = "py313"  # Minimum Python version supported
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
 extend-exclude = [
     "__pycache__",
@@ -182,5 +193,5 @@ classmethod-decorators = ["classmethod", "validator", "root_validator", "pydanti
 ]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
