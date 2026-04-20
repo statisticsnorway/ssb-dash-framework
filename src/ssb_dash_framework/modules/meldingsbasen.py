@@ -32,12 +32,6 @@ from klass import KlassVersion
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
-SHOW_COLUMNS: dict[str, bool] = {
-    "skjemadata": True,
-    "skjemadata_fjor": True,
-    "enhetsinfo": False,
-    "enhetsinfo_fjor": False,
-}
 SELECT_COLUMNS_FORETAK = [
     "foretaks_nr",
     "orgnr",
@@ -52,7 +46,8 @@ SELECT_COLUMNS_FORETAK = [
     "sn2025_1_gdato",
     "fritekst",
     "antall_ansatte",
-    "omsetning"
+    "omsetning",
+    "sn07_options"
 ]
 SELECT_COLUMNS_BEDRIFT = [
     "orgnr",
@@ -67,7 +62,8 @@ SELECT_COLUMNS_BEDRIFT = [
     "sn2025_1_gdato",
     "fritekst",
     "antall_ansatte",
-    "omsetning"
+    "omsetning",
+    "sn07_options"
 ]
 
 
@@ -237,7 +233,7 @@ class Meldingsbasen:
                                         ),
                                         AgGrid(
                                             id="meldingsbasen-foretak-grid",
-                                            getRowId="params.data.id",
+                                            getRowId="params.data.orgnr",
                                             defaultColDef={
                                                 "sortable": True,
                                                 "filter": True,
@@ -263,7 +259,7 @@ class Meldingsbasen:
                                         ),
                                         AgGrid(
                                             id="meldingsbasen-bedrift-grid",
-                                            getRowId="params.data.id",
+                                            getRowId="params.data.orgnr",
                                             defaultColDef={
                                                 "sortable": True,
                                                 "filter": True,
@@ -302,7 +298,8 @@ class Meldingsbasen:
         new_naring = changed["data"]["sn2025_1"]
 
         df = pd.DataFrame(rows)
-        row = df[df["orgnr"] == orgnr].iloc[0]
+        row_idx = edited[0]["rowIndex"]
+        row = df.iloc[row_idx]
 
         antall_ansatte = row.get("antall_ansatte", 0) or 0
         omsetning = row.get("omsetning", 0) or 0
@@ -312,10 +309,10 @@ class Meldingsbasen:
         # Update sn2025_1 in df
         df.loc[df["orgnr"] == orgnr, "sn2025_1"] = new_naring
 
+        # Fetch correspondence
+        result = klass_korrespondanse_naring(new_naring)
+
         if antall_ansatte > 9 or omsetning > 5_000_000:
-                
-            # Fetch correspondence
-            result = klass_korrespondanse_naring(new_naring)
 
             # Update sn2025 name row if you have one, or add tooltip/description col
             df.loc[df["orgnr"] == orgnr, "sn2025_navn"] = result["sn2025_name"]
@@ -323,28 +320,33 @@ class Meldingsbasen:
             if not result["needs_selection"]:
                 # 1-1 match, auto-fill sn07_1
                 sn07 = result["sn2007_options"][0]
+                sn07_code = sn07["code"]
+                sn07_name = sn07["name"]
                 df.loc[df["orgnr"] == orgnr, "sn07_1"] = sn07["code"]
                 df.loc[df["orgnr"] == orgnr, "sn07_navn"] = sn07["name"]
 
                 alert_store = [
-                    create_alert(f"sn2025_1 oppdatert til {new_naring}, og sn07_1 endret til {sn07}", "success", ephemeral=True),
+                    create_alert(f"sn2025_1 for {orgnr} oppdatert til {new_naring} - {sn07_name}, og sn07_1 endret til {sn07_code} - {sn07_name}", "success", ephemeral=True, duration=6),
                     *alert_store,
                 ]
             else:
                 # Multiple options — put them in sn07_1 cell as dropdown options
                 options = [o["code"] for o in result["sn2007_options"]]
                 option_labels = [f"{o['code']} {o['name']}" for o in result["sn2007_options"]]
+
+                if "sn07_options" not in df.columns:
+                    df["sn07_options"] = None
                 
                 # Mark the cell as needing selection — store options in a separate col
                 df.loc[df["orgnr"] == orgnr, "sn07_1"] = None
-                df.loc[df["orgnr"] == orgnr, "sn07_options"] = result["sn2007_options"]  # store for JS renderer
+                df.at[df[df["orgnr"] == orgnr].index[0], "sn07_options"] = result["sn2007_options"]  # store for JS renderer
 
                 # Update column def for sn07_1 to use dropdown with these specific options
                 for col_group in column_defs:
                     for child in col_group.get("children", []):
                         if child["field"] == "sn07_1":
                             child["cellRenderer"] = "DropdownRenderer"
-                            child["editable"] = True
+                            child["editable"] = False
                             child["cellRendererParams"] = {
                                 "optionsField": "sn07_options",
                                 "valueField": "code",
@@ -352,7 +354,7 @@ class Meldingsbasen:
                             }
 
                 alert_store = [
-                    create_alert(f"sn2025_1 oppdatert til {new_naring}! sn07_1 må velges manuelt", "success", ephemeral=True),
+                    create_alert(f"sn2025_1 for {orgnr} oppdatert til {new_naring}! sn07_1 må velges manuelt.", "success", ephemeral=True, duration=6),
                     *alert_store,
                 ]
 
@@ -361,12 +363,40 @@ class Meldingsbasen:
         # Leave sn07_1 blank
         df.loc[df["orgnr"] == orgnr, "sn07_1"] = None
         df.loc[df["orgnr"] == orgnr, "sn07_et"] = None
+        sn25_name = result["sn2025_name"]
+        
         alert_store = [
-            create_alert("sn2025_1 oppdatert og sn07_1 endret til blank", "success", ephemeral=True),
+            create_alert(f"sn2025_1 for {orgnr} endret til {new_naring} - {sn25_name},\nog sn07_1 endret til blank (liten enhet, oms < 5 mil og/eller antall ansatte < 9)", "success", ephemeral=True, duration=8),
             *alert_store,
         ]
         return df.to_dict("records"), column_defs, alert_store
 
+    def _split_sn07_selection(self, edited, rows, alert_store):
+        if not edited or edited[0].get("colId") != "sn07_1":
+            raise PreventUpdate
+
+        selected = edited[0]["data"]["sn07_1"]
+        selected_code = selected[:6] # fetch sn-code
+        orgnr = edited[0]["data"]["orgnr"]
+
+        df = pd.DataFrame(rows)
+        row_idx = df[df["orgnr"] == orgnr].index[0]
+        sn07_options = df.at[row_idx, "sn07_options"]
+
+        name = ""
+        if sn07_options:
+            match = next((o for o in sn07_options if o["code"] == selected), None)
+            if match:
+                name = match["name"]
+
+        df.at[row_idx, "sn07_1"] = selected_code
+        df.at[row_idx, "sn07_navn"] = name
+
+        alert_store = [
+                    create_alert(f"sn07_1 for {orgnr} oppdatert til {selected_code} - {name}!", "success", ephemeral=True, duration=6),
+                    *alert_store,
+                ]
+        return df.to_dict("records"), alert_store
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the Meldingsbasen module."""
@@ -397,6 +427,7 @@ class Meldingsbasen:
                 .to_pandas()
             )
             s = s.rename(columns={"ident": "orgnr", "verdi": "naeringskode"})
+            s = s.drop_duplicates(subset="orgnr")
             df = df.merge(s, how="left", on="orgnr")
 
             e = self.conn.table("enhetsinfo")
@@ -408,6 +439,7 @@ class Meldingsbasen:
                 .to_pandas()
             )
             e = e.rename(columns={"ident": "orgnr", "verdi": "nace_2007"})
+            e = e.drop_duplicates(subset="orgnr")
             df = df.merge(e, how="left", on="orgnr")
 
             df["sn07_et"] = None
@@ -424,15 +456,15 @@ class Meldingsbasen:
             if "nace_2007" not in df.columns:
                 df["nace_2007"] = None
 
-            df = df.reset_index().rename(columns={"index": "id"})
             return df.to_dict("records")
 
         # 2. Display foretak grid - fires on store change OR checklist change (no data fetching)
         @callback(
-            Output("meldingsbasen-foretak-grid", "rowData"),
-            Output("meldingsbasen-foretak-grid", "columnDefs"),
+            Output("meldingsbasen-foretak-grid", "rowData", allow_duplicate=True),
+            Output("meldingsbasen-foretak-grid", "columnDefs", allow_duplicate=True),
             Input("meldingsbasen-foretak-store", "data"),
             Input("meldingsbasen-checklist", "value"),
+            prevent_initial_call=True,
         )
         def show_foretak_grid(store_data, vis_kolonner):
             if not store_data:
@@ -496,7 +528,6 @@ class Meldingsbasen:
 
             return df.to_dict("records"), column_defs
 
-        # 3. Fetch and store bedrift data - only fires on aar/orgnr change
         @callback(
             Output("meldingsbasen-bedrift-store", "data"),
             Input("meldingsbasen-foretak-store", "data"),
@@ -516,7 +547,6 @@ class Meldingsbasen:
                     f"""SELECT orgnr, navn, sn07_1, sn07_1_rdato, sn07_1_gdato, sn2025_1, sn2025_1_rdato, sn2025_1_gdato, org_form, omsetning, antall_ansatte FROM ssb_bedrift WHERE foretaks_nr = '{foretaks_nr}';""",
                     conn,
                 )
-            print(f"bedrift df: {df.head()}")
             if refnr:
                 s = self.conn.table("core_skjemadata_mapped")
                 s = (
@@ -527,10 +557,8 @@ class Meldingsbasen:
                     .to_pandas()
                 )
                 s = s.rename(columns={"ident": "orgnr", "verdi": "virkNaeringskode"})
-                print(f"bedrift s: {s}")
+                s = s.drop_duplicates(subset="orgnr")
                 df = df.merge(s, how="left", on="orgnr")
-
-            print(f"bedrift after merge with skjemadata df: {df.head()}")
 
             e = self.conn.table("enhetsinfo")
             e = (
@@ -541,7 +569,8 @@ class Meldingsbasen:
                 .to_pandas()
             )
             e = e.rename(columns={"ident": "orgnr", "verdi": "nace_2007"})
-            print(f"bedrift e: {e}")
+            e = e.drop_duplicates(subset="orgnr")
+
             df = df.merge(e, how="left", on="orgnr")
 
             df["sn07_et"] = None
@@ -564,15 +593,15 @@ class Meldingsbasen:
                     key=lambda x: x.map(lambda v: 0 if v == orgnr_bedrift else 1),
                 )
 
-            df = df.reset_index().rename(columns={"index": "id"})
             return df.to_dict("records")
 
         # 4. Display bedrift grid - fires on store change OR checklist change (no data fetching)
         @callback(
-            Output("meldingsbasen-bedrift-grid", "rowData"),
-            Output("meldingsbasen-bedrift-grid", "columnDefs"),
+            Output("meldingsbasen-bedrift-grid", "rowData", allow_duplicate=True),
+            Output("meldingsbasen-bedrift-grid", "columnDefs", allow_duplicate=True),
             Input("meldingsbasen-bedrift-store", "data"),
             Input("meldingsbasen-checklist", "value"),
+            prevent_initial_call=True,
         )
         def show_bedrift_grid(store_data, vis_kolonner):
             if not store_data:
@@ -649,32 +678,14 @@ class Meldingsbasen:
             prevent_initial_call=True,
         )
         def edit_bedrift(edited, rows, column_defs, alert_store):
-            row_data, column_defs, alert_store = self._handle_naring_edit(edited, rows, column_defs, alert_store)
-            return row_data, column_defs, alert_store
-            
-            # # ignore non-naring edits
-            # if edited[0].get("colId") != "sn2025_1":
-            #     raise PreventUpdate
-            # # change colour of edited cell
-            # ident = edited[0].get("data").get("orgnr")
+            if edited[0]["colId"] == "sn2025_1":
+                row_data, column_defs, alert_store = self._handle_naring_edit(edited, rows, column_defs, alert_store)
+                return row_data, column_defs, alert_store
+            elif edited[0]["colId"] == "sn07_1":
+                row_data, alert_store = self._split_sn07_selection(edited, rows, alert_store)
+                return row_data, column_defs, alert_store
+            raise PreventUpdate
 
-            # df = pd.DataFrame(rows)
-            # df_bedrift = df[df["orgnr"]==ident][["omsetning", "antall_ansatte"]]
-
-            # # if type of edit changed between korrigering/endring -> update which date is shown. for endring, allow user to edit date cell, korreksjon not?
-
-            # # alert triggered to show nace has been edited
-
-            # # when nace has been changed in sn2025_1 -> change sn07_1 accordingly.
-            # #   if antall_ansatte > 9 and omsetning > 5 mill, -> fetch nace code from klass using klass_korrespondanse_naring()
-            # #       if 1-1 nace match -> put the correct nace into the sn07_1 (maybe have a row where you can see the nace label?)
-            # #       else: dropdown for the user to select nace code
-            # #   else:
-            # #       leave sn07_1 blank
-
-            # # allow full
-            # #
-            # return df.to_dict("records"), column_defs
 
         @callback(
             Output("meldingsbasen-foretak-grid", "rowData", allow_duplicate=True),
@@ -687,28 +698,13 @@ class Meldingsbasen:
             prevent_initial_call=True,
         )
         def edit_foretak(edited, rows, column_defs, alert_store):
-            row_data, column_defs, alert_store = self._handle_naring_edit(edited, rows, column_defs, alert_store)
-            return row_data, column_defs, alert_store
-            
-            # # ignore non-naring edits
-            # if edited[0].get("colId") != "sn2025_1":
-            #     raise PreventUpdate
-            # # change colour of edited cell
-
-            # # if type of edit changed between korrigering/endring -> update which date is shown. for endring, allow user to edit date cell, korreksjon not?
-            # ident = edited[0].get("data").get("orgnr")
-            # # alert triggered to show nace has been edited
-
-            # df = pd.DataFrame(rows)
-            # df_foretak = df[df["orgnr"]==ident][["omsetning", "antall_ansatte"]]
-
-            # #   if antall_ansatte > 9 and omsetning > 5 mill, -> fetch nace code from klass using klass_korrespondanse_naring()
-            # #       if 1-1 nace match -> put the correct nace into the sn07_1 (maybe have a row where you can see the nace label?)
-            # #       else: dropdown for the user to select nace code
-            # #   else:
-            # #       leave sn07_1 blank
-            # #
-            # return df.to_dict("records"), column_defs
+            if edited[0]["colId"] == "sn2025_1":
+                row_data, column_defs, alert_store = self._handle_naring_edit(edited, rows, column_defs, alert_store)
+                return row_data, column_defs, alert_store
+            elif edited[0]["colId"] == "sn07_1":
+                row_data, alert_store = self._split_sn07_selection(edited, rows, alert_store)
+                return row_data, column_defs, alert_store
+            raise PreventUpdate
 
 
 class MeldingsbasenTab(TabImplementation, Meldingsbasen):

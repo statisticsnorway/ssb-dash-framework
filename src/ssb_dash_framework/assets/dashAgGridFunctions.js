@@ -1,7 +1,23 @@
 var dagcomponentfuncs = window.dashAgGridComponentFunctions = window.dashAgGridComponentFunctions || {};
 
 dagcomponentfuncs.DropdownRenderer = function(props) {
-    const values = props.colDef.cellRendererParams.values;
+    // Support both static values from colDef and per-row options from rowData
+    const staticValues = props.colDef.cellRendererParams && props.colDef.cellRendererParams.values;
+    const optionsField = props.colDef.cellRendererParams && props.colDef.cellRendererParams.optionsField;
+    
+    let values;
+    if (staticValues) {
+        // Static list e.g. ["endring", "korreksjon"]
+        values = staticValues.map(v => ({ label: v, value: v }));
+    } else if (optionsField && props.data[optionsField]) {
+        // Per-row options from rowData e.g. [{code: "01", name: "Jordbruk"}, ...]
+        const rowOptions = props.data[optionsField];
+        const valueField = props.colDef.cellRendererParams.valueField || "code";
+        const labelField = props.colDef.cellRendererParams.labelField || "name";
+        values = rowOptions.map(o => ({ label: `${o[valueField]} ${o[labelField]}`, value: o[valueField] }));
+    } else {
+        values = [];
+    }
 
     function onChange(e) {
         const val = e.target.value === "" ? null : e.target.value;
@@ -29,7 +45,7 @@ dagcomponentfuncs.DropdownRenderer = function(props) {
         [
             React.createElement("option", { value: "" }, "Velg..."),
             ...values.map(v =>
-                React.createElement("option", { key: v, value: v }, v)
+                React.createElement("option", { key: v.value, value: v.value }, v.label)
             )
         ]
     );
