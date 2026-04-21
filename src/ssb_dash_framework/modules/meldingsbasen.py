@@ -262,6 +262,7 @@ class Meldingsbasen:
                                                 "sortable": True,
                                                 "filter": True,
                                                 "resizable": True,
+                                                "cellStyle": {"function": "editedCellStyle"},
                                             },
                                             columnSize="responsiveSizeToFit",
                                             rowData=[],
@@ -289,6 +290,7 @@ class Meldingsbasen:
                                                 "sortable": True,
                                                 "filter": True,
                                                 "resizable": True,
+                                                "cellStyle": {"function": "editedCellStyle"},
                                             },
                                             columnSize="responsiveSizeToFit",
                                             rowData=[],
@@ -347,7 +349,9 @@ class Meldingsbasen:
         row_idx = edited[0]["rowIndex"]
         row = df.iloc[row_idx]
 
-        antall_ansatte = int(row.get("antall_ansatte") or row.get("antall_ansatte_f") or 0)
+        antall_ansatte = int(
+            row.get("antall_ansatte") or row.get("antall_ansatte_f") or 0
+        )
         omsetning = int(row.get("omsetning") or row.get("omsetning_f") or 0)
         print(f"antall_ansatte: {antall_ansatte}")
         print(f"omsetning: {omsetning}")
@@ -624,6 +628,10 @@ class Meldingsbasen:
             cols = [c for c in cols if c in df.columns]
             df = df[cols]
 
+            df["sn2025_1_gdato"] = pd.to_datetime(
+                df["sn2025_1_gdato"], errors="coerce"
+            ).dt.strftime("%Y-%m-%d")
+
             omsetning = store_data[0].get("omsetning", "")
             antall_ansatte = store_data[0].get("antall_ansatte", "")
 
@@ -641,7 +649,13 @@ class Meldingsbasen:
                     "autoHeight": True,
                     "cellStyle": {"whiteSpace": "normal"},
                 },
-                {"field": "sn07_et", "headerName": "endring_sn07", "editable": True},
+                {
+                    "field": "sn07_et",
+                    "headerName": "sn07_et",
+                    "editable": True,
+                    "cellRenderer": "DropdownRenderer",
+                    "cellRendererParams": {"values": ["endring", "korreksjon"]},
+                },
                 {"field": "sn2025_1", "headerName": "sn2025_1", "editable": True},
                 {
                     "field": "sn2025_navn",
@@ -654,7 +668,7 @@ class Meldingsbasen:
                 },
                 {
                     "field": "sn25_et",
-                    "headerName": "endring_sn25",
+                    "headerName": "sn25_et",
                     "editable": True,
                     "cellRenderer": "DropdownRenderer",
                     "cellRendererParams": {"values": ["endring", "korreksjon"]},
@@ -663,7 +677,8 @@ class Meldingsbasen:
                     "field": "sn2025_1_gdato",
                     "headerName": "sn2025_1_gdato",
                     "editable": True,
-                    "cellEditor": "agDateCellEditor",
+                    "singleClickEdit": True,
+                    "width": 300,
                 },
                 {
                     "field": "fritekst",
@@ -793,6 +808,10 @@ class Meldingsbasen:
             cols = [c for c in cols if c in df.columns]
             df = df[cols]
 
+            df["sn2025_1_gdato"] = pd.to_datetime(
+                df["sn2025_1_gdato"], errors="coerce"
+            ).dt.strftime("%Y-%m-%d")
+
             bof_children = [
                 {"field": "orgnr", "headerName": "orgnr"},
                 {"field": "org_form", "headerName": "org_form"},
@@ -807,7 +826,13 @@ class Meldingsbasen:
                     "width": 600,
                     "cellStyle": {"whiteSpace": "normal"},
                 },
-                {"field": "sn07_et", "headerName": "endring_sn07", "editable": True},
+                {
+                    "field": "sn07_et",
+                    "headerName": "sn07_et",
+                    "editable": True,
+                    "cellRenderer": "DropdownRenderer",
+                    "cellRendererParams": {"values": ["endring", "korreksjon"]},
+                },
                 {"field": "sn2025_1", "headerName": "sn2025_1", "editable": True},
                 {
                     "field": "sn2025_navn",
@@ -820,7 +845,7 @@ class Meldingsbasen:
                 },
                 {
                     "field": "sn25_et",
-                    "headerName": "endring_sn25",
+                    "headerName": "sn25_et",
                     "editable": True,
                     "cellRenderer": "DropdownRenderer",
                     "cellRendererParams": {"values": ["endring", "korreksjon"]},
@@ -829,7 +854,8 @@ class Meldingsbasen:
                     "field": "sn2025_1_gdato",
                     "headerName": "sn2025_1_gdato",
                     "editable": True,
-                    "cellEditor": "agDateCellEditor",
+                    "singleClickEdit": True,
+                    "width": 300,
                 },
                 {
                     "field": "fritekst",
@@ -875,34 +901,77 @@ class Meldingsbasen:
             prevent_initial_call=True,
         )
         def edit_bedrift(edited, rows, column_defs, alert_store):
+            """
+            Tracks edits in bedrift-grid, updates cells accordingly, depending on edited column.
+            """
             alert_store = alert_store or []
-            edited_col = edited[0]["colId"]
-            if edited_col not in ("sn2025_1", "sn07_1", "sn2025_1_gdato"):
-                raise PreventUpdate
 
-            valid_check, alert_store = self._check_sn_input(edited, alert_store)
-            if valid_check == False:
-                changed = edited[0]
-                orgnr = changed["data"]["orgnr"]
-                df = pd.DataFrame(rows)
-                df.loc[df["orgnr"] == orgnr, "sn2025_1"] = changed["oldValue"]
-                return df.to_dict("records"), column_defs, alert_store
+            changed = edited[0]
+            edited_col = changed["colId"]
+            orgnr = changed["data"]["orgnr"]
+            
+            if edited_col not in ("sn2025_1", "sn07_1", "sn2025_1_gdato", "sn07_et", "sn25_et"):
+                raise PreventUpdate
+            
+            df = pd.DataFrame(rows)
+
+            # ensure tracking column exists
+            if "edited_cells" not in df.columns:
+                df["edited_cells"] = [{} for _ in range(len(df))]
+
+            def mark_edited(col):
+                idx = df[df["orgnr"] == orgnr].index[0]
+                edited_cells = df.at[idx, "edited_cells"]
+
+                if not isinstance(edited_cells, dict):
+                    edited_cells = {}
+
+                edited_cells[col] = True
+                df.at[idx, "edited_cells"] = edited_cells
 
             if edited_col == "sn2025_1":
+                valid_check, alert_store = self._check_sn_input(edited, alert_store)
+                if valid_check == False:
+                    df.loc[df["orgnr"] == orgnr, "sn2025_1"] = changed["oldValue"]
+                    return df.to_dict("records"), column_defs, alert_store
                 row_data, column_defs, alert_store = self._handle_naring_edit(
                     edited, rows, column_defs, alert_store
                 )
+                mark_edited("sn2025_1")
                 return row_data, column_defs, alert_store
+
+            elif edited_col in ("sn07_et", "sn25_et"):
+                alert_store = [
+                    create_alert(
+                        f"Endringstype ({edited_col}) for {orgnr} oppdatert til '{changed['value']}'!",
+                        "success",
+                        ephemeral=True,
+                        duration=4,
+                    ),
+                    *alert_store,
+                ]
+                mark_edited(edited_col)
+                return rows, column_defs, alert_store
+
             elif edited_col == "sn07_1":
                 row_data, column_defs, alert_store = self._split_sn07_selection(
                     edited, rows, column_defs, alert_store
                 )
+                mark_edited("sn07_1")
                 return row_data, column_defs, alert_store
+
             elif edited_col == "sn2025_1_gdato":
-                orgnr = edited[0]["data"]["orgnr"]
-                new_date = edited[0]["data"]["sn2025_1_gdato"]
+                new_date = changed["data"]["sn2025_1_gdato"]
+                new_date = pd.to_datetime(new_date, errors="coerce")
+
+                if pd.notna(new_date):
+                    new_date = new_date.strftime("%Y-%m-%d")
+                else:
+                    new_date = None
+                print(new_date)
                 df = pd.DataFrame(rows)
                 df.loc[df["orgnr"] == orgnr, "sn2025_1_gdato"] = new_date
+
                 alert_store = [
                     create_alert(
                         f"Dato for {orgnr} oppdatert til {new_date}!",
@@ -912,19 +981,9 @@ class Meldingsbasen:
                     ),
                     *alert_store,
                 ]
+                mark_edited("sn2025_1_gdato")
                 return df.to_dict("records"), column_defs, alert_store
-                # orgnr = edited[0]["data"]["orgnr"]
-                # selected = edited[0]["data"]["sn07_1"]
-                # alert_store = [
-                #     create_alert(
-                #         f"sn07_1 for {orgnr} endret til {selected}!",
-                #         "success",
-                #         ephemeral=True,
-                #         duration=6,
-                #     ),
-                #     *alert_store,
-                # ]
-                # return rows, column_defs, alert_store
+
             raise PreventUpdate
 
         @callback(
@@ -938,35 +997,77 @@ class Meldingsbasen:
             prevent_initial_call=True,
         )
         def edit_foretak(edited, rows, column_defs, alert_store):
+            """
+            Tracks edits in foretak-grid, updates cells accordingly, depending on edited column.
+            """
             alert_store = alert_store or []
-            edited_col = edited[0]["colId"]
-            if edited_col not in ("sn2025_1", "sn07_1", "sn2025_1_gdato"):
-                raise PreventUpdate
 
-            valid_check, alert_store = self._check_sn_input(edited, alert_store)
-            if valid_check == False:
-                changed = edited[0]
-                orgnr = changed["data"]["orgnr"]
-                df = pd.DataFrame(rows)
-                df.loc[df["orgnr"] == orgnr, "sn2025_1"] = changed["oldValue"]
-                return df.to_dict("records"), column_defs, alert_store
+            changed = edited[0]
+            edited_col = changed["colId"]
+            orgnr = changed["data"]["orgnr"]
+            
+            if edited_col not in ("sn2025_1", "sn07_1", "sn2025_1_gdato", "sn07_et", "sn25_et"):
+                raise PreventUpdate
+            
+            df = pd.DataFrame(rows)
+
+            # ensure tracking column exists
+            if "edited_cells" not in df.columns:
+                df["edited_cells"] = [{} for _ in range(len(df))]
+
+            def mark_edited(col):
+                idx = df[df["orgnr"] == orgnr].index[0]
+                edited_cells = df.at[idx, "edited_cells"]
+
+                if not isinstance(edited_cells, dict):
+                    edited_cells = {}
+
+                edited_cells[col] = True
+                df.at[idx, "edited_cells"] = edited_cells
 
             if edited_col == "sn2025_1":
+                valid_check, alert_store = self._check_sn_input(edited, alert_store)
+                if valid_check == False:
+                    df.loc[df["orgnr"] == orgnr, "sn2025_1"] = changed["oldValue"]
+                    return df.to_dict("records"), column_defs, alert_store
                 row_data, column_defs, alert_store = self._handle_naring_edit(
                     edited, rows, column_defs, alert_store
                 )
+                mark_edited("sn2025_1")
                 return row_data, column_defs, alert_store
+
+            elif edited_col in ("sn07_et", "sn25_et"):
+                alert_store = [
+                    create_alert(
+                        f"Endringstype ({edited_col}) for {orgnr} oppdatert til '{changed['value']}'!",
+                        "success",
+                        ephemeral=True,
+                        duration=4,
+                    ),
+                    *alert_store,
+                ]
+                mark_edited(edited_col)
+                return rows, column_defs, alert_store
+
             elif edited_col == "sn07_1":
                 row_data, column_defs, alert_store = self._split_sn07_selection(
                     edited, rows, column_defs, alert_store
                 )
+                mark_edited("sn07_1")
                 return row_data, column_defs, alert_store
 
             elif edited_col == "sn2025_1_gdato":
-                orgnr = edited[0]["data"]["orgnr"]
-                new_date = edited[0]["data"]["sn2025_1_gdato"]
+                new_date = changed["data"]["sn2025_1_gdato"]
+                new_date = pd.to_datetime(new_date, errors="coerce")
+
+                if pd.notna(new_date):
+                    new_date = new_date.strftime("%Y-%m-%d")
+                else:
+                    new_date = None
+                print(new_date)
                 df = pd.DataFrame(rows)
                 df.loc[df["orgnr"] == orgnr, "sn2025_1_gdato"] = new_date
+
                 alert_store = [
                     create_alert(
                         f"Dato for {orgnr} oppdatert til {new_date}!",
@@ -976,19 +1077,9 @@ class Meldingsbasen:
                     ),
                     *alert_store,
                 ]
+                mark_edited("sn2025_1_gdato")
                 return df.to_dict("records"), column_defs, alert_store
-                # orgnr = edited[0]["data"]["orgnr"]
-                # selected = edited[0]["data"]["sn07_1"]
-                # alert_store = [
-                #     create_alert(
-                #         f"sn07_1 for {orgnr} endret til {selected}!",
-                #         "success",
-                #         ephemeral=True,
-                #         duration=6,
-                #     ),
-                #     *alert_store,
-                # ]
-                return rows, column_defs, alert_store
+
             raise PreventUpdate
 
 
