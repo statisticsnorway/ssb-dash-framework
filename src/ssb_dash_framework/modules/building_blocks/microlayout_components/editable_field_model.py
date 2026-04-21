@@ -127,8 +127,8 @@ class EditableField(BaseModel):
         guard_states = self._build_guard_states(settings)
 
         @callback(
-            Output(id, "value", allow_duplicate=True),
-            Input(id, "value"),
+            Output(self._id, "value", allow_duplicate=True),
+            Input(self._id, "value"),
             Input(settings.form_reference_input_id, "value"),
             *inputs if inputs else [],
             *states if states else [],
