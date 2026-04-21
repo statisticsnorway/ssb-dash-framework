@@ -10,6 +10,7 @@ from dash.exceptions import PreventUpdate
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import computed_field
 
 from ....utils.config_tools.connection import get_connection
 
@@ -86,8 +87,14 @@ class EditableField(BaseModel):
     applies_to_tables: list[str] = Field(default_factory=list)
     applies_to_forms: list[str] = Field(default_factory=list)
 
+    @computed_field
+    @property
+    def _id(self) -> str:
+        return self.field_path + str(self.applies_to_tables) + str(self.applies_to_forms)
+
     def __str__(self) -> str:
         parts = [f"EditableField(path='{self.field_path}')"]
+        parts.append(f"id={self._id}")
 
         # Functions
         parts.append(
@@ -126,7 +133,6 @@ class EditableField(BaseModel):
 
     def create_callback(
         self,
-        id: str,
         settings: CallbackSettings,
         inputs: list[Input] | None = None,
         states: list[State] | None = None,
@@ -135,7 +141,7 @@ class EditableField(BaseModel):
         guard_states = self._build_guard_states(settings)
 
         @callback(
-            Output(id, "value", allow_duplicate=True),
+            Output(self._id, "value", allow_duplicate=True),
             Input(settings.form_reference_input_id, "value"),
             *inputs if inputs else [],
             *states if states else [],
@@ -166,8 +172,8 @@ class EditableField(BaseModel):
         ]
 
         @callback(
-            Output(id, "value", allow_duplicate=True),
-            Input(id, "value"),
+            Output(self._id, "value", allow_duplicate=True),
+            Input(self._id, "value"),
             State(settings.form_reference_input_id, "value"),
             *inputs_as_state,
             *states if states else [],

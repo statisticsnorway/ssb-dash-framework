@@ -7,12 +7,15 @@ from typing import Literal
 import dash_bootstrap_components as dbc
 from dash import Input
 from dash import State
+from dash import Output
 from dash import html
+from dash import callback
 from klass import get_classification
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import TypeAdapter
+from pydantic import computed_field
 
 from .editable_field_model import CallbackSettings
 from .editable_field_model import EditableField
@@ -173,9 +176,7 @@ class InputField(BaseNode):
         getter_args: None | list = None,
     ) -> html.Div:
         """A method for creating the layout."""
-        _id = str(uuid.uuid4())
         self.field_settings.create_callback(
-            _id,
             settings,
             inputs,
             states,
@@ -184,9 +185,135 @@ class InputField(BaseNode):
         return html.Div(
             [
                 dbc.Label(self.label),
-                dbc.Input(style={"width": "100%"}, id=_id, debounce=True),
+                dbc.Input(
+                    style={"width": "100%"}, id=self.field_settings._id, debounce=True
+                ),
             ]
         )
+
+
+class CalculatedField(BaseNode):
+    type: Literal["calculated-field"]
+    label: str
+    applies_to_tables: list[str] = Field(default_factory=list)
+    applies_to_forms: list[str] = Field(default_factory=list)
+    exponents: list[str | InputField] = Field(default_factory=list)
+    multiplication: list[str | InputField] = Field(default_factory=list)
+    division: list[str | InputField] = Field(default_factory=list)
+    addition: list[str | InputField] = Field(default_factory=list)
+    subtraction: list[str | InputField] = Field(default_factory=list)
+
+    @computed_field
+    @property
+    def _id(self) -> str:
+        return self.label + str(self.applies_to_tables) + str(self.applies_to_forms)
+
+    def _get_all_ids(self) -> list[tuple[str, str]]:
+        """Returns (operation, _id) pairs for all entries, resolving InputField to its _id."""
+        print("TEST TEST")
+        print(self.applies_to_tables)
+        print(self.applies_to_forms)
+        result = []
+        for op, fields in [
+            ("exponent", self.exponents),
+            ("multiplication", self.multiplication),
+            ("division", self.division),
+            ("addition", self.addition),
+            ("subtraction", self.subtraction),
+        ]:
+            for f in fields:
+                _id = (
+                    f.field_settings._id
+                    if isinstance(f, InputField)
+                    else f + str(self.applies_to_tables) + str(self.applies_to_forms)
+                )
+                result.append((op, _id))
+        return result
+
+    def _calculate(
+        self, op_id_pairs: list[tuple[str, str]], values: list[float | None]
+    ) -> float:
+        """Applies operations in order: exponents → multiply → divide → add → subtract."""
+        op_values: dict[str, list[float]] = {
+            "exponent": [],
+            "multiplication": [],
+            "division": [],
+            "addition": [],
+            "subtraction": [],
+        }
+
+        for (op, _), value in zip(op_id_pairs, values):
+            if value is not None:
+                op_values[op].append(float(value))
+
+        result = 0
+        for base in op_values["exponent"]: # Kept for future implementation
+            result **= base
+            raise NotImplementedError("Currently formulas involving 'exponent' is not implemented.")
+        for val in op_values["multiplication"]:
+            result *= val
+        for val in op_values["division"]:
+            result /= val if val != 0 else 1
+        for val in op_values["addition"]:
+            result += val
+        for val in op_values["subtraction"]:
+            result -= val
+
+        return result
+
+    def create_callback(self) -> None:
+        op_id_pairs = self._get_all_ids()
+        if not op_id_pairs:
+            return
+
+        inputs = [Input(id_, "value") for _, id_ in op_id_pairs]
+
+        @callback(
+            Output(self._id, "value"),
+            inputs,
+        )
+        def calculated_callback(*values):
+            try:
+                result = self._calculate(op_id_pairs, list(values))
+                return f"{result}"
+            except Exception as e:
+                return f"Error: {e}"
+
+    def create(self, *args, **kwargs) -> html.Div:
+        self.create_callback()
+        return html.Div(
+            [
+                dbc.Label(self.label),
+                dbc.Input(id=self._id, style={"width": "100%"}, readonly=True),
+            ]
+        )
+
+
+    def __str__(self, prefix: str = "", is_last: bool = True) -> str:
+        branch = "└─ " if is_last else "├─ "
+        node_name = self.type.upper()
+
+        def fmt(fields):
+            return [
+                f.field_settings._id if isinstance(f, InputField) else str(f)
+                for f in fields
+            ]
+
+        parts = []
+        if self.exponents:
+            parts.append(f"exp({', '.join(fmt(self.exponents))})")
+        if self.multiplication:
+            parts.append(" * ".join(fmt(self.multiplication)))
+        if self.division:
+            parts.append(" / ".join(fmt(self.division)))
+        if self.addition:
+            parts.append(" + ".join(fmt(self.addition)))
+        if self.subtraction:
+            parts.append(" - ".join(fmt(self.subtraction)))
+
+        formula = " ".join(parts) if parts else "∅"
+
+        return f"{prefix}{branch}{node_name} ({self.label}, formula={formula}, id={self._id})"
 
 
 class DropdownComponent(BaseNode):
@@ -207,7 +334,6 @@ class DropdownComponent(BaseNode):
         """A method for creating the layout."""
         _id = str(uuid.uuid4())
         self.field_settings.create_callback(
-            _id,
             settings,
             inputs,
             states,
@@ -217,7 +343,9 @@ class DropdownComponent(BaseNode):
             [
                 dbc.Label(self.label),
                 dbc.Select(
-                    options=self.options, id=_id, style={"width": "100%"}
+                    options=self.options,
+                    id=self.field_settings._id,
+                    style={"width": "100%"},
                 ),  # pyright: ignore
             ]
         )
@@ -239,9 +367,7 @@ class ChecklistComponent(BaseNode):
         getter_args: None | list = None,
     ) -> html.Div:
         """A method for creating the layout."""
-        _id = str(uuid.uuid4())
         self.field_settings.create_callback(
-            _id,
             settings,
             inputs,
             states,
@@ -251,7 +377,7 @@ class ChecklistComponent(BaseNode):
             [
                 dbc.Label(self.label),
                 dbc.Checklist(
-                    options=self.options, switch=False, id=_id
+                    options=self.options, switch=False, id=self.field_settings._id
                 ),  # pyright: ignore
             ],
             style={"display": "block"},
@@ -306,9 +432,7 @@ class Textarea(BaseNode):
         getter_args: None | list = None,
     ) -> html.Div:
         """A method for creating the layout."""
-        _id = str(uuid.uuid4())
         self.field_settings.create_callback(
-            _id,
             settings,
             inputs,
             states,
@@ -317,7 +441,9 @@ class Textarea(BaseNode):
         return html.Div(
             [
                 dbc.Label(self.label),
-                dbc.Textarea(style={"width": "100%"}, id=_id, debounce=True),
+                dbc.Textarea(
+                    style={"width": "100%"}, id=self.field_settings._id, debounce=True
+                ),
             ]
         )
 
@@ -384,6 +510,7 @@ Node = Annotated[
     | Col
     | Header
     | InputField
+    | CalculatedField
     | KlassDropdown
     | Textarea
     | KlassChecklist
