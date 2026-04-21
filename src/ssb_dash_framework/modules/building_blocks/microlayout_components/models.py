@@ -231,7 +231,7 @@ class CalculatedField(BaseNode):
         return result
 
     def _calculate(
-        self, op_id_pairs: list[tuple[str, str]], values: list[float | None]
+        self, op_id_pairs: list[tuple[str, str]], values: list[float | int | None]
     ) -> float:
         """Applies operations in order: exponents → multiply → divide → add → subtract."""
         op_values: dict[str, list[float]] = {
