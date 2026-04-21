@@ -562,8 +562,14 @@ Meldingsbasen
     font-size: 13;
     align-items: center;
     display: flex;
-    padding-left: 20px;
+    padding-left: 180px;
     padding-bottom: 40px;
+}
+
+.meldingsbasen-sidebar {
+    padding-top: 30px;
+    padding-left: 20px;
+    padding-bottom: 20px;
 }
 
 .meldingsbasen-container {
@@ -591,12 +597,12 @@ Meldingsbasen
 
 .meldingsbasen-foretak-grid-container {
     min-height: 200px;
-    max-height: 270px;
+    max-height: 250px;
 }
 
 .meldingsbasen-bedrift-grid-container {
     min-height: 190px;
-    max-height: 600px;
+    max-height: 500px;
 }
 
 .meldingsbasen-foretak-grid-container .ag-header-cell-label,
@@ -611,7 +617,6 @@ Meldingsbasen
     padding-top: 5px;
     padding-bottom: 5px;
 }
-
 
 .meldingsbasen-label {
     font-weight: 600;
@@ -637,8 +642,9 @@ Meldingsbasen
     font-size: 16px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 12px;
     align-items: flex-start;
+    padding-top: 20px;
 }
 
 .meldingsbasen-button-update {

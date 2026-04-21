@@ -61,8 +61,8 @@ SELECT_COLUMNS_BEDRIFT = [
     "sn25_et",
     "sn2025_1_gdato",
     "fritekst",
-    "antall_ansatte",
-    "omsetning",
+    "antall_ansatte_f",
+    "omsetning_f",
     "sn07_options",
 ]
 
@@ -167,31 +167,76 @@ class Meldingsbasen:
             className="meldingsbasen",
             children=[
                 # Top bar with button
-                html.Div(
+                dbc.Row(
                     children=[
                         dbc.Button(
                             "Send oppdateringer",
                             id="meldingsbasen-save-edits-button1",
                             className="meldingsbasen-button-update",
-                            # outline=True,
-                            # color="primary",
                         ),
                     ],
                     className="d-grid gap-2 justify-content-md-end",
                 ),
-                # sidebar
-                html.Div(
+                dbc.Row(
                     className="meldingsbasen-sidebar",
                     children=[
-                        dbc.Checklist(
-                            className="meldingsbasen-checklist",
-                            id="meldingsbasen-checklist",
-                            options=[
-                                {"label": "Vis skjemadata", "value": "skjemadata"},
-                                {"label": "Vis enhetsinfo", "value": "enhetsinfo"},
-                            ],
-                            value=["skjemadata", "enhetsinfo"],
-                            switch=True,
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    dbc.Card(
+                                        [
+                                            dbc.CardHeader("omsetning"),
+                                            dbc.CardBody(
+                                                [
+                                                    dbc.Input(
+                                                        id="meldingsbasen-foretak-omsetning-card",
+                                                        type="text",
+                                                    ),
+                                                ],
+                                                className="meldingsbasen-foretak-card-body",
+                                            ),
+                                        ],
+                                        className="meldingsbasen-foretak-card",
+                                    ),
+                                ),
+                                dbc.Col(
+                                    dbc.Card(
+                                        [
+                                            dbc.CardHeader("antall ansatte"),
+                                            dbc.CardBody(
+                                                [
+                                                    dbc.Input(
+                                                        id="meldingsbasen-foretak-ansatte-card",
+                                                        type="text",
+                                                    ),
+                                                ],
+                                                className="meldingsbasen-foretak-card-body",
+                                            ),
+                                        ],
+                                        className="meldingsbasen-foretak-card",
+                                    ),
+                                ),
+                                dbc.Col(
+                                    dbc.Checklist(
+                                        className="meldingsbasen-checklist",
+                                        id="meldingsbasen-checklist",
+                                        options=[
+                                            {
+                                                "label": "Vis skjemadata",
+                                                "value": "skjemadata",
+                                            },
+                                            {
+                                                "label": "Vis enhetsinfo",
+                                                "value": "enhetsinfo",
+                                            },
+                                        ],
+                                        value=["skjemadata", "enhetsinfo"],
+                                        switch=True,
+                                    ),
+                                    className="ms-auto d-flex align-items-center",
+                                    width="auto",
+                                ),
+                            ]
                         ),
                     ],
                 ),
@@ -224,6 +269,7 @@ class Meldingsbasen:
                                             dashGridOptions={
                                                 "rowSelection": "single",
                                                 "enableCellTextSelection": True,
+                                                "stopEditingWhenCellsLoseFocus": True,
                                             },
                                             style={"height": "100%", "width": "100%"},
                                         ),
@@ -250,6 +296,7 @@ class Meldingsbasen:
                                             dashGridOptions={
                                                 "rowSelection": "single",
                                                 "enableCellTextSelection": True,
+                                                "stopEditingWhenCellsLoseFocus": True,
                                             },
                                             style={"height": "100%", "width": "100%"},
                                         ),
@@ -267,21 +314,21 @@ class Meldingsbasen:
     def _enrich_naring_names(self, df: pd.DataFrame) -> pd.DataFrame:
         df["sn07_navn"] = None
         df["sn2025_navn"] = None
-        
+
         sn_2025_df = KlassVersion(version_id="3218").data
         sn_2007_df = KlassVersion(version_id="30").data
-        
+
         for idx, row in df.iterrows():
             if pd.notna(row.get("sn07_1")) and row["sn07_1"]:
                 match = sn_2007_df[sn_2007_df.code == row["sn07_1"]]
                 if not match.empty:
                     df.at[idx, "sn07_navn"] = match.iloc[0]["name"]
-            
+
             if pd.notna(row.get("sn2025_1")) and row["sn2025_1"]:
                 match = sn_2025_df[sn_2025_df.code == row["sn2025_1"]]
                 if not match.empty:
                     df.at[idx, "sn2025_navn"] = match.iloc[0]["name"]
-        
+
         return df
 
     def _handle_naring_edit(self, edited, rows, column_defs, alert_store):
@@ -300,8 +347,8 @@ class Meldingsbasen:
         row_idx = edited[0]["rowIndex"]
         row = df.iloc[row_idx]
 
-        antall_ansatte = row.get("antall_ansatte", 0) or 0
-        omsetning = row.get("omsetning", 0) or 0
+        antall_ansatte = int(row.get("antall_ansatte") or row.get("antall_ansatte_f") or 0)
+        omsetning = int(row.get("omsetning") or row.get("omsetning_f") or 0)
         print(f"antall_ansatte: {antall_ansatte}")
         print(f"omsetning: {omsetning}")
 
@@ -412,7 +459,7 @@ class Meldingsbasen:
 
         df = pd.DataFrame(rows)
         row_idx = df[df["orgnr"] == orgnr].index[0]
-        
+
         # Look up name from stored options
         name = ""
         if "sn07_options" in df.columns:
@@ -424,7 +471,7 @@ class Meldingsbasen:
                     selected = match["code"]  # ensure only code is stored
 
         df.at[row_idx, "sn07_1"] = selected
-        df.at[row_idx, "sn07_navn"] = name
+        df.at[row_idx, "sn07_navn"] = name.strip()
         df.at[row_idx, "sn07_options"] = None  # clear options after selection
 
         # Reset sn07_1 column def back to plain text
@@ -434,7 +481,6 @@ class Meldingsbasen:
                     child.pop("cellRenderer", None)
                     child.pop("cellRendererParams", None)
                     child["editable"] = True
-
 
         alert_store = [
             create_alert(
@@ -462,25 +508,26 @@ class Meldingsbasen:
         if not isinstance(edit, str) or len(edit) != 6 or "." not in edit:
             alert_store = [
                 create_alert(
-                    f"Invalid format for {orgnr}: You wrote: {edit}, expected: xx.xxx. Example: 01.190.",
-                    "error",
+                    f"Feil næringsformat for {orgnr}: Du skrev: {edit}, forventet format: xx.xxx. Eksempelvis: 01.190.",
+                    "danger",
                     ephemeral=True,
                     duration=10,
-                    position="center",
                 ),
                 *alert_store,
             ]
             return False, alert_store
 
         sn_klass_check = klass_korrespondanse_naring(edit)
-        if sn_klass_check["sn2025_name"] == "" or sn_klass_check["sn2007_options"][0]["name"] == "":
+        if (
+            sn_klass_check["sn2025_name"] == ""
+            or sn_klass_check["sn2007_options"][0]["name"] == ""
+        ):
             alert_store = [
                 create_alert(
-                    f"{edit} is not a valid SN code",
-                    "error",
+                    f"{edit} er ikke en godkjent SN 2025 næringskode!",
+                    "danger",
                     ephemeral=True,
-                    duration=10,
-                    position="center",
+                    duration=8,
                 ),
                 *alert_store,
             ]
@@ -554,6 +601,8 @@ class Meldingsbasen:
         @callback(
             Output("meldingsbasen-foretak-grid", "rowData", allow_duplicate=True),
             Output("meldingsbasen-foretak-grid", "columnDefs", allow_duplicate=True),
+            Output("meldingsbasen-foretak-omsetning-card", "value"),
+            Output("meldingsbasen-foretak-ansatte-card", "value"),
             Input("meldingsbasen-foretak-store", "data"),
             Input("meldingsbasen-checklist", "value"),
             prevent_initial_call=True,
@@ -575,14 +624,23 @@ class Meldingsbasen:
             cols = [c for c in cols if c in df.columns]
             df = df[cols]
 
+            omsetning = store_data[0].get("omsetning", "")
+            antall_ansatte = store_data[0].get("antall_ansatte", "")
+
             bof_children = [
                 {"field": "orgnr", "headerName": "orgnr"},
                 {"field": "org_form", "headerName": "org_form"},
                 {"field": "navn", "headerName": "navn"},
                 {"field": "sn07_1", "headerName": "sn07_1"},
-                {"field": "sn07_navn", "headerName": "sn07 navn", "editable": False, "wrapText": True,
-    "autoHeight": True,
-    "cellStyle": {"whiteSpace": "normal"}},
+                {
+                    "field": "sn07_navn",
+                    "headerName": "sn07 navn",
+                    "editable": False,
+                    "wrapText": True,
+                    "width": 600,
+                    "autoHeight": True,
+                    "cellStyle": {"whiteSpace": "normal"},
+                },
                 {"field": "sn07_et", "headerName": "endring_sn07", "editable": True},
                 {"field": "sn2025_1", "headerName": "sn2025_1", "editable": True},
                 {
@@ -590,8 +648,9 @@ class Meldingsbasen:
                     "headerName": "sn2025 navn",
                     "editable": False,
                     "wrapText": True,
-    "autoHeight": True,
-    "cellStyle": {"whiteSpace": "normal"}
+                    "width": 600,
+                    "autoHeight": True,
+                    "cellStyle": {"whiteSpace": "normal"},
                 },
                 {
                     "field": "sn25_et",
@@ -606,9 +665,15 @@ class Meldingsbasen:
                     "editable": True,
                     "cellEditor": "agDateCellEditor",
                 },
-                {"field": "fritekst", "headerName": "fritekst", "editable": True, "wrapText": True,
-    "autoHeight": True,
-    "cellStyle": {"whiteSpace": "normal"}},
+                {
+                    "field": "fritekst",
+                    "headerName": "fritekst",
+                    "editable": True,
+                    "wrapText": True,
+                    "width": 600,
+                    "autoHeight": True,
+                    "cellStyle": {"whiteSpace": "normal"},
+                },
             ]
             column_defs = [{"headerName": "BoF", "children": bof_children}]
             if skjemadata:
@@ -628,7 +693,7 @@ class Meldingsbasen:
                     }
                 )
 
-            return df.to_dict("records"), column_defs
+            return df.to_dict("records"), column_defs, omsetning, antall_ansatte
 
         @callback(
             Output("meldingsbasen-bedrift-store", "data"),
@@ -642,11 +707,13 @@ class Meldingsbasen:
                 raise PreventUpdate
 
             refnr = foretak_store[0].get("refnr", "")
+            omsetning = foretak_store[0].get("omsetning", "")
+            antall_ansatte = foretak_store[0].get("antall_ansatte", "")
             foretaks_nr = foretak_store[0].get("foretaks_nr", "")
 
             with sqlite3.connect(SSB_BEDRIFT_PATH) as conn:
                 df = pd.read_sql_query(
-                    f"""SELECT orgnr, navn, sn07_1, sn07_1_rdato, sn07_1_gdato, sn2025_1, sn2025_1_rdato, sn2025_1_gdato, org_form, omsetning, antall_ansatte FROM ssb_bedrift WHERE foretaks_nr = '{foretaks_nr}';""",
+                    f"""SELECT orgnr, navn, sn07_1, sn07_1_rdato, sn07_1_gdato, sn2025_1, sn2025_1_rdato, sn2025_1_gdato, org_form FROM ssb_bedrift WHERE foretaks_nr = '{foretaks_nr}';""",
                     conn,
                 )
             if refnr:
@@ -675,6 +742,8 @@ class Meldingsbasen:
 
             df = df.merge(e, how="left", on="orgnr")
 
+            df["omsetning_f"] = omsetning  # fra foretak
+            df["antall_ansatte_f"] = antall_ansatte  # fra foretak
             df["sn07_et"] = None
             df["sn25_et"] = None
             df["fritekst"] = ""
@@ -729,9 +798,15 @@ class Meldingsbasen:
                 {"field": "org_form", "headerName": "org_form"},
                 {"field": "navn", "headerName": "navn"},
                 {"field": "sn07_1", "headerName": "sn07_1"},
-                {"field": "sn07_navn", "headerName": "sn07 navn", "editable": False, "wrapText": True,
-    "autoHeight": True,
-    "cellStyle": {"whiteSpace": "normal"}},
+                {
+                    "field": "sn07_navn",
+                    "headerName": "sn07 navn",
+                    "editable": False,
+                    "wrapText": True,
+                    "autoHeight": True,
+                    "width": 600,
+                    "cellStyle": {"whiteSpace": "normal"},
+                },
                 {"field": "sn07_et", "headerName": "endring_sn07", "editable": True},
                 {"field": "sn2025_1", "headerName": "sn2025_1", "editable": True},
                 {
@@ -739,8 +814,9 @@ class Meldingsbasen:
                     "headerName": "sn2025 navn",
                     "editable": False,
                     "wrapText": True,
-    "autoHeight": True,
-    "cellStyle": {"whiteSpace": "normal"}
+                    "autoHeight": True,
+                    "width": 600,
+                    "cellStyle": {"whiteSpace": "normal"},
                 },
                 {
                     "field": "sn25_et",
@@ -755,9 +831,15 @@ class Meldingsbasen:
                     "editable": True,
                     "cellEditor": "agDateCellEditor",
                 },
-                {"field": "fritekst", "headerName": "fritekst", "editable": True, "wrapText": True,
-    "autoHeight": True,
-    "cellStyle": {"whiteSpace": "normal"}},
+                {
+                    "field": "fritekst",
+                    "headerName": "fritekst",
+                    "editable": True,
+                    "wrapText": True,
+                    "width": 600,
+                    "autoHeight": True,
+                    "cellStyle": {"whiteSpace": "normal"},
+                },
             ]
             column_defs = [{"headerName": "BoF", "children": bof_children}]
             if skjemadata:
@@ -795,7 +877,7 @@ class Meldingsbasen:
         def edit_bedrift(edited, rows, column_defs, alert_store):
             alert_store = alert_store or []
             edited_col = edited[0]["colId"]
-            if edited_col not in ("sn2025_1", "sn07_1"):
+            if edited_col not in ("sn2025_1", "sn07_1", "sn2025_1_gdato"):
                 raise PreventUpdate
 
             valid_check, alert_store = self._check_sn_input(edited, alert_store)
@@ -816,6 +898,21 @@ class Meldingsbasen:
                     edited, rows, column_defs, alert_store
                 )
                 return row_data, column_defs, alert_store
+            elif edited_col == "sn2025_1_gdato":
+                orgnr = edited[0]["data"]["orgnr"]
+                new_date = edited[0]["data"]["sn2025_1_gdato"]
+                df = pd.DataFrame(rows)
+                df.loc[df["orgnr"] == orgnr, "sn2025_1_gdato"] = new_date
+                alert_store = [
+                    create_alert(
+                        f"Dato for {orgnr} oppdatert til {new_date}!",
+                        "success",
+                        ephemeral=True,
+                        duration=4,
+                    ),
+                    *alert_store,
+                ]
+                return df.to_dict("records"), column_defs, alert_store
                 # orgnr = edited[0]["data"]["orgnr"]
                 # selected = edited[0]["data"]["sn07_1"]
                 # alert_store = [
@@ -843,7 +940,7 @@ class Meldingsbasen:
         def edit_foretak(edited, rows, column_defs, alert_store):
             alert_store = alert_store or []
             edited_col = edited[0]["colId"]
-            if edited_col not in ("sn2025_1", "sn07_1"):
+            if edited_col not in ("sn2025_1", "sn07_1", "sn2025_1_gdato"):
                 raise PreventUpdate
 
             valid_check, alert_store = self._check_sn_input(edited, alert_store)
@@ -864,6 +961,22 @@ class Meldingsbasen:
                     edited, rows, column_defs, alert_store
                 )
                 return row_data, column_defs, alert_store
+
+            elif edited_col == "sn2025_1_gdato":
+                orgnr = edited[0]["data"]["orgnr"]
+                new_date = edited[0]["data"]["sn2025_1_gdato"]
+                df = pd.DataFrame(rows)
+                df.loc[df["orgnr"] == orgnr, "sn2025_1_gdato"] = new_date
+                alert_store = [
+                    create_alert(
+                        f"Dato for {orgnr} oppdatert til {new_date}!",
+                        "success",
+                        ephemeral=True,
+                        duration=4,
+                    ),
+                    *alert_store,
+                ]
+                return df.to_dict("records"), column_defs, alert_store
                 # orgnr = edited[0]["data"]["orgnr"]
                 # selected = edited[0]["data"]["sn07_1"]
                 # alert_store = [
