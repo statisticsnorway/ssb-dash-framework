@@ -4,11 +4,11 @@ from abc import ABC
 from abc import abstractmethod
 
 import dash_bootstrap_components as dbc
-from dapla import FileClient
 from dash import callback
 from dash import html
 from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
+import gcsfs
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
@@ -156,7 +156,7 @@ class SkjemapdfViewer(ABC):
             path_to_file = f"{self.pdf_folder_path}/{form_identifier}.pdf"
             logger.debug(f"Trying to open file: {path_to_file}")
             try:
-                fs = FileClient.get_gcs_file_system()
+                fs = gcsfs.GCSFileSystem()
                 with fs.open(
                     f"{self.pdf_folder_path}/{form_identifier}.pdf",
                     "rb",

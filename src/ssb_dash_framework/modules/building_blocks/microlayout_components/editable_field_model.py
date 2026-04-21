@@ -51,24 +51,9 @@ def default_updater(
     value, refnr: str, settings: CallbackSettings, field_path: str, *args
 ):
     logger.debug(f"Updating {field_path}")
-    with get_connection() as conn: # TODO: Fix this probably unnecessary roundtrip to the database
-        t = conn.table(settings.form_data_table)
-        res = (
-            t.filter(
-                [
-                    t[settings.form_reference_number_column] == refnr,
-                    t[settings.formdata_fieldname_column] == field_path,
-                ]
-            )
-            .select(settings.formdata_field_value_column_name)
-            .as_scalar()
-            .to_pandas()
-        )
-        if value == res:
-            logger.debug(
-                f"Preventing update due to new value '{value}' being identical to old value '{res}'"
-            )
-            raise PreventUpdate
+    with (
+        get_connection() as conn
+    ):  
         query = f"""
             UPDATE {settings.form_data_table}
             SET {settings.formdata_field_value_column_name} = '{value}'
@@ -141,14 +126,15 @@ class EditableField(BaseModel):
         guard_states = self._build_guard_states(settings)
 
         @callback(
-            Output(self._id, "value", allow_duplicate=True),
+            Output(id, "value", allow_duplicate=True),
+            Input(id, "value"),
             Input(settings.form_reference_input_id, "value"),
             *inputs if inputs else [],
             *states if states else [],
             *guard_states,
             prevent_initial_call="duplicate",
         )
-        def populate_field(refnr, *args):
+        def populate_field(value, refnr, *args):
             # Peel guard values off the end of args
             n_guard = len(guard_states)
             guard_values = args[-n_guard:] if n_guard else ()
@@ -157,46 +143,22 @@ class EditableField(BaseModel):
                 logger.debug("Preventing update")
                 raise PreventUpdate
 
-            return self.getter_func(
-                refnr,
-                settings,
-                self.field_path,
-                *real_args,
-                *getter_args if getter_args else [],
-            )
-
-        inputs_valid = inputs if inputs else []
-        inputs_as_state = [
-            State(input.component_id, input.component_property)
-            for input in inputs_valid
-        ]
-
-        @callback(
-            Output(self._id, "value", allow_duplicate=True),
-            Input(self._id, "value"),
-            State(settings.form_reference_input_id, "value"),
-            *inputs_as_state,
-            *states if states else [],
-            *guard_states,
-            prevent_initial_call="duplicate",
-        )
-        def update_field(value, refnr, *args):
-            if ctx.triggered_id != id: # TODO: Make sure it only triggers on a true update, not just on loading data.
+            if ctx.triggered_id == id:
+                self.update_func(
+                    value,
+                    refnr,
+                    settings,
+                    self.field_path,
+                    *real_args,
+                    *getter_args if getter_args else [],
+                )
                 raise PreventUpdate
+            else:
+                return self.getter_func(
+                    refnr,
+                    settings,
+                    self.field_path,
+                    *real_args,
+                    *getter_args if getter_args else [],
+                )
 
-            n_guard = len(guard_states)
-            guard_values = args[-n_guard:] if n_guard else ()
-            real_args = args[:-n_guard] if n_guard else args
-
-            if not self._check_guard(settings, *guard_values):
-                raise PreventUpdate
-
-            self.update_func(
-                value,
-                refnr,
-                settings,
-                self.field_path,
-                *real_args,
-                *getter_args if getter_args else [],
-            )
-            raise PreventUpdate
