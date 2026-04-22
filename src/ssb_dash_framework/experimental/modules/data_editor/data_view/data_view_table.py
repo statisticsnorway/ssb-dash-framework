@@ -1,5 +1,4 @@
 import logging
-import threading
 import time
 from typing import Any
 
@@ -23,19 +22,6 @@ from .....utils.core_models import UpdateSkjemadata
 from ..core import DataEditorDataView
 
 logger = logging.getLogger(__name__)
-
-# Two-level cache for read_table results.
-#
-# _row_cache   — keyed by (table_name, sorted filter items); holds (rowData, columnDefs).
-#                Invalidated per-table when a cell edit is committed.
-# _col_cache   — keyed by table_name; holds columnDefs only.
-#                Never invalidated (schema doesn't change at runtime).
-#
-# Both are protected by a single lock. The lock is NOT held during the postgres query
-# so other threads can service cache hits while one thread is fetching.
-_row_cache: dict[str, tuple[list, list]] = {}
-_col_cache: dict[str, list] = {}
-_cache_lock = threading.Lock()
 
 
 class DataEditorTable(DataEditorDataView):
@@ -148,44 +134,36 @@ class DataEditorTable(DataEditorDataView):
                 variables=[*self.time_units, "skjema", "refnr"], values=args
             )
 
-            cache_key = f"{selected_table}:{sorted(filter_dict.items())}"
-
-            # Fast path: return cached result without touching the database.
-            with _cache_lock:
-                cached = _row_cache.get(cache_key)
-            if cached is not None:
-                logger.debug(f"Cache hit for {cache_key}")
-                msg = f"[PERF] read_table cache hit — {selected_table}: 0.000s"
-                logger.info(msg)
-                print(msg, flush=True)
-                return cached
-
-            # Cache miss: query postgres, build columndefs, populate both caches.
-            start = time.perf_counter()
+            t0 = time.perf_counter()
             with get_connection() as conn:
+                t1 = time.perf_counter()
                 t = conn.table(selected_table)
-                df = t.filter(ibis_filter_with_dict(filter_dict)).to_pandas()
-            elapsed = time.perf_counter() - start
-            msg = f"[PERF] read_table cache miss — {selected_table}: {elapsed:.3f}s ({len(df)} rows)"
+                expr = t.filter(ibis_filter_with_dict(filter_dict))
+                t2 = time.perf_counter()
+                df = expr.to_pandas()
+                t3 = time.perf_counter()
+            elapsed = t3 - t0
+            msg = (
+                f"[PERF] read_table — {selected_table}: "
+                f"total={elapsed:.3f}s "
+                f"conn={t1 - t0:.3f}s "
+                f"expr={t2 - t1:.3f}s "
+                f"query={t3 - t2:.3f}s "
+                f"({len(df)} rows)"
+            )
             logger.info(msg)
             print(msg, flush=True)
 
-            with _cache_lock:
-                if selected_table not in _col_cache:
-                    _col_cache[selected_table] = [
-                        {
-                            "headerName": col,
-                            "field": col,
-                            "hide": col in ["row_id", "row_ids", *self.time_units, "skjema", "refnr"],
-                            "flex": 2 if col == "variabel" else 1,
-                        }
-                        for col in df.columns
-                    ]
-                columndefs = _col_cache[selected_table]
-                result = df.to_dict("records"), columndefs
-                _row_cache[cache_key] = result
-
-            return result
+            columndefs = [
+                {
+                    "headerName": col,
+                    "field": col,
+                    "hide": col in ["row_id", "row_ids", *self.time_units, "skjema", "refnr"],
+                    "flex": 2 if col == "variabel" else 1,
+                }
+                for col in df.columns
+            ]
+            return df.to_dict("records"), columndefs
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
@@ -223,13 +201,6 @@ class DataEditorTable(DataEditorDataView):
             elif isinstance(_get_connection_object(), ConnectionPool):
                 logger.debug("Attempting to update using ibis logic.")
                 feedback = update.update_ibis(long)
-
-            # Invalidate all cached results for this table so the next read
-            # reflects the committed edit.
-            with _cache_lock:
-                stale = [k for k in _row_cache if k.startswith(f"{table}:")]
-                for k in stale:
-                    del _row_cache[k]
 
             return [feedback, *alert_store]
 

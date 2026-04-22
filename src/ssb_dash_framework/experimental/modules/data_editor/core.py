@@ -156,22 +156,12 @@ class DataEditor:
         try:
             from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_table import (
                 DataEditorTable,
-                _row_cache,
             )
 
             for table in undefined_view:
-                # Pass pre-warmed data if available so the first render is
-                # served from the layout itself — no callback round-trip needed.
-                initial: tuple | None = None
-                for key, val in _row_cache.items():
-                    if key.startswith(f"{table}:"):
-                        initial = val
-                        break
                 DataEditorTable(
                     applies_to_tables=[table],
                     applies_to_forms=undefined_view[table],
-                    initial_rowdata=initial[0] if initial else None,
-                    initial_coldefs=initial[1] if initial else None,
                 )
         except Exception as e:
             logger.error("Error during creation of default view.", exc_info=True)
