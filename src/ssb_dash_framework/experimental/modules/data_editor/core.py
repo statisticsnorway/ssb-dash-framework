@@ -399,9 +399,9 @@ class DataEditorInfoRow:
         variableselector = VariableSelector(
             selected_inputs=[],
             selected_states=[
-                self.info_variables[x]["variable_name"]
+                x.source_variable_name
                 for x in self.info_variables
-                if self.info_variables[x]["source"] == "variableselector"
+                if x.source == "variableselector"
             ],
         )
 
