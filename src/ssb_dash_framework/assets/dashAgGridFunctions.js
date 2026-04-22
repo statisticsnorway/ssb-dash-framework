@@ -1,27 +1,35 @@
 var dagcomponentfuncs = window.dashAgGridComponentFunctions = window.dashAgGridComponentFunctions || {};
 
 dagcomponentfuncs.DropdownRenderer = function(props) {
-    // Support both static values from colDef and per-row options from rowData
+    if (!props || !props.data || !props.colDef) {
+    return React.createElement("span", {}, "");
+    }
+
     const staticValues = props.colDef.cellRendererParams && props.colDef.cellRendererParams.values;
     const optionsField = props.colDef.cellRendererParams && props.colDef.cellRendererParams.optionsField;
-    
-    let values;
-    if (staticValues) {
-        // Static list e.g. ["endring", "korreksjon"]
-        values = staticValues.map(v => ({ label: v, value: v }));
-    } else if (optionsField && props.data[optionsField]) {
-        // Per-row options from rowData e.g. [{code: "01", name: "Jordbruk"}, ...]
-        const rowOptions = props.data[optionsField];
+
+    // If this row has per-row options, show dropdown
+    let values = null;
+    if (optionsField && props.data[optionsField]) {
+        let rowOptions = props.data[optionsField];
+        if (typeof rowOptions === "string") rowOptions = JSON.parse(rowOptions);
         const valueField = props.colDef.cellRendererParams.valueField || "code";
         const labelField = props.colDef.cellRendererParams.labelField || "name";
         values = rowOptions.map(o => ({ label: `${o[valueField]} ${o[labelField]}`, value: o[valueField] }));
-    } else {
-        values = [];
+    } else if (staticValues) {
+        values = staticValues.map(v => ({ label: v, value: v }));
+    }
+
+    // If no options for this row, just render plain text
+    if (!values || values.length === 0) {
+        return React.createElement("span", {}, props.value || "");
     }
 
     function onChange(e) {
         const val = e.target.value === "" ? null : e.target.value;
-        props.node.setDataValue(props.colDef.field, val);  // triggers cellValueChanged
+        if (props.node && typeof props.node.setDataValue === "function") {
+            props.node.setDataValue(props.colDef.field, val);
+        }
     }
 
     return React.createElement(
