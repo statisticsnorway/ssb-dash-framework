@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Any
 
 import dash_ag_grid as dag
@@ -29,19 +30,28 @@ class DataEditorTable(DataEditorDataView):
     _id_number = 0
 
     def __init__(
-        self, applies_to_tables: list[str], applies_to_forms: list[str]
+        self,
+        applies_to_tables: list[str],
+        applies_to_forms: list[str],
+        initial_rowdata: list[dict] | None = None,
+        initial_coldefs: list[dict] | None = None,
     ) -> None:
         """Initializes a DataEditorTable for selected tables and forms.
 
         Args:
             applies_to_tables: A list of tables that the module should apply to.
             applies_to_forms: A list of forms that the module should apply to.
+            initial_rowdata: Optional row data to embed in the layout on first render,
+                bypassing the callback round-trip for the initial page load.
+            initial_coldefs: Optional column definitions paired with initial_rowdata.
         """
         self.module_number = DataEditorTable._id_number
         self.module_name = self.__class__.__name__
         DataEditorTable._id_number += 1
         self.time_units = ["aar"]  # TODO fix, make set/get time_units functions
         self.refnr = "refnr"  # TODO fix, maybe make set/get for refnr?
+        self._initial_rowdata = initial_rowdata
+        self._initial_coldefs = initial_coldefs
         self.variable_selector = VariableSelector(
             selected_inputs=[
                 *self.time_units,
@@ -77,6 +87,8 @@ class DataEditorTable(DataEditorDataView):
                     id=f"{self.module_name}-{self.module_number}-aggrid",
                     className="ag-theme-alpine header-style-on-filter",
                     style={"width": "100%", "height": "90vh"},
+                    rowData=self._initial_rowdata,
+                    columnDefs=self._initial_coldefs,
                     defaultColDef={
                         "resizable": True,
                         "sortable": True,
@@ -85,7 +97,11 @@ class DataEditorTable(DataEditorDataView):
                         "filter": "agTextColumnFilter",
                         "flex": 1,
                     },
-                    dashGridOptions={"rowHeight": 38},
+                    dashGridOptions={
+                        "rowHeight": 38,
+                        "suppressColumnVirtualisation": True,
+                        "animateRows": False,
+                    },
                 ),
             ],
         )
@@ -98,6 +114,7 @@ class DataEditorTable(DataEditorDataView):
             Output(f"{self.module_name}-{self.module_number}-aggrid", "columnDefs"),
             Input("dataeditortableselector", "value"),
             self.variable_selector.get_all_callback_objects(),
+            prevent_initial_call=self._initial_rowdata is not None,
         )
         def read_table(selected_table: str, *args: list[str]):
             """Populate the table view with data."""
@@ -117,31 +134,35 @@ class DataEditorTable(DataEditorDataView):
                 variables=[*self.time_units, "skjema", "refnr"], values=args
             )
 
-            logger.debug(f"Filterdict: {filter_dict}")
-
+            t0 = time.perf_counter()
             with get_connection() as conn:
+                t1 = time.perf_counter()
                 t = conn.table(selected_table)
-                df = t.filter(ibis_filter_with_dict(filter_dict)).to_pandas()
-
-            logger.debug(f"Results from query:\n{df.head()}")
+                expr = t.filter(ibis_filter_with_dict(filter_dict))
+                t2 = time.perf_counter()
+                df = expr.to_pandas()
+                t3 = time.perf_counter()
+            elapsed = t3 - t0
+            msg = (
+                f"[PERF] read_table — {selected_table}: "
+                f"total={elapsed:.3f}s "
+                f"conn={t1 - t0:.3f}s "
+                f"expr={t2 - t1:.3f}s "
+                f"query={t3 - t2:.3f}s "
+                f"({len(df)} rows)"
+            )
+            logger.info(msg)
+            print(msg, flush=True)
 
             columndefs = [
                 {
                     "headerName": col,
                     "field": col,
-                    "hide": col
-                    in [
-                        "row_id",
-                        "row_ids",
-                        *self.time_units,
-                        "skjema",
-                        "refnr",
-                    ],
+                    "hide": col in ["row_id", "row_ids", *self.time_units, "skjema", "refnr"],
                     "flex": 2 if col == "variabel" else 1,
                 }
                 for col in df.columns
             ]
-            logger.debug(f"Returning:\n{df.head()}")
             return df.to_dict("records"), columndefs
 
         @callback(
@@ -180,6 +201,7 @@ class DataEditorTable(DataEditorDataView):
             elif isinstance(_get_connection_object(), ConnectionPool):
                 logger.debug("Attempting to update using ibis logic.")
                 feedback = update.update_ibis(long)
+
             return [feedback, *alert_store]
 
         @callback(  # type: ignore[misc]

@@ -159,8 +159,9 @@ class DataEditor:
             )
 
             for table in undefined_view:
-                test = DataEditorTable(
-                    applies_to_tables=[table], applies_to_forms=undefined_view[table]
+                DataEditorTable(
+                    applies_to_tables=[table],
+                    applies_to_forms=undefined_view[table],
                 )
         except Exception as e:
             logger.error("Error during creation of default view.", exc_info=True)
