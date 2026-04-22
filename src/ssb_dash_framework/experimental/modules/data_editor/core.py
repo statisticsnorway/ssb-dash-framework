@@ -1,9 +1,4 @@
-"""Needs to define models for:
-- infopanel
-- helpertab
-- helpersidebar
-- dataview
-"""
+"""Contains base classes for DataEditor functionality and some utilities."""
 
 import logging
 from abc import ABC
@@ -65,6 +60,9 @@ class DataEditor:
             table_list: A list of tables that will show up in the dropdown menu.
                 Defaults to None, which will try to find all tables with the 'skjemadata_' prefix.
 
+        Raises:
+            NotImplementedError: if another instance of DataEditor is already running. Current implementation does not support multiple of the DataEditor module.
+
         Note:
             This module needs to be initialized last, as components need to already be registered in order to be collected.
         """
@@ -83,6 +81,9 @@ class DataEditor:
             )
         else:
             self.enable_table_selector = False
+            logger.warning(
+                "Without a table selector, it will not be possible to choose which table to view.\nDataEditor looks for the selected table as the 'value' attribute from the id 'dataeditortableselector'."
+            )
 
         self.icon = "🗊"
         self.label = "Data editor"
@@ -92,6 +93,9 @@ class DataEditor:
 
     def gather_components(self) -> None:
         """Using the DataEditorRegistry, this method assembles the DataEditor module with currently enabled components."""
+        logger.debug(
+            f"Gathering components based on current DataEditorRegistry:\n{DataEditorRegistry()}"
+        )
         self.info_view = html.Div(
             [module.layout() for module in DataEditorRegistry.info_fields],
             className="dataeditor-info-view",
@@ -109,10 +113,6 @@ class DataEditor:
         main_views = []
 
         self.make_default_view()
-
-        logger.debug(
-            f"Existing main views at gathering of components:\n{DataEditorRegistry.main_views}"
-        )
 
         for divname, info in DataEditorRegistry.main_views.items():
             logger.debug(
@@ -138,14 +138,15 @@ class DataEditor:
             children=[view for view in main_views],
         )
 
-    def make_default_view(self):
+    def make_default_view(self) -> None:
+        """Creates a default view for table-form pairs without a specific one to prevent blank screen."""
         with get_connection() as conn:
             t = conn.table("skjemamottak")
             t = t.select("skjema").distinct().execute()
 
             with_view = set(DataEditorRegistry._table_form_covered)
 
-            undefined_view: dict[str, list] = {}
+            undefined_view: dict[str, list[str]] = {}
             for table in [
                 table for table in conn.list_tables() if table.startswith("skjemadata_")
             ]:
@@ -159,7 +160,7 @@ class DataEditor:
             )
 
             for table in undefined_view:
-                test = DataEditorTable(
+                DataEditorTable(
                     applies_to_tables=[table], applies_to_forms=undefined_view[table]
                 )
         except Exception as e:
@@ -167,7 +168,7 @@ class DataEditor:
             raise e
 
     def _create_layout(self) -> dbc.Container:
-
+        """Creates the layout for the DataEditor module."""
         return dbc.Container(
             [
                 dbc.Row(html.H1(id=f"{self.module_name}-{self.module_number}-header")),
@@ -206,7 +207,10 @@ class DataEditor:
         def update_main_view(
             selected_table: str, selected_form: str
         ) -> dict[str, Any] | list[dict[str, Any]]:
-            # Maybe more efficient to create all and then hide-unused?
+            """Checks which table and form is currently selected and shows the appropriate view.
+
+            Unused views are set to be hidden, but still exists in the layout.
+            """
             logger.debug(f"Selected table: {selected_table}")
             styles: list[dict[str, Any]] = []
             for divname in DataEditorRegistry.main_views:
@@ -236,7 +240,10 @@ class DataEditor:
             Input("dataeditortableselector", "value"),
             VariableSelector([], []).get_input("altinnskjema"),
         )
-        def update_header(selected_table: str, selected_form: str) -> str:
+        def update_header(
+            selected_table: str, selected_form: str
+        ) -> str:  # TODO: make prettier
+            """Show an info message telling the user which form and table are currently selected."""
             return f"Viser data for {selected_form} fra tabell {selected_table}"
 
 
@@ -254,6 +261,11 @@ class DataEditorTableSelector:
 
         Args:
             starting_table: Sets the default value of the DataEditorTableSelector dropdown.
+            table_list: Optional override to default list of tables. Defaults to getting all tables starting with the prefix 'skjemadata_'.
+
+        Raises:
+            NotImplementedError: if another instance of DataEditorTableSelector is already running. Current implementation does not support multiple of the DataEditorTableSelector module.
+            ValueError: If starting table does not exist in table_list.
         """
         if DataEditorTableSelector._id_number != 0:
             raise NotImplementedError(
@@ -273,13 +285,14 @@ class DataEditorTableSelector:
 
         if starting_table not in table_list:
             raise ValueError(
-                f"Selected starting table not found in data source.\nExpected one of: '{table_list}'.\nReceived: '{self.starting_table}'"
+                f"Selected starting table not found in data source.\nExpected one of: '{table_list}'.\nReceived: '{starting_table}'"
             )
         self.starting_table = starting_table
 
         DataEditorRegistry.sidebar_modules.insert(0, self)
 
     def _create_layout(self) -> html.Div:
+        """Creates the component."""
         return html.Div(
             [
                 dbc.Label("Tabellvelger"),
@@ -292,29 +305,71 @@ class DataEditorTableSelector:
         )
 
     def layout(self) -> html.Div:
+        """Returns the layout containing the component."""
         return self._create_layout()
 
     def module_callbacks(
         self,
     ) -> None:  # TODO Add a way to connect selected table to variable selector?
+        """Registers callbacks. Currently no callbacks required from the module itself."""
         pass
 
 
+from pydantic import BaseModel
+
+
+class InfoRowField(BaseModel):
+    """Model for a info field in the DataEditorInfoRow module."""
+
+    name: str
+    source: str
+    source_variable_name: str
+
+
 class DataEditorInfoRow:
+    """Creates a row of cards at top of DataEditor showing key variables for selected form."""
 
     _id_number = 0
 
-    def __init__(self, variables_dict: dict[str, Any]) -> None:
+    def __init__(
+        self, variables: dict[str, Any] | list[InfoRowField]
+    ) -> None:  # TODO make pydantic class for an info field.
+        """Initializes the info row for the DataEditor.
+
+        Args:
+            variables: A list of InfoRowField objects or a dict where the key is the label for the variable, while the value must contain...
+
+        Raises:
+            TypeError: If 'variables' is not list of InfoRowField objects or a compatible dict.
+
+        """
         self.module_number = DataEditorInfoRow._id_number
         self.module_name = self.__class__.__name__
         DataEditorInfoRow._id_number += 1
-
-        self.info_variables = variables_dict
+        if isinstance(variables, dict):
+            _vars = []
+            for var in variables:
+                _vars.append(
+                    InfoRowField(
+                        name=var,
+                        source=variables[var]["source"],
+                        source_variable_name=variables[var]["variable_name"],
+                    )
+                )
+            self.info_variables = _vars
+        elif isinstance(variables, list) and all(
+            isinstance(v, InfoRowField) for v in variables
+        ):
+            self.info_variables = variables
+        else:
+            raise TypeError(
+                "Argument 'variables' must be either list of InfoRowField or a dictionary."
+            )
         self.module_callbacks()
 
         DataEditorRegistry.info_fields.append(self)
 
-    def _create_layout(self):
+    def _create_layout(self) -> dbc.Row:
         info_fields = []
         for info_var in self.info_variables:
             info_fields.append(
@@ -330,10 +385,12 @@ class DataEditorInfoRow:
 
         return dbc.Row(dbc.CardGroup(info_fields))
 
-    def layout(self):
+    def layout(self) -> dbc.Row:
+        """Returns the module layout."""
         return self._create_layout()
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
+        """Registers callbacks for the module."""
         variableselector = VariableSelector(
             selected_inputs=[],
             selected_states=[
@@ -352,7 +409,9 @@ class DataEditorInfoRow:
             *[variableselector.get_input(unit) for unit in get_time_units().keys()],
             *[variableselector.get_all_states()],
         )
-        def get_data_for_info_row_fields(ident, *args):
+        def get_data_for_info_row_fields(
+            ident: str, *args: Any
+        ) -> list[str | int | float | bool | None]:
             logger.debug(f"ident: {ident}\nargs: {args}")
             info_values = []
             time_unit_list = [x for x in get_time_units().keys()]
@@ -382,13 +441,15 @@ class DataEditorInfoRow:
             return info_values
 
 
-class DataEditorHelperButton(ABC):
+class DataEditorHelperButton:
     """Base class for defining a helper button component."""
 
     _id_number = 0
 
     def __init__(self, label: str) -> None:
         """Core functionality to register the component and make the button functional.
+
+        After being initialized it registers itself to DataEditorRegistry.
 
         Args:
             label: The label to put on the button.
@@ -398,6 +459,7 @@ class DataEditorHelperButton(ABC):
         DataEditorRegistry.helper_modules.append(self)
 
     def layout(self) -> html.Div:
+        """Returns the layout of the module."""
         if not hasattr(self, "modal_body"):
             raise AttributeError("Lacking 'modal_body' attribute.")
         return html.Div(
@@ -444,44 +506,34 @@ class DataEditorHelperSidebar(ABC):
 
     @abstractmethod
     def _create_layout(self) -> html.Div:
+        """Creates the layout for the module."""
         pass
 
     def layout(self) -> html.Div:
+        """Returns the layout of the module."""
         return self._create_layout()
 
     @abstractmethod
     def module_callbacks(self) -> None:
+        """Registers callbacks for the module."""
         pass
 
 
 class DataEditorDataView(ABC):
     """Base class for defining a data view."""
 
-    # @property
-    # @abstractmethod
-    # def module_number(self) -> int:
-    #     """Subclasses must define a unique module number."""
-    #     pass
-
-    # @property
-    # @abstractmethod
-    # def module_name(self) -> str:
-    #     """Subclasses must define a module name. Normally by using 'self.__class__.__name__'."""
-    #     pass
-
-    # @property
-    # @abstractmethod
-    # def divname(self) -> str:
-    #     """Subclasses must define a name for its html.Div(id=self.divname).
-
-    #     Example:
-    #         self.divname = f'{self.module_name}-{self.module_number}'
-    #     """
-    #     pass
-
     def __init__(
         self, applies_to_tables: str | list[str], applies_to_forms: str | list[str]
     ) -> None:
+        """Initializes and registers a DataEditorDataView module.
+
+        Args:
+            applies_to_tables: A list of tables in the database that this view should apply to.
+            applies_to_forms: A list of forms that this view should apply to.¨
+
+        Raises:
+            TypeError: If not all tables and forms in applies_to_tables and applies_to_forms are strings.
+        """
         if isinstance(applies_to_tables, str):
             applies_to_tables = [applies_to_tables]
         self.applies_to_tables = applies_to_tables
@@ -501,16 +553,27 @@ class DataEditorDataView(ABC):
             }
         )
         for table in self.applies_to_tables:
+            if not isinstance(table, str):
+                raise TypeError(
+                    f"Expected all tables to be strings. Received: '{table}' of type '{type(table)}'"
+                )
             for form in self.applies_to_forms:
-                DataEditorRegistry._table_form_covered.append(tuple((table, form)))
+                if not isinstance(form, str):
+                    raise TypeError(
+                        f"Expected all forms to be strings. Received: '{form}' of type '{type(form)}'"
+                    )
+                DataEditorRegistry._table_form_covered.append((table, form))
 
     @abstractmethod
     def _create_layout(self) -> None:
+        """Abstract method for creating the module layout."""
         pass
 
     def layout(self) -> None:
+        """Returns the module layout."""
         return self._create_layout()
 
     @abstractmethod
     def module_callbacks(self) -> None:
+        """Abstract method to register callbacks."""
         pass
