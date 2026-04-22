@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Callable
+from typing import Any
 
 from dash import Input
 from dash import Output
@@ -10,6 +11,7 @@ from dash.exceptions import PreventUpdate
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import computed_field
 
 from ....utils.config_tools.connection import get_connection
 
@@ -27,7 +29,7 @@ class CallbackSettings(BaseModel):
     form_selector_id: str | None = None
 
 
-def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args):
+def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]) -> Any:
     logger.debug(f"Getting {field_path} for refnr: {refnr}")
     with get_connection() as conn:
         t = conn.table(settings.form_data_table)
@@ -47,8 +49,8 @@ def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args
 
 
 def default_updater(
-    value, refnr: str, settings: CallbackSettings, field_path: str, *args
-):
+    value: Any, refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]
+) -> None:
     logger.debug(f"Updating {field_path}")
     with (
         get_connection() as conn
@@ -65,14 +67,20 @@ def default_updater(
 class EditableField(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     field_path: str
-    getter_func: Callable = Field(default=defult_getter)
-    update_func: Callable = Field(default=default_updater)
+    getter_func: Callable[..., Any] = Field(default=defult_getter)
+    update_func: Callable[..., None] = Field(default=default_updater)
     # applies_to_... is used for compatibility with DataEditorDataViewCustom
     applies_to_tables: list[str] = Field(default_factory=list)
     applies_to_forms: list[str] = Field(default_factory=list)
 
+    @computed_field
+    @property
+    def _id(self) -> str:
+        return self.field_path + str(self.applies_to_tables) + str(self.applies_to_forms)
+
     def __str__(self) -> str:
         parts = [f"EditableField(path='{self.field_path}')"]
+        parts.append(f"id={self._id}")
 
         # Functions
         parts.append(
@@ -97,7 +105,7 @@ class EditableField(BaseModel):
             guard_states.append(State(settings.form_selector_id, "value"))
         return guard_states
 
-    def _check_guard(self, settings: CallbackSettings, *guard_values):
+    def _check_guard(self, settings: CallbackSettings, *guard_values: list[Any]) -> bool:
         """Returns True if the guard passes (i.e. we should proceed)."""
         idx = 0
         if settings.table_selector_id and self.applies_to_tables:
@@ -111,24 +119,23 @@ class EditableField(BaseModel):
 
     def create_callback(
         self,
-        id: str,
         settings: CallbackSettings,
         inputs: list[Input] | None = None,
         states: list[State] | None = None,
-        getter_args: None | list = None,
-    ):
+        getter_args: None | list[Any] = None,
+    ) -> None:
         guard_states = self._build_guard_states(settings)
 
         @callback(
-            Output(id, "value", allow_duplicate=True),
-            Input(id, "value"),
+            Output(self._id, "value", allow_duplicate=True),
+            Input(self._id, "value"),
             Input(settings.form_reference_input_id, "value"),
             *inputs if inputs else [],
             *states if states else [],
             *guard_states,
             prevent_initial_call="duplicate",
         )
-        def populate_field(value, refnr, *args):
+        def populate_field(value: Any, refnr: str, *args: list[Any]):
             # Peel guard values off the end of args
             n_guard = len(guard_states)
             guard_values = args[-n_guard:] if n_guard else ()
