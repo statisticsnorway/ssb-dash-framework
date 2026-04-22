@@ -544,6 +544,11 @@ MacroModule
 Meldingsbasen 
 */
 
+.cell-edited {
+    background-color: #fff5d7 !important;
+    color: #000;
+}
+
 .meldingsbasen {
     display: flex;
     flex-direction: column;
@@ -555,21 +560,27 @@ Meldingsbasen
 .meldingsbasen-topbar {
     display: flex;
     justify-content: flex-end;
+    padding-right: 20px;
+    padding-left: 40px;
+    padding-top: 20px;
     padding-bottom: 8px;
+    width: 20%;
 }
 
 .meldingsbasen-checklist {
-    font-size: 13;
-    align-items: center;
+    font-size: 16px;
     display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+    padding-top: 20px;
     padding-left: 180px;
-    padding-bottom: 40px;
 }
 
 .meldingsbasen-sidebar {
-    padding-top: 30px;
+    padding-top: 10px;
     padding-left: 20px;
-    padding-bottom: 20px;
+    padding-bottom: 10px;
 }
 
 .meldingsbasen-container {
@@ -584,27 +595,18 @@ Meldingsbasen
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 20px;
     padding-left: 20px;
+    padding-top: 20px;
 }
 
-.meldingsbasen-foretak-grid-container,
-.meldingsbasen-bedrift-grid-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.meldingsbasen-foretak-grid-container {
-    display: flex;
-    flex-direction: column;
+.meldingsbasen-foretak-grid-container .ag-center-cols-viewport {
+    min-height: unset !important;
 }
 
 .meldingsbasen-bedrift-grid-container {
     flex: 1;
-    min-height: 190px;
-    max-height: 500px;
-    padding-bottom: 10px;
+    padding-bottom: 40px;
 }
 
 .meldingsbasen-foretak-grid-container .ag-row-selected,
@@ -616,7 +618,7 @@ Meldingsbasen
 .meldingsbasen-bedrift-grid-container .ag-header-cell-label,
 .meldingsbasen-foretak-grid-container .ag-cell,
 .meldingsbasen-bedrift-grid-container .ag-cell {
-    line-height: 1.6;
+    line-height: 1.5;
     padding-top: 5px;
     padding-bottom: 5px;
 }
@@ -638,23 +640,6 @@ Meldingsbasen
     padding-left: 8px;
     cursor: pointer;
     vertical-align: middle;
-}
-
-.meldingsbasen-checklist {
-    font-size: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-    padding-top: 20px;
-}
-
-.meldingsbasen-topbar {
-    justify-content: flex-end;
-    padding-right: 20px;
-    padding-left: 40px;
-    padding-top: 20px;
-    width: 20%;
 }
 
 /*
