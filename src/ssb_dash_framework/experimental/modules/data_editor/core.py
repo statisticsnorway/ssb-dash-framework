@@ -325,6 +325,10 @@ class InfoRowField(BaseModel):
     source: str
     source_variable_name: str
 
+    def __str__(self) -> str:
+        """String representation for InfoRowField."""
+        return f"name: {self.name}\nsource: {self.source}\nsource_variable_name: {self.source_variable_name}"
+
 
 class DataEditorInfoRow:
     """Creates a row of cards at top of DataEditor showing key variables for selected form."""
@@ -422,23 +426,22 @@ class DataEditorInfoRow:
             filter_dict = create_filter_dict(time_unit_list, time_units)
             with get_connection(necessary_tables=["enhetsinfo"]) as conn:
                 for info_var in self.info_variables:
-                    logger.debug(f"{info_var}\n{self.info_variables[info_var]}")
-                    if self.info_variables[info_var]["source"] == "variableselector":
+                    logger.debug(f"Getting data for {info_var}")
+                    if info_var.source == "variableselector":
                         value = states[collected_states]
                         collected_states += 1
                     else:
-                        t = conn.table(self.info_variables[info_var]["source"])
+                        t = conn.table(info_var.source)
                         t = t.filter(_.ident == ident).filter(
                             ibis_filter_with_dict(filter_dict)
                         )
                         data = t.filter(
-                            _.variabel == self.info_variables[info_var]["variable_name"]
+                            _.variabel == info_var.source_variable_name
                         ).to_pandas()
                         logger.debug(data)
                         value = data["verdi"].item()
                     info_values.append(value)
-                    logger.debug("info_values: ", info_values)
-
+            logger.debug("info_values: ", info_values)
             return info_values
 
 
