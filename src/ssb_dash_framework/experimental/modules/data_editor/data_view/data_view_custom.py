@@ -23,7 +23,7 @@ from .....modules.building_blocks.microlayout_components.editable_field_model im
 from .....modules.building_blocks.microlayout_components.editable_field_model import (
     defult_getter,
 )
-from .....modules.building_blocks.microlayout_components.models import Layout
+from .....modules.building_blocks.microlayout_components.models import CalculatedField, Layout
 from ..core import DataEditorDataView
 
 logger = logging.getLogger(__name__)
@@ -433,10 +433,17 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
     logger.debug(
         f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
     )
+    print(
+        f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
+    )
     if applies_to_tables is None:
         applies_to_tables = []
     if applies_to_forms is None:
         applies_to_forms = []
+    if "type" in node and node["type"] == "calculated-field":
+        node["applies_to_tables"] = applies_to_tables
+        node["applies_to_forms"] = applies_to_forms
+        
     if "variable" in node:
         node = convert_node_build_field_settings(node, "field_path", node["variable"])
         node = convert_node_build_field_settings(
