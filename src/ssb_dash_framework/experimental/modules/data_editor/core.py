@@ -337,7 +337,8 @@ class DataEditorInfoRow:
         """Initializes the info row for the DataEditor.
 
         Args:
-            variables: A list of InfoRowField objects or a dict where the key is the label for the variable, while the value must contain...
+            variables: A list of InfoRowField objects or a dict where the key is the label for the variable.
+                In a dict the values must be {source: "sourcetable", variable_name: "variable name in table"}
 
         Raises:
             TypeError: If 'variables' is not list of InfoRowField objects or a compatible dict.
@@ -363,7 +364,7 @@ class DataEditorInfoRow:
             self.info_variables = variables
         else:
             raise TypeError(
-                "Argument 'variables' must be either list of InfoRowField or a dictionary."
+                "Argument 'variables' must be either list of InfoRowField or a dictionary that is convertable to a list of InfoRowField."
             )
         self.module_callbacks()
 
