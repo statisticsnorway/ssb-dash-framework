@@ -39,11 +39,15 @@ SELECT_COLUMNS_FORETAK = [
     "org_form",
     "navn",
     "sn07_1",
+    "sn07_2", 
+    "sn07_3",
     "sn07_navn",
     "sn07_et",
+    "hjelpeenhetskode_07",
     "sn2025_1",
     "sn2025_2",
     "sn2025_3",
+    "hjelpeenhetskode_25",
     "sn2025_navn",
     "sn25_et",
     "sn2025_1_gdato",
@@ -59,11 +63,15 @@ SELECT_COLUMNS_BEDRIFT = [
     "org_form",
     "navn",
     "sn07_1",
+    "sn07_2", 
+    "sn07_3",
     "sn07_navn",
     "sn07_et",
+    "hjelpeenhetskode_07",
     "sn2025_1",
     "sn2025_2",
     "sn2025_3",
+    "hjelpeenhetskode_25",
     "sn2025_navn",
     "sn25_et",
     "sn2025_1_gdato",
@@ -597,7 +605,16 @@ class Meldingsbasen:
                 ),
                 *alert_store,
             ]
-            row_data = self._mark_edited(rows, orgnr, edited_col)
+            df = pd.DataFrame(rows)
+
+            if changed['value'] == "korreksjon":
+                updated_value = "K" # korreksjonskode
+            else:
+                updated_value == "R" # endringskode
+
+            df.loc[df["orgnr"] == orgnr, edited_col] = updated_value
+
+            row_data = self._mark_edited(df.to_dict("records"), orgnr, edited_col)
             return row_data, column_defs, alert_store
 
         elif edited_col == "sn07_1":
@@ -625,7 +642,7 @@ class Meldingsbasen:
             new_date = pd.to_datetime(new_date, errors="coerce")
 
             if pd.notna(new_date):
-                new_date = new_date.strftime("%Y-%m-%d")
+                new_date = new_date.strftime("%Y%m%d")
             else:
                 new_date = None
 
@@ -661,7 +678,7 @@ class Meldingsbasen:
 
             with sqlite3.connect(SSB_FORETAK_PATH) as conn:
                 df = pd.read_sql_query(
-                    f"SELECT foretaks_nr, orgnr, navn, sn07_1, sn07_1_rdato, sn07_1_gdato, sn2025_1, sn2025_2, sn2025_3, sn2025_1_rdato, sn2025_1_gdato, org_form, omsetning, antall_ansatte FROM ssb_foretak WHERE orgnr = '{orgnr_foretak}'",
+                    f"SELECT foretaks_nr, orgnr, navn, sn07_1, sn07_2, sn07_3, hjelpeenhetskode_07, sn07_1_rdato, sn07_1_gdato, sn2025_1, sn2025_2, sn2025_3, hjelpeenhetskode_25, sn2025_1_rdato, sn2025_1_gdato, org_form, omsetning, antall_ansatte FROM ssb_foretak WHERE orgnr = '{orgnr_foretak}'",
                     conn,
                 )
 
@@ -750,7 +767,7 @@ class Meldingsbasen:
 
             df["sn2025_1_gdato"] = pd.to_datetime(
                 df["sn2025_1_gdato"], errors="coerce"
-            ).dt.strftime("%Y-%m-%d")
+            ).dt.strftime("%Y.%m.%d")
 
             omsetning = store_data[0].get("omsetning", "")
             antall_ansatte = store_data[0].get("antall_ansatte", "")
@@ -858,7 +875,7 @@ class Meldingsbasen:
 
             with sqlite3.connect(SSB_BEDRIFT_PATH) as conn:
                 df = pd.read_sql_query(
-                    f"""SELECT orgnr, navn, sn07_1, sn07_1_rdato, sn07_1_gdato, sn2025_1, sn2025_2, sn2025_3, sn2025_1_rdato, sn2025_1_gdato, org_form FROM ssb_bedrift WHERE foretaks_nr = '{foretaks_nr}';""",
+                    f"""SELECT orgnr, navn, sn07_1, sn07_2, sn07_3, hjelpeenhetskode_07, sn07_1_rdato, sn07_1_gdato, sn2025_1, sn2025_2, sn2025_3, hjelpeenhetskode_25, sn2025_1_rdato, sn2025_1_gdato, org_form FROM ssb_bedrift WHERE foretaks_nr = '{foretaks_nr}';""",
                     conn,
                 )
             if refnr:
@@ -954,7 +971,7 @@ class Meldingsbasen:
 
             df["sn2025_1_gdato"] = pd.to_datetime(
                 df["sn2025_1_gdato"], errors="coerce"
-            ).dt.strftime("%Y-%m-%d")
+            ).dt.strftime("%Y.%m.%d")
 
             bof_children = [
                 {"field": "orgnr", "headerName": "orgnr"},
@@ -1123,7 +1140,7 @@ class Meldingsbasen:
             State("var-aar", "value"),
             prevent_initial_call=True,
         )
-        def save_edits(n_clicks, foretak_rows, bedrift_rows, alert_store, aar):
+        def save_edits_to_file(n_clicks, foretak_rows, bedrift_rows, alert_store, aar):
             if not n_clicks:
                 raise PreventUpdate
 
@@ -1153,15 +1170,16 @@ class Meldingsbasen:
                 "orgnr",
                 "org_form",
                 "sn07_1",
+                "sn07_2",
+                "sn07_3",
                 "sn07_dat",
                 "sn07_et",
-                "kilde",
-                "fritekst",
                 "sn2025_1",
                 "sn2025_2",
                 "sn2025_3",
                 "sn25_dat",
                 "sn25_et",
+                "fritekst",
             ]
 
             necessary_edits = ["sn07_1", "sn2025_1", "sn25_et", "sn07_et", "fritekst", "sn2025_1_gdato"]
@@ -1194,8 +1212,6 @@ class Meldingsbasen:
                     *alert_store,
                 ]
                 return alert_store
-
-            output_lines = [f"=== Oppdateringer sendt: {timestamp} ===\n"]
 
             for row in edited_foretak:
                 output_lines.append("\n")
