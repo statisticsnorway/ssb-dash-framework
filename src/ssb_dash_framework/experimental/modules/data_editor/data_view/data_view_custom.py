@@ -213,15 +213,6 @@ class DataViewCustomMicroLayout(MicroLayoutAIO):
 
         return node
 
-    def from_yaml(self, yaml_path: str) -> list[dict]:
-        import yaml
-
-        with open(yaml_path) as f:
-            yaml_layout = yaml.safe_load(f)["layout"]
-        layout_from_yaml = Layout([self.convert_node(node) for node in yaml_layout])
-        logger.debug(layout_from_yaml)
-        return layout_from_yaml
-
 
 class DataViewCustom(DataEditorDataView):
     """DataView with a very flexible layout made to be tailored to specific needs."""
@@ -257,12 +248,33 @@ class DataViewCustom(DataEditorDataView):
     def build_layout(self, layout: dict | list) -> list:
         """Builds the layout for the custom view."""
         components = []
+        import json
+        print(json.dumps(layout, indent=2, ensure_ascii=False))
         if isinstance(layout, list):
             for item in layout:
                 components.extend(self.build_layout(item))
             return components
+        if isinstance(layout, dict):
+            print(layout)
+            if layout["type"] in ["row", "col"]:
+                components.append(dbc.Row(self.build_layout(layout["children"])))
+            if layout["type"] == "microlayout":
+                microlayout = DataViewCustomMicroLayout(
+                    applies_to_tables=self.applies_to_tables,
+                    applies_to_forms=self.applies_to_forms,
+                    layout=layout["layout"],
+                    getter_func=layout.get("getter_func", defult_getter),
+                    update_func=layout.get("update_func", default_updater),
+                    form_data_table=layout.get("form_data_table"),
+                    form_data_field_name_column=layout.get(
+                        "form_data_field_name_column"
+                    ),
+                )
+            else:
+                raise ValueError("Value for 'type' must be a valid component.")
 
         for key, value in layout.items():
+            
             if key == "kwargs":
                 continue
             if isinstance(value, dict):
@@ -294,20 +306,6 @@ class DataViewCustom(DataEditorDataView):
                     applies_to_forms=self.applies_to_forms,
                 )
                 components.append(table.content())
-            elif key == "microlayout":
-                microlayout = DataViewCustomMicroLayout(
-                    applies_to_tables=self.applies_to_tables,
-                    applies_to_forms=self.applies_to_forms,
-                    layout=value["layout"],
-                    getter_func=value.get("getter_func", defult_getter),
-                    update_func=value.get("update_func", default_updater),
-                    form_data_table=value.get("form_data_table"),
-                    form_data_field_name_column=value.get(
-                        "form_data_field_name_column"
-                    ),
-                )
-                logger.debug(f"Built microlayout:\n{microlayout}")
-                components.append(microlayout)
             else:
                 components.extend(self.build_layout(value))
 
@@ -324,61 +322,23 @@ class DataViewCustom(DataEditorDataView):
         """Registers the module callbacks."""
         pass
 
-    @classmethod
-    def convert_typed_to_keyed(
-        cls, node, applies_to_tables=None, applies_to_forms=None
-    ):
-        logger.debug(f"inputs: {node}, {applies_to_tables}, {applies_to_forms}")
-        if isinstance(node, list):
-            return [
-                cls.convert_typed_to_keyed(item, applies_to_tables, applies_to_forms)
-                for item in node
-            ]
 
-        if isinstance(node, dict):
-            if node.get("type") == "microlayout":
-                inner = {k: v for k, v in node.items() if k != "type"}
-                if "layout" in inner:
-                    inner["layout"] = [
-                        convert_node(child, applies_to_tables, applies_to_forms)
-                        for child in cls.convert_typed_to_keyed(
-                            inner["layout"], applies_to_tables, applies_to_forms
-                        )
-                    ]
-                if "children" in inner:
-                    inner["children"] = cls.convert_typed_to_keyed(
-                        inner["children"], applies_to_tables, applies_to_forms
-                    )
-                return {"microlayout": inner}
-
-            return {
-                k: cls.convert_typed_to_keyed(v, applies_to_tables, applies_to_forms)
-                for k, v in node.items()
-            }
-
-        return node
 
     @classmethod
-    def from_yaml(cls, yaml_path: str) -> "DataViewCustom":
+    def from_dict(cls, config_dict):
+        import json
+        if isinstance(config_dict, list):
+            config_dict = config_dict[0]
 
-        
-        config = config_parser_yaml(yaml_path)
+        print(json.dumps(config_dict, indent=2, ensure_ascii=False))
 
-        # Handle both a top-level dict and a single-item list
-        if isinstance(config, list):
-            config = config[0]
-
-        config["layout"] = cls.convert_typed_to_keyed(
-            config["layout"],
-            applies_to_tables=config["applies_to_tables"],
-            applies_to_forms=config["applies_to_forms"],
-        )
 
         return cls(
-            applies_to_tables=config["applies_to_tables"],
-            applies_to_forms=config["applies_to_forms"],
-            layout=config["layout"],
+            applies_to_tables=config_dict["applies_to_tables"],
+            applies_to_forms=config_dict["applies_to_forms"],
+            layout=config_dict["layout"],
         )
+
 
     def __str__(self) -> str:
         lines = [

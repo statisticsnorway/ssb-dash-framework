@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # noposter_resultatregnskap: DataFrame= pd.read_csv("/buckets/produkt/temp/nspek_editeringsrammeverk/nspek_utility/nspek_resultatposter.csv")
 # noposter_balanseregnskap: DataFrame= pd.read_csv("/buckets/produkt/temp/nspek_editeringsrammeverk/nspek_utility/nspek_balanseposter.csv")
 
-TYPE_REGNSKAP_FILEPATH = { # type: file-path
+TYPE_REGNSKAP_FILEPATH = {
     "balanseregnskap": "/buckets/shared/nspek/naeringsdata/flat_p2024_v1.parquet/balanseregnskap",
     "resultatregnskap": "/buckets/shared/nspek/naeringsdata/flat_p2024_v1.parquet/resultatregnskap",
     "virksomhet": "/buckets/shared/nspek/naeringsdata/flat_p2024_v1.parquet/virksomhet",
