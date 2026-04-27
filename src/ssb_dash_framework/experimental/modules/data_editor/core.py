@@ -210,13 +210,23 @@ class DataEditor:
             logger.debug(f"Selected table: {selected_table}")
             styles: list[dict[str, Any]] = []
             for divname in DataEditorRegistry.main_views:
-                if (
-                    selected_table in DataEditorRegistry.main_views[divname]["tables"]
-                    and selected_form in DataEditorRegistry.main_views[divname]["forms"]
-                ):
+                forms = DataEditorRegistry.main_views[divname]["forms"]
+                tables = DataEditorRegistry.main_views[divname]["tables"]
+
+                table_match = selected_table in tables
+                form_match = selected_form in forms or None in forms
+
+                if table_match and form_match:
                     styles.append({"display": "block"})
                 else:
                     styles.append({"display": "none"})
+                # if (
+                #     selected_table in DataEditorRegistry.main_views[divname]["tables"]
+                #     and selected_form in DataEditorRegistry.main_views[divname]["forms"]
+                # ):
+                #     styles.append({"display": "block"})
+                # else:
+                #     styles.append({"display": "none"})
             if all(style == {"display": "none"} for style in styles):
                 message = f"No main_view defined for {selected_table} - {selected_form}"
                 logger.error(message)
@@ -502,7 +512,8 @@ class DataEditorDataView(ABC):
         )
         for table in self.applies_to_tables:
             for form in self.applies_to_forms:
-                DataEditorRegistry._table_form_covered.append(tuple((table, form)))
+                if form is not None:
+                    DataEditorRegistry._table_form_covered.append(tuple((table, form)))
 
     @abstractmethod
     def _create_layout(self) -> None:

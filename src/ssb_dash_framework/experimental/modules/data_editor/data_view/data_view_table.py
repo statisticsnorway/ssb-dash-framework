@@ -19,7 +19,7 @@ from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.connection import get_connection
 from .....utils.core_models import UpdateSkjemadata
 from ..core import DataEditorDataView
-
+from .....utils.alert_handler import create_alert
 logger = logging.getLogger(__name__)
 
 
@@ -50,6 +50,7 @@ class DataEditorTable(DataEditorDataView):
             ],  # Order of inputs is not random!
             selected_states=[],
         )
+        self.uneditable_columns = {"id", "ident", "refnr", "skjema", "variabel"}
         self.divname = f"{self.module_name}-{self.module_number}"
         self.module_callbacks()
         super().__init__(
@@ -81,7 +82,7 @@ class DataEditorTable(DataEditorDataView):
                         "resizable": True,
                         "sortable": True,
                         "floatingFilter": True,
-                        "editable": True,
+                        # "editable": True,
                         "filter": "agTextColumnFilter",
                         "flex": 1,
                     },
@@ -133,10 +134,12 @@ class DataEditorTable(DataEditorDataView):
                     in [
                         "row_id",
                         "row_ids",
+                        "enhetsinfo_row_ids",
                         *self.time_units,
                         "skjema",
                         "refnr",
                     ],
+                    "editable": False if col in self.uneditable_columns else True,
                     "flex": 2 if col == "variabel" else 1,
                 }
                 for col in df.columns
@@ -160,16 +163,28 @@ class DataEditorTable(DataEditorDataView):
             columns = [col["field"] for col in columndefs]
             if "variabel" in columns and "verdi" in columns:
                 long = True
+                variabel = edited[0]["data"]["variabel"]
             else:
                 long = False
-            long_variabel = edited[0]["data"]["variabel"]
+                variabel = edited[0]["colId"]
+            # if variabel in self.uneditable_columns:
+            #     alert_store = [
+            #         create_alert(
+            #             f"Kolonnen {variabel} kan ikke editeres!",
+            #             "danger",
+            #             ephemeral=True,
+            #         ),
+            #         *alert_store,
+            #     ]
+            #     return alert_store
+
             update = UpdateSkjemadata(
                 table=table,
                 long=long,
                 ident=edited[0]["data"]["ident"],
                 refnr=edited[0]["data"]["refnr"],
                 column=edited[0]["colId"],
-                variable=long_variabel if long else edited[0]["colId"],
+                variable=variabel,
                 value=edited[0]["value"],
                 old_value=edited[0]["oldValue"],
             )
@@ -186,10 +201,11 @@ class DataEditorTable(DataEditorDataView):
             self.variable_selector.get_output_object("variabel"),
             Input(f"{self.module_name}-{self.module_number}-aggrid", "cellClicked"),
             State(f"{self.module_name}-{self.module_number}-aggrid", "rowData"),
+            self.variable_selector.get_state("variabel"),
             prevent_initial_call=True,
         )
         def send_variabel_to_variableselector(
-            click: dict[str, Any], row_data: list[dict[str, Any]]
+            click: dict[str, Any], row_data: list[dict[str, Any]], statistikkvariabel: str
         ) -> str:
             """Make it possible to click the table and affect the VariableSelector."""
             logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")
@@ -201,9 +217,15 @@ class DataEditorTable(DataEditorDataView):
 
             long_format = "variabel" in columns and "verdi" in columns
             if long_format:
-                return str(row_data[click["rowIndex"]]["variabel"])
+                variable = str(row_data[click["rowIndex"]]["variabel"])
+                if variable == statistikkvariabel:
+                    raise PreventUpdate
+                return variable
 
             column = click.get("colId")  # wide format
+            if column == statistikkvariabel:
+                raise PreventUpdate
+
             if column in ("aar", "ident", "skjema", "refnr", "tabell"):
                 raise PreventUpdate
 

@@ -124,13 +124,13 @@ class UpdateSkjemadata(BaseModel):
     def to_alert(self, long, success):
         if success:
             return create_alert(
-                f"Refnr '{self.refnr}' oppdatert på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'",
+                f"Ident '{self.ident}' oppdatert på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'",
                 "success",
                 ephemeral=True,
             )
         else:
             return create_alert(
-                f"Feilet oppdatering av refnr '{self.refnr}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'. Se logg for detaljer.",
+                f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'. Se logg for detaljer.",
                 "danger",
                 ephemeral=True,
             )

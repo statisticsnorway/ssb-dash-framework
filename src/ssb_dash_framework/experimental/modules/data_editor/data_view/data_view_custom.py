@@ -154,7 +154,7 @@ class DataViewCustomMicroLayout(MicroLayoutAIO):
         aio_id: str | None = None,
         horizontal: bool = False,
         form_data_table: str = "skjemadata",
-        form_reference_number_column: str = "refnr",
+        form_reference_number_column: str | None = "refnr",
         form_data_field_name_column: str = "feltnavn",
         formdata_field_value_column_name: str = "verdi",
         table_selector_id: str | None = "dataeditortableselector",
@@ -305,6 +305,9 @@ class DataViewCustom(DataEditorDataView):
                     form_data_field_name_column=value.get(
                         "form_data_field_name_column"
                     ),
+                    form_reference_number_column=value.get("form_reference_number_column", "refnr"),
+                    form_reference_input_id=value.get("form_reference_input_id", "var-refnr"), 
+                    inputs=[Input(f"var-{unit}", "value") for unit in get_time_units()],
                 )
                 logger.debug(f"Built microlayout:\n{microlayout}")
                 components.append(microlayout)
@@ -368,15 +371,17 @@ class DataViewCustom(DataEditorDataView):
         if isinstance(config, list):
             config = config[0]
 
+        applies_to_forms = config.get("applies_to_forms", [])
+
         config["layout"] = cls.convert_typed_to_keyed(
             config["layout"],
             applies_to_tables=config["applies_to_tables"],
-            applies_to_forms=config["applies_to_forms"],
+            applies_to_forms=applies_to_forms,
         )
 
         return cls(
             applies_to_tables=config["applies_to_tables"],
-            applies_to_forms=config["applies_to_forms"],
+            applies_to_forms=applies_to_forms,
             layout=config["layout"],
         )
 
@@ -450,7 +455,7 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
             node, "applies_to_tables", applies_to_tables
         )
         node = convert_node_build_field_settings(
-            node, "applies_to_forms", applies_to_forms
+            node, "applies_to_forms", [f for f in applies_to_forms if f is not None]
         )
 
     if "children" in node:
