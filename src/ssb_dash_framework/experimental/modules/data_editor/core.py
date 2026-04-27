@@ -381,7 +381,7 @@ class DataEditorInfoRow:
                 dbc.Card(
                     [
                         dbc.CardHeader(
-                            id=f"info-var-label-{info_var}", children=info_var
+                            id=f"info-var-label-{info_var}", children=info_var.name
                         ),
                         dbc.CardBody(id=f"info-var-field-{info_var}"),
                     ]
