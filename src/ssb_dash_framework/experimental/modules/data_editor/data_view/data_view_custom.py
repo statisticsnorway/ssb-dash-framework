@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Callable
+import json
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -23,7 +24,10 @@ from .....modules.building_blocks.microlayout_components.editable_field_model im
 from .....modules.building_blocks.microlayout_components.editable_field_model import (
     defult_getter,
 )
-from .....modules.building_blocks.microlayout_components.models import CalculatedField, Layout
+from .....modules.building_blocks.microlayout_components.models import (
+    CalculatedField,
+    Layout,
+)
 from ..core import DataEditorDataView
 
 logger = logging.getLogger(__name__)
@@ -200,19 +204,6 @@ class DataViewCustomMicroLayout(MicroLayoutAIO):
         ]
         return "\n".join(lines)
 
-    def convert_node(self, node: dict) -> dict:
-
-        if "label" in node:
-            node["label"] = node["label"]
-
-        if "variable" in node:
-            node["field_settings"] = {"field_path": node["variable"]}
-
-        if "children" in node:
-            node["children"] = [self.convert_node(child) for child in node["children"]]
-
-        return node
-
 
 class DataViewCustom(DataEditorDataView):
     """DataView with a very flexible layout made to be tailored to specific needs."""
@@ -224,6 +215,7 @@ class DataViewCustom(DataEditorDataView):
         applies_to_tables: str | list[str],
         applies_to_forms: str | list[str],
         layout,
+        _from_config_file=False,
     ) -> None:
         """Initializes and registers the custom data view for selected tables and forms.
 
@@ -231,6 +223,7 @@ class DataViewCustom(DataEditorDataView):
             applies_to_tables: A list of tables that the module should apply to.
             applies_to_forms: A list of forms that the module should apply to.
         """
+        self._from_config_file = _from_config_file
         self.module_number = DataViewCustom._id_number
         self.module_name = self.__class__.__name__
         DataViewCustom._id_number += 1
@@ -248,17 +241,32 @@ class DataViewCustom(DataEditorDataView):
     def build_layout(self, layout: dict | list) -> list:
         """Builds the layout for the custom view."""
         components = []
-        import json
-        print(json.dumps(layout, indent=2, ensure_ascii=False))
+
         if isinstance(layout, list):
             for item in layout:
                 components.extend(self.build_layout(item))
             return components
+
+
         if isinstance(layout, dict):
-            print(layout)
-            if layout["type"] in ["row", "col"]:
+            if layout["type"] == "row":                
                 components.append(dbc.Row(self.build_layout(layout["children"])))
-            if layout["type"] == "microlayout":
+            elif layout["type"] == "col":                
+                components.append(dbc.Col(self.build_layout(layout["children"])))
+
+            elif layout["type"] == "microlayout":
+                if self._from_config_file:
+                    logger.debug(
+                        "Converting 'layout' from config file structure to Microlayout compatible Layout object."
+                    )
+                    layout["layout"] = [convert_node( # Wraps in a list to work properly with Layout from microlayout models.
+                        layout["layout"],
+                        applies_to_tables=self.applies_to_tables,
+                        applies_to_forms=self.applies_to_forms,
+                    )]
+                    logger.debug(
+                        f"Done converting:\n{json.dumps(layout["layout"], indent=2, ensure_ascii=False)}"
+                    )
                 microlayout = DataViewCustomMicroLayout(
                     applies_to_tables=self.applies_to_tables,
                     applies_to_forms=self.applies_to_forms,
@@ -270,44 +278,9 @@ class DataViewCustom(DataEditorDataView):
                         "form_data_field_name_column"
                     ),
                 )
+                components.append(microlayout)
             else:
-                raise ValueError("Value for 'type' must be a valid component.")
-
-        for key, value in layout.items():
-            
-            if key == "kwargs":
-                continue
-            if isinstance(value, dict):
-                kwargs = value.get("kwargs", None)
-            else:
-                kwargs = None
-
-            if key == "row":
-                children = self.build_layout(value)
-                components.append(dbc.Row(children, **kwargs if kwargs else {}))
-
-            elif key == "col":
-                children = self.build_layout(value)
-                components.append(dbc.Col(children, **kwargs if kwargs else {}))
-
-            elif key == "figure":
-                figure = DataViewCustomFigure(
-                    label=value["label"],
-                    figure_func=value["figure_func"],
-                    applies_to_tables=self.applies_to_tables,
-                    applies_to_forms=self.applies_to_forms,
-                )
-                components.append(figure.content())
-            elif key == "table":
-                table = DataViewCustomTable(
-                    label=value["label"],
-                    table_func=value["table_func"],
-                    applies_to_tables=self.applies_to_tables,
-                    applies_to_forms=self.applies_to_forms,
-                )
-                components.append(table.content())
-            else:
-                components.extend(self.build_layout(value))
+                raise ValueError(f"Value for 'type' must be a valid component. Found type '{layout["type"]}'")
 
         return components
 
@@ -322,23 +295,20 @@ class DataViewCustom(DataEditorDataView):
         """Registers the module callbacks."""
         pass
 
-
-
     @classmethod
     def from_dict(cls, config_dict):
-        import json
+        logger.info(f"Initializing class '{cls.__name__}' from dict object")
+        logger.debug(config_dict)
+
         if isinstance(config_dict, list):
             config_dict = config_dict[0]
-
-        print(json.dumps(config_dict, indent=2, ensure_ascii=False))
-
 
         return cls(
             applies_to_tables=config_dict["applies_to_tables"],
             applies_to_forms=config_dict["applies_to_forms"],
             layout=config_dict["layout"],
+            _from_config_file=True,
         )
-
 
     def __str__(self) -> str:
         lines = [
@@ -393,19 +363,24 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
     logger.debug(
         f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
     )
-    print(
-        f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
-    )
+
     if applies_to_tables is None:
         applies_to_tables = []
     if applies_to_forms is None:
         applies_to_forms = []
+
+    if isinstance(node, list):
+        for listed_node in node:
+            node = convert_node(listed_node, applies_to_tables = applies_to_tables, applies_to_forms = applies_to_forms)
+
     if "type" in node and node["type"] == "calculated-field":
         node["applies_to_tables"] = applies_to_tables
         node["applies_to_forms"] = applies_to_forms
-        
+
     if "variable" in node:
         node = convert_node_build_field_settings(node, "field_path", node["variable"])
+        popped = node.pop("variable")
+        logger.debug(f"Removing value for 'variable' in node. Removed value: {popped}")
         node = convert_node_build_field_settings(
             node, "applies_to_tables", applies_to_tables
         )

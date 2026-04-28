@@ -18,6 +18,7 @@ from typing import Any
 
 import yaml
 
+from .parsed_config_models import load_config
 
 class _IncludeLoader(yaml.SafeLoader):
     """SafeLoader extended with an ``!include`` constructor.
@@ -53,4 +54,6 @@ def load_yaml(path: str | Path) -> Any:
     ``list``, scalars become ``str`` / ``int`` / ``float`` / ``bool`` / ``None``.
     """
     with open(path, encoding="utf-8") as fh:
-        return yaml.load(fh, Loader=_IncludeLoader)
+        read_config_file = yaml.load(fh, Loader=_IncludeLoader)
+        print(read_config_file)
+        return load_config(read_config_file)
