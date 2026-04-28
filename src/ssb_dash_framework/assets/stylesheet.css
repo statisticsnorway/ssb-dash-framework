@@ -380,6 +380,29 @@ Altinn Editor Support Tables
     overflow: hidden;
 }
 
+/* Spacing between microlayout items */
+.microlayout-input {
+    margin-bottom: 0.5rem;
+    max-width: 250px;
+}
+
+.row {
+    margin-bottom: 0.8rem;
+}
+
+/* Header sizes */
+h4 {
+    /* font-size: 0.85rem; */
+    margin-bottom: 0.25rem;
+    margin-top: 0.9rem;
+}
+
+h3 {
+    /* font-size: 1rem; */
+    margin-bottom: 0.25rem;
+    margin-top: 0.9rem;
+}
+
 /*
 MacroModule
 */

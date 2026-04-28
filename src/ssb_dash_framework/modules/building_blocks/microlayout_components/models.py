@@ -144,7 +144,7 @@ class Header(BaseNode):
     type: Literal["header"]
     label: str
 
-    size: Literal["sm", "md", "lg"] = "md"
+    size: Literal["xs", "sm", "md", "lg"] = "md"
 
     def create(
         self,
@@ -152,14 +152,16 @@ class Header(BaseNode):
         inputs: list[Input] | None = None,
         states: list[State] | None = None,
         getter_args: None | list = None,
-    ) -> html.H1 | html.H2 | html.H3:
+    ) -> html.H1 | html.H2 | html.H3 | html.H4:
         """A method for creating the layout."""
         if self.size == "lg":
             return html.H1(self.label)
         elif self.size == "md":
             return html.H2(self.label)
-        else:
+        elif self.size == "sm":
             return html.H3(self.label)
+        else:
+            return html.H4(self.label)
 
 
 class InputField(BaseNode):
@@ -167,6 +169,7 @@ class InputField(BaseNode):
     label: str
     value: str | None = ""
     field_settings: EditableField
+    readonly: bool = False
 
     def create(
         self,
@@ -186,9 +189,10 @@ class InputField(BaseNode):
             [
                 dbc.Label(self.label),
                 dbc.Input(
-                    style={"width": "100%"}, id=self.field_settings._id, debounce=True
+                    style={"width": "100%"}, id=self.field_settings._id, debounce=True, readonly=self.readonly,
                 ),
-            ]
+            ],
+            className="microlayout-input"
         )
 
 
@@ -285,7 +289,8 @@ class CalculatedField(BaseNode):
             [
                 dbc.Label(self.label),
                 dbc.Input(id=self._id, style={"width": "100%"}, readonly=True),
-            ]
+            ],
+            className="microlayout-calculated-field"
         )
 
 
@@ -347,7 +352,8 @@ class DropdownComponent(BaseNode):
                     id=self.field_settings._id,
                     style={"width": "100%"},
                 ),  # pyright: ignore
-            ]
+            ],
+            className="microlayout-dropdown"
         )
 
 
@@ -367,6 +373,18 @@ class ChecklistComponent(BaseNode):
         getter_args: None | list = None,
     ) -> html.Div:
         """A method for creating the layout."""
+
+        original_getter = self.field_settings.getter_func
+    
+        def wrapped_getter(refnr, settings, field_path, *args):
+            """Returns 1 or 0 correctly based on user input."""
+            result = original_getter(refnr, settings, field_path, *args)
+            if result is None or str(result) == "0":
+                return []
+            # return same type as what came from db to match option values
+            return [result]
+        
+        self.field_settings.getter_func = wrapped_getter
         self.field_settings.create_callback(
             settings,
             inputs,
@@ -380,6 +398,7 @@ class ChecklistComponent(BaseNode):
                     options=self.options, switch=False, id=self.field_settings._id
                 ),  # pyright: ignore
             ],
+            className="microlayout-checklist",
             style={"display": "block"},
         )
 
@@ -423,6 +442,7 @@ class Textarea(BaseNode):
     label: str
     value: str | None = ""
     field_settings: EditableField
+    readonly: bool = False
 
     def create(
         self,
@@ -442,9 +462,10 @@ class Textarea(BaseNode):
             [
                 dbc.Label(self.label),
                 dbc.Textarea(
-                    style={"width": "100%"}, id=self.field_settings._id, debounce=True
+                    style={"width": "100%"}, id=self.field_settings._id, debounce=True, readonly=self.readonly,
                 ),
-            ]
+            ],
+            className="microlayout-textarea"
         )
 
 
