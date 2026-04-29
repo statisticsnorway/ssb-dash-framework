@@ -1,6 +1,9 @@
 from ibis.expr.types.relations import Table
 
 
+from ibis.expr.types.relations import Table
+
+
 import logging
 from collections.abc import Callable
 from typing import Any
@@ -36,32 +39,54 @@ class CallbackSettings(BaseModel):
     form_selector_id: str | None = None
 
 
+from dataclasses import dataclass
+from typing import Any
+
+
+@dataclass
+class CacheEntry:
+    entry: Table
+    last_cache_hit: float
+
+
 class FormGetterCached:
-    data: Table | None = None
-    last_cache_hit: None | float = None
+    data: dict[str, CacheEntry] = {}
 
-    def __init__(self) -> None:
-        pass
-
-    @classmethod
-    def get_form(cls, refnr: str, settings: CallbackSettings) -> Table:
-        if cls.last_cache_hit and ((time.perf_counter() - cls.last_cache_hit) > 5.0) and cls.data:
-            return cls.data
-
+    @staticmethod
+    def get_table(refnr: str, settings: CallbackSettings) -> Table:
         with get_connection() as conn:
             t = conn.table(settings.form_data_table)
             res = t.filter(
                 t[settings.form_reference_number_column] == refnr,
             )
-            cls.data = res
-            cls.last_cache_hit = time.perf_counter()
-            return cls.data
+        return res
+
+    @classmethod
+    def clean_cache(cls):
+        max_size = 10
+        if len(cls.data.keys()) > max_size:
+            key, _ = min(cls.data.items(), key=lambda x: x[1].last_cache_hit)
+            cls.data.pop(key)
+
+    @classmethod
+    def get_form(cls, refnr: str, settings: CallbackSettings) -> Table:
+        entry = cls.data.get(refnr)
+
+        if (entry is None) or ((time.perf_counter() - entry.last_cache_hit) > 5.0):
+            table = FormGetterCached.get_table(refnr, settings)
+            cls.data[refnr] = CacheEntry(
+                entry=table, last_cache_hit=time.perf_counter()
+            )
+            cls.clean_cache()
+            return cls.data[refnr].entry
+        cls.clean_cache()
+        return entry.entry
 
 
 def defult_getter(
     refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]
 ) -> Any:
-    
+
     logger.debug(f"Getting {field_path} for refnr: {refnr}")
     t = FormGetterCached.get_form(refnr, settings)
     res = (
