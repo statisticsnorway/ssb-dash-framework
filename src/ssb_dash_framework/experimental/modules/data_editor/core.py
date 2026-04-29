@@ -103,7 +103,8 @@ class DataEditor:
             [
                 dbc.Card(dbc.CardBody(module.layout()))
                 for module in DataEditorRegistry.sidebar_modules
-            ]
+            ],
+            className="dataeditor-sidebar-modules"
         )
         _existing_views = []
         main_views = []
@@ -170,15 +171,15 @@ class DataEditor:
 
         return dbc.Container(
             [
-                dbc.Row(html.H1(id=f"{self.module_name}-{self.module_number}-header")),
+                dbc.Row(html.H1(id=f"{self.module_name}-{self.module_number}-header", className=f"{self.module_name}-header")),
                 dbc.Row(self.info_view),
                 dbc.Row(
                     [
-                        dbc.Col(self.sidebar, width=2),
+                        dbc.Col(self.sidebar, width=2, className=f"{self.module_name}-sidebar"),
                         dbc.Col(
                             [
                                 dbc.Row(dbc.Card(dbc.CardBody(self.helper_row))),
-                                dbc.Row(dbc.Card(dbc.CardBody(self.main_view))),
+                                dbc.Row(dbc.Card(dbc.CardBody(self.main_view, className=f"{self.module_name}-main-view"))),
                             ],
                             width=10,
                         ),
@@ -338,7 +339,7 @@ class DataEditorInfoRow:
                 )
             )
 
-        return dbc.Row(dbc.CardGroup(info_fields))
+        return dbc.Row(dbc.CardGroup(info_fields), className="dataeditor-info-row")
 
     def layout(self):
         return self._create_layout()

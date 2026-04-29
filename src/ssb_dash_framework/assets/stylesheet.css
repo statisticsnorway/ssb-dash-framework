@@ -381,26 +381,94 @@ Altinn Editor Support Tables
 }
 
 /* Spacing between microlayout items */
-.microlayout-input {
+.DataEditor-main-view .microlayout-input {
     margin-bottom: 0.5rem;
-    max-width: 250px;
+    max-width: 18rem;
 }
 
-.row {
+.DataEditor-main-view .microlayout-textarea textarea {
+    min-height: 5rem;
+    max-width: 20rem;
+}
+
+.DataEditor-main-view .row {
     margin-bottom: 0.8rem;
+    /* margin-top: 0.5rem; */
 }
 
-/* Header sizes */
-h4 {
-    /* font-size: 0.85rem; */
-    margin-bottom: 0.25rem;
-    margin-top: 0.9rem;
+.DataEditor-main-view .col {
+    margin-right: 2rem;
+    /* margin-left: 2rem; */
+    /* margin-top: 0.8rem; */
 }
 
-h3 {
-    /* font-size: 1rem; */
-    margin-bottom: 0.25rem;
-    margin-top: 0.9rem;
+.DataEditor-main-view h2 {
+    font-size: 1.4rem;
+    font-weight: bold;
+}
+
+.DataEditor-main-view h3 {
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+.DataEditor-main-view h4 {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.dataeditor-info-row {
+    padding-bottom: 10px;
+}
+
+.dataeditor-info-row .card {
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    border: none;
+}
+
+.dataeditor-info-row .card-header {
+    background-color: transparent;
+    border-bottom: none;
+    font-size: 16px;
+    font-weight: bold;
+    color: #2e2e2e;
+    padding-bottom: 0;
+}
+
+.dataeditor-info-row .card-body {
+    font-size: 16px;
+    font-weight: 500;
+    padding-top: 0.25rem;
+    color: #2e2e2e;
+}
+
+.DataEditor-sidebar .row {
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+}
+
+.DataEditor-sidebar .card {
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    border: none;
+    color: #2e2e2e;
+}
+
+.dataeditor-sidebar-modules {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.DataEditor-header {
+    font-size: 1.5rem;
+    margin-top: 15px;
+    margin-left: 15px;
+}
+
+.dataeditorsidebar-comment-textarea {
+    min-height: 100px;
 }
 
 /*
