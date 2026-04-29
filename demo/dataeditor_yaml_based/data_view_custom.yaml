@@ -28,5 +28,43 @@
                   tabs:
                     - type: tab
                       label: "tab 1"
+                      children:
+                      - type: input
+                        label: "Innmarksbeite"
+                        variable: innmarksbeite¨
+                        field_settings:
+                          field_path: "rt"
                     - type: tab
                       label: "tab 2"
+                      children:
+                      - type: input
+                        label: "Innmarksbeite 1"
+                        variable: innmarksbeite
+                        field_settings:
+                          field_path: "rtjr"
+                      - type: row
+                        children:
+                        - type: col
+                          children:
+                          - type: input
+                            label: "Totalareal"
+                            variable: totalareal
+                            field_settings:
+                              field_path: "wew"
+                          - type: input
+                            label: "Totalareal 2"
+                            variable: totalareal
+                            field_settings:
+                              field_path: "wregerew"
+                        - type: col
+                          children:
+                          - type: input
+                            label: "Totalareal"
+                            variable: totalareal
+                            field_settings:
+                              field_path: "wew"
+                          - type: input
+                            label: "Totalareal 2"
+                            variable: totalareal
+                            field_settings:
+                              field_path: "wregerew"
