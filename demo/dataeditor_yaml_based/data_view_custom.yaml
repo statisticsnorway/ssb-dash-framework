@@ -24,3 +24,9 @@
                 - type: input
                   label: "Innmarksbeite"
                   variable: innmarksbeite
+                - type: tabs
+                  tabs:
+                    - type: tab
+                      label: "tab 1"
+                    - type: tab
+                      label: "tab 2"
