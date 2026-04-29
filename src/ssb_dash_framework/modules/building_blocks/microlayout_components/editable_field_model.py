@@ -45,7 +45,7 @@ class FormGetterCached:
 
     @classmethod
     def get_form(cls, refnr: str, settings: CallbackSettings) -> Table:
-        if cls.last_cache_hit and ((cls.last_cache_hit - time.perf_counter()) > 5.0) and cls.data:
+        if cls.last_cache_hit and ((time.perf_counter() - cls.last_cache_hit) > 5.0) and cls.data:
             return cls.data
 
         with get_connection() as conn:
