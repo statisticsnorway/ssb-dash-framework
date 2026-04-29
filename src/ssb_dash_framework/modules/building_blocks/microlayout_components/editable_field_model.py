@@ -1,6 +1,13 @@
+from ibis.expr.types.relations import Table
+
+
 import logging
 from collections.abc import Callable
 from typing import Any
+from functools import cache
+import time
+
+from ibis import Table
 
 from dash import Input
 from dash import Output
@@ -29,32 +36,58 @@ class CallbackSettings(BaseModel):
     form_selector_id: str | None = None
 
 
-def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]) -> Any:
-    logger.debug(f"Getting {field_path} for refnr: {refnr}")
-    with get_connection() as conn:
-        t = conn.table(settings.form_data_table)
-        res = (
-            t.filter(
-                [
-                    t[settings.form_reference_number_column] == refnr,
-                    t[settings.formdata_fieldname_column] == field_path,
-                ]
+class FormGetterCached:
+    data: Table | None = None
+    last_cache_hit: None | float = None
+
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def get_form(cls, refnr: str, settings: CallbackSettings) -> Table:
+        if cls.last_cache_hit and ((cls.last_cache_hit - time.perf_counter()) > 5.0) and cls.data:
+            return cls.data
+
+        with get_connection() as conn:
+            t = conn.table(settings.form_data_table)
+            res = t.filter(
+                t[settings.form_reference_number_column] == refnr,
             )
-            .select(settings.formdata_field_value_column_name)
-            .as_scalar()
-            .to_pandas()
+            cls.data = res
+            cls.last_cache_hit = time.perf_counter()
+            return cls.data
+
+
+def defult_getter(
+    refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]
+) -> Any:
+    
+    logger.debug(f"Getting {field_path} for refnr: {refnr}")
+    t = FormGetterCached.get_form(refnr, settings)
+    res = (
+        t.filter(
+            [
+                t[settings.form_reference_number_column] == refnr,
+                t[settings.formdata_fieldname_column] == field_path,
+            ]
         )
+        .select(settings.formdata_field_value_column_name)
+        .as_scalar()
+        .to_pandas()
+    )
     logger.debug(f"Returning:\n{res}")
     return res
 
 
 def default_updater(
-    value: Any, refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]
+    value: Any,
+    refnr: str,
+    settings: CallbackSettings,
+    field_path: str,
+    *args: list[Any],
 ) -> None:
     logger.debug(f"Updating {field_path}")
-    with (
-        get_connection() as conn
-    ):  
+    with get_connection() as conn:
         query = f"""
             UPDATE {settings.form_data_table}
             SET {settings.formdata_field_value_column_name} = '{value}'
@@ -76,7 +109,9 @@ class EditableField(BaseModel):
     @computed_field
     @property
     def _id(self) -> str:
-        return self.field_path + str(self.applies_to_tables) + str(self.applies_to_forms)
+        return (
+            self.field_path + str(self.applies_to_tables) + str(self.applies_to_forms)
+        )
 
     def __str__(self) -> str:
         parts = [f"EditableField(path='{self.field_path}')"]
@@ -105,7 +140,9 @@ class EditableField(BaseModel):
             guard_states.append(State(settings.form_selector_id, "value"))
         return guard_states
 
-    def _check_guard(self, settings: CallbackSettings, *guard_values: list[Any]) -> bool:
+    def _check_guard(
+        self, settings: CallbackSettings, *guard_values: list[Any]
+    ) -> bool:
         """Returns True if the guard passes (i.e. we should proceed)."""
         idx = 0
         if settings.table_selector_id and self.applies_to_tables:
@@ -162,4 +199,3 @@ class EditableField(BaseModel):
                     *real_args,
                     *getter_args if getter_args else [],
                 )
-
