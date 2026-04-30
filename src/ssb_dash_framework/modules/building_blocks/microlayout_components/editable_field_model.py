@@ -9,11 +9,15 @@ from dash import callback
 from dash import ctx
 from dash import no_update
 from dash.exceptions import PreventUpdate
+from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import computed_field
+from sqlalchemy import text
 
+from ....utils.core_models import UpdateSkjemadata
+from ....utils.config_tools.connection import _get_connection_object
 from ....utils.alert_handler import create_alert
 from ....utils.config_tools.connection import get_connection
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
@@ -62,41 +66,27 @@ def default_updater(
     time_unit_keys = list(get_time_units().keys())
     time_units = dict(zip(time_unit_keys, args))
 
-    if isinstance(value, list): # checkbox-handler
+    if isinstance(value, list):
         value = value[0] if value else "0"
 
-    time_filters = ""
-    if settings.form_reference_number_column != "refnr": # ignore time_units filter if refnr is used
-        time_filters = " ".join([
-            f"AND {unit} = '{val}'" 
-            for unit, val in time_units.items() 
-            if val
-        ])
+    old_value = defult_getter(refnr, settings, field_path, *args)
 
-    try:
-        with (
-            get_connection() as conn
-        ):  
-            query = f"""
-                UPDATE {settings.form_data_table}
-                SET {settings.formdata_field_value_column_name} = '{value}'
-                WHERE {settings.form_reference_number_column} = '{refnr}' 
-                AND {settings.formdata_fieldname_column} = '{field_path}'
-                {time_filters}
-            """
-            conn.raw_sql(query)
-            logger.info(query)
-            return create_alert(
-                f"Oppdaterte {field_path} til {value} for {refnr} i {settings.form_data_table}!",
-                color="success",
-                ephemeral=True,
-            )
-    except Exception as e:
-        logger.error(e)
-        return create_alert(
-            f"Feil ved oppdatering av {field_path}: {e} for {refnr} i {settings.form_data_table}",
-            color="danger",
-            ephemeral=True,
+    update = UpdateSkjemadata(
+        table=settings.form_data_table,
+        ident=refnr,
+        refnr=refnr,
+        column=settings.formdata_field_value_column_name,
+        variable=field_path,
+        value=value,
+        old_value=old_value,
+        long=True,
+    )
+
+    if isinstance(_get_connection_object(), ConnectionPool):
+        return update.update_ibis(long=True)
+    else:
+        raise NotImplementedError(
+            f"Connection of type '{type(_get_connection_object())}' is not implemented yet."
         )
 
 
