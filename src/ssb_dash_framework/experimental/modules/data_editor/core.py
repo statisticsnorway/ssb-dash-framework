@@ -94,7 +94,6 @@ class DataEditor:
         """Using the DataEditorRegistry, this method assembles the DataEditor module with currently enabled components."""
         self.info_view = html.Div(
             [module.layout() for module in DataEditorRegistry.info_fields],
-            className="dataeditor-info-view",
         )
         self.helper_row = dbc.Row(
             [dbc.Col(module.layout()) for module in DataEditorRegistry.helper_modules]
@@ -104,7 +103,7 @@ class DataEditor:
                 dbc.Card(dbc.CardBody(module.layout()))
                 for module in DataEditorRegistry.sidebar_modules
             ],
-            className="dataeditor-sidebar-modules"
+            className=f"{self.module_name}-sidebar-modules"
         )
         _existing_views = []
         main_views = []
@@ -175,13 +174,12 @@ class DataEditor:
                 dbc.Row(self.info_view),
                 dbc.Row(
                     [
-                        dbc.Col(self.sidebar, width=2, className=f"{self.module_name}-sidebar"),
+                        dbc.Col(self.sidebar, className=f"{self.module_name}-sidebar"),
                         dbc.Col(
                             [
-                                dbc.Row(dbc.Card(dbc.CardBody(self.helper_row))),
-                                dbc.Row(dbc.Card(dbc.CardBody(self.main_view, className=f"{self.module_name}-main-view"))),
+                                dbc.Row(dbc.Card(dbc.CardBody(self.helper_row), className=f"{self.module_name}-helper-row")),
+                                dbc.Row(dbc.Card(dbc.CardBody(self.main_view), className=f"{self.module_name}-main-view")),
                             ],
-                            width=10,
                         ),
                     ]
                 ),
@@ -339,7 +337,7 @@ class DataEditorInfoRow:
                 )
             )
 
-        return dbc.Row(dbc.CardGroup(info_fields), className="dataeditor-info-row")
+        return dbc.Row(dbc.CardGroup(info_fields), className=f"{self.module_name}-info-row")
 
     def layout(self):
         return self._create_layout()
@@ -423,7 +421,7 @@ class DataEditorHelperButton(ABC):
                     ],
                     id=f"{self.module_name}-{self.module_number}-modal",
                     is_open=False,
-                    className="dataeditor-helper-button-modal",
+                    className=f"{self.module_name}-helper-modal",
                 ),
             ]
         )

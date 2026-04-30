@@ -370,36 +370,53 @@ Altinn Editor Support Tables
     overflow: hidden;
 }
 
-.dataeditor-helper-button-modal .modal-dialog {
+/* 
+DataEditor 
+*/
+
+.DataEditorHistory-toggle-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-bottom: 10px;
+    padding-right: 10px;
+}
+
+.DataEditorHistory-helper-modal .modal-dialog,
+.DataEditorSupportTables-helper-modal .modal-dialog {
     max-width: 90vw !important;
     width: 90vw !important;
 }
 
-.dataeditor-helper-button-modal .modal-content {
-    height: 80vh !important;
+.DataEditorHistory-helper-modal .modal-content,
+.DataEditorSupportTables-helper-modal .modal-content {
     overflow: hidden;
+}
+
+.dbc input.microlayout-input-readonly:not([type=radio]):not([type=checkbox]),
+.form-control.microlayout-textarea-readonly[readonly] {
+    background-color: #edeff1 !important;
+    color: #595f65 !important;
+    cursor: not-allowed;
 }
 
 /* Spacing between microlayout items */
 .DataEditor-main-view .microlayout-input {
     margin-bottom: 0.5rem;
-    max-width: 18rem;
+    max-width: 20rem;
 }
 
 .DataEditor-main-view .microlayout-textarea textarea {
-    min-height: 5rem;
+    min-height: 7rem;
     max-width: 20rem;
 }
 
 .DataEditor-main-view .row {
     margin-bottom: 0.8rem;
-    /* margin-top: 0.5rem; */
 }
 
 .DataEditor-main-view .col {
     margin-right: 2rem;
-    /* margin-left: 2rem; */
-    /* margin-top: 0.8rem; */
 }
 
 .DataEditor-main-view h2 {
@@ -417,30 +434,29 @@ Altinn Editor Support Tables
     font-weight: bold;
 }
 
-.dataeditor-info-row {
-    padding-bottom: 10px;
-}
-
-.dataeditor-info-row .card {
+.DataEditorInfoRow-info-row .card,
+.DataEditor-sidebar .card,
+.DataEditor-helper-row,
+.DataEditor-main-view.card {
     border-radius: 8px;
-    background-color: #f8f9fa;
+    background-color: #f3f4f5;
     border: none;
+    margin-bottom: 0.6rem;
+    color: #2e2e2e;
+
 }
 
-.dataeditor-info-row .card-header {
+.DataEditorInfoRow-info-row .card-header {
     background-color: transparent;
     border-bottom: none;
     font-size: 16px;
     font-weight: bold;
-    color: #2e2e2e;
-    padding-bottom: 0;
 }
 
-.dataeditor-info-row .card-body {
+.DataEditorInfoRow-info-row .card-body {
     font-size: 16px;
     font-weight: 500;
     padding-top: 0.25rem;
-    color: #2e2e2e;
 }
 
 .DataEditor-sidebar .row {
@@ -448,17 +464,13 @@ Altinn Editor Support Tables
     padding-right: 0.8rem;
 }
 
-.DataEditor-sidebar .card {
-    border-radius: 8px;
-    background-color: #f8f9fa;
-    border: none;
-    color: #2e2e2e;
+.DataEditor-sidebar {
+    flex: 0 0 280px;
 }
 
-.dataeditor-sidebar-modules {
+.DataEditor-sidebar-modules {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
 }
 
 .DataEditor-header {
@@ -467,7 +479,7 @@ Altinn Editor Support Tables
     margin-left: 15px;
 }
 
-.dataeditorsidebar-comment-textarea {
+.DataEditorSidebarComment-comment-text {
     min-height: 100px;
 }
 

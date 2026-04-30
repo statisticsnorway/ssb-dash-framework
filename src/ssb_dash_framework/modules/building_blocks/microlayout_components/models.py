@@ -187,9 +187,9 @@ class InputField(BaseNode):
         )
         return html.Div(
             [
-                dbc.Label(self.label),
+                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
                 dbc.Input(
-                    style={"width": "100%"}, id=self.field_settings._id, debounce=True, readonly=self.readonly,
+                    style={"width": "100%"}, id=self.field_settings._id, debounce=True, readonly=self.readonly, className="microlayout-input-field" + (" microlayout-input-readonly" if self.readonly else ""),
                 ),
             ],
             className="microlayout-input"
@@ -287,8 +287,8 @@ class CalculatedField(BaseNode):
         self.create_callback()
         return html.Div(
             [
-                dbc.Label(self.label),
-                dbc.Input(id=self._id, style={"width": "100%"}, readonly=True),
+                html.Label(self.label, title=", ".join(id_ for _, id_ in self._get_all_ids())),
+                dbc.Input(id=self._id, style={"width": "100%"}, readonly=True), 
             ],
             className="microlayout-calculated-field"
         )
@@ -346,7 +346,7 @@ class DropdownComponent(BaseNode):
         )
         return html.Div(
             [
-                dbc.Label(self.label),
+                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
                 dbc.Select(
                     options=self.options,
                     id=self.field_settings._id,
@@ -393,7 +393,7 @@ class ChecklistComponent(BaseNode):
         )
         return html.Div(
             [
-                dbc.Label(self.label),
+                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
                 dbc.Checklist(
                     options=self.options, switch=False, id=self.field_settings._id
                 ),  # pyright: ignore
@@ -460,9 +460,9 @@ class Textarea(BaseNode):
         )
         return html.Div(
             [
-                dbc.Label(self.label),
+                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
                 dbc.Textarea(
-                    style={"width": "100%"}, id=self.field_settings._id, debounce=True, readonly=self.readonly,
+                    style={"width": "100%"}, id=self.field_settings._id, debounce=True, readonly=self.readonly, className="microlayout-textarea-field" + (" microlayout-textarea-readonly" if self.readonly else ""),
                 ),
             ],
             className="microlayout-textarea"
