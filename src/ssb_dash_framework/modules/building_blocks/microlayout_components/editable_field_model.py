@@ -12,8 +12,12 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import computed_field
+import pendulum
 
+from ....setup.variableselector import VariableSelector
+from ....utils.config_tools.set_variables import TimeUnitType, get_time_units
 from ....utils.config_tools.connection import get_connection
+from .period_model import Period, PeriodModel
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +33,9 @@ class CallbackSettings(BaseModel):
     form_selector_id: str | None = None
 
 
-def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]) -> Any:
+def defult_getter(
+    refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]
+) -> Any:
     logger.debug(f"Getting {field_path} for refnr: {refnr}")
     with get_connection() as conn:
         t = conn.table(settings.form_data_table)
@@ -49,12 +55,14 @@ def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args
 
 
 def default_updater(
-    value: Any, refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]
+    value: Any,
+    refnr: str,
+    settings: CallbackSettings,
+    field_path: str,
+    *args: list[Any],
 ) -> None:
     logger.debug(f"Updating {field_path}")
-    with (
-        get_connection() as conn
-    ):  
+    with get_connection() as conn:
         query = f"""
             UPDATE {settings.form_data_table}
             SET {settings.formdata_field_value_column_name} = '{value}'
@@ -76,7 +84,9 @@ class EditableField(BaseModel):
     @computed_field
     @property
     def _id(self) -> str:
-        return self.field_path + str(self.applies_to_tables) + str(self.applies_to_forms)
+        return (
+            self.field_path + str(self.applies_to_tables) + str(self.applies_to_forms)
+        )
 
     def __str__(self) -> str:
         parts = [f"EditableField(path='{self.field_path}')"]
@@ -105,7 +115,9 @@ class EditableField(BaseModel):
             guard_states.append(State(settings.form_selector_id, "value"))
         return guard_states
 
-    def _check_guard(self, settings: CallbackSettings, *guard_values: list[Any]) -> bool:
+    def _check_guard(
+        self, settings: CallbackSettings, *guard_values: list[Any]
+    ) -> bool:
         """Returns True if the guard passes (i.e. we should proceed)."""
         idx = 0
         if settings.table_selector_id and self.applies_to_tables:
@@ -125,21 +137,47 @@ class EditableField(BaseModel):
         getter_args: None | list[Any] = None,
     ) -> None:
         guard_states = self._build_guard_states(settings)
+        options = VariableSelector._variableselectoroptions
+        time_units = get_time_units()
+        time_options = [option for option in options if option.title in time_units]
+
+        time_inputs = [Input(option.id, "value") for option in time_options]
 
         @callback(
             Output(self._id, "value", allow_duplicate=True),
             Input(self._id, "value"),
             Input(settings.form_reference_input_id, "value"),
             *inputs if inputs else [],
+            *time_inputs,
             *states if states else [],
             *guard_states,
             prevent_initial_call="duplicate",
         )
-        def populate_field(value: Any, refnr: str, *args: list[Any]):
+        def populate_field(value: Any, refnr: str, *args: Any):
             # Peel guard values off the end of args
             n_guard = len(guard_states)
+            n_time = len(time_inputs)
             guard_values = args[-n_guard:] if n_guard else ()
-            real_args = args[:-n_guard] if n_guard else args
+            n_real_args = len(inputs) if inputs else 0
+            real_args = args[:n_real_args]
+            time_args = args[n_real_args : n_real_args + n_time]
+            print(args)
+            print(real_args, guard_values, time_args)
+            print(time_options, time_units[time_options[0].title])
+
+            time: dict[TimeUnitType, Any] = {}
+            for arg, opt in zip(time_args, time_options):
+                unit = time_units.get(opt.title)
+                if unit:
+                    time[unit] = arg
+
+            if TimeUnitType.YEAR not in time:
+                raise PreventUpdate
+
+            period = PeriodModel.from_dict(time)
+            for period in period.iter(12):
+                print(period)
+
             if not self._check_guard(settings, *guard_values):
                 logger.debug("Preventing update")
                 raise PreventUpdate
@@ -162,4 +200,3 @@ class EditableField(BaseModel):
                     *real_args,
                     *getter_args if getter_args else [],
                 )
-
