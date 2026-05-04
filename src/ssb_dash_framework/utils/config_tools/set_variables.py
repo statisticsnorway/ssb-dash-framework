@@ -55,6 +55,16 @@ class VariableSelectorConfig(BaseModel):  # TODO Add default templates?
         for unit in config["time_units"]:
             if config["time_units"][unit] == "year":
                 config["time_units"][unit] = TimeUnitType.YEAR
+            elif config["time_units"][unit] == "month":
+                config["time_units"][unit] = TimeUnitType.MONTH
+            elif config["time_units"][unit] == "day":
+                config["time_units"][unit] = TimeUnitType.DAY
+            elif config["time_units"][unit] == "week":
+                config["time_units"][unit] = TimeUnitType.WEEK
+            elif config["time_units"][unit] == "quarter":
+                config["time_units"][unit] = TimeUnitType.QUARTER
+            elif config["time_units"][unit] == "half-year":
+                config["time_units"][unit] = TimeUnitType.HALF_YEAR
         return cls(**config)
 
     def __str__(self) -> str:
