@@ -3,8 +3,8 @@ import os
 import zoneinfo
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any
-
+from pydantic import BaseModel, ConfigDict
+from typing import Callable, Any, Optional, Union
 import dash_ag_grid as dag
 import pandas as pd
 from dash import callback
@@ -22,6 +22,17 @@ from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
+class EditingTableConfig(BaseModel):
+    label: str
+    inputs: list[str]
+    states: list[str]
+    get_data_func: Callable[..., Any]
+    update_table_func: Optional[Callable[..., Any]] = None
+    output: Union[str, list[str], None] = None
+    output_varselector_name: Union[str, list[str], None] = None
+    number_format: Optional[str] = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
 class EditingTable:
     """A reusable and flexible Dash component for editing tabular data.

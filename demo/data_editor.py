@@ -145,25 +145,25 @@ layout = [
                 "col": {
                     "microlayout": {
                         "label": "Test mikrolayout",
+                        "form_data_table": "skjemadata_hoved",
+                        "form_data_field_name_column": "variabel",
                         "layout": [
                             {
                                 "type": "input",
                                 "label": "Totalareal",
-                                "variable": "totalareal",
+                                "field_settings": {"field_path": "totalareal"},
                             },
                             {
                                 "type": "input",
                                 "label": "Fulldyrket",
-                                "variable": "fulldyrket",
+                                "field_settings": {"field_path": "fulldyrket"},
                             },
                             {
                                 "type": "input",
                                 "label": "Innmarksbeite",
-                                "variable": "innmarksbeite",
+                                "field_settings": {"field_path": "innmarksbeite"},
                             },
                         ],
-                        "get_data_func": "default",
-                        "update_func": "default",
                     },
                     "kwargs": {"width": 1},
                 }

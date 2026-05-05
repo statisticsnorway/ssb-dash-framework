@@ -1,14 +1,14 @@
 - type: CustomView
   applies_to_tables:
-    - skjemadata_foretak
+    - skjemadata_hoved
   applies_to_forms:
-    - RA-0481
+    - RA-7357
   layout:
     - row:
         - col:
             type: microlayout
-            label: Omsetning og driftskostnad
-            form_data_table: skjemadata_foretak
+            label: Tre variabler
+            form_data_table: skjemadata_hoved
             form_data_field_name_column: variabel
             layout:
             - type: row
