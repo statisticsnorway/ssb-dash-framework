@@ -27,7 +27,7 @@ from ...utils import WindowImplementation
 from ...utils.module_validation import module_validator
 from ...utils.config_tools import set_postgres_connection
 from ...utils.config_tools import get_connection
-from ...utils.a import create_alert
+from ...utils.alert_handler import create_alert
 
 from mock_controls import NspekMockControls
 
