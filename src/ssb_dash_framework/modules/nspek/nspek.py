@@ -29,7 +29,7 @@ from ...utils.config_tools import set_postgres_connection
 from ...utils.config_tools import get_connection
 from ...utils.alert_handler import create_alert
 
-from mock_controls import NspekMockControls
+from .mock_controls import NspekMockControls
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
