@@ -4,6 +4,11 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from ssb_dash_framework.setup.variableselector import VariableSelector
+from ssb_dash_framework.setup.variableselector import VariableSelectorOption
+import ibis
+from ibis import _
+
 from .alert_handler import create_alert
 from .config_tools.connection import _get_connection_object
 from .config_tools.connection import get_connection
@@ -87,12 +92,15 @@ class UpdateSkjemamottakKommentar(UpdateSkjemamottak):
 
 
 class UpdateSkjemadata(BaseModel):
-    """Model to centralize logic for updating data.
+    f"""Model to centralize logic for updating data.
 
     Args:
         table (str): Name of the table being updated.
+        skjema (str): Type of Altinn3 RA-skjema to insert on.
         ident (str): Identity of unit being updated.
+        identifier_column (str): Identifying column to refer to for updates. Usually refnr, ident for non-Altinn3 data.
         refnr (str): Reference number identifying the row.
+        time_units (dict): Time units with a dict, 'unit': 'value'. Needed if refnr is missing, to update correct row.
         column (str): Column that will be updated.
         variable (str): Variable associated with the column. Note, this is identical to column if the table is not in the long format.
         value (Any): New value to write.
@@ -101,8 +109,11 @@ class UpdateSkjemadata(BaseModel):
     """
 
     table: str
+    skjema: str | None = None
     ident: str
+    identifier_column: str = "refnr"
     refnr: str
+    time_units: None | dict = None
     column: str
     variable: str
     value: Any
@@ -112,13 +123,15 @@ class UpdateSkjemadata(BaseModel):
     def __str__(self) -> str:
         return (
             "Update to apply:\n"
-            f"  Table     : {self.table}\n"
-            f"  Table Type: {'long' if self.long else 'wide'}\n"
-            f"  Ident     : {self.ident}"
-            f"  RefNr     : {self.refnr}\n"
-            f"  Column    : {self.column}\n"
-            f"  Variable  : {self.variable}\n"
-            f"  Value     : {self.old_value} -> {self.value}"
+            f"  Table             : {self.table}\n"
+            f"  Table Type        : {'long' if self.long else 'wide'}\n"
+            f"  Ident             : {self.ident}\n"
+            f"  Identifier column : {self.identifier_column}\n"
+            f"  RefNr             : {self.refnr}\n"
+            f"  Time Units        : {self.time_units}\n"
+            f"  Column            : {self.column}\n"
+            f"  Variable          : {self.variable}\n"
+            f"  Value             : {self.old_value} -> {self.value}"
         )
 
     def to_alert(self, long, success):
@@ -173,21 +186,89 @@ class UpdateSkjemadata(BaseModel):
             )
             return self.to_alert(long, success=False)
 
+
+    def _get_skjema_navn(self, conn) -> str:
+        """Looks up the long variable name from mapping_variabelnavn."""
+        df = conn.table("mapping_variabelnavn")
+        result = (
+            df.filter(_.aar == (self.time_units or {}).get("aar"))
+            .filter(_.skjema_kortnavn == self.variable)
+            .filter(_.skjema == self.skjema)
+            .select(["skjema_navn"])
+            .limit(1)
+            .execute()
+        )
+        print(f"result: {result}")
+        if result.empty:
+            logger.warning(
+                f"No skjema_navn found for kortnavn='{self.variable}', "
+                f"aar='{(self.time_units or {}).get('aar')}'. Falling back to kortnavn."
+            )
+            return self.variable
+        return result["skjema_navn"].iloc[0]
+
+    def _insert_ibis(self, conn, long):
+        """
+        NØKU-specific function to insert data if the row doesn't exist in the postgreSQL database.
+        Because Altinn3-xml only returns data if the values are not None.
+        """
+
+        variabel = self._get_skjema_navn(conn)
+        columns = {
+            **{unit: f"'{val}'" for unit, val in (self.time_units or {}).items() if val},
+            "skjema": f"'{self.skjema}'",
+            "refnr": f"'{self.refnr}'",
+            "ident": f"'{self.ident}'",
+            "variabel": f"'{variabel}'",
+            "verdi": f"'{self.value}'",
+        }
+
+        insert_query = f"""
+            INSERT INTO core_skjemadata ({', '.join(columns.keys())})
+            VALUES ({', '.join(columns.values())})
+        """
+        try:
+            conn.raw_sql(insert_query)
+            logger.info(f"Inserted new row with variabel='{variabel}' (kortnavn='{self.variable}'): {columns}")
+            return self.to_alert(long, success=True)
+        except Exception as e:
+            logger.error(f"INSERT feilet: {e}", exc_info=True)
+            return self.to_alert(long, success=False)
+
     def update_ibis(self, long):
-        query = f"""
+        update_query  = f"""
             UPDATE {self.table}
             SET {self.column} = '{self.value}'
-            WHERE refnr = '{self.refnr}'
+            WHERE {self.identifier_column} = '{self.refnr}'
         """
+        if self.identifier_column != "refnr" and self.time_units:
+            time_filters = " ".join([
+                f"AND {unit} = '{val}'" 
+                for unit, val in self.time_units.items() 
+                if val
+            ])
+            update_query= update_query.strip() + "\n" + time_filters
         if long:
-            query = query + f" AND variabel = '{self.variable}'"
+            update_query= update_query.strip() + f"\nAND variabel = '{self.variable}'"
+        else:
+            update_query= update_query.strip() + f"\nAND ident = '{self.ident}'"
+
         try:
             with get_connection() as conn:
-                conn.raw_sql(query)
-            logger.info(
-                f"Successfully updated '{self.column}' from '{self.old_value}' to '{self.value}'"
-            )
-            return self.to_alert(long, success=True)
+                result = conn.raw_sql(update_query)
+                if result.rowcount == 0:
+                    if self.table.startswith("skjemadata"):
+                        logger.warning(
+                            f"UPDATE matched 0 rows for {self.identifier_column}='{self.refnr}', "
+                            f"variabel='{self.variable}'. Attempting INSERT."
+                        )
+                        return self._insert_ibis(conn, long)
+                    else:
+                        return self.to_alert(long, success=False)
+                logger.info(
+                    f"Successfully updated '{self.column}' from '{self.old_value}' to '{self.value}'"
+                )
+                return self.to_alert(long, success=True)
         except Exception as e:
             logger.error(
                 f"Update feilet! Kunne ikke oppdatere {self.refnr} - '{self.variable if long else self.column} til '{self.value}'. Feilmelding: \n{e}",

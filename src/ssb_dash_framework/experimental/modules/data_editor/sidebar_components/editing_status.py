@@ -168,7 +168,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 return (
                     ["Aktiv"] if data["aktiv"].item() else [],
                     data["status"].item(),
-                    f"Viser for {refnr}",
+                    f"Viser skjema: {data["skjema"].item()}",
                     no_update,
                 )
 

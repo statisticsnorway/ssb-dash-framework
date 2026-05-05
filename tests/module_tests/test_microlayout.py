@@ -57,12 +57,12 @@ def test_editable_field_defaults():
         default_updater,
     )
     from ssb_dash_framework.modules.building_blocks.microlayout_components.editable_field_model import (
-        defult_getter,
+        default_getter,
     )
 
     field = EditableField(field_path="my_field")
     assert field.field_path == "my_field"
-    assert field.getter_func is defult_getter
+    assert field.getter_func is default_getter
     assert field.update_func is default_updater
     assert field.applies_to_tables == []
     assert field.applies_to_forms == []

@@ -16,6 +16,7 @@ from pydantic import Field
 from pydantic import computed_field
 from sqlalchemy import text
 
+from ssb_dash_framework.setup import VariableSelector
 from ....utils.core_models import UpdateSkjemadata
 from ....utils.config_tools.connection import _get_connection_object
 from ....utils.alert_handler import create_alert
@@ -36,10 +37,8 @@ class CallbackSettings(BaseModel):
     form_selector_id: str | None = None
 
 
-def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]) -> Any:
+def default_getter(skjema: str, refnr: str, ident: str, settings: CallbackSettings, field_path: str, time_units: dict, *args: list[Any]) -> Any:
     logger.debug(f"Getting {field_path} for refnr: {refnr}")
-    time_unit_keys = list(get_time_units().keys())
-    time_units = dict(zip(time_unit_keys, args))
     
     with get_connection() as conn:
         t = conn.table(settings.form_data_table)
@@ -47,7 +46,7 @@ def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args
             t[settings.form_reference_number_column] == refnr,
             t[settings.formdata_fieldname_column] == field_path,
         ]
-        if settings.form_reference_number_column != "refnr": # ignore time_units filter if refnr is used
+        if settings.form_reference_number_column != "refnr": # apply time_units filter if refnr is not used
             for unit, value in time_units.items():
                 if value and unit in t.columns:
                     filters.append(t[unit] == value)
@@ -60,30 +59,54 @@ def defult_getter(refnr: str, settings: CallbackSettings, field_path: str, *args
 
 
 def default_updater(
-    value: Any, refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]
+    value: Any, skjema: str, refnr: str, ident: str, settings: CallbackSettings, field_path: str, time_units: dict, *args: list[Any]
 ) -> None:
+    """
+    Args:
+        value (Any): New value to write.
+        refnr (str): Refnr for Altinn3-skjema.
+        settings (class): Holds all settings defined in the DataEditor class.
+        field_path (str): Variable name.
+
+    """
     logger.debug(f"Updating {field_path}")
-    time_unit_keys = list(get_time_units().keys())
-    time_units = dict(zip(time_unit_keys, args))
+
+    print(f"time_units: {time_units}")
+    print(f"ident: {ident}")
+    print(f"refnr: {refnr}")
+    print(f"field_path: {field_path}")
+    print(f"settings: {settings}")
+    print(f"args: {settings}")
 
     if isinstance(value, list):
-        value = value[0] if value else "0"
+        value = str(value[0]) if value else "0"
 
-    old_value = defult_getter(refnr, settings, field_path, *args)
+    print(f"Raw incoming value: {value!r}, type: {type(value)}")
+    old_value = default_getter(skjema, refnr, ident, settings, field_path, time_units, *args)
+    print(f"Old value from DB: {old_value!r}, type: {type(old_value)}")
 
+    if value == old_value or (value == "" and not old_value):
+        raise PreventUpdate
+
+    long = False
+    if settings.formdata_fieldname_column == "variabel":
+        long = True
     update = UpdateSkjemadata(
         table=settings.form_data_table,
-        ident=refnr,
+        skjema=skjema,
+        ident=ident,
+        identifier_column=settings.form_reference_number_column,
         refnr=refnr,
+        time_units=time_units,
         column=settings.formdata_field_value_column_name,
         variable=field_path,
         value=value,
         old_value=old_value,
-        long=True,
+        long=long,
     )
 
     if isinstance(_get_connection_object(), ConnectionPool):
-        return update.update_ibis(long=True)
+        return update.update_ibis(long=long)
     else:
         raise NotImplementedError(
             f"Connection of type '{type(_get_connection_object())}' is not implemented yet."
@@ -93,7 +116,7 @@ def default_updater(
 class EditableField(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     field_path: str
-    getter_func: Callable[..., Any] = Field(default=defult_getter)
+    getter_func: Callable[..., Any] = Field(default=default_getter)
     update_func: Callable[..., None] = Field(default=default_updater)
     # applies_to_... is used for compatibility with DataEditorDataViewCustom
     applies_to_tables: list[str] = Field(default_factory=list)
@@ -159,6 +182,8 @@ class EditableField(BaseModel):
             Output(self._id, "value", allow_duplicate=True),
             Output("alert_store", "data", allow_duplicate=True),
             Input(settings.form_reference_input_id, "value"),
+            VariableSelector([], []).get_state("ident"),
+            VariableSelector([], []).get_state("altinnskjema"),
             Input(self._id, "value"),
             *inputs if inputs else [],
             *states if states else [],
@@ -166,13 +191,18 @@ class EditableField(BaseModel):
             State("alert_store", "data"),
             prevent_initial_call="initial_duplicate",
         )
-        def populate_field(refnr: str, value: Any, *args: list[Any]):
+        def populate_field(refnr: str, ident: str, skjema: str, value: Any, *args: list[Any]):
             # Peel guard values off the end of args
             n_guard = len(guard_states)
             alert_log = args[-1]
             guard_values = args[-(n_guard + 1):-1] if n_guard else ()
             real_args = args[:-(n_guard + 1)] if n_guard else args[:-1] # exclude alert_log
 
+            time_unit_keys = list(get_time_units().keys())
+            time_units = dict(zip(time_unit_keys, real_args))
+
+            print(f"ident: {ident}")
+            print(f"time_units: {time_units}")
             print(f"guard_values={guard_values}, passes guard={self._check_guard(settings, *guard_values)}")
 
             if not self._check_guard(settings, *guard_values):
@@ -183,9 +213,12 @@ class EditableField(BaseModel):
                 # field was edited by user
                 alert = self.update_func(
                     value,
+                    skjema,
                     refnr,
+                    ident,
                     settings,
                     self.field_path,
+                    time_units,
                     *real_args,
                     *getter_args if getter_args else [],
                 )
@@ -195,9 +228,12 @@ class EditableField(BaseModel):
                 return no_update, alert_log
             else:
                 result = self.getter_func(
+                    skjema,
                     refnr,
+                    ident,
                     settings,
                     self.field_path,
+                    time_units,
                     *real_args,
                     *getter_args if getter_args else [],
                 )

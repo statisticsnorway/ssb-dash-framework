@@ -21,7 +21,7 @@ from .....modules.building_blocks.microlayout_components.editable_field_model im
     default_updater,
 )
 from .....modules.building_blocks.microlayout_components.editable_field_model import (
-    defult_getter,
+    default_getter,
 )
 from .....modules.building_blocks.microlayout_components.models import CalculatedField, Layout
 from ..core import DataEditorDataView
@@ -299,7 +299,7 @@ class DataViewCustom(DataEditorDataView):
                     applies_to_tables=self.applies_to_tables,
                     applies_to_forms=self.applies_to_forms,
                     layout=value["layout"],
-                    getter_func=value.get("getter_func", defult_getter),
+                    getter_func=value.get("getter_func", default_getter),
                     update_func=value.get("update_func", default_updater),
                     form_data_table=value.get("form_data_table"),
                     form_data_field_name_column=value.get(

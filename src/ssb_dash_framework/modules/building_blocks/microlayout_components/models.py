@@ -381,8 +381,10 @@ class ChecklistComponent(BaseNode):
             result = original_getter(refnr, settings, field_path, *args)
             if result is None or str(result) == "0":
                 return []
-            # return same type as what came from db to match option values
-            return [result]
+            option_values = [o["value"] for o in self.options]
+            if option_values and isinstance(option_values[0], int):
+                return [int(result)]
+            return [str(result)]
         
         self.field_settings.getter_func = wrapped_getter
         self.field_settings.create_callback(
