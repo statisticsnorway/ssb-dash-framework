@@ -20,8 +20,8 @@ from sqlalchemy import text
 import time
 import re
 from dash_iconify import DashIconify
-from nspek_utils import set_nspek_connection
-from nspek_utils import get_nspek_connection
+from .nspek_utils import set_nspek_connection
+from .nspek_utils import get_nspek_connection
 
 from pathlib import Path
 
