@@ -403,18 +403,19 @@ DataEditor
 /* Spacing between microlayout items */
 .DataEditor-main-view .microlayout-input {
     margin-bottom: 0.5rem;
-    max-width: 20rem;
+    max-width: 13rem;
 }
 
 .DataEditor-main-view .microlayout-textarea textarea {
     min-height: 7rem;
-    max-width: 20rem;
+    max-width: 13rem;
 }
 
 .DataEditor-main-view .row {
     margin-bottom: 0.8rem;
-    flex-wrap: nowrap;
-    gap: 4rem;
+    /* flex-wrap: nowrap; */
+    gap: 2rem;
+    /* min-width: max-content; */
 }
 
 .DataEditor-main-view .col {

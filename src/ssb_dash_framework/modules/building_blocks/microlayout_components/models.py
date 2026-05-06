@@ -247,9 +247,9 @@ class CalculatedField(BaseNode):
         }
 
         for (op, _), value in zip(op_id_pairs, values):
-            if value is not None:
+            if value is not None and str(value).strip() != "":
                 op_values[op].append(float(value))
-
+                
         result = 0
         for base in op_values["exponent"]: # Kept for future implementation
             result **= base
