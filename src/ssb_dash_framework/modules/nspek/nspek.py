@@ -20,12 +20,12 @@ from sqlalchemy import text
 import time
 import re
 from dash_iconify import DashIconify
+from ssb_dash_framework.modules.nspek.nspek_utils import set_nspek_connection
 
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
 from ...utils.module_validation import module_validator
-from ...utils.config_tools import set_postgres_connection
 from ...utils.config_tools import get_connection
 from ...utils.alert_handler import create_alert
 
@@ -33,21 +33,6 @@ from .mock_controls import NspekMockControls
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
-
-# dapla_group = os.getenv('DAPLA_GROUP_CONTEXT', None)
-# DB_USER = f"{dapla_group}@dapla-group-sa-p-ye.iam"   ### p-ye kan også være ulike mellom tilgangsgrupper.
-
-DB_USER = f"nspek-developers@dapla-group-sa-p-ye.iam"
-
-encoded_user = quote_plus(DB_USER)
-conn_url = f"postgresql://{encoded_user}@localhost:5432/nspek"
-set_postgres_connection(conn_url)
-
-with get_connection() as conn:
-    dapla_user = os.getenv('DAPLA_USER', None)[:3]
-    PROCESS_TYPE = "editering"
-    conn.raw_sql(f"SET nspek_app.user_id = {dapla_user}")
-    conn.raw_sql(f"SET nspek_app.process_type = {PROCESS_TYPE}")
 
 virksomhetsinfo_variabler = ["virksomhetstype", "regeltypeForAarsregnskap", "regnskapspliktstype", "start", "slutt"]
 
@@ -806,10 +791,11 @@ class Naeringsspesifikasjon:
         ]
     )
 
-    def __init__(self, time_units: list[str]) -> None:
+    def __init__(self, time_units: list[str], db_user: str | None) -> None:
         """
         Explanation of module.
         """
+        set_nspek_connection(db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam")
         self.module_number = Naeringsspesifikasjon._id_number
         self.module_name = self.__class__.__name__
         self.icon = "📒"
@@ -2612,19 +2598,19 @@ class Naeringsspesifikasjon:
 
 class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
     """NaeringsspesifikasjonTab is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
-    def __init__(self, time_units: list[str]) -> None:
+    def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
         """Initializes the NaeringsspesifikasjonTab class."""
         Naeringsspesifikasjon.__init__(
-            self, time_units=time_units
+            self, time_units=time_units, db_user=db_user
         )
         TabImplementation.__init__(self)
 
 
 class NaeringsspesifikasjonWindow(WindowImplementation, Naeringsspesifikasjon):
     """NaeringsspesifikasjonWindow is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
-    def __init__(self, time_units: list[str]) -> None:
+    def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
         """Initializes the NaeringsspesifikasjonWindow class."""
         Naeringsspesifikasjon.__init__(
-            self, time_units=time_units
+            self, time_units=time_units, db_user=db_user
         )
         WindowImplementation.__init__(self)
