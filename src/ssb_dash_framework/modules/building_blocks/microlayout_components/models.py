@@ -375,18 +375,34 @@ class ChecklistComponent(BaseNode):
         """A method for creating the layout."""
 
         original_getter = self.field_settings.getter_func
-    
-        def wrapped_getter(refnr, settings, field_path, *args):
-            """Returns 1 or 0 correctly based on user input."""
-            result = original_getter(refnr, settings, field_path, *args)
-            if result is None or str(result) == "0":
+        original_updater = self.field_settings.update_func
+
+        def wrapped_getter(*args, **kwargs):
+            result = original_getter(*args, **kwargs)
+            if result is None or str(result).lower() in ("0", "false", ""):
                 return []
-            option_values = [o["value"] for o in self.options]
-            if option_values and isinstance(option_values[0], int):
+            first = self.options[0]["value"] if self.options else 1
+            if isinstance(first, bool):
+                return [bool(result)]
+            if isinstance(first, int):
                 return [int(result)]
             return [str(result)]
-        
+
+        def wrapped_updater(value, *args, **kwargs):
+            if isinstance(value, list):
+                first = self.options[0]["value"] if self.options else 1
+                if isinstance(first, bool):
+                    value = bool(value)
+                elif isinstance(first, int):
+                    value = 1 if value else 0
+                elif first in ("1", "0"):
+                    value = "1" if value else "0"
+                else:
+                    value = "true" if value else "false"
+            return original_updater(value, *args, **kwargs)
+
         self.field_settings.getter_func = wrapped_getter
+        self.field_settings.update_func = wrapped_updater
         self.field_settings.create_callback(
             settings,
             inputs,

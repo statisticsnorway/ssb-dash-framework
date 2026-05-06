@@ -78,8 +78,8 @@ def default_updater(
     print(f"settings: {settings}")
     print(f"args: {settings}")
 
-    if isinstance(value, list):
-        value = str(value[0]) if value else "0"
+    # if isinstance(value, list):
+    #     value = str(value[0]) if value else "0"
 
     print(f"Raw incoming value: {value!r}, type: {type(value)}")
     old_value = default_getter(skjema, refnr, ident, settings, field_path, time_units, *args)

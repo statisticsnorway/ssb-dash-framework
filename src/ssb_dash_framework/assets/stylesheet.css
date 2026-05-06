@@ -413,10 +413,13 @@ DataEditor
 
 .DataEditor-main-view .row {
     margin-bottom: 0.8rem;
+    flex-wrap: nowrap;
+    gap: 4rem;
 }
 
 .DataEditor-main-view .col {
-    margin-right: 2rem;
+    flex: 0 0 auto;
+    width: auto;
 }
 
 .DataEditor-main-view h2 {
