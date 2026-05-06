@@ -21,6 +21,8 @@ import time
 import re
 from dash_iconify import DashIconify
 from nspek_utils import set_nspek_connection
+from nspek_utils import get_nspek_connection
+
 from pathlib import Path
 
 from ...setup.variableselector import VariableSelector
@@ -806,7 +808,7 @@ class Naeringsspesifikasjon:
         self.icon = "📒"
         self.label = "NSPEK"
 
-        self.conn: BaseBackend = get_connection().__enter__()
+        self.conn: BaseBackend = get_nspek_connection().__enter__()
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
         )
@@ -1745,7 +1747,11 @@ class Naeringsspesifikasjon:
                 ON CONFLICT (sekvensnummer, felt)
                 DO UPDATE SET belop = EXCLUDED.belop
                 """
-                with get_connection() as conn:
+                with get_nspek_connection() as conn:
+                    dapla_user = os.getenv('DAPLA_USER', None)[:3]
+                    PROCESS_TYPE = "editering"
+                    conn.raw_sql(f"SET nspek_app.user_id = {dapla_user}")
+                    conn.raw_sql(f"SET nspek_app.process_type = {PROCESS_TYPE}")
                     conn.raw_sql(query)
 
                 alert_store = [
@@ -1803,7 +1809,11 @@ class Naeringsspesifikasjon:
                 ON CONFLICT (sekvensnummer, felt)
                 DO UPDATE SET belop = EXCLUDED.belop
                 """
-                with get_connection() as conn:
+                with get_nspek_connection() as conn:
+                    dapla_user = os.getenv('DAPLA_USER', None)[:3]
+                    PROCESS_TYPE = "editering"
+                    conn.raw_sql(f"SET nspek_app.user_id = {dapla_user}")
+                    conn.raw_sql(f"SET nspek_app.process_type = {PROCESS_TYPE}")
                     conn.raw_sql(query)
 
                 alert_store = [
@@ -2052,7 +2062,7 @@ class Naeringsspesifikasjon:
                 ORDER BY felt, hist_id DESC
             """
                 #WHERE sekvensnummer = {sekvensnummer} and process_type = 'editering'   ### Må se an brukerbehov hvilken som skal brukes.
-            with get_connection() as conn:
+            with get_nspek_connection() as conn:
                 cursor = conn.raw_sql(query)
 
                 rows = cursor.fetchall()
@@ -2098,7 +2108,7 @@ class Naeringsspesifikasjon:
                 LIMIT 1
             """
 
-            with get_connection() as conn:
+            with get_nspek_connection() as conn:
                 cursor = conn.raw_sql(query)
                 rows = cursor.fetchall()
                 columns = [col[0] for col in cursor.description]
@@ -2165,7 +2175,11 @@ class Naeringsspesifikasjon:
             """
 
             try:
-                with get_connection() as conn:
+                with get_nspek_connection() as conn:
+                    dapla_user = os.getenv('DAPLA_USER', None)[:3]
+                    PROCESS_TYPE = "editering"
+                    conn.raw_sql(f"SET nspek_app.user_id = {dapla_user}")
+                    conn.raw_sql(f"SET nspek_app.process_type = {PROCESS_TYPE}")
                     conn.raw_sql(query_deactivate)
                     conn.raw_sql(query_insert)
 
@@ -2242,12 +2256,16 @@ class Naeringsspesifikasjon:
                     1,
                     true,
                     NOW(),
-                    current_setting('nspek_app.user_id')
+                    ''current_setting('nspek_app.user_id')''
                 )
             """
 
             try:
-                with get_connection() as conn:
+                with get_nspek_connection() as conn:
+                    dapla_user = os.getenv('DAPLA_USER', None)[:3]
+                    PROCESS_TYPE = "editering"
+                    conn.raw_sql(f"SET nspek_app.user_id = {dapla_user}")
+                    conn.raw_sql(f"SET nspek_app.process_type = {PROCESS_TYPE}")
                     conn.raw_sql(query_deactivate)
                     conn.raw_sql(query_insert)
 
@@ -2292,7 +2310,7 @@ class Naeringsspesifikasjon:
                 ORDER BY opprettet DESC
             """
 
-            with get_connection() as conn:
+            with get_nspek_connection() as conn:
                 cursor = conn.raw_sql(query)
                 rows = cursor.fetchall()
                 columns = [col[0] for col in cursor.description]
@@ -2354,7 +2372,7 @@ class Naeringsspesifikasjon:
                         WHERE id = {kommentar_id}
                     """
 
-                    with get_connection() as conn:
+                    with get_nspek_connection() as conn:
                         conn.raw_sql(query_deactivate_others)
                         conn.raw_sql(query_activate)
 
@@ -2368,7 +2386,7 @@ class Naeringsspesifikasjon:
                         WHERE id = {kommentar_id}
                     """
 
-                    with get_connection() as conn:
+                    with get_nspek_connection() as conn:
                         conn.raw_sql(query_deactivate)
 
                     msg = f"Deaktivert kommentar for felt {felt}"
@@ -2449,7 +2467,7 @@ class Naeringsspesifikasjon:
                 ORDER BY opprettet DESC
             """
 
-            with get_connection() as conn:
+            with get_nspek_connection() as conn:
                 cursor = conn.raw_sql(query)
                 rows = cursor.fetchall()
                 columns = [col[0] for col in cursor.description]
@@ -2501,7 +2519,7 @@ class Naeringsspesifikasjon:
 
                     msg = "Kommentar aktivert"
 
-                    with get_connection() as conn:
+                    with get_nspek_connection() as conn:
                         conn.raw_sql(query_deactivate)
                         conn.raw_sql(query_activate)
 
@@ -2515,7 +2533,7 @@ class Naeringsspesifikasjon:
 
                     msg = "Kommentar deaktivert"
 
-                    with get_connection() as conn:
+                    with get_nspek_connection() as conn:
                         conn.raw_sql(query)
 
                 query_reload = f"""
@@ -2531,7 +2549,7 @@ class Naeringsspesifikasjon:
                     ORDER BY opprettet DESC
                 """
 
-                with get_connection() as conn:
+                with get_nspek_connection() as conn:
                     cursor = conn.raw_sql(query_reload)
                     rows = cursor.fetchall()
                     columns = [col[0] for col in cursor.description]
