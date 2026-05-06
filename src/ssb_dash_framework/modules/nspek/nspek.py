@@ -20,7 +20,8 @@ from sqlalchemy import text
 import time
 import re
 from dash_iconify import DashIconify
-from ssb_dash_framework.modules.nspek.nspek_utils import set_nspek_connection
+from nspek_utils import set_nspek_connection
+from pathlib import Path
 
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
@@ -427,11 +428,15 @@ def post_description_data(regnskapstype: str) -> DataFrame:
 
     Example use: post_description_data("balanseregnskap")
     """
-    post_file_path = "/home/onyxia/work/nspek/experimental/app/"
+    base_path = Path(__file__).parent
+
     if regnskapstype == "balanseregnskap":
         poster = "nspek_balanseposter"
     elif regnskapstype == "resultatregnskap":
         poster = "nspek_resultatposter"
+
+    post_file_path = base_path / f"{poster}.csv"
+
     df = pd.read_csv(
         f"{post_file_path}{poster}.csv", 
         dtype={"felt": "string"},
