@@ -143,7 +143,6 @@ class Col(ContainerNode):
 class Header(BaseNode):
     type: Literal["header"]
     label: str
-
     size: Literal["xs", "sm", "md", "lg"] = "md"
 
     def create(
@@ -164,11 +163,32 @@ class Header(BaseNode):
             return html.H4(self.label)
 
 
+class Label(BaseNode):
+    type: Literal["label"]
+    label: str
+    bold: bool = False
+
+    def create(
+        self,
+        settings: CallbackSettings,
+        inputs: list[Input] | None = None,
+        states: list[State] | None = None,
+        getter_args: None | list = None,
+    ) -> html.Div:
+        return html.Div(
+            html.Label(
+                self.label, style={"fontWeight": "bold" if self.bold else "normal"}
+            ),
+            className="microlayout-label",
+        )
+
+
 class InputField(BaseNode):
     type: Literal["input"]
     label: str
     value: str | None = ""
     field_settings: EditableField
+    hidelabel: bool = False
     readonly: bool = False
 
     def create(
@@ -187,18 +207,30 @@ class InputField(BaseNode):
         )
         return html.Div(
             [
-                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
+                html.Label(
+                    self.label,
+                    title=self.field_settings._id.split("[")[0],
+                    style={
+                        "visibility": "hidden" if self.hidelabel else "visible",
+                    },
+                ),
                 dbc.Input(
-                    style={"width": "100%"}, id=self.field_settings._id, debounce=True, readonly=self.readonly, className="microlayout-input-field" + (" microlayout-input-readonly" if self.readonly else ""),
+                    style={"width": "100%"},
+                    id=self.field_settings._id,
+                    debounce=True,
+                    readonly=self.readonly,
+                    className="microlayout-input-field"
+                    + (" microlayout-input-readonly" if self.readonly else ""),
                 ),
             ],
-            className="microlayout-input"
+            className="microlayout-input",
         )
 
 
 class CalculatedField(BaseNode):
     type: Literal["calculated-field"]
     label: str
+    hidelabel: bool = False
     applies_to_tables: list[str] = Field(default_factory=list)
     applies_to_forms: list[str] = Field(default_factory=list)
     exponents: list[str | InputField] = Field(default_factory=list)
@@ -249,11 +281,13 @@ class CalculatedField(BaseNode):
         for (op, _), value in zip(op_id_pairs, values):
             if value is not None and str(value).strip() != "":
                 op_values[op].append(float(value))
-                
+
         result = 0
-        for base in op_values["exponent"]: # Kept for future implementation
+        for base in op_values["exponent"]:  # Kept for future implementation
             result **= base
-            raise NotImplementedError("Currently formulas involving 'exponent' is not implemented.")
+            raise NotImplementedError(
+                "Currently formulas involving 'exponent' is not implemented."
+            )
         for val in op_values["multiplication"]:
             result *= val
         for val in op_values["division"]:
@@ -287,12 +321,17 @@ class CalculatedField(BaseNode):
         self.create_callback()
         return html.Div(
             [
-                html.Label(self.label, title=", ".join(id_ for _, id_ in self._get_all_ids())),
-                dbc.Input(id=self._id, style={"width": "100%"}, readonly=True), 
+                html.Label(
+                    self.label,
+                    title=", ".join(id_ for _, id_ in self._get_all_ids()),
+                    style={
+                        "visibility": "hidden" if self.hidelabel else "visible",
+                    },
+                ),
+                dbc.Input(id=self._id, style={"width": "100%"}, readonly=True),
             ],
-            className="microlayout-calculated-field"
+            className="microlayout-calculated-field",
         )
-
 
     def __str__(self, prefix: str = "", is_last: bool = True) -> str:
         branch = "└─ " if is_last else "├─ "
@@ -353,7 +392,7 @@ class DropdownComponent(BaseNode):
                     style={"width": "100%"},
                 ),  # pyright: ignore
             ],
-            className="microlayout-dropdown"
+            className="microlayout-dropdown",
         )
 
 
@@ -480,10 +519,15 @@ class Textarea(BaseNode):
             [
                 html.Label(self.label, title=self.field_settings._id.split("[")[0]),
                 dbc.Textarea(
-                    style={"width": "100%"}, id=self.field_settings._id, debounce=True, readonly=self.readonly, className="microlayout-textarea-field" + (" microlayout-textarea-readonly" if self.readonly else ""),
+                    style={"width": "100%"},
+                    id=self.field_settings._id,
+                    debounce=True,
+                    readonly=self.readonly,
+                    className="microlayout-textarea-field"
+                    + (" microlayout-textarea-readonly" if self.readonly else ""),
                 ),
             ],
-            className="microlayout-textarea"
+            className="microlayout-textarea",
         )
 
 
@@ -548,6 +592,7 @@ Node = Annotated[
     Row
     | Col
     | Header
+    | Label
     | InputField
     | CalculatedField
     | KlassDropdown
@@ -563,6 +608,7 @@ for m in (
     Row,
     Col,
     Header,
+    Label,
     InputField,
     KlassDropdown,
     Textarea,

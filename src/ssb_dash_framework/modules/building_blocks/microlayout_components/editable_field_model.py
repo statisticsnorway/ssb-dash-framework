@@ -71,16 +71,6 @@ def default_updater(
     """
     logger.debug(f"Updating {field_path}")
 
-    print(f"time_units: {time_units}")
-    print(f"ident: {ident}")
-    print(f"refnr: {refnr}")
-    print(f"field_path: {field_path}")
-    print(f"settings: {settings}")
-    print(f"args: {settings}")
-
-    # if isinstance(value, list):
-    #     value = str(value[0]) if value else "0"
-
     print(f"Raw incoming value: {value!r}, type: {type(value)}")
     old_value = default_getter(skjema, refnr, ident, settings, field_path, time_units, *args)
     print(f"Old value from DB: {old_value!r}, type: {type(old_value)}")
@@ -200,10 +190,6 @@ class EditableField(BaseModel):
 
             time_unit_keys = list(get_time_units().keys())
             time_units = dict(zip(time_unit_keys, real_args))
-
-            print(f"ident: {ident}")
-            print(f"time_units: {time_units}")
-            print(f"guard_values={guard_values}, passes guard={self._check_guard(settings, *guard_values)}")
 
             if not self._check_guard(settings, *guard_values):
                 logger.debug("Preventing update")

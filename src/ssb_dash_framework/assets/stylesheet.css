@@ -394,16 +394,25 @@ DataEditor
 }
 
 .dbc input.microlayout-input-readonly:not([type=radio]):not([type=checkbox]),
-.form-control.microlayout-textarea-readonly[readonly] {
-    background-color: #edeff1 !important;
-    color: #595f65 !important;
+.form-control.microlayout-textarea-readonly[readonly],
+.dbc .microlayout-calculated-field .form-control[readonly],
+.dbc .microlayout-calculated-field input[readonly] {
+    background-color: #eeeff0 !important;
+    color: #4a4e53 !important;
     cursor: not-allowed;
 }
 
 /* Spacing between microlayout items */
+.DataEditor-main-view .microlayout-calculated-field,
 .DataEditor-main-view .microlayout-input {
-    margin-bottom: 0.5rem;
     max-width: 13rem;
+}
+
+.microlayout-label {
+    display: flex;
+    align-items: center;
+    height: 62px;
+    margin-top: 0.1rem;
 }
 
 .DataEditor-main-view .microlayout-textarea textarea {
@@ -412,10 +421,9 @@ DataEditor
 }
 
 .DataEditor-main-view .row {
-    margin-bottom: 0.8rem;
-    /* flex-wrap: nowrap; */
-    gap: 2rem;
-    /* min-width: max-content; */
+    margin-bottom: 1rem;
+    /* flex-wrap: nowrap;  */
+    /* gap: 2rem; */
 }
 
 .DataEditor-main-view .col {
@@ -469,7 +477,7 @@ DataEditor
 }
 
 .DataEditor-sidebar {
-    flex: 0 0 280px;
+    flex: 0 0 250px;
 }
 
 .DataEditor-sidebar-modules {

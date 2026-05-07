@@ -257,6 +257,11 @@ class DataViewCustom(DataEditorDataView):
     def build_layout(self, layout: dict | list) -> list:
         """Builds the layout for the custom view."""
         components = []
+
+        # guard against strings and other primitives
+        if not isinstance(layout, (dict, list)):
+            return components
+            
         if isinstance(layout, list):
             for item in layout:
                 components.extend(self.build_layout(item))
@@ -286,6 +291,7 @@ class DataViewCustom(DataEditorDataView):
                     applies_to_forms=self.applies_to_forms,
                 )
                 components.append(figure.content())
+
             elif key == "table":
                 table = DataViewCustomTable(
                     label=value["label"],
@@ -294,6 +300,7 @@ class DataViewCustom(DataEditorDataView):
                     applies_to_forms=self.applies_to_forms,
                 )
                 components.append(table.content())
+
             elif key == "microlayout":
                 microlayout = DataViewCustomMicroLayout(
                     applies_to_tables=self.applies_to_tables,
@@ -454,8 +461,9 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
         node = convert_node_build_field_settings(
             node, "applies_to_tables", applies_to_tables
         )
+        clean_forms = [f for f in applies_to_forms if f is not None]
         node = convert_node_build_field_settings(
-            node, "applies_to_forms", [f for f in applies_to_forms if f is not None]
+            node, "applies_to_forms", clean_forms
         )
 
     if "children" in node:

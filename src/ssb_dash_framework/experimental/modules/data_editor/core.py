@@ -251,7 +251,7 @@ class DataEditor:
         )
         def update_header(
             selected_table: str, selected_form: str
-        ) -> str:  # TODO: make prettier
+        ) -> str:
             """Show an info message telling the user which form and table are currently selected."""
             return f"Viser data for {selected_form} fra tabell {selected_table}"
 

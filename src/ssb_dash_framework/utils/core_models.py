@@ -2,6 +2,7 @@ import logging
 from typing import Any
 from typing import Literal
 
+from dash.exceptions import PreventUpdate
 from pydantic import BaseModel
 
 from ssb_dash_framework.setup.variableselector import VariableSelector
@@ -12,6 +13,7 @@ from ibis import _
 from .alert_handler import create_alert
 from .config_tools.connection import _get_connection_object
 from .config_tools.connection import get_connection
+from psycopg_pool import ConnectionPool
 
 logger = logging.getLogger(__name__)
 
@@ -213,23 +215,39 @@ class UpdateSkjemadata(BaseModel):
         Because Altinn3-xml only returns data if the values are not None.
         """
 
-        variabel = self._get_skjema_navn(conn)
-        columns = {
-            **{unit: f"'{val}'" for unit, val in (self.time_units or {}).items() if val},
-            "skjema": f"'{self.skjema}'",
-            "refnr": f"'{self.refnr}'",
-            "ident": f"'{self.ident}'",
-            "variabel": f"'{variabel}'",
-            "verdi": f"'{self.value}'",
-        }
+        if not isinstance(_get_connection_object(), ConnectionPool):
+            logger.debug("Insert failed. The connection object is not a valid postgreSQL object. This insert function was specifically made for NØKU and only works for tables starting with 'skjemadata', 'kildevalg', or 'saldoskjema'.")
+            raise PreventUpdate
 
-        insert_query = f"""
-            INSERT INTO core_skjemadata ({', '.join(columns.keys())})
-            VALUES ({', '.join(columns.values())})
-        """
+        if self.table.startswith("skjemadata"):
+            variabel = self._get_skjema_navn(conn)
+            columns = {
+                **{unit: f"'{val}'" for unit, val in (self.time_units or {}).items() if val},
+                "skjema": f"'{self.skjema}'",
+                "refnr": f"'{self.refnr}'",
+                "ident": f"'{self.ident}'",
+                "variabel": f"'{variabel}'",
+                "verdi": f"'{self.value}'",
+            }
+            insert_query = f"""
+                INSERT INTO core_skjemadata ({', '.join(columns.keys())})
+                VALUES ({', '.join(columns.values())})
+            """
+        elif self.table.startswith("saldoskjema"):
+            columns = {
+                **{unit: f"'{val}'" for unit, val in (self.time_units or {}).items() if val},
+                "orgnr_foretak": f"'{self.ident}'",
+                "variabel": f"'{self.variable}'",
+                "verdi": f"'{self.value}'",
+            }
+            insert_query = f"""
+                INSERT INTO saldoskjema ({', '.join(columns.keys())})
+                VALUES ({', '.join(columns.values())})
+            """
+
         try:
             conn.raw_sql(insert_query)
-            logger.info(f"Inserted new row with variabel='{variabel}' (kortnavn='{self.variable}'): {columns}")
+            logger.info(f"Inserted new row with variabel='{self.variable}' and value='{self.value}' into {self.table}.")
             return self.to_alert(long, success=True)
         except Exception as e:
             logger.error(f"INSERT feilet: {e}", exc_info=True)
@@ -257,7 +275,7 @@ class UpdateSkjemadata(BaseModel):
             with get_connection() as conn:
                 result = conn.raw_sql(update_query)
                 if result.rowcount == 0:
-                    if self.table.startswith("skjemadata"):
+                    if self.table.startswith(("skjemadata", "saldoskjema")):
                         logger.warning(
                             f"UPDATE matched 0 rows for {self.identifier_column}='{self.refnr}', "
                             f"variabel='{self.variable}'. Attempting INSERT."

@@ -102,12 +102,24 @@ class DataEditorTable(DataEditorDataView):
         )
         def read_table(selected_table: str, *args: list[str]):
             """Populate the table view with data."""
-            if (
-                selected_table not in self.applies_to_tables
-                or args[len(self.time_units)] not in self.applies_to_forms
-            ):
-                logger.info("Preventing update.")
+            selected_form = args[len(self.time_units)]
+
+            if selected_table not in self.applies_to_tables:
+                logger.info("Preventing update: table mismatch.")
                 raise PreventUpdate
+
+            if (
+                self.applies_to_forms
+                and selected_form not in self.applies_to_forms
+            ):
+                logger.info("Preventing update: form mismatch.")
+                raise PreventUpdate
+            # if (
+            #     selected_table not in self.applies_to_tables
+            #     or args[len(self.time_units)] not in self.applies_to_forms
+            # ):
+            #     logger.info("Preventing update.")
+            #     raise PreventUpdate
 
             if isinstance(_get_connection_object(), EimerDBInstance):
                 N = len(self.time_units)
