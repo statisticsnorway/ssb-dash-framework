@@ -1,21 +1,20 @@
-from typing import Any, Iterator
-from ibis import BaseBackend
+from collections.abc import Callable
+from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import Any
 from urllib.parse import quote_plus
-from psycopg_pool import ConnectionPool
-from ibis.backends.postgres import Backend
+
 import pandas as pd
-from typing import Callable
-
-
+from ibis import BaseBackend
+from ibis.backends.postgres import Backend
+from psycopg_pool import ConnectionPool
 
 _IS_POOLED_NSPEK: bool | None = None
 _CONNECTION_NSPEK: object | None = None
 _CONNECTION_CALLABLE_NSPEK: Callable[..., Any] | None = None
 
-def set_nspek_connection(
-    database_user: str | None = None
-) -> None:
+
+def set_nspek_connection(database_user: str | None = None) -> None:
     """Helper function to configure a pooled connection to a postgres database.
 
     Args:
@@ -23,7 +22,9 @@ def set_nspek_connection(
     """
     global _IS_POOLED_NSPEK, _CONNECTION_NSPEK, _CONNECTION_CALLABLE_NSPEK
 
-    DB_USER = database_user if database_user else "nspek-developers@dapla-group-sa-p-ye.iam"
+    DB_USER = (
+        database_user if database_user else "nspek-developers@dapla-group-sa-p-ye.iam"
+    )
 
     encoded_user = quote_plus(DB_USER)
     conn_url = f"postgresql://{encoded_user}@localhost:5432/nspek"
@@ -31,17 +32,13 @@ def set_nspek_connection(
 
     _IS_POOLED_NSPEK = True
 
-    pool = ConnectionPool(
-        conninfo=conn_url, min_size=1, max_size=1
-    )
+    pool = ConnectionPool(conninfo=conn_url, min_size=1, max_size=1)
     _CONNECTION_NSPEK = pool
 
     @contextmanager
     def _wrap_ibis_postgres(*args: Any, **kwargs: Any) -> Iterator[BaseBackend]:
         with pool.connection() as raw_conn:
             yield Backend.from_connection(raw_conn)
-
-
 
     with _wrap_ibis_postgres() as yielded_conn_object:
         if not isinstance(yielded_conn_object, BaseBackend):

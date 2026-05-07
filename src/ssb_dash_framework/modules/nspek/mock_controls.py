@@ -1,7 +1,9 @@
-import pandas as pd
 import random
-from ssb_dash_framework import ControlFrameworkBase, register_control
 
+import pandas as pd
+
+from ssb_dash_framework import ControlFrameworkBase
+from ssb_dash_framework import register_control
 
 ORGNRS = [
     "979443137",

@@ -1,12 +1,12 @@
 import logging
-import warnings
 from abc import ABC
 from abc import abstractmethod
 from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-#import ibis
+
+# import ibis
 from dash import callback
 from dash import callback_context as ctx
 from dash import html
@@ -14,10 +14,12 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-#from eimerdb import EimerDBInstance
 
+from ssb_dash_framework import TabImplementation
+
+# from eimerdb import EimerDBInstance
 from ssb_dash_framework import VariableSelector
-from ssb_dash_framework import TabImplementation, WindowImplementation
+from ssb_dash_framework import WindowImplementation
 from ssb_dash_framework import create_alert
 from ssb_dash_framework import module_validator
 
@@ -25,17 +27,16 @@ logger = logging.getLogger(__name__)
 
 
 default_col_def = {
-    #"filter": True,
+    # "filter": True,
     "resizable": True,
     "sortable": True,
-    #"floatingFilter": True,
+    # "floatingFilter": True,
     "editable": False,
 }
 
 
 class NspekControlView(ABC):
-    """
-    Nspek variant av ControlView - tett på original implementasjon,
+    """Nspek variant av ControlView - tett på original implementasjon,
     men med control_dict og uten hard dependency på altinnskjema.
     """
 
@@ -63,10 +64,11 @@ class NspekControlView(ABC):
 
         self.control_dict = control_dict
         self.outputs = outputs
-        #self._is_valid()
+        # self._is_valid()
         self.module_layout = self.create_layout()
         self.variableselector = VariableSelector(
-            selected_inputs=time_units, selected_states=[],
+            selected_inputs=time_units,
+            selected_states=[],
         )
         self.time_units = [
             self.variableselector.get_option(x).id.removeprefix("var-")
@@ -90,7 +92,7 @@ class NspekControlView(ABC):
                             dbc.Button(
                                 "Oppdater visning",
                                 id=f"{self.module_number}-kontroll-refresh",
-                                className="ssb-btn primary-btn"
+                                className="ssb-btn primary-btn",
                             ),
                             width="auto",
                         ),
@@ -98,7 +100,7 @@ class NspekControlView(ABC):
                             dbc.Button(
                                 "Kjør kontroller (kan ta tid)",
                                 id=f"{self.module_number}-kontroll-run-button",
-                                className="ssb-btn primary-btn"
+                                className="ssb-btn primary-btn",
                             ),
                             width="auto",
                         ),

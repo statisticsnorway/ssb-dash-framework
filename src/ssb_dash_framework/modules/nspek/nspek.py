@@ -1,43 +1,46 @@
-from pandas.core.series import Series
-from pandas.core.frame import DataFrame
-from dash_ag_grid import AgGrid
-import dash_bootstrap_components as dbc
-from dash import dcc, html, callback, no_update
-from dash.dependencies import Input, Output, State
-from dash.exceptions import PreventUpdate
-from datetime import datetime, date
-import pandas as pd
-import ibis
-from ibis import _
-from ibis.util import S
-from ibis.backends import BaseBackend
 import logging
-from typing import ClassVar
-from ibis.expr.types.relations import Table
 import os
-from urllib.parse import quote_plus
-from sqlalchemy import text
-import time
 import re
-from dash_iconify import DashIconify
-from .nspek_utils import set_nspek_connection
-from .nspek_utils import get_nspek_connection
-
+import time
 from pathlib import Path
+from typing import ClassVar
+
+import dash_bootstrap_components as dbc
+import ibis
+import pandas as pd
+from dash import callback
+from dash import dcc
+from dash import html
+from dash import no_update
+from dash.dependencies import Input
+from dash.dependencies import Output
+from dash.dependencies import State
+from dash.exceptions import PreventUpdate
+from dash_ag_grid import AgGrid
+from dash_iconify import DashIconify
+from ibis import _
+from ibis.backends import BaseBackend
+from pandas.core.frame import DataFrame
 
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
-from ...utils.module_validation import module_validator
-from ...utils.config_tools import get_connection
 from ...utils.alert_handler import create_alert
-
+from ...utils.module_validation import module_validator
 from .mock_controls import NspekMockControls
+from .nspek_utils import get_nspek_connection
+from .nspek_utils import set_nspek_connection
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
-virksomhetsinfo_variabler = ["virksomhetstype", "regeltypeForAarsregnskap", "regnskapspliktstype", "start", "slutt"]
+virksomhetsinfo_variabler = [
+    "virksomhetstype",
+    "regeltypeForAarsregnskap",
+    "regnskapspliktstype",
+    "start",
+    "slutt",
+]
 
 BALANSE_STRUCTURE = {
     "eiendeler": {
@@ -48,7 +51,7 @@ BALANSE_STRUCTURE = {
         "egenkapital": (2000, 2099),
         "langsiktig gjeld": (2100, 2299),
         "kortsiktig gjeld": (2300, 2999),
-    }
+    },
 }
 
 RESULTAT_STRUCTURE = {
@@ -59,13 +62,13 @@ RESULTAT_STRUCTURE = {
     "driftskostnader": {
         "varekostnader": (4000, 4999),
         "lønn og kostnader til ansatte": (5000, 5999),
-        "andre driftskostnader": (6000,7999),
+        "andre driftskostnader": (6000, 7999),
     },
     "finansposter og skattekostnad": {
         "finansinntekter": (8000, 8099),
         "finanskostnader": (8100, 8299),
         "skattekostnader": (8300, 8999),
-    }
+    },
 }
 
 NEGATIVE_ACCOUNTS = {
@@ -81,13 +84,12 @@ NEGATIVE_ACCOUNTS = {
     "7099",
 }
 
+
 def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
-    """
-    Adds UI sum rows used for display aggregation in AG Grid.
+    """Adds UI sum rows used for display aggregation in AG Grid.
 
     Example use: add_ui_sums(df, RESULTAT_STRUCTURE)
     """
-
     df = df.copy()
 
     if "post" not in df.columns or "verdi" not in df.columns:
@@ -234,7 +236,6 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
         "UI_SUM_2100_2299": "sumLangsiktigGjeld",
         "UI_SUM_2300_2999": "sumKortsiktigGjeld",
         "UI_SUM_2000_2999": "sumGjeldOgEgenkapital",
-
         "UI_SUM_3000_3399": "3300",
         "UI_SUM_3400_3999": "3911",
         "UI_SUM_4000_4999": "4995",
@@ -267,25 +268,57 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
 
     return pd.DataFrame(new_rows)
 
+
 PETROLEUM_ORGNR = {
-    "913905881", "914807077", "915419062", "916358857",
-    "918110127", "918175334", "918500863", "918980946",
-    "919160675", "921166753", "924186720", "927066440",
-    "953133210", "975871932", "985224323", "988217867",
-    "988400025", "989795848", "990888213", "991317155",
-    "993787787", "995152142", "996739910", "996888177",
-    "997015231", "998726441", "913561473", "914048990",
-    "919886080", "977095239"
+    "913905881",
+    "914807077",
+    "915419062",
+    "916358857",
+    "918110127",
+    "918175334",
+    "918500863",
+    "918980946",
+    "919160675",
+    "921166753",
+    "924186720",
+    "927066440",
+    "953133210",
+    "975871932",
+    "985224323",
+    "988217867",
+    "988400025",
+    "989795848",
+    "990888213",
+    "991317155",
+    "993787787",
+    "995152142",
+    "996739910",
+    "996888177",
+    "997015231",
+    "998726441",
+    "913561473",
+    "914048990",
+    "919886080",
+    "977095239",
 }
 
 PETROLEUM_POSTS = {
-    "3001", "3002", "3003", "3004", "3005",
-    "3006", "3007", "3008", "3886"
+    "3001",
+    "3002",
+    "3003",
+    "3004",
+    "3005",
+    "3006",
+    "3007",
+    "3008",
+    "3886",
 }
 
-def apply_petroleum_filter(df: pd.DataFrame, orgnr: str, toggle_petroleum: list[str]) -> pd.DataFrame:
-    """
-    Filters petroleum-related rows (PETROLEUM_POSTS) based on orgnr (PETROLEUM_ORGNR) and user toggle i UI checkbox.
+
+def apply_petroleum_filter(
+    df: pd.DataFrame, orgnr: str, toggle_petroleum: list[str]
+) -> pd.DataFrame:
+    """Filters petroleum-related rows (PETROLEUM_POSTS) based on orgnr (PETROLEUM_ORGNR) and user toggle i UI checkbox.
 
     Example use: apply_petroleum_filter(df, "979443137", ["show_petroleum"])
     """
@@ -296,8 +329,7 @@ def apply_petroleum_filter(df: pd.DataFrame, orgnr: str, toggle_petroleum: list[
 
 
 def apply_blank_filter(df: pd.DataFrame, toggle_blank: list[str]) -> pd.DataFrame:
-    """
-    Removes or retains rows with blank values and header/subheader row depending on UI toggle state in checkbox.
+    """Removes or retains rows with blank values and header/subheader row depending on UI toggle state in checkbox.
 
     Example use: apply_blank_filter(df, ["show_blank"])
     """
@@ -310,38 +342,36 @@ def apply_blank_filter(df: pd.DataFrame, toggle_blank: list[str]) -> pd.DataFram
     keep_rows = (
         df["verdi"].notna()
         | df["verdi_compare"].notna()
-        | df["beskrivelse"].isin([
-            "",
-            "Eiendeler",
-            "Anleggsmidler",
-            "Omløpsmidler",
-
-            "Egenkapital og gjeld",
-            "Egenkapital",
-            "Langsiktig gjeld",
-            "Kortsiktig gjeld",
-
-            "Driftsinntekter",
-            "Salgsinntekter",
-            "Andre driftsinntekter ",
-            
-            "Driftskostnader",
-            "Varekostnader",
-            "Lønn og kostnader til ansatte",
-            "Andre driftskostnader",
-
-            "Finansposter og skattekostnad",
-            "Finansinntekter",
-            "Finanskostnader",
-            "Skattekostnader",
-
-        ])
+        | df["beskrivelse"].isin(
+            [
+                "",
+                "Eiendeler",
+                "Anleggsmidler",
+                "Omløpsmidler",
+                "Egenkapital og gjeld",
+                "Egenkapital",
+                "Langsiktig gjeld",
+                "Kortsiktig gjeld",
+                "Driftsinntekter",
+                "Salgsinntekter",
+                "Andre driftsinntekter ",
+                "Driftskostnader",
+                "Varekostnader",
+                "Lønn og kostnader til ansatte",
+                "Andre driftskostnader",
+                "Finansposter og skattekostnad",
+                "Finansinntekter",
+                "Finanskostnader",
+                "Skattekostnader",
+            ]
+        )
         | df["beskrivelse"].str.startswith("SUM", na=False)
     )
 
     return df.loc[keep_rows].copy()
 
-TYPE_REGNSKAP_TABLE = { # type: {database: exampleregnskap, table: tema_example}
+
+TYPE_REGNSKAP_TABLE = {  # type: {database: exampleregnskap, table: tema_example}
     "registrering": {
         "database": "nspek_core",
         "table": "registrering",
@@ -366,8 +396,7 @@ TYPE_REGNSKAP_TABLE = { # type: {database: exampleregnskap, table: tema_example}
 
 
 def get_versions(conn, ident: str, aar: str) -> pd.DataFrame:
-    """
-    Fetch and return pandas dataframe containing all sekvensnummer sorted by versjon_nr from nspek_core view v_registrering_versjon.
+    """Fetch and return pandas dataframe containing all sekvensnummer sorted by versjon_nr from nspek_core view v_registrering_versjon.
 
     Example use: get_versions(self.conn, "979443137", "2024")
     """
@@ -383,7 +412,8 @@ def get_versions(conn, ident: str, aar: str) -> pd.DataFrame:
     )
 
     df["label"] = (
-        "v" + df["versjon_nr"].astype(str)
+        "v"
+        + df["versjon_nr"].astype(str)
         + " – "
         + pd.to_datetime(df["dato_mottatt"]).dt.strftime("%Y-%m-%d %H:%M")
     )
@@ -391,42 +421,42 @@ def get_versions(conn, ident: str, aar: str) -> pd.DataFrame:
     return df
 
 
-def get_virksomhetsinfo(conn, variables_to_fetch: list, ident: str, aar: str, sekvensnummer: int) -> pd.DataFrame:
-    """
-    Fetch and return pandas dataframe containing virksomhetsinfo from nspek files for specified variables for a unit.
+def get_virksomhetsinfo(
+    conn, variables_to_fetch: list, ident: str, aar: str, sekvensnummer: int
+) -> pd.DataFrame:
+    """Fetch and return pandas dataframe containing virksomhetsinfo from nspek files for specified variables for a unit.
 
     Example use: get_virksomhetsinfo(self.conn, virksomhetsinfo_variabler, "979443137", "2024", 2291859)
     """
     config = TYPE_REGNSKAP_TABLE["virksomhet"]
 
     t = conn.table(config["table"], database=config["database"])
-    t = t.filter((_.sekvensnummer == sekvensnummer))
-    filtered = t.filter(t['felt'].isin(variables_to_fetch)).select(["felt", "char_verdi"])
+    t = t.filter(_.sekvensnummer == sekvensnummer)
+    filtered = t.filter(t["felt"].isin(variables_to_fetch)).select(
+        ["felt", "char_verdi"]
+    )
     df = filtered.execute()
-    
+
     return df
 
 
 def get_bofinfo(ident: str) -> pd.DataFrame:
-    """
-    Fetch and return pandas dataframe containing BOF info from ssb_foretak.db for a given orgnr as a pandas dataframe.
+    """Fetch and return pandas dataframe containing BOF info from ssb_foretak.db for a given orgnr as a pandas dataframe.
 
     Example use: get_bofinfo("979443137")
     """
     config = TYPE_REGNSKAP_TABLE["virksomhet"]
 
-
     conn = ibis.sqlite.connect("/buckets/shared/vof/oracle-hns/ssb_foretak.db")
     t = conn.table("ssb_foretak")
-    filtered = t.filter((_.orgnr == ident))
+    filtered = t.filter(_.orgnr == ident)
     df = filtered.execute()
-    
+
     return df
 
 
 def post_description_data(regnskapstype: str) -> DataFrame:
-    """
-    Returns a pandas dataframe with the npspek posts and their names.
+    """Returns a pandas dataframe with the npspek posts and their names.
 
     Example use: post_description_data("balanseregnskap")
     """
@@ -440,10 +470,8 @@ def post_description_data(regnskapstype: str) -> DataFrame:
     post_file_path = base_path / f"{poster}.csv"
 
     df = pd.read_csv(
-        f"{post_file_path}", 
-        dtype={"felt": "string"},
-        keep_default_na=False
-        )
+        f"{post_file_path}", dtype={"felt": "string"}, keep_default_na=False
+    )
 
     return df[["tekst", "felt"]]
 
@@ -457,7 +485,6 @@ def comment_icon_column():
         "filter": False,
         "resizable": True,
         "pinned": "right",
-
         "cellStyle": {
             "styleConditions": [
                 {
@@ -465,13 +492,12 @@ def comment_icon_column():
                     "style": {
                         "textAlign": "center",
                         "fontSize": "16px",
-                        "cursor": "pointer"
-                    }
+                        "cursor": "pointer",
+                    },
                 }
             ]
         },
-
-        "tooltipField": "comment_text"
+        "tooltipField": "comment_text",
     }
 
 
@@ -483,82 +509,65 @@ def build_column_defs(sekvens_compare=None):
         columns = [c for c in columns if c not in ["verdi_compare", "diff"]]
 
     header_rows: list[str] = [
-        'Eiendeler', 
-        'SUM Eiendeler', 
-        'SUM forslag for eiendeler',
-
-        'Egenkapital og gjeld', 
-        'SUM Egenkapital og gjeld',
-        'SUM forslag for egenkapital og gjeld',
-
-        'Driftsinntekter', 
-        'SUM Driftsinntekter', 
-        'SUM forslag for driftsinntekter',
-        
-        'Driftskostnader', 
-        'SUM Driftskostnader',
-        'SUM forslag for driftskostnader',
-        
-        'Finansposter og skattekostnad',
-        'SUM Finansposter og skattekostnad',
-        'SUM forslag for finansposter og skattekostnad',
-
-        'SUM Årsresultat', 
-        'SUM forslag for årsresultat',
+        "Eiendeler",
+        "SUM Eiendeler",
+        "SUM forslag for eiendeler",
+        "Egenkapital og gjeld",
+        "SUM Egenkapital og gjeld",
+        "SUM forslag for egenkapital og gjeld",
+        "Driftsinntekter",
+        "SUM Driftsinntekter",
+        "SUM forslag for driftsinntekter",
+        "Driftskostnader",
+        "SUM Driftskostnader",
+        "SUM forslag for driftskostnader",
+        "Finansposter og skattekostnad",
+        "SUM Finansposter og skattekostnad",
+        "SUM forslag for finansposter og skattekostnad",
+        "SUM Årsresultat",
+        "SUM forslag for årsresultat",
     ]
 
     subheader_rows: list[str] = [
-        'Anleggsmidler', 
-        'SUM Anleggsmidler',
-        'SUM forslag for anleggsmidler',
-
-        'SUM Omløpsmidler',         
-        'Omløpsmidler', 
-        'SUM forslag for omløpsmidler',
-
-        'Egenkapital', 
-        'SUM Egenkapital',
-        'SUM forslag for egenkapital',
-
-        'Langsiktig gjeld', 
-        'SUM Langsiktig gjeld', 
-        'SUM forslag for langsiktig gjeld',
-
-        'Kortsiktig gjeld',
-        'SUM Kortsiktig gjeld', 
-        'SUM forslag for kortsiktig gjeld',
-
-        'Salgsinntekter',
-        'SUM Salgsinntekter', 
-        'SUM forslag for salgsinntekter',
-
-        'Andre driftsinntekter ',
-        'SUM Andre driftsinntekter', 
-        'SUM forslag for andre driftsinntekter',
-
-        'Varekostnader',
-        'SUM Varekostnader',
-        'SUM forslag for varekostnader',
-
-        'Lønn og kostnader til ansatte',
-        'SUM Lønn og kostnader til ansatte', 
-        'SUM forslag for lønn og kostnader til ansatte',
-
-        'Andre driftskostnader',
-        'SUM Andre driftskostnader',
-        'SUM forslag for andre driftskostnader',
-
-        'Finansinntekter', 
-        'SUM Finansinntekter',
-        'SUM forslag for finansinntekter',
-
-        'Finanskostnader', 
-        'SUM Finanskostnader', 
-        'SUM forslag for finanskostnader',
-
-        'Skattekostnader', 
-        'SUM Skattekostnader',
-        'SUM forslag for skattekostnader',
+        "Anleggsmidler",
+        "SUM Anleggsmidler",
+        "SUM forslag for anleggsmidler",
+        "SUM Omløpsmidler",
+        "Omløpsmidler",
+        "SUM forslag for omløpsmidler",
+        "Egenkapital",
+        "SUM Egenkapital",
+        "SUM forslag for egenkapital",
+        "Langsiktig gjeld",
+        "SUM Langsiktig gjeld",
+        "SUM forslag for langsiktig gjeld",
+        "Kortsiktig gjeld",
+        "SUM Kortsiktig gjeld",
+        "SUM forslag for kortsiktig gjeld",
+        "Salgsinntekter",
+        "SUM Salgsinntekter",
+        "SUM forslag for salgsinntekter",
+        "Andre driftsinntekter ",
+        "SUM Andre driftsinntekter",
+        "SUM forslag for andre driftsinntekter",
+        "Varekostnader",
+        "SUM Varekostnader",
+        "SUM forslag for varekostnader",
+        "Lønn og kostnader til ansatte",
+        "SUM Lønn og kostnader til ansatte",
+        "SUM forslag for lønn og kostnader til ansatte",
+        "Andre driftskostnader",
+        "SUM Andre driftskostnader",
+        "SUM forslag for andre driftskostnader",
+        "Finansinntekter",
+        "SUM Finansinntekter",
+        "SUM forslag for finansinntekter",
+        "Finanskostnader",
+        "SUM Finanskostnader",
+        "SUM forslag for finanskostnader",
+        "Skattekostnader",
+        "SUM Skattekostnader",
+        "SUM forslag for skattekostnader",
     ]
 
     column_defs = [
@@ -570,10 +579,12 @@ def build_column_defs(sekvens_compare=None):
             "hide": col == "sekvensnummer",
             "editable": col == "verdi",
             "flex": 3 if col == "beskrivelse" else 2 if col == "post" else 1,
-
             "valueFormatter": {
-                "function": "params.value == null ? '' : params.value.toLocaleString('no-NO')" 
-                            if col in ["verdi", "verdi_compare", "diff"] else None
+                "function": (
+                    "params.value == null ? '' : params.value.toLocaleString('no-NO')"
+                    if col in ["verdi", "verdi_compare", "diff"]
+                    else None
+                )
             },
             "cellStyle": {
                 "styleConditions": [
@@ -599,7 +610,11 @@ def build_column_defs(sekvens_compare=None):
                     },
                     {
                         "condition": "params.data.beskrivelse && params.data.beskrivelse.startsWith('SUM') && ['verdi','verdi_compare','diff'].includes(params.colDef.field)",
-                        "style": {"fontWeight": "bold", "textAlign": "right", "paddingRight": "10px"},
+                        "style": {
+                            "fontWeight": "bold",
+                            "textAlign": "right",
+                            "paddingRight": "10px",
+                        },
                     },
                     {
                         "condition": f"params.data && {header_rows}.includes(params.data.beskrivelse)",
@@ -629,9 +644,10 @@ def build_column_defs(sekvens_compare=None):
     return column_defs
 
 
-def fetch_data_by_orgnr(conn, regnskapstype: str, ident: str, aar: str, sekvensnummer: int) -> pd.DataFrame:
-    """
-    Returns a pandas dataframe with all nspek values found in the specified regnskapstype for a unit/orgnr.
+def fetch_data_by_orgnr(
+    conn, regnskapstype: str, ident: str, aar: str, sekvensnummer: int
+) -> pd.DataFrame:
+    """Returns a pandas dataframe with all nspek values found in the specified regnskapstype for a unit/orgnr.
 
     Example use: fetch_data_by_orgnr(self.conn, "resultatregnskap", "932598957", "2024", 2291859)
     """
@@ -646,12 +662,10 @@ def fetch_data_by_orgnr(conn, regnskapstype: str, ident: str, aar: str, sekvensn
 
 
 def get_latest_field_comments(conn, orgnr: str) -> dict:
-    """
-    Returns a dictonary with latest aktiv comment for each variabel sorted by opprett descending.
+    """Returns a dictonary with latest aktiv comment for each variabel sorted by opprett descending.
 
     Example use: get_latest_field_comments(conn, "932598957")
     """
-
     query = f"""
         SELECT DISTINCT ON (variabel)
             variabel,
@@ -683,16 +697,17 @@ def get_latest_field_comments(conn, orgnr: str) -> dict:
             "kommentar": row["kommentar"] or "",
             "endret_dato": (
                 pd.to_datetime(row["opprettet"]).strftime("%Y-%m-%d %H:%M")
-                if pd.notna(row["opprettet"]) else ""
+                if pd.notna(row["opprettet"])
+                else ""
             ),
-            "opprettet_av": row["opprettet_av"] or ""
+            "opprettet_av": row["opprettet_av"] or "",
         }
 
     return latest
 
+
 def trigger_refresh(current_data, key):
-    """
-    Triggers refresh for a specific UI domain key.
+    """Triggers refresh for a specific UI domain key.
 
     Example use: trigger_refresh(refresh_data, "balanse")
     """
@@ -700,9 +715,9 @@ def trigger_refresh(current_data, key):
     new_data["ts"] = time.time_ns()
     return new_data
 
+
 def clean_whitespace(value: str) -> str:
-    """
-    Cleans user input by stripping whitespace.
+    """Cleans user input by stripping whitespace.
 
     Example use: clean_whitespace(" 123 ") returns "123"
     """
@@ -711,9 +726,9 @@ def clean_whitespace(value: str) -> str:
     value = str(value).strip()
     return re.sub(r"\s+", "", value)
 
+
 def validate_orgnr(orgnr: str) -> tuple[bool, str]:
-    """
-    Validates organisation number format.
+    """Validates organisation number format.
 
     Example use: validate_orgnr("979443137")
     """
@@ -728,9 +743,9 @@ def validate_orgnr(orgnr: str) -> tuple[bool, str]:
 
     return True, ""
 
+
 def orgnr_exists_in_bof(orgnr: str) -> bool:
-    """
-    Checks if organisation exists in BOF registry.
+    """Checks if organisation exists in BOF registry.
 
     Example use: orgnr_exists_in_bof("979443137")
     """
@@ -738,11 +753,7 @@ def orgnr_exists_in_bof(orgnr: str) -> bool:
         conn = ibis.sqlite.connect("/buckets/shared/vof/oracle-hns/ssb_foretak.db")
         t = conn.table("ssb_foretak")
 
-        df = (
-            t.filter(_.orgnr == orgnr)
-            .limit(1)
-            .execute()
-        )
+        df = t.filter(_.orgnr == orgnr).limit(1).execute()
 
         return not df.empty
 
@@ -750,9 +761,9 @@ def orgnr_exists_in_bof(orgnr: str) -> bool:
         logger.error(f"BOF lookup feilet: {e}")
         return True
 
+
 def validate_aar(aar: str) -> tuple[bool, str]:
-    """
-    Validates year format and range.
+    """Validates year format and range.
 
     Example use: validate_aar("2024")
     """
@@ -769,9 +780,9 @@ def validate_aar(aar: str) -> tuple[bool, str]:
 
     return True, ""
 
+
 def has_data(conn, orgnr: str, aar: str) -> bool:
-    """
-    Checks if NSPEK data exists for given organisation and year.
+    """Checks if NSPEK data exists for given organisation and year.
 
     Example use: has_data(conn, "979443137", "2024")
     """
@@ -779,19 +790,16 @@ def has_data(conn, orgnr: str, aar: str) -> bool:
 
     t = conn.table(config["table"], database=config["database"])
 
-    df = (
-        t.filter((_.orgnr == orgnr) & (_.aar == int(aar)))
-        .limit(1)
-        .execute()
-    )
+    df = t.filter((_.orgnr == orgnr) & (_.aar == int(aar))).limit(1).execute()
 
     return not df.empty
 
+
 MAX_ALLOWED_VALUE = 999_999_999_999
 
+
 def validate_numeric_input(value: str) -> tuple[bool, str | None]:
-    """
-    Validates integer input for nspek grid cells and check for extreme values.
+    """Validates integer input for nspek grid cells and check for extreme values.
 
     Example use: validate_numeric_input("1200")
     """
@@ -810,9 +818,9 @@ def validate_numeric_input(value: str) -> tuple[bool, str | None]:
 
     return True, None
 
+
 def is_negative(value: str) -> bool:
-    """
-    Checks whether a numeric string is negative.
+    """Checks whether a numeric string is negative.
 
     Example use: is_negative("-10")
     """
@@ -821,14 +829,15 @@ def is_negative(value: str) -> bool:
     except Exception:
         return False
 
-def save_regnskap_value(conn, regnskapstype: str, sekvensnummer: int, post: str, value: str):
-    """
-    Inserts or updates nspek regnskap values.
+
+def save_regnskap_value(
+    conn, regnskapstype: str, sekvensnummer: int, post: str, value: str
+):
+    """Inserts or updates nspek regnskap values.
 
     Example use:
     save_regnskap_value(conn, "balanseregnskap", 123, "A1", "1000")
     """
-
     config = TYPE_REGNSKAP_TABLE[regnskapstype]
 
     query = f"""
@@ -841,14 +850,15 @@ def save_regnskap_value(conn, regnskapstype: str, sekvensnummer: int, post: str,
 
     conn.raw_sql(query)
 
-def handle_regnskap_edit(edited, alert_store, refresh_data, regnskapstype: str, refresh_key: str):
-    """
-    Central handler for nspek grid edits (balanse + resultat).
+
+def handle_regnskap_edit(
+    edited, alert_store, refresh_data, regnskapstype: str, refresh_key: str
+):
+    """Central handler for nspek grid edits (balanse + resultat).
 
     Example use:
     handle_regnskap_edit(..., "balanseregnskap", "balanse")
     """
-
     if edited[0]["data"].get("is_ui_sum"):
         raise PreventUpdate
 
@@ -932,10 +942,10 @@ def handle_regnskap_edit(edited, alert_store, refresh_data, regnskapstype: str, 
 
     return alert_store, refresh_data, False, None, no_update
 
+
 class Naeringsspesifikasjon:
-    """
-    The Naeringsspesifikasjon module lets you view the nspek/naeringsspesifikasjon for a specified foretak (var-ident).
-    """
+    """The Naeringsspesifikasjon module lets you view the nspek/naeringsspesifikasjon for a specified foretak (var-ident)."""
+
     _id_number: ClassVar[int] = 0
     _required_variables: ClassVar[list[str]] = (
         [  # Used for validating that the variable selector has the required variables set. These are hard-coded in the module_callbacks.
@@ -944,10 +954,10 @@ class Naeringsspesifikasjon:
     )
 
     def __init__(self, time_units: list[str], db_user: str | None) -> None:
-        """
-        Explanation of module.
-        """
-        set_nspek_connection(db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam")
+        """Explanation of module."""
+        set_nspek_connection(
+            db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
+        )
         self.module_number = Naeringsspesifikasjon._id_number
         self.module_name = self.__class__.__name__
         self.icon = "📒"
@@ -962,7 +972,7 @@ class Naeringsspesifikasjon:
             for x in time_units
         ]
         logger.debug("TIME UNITS ", self.time_units)
-        
+
         self.module_layout = self._create_layout()
         self.module_callbacks()
         module_validator(self)
@@ -981,7 +991,6 @@ class Naeringsspesifikasjon:
             className="ssb-input",
             children=[
                 html.Label(title),
-
                 html.Div(
                     className="input-wrapper",
                     children=[
@@ -1009,15 +1018,15 @@ class Naeringsspesifikasjon:
         )
         return dropdown_card
 
-    def create_checkbox(self, component_id: str, label: str, value: str, checked: bool = False):
-        checkbox =  html.Div(
+    def create_checkbox(
+        self, component_id: str, label: str, value: str, checked: bool = False
+    ):
+        checkbox = html.Div(
             className="ssb-checkbox d-flex align-items-center",
             children=[
                 dcc.Checklist(
                     id=component_id,
-                    options=[
-                        {"label": "", "value": value}
-                    ],
+                    options=[{"label": "", "value": value}],
                     value=[value] if checked else [],
                 ),
                 html.Label(
@@ -1034,24 +1043,22 @@ class Naeringsspesifikasjon:
             children=[
                 html.Div(
                     DashIconify(icon=self._map_icon(variant), width=40),
-                    className="icon-panel"
+                    className="icon-panel",
                 ),
-
                 html.Div(
                     [
                         html.Div(title, className="dialog-title"),
                         html.Div(message, className="content"),
                     ],
-                    className="dialog-content"
+                    className="dialog-content",
                 ),
-
                 html.Button(
                     "✕",
                     id="close-version-warning",
                     n_clicks=0,
-                    className="dialog-close"
-                )
-            ]
+                    className="dialog-close",
+                ),
+            ],
         )
         return dialog
 
@@ -1067,33 +1074,25 @@ class Naeringsspesifikasjon:
             "styleConditions": [
                 {
                     "condition": "params.data && params.data.operation_type === 'INSERT' && params.data.process_type === 'editering'",
-                    "style": {
-                        "backgroundColor": "#c8e6c9"  # lys grønn
-                    }
+                    "style": {"backgroundColor": "#c8e6c9"},  # lys grønn
                 },
                 {
                     "condition": "params.data && params.data.operation_type === 'UPDATE'",
-                    "style": {
-                        "backgroundColor": "#ffe082"  # lys gul
-                    }
+                    "style": {"backgroundColor": "#ffe082"},  # lys gul
                 },
                 {
                     "condition": "params.data && params.data.operation_type === 'INSERT' && params.data.process_type === 'innsamling'",
-                    "style": {
-                        "backgroundColor": "#bde4ff"  # lys blå
-                    }
-                }
+                    "style": {"backgroundColor": "#bde4ff"},  # lys blå
+                },
             ]
         }
-        
+
     def get_row_style_with_comments(self):
         return {
             "styleConditions": [
                 {
                     "condition": "params.data && params.data.comment_icon",
-                    "style": {
-                        "backgroundColor": "#ECFEED"  # SSB grønn 1
-                    }
+                    "style": {"backgroundColor": "#ECFEED"},  # SSB grønn 1
                 },
             ]
         }
@@ -1102,14 +1101,14 @@ class Naeringsspesifikasjon:
         return {
             "styleConditions": [
                 {
-                        "condition": "params.data && params.data.is_ui_sum",
-                        "style": {
-                            "fontStyle": "italic",
-                            "fontWeight": "normal",
-                            "backgroundColor": "#F0F8F9", # SSB mørk 1
-                            "color": "#333333",
-                        }
+                    "condition": "params.data && params.data.is_ui_sum",
+                    "style": {
+                        "fontStyle": "italic",
+                        "fontWeight": "normal",
+                        "backgroundColor": "#F0F8F9",  # SSB mørk 1
+                        "color": "#333333",
                     },
+                },
             ]
         }
 
@@ -1118,9 +1117,7 @@ class Naeringsspesifikasjon:
             "styleConditions": [
                 {
                     "condition": "params.data.aktiv === false",
-                    "style": {
-                        "opacity": "0.5"
-                    }
+                    "style": {"opacity": "0.5"},
                 }
             ]
         }
@@ -1130,565 +1127,793 @@ class Naeringsspesifikasjon:
             "styleConditions": [
                 {
                     "condition": "params.data && params.data.utslag",
-                    "style": {
-                        "backgroundColor": "#C3DCDC"  # SSB mørk 2
-                    }
+                    "style": {"backgroundColor": "#C3DCDC"},  # SSB mørk 2
                 },
                 {
                     "condition": "params.data.utslag === false",
-                    "style": {
-                        "opacity": "0.5"
-                    }
-                }
+                    "style": {"opacity": "0.5"},
+                },
             ]
         }
 
     def _create_layout(self):
-        layout = html.Div([
-
-            dcc.Store(id="refresh-manager", data={}),
-            dcc.Store(id="pending-regnskap-edit", data=None,),
-
-            html.Div(
-                [
-                    dbc.Row(
-                        [
-                            dbc.Col(
-                                self.create_info_card(
-                                    title="Organisasjonsnummer",
-                                    component_id="nspek-info-card-organisasjonsnummer",
-                                    var_type="text",
+        layout = html.Div(
+            [
+                dcc.Store(id="refresh-manager", data={}),
+                dcc.Store(
+                    id="pending-regnskap-edit",
+                    data=None,
+                ),
+                html.Div(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    self.create_info_card(
+                                        title="Organisasjonsnummer",
+                                        component_id="nspek-info-card-organisasjonsnummer",
+                                        var_type="text",
+                                    ),
+                                    width=2,
                                 ),
-                                width=2,
-                            ),
-                            dbc.Col(
-                                self.create_info_card(
-                                    title="Årgang",
-                                    component_id="nspek-info-card-aar",
-                                    var_type="number",
+                                dbc.Col(
+                                    self.create_info_card(
+                                        title="Årgang",
+                                        component_id="nspek-info-card-aar",
+                                        var_type="number",
+                                    ),
+                                    width=2,
                                 ),
-                                width=2,
-                            ),
-                            dbc.Col(self.create_dropdown_card(title="Versjon", component_id="nspek-versjon-dropdown",), width=4,),
-                            dbc.Col(self.create_dropdown_card(title="Sammenlign med versjon / årgang",component_id="nspek-versjon-dropdown-compare",), width=4,),
-                        ],
-                        className="g-2 align-items-end",
-                    ),
-                    dbc.Row(
-                        [
-                            dbc.Col(dbc.Button("Oppdater data", id="btn-hent-data", className="ssb-btn primary-btn"), width=2),
-                            dbc.Col(width=2),  # tom spacer
-                            dbc.Col(dbc.Button("Editeringslogg", id="btn-vis-editeringslogg", className="ssb-btn primary-btn"), width=2),
-                        ],
-                        className="g-2 mt-1 align-items-end",
-                    ),
-                    html.Div(
-                        id="nspek-version-warning",
-                        children=self.create_dialog(
-                            variant="info",
-                            title="Tittel",
-                            message="Melding"
+                                dbc.Col(
+                                    self.create_dropdown_card(
+                                        title="Versjon",
+                                        component_id="nspek-versjon-dropdown",
+                                    ),
+                                    width=4,
+                                ),
+                                dbc.Col(
+                                    self.create_dropdown_card(
+                                        title="Sammenlign med versjon / årgang",
+                                        component_id="nspek-versjon-dropdown-compare",
+                                    ),
+                                    width=4,
+                                ),
+                            ],
+                            className="g-2 align-items-end",
                         ),
-                        style={"display": "none"},
-                    ),
-                    dcc.Store(id="nspek-version-warning-closed", data=False),
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle("Editeringslogg", id="modal-editeringslogg-title")),
-                            dbc.ModalBody(
-                                AgGrid(
-                                    id="nspek-editeringslogg-grid",
-                                    className="ag-theme-alpine ag-theme-ssb mb-2",
-                                    columnDefs=[
-                                        {"field": "tekst", "flex": 5},
-                                        {"field": "felt", "flex": 3},
-                                        {
-                                            "field": "belop",
-                                            "flex": 2,
-                                            "type": "numericColumn",
-                                            "valueFormatter": {
-                                                "function": "params.value == null ? '' : params.value.toLocaleString('no-NO')"
-                                            },
-                                            "cellStyle": {"textAlign": "right"},
-                                        },
-                                        {"field": "endret_av", "flex": 2},
-                                        {"field": "endret_dato", "flex": 2},
-                                        {"field": "operation_type", "hide": True},
-                                        {"field": "process_type", "hide": True},
-                                    ],
-                                    rowData=[],
-                                    dashGridOptions={
-                                        "enableCellTextSelection": True,
-                                        "ensureDomOrder": True,
-                                        "enableRangeSelection": True,
-                                    },
-                                    getRowStyle=self.get_edit_log_row_style(),
-                                    style={"height": "83vh", "width": "100%"},
-                                )
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    dbc.Button(
+                                        "Oppdater data",
+                                        id="btn-hent-data",
+                                        className="ssb-btn primary-btn",
+                                    ),
+                                    width=2,
+                                ),
+                                dbc.Col(width=2),  # tom spacer
+                                dbc.Col(
+                                    dbc.Button(
+                                        "Editeringslogg",
+                                        id="btn-vis-editeringslogg",
+                                        className="ssb-btn primary-btn",
+                                    ),
+                                    width=2,
+                                ),
+                            ],
+                            className="g-2 mt-1 align-items-end",
+                        ),
+                        html.Div(
+                            id="nspek-version-warning",
+                            children=self.create_dialog(
+                                variant="info", title="Tittel", message="Melding"
                             ),
-                            dbc.ModalFooter(
+                            style={"display": "none"},
+                        ),
+                        dcc.Store(id="nspek-version-warning-closed", data=False),
+                        dbc.Modal(
+                            [
+                                dbc.ModalHeader(
+                                    dbc.ModalTitle(
+                                        "Editeringslogg",
+                                        id="modal-editeringslogg-title",
+                                    )
+                                ),
+                                dbc.ModalBody(
+                                    AgGrid(
+                                        id="nspek-editeringslogg-grid",
+                                        className="ag-theme-alpine ag-theme-ssb mb-2",
+                                        columnDefs=[
+                                            {"field": "tekst", "flex": 5},
+                                            {"field": "felt", "flex": 3},
+                                            {
+                                                "field": "belop",
+                                                "flex": 2,
+                                                "type": "numericColumn",
+                                                "valueFormatter": {
+                                                    "function": "params.value == null ? '' : params.value.toLocaleString('no-NO')"
+                                                },
+                                                "cellStyle": {"textAlign": "right"},
+                                            },
+                                            {"field": "endret_av", "flex": 2},
+                                            {"field": "endret_dato", "flex": 2},
+                                            {"field": "operation_type", "hide": True},
+                                            {"field": "process_type", "hide": True},
+                                        ],
+                                        rowData=[],
+                                        dashGridOptions={
+                                            "enableCellTextSelection": True,
+                                            "ensureDomOrder": True,
+                                            "enableRangeSelection": True,
+                                        },
+                                        getRowStyle=self.get_edit_log_row_style(),
+                                        style={"height": "83vh", "width": "100%"},
+                                    )
+                                ),
+                                dbc.ModalFooter(
+                                    dbc.Row(
+                                        [
+                                            dbc.Col(
+                                                dbc.Label(
+                                                    [
+                                                        html.Span(
+                                                            "■",
+                                                            style={
+                                                                "color": "#c8e6c9",
+                                                                "marginRight": "5px",
+                                                            },
+                                                        ),
+                                                        html.Span("Satt inn nytt felt"),
+                                                        html.Span(
+                                                            "   ■",
+                                                            style={
+                                                                "color": "#ffe082",
+                                                                "marginLeft": "15px",
+                                                                "marginRight": "5px",
+                                                            },
+                                                        ),
+                                                        html.Span("Editert felt"),
+                                                        html.Span(
+                                                            "   ■",
+                                                            style={
+                                                                "color": "#9fc5e8",
+                                                                "marginLeft": "15px",
+                                                                "marginRight": "5px",
+                                                            },
+                                                        ),
+                                                        html.Span("Innsamling fra SKE"),
+                                                    ],
+                                                ),
+                                                width="auto",
+                                            ),
+                                            dbc.Col(width=True),
+                                            dbc.Col(
+                                                dbc.Button(
+                                                    "Lukk",
+                                                    id="btn-lukk-editeringslogg",
+                                                    className="ssb-btn primary-btn",
+                                                ),
+                                                width="auto",
+                                            ),
+                                        ],
+                                        align="center",
+                                        className="w-100",
+                                    )
+                                ),
+                            ],
+                            id="modal-editeringslogg",
+                            is_open=False,
+                            size="xl",
+                            style={
+                                "maxWidth": "100vw",
+                                "width": "100vw",
+                            },
+                        ),
+                        dbc.Modal(
+                            [
+                                dbc.ModalHeader(
+                                    dbc.ModalTitle(
+                                        id="modal-generell-kommentar-historikk-title"
+                                    )
+                                ),
+                                dbc.ModalBody(
+                                    AgGrid(
+                                        id="generell-kommentar-historikk-grid",
+                                        className="ag-theme-alpine ag-theme-ssb mb-2",
+                                        columnDefs=[
+                                            {
+                                                "field": "id",
+                                                "headerName": "ID",
+                                                "width": 80,
+                                                "hide": True,
+                                            },
+                                            {
+                                                "field": "kommentar",
+                                                "headerName": "Kommentar",
+                                                "flex": 1,
+                                                "wrapText": True,
+                                                "autoHeight": True,
+                                                "cellStyle": {
+                                                    "whiteSpace": "normal",
+                                                    "lineHeight": "1.4",
+                                                    "paddingTop": "6px",
+                                                    "paddingBottom": "6px",
+                                                },
+                                            },
+                                            {
+                                                "field": "opprettet",
+                                                "headerName": "Opprettet",
+                                                "width": 160,
+                                            },
+                                            {
+                                                "field": "opprettet_av",
+                                                "headerName": "Opprettet av",
+                                                "width": 120,
+                                            },
+                                            {
+                                                "field": "aktiv",
+                                                "headerName": "Aktiv",
+                                                "width": 90,
+                                                "editable": True,
+                                            },
+                                        ],
+                                        rowData=[],
+                                        dashGridOptions={
+                                            "rowSelection": "single",
+                                            "animateRows": True,
+                                            "enableCellTextSelection": True,
+                                        },
+                                        style={"height": "83vh", "width": "100%"},
+                                    )
+                                ),
+                                dbc.ModalFooter(
+                                    dbc.Button(
+                                        "Lukk",
+                                        id="close-generell-historikk",
+                                        className="ssb-btn primary-btn",
+                                    )
+                                ),
+                            ],
+                            id="modal-generell-kommentar-historikk",
+                            is_open=False,
+                            size="xl",
+                            style={
+                                "maxWidth": "100vw",
+                                "width": "100vw",
+                            },
+                        ),
+                        dbc.Modal(
+                            [
+                                dbc.ModalHeader(dbc.ModalTitle("Advarsel")),
+                                dbc.ModalBody(id="negative-value-modal-body"),
+                                dbc.ModalFooter(
+                                    [
+                                        dbc.Button(
+                                            "Avbryt",
+                                            id="btn-cancel-negative-edit",
+                                            color="secondary",
+                                            className="ssb-btn",
+                                        ),
+                                        dbc.Button(
+                                            "Bekreft",
+                                            id="btn-confirm-negative-edit",
+                                            color="danger",
+                                            className="ssb-btn primary-btn",
+                                        ),
+                                    ]
+                                ),
+                            ],
+                            id="modal-negative-value",
+                            is_open=False,
+                            centered=True,
+                            backdrop="static",
+                            className="negative-warning-modal",
+                        ),
+                    ],
+                    style={"marginBottom": "10px"},
+                ),
+                dbc.Accordion(
+                    [
+                        dbc.AccordionItem(
+                            dbc.Row(
+                                children=[
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Organisasjonsnummer",
+                                            component_id="bof-info-card-organisasjonsnummer",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Navn",
+                                            component_id="bof-info-card-navn",
+                                            var_type="text",
+                                        ),
+                                        width=4,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Orgform",
+                                            component_id="bof-info-card-organisasjonsform",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Næringskode",
+                                            component_id="bof-info-card-naringskode",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Sektorkode",
+                                            component_id="bof-info-card-sektorkode",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Typekode",
+                                            component_id="bof-info-card-typekode",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Kommune",
+                                            component_id="bof-info-card-kommunekode",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Statuskode",
+                                            component_id="bof-info-card-statuskode",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Sysselsatte",
+                                            component_id="bof-info-card-sysselsatte",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                ],
+                                className="bof-info-cards gy-2",
+                            ),
+                            title="BOF informasjon",
+                            className="ssb-accordion",
+                        ),
+                        dbc.AccordionItem(
+                            dbc.Row(
+                                children=[
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Virksomhetstype",
+                                            component_id="nspek-info-card-virksomhetstype",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Regeltype",
+                                            component_id="nspek-info-card-regeltypeforaarsregnskap",
+                                            var_type="text",
+                                        ),
+                                        width=4,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Type regnskapsplikt",
+                                            component_id="nspek-info-card-regnskapspliktstype",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Startdato",
+                                            component_id="nspek-info-card-start",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Sluttdato",
+                                            component_id="nspek-info-card-slutt",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                ],
+                                className="nspek-info-cards gy-2",
+                            ),
+                            title="NSPEK informasjon",
+                            className="ssb-accordion",
+                        ),
+                        dbc.AccordionItem(
+                            dbc.Accordion(
+                                [
+                                    dbc.AccordionItem(
+                                        html.Div(
+                                            [
+                                                dbc.Row(
+                                                    [
+                                                        dbc.Col(
+                                                            dbc.Button(
+                                                                "Historikk",
+                                                                id="btn-generell-kommentar-historikk",
+                                                                className="ssb-btn primary-btn",
+                                                            ),
+                                                            width="auto",
+                                                        ),
+                                                        dbc.Col(
+                                                            self.create_info_card(
+                                                                title="Endret av:",
+                                                                component_id="nspek-info-card-endret-av",
+                                                                var_type="text",
+                                                            ),
+                                                            width=2,
+                                                        ),
+                                                        dbc.Col(
+                                                            self.create_info_card(
+                                                                title="Dato:",
+                                                                component_id="nspek-info-card-endret-dato",
+                                                                var_type="text",
+                                                            ),
+                                                            width=2,
+                                                        ),
+                                                        dbc.Col(
+                                                            dbc.Button(
+                                                                "Lagre",
+                                                                id="btn-save-kommentar",
+                                                                className="ssb-btn primary-btn",
+                                                            ),
+                                                            width="auto",
+                                                        ),
+                                                    ],
+                                                    className="g-2 mb-2 justify-content-end align-items-end",
+                                                ),
+                                                html.Div(
+                                                    className="ssb-text-area",
+                                                    children=[
+                                                        dcc.Textarea(
+                                                            id="kommentar-text",
+                                                            placeholder="Skriv kommentar her...",
+                                                            className="comment-textarea",
+                                                            style={
+                                                                "width": "100%",
+                                                                "height": "200px",
+                                                                "padding": "10px 12px",
+                                                                "borderRadius": "6px",
+                                                            },
+                                                        ),
+                                                    ],
+                                                ),
+                                            ]
+                                        ),
+                                        title="Generell kommentar",
+                                    ),
+                                    dbc.AccordionItem(
+                                        html.Div(
+                                            [
+                                                dbc.Row(
+                                                    [
+                                                        dbc.Col(
+                                                            self.create_checkbox(
+                                                                component_id="toggle-show-inactive",
+                                                                label="Vis inaktive kommentarer",
+                                                                value="show_inactive",
+                                                                checked=False,
+                                                            ),
+                                                            width="auto",
+                                                        ),
+                                                    ],
+                                                    align="center",
+                                                    className="g-2 mb-2 justify-content-end align-items-end",
+                                                ),
+                                                AgGrid(
+                                                    id="nspek-feltkommentar-grid",
+                                                    className="ag-theme-alpine ag-theme-ssb mb-2",
+                                                    columnDefs=[
+                                                        {"field": "id", "hide": True},
+                                                        {
+                                                            "field": "felt",
+                                                            "headerName": "Felt",
+                                                            "width": 120,
+                                                        },
+                                                        {
+                                                            "field": "kommentar",
+                                                            "flex": 1,
+                                                        },
+                                                        {
+                                                            "field": "opprettet_av",
+                                                            "width": 120,
+                                                        },
+                                                        {
+                                                            "field": "opprettet",
+                                                            "width": 150,
+                                                        },
+                                                        {
+                                                            "field": "aktiv",
+                                                            "width": 70,
+                                                            "editable": True,
+                                                        },
+                                                    ],
+                                                    rowData=[],
+                                                    dashGridOptions={
+                                                        "rowSelection": "single",
+                                                        "animateRows": True,
+                                                    },
+                                                    getRowStyle=self.get_row_style_active_comment(),
+                                                    style={"height": "300px"},
+                                                ),
+                                                dbc.Row(
+                                                    [
+                                                        dbc.Col(
+                                                            self.create_info_card(
+                                                                title="Felt",
+                                                                component_id="input-felt",
+                                                                var_type="number",
+                                                            ),
+                                                            width=1,
+                                                        ),
+                                                        dbc.Col(
+                                                            self.create_info_card(
+                                                                title="Legg inn ny feltkommentar",
+                                                                component_id="input-felt-kommentar",
+                                                                var_type="text",
+                                                            ),
+                                                            width=True,
+                                                        ),
+                                                        dbc.Col(
+                                                            dbc.Button(
+                                                                "Lagre",
+                                                                id="btn-save-feltkommentar",
+                                                                className="ssb-btn primary-btn",
+                                                            ),
+                                                            width="auto",
+                                                        ),
+                                                    ],
+                                                    className="g-2 mb-2 justify-content-end align-items-end",
+                                                ),
+                                            ]
+                                        ),
+                                        title="Feltkommentar",
+                                    ),
+                                ],
+                                always_open=True,
+                                start_collapsed=False,
+                                className="ssb-nested-accordion",
+                            ),
+                            title="Kommentarer",
+                            className="ssb-accordion",
+                        ),
+                    ],
+                    always_open=True,
+                    start_collapsed=True,
+                    className="mb-2",
+                ),
+                dcc.Tabs(
+                    id="nspek-tabs",
+                    children=[
+                        dcc.Tab(
+                            label="Resultatregnskap",
+                            value="resultat",
+                            children=[
                                 dbc.Row(
                                     [
                                         dbc.Col(
-                                            dbc.Label(
-                                                [
-                                                    html.Span("■", style={"color": "#c8e6c9", "marginRight": "5px"}),
-                                                    html.Span("Satt inn nytt felt"),
-                                                    
-                                                    html.Span("   ■", style={"color": "#ffe082", "marginLeft": "15px", "marginRight": "5px"}),
-                                                    html.Span("Editert felt"),
-
-                                                    html.Span("   ■", style={"color": "#9fc5e8", "marginLeft": "15px", "marginRight": "5px"}),
-                                                    html.Span("Innsamling fra SKE"),
-                                                ],
+                                            self.create_checkbox(
+                                                component_id="toggle-show-blank-values-resultat",
+                                                label="Vis blanke verdier 👻",
+                                                value="show_blank",
+                                                checked=True,
                                             ),
-                                            width="auto"
+                                            width="auto",
                                         ),
-
-                                        dbc.Col(width=True),
-
                                         dbc.Col(
-                                            dbc.Button("Lukk", id="btn-lukk-editeringslogg", className="ssb-btn primary-btn"),
-                                            width="auto"
+                                            self.create_checkbox(
+                                                component_id="toggle-show-petroleum-fields-resultat",
+                                                label="Vis petroleumsposter 🛢️",
+                                                value="show_petroleum",
+                                                checked=False,
+                                            ),
+                                            width="auto",
                                         ),
                                     ],
-                                    align="center",
-                                    className="w-100"
-                                )
-                            )
-                        ],
-                        id="modal-editeringslogg",
-                        is_open=False,
-                        size="xl",
-                        style={
-                            "maxWidth": "100vw",
-                            "width": "100vw",
-                        },
-                    ),
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle(id="modal-generell-kommentar-historikk-title")),
-                            dbc.ModalBody(
+                                    className="g-2 mb-2",
+                                ),
                                 AgGrid(
-                                    id="generell-kommentar-historikk-grid",
+                                    id="nspek-resultatdata-grid",
                                     className="ag-theme-alpine ag-theme-ssb mb-2",
-                                    columnDefs=[
-                                        {"field": "id", "headerName": "ID", "width": 80, "hide": True},
-                                        {
-                                            "field": "kommentar",
-                                            "headerName": "Kommentar",
-                                            "flex": 1,
-                                            "wrapText": True,
-                                            "autoHeight": True,
-                                            "cellStyle": {
-                                                "whiteSpace": "normal",
-                                                "lineHeight": "1.4",
-                                                "paddingTop": "6px",
-                                                "paddingBottom": "6px",
-                                            },
-                                        },
-                                        {"field": "opprettet", "headerName": "Opprettet", "width": 160},
-                                        {"field": "opprettet_av", "headerName": "Opprettet av", "width": 120},
-                                        {"field": "aktiv", "headerName": "Aktiv", "width": 90, "editable": True},
-                                    ],
+                                    # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
+                                    defaultColDef={"resizable": True},
                                     rowData=[],
+                                    columnDefs=[],
+                                    dashGridOptions={
+                                        "rowSelection": "single",
+                                        "enableCellTextSelection": True,
+                                        "enableBrowserTooltips": True,
+                                    },
+                                    # getRowStyle=self.get_row_style_with_comments(),
+                                    getRowStyle=self.get_row_style_ui_sums(),
+                                    style={
+                                        "height": "70vh",
+                                        "width": "100%",
+                                    },
+                                ),
+                            ],
+                        ),
+                        dcc.Tab(
+                            label="Balanseregnskap",
+                            value="balanse",
+                            children=[
+                                dbc.Row(
+                                    [
+                                        dbc.Col(
+                                            self.create_checkbox(
+                                                component_id="toggle-show-blank-values-balanse",
+                                                label="Vis blanke verdier 👻",
+                                                value="show_blank",
+                                                checked=True,
+                                            ),
+                                            width="auto",
+                                        ),
+                                        dbc.Col(
+                                            self.create_checkbox(
+                                                component_id="toggle-show-petroleum-fields-balanse",
+                                                label="Vis petroleumsposter 🛢️",
+                                                value="show_petroleum",
+                                                checked=False,
+                                            ),
+                                            width="auto",
+                                        ),
+                                    ],
+                                    className="g-2 mb-2",
+                                ),
+                                AgGrid(
+                                    id="nspek-balansedata-grid",
+                                    className="ag-theme-alpine ag-theme-ssb mb-2",
+                                    # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
+                                    defaultColDef={"resizable": True},
+                                    rowData=[],
+                                    columnDefs=[],
+                                    dashGridOptions={
+                                        "rowSelection": "single",
+                                        "enableCellTextSelection": True,
+                                        "enableBrowserTooltips": True,
+                                    },
+                                    # getRowStyle=self.get_row_style_with_comments(),
+                                    getRowStyle=self.get_row_style_ui_sums(),
+                                    style={
+                                        "height": "70vh",
+                                        "width": "100%",
+                                    },
+                                ),
+                            ],
+                        ),
+                        dcc.Tab(
+                            id="kontrollutslag-tab",
+                            label="Kontrollutslag",
+                            value="kontrollutslag",
+                            children=[
+                                AgGrid(
+                                    id="nspek-kontrollutslag-grid",
+                                    className="ag-theme-alpine ag-theme-ssb mb-2",
+                                    defaultColDef={
+                                        "resizable": True,
+                                        "sortable": True,
+                                    },
+                                    columnDefs=[
+                                        {
+                                            "field": "aar",
+                                            "headerName": "År",
+                                            "hide": True,
+                                        },
+                                        {
+                                            "field": "kontrollid",
+                                            "headerName": "Kontroll",
+                                            "flex": 1,
+                                            "minWidth": 120,
+                                        },
+                                        {
+                                            "field": "tema",
+                                            "headerName": "Tema",
+                                            "flex": 1,
+                                            "minWidth": 120,
+                                        },
+                                        {
+                                            "field": "skildring",
+                                            "headerName": "Beskrivelse",
+                                            "flex": 4,
+                                            "minWidth": 200,
+                                        },
+                                        {
+                                            "field": "ident",
+                                            "headerName": "Ident",
+                                            "hide": True,
+                                        },
+                                        {
+                                            "field": "utslag",
+                                            "headerName": "Utslag",
+                                            "flex": 1,
+                                            "minWidth": 100,
+                                        },
+                                        {
+                                            "field": "verdi",
+                                            "headerName": "Verdi",
+                                            "flex": 1,
+                                            "minWidth": 100,
+                                        },
+                                    ],
                                     dashGridOptions={
                                         "rowSelection": "single",
                                         "animateRows": True,
-                                        "enableCellTextSelection": True,
                                     },
-                                    style={"height": "83vh", "width": "100%"}
-                                )
-                            ),
-                            dbc.ModalFooter(
-                                dbc.Button("Lukk", id="close-generell-historikk", className="ssb-btn primary-btn")
-                            ),
-                        ],
-                        id="modal-generell-kommentar-historikk",
-                        is_open=False,
-                        size="xl",
-                        style={
-                            "maxWidth": "100vw",
-                            "width": "100vw",
-                        },
-                    ),
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle("Advarsel")),
-
-                            dbc.ModalBody(id="negative-value-modal-body"),
-
-                            dbc.ModalFooter(
-                                [
-                                    dbc.Button(
-                                        "Avbryt",
-                                        id="btn-cancel-negative-edit",
-                                        color="secondary",
-                                        className="ssb-btn"
-                                    ),
-                                    dbc.Button(
-                                        "Bekreft",
-                                        id="btn-confirm-negative-edit",
-                                        color="danger",
-                                        className="ssb-btn primary-btn"
-                                    ),
-                                ]
-                            ),
-                        ],
-                        id="modal-negative-value",
-                        is_open=False,
-                        centered=True,
-                        backdrop="static",
-                        className="negative-warning-modal",
-                    ),
-                ],
-                style={"marginBottom": "10px"},
-            ),
-
-            dbc.Accordion(
-                [
-                    dbc.AccordionItem(
-                        dbc.Row(
-                            children=[
-                                dbc.Col(self.create_info_card(
-                                    title="Organisasjonsnummer",
-                                    component_id="bof-info-card-organisasjonsnummer",
-                                    var_type="text"), width=2),
-                                dbc.Col(self.create_info_card(
-                                    title="Navn",
-                                    component_id="bof-info-card-navn",
-                                    var_type="text"), width=4),
-                                dbc.Col(self.create_info_card(
-                                    title="Orgform",
-                                    component_id="bof-info-card-organisasjonsform",
-                                    var_type="text"), width=2),
-                                dbc.Col(self.create_info_card(
-                                    title="Næringskode",
-                                    component_id="bof-info-card-naringskode",
-                                    var_type="text"), width=2),
-                                dbc.Col(self.create_info_card(
-                                    title="Sektorkode",
-                                    component_id="bof-info-card-sektorkode",
-                                    var_type="text"), width=2),
-                                dbc.Col(self.create_info_card(
-                                    title="Typekode",
-                                    component_id="bof-info-card-typekode",
-                                    var_type="text"), width=2),
-                                dbc.Col(self.create_info_card(
-                                    title="Kommune",
-                                    component_id="bof-info-card-kommunekode",
-                                    var_type="text"), width=2),
-                                dbc.Col(self.create_info_card(
-                                    title="Statuskode",
-                                    component_id="bof-info-card-statuskode",
-                                    var_type="text"), width=2),
-                                dbc.Col(self.create_info_card(
-                                    title="Sysselsatte",
-                                    component_id="bof-info-card-sysselsatte",
-                                    var_type="text"), width=2),
-                            ],
-                            className="bof-info-cards gy-2",
-                        ),
-                        title="BOF informasjon",
-                        className="ssb-accordion"
-                    ),
-
-                    dbc.AccordionItem(
-                        dbc.Row(
-                            children=[
-                                dbc.Col(self.create_info_card(
-                                    title="Virksomhetstype",
-                                    component_id="nspek-info-card-virksomhetstype",
-                                    var_type="text"), width=2),
-                                dbc.Col(self.create_info_card(
-                                    title="Regeltype",
-                                    component_id="nspek-info-card-regeltypeforaarsregnskap",
-                                    var_type="text"), width=4),
-                                dbc.Col(self.create_info_card(
-                                    title="Type regnskapsplikt",
-                                    component_id="nspek-info-card-regnskapspliktstype",
-                                    var_type="text"), width=2),
-                                dbc.Col(self.create_info_card(
-                                    title="Startdato",
-                                    component_id="nspek-info-card-start",
-                                    var_type="text"), width=2),
-                                dbc.Col(self.create_info_card(
-                                    title="Sluttdato",
-                                    component_id="nspek-info-card-slutt",
-                                    var_type="text"), width=2),
-                            ],
-                            className="nspek-info-cards gy-2",
-                        ),
-                        title="NSPEK informasjon",
-                        className="ssb-accordion"
-                    ),
-
-                    dbc.AccordionItem(
-                        dbc.Accordion(
-                            [
-
-                                dbc.AccordionItem(
-                                    html.Div(
-                                        [
-                                            dbc.Row(
-                                                [
-                                                    dbc.Col(
-                                                        dbc.Button(
-                                                            "Historikk",
-                                                            id="btn-generell-kommentar-historikk",
-                                                            className="ssb-btn primary-btn"
-                                                        ),
-                                                        width="auto"
-                                                    ),
-                                                    dbc.Col(
-                                                        self.create_info_card(
-                                                            title="Endret av:",
-                                                            component_id="nspek-info-card-endret-av",
-                                                            var_type="text"
-                                                        ),
-                                                        width=2
-                                                    ),
-                                                    dbc.Col(
-                                                        self.create_info_card(
-                                                            title="Dato:",
-                                                            component_id="nspek-info-card-endret-dato",
-                                                            var_type="text"
-                                                        ),
-                                                        width=2
-                                                    ),
-                                                    dbc.Col(
-                                                        dbc.Button(
-                                                            "Lagre",
-                                                            id="btn-save-kommentar",
-                                                            className="ssb-btn primary-btn"
-                                                        ),
-                                                        width="auto"
-                                                    ),
-                                                ],
-                                                className="g-2 mb-2 justify-content-end align-items-end",
-                                            ),
-
-                                            html.Div(
-                                                className="ssb-text-area",
-                                                children=[
-                                                    dcc.Textarea(
-                                                        id="kommentar-text",
-                                                        placeholder="Skriv kommentar her...",
-                                                        className="comment-textarea",
-                                                        style={ "width": "100%", "height": "200px", "padding": "10px 12px", "borderRadius": "6px", },
-                                                    ),
-                                                ],
-                                            ),
-                                        ]
-                                    ),
-                                    title="Generell kommentar",
-                                ),
-
-                                dbc.AccordionItem(
-                                    html.Div(
-                                        [
-                                            dbc.Row(
-                                                [
-                                                    dbc.Col(
-                                                        self.create_checkbox(
-                                                            component_id="toggle-show-inactive",
-                                                            label="Vis inaktive kommentarer",
-                                                            value="show_inactive",
-                                                            checked = False,
-                                                        ),
-                                                        width="auto",
-                                                    ),
-                                                ],
-                                                align="center",
-                                                className="g-2 mb-2 justify-content-end align-items-end",
-                                            ),
-
-                                            AgGrid(
-                                                id="nspek-feltkommentar-grid",
-                                                className="ag-theme-alpine ag-theme-ssb mb-2",
-                                                columnDefs=[
-                                                    {"field": "id", "hide": True},
-                                                    {"field": "felt", "headerName": "Felt", "width": 120},
-                                                    {"field": "kommentar", "flex": 1},
-                                                    {"field": "opprettet_av", "width": 120},
-                                                    {"field": "opprettet", "width": 150},
-                                                    {"field": "aktiv", "width": 70, "editable": True},
-                                                ],
-                                                rowData=[],
-                                                dashGridOptions={
-                                                    "rowSelection": "single",
-                                                    "animateRows": True,
-                                                },
-                                                getRowStyle=self.get_row_style_active_comment(),
-                                                style={"height": "300px"},
-                                            ),
-
-                                            dbc.Row(
-                                                [
-                                                    dbc.Col(
-                                                        self.create_info_card(
-                                                            title="Felt",
-                                                            component_id="input-felt",
-                                                            var_type="number",
-                                                        ),
-                                                        width=1
-                                                    ),
-                                                    dbc.Col(
-                                                        self.create_info_card(
-                                                            title="Legg inn ny feltkommentar",
-                                                            component_id="input-felt-kommentar",
-                                                            var_type="text",
-                                                        ),
-                                                        width=True
-                                                    ),
-                                                    dbc.Col(
-                                                        dbc.Button(
-                                                            "Lagre",
-                                                            id="btn-save-feltkommentar",
-                                                            className="ssb-btn primary-btn"
-                                                        ),
-                                                        width="auto"
-                                                    ),
-                                                ],
-                                                className="g-2 mb-2 justify-content-end align-items-end",
-                                            ),
-                                        ]
-                                    ),
-                                    title="Feltkommentar",
+                                    getRowStyle=self.get_row_style_kontrollutslag(),
+                                    style={
+                                        "height": "50vh",
+                                        "width": "100%",
+                                        #'display': 'none',
+                                    },
                                 ),
                             ],
-                            always_open=True,
-                            start_collapsed=False,
-                            className="ssb-nested-accordion"
                         ),
-                        title="Kommentarer",
-                        className="ssb-accordion"
-                    ),
-                ],
-                always_open=True,
-                start_collapsed=True,
-                className="mb-2",
-            ),
-
-            dcc.Tabs(
-                id="nspek-tabs",
-                children=[
-                    dcc.Tab(label="Resultatregnskap", value="resultat", children=[
-                        dbc.Row(
-                            [
-                                dbc.Col(self.create_checkbox(component_id="toggle-show-blank-values-resultat", label="Vis blanke verdier 👻", value="show_blank", checked = True,), width="auto",),
-                                dbc.Col(self.create_checkbox(component_id="toggle-show-petroleum-fields-resultat", label="Vis petroleumsposter 🛢️", value="show_petroleum", checked = False,), width="auto",),
-                            ],
-                            className="g-2 mb-2",
-                        ),
-                        AgGrid(
-                            id="nspek-resultatdata-grid",
-                            className="ag-theme-alpine ag-theme-ssb mb-2",
-                            #getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
-                            defaultColDef={
-                                "resizable": True},
-                            rowData=[],
-                            columnDefs=[],
-                            dashGridOptions={
-                                "rowSelection": "single", 
-                                "enableCellTextSelection": True, 
-                                "enableBrowserTooltips": True
-                            },
-                            #getRowStyle=self.get_row_style_with_comments(),
-                            getRowStyle=self.get_row_style_ui_sums(),
-                            style={
-                                "height": "70vh", 
-                                "width": "100%", 
-                            },
-                        ),
-                    ]),
-                    dcc.Tab(label="Balanseregnskap", value="balanse", children=[
-                        dbc.Row(
-                            [
-                                dbc.Col(self.create_checkbox(component_id="toggle-show-blank-values-balanse", label="Vis blanke verdier 👻", value="show_blank", checked = True,), width="auto",),
-                                dbc.Col(self.create_checkbox(component_id="toggle-show-petroleum-fields-balanse", label="Vis petroleumsposter 🛢️", value="show_petroleum", checked = False,), width="auto",),
-                            ],
-                            className="g-2 mb-2",
-                        ),
-                        AgGrid(
-                            id="nspek-balansedata-grid",
-                            className="ag-theme-alpine ag-theme-ssb mb-2",
-                            #getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
-                            defaultColDef={
-                                "resizable": True},
-                            rowData=[],
-                            columnDefs=[],
-                            dashGridOptions={
-                                "rowSelection": "single", 
-                                "enableCellTextSelection": True, 
-                                "enableBrowserTooltips": True
-                            },
-                            #getRowStyle=self.get_row_style_with_comments(),
-                            getRowStyle=self.get_row_style_ui_sums(),
-                            style={
-                                "height": "70vh", 
-                                "width": "100%", 
-                            },
-                        ),
-                    ]),
-                    dcc.Tab(id="kontrollutslag-tab", label="Kontrollutslag", value="kontrollutslag",  children=[
-                        AgGrid(
-                            id="nspek-kontrollutslag-grid",
-                            className="ag-theme-alpine ag-theme-ssb mb-2",
-                            defaultColDef={
-                                "resizable": True,
-                                "sortable": True,
-                            },
-                            columnDefs=[
-                                {"field": "aar", "headerName": "År", "hide": True},
-                                {"field": "kontrollid", "headerName": "Kontroll", "flex": 1, "minWidth": 120},
-                                {"field": "tema", "headerName": "Tema", "flex": 1, "minWidth": 120},
-                                {"field": "skildring", "headerName": "Beskrivelse", "flex": 4, "minWidth": 200},
-                                {"field": "ident", "headerName": "Ident", "hide": True},
-                                {"field": "utslag", "headerName": "Utslag", "flex": 1, "minWidth": 100},
-                                {"field": "verdi", "headerName": "Verdi", "flex": 1, "minWidth": 100},
-                            ],
-                            dashGridOptions={
-                                "rowSelection": "single",
-                                "animateRows": True,
-                            },
-                            getRowStyle=self.get_row_style_kontrollutslag(),
-                            style={
-                                "height": "50vh", 
-                                "width": "100%",
-                                #'display': 'none', 
-                            },
-                        ),
-                    ]),
+                    ],
+                    className="ssb-tabs mb-3",
+                ),
             ],
-            className="ssb-tabs mb-3"
-            ),
-        ],
-        style={
-            "width": "100%",
-            "minWidth": "0",
-        })
-        
+            style={
+                "width": "100%",
+                "minWidth": "0",
+            },
+        )
+
         return layout
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the Naeringsspesifikasjon module."""
-        
+
         @callback(
-            Output(component_id="bof-info-card-organisasjonsnummer", component_property="value"),
+            Output(
+                component_id="bof-info-card-organisasjonsnummer",
+                component_property="value",
+            ),
             Output(component_id="bof-info-card-navn", component_property="value"),
-            Output(component_id="bof-info-card-organisasjonsform", component_property="value"),
-            Output(component_id="bof-info-card-naringskode", component_property="value"),
+            Output(
+                component_id="bof-info-card-organisasjonsform",
+                component_property="value",
+            ),
+            Output(
+                component_id="bof-info-card-naringskode", component_property="value"
+            ),
             Output(component_id="bof-info-card-sektorkode", component_property="value"),
             Output(component_id="bof-info-card-typekode", component_property="value"),
-            Output(component_id="bof-info-card-kommunekode", component_property="value"),
+            Output(
+                component_id="bof-info-card-kommunekode", component_property="value"
+            ),
             Output(component_id="bof-info-card-statuskode", component_property="value"),
-            Output(component_id="bof-info-card-sysselsatte", component_property="value"),
+            Output(
+                component_id="bof-info-card-sysselsatte", component_property="value"
+            ),
             Input("var-ident", "value"),
         )
         def create_info_cards_bof(orgnr_foretak: str) -> tuple[str, str, str, str, str]:
-            """
-            Returns a tuple of strings with the values for info cards for the top of the bof accordion.
+            """Returns a tuple of strings with the values for info cards for the top of the bof accordion.
             These cards will hold bof information for the foretak.
             """
             df = get_bofinfo(ident=orgnr_foretak)
@@ -1716,41 +1941,49 @@ class Naeringsspesifikasjon:
             )
 
         @callback(
-            Output(component_id="nspek-info-card-virksomhetstype", component_property="value"),
-            Output(component_id="nspek-info-card-regeltypeforaarsregnskap", component_property="value"),
-            Output(component_id="nspek-info-card-regnskapspliktstype", component_property="value"),
+            Output(
+                component_id="nspek-info-card-virksomhetstype",
+                component_property="value",
+            ),
+            Output(
+                component_id="nspek-info-card-regeltypeforaarsregnskap",
+                component_property="value",
+            ),
+            Output(
+                component_id="nspek-info-card-regnskapspliktstype",
+                component_property="value",
+            ),
             Output(component_id="nspek-info-card-start", component_property="value"),
             Output(component_id="nspek-info-card-slutt", component_property="value"),
             Input("var-aar", "value"),
             Input("var-ident", "value"),
             Input("nspek-versjon-dropdown", "value"),
         )
-        def create_info_cards_virksomhet(aar: str, orgnr_foretak: str, sekvensnummer: int) -> tuple[str, str, str, str, str]:
-            """
-            Returns a tuple of strings with the values for info cards for the top of the nspek module.
+        def create_info_cards_virksomhet(
+            aar: str, orgnr_foretak: str, sekvensnummer: int
+        ) -> tuple[str, str, str, str, str]:
+            """Returns a tuple of strings with the values for info cards for the top of the nspek module.
             These cards will hold virksomhetsinfo for the foretak.
             """
             df = get_virksomhetsinfo(
                 conn=self.conn,
-                variables_to_fetch=virksomhetsinfo_variabler, 
-                ident=orgnr_foretak, 
+                variables_to_fetch=virksomhetsinfo_variabler,
+                ident=orgnr_foretak,
                 aar=aar,
                 sekvensnummer=sekvensnummer,
-                )
-
-            virksomhetstype = df[df["felt"]=="virksomhetstype"]["char_verdi"].iloc[0]
-            regeltype = df[df["felt"]=="regeltypeForAarsregnskap"]["char_verdi"].iloc[0]
-            regnskapspliktstype = df[df["felt"]=="regnskapspliktstype"]["char_verdi"].iloc[0]
-            start = df[df["felt"]=="start"]["char_verdi"].iloc[0]
-            slutt = df[df["felt"]=="slutt"]["char_verdi"].iloc[0]
-
-            return (
-                virksomhetstype,
-                regeltype,
-                regnskapspliktstype,
-                start,
-                slutt
             )
+
+            virksomhetstype = df[df["felt"] == "virksomhetstype"]["char_verdi"].iloc[0]
+            regeltype = df[df["felt"] == "regeltypeForAarsregnskap"]["char_verdi"].iloc[
+                0
+            ]
+            regnskapspliktstype = df[df["felt"] == "regnskapspliktstype"][
+                "char_verdi"
+            ].iloc[0]
+            start = df[df["felt"] == "start"]["char_verdi"].iloc[0]
+            slutt = df[df["felt"] == "slutt"]["char_verdi"].iloc[0]
+
+            return (virksomhetstype, regeltype, regnskapspliktstype, start, slutt)
 
         @callback(
             Output("nspek-balansedata-grid", "rowData"),
@@ -1767,43 +2000,57 @@ class Naeringsspesifikasjon:
         def show_balanseregnskap(
             n_clicks,
             refresh_data,
-            aar: str, 
-            orgnr_foretak: str, 
+            aar: str,
+            orgnr_foretak: str,
             toggle_blank: list[str],
             sekvensnummer: int,
             sekvens_compare: int,
             toggle_petroleum: list[str],
-            ):
+        ):
 
-            #if refresh_data and "balanse" not in refresh_data:
+            # if refresh_data and "balanse" not in refresh_data:
             #     raise PreventUpdate
-            
-            if not aar or not orgnr_foretak: 
+
+            if not aar or not orgnr_foretak:
                 raise PreventUpdate
 
             if refresh_data and refresh_data.get("status") == "invalid_search":
                 return [], []
 
             post_descriptions = post_description_data("balanseregnskap")
-            ident_data = fetch_data_by_orgnr(self.conn, "balanseregnskap", orgnr_foretak, aar, sekvensnummer)
+            ident_data = fetch_data_by_orgnr(
+                self.conn, "balanseregnskap", orgnr_foretak, aar, sekvensnummer
+            )
 
             post_descriptions["felt"] = post_descriptions["felt"].astype(str)
             ident_data["felt"] = ident_data["felt"].astype(str)
 
-            df_main = post_descriptions.merge(ident_data, how= "left", on="felt")
+            df_main = post_descriptions.merge(ident_data, how="left", on="felt")
             df_main["sekvensnummer"] = sekvensnummer
-            df_main = df_main.rename(columns={"tekst": "beskrivelse", "felt": "post", "belop": "verdi"})
+            df_main = df_main.rename(
+                columns={"tekst": "beskrivelse", "felt": "post", "belop": "verdi"}
+            )
 
             if sekvens_compare:
-                df_compare = fetch_data_by_orgnr(self.conn, "balanseregnskap", orgnr_foretak, aar, sekvens_compare)
-                df_compare = df_compare.rename(columns={"tekst": "beskrivelse", "felt": "post", "belop": "verdi_compare"})
+                df_compare = fetch_data_by_orgnr(
+                    self.conn, "balanseregnskap", orgnr_foretak, aar, sekvens_compare
+                )
+                df_compare = df_compare.rename(
+                    columns={
+                        "tekst": "beskrivelse",
+                        "felt": "post",
+                        "belop": "verdi_compare",
+                    }
+                )
 
                 df = df_main.merge(df_compare, on="post", how="left")
                 verdi = df["verdi"]
                 verdi_compare = df["verdi_compare"]
                 verdi_calc = verdi.fillna(0)
                 verdi_compare_calc = verdi_compare.fillna(0)
-                df["diff"] = (verdi_calc - verdi_compare_calc).where(~(verdi.isna() & verdi_compare.isna()))
+                df["diff"] = (verdi_calc - verdi_compare_calc).where(
+                    ~(verdi.isna() & verdi_compare.isna())
+                )
 
             else:
                 df = df_main
@@ -1814,13 +2061,15 @@ class Naeringsspesifikasjon:
 
             comments = get_latest_field_comments(self.conn, orgnr_foretak)
             df["comment_icon"] = df["post"].map(lambda x: "💬" if x in comments else "")
-            df["comment_text"] = df["post"].map(lambda x: comments.get(x, {}).get("kommentar", ""))
+            df["comment_text"] = df["post"].map(
+                lambda x: comments.get(x, {}).get("kommentar", "")
+            )
 
             row_data = df.to_dict("records")
             column_defs = build_column_defs(sekvens_compare)
 
             return row_data, column_defs
-        
+
         @callback(
             Output("nspek-resultatdata-grid", "rowData"),
             Output("nspek-resultatdata-grid", "columnDefs"),
@@ -1836,43 +2085,57 @@ class Naeringsspesifikasjon:
         def show_resultatregnskap(
             n_clicks,
             refresh_data,
-            aar: str, 
-            orgnr_foretak: str, 
+            aar: str,
+            orgnr_foretak: str,
             toggle_blank: list[str],
             sekvensnummer: int,
             sekvens_compare: int,
             toggle_petroleum: list[str],
-            ):
+        ):
 
-            #if refresh_data and "resultat" not in refresh_data:
+            # if refresh_data and "resultat" not in refresh_data:
             #     raise PreventUpdate
-            
-            if not aar or not orgnr_foretak: 
+
+            if not aar or not orgnr_foretak:
                 raise PreventUpdate
 
             if refresh_data and refresh_data.get("status") == "invalid_search":
                 return [], []
 
             post_descriptions = post_description_data("resultatregnskap")
-            ident_data = fetch_data_by_orgnr(self.conn, "resultatregnskap", orgnr_foretak, aar, sekvensnummer)
+            ident_data = fetch_data_by_orgnr(
+                self.conn, "resultatregnskap", orgnr_foretak, aar, sekvensnummer
+            )
 
             post_descriptions["felt"] = post_descriptions["felt"].astype(str)
             ident_data["felt"] = ident_data["felt"].astype(str)
 
-            df_main = post_descriptions.merge(ident_data, how= "left", on="felt")
+            df_main = post_descriptions.merge(ident_data, how="left", on="felt")
             df_main["sekvensnummer"] = sekvensnummer
-            df_main = df_main.rename(columns={"tekst": "beskrivelse", "felt": "post", "belop": "verdi"})
+            df_main = df_main.rename(
+                columns={"tekst": "beskrivelse", "felt": "post", "belop": "verdi"}
+            )
 
             if sekvens_compare:
-                df_compare = fetch_data_by_orgnr(self.conn, "resultatregnskap", orgnr_foretak, aar, sekvens_compare)
-                df_compare = df_compare.rename(columns={"tekst": "beskrivelse", "felt": "post", "belop": "verdi_compare"})
+                df_compare = fetch_data_by_orgnr(
+                    self.conn, "resultatregnskap", orgnr_foretak, aar, sekvens_compare
+                )
+                df_compare = df_compare.rename(
+                    columns={
+                        "tekst": "beskrivelse",
+                        "felt": "post",
+                        "belop": "verdi_compare",
+                    }
+                )
 
                 df = df_main.merge(df_compare, on="post", how="left")
                 verdi = df["verdi"]
                 verdi_compare = df["verdi_compare"]
                 verdi_calc = verdi.fillna(0)
                 verdi_compare_calc = verdi_compare.fillna(0)
-                df["diff"] = (verdi_calc - verdi_compare_calc).where(~(verdi.isna() & verdi_compare.isna()))
+                df["diff"] = (verdi_calc - verdi_compare_calc).where(
+                    ~(verdi.isna() & verdi_compare.isna())
+                )
 
             else:
                 df = df_main
@@ -1883,13 +2146,14 @@ class Naeringsspesifikasjon:
 
             comments = get_latest_field_comments(self.conn, orgnr_foretak)
             df["comment_icon"] = df["post"].map(lambda x: "💬" if x in comments else "")
-            df["comment_text"] = df["post"].map(lambda x: comments.get(x, {}).get("kommentar", ""))
+            df["comment_text"] = df["post"].map(
+                lambda x: comments.get(x, {}).get("kommentar", "")
+            )
 
             row_data = df.to_dict("records")
             column_defs = build_column_defs(sekvens_compare)
 
             return row_data, column_defs
-
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
@@ -1994,12 +2258,10 @@ class Naeringsspesifikasjon:
             prevent_initial_call=True,
         )
         def cancel_negative(_):
-            """
-            Cancels negative value edit.
+            """Cancels negative value edit.
 
             Example use: modal cancel button.
             """
-
             return False, None
 
         @callback(
@@ -2013,7 +2275,6 @@ class Naeringsspesifikasjon:
                 raise PreventUpdate
 
             return orgnr, aar
-
 
         @callback(
             self.variableselector.get_output_object("ident"),
@@ -2030,7 +2291,9 @@ class Naeringsspesifikasjon:
             State("alert_store", "data"),
             prevent_initial_call=True,
         )
-        def update_variableselector(n_clicks, orgnr_submit, aar_submit, orgnr, aar, refresh_data, alert_store):
+        def update_variableselector(
+            n_clicks, orgnr_submit, aar_submit, orgnr, aar, refresh_data, alert_store
+        ):
 
             alert_store = alert_store or []
 
@@ -2039,47 +2302,69 @@ class Naeringsspesifikasjon:
             ok_org, msg_org = validate_orgnr(orgnr)
             if not ok_org:
                 refresh_data = trigger_refresh(refresh_data, "invalid_search")
-                return no_update, no_update, no_update, refresh_data, [
-                    create_alert(msg_org, "danger", ephemeral=True),
-                    *alert_store,
-                ]
+                return (
+                    no_update,
+                    no_update,
+                    no_update,
+                    refresh_data,
+                    [
+                        create_alert(msg_org, "danger", ephemeral=True),
+                        *alert_store,
+                    ],
+                )
 
             ok_aar, msg_aar = validate_aar(aar)
             if not ok_aar:
                 refresh_data = trigger_refresh(refresh_data, "invalid_search")
-                return no_update, no_update, no_update, refresh_data, [
-                    create_alert(msg_aar, "danger", ephemeral=True),
-                    *alert_store,
-                ]
-                
+                return (
+                    no_update,
+                    no_update,
+                    no_update,
+                    refresh_data,
+                    [
+                        create_alert(msg_aar, "danger", ephemeral=True),
+                        *alert_store,
+                    ],
+                )
 
             if not orgnr_exists_in_bof(orgnr):
                 refresh_data = trigger_refresh(refresh_data, "invalid_search")
-                return no_update, no_update, no_update, refresh_data, [
-                    create_alert(
-                        f"Organisasjonsnummer {orgnr} finnes ikke i BOF",
-                        "warning",
-                        ephemeral=True,
-                    ),
-                    *alert_store,
-                ]
+                return (
+                    no_update,
+                    no_update,
+                    no_update,
+                    refresh_data,
+                    [
+                        create_alert(
+                            f"Organisasjonsnummer {orgnr} finnes ikke i BOF",
+                            "warning",
+                            ephemeral=True,
+                        ),
+                        *alert_store,
+                    ],
+                )
 
             if not has_data(self.conn, orgnr, aar):
                 refresh_data = trigger_refresh(refresh_data, "invalid_search")
-                return no_update, no_update, no_update, refresh_data, [
-                    create_alert(
-                        f"Ingen data funnet for orgnr {orgnr} og årgang {aar} i NSPEK",
-                        "warning",
-                        ephemeral=True,
-                    ),
-                    *alert_store,
-                ]
+                return (
+                    no_update,
+                    no_update,
+                    no_update,
+                    refresh_data,
+                    [
+                        create_alert(
+                            f"Ingen data funnet for orgnr {orgnr} og årgang {aar} i NSPEK",
+                            "warning",
+                            ephemeral=True,
+                        ),
+                        *alert_store,
+                    ],
+                )
 
             refresh_data = trigger_refresh(refresh_data, "valid_search")
 
             return orgnr, aar, orgnr, refresh_data, alert_store
 
-        
         @callback(
             Output("nspek-versjon-dropdown", "options"),
             Output("nspek-versjon-dropdown", "value"),
@@ -2105,8 +2390,9 @@ class Naeringsspesifikasjon:
             df = df.merge(df_updates, on="sekvensnummer", how="left")
             df["antall_endringer"] = df["antall_endringer"].fillna(0)
             df["label"] = df.apply(
-                lambda row: row["label"] + (" (editert)" if row["antall_endringer"] > 0 else ""),
-                axis=1
+                lambda row: row["label"]
+                + (" (editert)" if row["antall_endringer"] > 0 else ""),
+                axis=1,
             )
 
             options = [
@@ -2117,21 +2403,15 @@ class Naeringsspesifikasjon:
             df_with_changes = df[df["antall_endringer"] > 0]
 
             if not df_with_changes.empty:
-                default_value = (
-                    df_with_changes.sort_values("dato_mottatt", ascending=False)
-                    .iloc[0]["sekvensnummer"]
-                )
+                default_value = df_with_changes.sort_values(
+                    "dato_mottatt", ascending=False
+                ).iloc[0]["sekvensnummer"]
             else:
-                default_value = (
-                    df.sort_values(
-                        by=["dato_mottatt", "sekvensnummer"],
-                        ascending=[False, False]
-                    )
-                    .iloc[0]["sekvensnummer"]
-                )
+                default_value = df.sort_values(
+                    by=["dato_mottatt", "sekvensnummer"], ascending=[False, False]
+                ).iloc[0]["sekvensnummer"]
 
             return options, default_value
-
 
         @callback(
             Output("nspek-version-warning", "style"),
@@ -2151,10 +2431,9 @@ class Naeringsspesifikasjon:
                 return {"display": "none"}, "", False
 
             df = get_versions(self.conn, orgnr, aar)
-            latest_sekvens = (
-                df.sort_values(by=["dato_mottatt", "sekvensnummer"], ascending=[False, False])
-                .iloc[0]["sekvensnummer"]
-            )
+            latest_sekvens = df.sort_values(
+                by=["dato_mottatt", "sekvensnummer"], ascending=[False, False]
+            ).iloc[0]["sekvensnummer"]
 
             if selected_sekvens != latest_sekvens:
                 return (
@@ -2173,7 +2452,7 @@ class Naeringsspesifikasjon:
             Output("nspek-versjon-dropdown-compare", "options"),
             Input("nspek-versjon-dropdown", "options"),
         )
-        def sync_compare_options(options): 
+        def sync_compare_options(options):
             return options
 
         @callback(
@@ -2221,7 +2500,7 @@ class Naeringsspesifikasjon:
                 WHERE sekvensnummer = {sekvensnummer}
                 ORDER BY felt, hist_id DESC
             """
-                #WHERE sekvensnummer = {sekvensnummer} and process_type = 'editering'   ### Må se an brukerbehov hvilken som skal brukes.
+            # WHERE sekvensnummer = {sekvensnummer} and process_type = 'editering'   ### Må se an brukerbehov hvilken som skal brukes.
             with get_nspek_connection() as conn:
                 cursor = conn.raw_sql(query)
 
@@ -2235,11 +2514,10 @@ class Naeringsspesifikasjon:
                 post_descriptions["felt"] = post_descriptions["felt"].astype(str)
                 df["felt"] = df["felt"].astype(str)
 
-                df = post_descriptions.merge(df, how= "right", on="felt")
+                df = post_descriptions.merge(df, how="right", on="felt")
 
-                df["endret_dato"] = (
-                    pd.to_datetime(df["endret_dato"])
-                    .dt.strftime("%Y-%m-%d %H:%M")
+                df["endret_dato"] = pd.to_datetime(df["endret_dato"]).dt.strftime(
+                    "%Y-%m-%d %H:%M"
                 )
 
             return df.to_dict("records"), title
@@ -2256,7 +2534,7 @@ class Naeringsspesifikasjon:
                 raise PreventUpdate
 
             query = f"""
-                SELECT 
+                SELECT
                     kommentar,
                     opprettet_av,
                     opprettet
@@ -2284,11 +2562,11 @@ class Naeringsspesifikasjon:
             endret_av = row["opprettet_av"] or ""
             endret_dato = (
                 pd.to_datetime(row["opprettet"]).strftime("%Y-%m-%d %H:%M")
-                if pd.notna(row["opprettet"]) else ""
+                if pd.notna(row["opprettet"])
+                else ""
             )
 
             return kommentar, endret_av, endret_dato
-
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
@@ -2305,7 +2583,7 @@ class Naeringsspesifikasjon:
 
             kommentar = kommentar or ""
 
-            query_deactivate= f"""
+            query_deactivate = f"""
                 UPDATE nspek_core.kommentarfelt_test_2
                 SET aktiv = false
                 WHERE orgnr = '{orgnr}'
@@ -2336,7 +2614,7 @@ class Naeringsspesifikasjon:
 
             try:
                 with get_nspek_connection() as conn:
-                    dapla_user = os.getenv('DAPLA_USER', None)[:3]
+                    dapla_user = os.getenv("DAPLA_USER", None)[:3]
                     PROCESS_TYPE = "editering"
                     conn.raw_sql(f"SET nspek_app.user_id = {dapla_user}")
                     conn.raw_sql(f"SET nspek_app.process_type = {PROCESS_TYPE}")
@@ -2373,18 +2651,34 @@ class Naeringsspesifikasjon:
             State("refresh-manager", "data"),
             prevent_initial_call=True,
         )
-        def save_feltkommentar(n_clicks, orgnr, felt, kommentar, alert_store, refresh_data):
+        def save_feltkommentar(
+            n_clicks, orgnr, felt, kommentar, alert_store, refresh_data
+        ):
 
             if not orgnr:
                 raise PreventUpdate
 
             if felt is None:
-                return [create_alert("Felt må fylles ut", "danger", ephemeral=True), *alert_store], None, ""
+                return (
+                    [
+                        create_alert("Felt må fylles ut", "danger", ephemeral=True),
+                        *alert_store,
+                    ],
+                    None,
+                    "",
+                )
 
             try:
                 felt = int(felt)
             except ValueError:
-                return [create_alert("Felt må være tall", "danger", ephemeral=True), *alert_store], None, ""
+                return (
+                    [
+                        create_alert("Felt må være tall", "danger", ephemeral=True),
+                        *alert_store,
+                    ],
+                    None,
+                    "",
+                )
 
             kommentar = kommentar or ""
 
@@ -2422,7 +2716,7 @@ class Naeringsspesifikasjon:
 
             try:
                 with get_nspek_connection() as conn:
-                    dapla_user = os.getenv('DAPLA_USER', None)[:3]
+                    dapla_user = os.getenv("DAPLA_USER", None)[:3]
                     PROCESS_TYPE = "editering"
                     conn.raw_sql(f"SET nspek_app.user_id = {dapla_user}")
                     conn.raw_sql(f"SET nspek_app.process_type = {PROCESS_TYPE}")
@@ -2441,15 +2735,14 @@ class Naeringsspesifikasjon:
                 ]
 
             refresh_data = trigger_refresh(refresh_data, "comments")
-            
-            return alert_store, None, "", refresh_data
 
+            return alert_store, None, "", refresh_data
 
         @callback(
             Output("nspek-feltkommentar-grid", "rowData"),
             Input("var-ident", "value"),
             Input("btn-save-feltkommentar", "n_clicks"),
-            Input("toggle-show-inactive", "value")
+            Input("toggle-show-inactive", "value"),
         )
         def load_feltkommentarer(orgnr, _, toggle_inactive):
 
@@ -2457,7 +2750,7 @@ class Naeringsspesifikasjon:
                 raise PreventUpdate
 
             query = f"""
-                SELECT 
+                SELECT
                     id,
                     variabel AS felt,
                     kommentar,
@@ -2483,7 +2776,9 @@ class Naeringsspesifikasjon:
             if "show_inactive" not in toggle_inactive:
                 df = df[df["aktiv"] == True]
 
-            df["opprettet"] = pd.to_datetime(df["opprettet"]).dt.strftime("%Y-%m-%d %H:%M")
+            df["opprettet"] = pd.to_datetime(df["opprettet"]).dt.strftime(
+                "%Y-%m-%d %H:%M"
+            )
 
             return df.to_dict("records")
 
@@ -2498,12 +2793,11 @@ class Naeringsspesifikasjon:
             State("refresh-manager", "data"),
             prevent_initial_call=True,
         )
-        def toggle_feltkommentar_aktiv(edited, orgnr, alert_store, toggle_inactive, refresh_data):
+        def toggle_feltkommentar_aktiv(
+            edited, orgnr, alert_store, toggle_inactive, refresh_data
+        ):
 
-            logger.debug(
-                f"edited: {edited}\n"
-                f"orgnr: {orgnr}\n"
-            )
+            logger.debug(f"edited: {edited}\n" f"orgnr: {orgnr}\n")
 
             refresh_data = refresh_data or {}
 
@@ -2558,7 +2852,11 @@ class Naeringsspesifikasjon:
 
                 refresh_data = trigger_refresh(refresh_data, "comments")
 
-                return load_feltkommentarer(orgnr, None, toggle_inactive), alert_store, refresh_data
+                return (
+                    load_feltkommentarer(orgnr, None, toggle_inactive),
+                    alert_store,
+                    refresh_data,
+                )
 
             except Exception as e:
 
@@ -2573,7 +2871,11 @@ class Naeringsspesifikasjon:
                     *(alert_store or []),
                 ]
 
-                return load_feltkommentarer(orgnr, None, toggle_inactive), alert_store, refresh_data
+                return (
+                    load_feltkommentarer(orgnr, None, toggle_inactive),
+                    alert_store,
+                    refresh_data,
+                )
 
         @callback(
             Output("toggle-show-petroleum-fields-balanse", "value"),
@@ -2589,7 +2891,6 @@ class Naeringsspesifikasjon:
 
             return [], []
 
-        
         @callback(
             Output("modal-generell-kommentar-historikk", "is_open"),
             Input("btn-generell-kommentar-historikk", "n_clicks"),
@@ -2601,7 +2902,6 @@ class Naeringsspesifikasjon:
                 return not is_open
             return is_open
 
-        
         @callback(
             Output("generell-kommentar-historikk-grid", "rowData"),
             Output("modal-generell-kommentar-historikk-title", "children"),
@@ -2637,15 +2937,18 @@ class Naeringsspesifikasjon:
             if df.empty:
                 return [], "Ingen historikk funnet"
 
-            df["opprettet"] = pd.to_datetime(df["opprettet"]).dt.strftime("%Y-%m-%d %H:%M")
+            df["opprettet"] = pd.to_datetime(df["opprettet"]).dt.strftime(
+                "%Y-%m-%d %H:%M"
+            )
 
             title = f"Generell kommentar - historikk ({orgnr})"
 
             return df.to_dict("records"), title
 
-
         @callback(
-            Output("generell-kommentar-historikk-grid", "rowData", allow_duplicate=True),
+            Output(
+                "generell-kommentar-historikk-grid", "rowData", allow_duplicate=True
+            ),
             Output("alert_store", "data", allow_duplicate=True),
             Input("generell-kommentar-historikk-grid", "cellValueChanged"),
             State("var-ident", "value"),
@@ -2715,7 +3018,9 @@ class Naeringsspesifikasjon:
                     columns = [col[0] for col in cursor.description]
 
                 df = pd.DataFrame(rows, columns=columns)
-                df["opprettet"] = pd.to_datetime(df["opprettet"]).dt.strftime("%Y-%m-%d %H:%M")
+                df["opprettet"] = pd.to_datetime(df["opprettet"]).dt.strftime(
+                    "%Y-%m-%d %H:%M"
+                )
 
                 alert_store = [
                     create_alert(msg, "success", ephemeral=True),
@@ -2768,8 +3073,12 @@ class Naeringsspesifikasjon:
             if df.empty:
                 return [], "Kontrollutslag"
 
-            df["skildring"] = df["kontrollid"].map(lambda x: kontroller_lookup.get(x, {}).get("skildring"))
-            df["tema"] = df["kontrollid"].map(lambda x: kontroller_lookup.get(x, {}).get("tema"))
+            df["skildring"] = df["kontrollid"].map(
+                lambda x: kontroller_lookup.get(x, {}).get("skildring")
+            )
+            df["tema"] = df["kontrollid"].map(
+                lambda x: kontroller_lookup.get(x, {}).get("tema")
+            )
 
             has_issues = df["utslag"].any()
             tab_label = "⚠️ Kontrollutslag" if has_issues else "Kontrollutslag"
@@ -2779,19 +3088,17 @@ class Naeringsspesifikasjon:
 
 class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
     """NaeringsspesifikasjonTab is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
+
     def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
         """Initializes the NaeringsspesifikasjonTab class."""
-        Naeringsspesifikasjon.__init__(
-            self, time_units=time_units, db_user=db_user
-        )
+        Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
         TabImplementation.__init__(self)
 
 
 class NaeringsspesifikasjonWindow(WindowImplementation, Naeringsspesifikasjon):
     """NaeringsspesifikasjonWindow is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
+
     def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
         """Initializes the NaeringsspesifikasjonWindow class."""
-        Naeringsspesifikasjon.__init__(
-            self, time_units=time_units, db_user=db_user
-        )
+        Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
         WindowImplementation.__init__(self)
