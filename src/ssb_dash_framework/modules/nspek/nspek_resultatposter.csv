@@ -1,0 +1,169 @@
+felt,tekst,__index_level_0__
+"","Driftsinntekter",0
+"","Salgsinntekter",0
+3000,"Salg og uttak med MVA-plikt",1
+3001,"Salgsinntekter og uttak av olje",2
+3002,"Salgsinntekter og uttak av tørrgass",3
+3003,"Salgsinntekter og uttak av våtgass",4
+3004,"Tariffinntekt rørledning",5
+3005,"Tariffinntekt prosessering",6
+3006,"Timer viderefakturert",7
+3007,"Annen kostnad viderefakturert",8
+3008,"Endring i mer-/mindreuttak av petroleumsprodukter",9
+3100,"Salg og uttak med 0 prosent MVA",10
+3200,"Salg og uttak, utenfor MVA loven",11
+3300,"Offentlige særavgifter ved slag",12
+"",,
+"","Andre driftsinntekter ",0a
+3400,"Offentlige tilskudd og refusjoner",13
+3500,"Endring uopptjent inntekt",14
+3600,"Inntekt fra utleie av eiendom",15
+3650,"Utleie av rettigheter til jakt/fiske mm.",16
+3695,"Andre leieinntekter",17
+3700,"Provisjon",18
+3710,"Lisens-, patent- og royalty-inntekter",19
+3850,"Verdiendringer av investeringseiendommer etter IFRS",20
+3870,"Verdiendringer biologiske eiendeler etter IFRS",21
+3880,"Gevinst ved avgang av immaterielle eiendeler og varige driftsmidler",22
+3885,"Gevinst ved avgang av finansielle anleggsmidler",23
+3886,"Gevinst ved overdragelse av tillatelse til petroleumsvirksomhet",24
+3890,"Inntekt fra gevinst-/tapskonto",25
+3895,"Inntekt fra saldo",26
+3900,"Andre driftsinntekter",27
+3910,"Inntekt fra tømmerkonto",28
+3911,"Inntekt fra jordbrukskonto",29
+"",,
+sumDriftsinntekt,"SUM Driftsinntekter",30
+"",,
+"","Driftskostnader",31
+"","Varekostnader",0
+4001,"Letekostnader",32
+4002,"Utbyggingskostnader",33
+4003,"Produksjonskostnader",34
+4004,"Handling fee / Service fee / Trading fee",35
+4005,"Varekostnader inklusiv endring i beholdningen",36
+4007,"Endring i mer-/mindreuttak av petroleumsprodukter",37
+4008,"Fjernings- og nedstengningskostnader",38
+4295,"Endring i beholdningen av ferdige og uferdige egenproduserte varer",39
+4500,"Innleid arbeidskraft",40
+4995,"Endring i beholdningen av egenproduserte driftsmidler",41
+"",,
+"","Lønn og kostnader til ansatte",0
+5000,"Lønn og feriepenger med mer",42
+5300,"Andre opplysningspliktige godtgjørelser",43
+5400,"Arbeidsgiveravgift",44
+5420,"Opplysningspliktige pensjonskostnader",45
+5600,"Arbeidsgodtgjørelse til eiere i ANS mv.",46
+5900,"Andre personalkostnader",47
+5950,"Egen pensjonsordning",48
+"",,
+"","Andre driftskostnader",0
+6000,"Avskrivning på varige driftsmidler",49
+6001,"Avskrivning på produksjonsinnretning og rørledning",50
+6002,"Avskrivning på fjernings- og nedstengningseiendeler",51
+6004,"Annen avskrivning",52
+6050,"Nedskrivning på varige driftsmidler og immaterielle eiendeler",53
+6051,"Nedskrivning på produksjonsinnretning og rørledning",54
+6052,"Nedskrivning på aktiverte letekostnader",55
+6053,"Nedskrivning på anlegg under utførelse",56
+6054,"Annen nedskrivning",57
+6100,"Frakt- og transportkostnader ved salg",58
+6110,"Frakt- og transportkostnad vedrørende salg av olje",59
+6120,"Frakt- og transportkostnad vedrørende salg av tørrgass",60
+6130,"Frakt- og transportkostnad vedrørende salg av LNG",61
+6140,"Frakt- og transportkostnad vedrørende salg av våtgass",62
+6200,"Energi og brensel med mer til produksjon",63
+6300,"Leie av lokaler",64
+6340,"Strøm og oppvarming",65
+6350,"IT kostnader",66
+6395,"Renovasjon, vann, avløp, renhold med mer",67
+6400,"Leie av maskiner, inventar og utstyr med mer",68
+6440,"Langtidsleie/leasing av bil",69
+6500,"Verktøy, inventar med mer som skal kostnadsføres direkte",70
+6600,"Reparasjoner og vedlikehold av bygninger",71
+6695,"Reparasjoner og vedlikehold av utstyr med mer",72
+6700,"Regnskapstjenester, rådgivning med mer",73
+6750,"Konserntjenester",74
+6751,"Kostnadsreduksjon timer viderefakturert",75
+6752,"Kostnadsreduksjon annen kostnad viderefakturert",76
+6995,"Kontorrekvisita, elektronisk kommunikasjon, porto med mer",77
+6998,"Privat bruk av elektronisk kommunikasjon",78
+7000,"Drivstoff",79
+7020,"Vedlikehold",80
+7040,"Forsikring og avgifter",81
+7080,"Fradrag for bruk av privat bil i næringsvirksomheten",82
+7099,"Privat bruk av næringsbil",83
+7155,"Reise-, diett- og bilgodtgjørelser, med opplysningsplikt",84
+7165,"Reise- og diettkostnader, uten opplysningsplikt",85
+7295,"Provisjonskostnader",86
+7330,"Salgs- og reklamekostnader",87
+7350,"Representasjonskostnader med fradragsrett",88
+7370,"Representasjonskostnader",89
+7400,"Kontingenter med fradragsrett",90
+7420,"Gaver med fradragsrett",91
+7440,"Gaver",92
+7490,"Kontingenter",93
+7500,"Forsikringspremier",94
+7501,"Driftsforsikring",95
+7502,"Utbyggingsforsikring",96
+7503,"Annen forsikring",97
+7565,"Garanti- og servicekostnader",98
+7600,"Lisenser, patenter og royalties",99
+7650,"Forskning og utviklingskostnad",100
+7651,"Tilskudd til vitenskapelig forskning mv jf sktl § 6-42",101
+7700,"Andre kostnader",102
+7701,"Co2-avgift",103
+7830,"Tap på fordringer",104
+7860,"Tap på kontrakter",105
+7880,"Tap ved avgang av immaterielle eiendeler og varige driftsmidler",106
+7885,"Tap ved avgang av finansielle anleggsmidler",107
+7886,"Tap ved overdragelse av tillatelse til petroleumsvirksomhet",108
+7890,"Fradrag fra gevinst- og tapskonto",109
+7897,"Endring i skattemessig tap på fordringer",110
+7910,"Overført til tømmerkonto av årets overskudd/underskudd",111
+7911,"Kostnadsføring tømmerkonto",112
+7912,"Overført til jordbrukskonto av årets overskudd/underskudd",113
+7913,"Kostnadsføring fra jordbrukskonto",114
+"",,
+sumDriftskostnad,"SUM Driftskostnader",115
+"",,
+"","Finansposter og skattekostnad",0
+"","Finansinntekter",116
+8005,"Netto positiv resultatandel vedrørende investering i DS, TS og FKV",117
+8030,"Renteinntekt fra foretak i samme konsern",118
+8050,"Annen renteinntekt",119
+8054,"Garantiinntekter fra foretak i samme konsern",120
+8059,"Garantiinntekt",121
+8060,"Gevinst ved kursendring på valuta",122
+8074,"Gevinst ved realisasjon av aksjer, egenkapitalbevis og fondsandeler",123
+8075,"Finansinntekt fra foretak i samme konsern",124
+8079,"Andre finansinntekter",125
+8080,"Verdiøkning av finansielle instrumenter vurdert til virkelig verdi",126
+8090,"Inntekt av andre investeringer/utbytte",127
+8091,"3 % av netto skattefrie inntekter etter fritaksmetoden og 3 % av utdeling fra selskap med deltakerfastsetting til selskapsdeltaker",128
+sumFinansinntekt,"SUM Finansinntekter",129
+"",,
+"","Finanskostnader",130
+8100,"Verdireduksjon av finansielle instrumenter vurdert til virkelig verdi",131
+8105,"Netto negativ resultatandel vedrørende investering i DS, TS og FKV",132
+8115,"Nedskriving av finansielle eiendeler",133
+8120,"Kalkulatorisk rente fjernings- og nedstengningsforpliktelse",134
+8130,"Rentekostnad til foretak i samme konsern",135
+8150,"Annen rentekostnad",136
+8154,"Garantikostnad til foretak i samme konsern",137
+8159,"Annen garantikostnad",138
+8160,"Tap ved kursendring på valuta",139
+8174,"Tap ved realisasjon av aksjer, egenkapitalbevis og fondsandeler",140
+8175,"Finanskostnader til foretak i samme konsern",141
+8179,"Andre finanskostnader",142
+sumFinanskostnad,"SUM Finanskostnader",143
+"",,
+"","Skattekostnader",144
+8300,"Betalbar skatt på ordinært resultat",145
+8321,"Økning i utsatt skatt/nedgang i utsatt skattefordel på ordinært resultat",146
+8322,"Nedgang i utsatt skatt/økning i utsatt skattefordel på ordinært resultat",147
+8323,"For lite avsatt skatt fra forrige år",148
+8324,"For mye avsatt skatt fra forrige år",149
+sumSkattekostnad,"SUM Skattekostnader",150
+"",,
+aarsresultat,"SUM Årsresultat",162

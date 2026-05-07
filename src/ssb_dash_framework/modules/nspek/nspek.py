@@ -20,19 +20,27 @@ from sqlalchemy import text
 import time
 import re
 from dash_iconify import DashIconify
-from .nspek_utils import set_nspek_connection
-from .nspek_utils import get_nspek_connection
+
+#from ..setup.variableselector import VariableSelector
+#from ..utils import TabImplementation
+#from ..utils import WindowImplementation
+#from ..utils.module_validation import module_validator
+
+from ssb_dash_framework import VariableSelector
+from ssb_dash_framework import TabImplementation
+from ssb_dash_framework import WindowImplementation
+from ssb_dash_framework import module_validator
+from ssb_dash_framework import set_postgres_connection
+from ssb_dash_framework import get_connection
+from ssb_dash_framework import create_alert
+
+from mock_controls import NspekMockControls
+
+
+from nspek_utils import set_nspek_connection
+from nspek_utils import get_nspek_connection
 
 from pathlib import Path
-
-from ...setup.variableselector import VariableSelector
-from ...utils import TabImplementation
-from ...utils import WindowImplementation
-from ...utils.module_validation import module_validator
-from ...utils.config_tools import get_connection
-from ...utils.alert_handler import create_alert
-
-from .mock_controls import NspekMockControls
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
@@ -440,7 +448,7 @@ def post_description_data(regnskapstype: str) -> DataFrame:
     post_file_path = base_path / f"{poster}.csv"
 
     df = pd.read_csv(
-        f"{post_file_path}{poster}.csv", 
+        f"{post_file_path}", 
         dtype={"felt": "string"},
         keep_default_na=False
         )
@@ -787,6 +795,151 @@ def has_data(conn, orgnr: str, aar: str) -> bool:
 
     return not df.empty
 
+MAX_ALLOWED_VALUE = 999_999_999_999
+
+def validate_numeric_input(value: str) -> tuple[bool, str | None]:
+    """
+    Validates integer input for nspek grid cells and check for extreme values.
+
+    Example use: validate_numeric_input("1200")
+    """
+    if value is None or value == "":
+        return False, "Verdi kan ikke være tom"
+
+    value = clean_whitespace(str(value))
+
+    try:
+        int(value)
+    except ValueError:
+        return False, "Kun heltall er tillatt"
+
+    if abs(int(value)) > MAX_ALLOWED_VALUE:
+        return False, f"Verdien er for stor (maks {MAX_ALLOWED_VALUE})"
+
+    return True, None
+
+def is_negative(value: str) -> bool:
+    """
+    Checks whether a numeric string is negative.
+
+    Example use: is_negative("-10")
+    """
+    try:
+        return int(value) < 0
+    except Exception:
+        return False
+
+def save_regnskap_value(conn, regnskapstype: str, sekvensnummer: int, post: str, value: str):
+    """
+    Inserts or updates nspek regnskap values.
+
+    Example use:
+    save_regnskap_value(conn, "balanseregnskap", 123, "A1", "1000")
+    """
+
+    config = TYPE_REGNSKAP_TABLE[regnskapstype]
+
+    query = f"""
+        INSERT INTO {config["database"]}.{config["table"]}
+        (sekvensnummer, felt, belop)
+        VALUES ({sekvensnummer}, '{post}', '{value}')
+        ON CONFLICT (sekvensnummer, felt)
+        DO UPDATE SET belop = EXCLUDED.belop
+    """
+
+    conn.raw_sql(query)
+
+def handle_regnskap_edit(edited, alert_store, refresh_data, regnskapstype: str, refresh_key: str):
+    """
+    Central handler for nspek grid edits (balanse + resultat).
+
+    Example use:
+    handle_regnskap_edit(..., "balanseregnskap", "balanse")
+    """
+
+    if edited[0]["data"].get("is_ui_sum"):
+        raise PreventUpdate
+
+    alert_store = alert_store or []
+
+    row = edited[0]["data"]
+
+    ident = row["sekvensnummer"]
+    sekvensnummer = row["sekvensnummer"]
+    post = row["post"]
+
+    value = clean_whitespace(edited[0]["value"])
+    old_value = edited[0]["oldValue"]
+
+    ok, error = validate_numeric_input(value)
+
+    if not ok:
+        alert_store = [
+            create_alert(error, "danger", ephemeral=True),
+            *alert_store,
+        ]
+        return alert_store, refresh_data, False, None, no_update
+
+    if is_negative(value):
+
+        pending = {
+            "regnskapstype": regnskapstype,
+            "sekvensnummer": sekvensnummer,
+            "post": post,
+            "value": value,
+            "old_value": old_value,
+            "ident": ident,
+            "refresh_key": refresh_key,
+        }
+
+        message = (
+            f"Du forsøker å lagre en negativ verdi {value} for post {post}. "
+            f"Dette skal kun skje unntaksvis. Er du sikker?"
+        )
+
+        return (
+            alert_store,
+            refresh_data,
+            True,
+            pending,
+            message,
+        )
+
+    try:
+        with get_nspek_connection() as conn:
+
+            user = os.getenv("DAPLA_USER", "")[:3]
+
+            conn.raw_sql(f"SET nspek_app.user_id = '{user}'")
+            conn.raw_sql("SET nspek_app.process_type = 'editering'")
+
+            save_regnskap_value(conn, regnskapstype, sekvensnummer, post, value)
+
+        alert_store = [
+            create_alert(
+                f"{post} oppdatert fra {old_value} til {value}",
+                "success",
+                ephemeral=True,
+            ),
+            *alert_store,
+        ]
+
+    except Exception as e:
+        logger.error(e, exc_info=True)
+
+        alert_store = [
+            create_alert(
+                f"Feil: {str(e)[:80]}",
+                "danger",
+                ephemeral=True,
+            ),
+            *alert_store,
+        ]
+
+    refresh_data = trigger_refresh(refresh_data, refresh_key)
+
+    return alert_store, refresh_data, False, None, no_update
+
 class Naeringsspesifikasjon:
     """
     The Naeringsspesifikasjon module lets you view the nspek/naeringsspesifikasjon for a specified foretak (var-ident).
@@ -1002,6 +1155,7 @@ class Naeringsspesifikasjon:
         layout = html.Div([
 
             dcc.Store(id="refresh-manager", data={}),
+            dcc.Store(id="pending-regnskap-edit", data=None,),
 
             html.Div(
                 [
@@ -1165,7 +1319,36 @@ class Naeringsspesifikasjon:
                             "maxWidth": "100vw",
                             "width": "100vw",
                         },
-                    )
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle("Advarsel")),
+
+                            dbc.ModalBody(id="negative-value-modal-body"),
+
+                            dbc.ModalFooter(
+                                [
+                                    dbc.Button(
+                                        "Avbryt",
+                                        id="btn-cancel-negative-edit",
+                                        color="secondary",
+                                        className="ssb-btn"
+                                    ),
+                                    dbc.Button(
+                                        "Bekreft",
+                                        id="btn-confirm-negative-edit",
+                                        color="danger",
+                                        className="ssb-btn primary-btn"
+                                    ),
+                                ]
+                            ),
+                        ],
+                        id="modal-negative-value",
+                        is_open=False,
+                        centered=True,
+                        backdrop="static",
+                        className="negative-warning-modal",
+                    ),
                 ],
                 style={"marginBottom": "10px"},
             ),
@@ -1481,7 +1664,7 @@ class Naeringsspesifikasjon:
                             style={
                                 "height": "50vh", 
                                 "width": "100%",
-                                'display': 'none', 
+                                #'display': 'none', 
                             },
                         ),
                     ]),
@@ -1637,7 +1820,7 @@ class Naeringsspesifikasjon:
             df = apply_blank_filter(df, toggle_blank)
             df = apply_petroleum_filter(df, orgnr_foretak, toggle_petroleum)
 
-            comments = get_latest_field_comments(conn, orgnr_foretak)
+            comments = get_latest_field_comments(self.conn, orgnr_foretak)
             df["comment_icon"] = df["post"].map(lambda x: "💬" if x in comments else "")
             df["comment_text"] = df["post"].map(lambda x: comments.get(x, {}).get("kommentar", ""))
 
@@ -1706,7 +1889,7 @@ class Naeringsspesifikasjon:
             df = apply_blank_filter(df, toggle_blank)
             df = apply_petroleum_filter(df, orgnr_foretak, toggle_petroleum)
 
-            comments = get_latest_field_comments(conn, orgnr_foretak)
+            comments = get_latest_field_comments(self.conn, orgnr_foretak)
             df["comment_icon"] = df["post"].map(lambda x: "💬" if x in comments else "")
             df["comment_text"] = df["post"].map(lambda x: comments.get(x, {}).get("kommentar", ""))
 
@@ -1719,126 +1902,113 @@ class Naeringsspesifikasjon:
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
             Output("refresh-manager", "data", allow_duplicate=True),
+            Output("modal-negative-value", "is_open", allow_duplicate=True),
+            Output("pending-regnskap-edit", "data", allow_duplicate=True),
+            Output("negative-value-modal-body", "children"),
             Input("nspek-balansedata-grid", "cellValueChanged"),
             State("alert_store", "data"),
             State("refresh-manager", "data"),
-            self.variableselector.get_all_states(),
             prevent_initial_call=True,
         )
         def edit_balanseregnskap(edited, alert_store, refresh_data):
-
-            if edited[0]["data"].get("is_ui_sum"):
-                raise PreventUpdate
-
-            logger.debug(
-                f"Args:\n"
-                f"edited: {edited}\n"
-                f"alert_store: {alert_store}\n"
+            return handle_regnskap_edit(
+                edited,
+                alert_store,
+                refresh_data,
+                regnskapstype="balanseregnskap",
+                refresh_key="balanse",
             )
-            ident = edited[0]["data"]["sekvensnummer"]
-            sekvensnummer = edited[0]["data"]["sekvensnummer"]
-            post = edited[0]["data"]["post"]
-            value = clean_whitespace(edited[0]["value"])
-            old_value = edited[0]["oldValue"]
-            try:
-                query = f"""
-                INSERT INTO balanseregnskap.tema_balanse (sekvensnummer, felt, belop)
-                VALUES ({sekvensnummer}, '{post}', '{value}')
-                ON CONFLICT (sekvensnummer, felt)
-                DO UPDATE SET belop = EXCLUDED.belop
-                """
-                with get_nspek_connection() as conn:
-                    dapla_user = os.getenv('DAPLA_USER', None)[:3]
-                    PROCESS_TYPE = "editering"
-                    conn.raw_sql(f"SET nspek_app.user_id = {dapla_user}")
-                    conn.raw_sql(f"SET nspek_app.process_type = {PROCESS_TYPE}")
-                    conn.raw_sql(query)
-
-                alert_store = [
-                    create_alert(
-                        f"ident: {ident}, post: {post} er oppdatert fra {old_value} til {value}!",
-                        "success",
-                        ephemeral=True,
-                    ),
-                    *alert_store,
-                ]
-            # except Exception as e:   ### Må legge til slik at vi fanger exceptions her og kan sende de som inserts.
-            except Exception as e:
-                alert_store = [
-                        create_alert(
-                            f"Oppdateringa feilet. {str(e)[:60]}",
-                            "danger",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-                logger.error(e, exc_info=True)
-            finally:
-                refresh_data = trigger_refresh(refresh_data, "balanse")
-                return alert_store, refresh_data
-
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
             Output("refresh-manager", "data", allow_duplicate=True),
+            Output("modal-negative-value", "is_open", allow_duplicate=True),
+            Output("pending-regnskap-edit", "data", allow_duplicate=True),
+            Output("negative-value-modal-body", "children", allow_duplicate=True),
             Input("nspek-resultatdata-grid", "cellValueChanged"),
             State("alert_store", "data"),
             State("refresh-manager", "data"),
-            self.variableselector.get_all_states(),
             prevent_initial_call=True,
         )
         def edit_resultatregnskap(edited, alert_store, refresh_data):
+            return handle_regnskap_edit(
+                edited,
+                alert_store,
+                refresh_data,
+                regnskapstype="resultatregnskap",
+                refresh_key="resultat",
+            )
 
-            if edited[0]["data"].get("is_ui_sum"):
+        @callback(
+            Output("modal-negative-value", "is_open", allow_duplicate=True),
+            Output("pending-regnskap-edit", "data", allow_duplicate=True),
+            Output("alert_store", "data", allow_duplicate=True),
+            Output("refresh-manager", "data", allow_duplicate=True),
+            Input("btn-confirm-negative-edit", "n_clicks"),
+            State("pending-regnskap-edit", "data"),
+            State("alert_store", "data"),
+            State("refresh-manager", "data"),
+            prevent_initial_call=True,
+        )
+        def confirm_negative(_, pending, alert_store, refresh_data):
+            if not pending:
                 raise PreventUpdate
 
-            logger.debug(
-                f"Args:\n"
-                f"edited: {edited}\n"
-                f"alert_store: {alert_store}\n"
-            )
-            ident = edited[0]["data"]["sekvensnummer"]
-            sekvensnummer = edited[0]["data"]["sekvensnummer"]
-            post = edited[0]["data"]["post"]
-            value = clean_whitespace(edited[0]["value"])
-            old_value = edited[0]["oldValue"]
             try:
-                query = f"""
-                INSERT INTO resultatregnskap.tema_resultat (sekvensnummer, felt, belop)
-                VALUES ({sekvensnummer}, '{post}', '{value}')
-                ON CONFLICT (sekvensnummer, felt)
-                DO UPDATE SET belop = EXCLUDED.belop
-                """
                 with get_nspek_connection() as conn:
-                    dapla_user = os.getenv('DAPLA_USER', None)[:3]
-                    PROCESS_TYPE = "editering"
-                    conn.raw_sql(f"SET nspek_app.user_id = {dapla_user}")
-                    conn.raw_sql(f"SET nspek_app.process_type = {PROCESS_TYPE}")
-                    conn.raw_sql(query)
+
+                    user = os.getenv("DAPLA_USER", "")[:3]
+
+                    conn.raw_sql(f"SET nspek_app.user_id = '{user}'")
+                    conn.raw_sql("SET nspek_app.process_type = 'editering'")
+
+                    save_regnskap_value(
+                        conn,
+                        pending["regnskapstype"],
+                        pending["sekvensnummer"],
+                        pending["post"],
+                        pending["value"],
+                    )
 
                 alert_store = [
                     create_alert(
-                        f"ident: {ident}, post: {post} er oppdatert fra {old_value} til {value}!",
+                        f"{pending['post']} oppdatert til {pending['value']}",
                         "success",
                         ephemeral=True,
                     ),
                     *alert_store,
                 ]
-            # except Exception as e:   ### Må legge til slik at vi fanger exceptions her og kan sende de som inserts.
-            except Exception as e:
-                alert_store = [
-                        create_alert(
-                            f"Oppdateringa feilet. {str(e)[:60]}",
-                            "danger",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-                logger.error(e, exc_info=True)
-            finally:
-                refresh_data = trigger_refresh(refresh_data, "resultat")
-                return alert_store, refresh_data
 
+            except Exception as e:
+                logger.error(e, exc_info=True)
+
+                alert_store = [
+                    create_alert(
+                        f"Feil: {str(e)[:80]}",
+                        "danger",
+                        ephemeral=True,
+                    ),
+                    *alert_store,
+                ]
+
+            refresh_data = trigger_refresh(refresh_data, pending["refresh_key"])
+
+            return False, None, alert_store, refresh_data
+
+        @callback(
+            Output("modal-negative-value", "is_open", allow_duplicate=True),
+            Output("pending-regnskap-edit", "data", allow_duplicate=True),
+            Input("btn-cancel-negative-edit", "n_clicks"),
+            prevent_initial_call=True,
+        )
+        def cancel_negative(_):
+            """
+            Cancels negative value edit.
+
+            Example use: modal cancel button.
+            """
+
+            return False, None
 
         @callback(
             Output("nspek-info-card-organisasjonsnummer", "value"),
@@ -1914,8 +2084,6 @@ class Naeringsspesifikasjon:
                 ]
 
             refresh_data = trigger_refresh(refresh_data, "valid_search")
-
-            print(refresh_data)
 
             return orgnr, aar, orgnr, refresh_data, alert_store
 
@@ -2610,8 +2778,6 @@ class Naeringsspesifikasjon:
 
             df["skildring"] = df["kontrollid"].map(lambda x: kontroller_lookup.get(x, {}).get("skildring"))
             df["tema"] = df["kontrollid"].map(lambda x: kontroller_lookup.get(x, {}).get("tema"))
-
-            print(df)
 
             has_issues = df["utslag"].any()
             tab_label = "⚠️ Kontrollutslag" if has_issues else "Kontrollutslag"
