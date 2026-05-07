@@ -20,27 +20,19 @@ from sqlalchemy import text
 import time
 import re
 from dash_iconify import DashIconify
-
-#from ..setup.variableselector import VariableSelector
-#from ..utils import TabImplementation
-#from ..utils import WindowImplementation
-#from ..utils.module_validation import module_validator
-
-from ssb_dash_framework import VariableSelector
-from ssb_dash_framework import TabImplementation
-from ssb_dash_framework import WindowImplementation
-from ssb_dash_framework import module_validator
-from ssb_dash_framework import set_postgres_connection
-from ssb_dash_framework import get_connection
-from ssb_dash_framework import create_alert
-
-from mock_controls import NspekMockControls
-
-
-from nspek_utils import set_nspek_connection
-from nspek_utils import get_nspek_connection
+from .nspek_utils import set_nspek_connection
+from .nspek_utils import get_nspek_connection
 
 from pathlib import Path
+
+from ...setup.variableselector import VariableSelector
+from ...utils import TabImplementation
+from ...utils import WindowImplementation
+from ...utils.module_validation import module_validator
+from ...utils.config_tools import get_connection
+from ...utils.alert_handler import create_alert
+
+from .mock_controls import NspekMockControls
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
