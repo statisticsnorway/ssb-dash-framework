@@ -20,6 +20,7 @@ from ssb_dash_framework.utils.config_tools.set_variables import get_ident
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
 from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
+from ssb_dash_framework.utils.alert_handler import create_alert
 
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
@@ -195,6 +196,22 @@ class DataEditor:
 
     def module_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor."""
+        
+        # @callback(
+        #     VariableSelector([], []).get_output_object("refnr"),
+        #     VariableSelector([], []).get_output_object("altinnskjema"),
+        #     VariableSelector([], []).get_input(get_ident()),
+        #     prevent_initial_call=True,
+        # )
+        # def clear_on_missing_ident(ident: str):
+        #     if not ident:
+        #         raise PreventUpdate
+        #     with get_connection() as conn:
+        #         t = conn.table("skjemamottak")
+        #         result = t.filter(_.ident == ident).limit(1).to_pandas()
+        #     if result.empty:
+        #         return "", ""
+        #     raise PreventUpdate
 
         @callback(
             *[
@@ -411,11 +428,12 @@ class DataEditorInfoRow:
                 for info_var in self.info_variables
             ],
             variableselector.get_input(get_ident()),
+            variableselector.get_input("refnr"),
             *[variableselector.get_input(unit) for unit in get_time_units().keys()],
             *[variableselector.get_all_states()],
         )
         def get_data_for_info_row_fields(
-            ident: str, *args: Any
+            ident: str, altinnskjema: str, *args: Any
         ) -> list[str | int | float | bool | None]:
             logger.debug(f"ident: {ident}\nargs: {args}")
             info_values = []
