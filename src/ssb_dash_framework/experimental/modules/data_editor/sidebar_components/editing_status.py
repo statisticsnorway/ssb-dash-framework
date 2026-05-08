@@ -117,6 +117,8 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                                     dcc.RadioItems(
                                         id=f"{self.module_name}-{self.module_number}-radioitems",
                                         options=self.status_options,
+                                        inputStyle={"margin-right": "8px"},
+                                        labelStyle={"white-space": "nowrap"},
                                     )
                                 ),
                             ]
@@ -128,6 +130,8 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                                     dcc.Checklist(
                                         id=f"{self.module_name}-{self.module_number}-checkbox",
                                         options={"Aktiv": True},
+                                        inputStyle={"margin-right": "8px"},
+                                        labelStyle={"white-space": "nowrap"},
                                     )
                                 ),
                             ]
@@ -170,7 +174,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 return (
                     ["Aktiv"] if data["aktiv"].item() else [],
                     data["status"].item(),
-                    f"Viser for {refnr}",
+                    f"Viser skjema: {data["skjema"].item()}",
                     no_update,
                 )
 
