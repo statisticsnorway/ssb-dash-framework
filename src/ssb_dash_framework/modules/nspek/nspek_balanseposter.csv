@@ -1,0 +1,133 @@
+felt,tekst,__index_level_0__
+"","Eiendeler",0
+"","Anleggsmidler",0
+1000,"Utvikling",1
+1020,"Varige konsesjoner, patenter, lisenser, rettigheter med mer",2
+1070,"Utsatt skattefordel",3
+1080,"Goodwill",4
+1101,"Aktiverte letekostnader",6
+1102,"Felt under utbygging",7
+1103,"Produksjonsinnretning og rørledning",8
+1104,"Fjernings- og nedstengningseiendeler",9
+1105,"Forretningsbygg",10
+1115,"Bygg, anlegg, hotell o.l.",11
+1117,"Elektroteknisk utrustning i kraftforetak mv.",12
+1120,"Fast teknisk installasjon i bygninger",13
+1130,"Anlegg og maskiner under bygging",14
+1140,"Jord- og skogbrukseiendommer",15
+1150,"Tomter og andre grunnarealer",16
+1160,"Bolig inkl. boligtomter, hytter mv.",17
+1180,"Investeringseiendommer",18
+1205,"Personbiler, maskiner, inventar",20
+1221,"Skip, rigger mv.",21
+1225,"Fly, helikopter mv.",22
+1238,"Vare- og lastebiler, busser, inkludert varebiler med nullutslipp mv.",23
+1280,"Kontormaskiner o.l.",24
+1290,"Andre driftsmidler",25
+1295,"Driftsmidler som avskrives lineært",26
+1296,"Negativ gevinst- og tapskonto",27
+1298,"Negativ tømmerkonto",28
+1299,"Negativ jordbrukskonto",29
+1312,"Investeringer i datter- og konsernselskap med deltakerfastsetting",31
+1313,"Investeringer i andre datter- og konsernselskap",32
+1320,"Lån til foretak i samme konsern",33
+1331,"Investeringer i tilknyttede selskap med deltakerfastsetting",34
+1332,"Investeringer i andre tilknyttede selskap",35
+1340,"Lån til tilknyttet selskap og felles kontrollert virksomhet",36
+1350,"Investeringer i aksjer, andeler og verdipapirfondsandeler",37
+1360,"Obligasjoner",38
+1370,"Fordringer på personlige eiere, styremedl. o.l.",39
+1380,"Krav/fordringer mot ansatte",40
+1390,"Andre langsiktige fordringer",41
+1395,"Netto pensjonsmidler",42
+sumBalanseverdiForAnleggsmiddel,"SUM Anleggsmidler",43
+"",,
+"","Omløpsmidler",44
+1400,"Varelager",45
+1401,"Beholdning av egenproduserte varer for bruk i egen jordbruksvirksomhet",46
+1470,"Mindreuttak av petroleumsprodukter",47
+1490,"Biologiske eiendeler",48
+1500,"Kundefordringer",50
+1501,"Kundefordringer på selskap i samme konsern",51
+1530,"Opptjente ikke fakturerte driftsinntekter",52
+1560,"Andre fordringer på selskap i samme konsern",53
+1565,"Kortsiktige fordringer mot personlig eier, styremedlem o.l.",54
+1570,"Andre kortsiktige krav/fordringer",55
+1780,"Krav på innbetalt selskapskapital",58
+1800,"Ikke-markedsbaserte aksjer og verdipapirfondsandeler",60
+1810,"Markedsbaserte aksjer og verdipapirfondsandeler",61
+1830,"Markedsbaserte obligasjoner, sertifikater mv.",62
+1840,"Andre obligasjoner og sertifikater",63
+1880,"Andre finansielle instrumenter",64
+1895,"Andel i selskap med deltakerfastsetting",65
+1900,"Kontanter",67
+1920,"Bankinnskudd",68
+1950,"Innskudd på skattetrekkskonto",69
+sumBalanseverdiForOmloepsmiddel,"SUM Omløpsmidler",70
+"",,
+sumBalanseverdiForEiendel,"SUM Eiendeler",71
+"",,
+"","Egenkapital og gjeld",0
+"","Egenkapital",72
+2000,"Aksjekapital/Egenkapital andre foretak",73
+2010,"Egne aksjer",74
+2015,"Felleseid andelskapital",75
+2020,"Overkurs",76
+2030,"Annen innskutt egenkapital",77
+2041,"Etterbetalingsfond",78
+2042,"Medlemskapitalkonti",79
+2043,"Fond for vurderingsforskjeller",80
+2045,"Fond for urealiserte gevinster",81
+2050,"Positiv egenkapital",82
+2055,"Avsatt utbytte - IFRS",83
+2080,"Negativ egenkapital",84
+2095,"Negativ saldo",85
+2096,"Positiv gevinst og tapskonto",86
+2097,"Betinget avsatt gevinst",87
+2098,"Positiv tømmerkonto",88
+2099,"Positiv jordbrukskonto",89
+sumEgenkapital,"SUM Egenkapital",90
+"",,
+"","Langsiktig gjeld",91
+2100,"Pensjonsforpliktelser",92
+2120,"Utsatt skatt",93
+2130,"Derivater",94
+2160,"Uopptjent inntekt",95
+2180,"Avsetninger for forpliktelser",96
+2185,"Avsetninger for fjerning- og nedstengningsforpliktelser",97
+2200,"Konvertible lån",99
+2210,"Obligasjonslån",100
+2220,"Langsiktig gjeld til banker og andre kredittinstitusjoner",101
+2250,"Gjeld til ansatte og personlige eiere",102
+2260,"Gjeld til selskap i samme konsern",103
+2280,"Stille interessentinnskudd og ansvarlig lånekapital",104
+2290,"Annen langsiktig gjeld",105
+sumLangsiktigGjeld,"SUM Langsiktig gjeld",106
+"",,
+"","Kortsiktig gjeld",107
+2310,"Konvertible lån",108
+2320,"Obligasjonslån",109
+2330,"Derivater",110
+2380,"Kortsiktig gjeld til banker og andre kredittinstitusjoner",111
+2400,"Gjeld til leverandører",113
+2460,"Gjeld til selskap i samme konsern",114
+2470,"Mindereuttak av petroleumsprodukter",115
+2500,"Betalbar skatt, ikke fastsatt",117
+2510,"Betalbar skatt, fastsatt",118
+2600,"Skattetrekk og andre trekk",120
+2740,"Skyldig merverdiavgift",122
+2770,"Skyldig arbeidsgiveravgift",123
+2790,"Andre offentlige avgifter",124
+2800,"Avsatt utbytte",126
+2900,"Forskudd fra kunder",128
+2910,"Gjeld til ansatte og personlige eiere",129
+2920,"Gjeld til selskap i samme konsern",130
+2949,"Skyldig lønn og feriepenger med mer",131
+2950,"Skyldige gjeldsrenter",132
+2970,"Uopptjent inntekt",133
+2980,"Avsetninger for forpliktelser",134
+2981,"Avsatt etterbetaling til utbetaling",135
+2990,"Annen kortsiktig gjeld",136
+sumKortsiktigGjeld,"SUM Kortsiktig gjeld",137
+"",,
+sumGjeldOgEgenkapital,"SUM Egenkapital og gjeld",138
