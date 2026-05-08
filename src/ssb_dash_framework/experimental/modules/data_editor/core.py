@@ -196,21 +196,21 @@ class DataEditor:
     def module_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor."""
         
-        # @callback(
-        #     VariableSelector([], []).get_output_object("refnr"),
-        #     VariableSelector([], []).get_output_object("altinnskjema"),
-        #     VariableSelector([], []).get_input(get_ident()),
-        #     prevent_initial_call=True,
-        # )
-        # def clear_on_missing_ident(ident: str):
-        #     if not ident:
-        #         raise PreventUpdate
-        #     with get_connection() as conn:
-        #         t = conn.table("skjemamottak")
-        #         result = t.filter(_.ident == ident).limit(1).to_pandas()
-        #     if result.empty:
-        #         return "", ""
-        #     raise PreventUpdate
+        @callback(
+            VariableSelector([], []).get_output_object("refnr"),
+            VariableSelector([], []).get_output_object("altinnskjema"),
+            VariableSelector([], []).get_input(get_ident()),
+            prevent_initial_call=True,
+        )
+        def clear_on_missing_ident(ident: str):
+            if not ident:
+                raise PreventUpdate
+            with get_connection() as conn:
+                t = conn.table("skjemamottak")
+                result = t.filter(_.ident == ident).limit(1).to_pandas()
+            if result.empty:
+                return "", ""
+            raise PreventUpdate
 
         @callback(
             *[
@@ -234,7 +234,7 @@ class DataEditor:
                 tables = DataEditorRegistry.main_views[divname]["tables"]
 
                 table_match = selected_table in tables
-                form_match = selected_form in forms or None in forms
+                form_match = (not forms and not selected_form) or selected_form in forms
 
                 if table_match and form_match:
                     styles.append({"display": "block"})

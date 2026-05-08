@@ -377,6 +377,7 @@ class DropdownComponent(BaseNode):
     ) -> html.Div:
         """A method for creating the layout."""
         _id = str(uuid.uuid4())
+        self.field_settings.variabel_trigger = "value"
         self.field_settings.create_callback(
             settings,
             inputs,
@@ -442,6 +443,7 @@ class ChecklistComponent(BaseNode):
 
         self.field_settings.getter_func = wrapped_getter
         self.field_settings.update_func = wrapped_updater
+        self.field_settings.variabel_trigger = "value"
         self.field_settings.create_callback(
             settings,
             inputs,
