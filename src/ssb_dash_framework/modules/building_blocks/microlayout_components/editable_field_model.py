@@ -167,13 +167,14 @@ class EditableField(BaseModel):
         getter_args: None | list[Any] = None,
     ) -> None:
         guard_states = self._build_guard_states(settings)
+        variableselector = VariableSelector(selected_inputs=[], selected_states=["ident", "altinnskjema"])
 
         @callback(
             Output(self._id, "value", allow_duplicate=True),
             Output("alert_store", "data", allow_duplicate=True),
-            Input(settings.form_reference_input_id, "value"),
-            VariableSelector([], []).get_state("ident"),
-            VariableSelector([], []).get_state("altinnskjema"),
+            Input(settings.form_reference_input_id, component_property="value"),
+            variableselector.get_state("ident"),
+            variableselector.get_state("altinnskjema"),
             Input(self._id, "value"),
             *inputs if inputs else [],
             *states if states else [],

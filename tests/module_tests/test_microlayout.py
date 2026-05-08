@@ -121,9 +121,15 @@ def test_row_node():
 
 
 def test_layout_parses_and_builds(callback_settings):
+    from ssb_dash_framework.setup import set_variables, VariableSelector
     from ssb_dash_framework.modules.building_blocks.microlayout_components.models import (
         Layout,
     )
+
+    registered = [o.title for o in VariableSelector._variableselectoroptions]
+    for var in ["ident", "altinnskjema"]:
+        if var not in registered:
+            set_variables(var)
 
     layout = Layout(
         [
