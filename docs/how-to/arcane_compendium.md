@@ -48,3 +48,29 @@ def update_from_ident(ident):
     else:
         return no_update, ident
 ```
+
+## Connect a custom callback to a module
+
+If you want to connect to a html component contained inside a module, you can achieve this by using a small workaround.
+
+When you have a module initialized like this:
+
+```python
+my_table = EditingTableTab(
+    label="municipality table",
+    inputs=["municipality"],
+    states=["year"],
+    get_data_func=my_get_data_func,
+)
+```
+
+You can connect your callback directly to it by looking at the module source code or inspecting the elements in your browser, finding the name of the component you wish to connect a callback to and using the instance of the module class like this:
+
+```python
+@callback(
+    Output("my-id", "children"),
+    Input(f"{my_table.module_number}-tabelleditering-table1", "cellClicked"),
+)
+def my_callback_function(*args):
+    ...
+```
