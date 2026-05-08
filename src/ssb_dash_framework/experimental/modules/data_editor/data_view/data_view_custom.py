@@ -21,7 +21,7 @@ from .....modules.building_blocks.microlayout_components.editable_field_model im
     default_updater,
 )
 from .....modules.building_blocks.microlayout_components.editable_field_model import (
-    defult_getter,
+    default_getter,
 )
 from .....modules.building_blocks.microlayout_components.models import CalculatedField, Layout
 from ..core import DataEditorDataView
@@ -154,7 +154,7 @@ class DataViewCustomMicroLayout(MicroLayoutAIO):
         aio_id: str | None = None,
         horizontal: bool = False,
         form_data_table: str = "skjemadata",
-        form_reference_number_column: str = "refnr",
+        form_reference_number_column: str | None = "refnr",
         form_data_field_name_column: str = "feltnavn",
         formdata_field_value_column_name: str = "verdi",
         table_selector_id: str | None = "dataeditortableselector",
@@ -257,6 +257,11 @@ class DataViewCustom(DataEditorDataView):
     def build_layout(self, layout: dict | list) -> list:
         """Builds the layout for the custom view."""
         components = []
+
+        # guard against strings and other primitives
+        if not isinstance(layout, (dict, list)):
+            return components
+            
         if isinstance(layout, list):
             for item in layout:
                 components.extend(self.build_layout(item))
@@ -286,6 +291,7 @@ class DataViewCustom(DataEditorDataView):
                     applies_to_forms=self.applies_to_forms,
                 )
                 components.append(figure.content())
+
             elif key == "table":
                 table = DataViewCustomTable(
                     label=value["label"],
@@ -294,17 +300,21 @@ class DataViewCustom(DataEditorDataView):
                     applies_to_forms=self.applies_to_forms,
                 )
                 components.append(table.content())
+
             elif key == "microlayout":
                 microlayout = DataViewCustomMicroLayout(
                     applies_to_tables=self.applies_to_tables,
                     applies_to_forms=self.applies_to_forms,
                     layout=value["layout"],
-                    getter_func=value.get("getter_func", defult_getter),
+                    getter_func=value.get("getter_func", default_getter),
                     update_func=value.get("update_func", default_updater),
                     form_data_table=value.get("form_data_table"),
                     form_data_field_name_column=value.get(
                         "form_data_field_name_column"
                     ),
+                    form_reference_number_column=value.get("form_reference_number_column", "refnr"),
+                    form_reference_input_id=value.get("form_reference_input_id", "var-refnr"), 
+                    inputs=[Input(f"var-{unit}", "value") for unit in get_time_units()],
                 )
                 logger.debug(f"Built microlayout:\n{microlayout}")
                 components.append(microlayout)
@@ -368,15 +378,17 @@ class DataViewCustom(DataEditorDataView):
         if isinstance(config, list):
             config = config[0]
 
+        applies_to_forms = config.get("applies_to_forms", [])
+
         config["layout"] = cls.convert_typed_to_keyed(
             config["layout"],
             applies_to_tables=config["applies_to_tables"],
-            applies_to_forms=config["applies_to_forms"],
+            applies_to_forms=applies_to_forms,
         )
 
         return cls(
             applies_to_tables=config["applies_to_tables"],
-            applies_to_forms=config["applies_to_forms"],
+            applies_to_forms=applies_to_forms,
             layout=config["layout"],
         )
 
@@ -449,8 +461,9 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
         node = convert_node_build_field_settings(
             node, "applies_to_tables", applies_to_tables
         )
+        clean_forms = [f for f in applies_to_forms if f is not None]
         node = convert_node_build_field_settings(
-            node, "applies_to_forms", applies_to_forms
+            node, "applies_to_forms", clean_forms
         )
 
     if "children" in node:
