@@ -68,7 +68,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 dbc.Row(
                     dcc.Textarea(
                         id=f"{self.module_name}-{self.module_number}-comment-text",
-                        className="dataeditorsidebar-comment-textarea",  # TODO: Style in the css
+                        className=f"{self.module_name}-comment-text",  # TODO: Style in the css
                     )
                 ),
             ]
