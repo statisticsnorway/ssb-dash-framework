@@ -127,7 +127,7 @@ def test_layout_parses_and_builds(callback_settings):
     )
 
     registered = [o.title for o in VariableSelector._variableselectoroptions]
-    for var in ["ident", "altinnskjema"]:
+    for var in ["ident", "altinnskjema", "variabel"]:
         if var not in registered:
             set_variables(var)
 

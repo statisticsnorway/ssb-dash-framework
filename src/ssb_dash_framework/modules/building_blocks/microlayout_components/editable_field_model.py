@@ -111,6 +111,7 @@ class EditableField(BaseModel):
     # applies_to_... is used for compatibility with DataEditorDataViewCustom
     applies_to_tables: list[str] = Field(default_factory=list)
     applies_to_forms: list[str] = Field(default_factory=list)
+    variabel_trigger: str = "n_blur"
 
     @computed_field
     @property
@@ -226,4 +227,12 @@ class EditableField(BaseModel):
                 )
                 logger.info(f"getter returned {result!r} for {self.field_path}, refnr={refnr}")
                 return result, no_update
-
+        
+        @callback(
+            variableselector.get_output_object("variabel"),
+            Input(self._id, self.variabel_trigger),
+            prevent_initial_call=True,
+        )
+        def update_variabel(_):
+            return self.field_path
+        update_variabel.__name__ = f"update_variabel_{self._id}"

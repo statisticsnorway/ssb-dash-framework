@@ -13,9 +13,11 @@ from dash import dcc
 from dash import html
 from dash import no_update
 from dash.exceptions import PreventUpdate
+import ibis.selectors as s
 from eimerdb import EimerDBInstance
 from ibis import _
 from psycopg_pool import ConnectionPool
+import tzlocal
 
 from ssb_dash_framework import VariableSelector
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
@@ -30,6 +32,8 @@ from .....utils.core_models import UpdateSkjemamottakStatus
 from ..core import DataEditorHelperSidebar
 
 logger = logging.getLogger(__name__)
+
+local_tz = tzlocal.get_localzone()
 
 
 class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
@@ -57,7 +61,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         DataEditorSidebarEditingStatus._id_number += 1
 
         self.variableselector = VariableSelector(
-            selected_inputs=[], selected_states=[get_ident(), *get_time_units().keys()]
+            selected_inputs=[], selected_states=[get_ident(), *get_time_units().keys(), "altinnskjema", "refnr"]
         )
 
         self.status_options = (
@@ -80,7 +84,9 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 dbc.ModalBody(
                     [
                         dag.AgGrid(
-                            id=f"{self.module_name}-{self.module_number}-form-table"
+                            id=f"{self.module_name}-{self.module_number}-form-table",
+                            columnSize="responsiveSizeToFit",
+                            dashGridOptions={"rowSelection": "single"},
                         )
                     ]
                 ),
@@ -217,5 +223,46 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             filterdict = create_filter_dict([get_ident(), *get_time_units()], [*args])
             with get_connection() as conn:
                 t = conn.table("skjemamottak")
-                data = t.filter(ibis_filter_with_dict(filterdict)).to_pandas()
-            return data.to_dict("records"), [{"field": x} for x in data.columns], True
+                data = (
+                    t.filter(ibis_filter_with_dict(filterdict))
+                    .order_by(_.dato_mottatt.desc())
+                    .select(
+                        "skjema",
+                        "dato_mottatt",
+                        "refnr",
+                        s.matches(r"^(editert|status)$"),
+                        "kommentar",
+                        "aktiv",
+                    )
+                    .to_pandas()
+                )
+                data["dato_mottatt"] = (
+                    data["dato_mottatt"]
+                    .dt.tz_convert(local_tz)
+                    .dt.tz_localize(None)
+                    .dt.strftime("%Y-%m-%d %H:%M:%S")
+                )
+            return data.to_dict("records"), [{"field": x, "headerName": x} for x in data.columns], True
+        
+        @callback(  # type: ignore[misc]
+            self.variableselector.get_output_object("refnr"), # oppdater refnr
+            self.variableselector.get_output_object("altinnskjema"), # oppdater altinnskjema
+            Input(f"{self.module_name}-{self.module_number}-form-table", "selectedRows"),
+            self.variableselector.get_input("refnr"),
+            self.variableselector.get_input("altinnskjema"),
+            prevent_initial_call=True,
+        )
+        def selected_refnr(selected_row: list[dict[str, Any]], current_refnr, current_altinnskjema):
+            print(selected_row)
+            logger.debug(f"Args:\nselected_row: {selected_row}")
+            if not selected_row:
+                logger.debug("Raised PreventUpdate")
+                raise PreventUpdate
+
+            refnr = selected_row[0]["refnr"]
+            skjema = selected_row[0]["skjema"]
+
+            return (
+                refnr if refnr != current_refnr else no_update,
+                skjema if skjema != current_altinnskjema else no_update,
+            )
