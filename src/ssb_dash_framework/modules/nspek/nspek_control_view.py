@@ -15,13 +15,13 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
-from ssb_dash_framework import TabImplementation
+from ...utils import TabImplementation
 
 # from eimerdb import EimerDBInstance
-from ssb_dash_framework import VariableSelector
-from ssb_dash_framework import WindowImplementation
-from ssb_dash_framework import create_alert
-from ssb_dash_framework import module_validator
+from ...setup.variableselector import VariableSelector
+from ...utils import WindowImplementation
+from ...utils.alert_handler import create_alert
+from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
