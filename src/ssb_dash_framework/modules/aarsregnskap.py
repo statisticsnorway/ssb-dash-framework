@@ -3,6 +3,8 @@ import logging
 from abc import ABC
 from abc import abstractmethod
 from typing import ClassVar
+from PIL import Image
+import io
 
 import gcsfs
 import dash_bootstrap_components as dbc
@@ -119,10 +121,17 @@ class Aarsregnskap(ABC):
                         ),
                         dbc.Row(
                             dbc.Col(
-                                html.Iframe(
-                                    className="aarsregnskap-pdf-iframe",
-                                    id="tab-aarsregnskap-iframe",
-                                ),
+                                [
+                                    html.Iframe(
+                                        className="aarsregnskap-pdf-iframe",
+                                        id="tab-aarsregnskap-iframe",
+                                    ),
+                                    html.Img(
+                                        className="aarsregnskap-pdf-iframe",  # reuse same CSS
+                                        id="tab-aarsregnskap-img",
+                                        style={"display": "none", "width": "100%"},
+                                    ),
+                                ],
                                 className="aarsregnskap-pdf-col",
                             ),
                             className="aarsregnskap-pdf-row",
@@ -180,47 +189,93 @@ class Aarsregnskap(ABC):
             logger.debug(f"Args:\norgnr: {orgnr}\n")
             return orgnr
 
-        @callback(  # type: ignore[misc]
+        # @callback(  # type: ignore[misc]
+        #     Output("tab-aarsregnskap-iframe", "src"),
+        #     Input("tab-aarsregnskap-input-aar", "value"),
+        #     Input("tab-aarsregnskap-input-orgnr", "value"),
+        # )
+        # def update_pdf_source(aar: int, orgnr: str) -> str | None:
+        #     """Fetch and encode the PDF source based on the year and organization number.
+
+        #     Args:
+        #         aar: The year input value.
+        #         orgnr: The organization number input value.
+
+        #     Returns:
+        #         A data URI for the PDF file, encoded in base64.
+
+        #     Raises:
+        #         PreventUpdate: If the year or organization number is not provided.
+        #     """
+        #     logger.debug(f"Args:\naar: {aar}\norgnr: {orgnr}\n")
+        #     if not aar or not orgnr:
+        #         raise PreventUpdate
+        #     path_to_file = f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/bildefil/g{aar}/{orgnr}_{aar}.pdf"
+        #     logger.debug(f"Trying to open file: {path_to_file}")
+        #     try:
+        #         fs = gcsfs.GCSFileSystem()
+        #         with fs.open(
+        #             path_to_file,
+        #             "rb",
+        #         ) as f:
+        #             pdf_bytes = f.read()
+
+        #         pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
+        #         pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
+        #     except FileNotFoundError:
+        #         logger.debug(f"Returning None. Could not open file: {path_to_file}")
+        #         return None
+        #     pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
+        #     pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
+        #     return pdf_data_uri
+
+        # logger.debug("Generated callbacks")
+
+        @callback(
             Output("tab-aarsregnskap-iframe", "src"),
+            Output("tab-aarsregnskap-img", "src"),
+            Output("tab-aarsregnskap-iframe", "style"),
+            Output("tab-aarsregnskap-img", "style"),
             Input("tab-aarsregnskap-input-aar", "value"),
             Input("tab-aarsregnskap-input-orgnr", "value"),
         )
-        def update_pdf_source(aar: int, orgnr: str) -> str | None:
-            """Fetch and encode the PDF source based on the year and organization number.
+        def update_pdf_source(aar: int, orgnr: str):
+            show_iframe = {"display": "block", "width": "100%", "height": "100%"}
+            hide_iframe = {"display": "none"}
+            show_img = {"display": "block", "width": "100%"}
+            hide_img = {"display": "none"}
 
-            Args:
-                aar: The year input value.
-                orgnr: The organization number input value.
-
-            Returns:
-                A data URI for the PDF file, encoded in base64.
-
-            Raises:
-                PreventUpdate: If the year or organization number is not provided.
-            """
-            logger.debug(f"Args:\naar: {aar}\norgnr: {orgnr}\n")
             if not aar or not orgnr:
                 raise PreventUpdate
-            path_to_file = f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/bildefil/g{aar}/{orgnr}_{aar}.pdf"
-            logger.debug(f"Trying to open file: {path_to_file}")
+
+            fs = gcsfs.GCSFileSystem()
+            base_path = f"gs://ssb-skatt-naering-data-delt-naeringspesifikasjon-selskap-prod/bildefil/g{aar}/{orgnr}_{aar}"
+
+            # Try PDF first
             try:
-                fs = gcsfs.GCSFileSystem()
-                with fs.open(
-                    path_to_file,
-                    "rb",
-                ) as f:
+                with fs.open(f"{base_path}.pdf", "rb") as f:
                     pdf_bytes = f.read()
-
-                pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
-                pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
+                encoded = base64.b64encode(pdf_bytes).decode("utf-8")
+                logger.info(f"Found PDF file")
+                return f"data:application/pdf;base64,{encoded}", None, show_iframe, hide_img
             except FileNotFoundError:
-                logger.debug(f"Returning None. Could not open file: {path_to_file}")
-                return None
-            pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
-            pdf_data_uri = f"data:application/pdf;base64,{pdf_base64}"
-            return pdf_data_uri
+                logger.debug("PDF not found, trying TIF")
 
-        logger.debug("Generated callbacks")
+            # Try TIF
+            try:
+                with fs.open(f"{base_path}.tif", "rb") as f:
+                    tif_bytes = f.read()
+                tif_image = Image.open(io.BytesIO(tif_bytes))
+                png_buffer = io.BytesIO()
+                tif_image.convert("RGB").save(png_buffer, format="PNG")
+                png_buffer.seek(0)
+                encoded = base64.b64encode(png_buffer.getvalue()).decode("utf-8")
+                logger.info(f"Found TIF file")
+                return None, f"data:image/png;base64,{encoded}", hide_iframe, show_img
+            except FileNotFoundError:
+                logger.debug("TIF not found either")
+                return None, None, hide_iframe, hide_img
+                ############ TURN INTO SCROLLABLE DIV INSTEAD
 
 
 class AarsregnskapTab(TabImplementation, Aarsregnskap):
