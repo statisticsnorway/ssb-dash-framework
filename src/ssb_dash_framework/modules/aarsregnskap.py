@@ -126,10 +126,10 @@ class Aarsregnskap(ABC):
                                         className="aarsregnskap-pdf-iframe",
                                         id="tab-aarsregnskap-iframe",
                                     ),
-                                    html.Img(
-                                        className="aarsregnskap-pdf-iframe",  # reuse same CSS
-                                        id="tab-aarsregnskap-img",
-                                        style={"display": "none", "width": "100%"},
+                                    html.Div(
+                                        id="tab-aarsregnskap-img-container",
+                                        style={"display": "none"},
+                                        className="tab-aarsregnskap-img-container",
                                     ),
                                 ],
                                 className="aarsregnskap-pdf-col",
@@ -233,17 +233,17 @@ class Aarsregnskap(ABC):
 
         @callback(
             Output("tab-aarsregnskap-iframe", "src"),
-            Output("tab-aarsregnskap-img", "src"),
+            Output("tab-aarsregnskap-img-container", "children"),
             Output("tab-aarsregnskap-iframe", "style"),
-            Output("tab-aarsregnskap-img", "style"),
+            Output("tab-aarsregnskap-img-container", "style"),
             Input("tab-aarsregnskap-input-aar", "value"),
             Input("tab-aarsregnskap-input-orgnr", "value"),
         )
         def update_pdf_source(aar: int, orgnr: str):
-            show_iframe = {"display": "block", "width": "100%", "height": "100%"}
+            show_iframe = {"display": "block"}
             hide_iframe = {"display": "none"}
-            show_img = {"display": "block", "width": "100%"}
-            hide_img = {"display": "none"}
+            show_div = {"display": "block"}
+            hide_div = {"display": "none"}
 
             if not aar or not orgnr:
                 raise PreventUpdate
@@ -257,25 +257,35 @@ class Aarsregnskap(ABC):
                     pdf_bytes = f.read()
                 encoded = base64.b64encode(pdf_bytes).decode("utf-8")
                 logger.info(f"Found PDF file")
-                return f"data:application/pdf;base64,{encoded}", None, show_iframe, hide_img
+                return f"data:application/pdf;base64,{encoded}", [], show_iframe, hide_div
             except FileNotFoundError:
                 logger.debug("PDF not found, trying TIF")
 
-            # Try TIF
+            # Try TIF - convert each page to PNG
             try:
                 with fs.open(f"{base_path}.tif", "rb") as f:
                     tif_bytes = f.read()
                 tif_image = Image.open(io.BytesIO(tif_bytes))
-                png_buffer = io.BytesIO()
-                tif_image.convert("RGB").save(png_buffer, format="PNG")
-                png_buffer.seek(0)
-                encoded = base64.b64encode(png_buffer.getvalue()).decode("utf-8")
-                logger.info(f"Found TIF file")
-                return None, f"data:image/png;base64,{encoded}", hide_iframe, show_img
+                img_elements = []
+                try:
+                    while True:
+                        png_buffer = io.BytesIO()
+                        tif_image.copy().convert("RGB").save(png_buffer, format="PNG")
+                        png_buffer.seek(0)
+                        encoded = base64.b64encode(png_buffer.getvalue()).decode("utf-8")
+                        img_elements.append(
+                            html.Img(
+                                src=f"data:image/png;base64,{encoded}",
+                                style={"width": "100%", "display": "block", "marginBottom": "4px"},
+                            )
+                        )
+                        tif_image.seek(tif_image.tell() + 1)
+                except EOFError:
+                    pass
+                return None, img_elements, hide_iframe, show_div
             except FileNotFoundError:
                 logger.debug("TIF not found either")
-                return None, None, hide_iframe, hide_img
-                ############ TURN INTO SCROLLABLE DIV INSTEAD
+                return None, [], hide_iframe, hide_div
 
 
 class AarsregnskapTab(TabImplementation, Aarsregnskap):
