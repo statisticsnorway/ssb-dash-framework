@@ -34,6 +34,7 @@ dependencies = [
     "ssb-eimerdb (>=0.2.7,<0.3.0)",
     "dash-iconify (>=0.1.2,<0.2.0)",
     "pillow (>=12.2.0,<13.0.0)",
+    "pymupdf (>=1.27.2.3,<2.0.0.0)",
 ]
 
 [project.urls]
