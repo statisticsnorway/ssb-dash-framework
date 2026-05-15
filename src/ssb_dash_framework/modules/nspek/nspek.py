@@ -27,7 +27,7 @@ from ...utils import TabImplementation
 from ...utils import WindowImplementation
 from ...utils.alert_handler import create_alert
 from ...utils.module_validation import module_validator
-from .mock_controls import NspekMockControls
+from .nspek_controls import NspekControls
 from .nspek_utils import get_nspek_connection
 from .nspek_utils import set_nspek_connection
 
@@ -1828,7 +1828,7 @@ class Naeringsspesifikasjon:
                                             "field": "kontrollid",
                                             "headerName": "Kontroll",
                                             "flex": 1,
-                                            "minWidth": 120,
+                                            "minWidth": 250,
                                         },
                                         {
                                             "field": "tema",
@@ -2797,7 +2797,7 @@ class Naeringsspesifikasjon:
             edited, orgnr, alert_store, toggle_inactive, refresh_data
         ):
 
-            logger.debug(f"edited: {edited}\n" f"orgnr: {orgnr}\n")
+            logger.debug(f"edited: {edited}\norgnr: {orgnr}\n")
 
             refresh_data = refresh_data or {}
 
@@ -3059,7 +3059,7 @@ class Naeringsspesifikasjon:
             if refresh_data and refresh_data.get("status") == "invalid_search":
                 return [], "Kontrollutslag"
 
-            instance = NspekMockControls(
+            instance = NspekControls(
                 time_units=["aar"],
                 applies_to_subset={"aar": [int(aar)]},
             )
