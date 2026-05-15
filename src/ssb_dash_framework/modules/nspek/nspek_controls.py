@@ -1,11 +1,12 @@
 import random
-
+import os
 import pandas as pd
 
 from ssb_dash_framework import ControlFrameworkBase
 from ssb_dash_framework import register_control
 from .nspek_utils import get_nspek_connection
 from .nspek_utils import set_nspek_connection
+
 
 class NspekControls(ControlFrameworkBase):
     """
@@ -19,8 +20,13 @@ class NspekControls(ControlFrameworkBase):
         if applies_to_subset is None:
             applies_to_subset = {"aar": [2024]}
 
-        db_user = "nspek-developers@dapla-group-sa-p-ye.iam"
-        set_nspek_connection(db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam")
+        dapla_team = os.getenv("DAPLA_GROUP_CONTEXT")
+        db_user = (
+            f"{dapla_team}@dapla-group-sa-p-ye.iam"
+            if dapla_team != "nspek-developers"
+            else None
+        )
+        set_nspek_connection(db_user)
 
         super().__init__(time_units=time_units, applies_to_subset=applies_to_subset)
 
@@ -32,7 +38,8 @@ class NspekControls(ControlFrameworkBase):
             DataFrame med kontrollmetadata
         """
         with get_nspek_connection() as conn:
-            cursor = conn.raw_sql("""
+            cursor = conn.raw_sql(
+                """
                 SELECT
                     aar,
                     tema,
@@ -45,17 +52,19 @@ class NspekControls(ControlFrameworkBase):
                     sist_kjoert
                 FROM nspek_core.kontroller
                 WHERE aar = 2024
-            """)
+            """
+            )
 
             rows = cursor.fetchall()
             cols = [c[0] for c in cursor.description]
 
         df = pd.DataFrame(rows, columns=cols)
 
-        df["sist_kjoert"] = pd.to_datetime(df["sist_kjoert"]).dt.strftime("%d.%m.%Y %H:%M")
+        df["sist_kjoert"] = pd.to_datetime(df["sist_kjoert"]).dt.strftime(
+            "%d.%m.%Y %H:%M"
+        )
 
-        return df   
-
+        return df
 
     def get_current_kontrollutslag(self, specific_control=None) -> pd.DataFrame:
         """
@@ -82,7 +91,9 @@ class NspekControls(ControlFrameworkBase):
             """
 
             if specific_control:
-                query += f" AND kontrollid = '{specific_control}' ORDER by abs(verdi) DESC"
+                query += (
+                    f" AND kontrollid = '{specific_control}' ORDER by abs(verdi) DESC"
+                )
 
             cursor = conn.raw_sql(query)
             rows = cursor.fetchall()
