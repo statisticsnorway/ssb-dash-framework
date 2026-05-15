@@ -54,9 +54,9 @@ from .modules import MultiModuleWindow
 from .modules import Naeringsspesifikasjon
 from .modules import NaeringsspesifikasjonTab
 from .modules import NaeringsspesifikasjonWindow
+from .modules import NspekControls
 from .modules import NspekControlViewTab
 from .modules import NspekControlViewWindow
-from .modules import NspekMockControls
 from .modules import ParquetEditor
 from .modules import ParquetEditorChangelog
 from .modules import PimemorizerTab
@@ -164,7 +164,7 @@ __all__ = [
     "NaeringsspesifikasjonWindow",
     "NspekControlViewTab",
     "NspekControlViewWindow",
-    "NspekMockControls",
+    "NspekControls",
     "ParquetEditor",
     "ParquetEditorChangelog",
     "PimemorizerTab",
