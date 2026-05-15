@@ -7,9 +7,6 @@ from ssb_dash_framework import register_control
 from .nspek_utils import get_nspek_connection
 from .nspek_utils import set_nspek_connection
 
-db_user = "nspek-developers@dapla-group-sa-p-ye.iam"
-set_nspek_connection(db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam")
-
 class NspekControls(ControlFrameworkBase):
     """
     Control framework som bruker nspek_core-tabellene som datakilde
@@ -21,6 +18,9 @@ class NspekControls(ControlFrameworkBase):
 
         if applies_to_subset is None:
             applies_to_subset = {"aar": [2024]}
+
+        db_user = "nspek-developers@dapla-group-sa-p-ye.iam"
+        set_nspek_connection(db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam")
 
         super().__init__(time_units=time_units, applies_to_subset=applies_to_subset)
 
