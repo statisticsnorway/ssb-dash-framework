@@ -1,3 +1,4 @@
+import logging
 from abc import ABC
 from abc import abstractmethod
 from typing import Any
@@ -20,6 +21,8 @@ from ...utils import TabImplementation
 from ...utils import WindowImplementation
 from ...utils.alert_handler import create_alert
 from ...utils.module_validation import module_validator
+
+logger = logging.getLogger(__name__)
 
 default_col_def = {
     # "filter": True,
