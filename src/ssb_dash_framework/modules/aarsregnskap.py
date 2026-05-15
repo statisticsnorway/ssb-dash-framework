@@ -241,6 +241,18 @@ class Aarsregnskap(ABC):
             prevent_initial_call="initial_duplicate",
         )
         def update_pdf_source(aar: int, orgnr: str, alert_store):
+            """Fetch and encode the PDF source based on the year and organization number.
+            If PDF cannot be found, it fetches the TIF-file instead (if it exists), and styles it like a PDF.
+            Returns an alert to the user if neither can be found.
+
+            Args:
+                aar: The year input value.
+                orgnr: The organization number input value.
+                alert_store: Alert setup.
+
+            Returns:
+                A data URI for the PDF/TIF file, encoded in base64.
+            """
             show_iframe = {"display": "block"}
             hide_iframe = {"display": "none"}
             show_div = {"display": "block"}
