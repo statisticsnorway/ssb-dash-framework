@@ -15,16 +15,14 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
-from ssb_dash_framework import TabImplementation
-
 # from eimerdb import EimerDBInstance
-from ssb_dash_framework import VariableSelector
-from ssb_dash_framework import WindowImplementation
-from ssb_dash_framework import create_alert
-from ssb_dash_framework import module_validator
+from ...setup.variableselector import VariableSelector
+from ...utils import TabImplementation
+from ...utils import WindowImplementation
+from ...utils.alert_handler import create_alert
+from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
-
 
 default_col_def = {
     # "filter": True,
@@ -116,10 +114,11 @@ class NspekControlView(ABC):
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
                             columnSize="responsiveSizeToFit",
                             dashGridOptions={
-                                "pagination": True,
+                                # "pagination": True,
                                 "rowSelection": "single",
-                                "rowHeight": 33,
+                                "rowHeight": 30,
                             },
+                            style={"height": "500px"},
                         ),
                         style={"flexShrink": 0},
                         width=12,
@@ -136,8 +135,9 @@ class NspekControlView(ABC):
                             dashGridOptions={
                                 "pagination": True,
                                 "rowSelection": "single",
-                                "rowHeight": 33,
+                                "rowHeight": 30,
                             },
+                            style={"height": "600px"},
                         ),
                         width=12,
                     )

@@ -90,6 +90,10 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             refnr: str, skjema: str, *args: list[Any]
         ) -> tuple[str, list[dict[str, str]]]:
             """Collect relevant refnrs."""  # TODO Check what it actually does and needs to do.
+            
+            if not refnr or not skjema:
+                raise PreventUpdate
+
             if isinstance(_get_connection_object(), EimerDBInstance):
                 args_before_timeunits = 1
                 N = len(get_time_units())
