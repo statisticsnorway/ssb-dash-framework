@@ -240,6 +240,7 @@ Aarsregnskap
 .aarsregnskap {
     height: 100%;
     display: flex;
+    width: 100%;
     flex-direction: column;
 }
 
@@ -247,27 +248,120 @@ Aarsregnskap
     display: flex;
     flex-direction: column;
     flex: 1;
+    
 }
 
 .aarsregnskap-aar-foretak-row {
+    justify-content: flex-start;
+    gap: 2rem;
+    padding: 15px;
+    align-items: flex-end;
+}
+
+#tab-aarsregnskap-input-orgnr,
+#tab-aarsregnskap-input-aar {
+    max-width: 10rem;
+}
+
+.aarsregnskap-aar-foretak-row .col {
     flex: 0 0 auto;
+    width: auto;
 }
 
 .aarsregnskap-pdf-row {
     flex: 1;
+    min-height: 0;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.aarsregnskap-pdf-row .row {
+    flex: 1;
+    min-height: 0;
+    display: flex;
 }
 
 .aarsregnskap-pdf-col {
     padding: 15px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#tab-aarsregnskap-img-container {
+    padding: 15px;
+    width: 60%;
     flex: 1;
     min-height: 0;
+    overflow-y: scroll;
+}
+
+#tab-aarsregnskap-img-container img {
+    width: 100%;
+    display: block;
+    margin-bottom: 12px;
+    border: 1px solid #bebebe;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+#tab-aarsregnskap-zoom-slider {
+    padding: 15px;
+    width: 450px;
 }
 
 .aarsregnskap-pdf-iframe {
-    width: 120vh;
+    width: 100%;
     height: 100%;
+    min-height: 0;
     border: none;
+    padding: 15px;
+}
+
+#tab-aarsregnskap-brreg-link .btn {
+    padding: 10px;
+    margin-top: 15px;
+    font-size: 15px;
+}
+
+#tab-aarsregnskap-zoom-controls .btn {
+    background-color: #686868;
+    color: #ffffff;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 3px;
+    font-size: 1.2rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+#tab-aarsregnskap-zoom-controls {
+    padding: 15px;
+    background-color: #3d3d3d;
+    width: 59%;
+    padding: 7px 12px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    margin-left: 15px;
+}
+#tab-aarsregnskap-zoom-controls .btn:hover {
+    background-color: #505050;
+    align-items: center;
+    justify-content: center;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+#tab-aarsregnskap-zoom-label {
+    color: white;
+    font-size: 0.9rem;
+    min-width: 40px;
+    text-align: center;
 }
 
 /*

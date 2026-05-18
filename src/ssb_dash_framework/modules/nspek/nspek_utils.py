@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 from urllib.parse import quote_plus
+import os
 
 import pandas as pd
 from ibis import BaseBackend
@@ -28,7 +29,8 @@ def set_nspek_connection(database_user: str | None = None) -> None:
 
     encoded_user = quote_plus(DB_USER)
     conn_url = f"postgresql://{encoded_user}@localhost:5432/nspek"
-    print(conn_url)
+    if DB_USER.startswith("nspek-developers"):
+        print(conn_url)
 
     _IS_POOLED_NSPEK = True
 
