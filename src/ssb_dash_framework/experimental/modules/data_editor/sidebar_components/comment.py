@@ -127,11 +127,18 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 comment = (
                     s.filter(_.refnr == refnr)
                     .select("kommentar")
+                    .limit(1)
                     .to_pandas()["kommentar"]
-                    .item()
                 )
-            # print(f"comment: {comment}")
-            return comment
+                print(f"comment: {comment}")
+            if len(comment) == 0:
+                return ""
+
+            if len(comment) > 1:
+                print(f"Multiple comments found for refnr={refnr}: {comment}")
+
+            return comment[0]
+
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
