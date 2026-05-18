@@ -21,10 +21,10 @@ from ....utils.core_models import UpdateSkjemadata
 from ....utils.config_tools.connection import _get_connection_object
 from ....utils.alert_handler import create_alert
 from ....utils.config_tools.connection import get_connection
+from .microlayout_data_stores import _STORE_CONFIGS, store_getter
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
 logger = logging.getLogger(__name__)
-
 
 class CallbackSettings(BaseModel):
     form_data_table: str
@@ -56,6 +56,13 @@ def default_getter(skjema: str, refnr: str, ident: str, settings: CallbackSettin
     if res.empty:
         return None
     return res.iloc[0, 0]
+
+
+def _resolve_default_getter():
+    print(f"_resolve_default_getter called, _STORE_CONFIGS={list(_STORE_CONFIGS.keys())}")
+    if _STORE_CONFIGS:
+        return store_getter
+    return default_getter
 
 
 def default_updater(
@@ -106,7 +113,7 @@ def default_updater(
 class EditableField(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     field_path: str
-    getter_func: Callable[..., Any] = Field(default=default_getter)
+    getter_func: Callable[..., Any] = Field(default_factory=_resolve_default_getter)
     update_func: Callable[..., None] = Field(default=default_updater)
     # applies_to_... is used for compatibility with DataEditorDataViewCustom
     applies_to_tables: list[str] = Field(default_factory=list)
@@ -179,11 +186,20 @@ class EditableField(BaseModel):
             Input(self._id, "value"),
             *inputs if inputs else [],
             *states if states else [],
+            *getter_args if getter_args else [],
             *guard_states,
             State("alert_store", "data"),
             prevent_initial_call="initial_duplicate",
         )
         def populate_field(refnr: str, ident: str, skjema: str, value: Any, *args: list[Any]):
+            # bail early if stores not ready
+            n_stores = len(_STORE_CONFIGS)
+            if n_stores:
+                store_data = args[-(n_stores + 1):-1]  # adjust for alert_log
+                if all(s is None for s in store_data):
+                    print("Firing cancelled.")
+                    raise PreventUpdate
+            
             # Peel guard values off the end of args
             n_guard = len(guard_states)
             alert_log = args[-1]

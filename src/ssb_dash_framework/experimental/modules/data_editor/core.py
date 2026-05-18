@@ -170,8 +170,13 @@ class DataEditor:
 
     def _create_layout(self) -> dbc.Container:
         """Creates the layout for the DataEditor module."""
+
+        from ssb_dash_framework.modules.building_blocks.microlayout_components.microlayout_data_stores import _STORE_CONFIGS
+        stores = [dcc.Store(id=f"store-{table}") for table in _STORE_CONFIGS]
+
         return dbc.Container(
             [
+                *stores,
                 dbc.Row(html.H1(id=f"{self.module_name}-{self.module_number}-header", className=f"{self.module_name}-header")),
                 dbc.Row(self.info_view),
                 dbc.Row(
@@ -203,12 +208,17 @@ class DataEditor:
             prevent_initial_call=True,
         )
         def clear_on_missing_ident(ident: str):
+            time_unit_keys = list(get_time_units())
+
+            print(f"time_unit_keys: {time_unit_keys}")
             if not ident:
                 raise PreventUpdate
             with get_connection() as conn:
                 t = conn.table("skjemamottak")
                 result = t.filter(_.ident == ident).limit(1).to_pandas()
-            if result.empty:
+            if len(result) == 1:
+                return result["refnr"].item(), result["skjema"].item()
+            elif result.empty:
                 return "", ""
             raise PreventUpdate
 
@@ -249,8 +259,11 @@ class DataEditor:
                 #     styles.append({"display": "none"})
             if all(style == {"display": "none"} for style in styles):
                 message = f"No main_view defined for {selected_table} - {selected_form}"
-                logger.error(message)
-                raise ValueError(message)
+                # logger.error(message)
+                # raise ValueError(message)
+                if len(styles) == 1:
+                    return styles[0]
+                return styles
             if len(DataEditorRegistry.main_views) == 1:
                 logger.debug(
                     "Returning a single dict due to only one main_view being defined"

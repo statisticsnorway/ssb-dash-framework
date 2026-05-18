@@ -324,7 +324,7 @@ class DataViewCustom(DataEditorDataView):
         return components
 
     def _create_layout(self) -> html.Div:
-        return html.Div(id=self.divname, children=self.created_layout)
+        return html.Div(id=self.divname, children=self.created_layout, style={"display": "none"})
 
     def layout(self):
         """Returns the layout of the module."""
@@ -445,9 +445,9 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
     logger.debug(
         f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
     )
-    print(
-        f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
-    )
+    # print(
+    #     f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
+    # )
     if applies_to_tables is None:
         applies_to_tables = []
     if applies_to_forms is None:

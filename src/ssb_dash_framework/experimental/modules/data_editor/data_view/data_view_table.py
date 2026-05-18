@@ -56,7 +56,7 @@ class DataEditorTable(DataEditorDataView):
         super().__init__(
             applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
         )
-        print(self)
+        # print(self)
 
     def __str__(self):
         return (
@@ -69,10 +69,11 @@ class DataEditorTable(DataEditorDataView):
     def _create_layout(self) -> html.Div:
         return html.Div(
             id=f"{self.divname}",
-            style={
-                "height": "100vh",
-                "width": "100%",
-            },
+            # style={
+            #     "height": "100vh",
+            #     "width": "100%",
+            # },
+            style={"display": "none"},
             children=[
                 dag.AgGrid(
                     id=f"{self.module_name}-{self.module_number}-aggrid",

@@ -253,7 +253,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             prevent_initial_call=True,
         )
         def selected_refnr(selected_row: list[dict[str, Any]], current_refnr, current_altinnskjema):
-            print(selected_row)
+            # print(selected_row)
             logger.debug(f"Args:\nselected_row: {selected_row}")
             if not selected_row:
                 logger.debug("Raised PreventUpdate")

@@ -98,11 +98,11 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 args_before_timeunits = 1
                 N = len(get_time_units())
                 args = list(args)
-                print(f"Utklipp: {args[args_before_timeunits:N+args_before_timeunits]}")
+                # print(f"Utklipp: {args[args_before_timeunits:N+args_before_timeunits]}")
                 args[args_before_timeunits : N + args_before_timeunits] = list(
                     map(int, args[args_before_timeunits : N + args_before_timeunits])
                 )
-                print(f"test: {args}")
+                # print(f"test: {args}")
 
             filterdict = create_filter_dict(
                 ["skjema", get_ident(), *get_time_units()], [skjema, *args]
@@ -130,7 +130,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                     .to_pandas()["kommentar"]
                     .item()
                 )
-            print(f"comment: {comment}")
+            # print(f"comment: {comment}")
             return comment
 
         @callback(
