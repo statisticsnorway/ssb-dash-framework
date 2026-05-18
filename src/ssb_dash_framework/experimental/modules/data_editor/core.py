@@ -200,26 +200,44 @@ class DataEditor:
 
     def module_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor."""
+
+        variableselector = VariableSelector(
+            selected_inputs=[*get_time_units().keys()],
+            selected_states=[],
+        )
         
         @callback(
             VariableSelector([], []).get_output_object("refnr"),
             VariableSelector([], []).get_output_object("altinnskjema"),
             VariableSelector([], []).get_input(get_ident()),
+            variableselector.get_all_inputs(),
             prevent_initial_call=True,
         )
-        def clear_on_missing_ident(ident: str):
-            time_unit_keys = list(get_time_units())
+        def clear_on_missing_ident(ident: str, *time_unit_values):
+            time_unit_keys = list(get_time_units().keys())
+            time_units = dict(zip(time_unit_keys, time_unit_values))
+
+            print(time_units)
 
             print(f"time_unit_keys: {time_unit_keys}")
             if not ident:
                 raise PreventUpdate
             with get_connection() as conn:
                 t = conn.table("skjemamottak")
-                result = t.filter(_.ident == ident).limit(1).to_pandas()
+                expr = _.ident == ident
+
+                for key, value in time_units.items():
+                    expr &= getattr(_, key) == value
+
+                result = t.filter(expr).limit(1).to_pandas()
+
             if len(result) == 1:
-                return result["refnr"].item(), result["skjema"].item()
+                row = result.iloc[0]
+                return row["refnr"], row["skjema"]
+
             elif result.empty:
                 return "", ""
+
             raise PreventUpdate
 
         @callback(

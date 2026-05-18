@@ -150,54 +150,72 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             Output(
                 f"{self.module_name}-{self.module_number}-refnr-text-row", "children"
             ),
-            Output("alert_store", "data", allow_duplicate=True),
             self.variableselector.get_input("refnr"),
+        )
+        def set_initial_status(refnr):
+
+            if not refnr:
+                raise PreventUpdate
+
+            with get_connection() as conn:
+                t = conn.table("skjemamottak")
+                data = t.filter(_.refnr == refnr).to_pandas()
+
+            if data.empty:
+                raise PreventUpdate
+
+            row = data.iloc[0]
+
+            return (
+                ["Aktiv"] if row["aktiv"] else [],
+                row["status"],
+                f'Viser skjema: {row["skjema"]}',
+            )
+
+        @callback(
+            Output("alert_store", "data", allow_duplicate=True),
             Input(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             Input(f"{self.module_name}-{self.module_number}-radioitems", "value"),
+            State(self.variableselector.get_input("refnr").component_id, "value"),
             State("alert_store", "data"),
             prevent_initial_call=True,
         )
-        def set_initial_values_and_update_status(
-            refnr: str, aktiv_status: bool, status_code: str, alert_store
-        ) -> (
-            tuple[list[str], Literal["Ferdig", "Ikke påbegynt"], str, Any]
-            | tuple[Any, Any, Any, list[Any]]
+        def update_status(
+            aktiv_status,
+            status_code,
+            refnr,
+            alert_store,
         ):
-            """Sets the initial values for the components and handles updates to them."""
-            triggered_id = ctx.triggered_id
-            refnr_input_id = self.variableselector.get_input("refnr").component_id
 
-            if triggered_id == refnr_input_id:
-                with get_connection() as conn:
-                    t = conn.table("skjemamottak")
-                    data = t.filter(_.refnr == refnr).to_pandas()
-                return (
-                    ["Aktiv"] if data["aktiv"].item() else [],
-                    data["status"].item(),
-                    f"Viser skjema: {data["skjema"].item()}",
-                    no_update,
-                )
+            triggered_id = ctx.triggered_id
 
             if triggered_id == f"{self.module_name}-{self.module_number}-checkbox":
+
                 update_to_apply = UpdateSkjemamottakAktiv(
-                    refnr=refnr, value=True if aktiv_status else False
+                    refnr=refnr,
+                    value=bool(aktiv_status),
                 )
+
             elif triggered_id == f"{self.module_name}-{self.module_number}-radioitems":
+
                 update_to_apply = UpdateSkjemamottakStatus(
-                    refnr=refnr, value=status_code
+                    refnr=refnr,
+                    value=status_code,
                 )
+
+            else:
+                raise PreventUpdate
 
             if isinstance(_get_connection_object(), EimerDBInstance):
                 feedback = update_to_apply.update_eimer()
-            elif isinstance(_get_connection_object(), ConnectionPool):
-                logger.debug("Attempting to update using ibis logic.")
-                feedback = update_to_apply.update_ibis()
-            else:
-                raise NotImplementedError(
-                    f"Connection of type '{type(_get_connection_object())}' is not implemented yet."
-                )
 
-            return no_update, no_update, no_update, [feedback, *alert_store]
+            elif isinstance(_get_connection_object(), ConnectionPool):
+                feedback = update_to_apply.update_ibis()
+
+            else:
+                raise NotImplementedError
+
+            return [feedback, *alert_store]
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-form-table", "rowData"),

@@ -59,7 +59,6 @@ def default_getter(skjema: str, refnr: str, ident: str, settings: CallbackSettin
 
 
 def _resolve_default_getter():
-    print(f"_resolve_default_getter called, _STORE_CONFIGS={list(_STORE_CONFIGS.keys())}")
     if _STORE_CONFIGS:
         return store_getter
     return default_getter
@@ -197,7 +196,6 @@ class EditableField(BaseModel):
             if n_stores:
                 store_data = args[-(n_stores + 1):-1]  # adjust for alert_log
                 if all(s is None for s in store_data):
-                    print("Firing cancelled.")
                     raise PreventUpdate
             
             # Peel guard values off the end of args
