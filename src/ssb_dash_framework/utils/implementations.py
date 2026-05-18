@@ -181,6 +181,7 @@ class WindowImplementation:
                                             dbc.Button(
                                                 "Fullscreen visning",
                                                 id=f"{self._window_n}-{self.module_name}-modal-fullscreen",
+                                                className="ssb-btn primary-btn",
                                             ),
                                         ),
                                     ],
