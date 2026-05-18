@@ -484,6 +484,11 @@ def create_database_engine(database_type: str, *args: Any, **kwargs: Any) -> Eng
         engine = create_engine(
             f"sqlite:///{kwargs.get('sqlite_path', 'mydb.sqlite')}", echo=True
         )
+    elif database_type == "duckdb":
+        engine = create_engine(
+            f"duckdb:///{kwargs.get('duckdb_path', 'mydb.duckdb')}",
+            echo=True
+        )
     elif database_type == "postgres":
         user = os.environ.get("DB_USER", "dev")
         password = os.environ.get("DB_PASSWORD", "")
@@ -562,6 +567,8 @@ class DemoDataCreator:
             )
 
         df = df.rename({"orgnr": "ident", "soeknads_aar": "aar"}, axis=1)
+        #sub_selection = df.loc[df["aar"] == "2025"].sample(1000)["ident"]
+        #df = df.loc[df["ident"].isin(sub_selection)]
         df["ident"] = df["ident"].astype(str)
         df["skjema"] = "RA-7357"
         df["refnr"] = df.index.astype(str)

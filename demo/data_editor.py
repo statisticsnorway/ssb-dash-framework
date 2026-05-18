@@ -17,15 +17,14 @@ from ssb_dash_framework.experimental.modules.data_editor.sidebar_components.edit
 )
 
 if os.getenv("DAPLA_ENVIRONMENT", None) == "PROD":
-    from ssb_dash_framework import _get_connection_object
-    from ssb_dash_framework import set_eimerdb_connection
+    from ssb_dash_framework import set_sqlite_connection
+    from ssb_dash_framework import get_connection
 
-    set_eimerdb_connection(
-        bucket_name="ssb-dapla-felles-data-produkt-prod",
-        eimer_name="produksjonstilskudd_altinn3",
-    )
+    set_sqlite_connection(f"/home/onyxia/work/ssb-dash-framework/mydb.sqlite")
     try:
-        _get_connection_object().query("SELECT * FROM enheter")
+        with get_connection() as conn:
+            t = conn.table("enheter")
+            t = t.select("ident").to_pandas()
     except Exception as e:
         raise e
 else:
@@ -33,14 +32,6 @@ else:
         "Demo currently only works inside of SSB's Dapla Prod environment using the 'Dapla felles' buckets."
     )
 
-test = _get_connection_object().query(
-    "SELECT * FROM skjemamottak WHERE aar = 2024 and refnr = 20243"
-)
-print(test)
-test = _get_connection_object().query(
-    "SELECT * FROM skjemadata_hoved WHERE aar = 2024 and refnr = 20243"
-)
-print(test)
 
 from ssb_dash_framework import app_setup
 from ssb_dash_framework import get_connection
@@ -181,7 +172,7 @@ layout = [
 ]
 
 DataEditorInfoRow(
-    variables_dict={"Navn": {"source": "enhetsinfo", "variable_name": "orgnavn"}}
+    variables={"Navn": {"source": "enhetsinfo", "variable_name": "orgnavn"}}
 )
 
 DataViewCustom(

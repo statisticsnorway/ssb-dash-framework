@@ -84,6 +84,23 @@ def set_connection(
     _CONNECTION_CALLABLE = connection_func
 
 
+def set_sqlite_connection(database_path: str) -> None:
+    """Helper function to configure a connection to a SQLite database.
+
+    Args:
+        database_path: Path to the SQLite database file. Use ":memory:" for an
+            in-memory database.
+    """
+    global _IS_POOLED, _CONNECTION, _CONNECTION_CALLABLE
+    _IS_POOLED = False
+
+    @contextmanager
+    def _wrap_ibis_sqlite(*args: Any, **kwargs: Any) -> Iterator[BaseBackend]:
+        yield ibis.sqlite.connect(database_path)
+
+    set_connection(_wrap_ibis_sqlite, is_pooled=False)
+
+
 def set_postgres_connection(
     database_url: str, pool_min_size: int = 1, pool_max_size: int = 1
 ) -> None:
