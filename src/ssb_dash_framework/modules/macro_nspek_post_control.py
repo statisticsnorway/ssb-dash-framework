@@ -247,7 +247,7 @@ class MacroNspekPostControl:
                                     className="macromodule-label",
                                 ),
                                 dcc.Dropdown(
-                                    className="macromodule-dropdown",
+                                    className="ssb-dropdown",
                                     options=[
                                         {"label": k, "value": k}
                                         for k in MACRO_FILTER_OPTIONS.keys()
@@ -261,7 +261,7 @@ class MacroNspekPostControl:
                                 ),
                                 dcc.Dropdown(
                                     id="macromodule-nopost-naring-velger",
-                                    className="macromodule-naring-dropdown",
+                                    className="ssb-dropdown",
                                     options=[],
                                     multi=True,
                                     value=[],

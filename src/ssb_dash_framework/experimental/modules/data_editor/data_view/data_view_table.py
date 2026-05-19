@@ -77,7 +77,7 @@ class DataEditorTable(DataEditorDataView):
             children=[
                 dag.AgGrid(
                     id=f"{self.module_name}-{self.module_number}-aggrid",
-                    className="ag-theme-alpine header-style-on-filter",
+                    className="ag-theme-alpine ag-theme-ssb mb-2",
                     style={"width": "100%", "height": "90vh"},
                     defaultColDef={
                         "resizable": True,

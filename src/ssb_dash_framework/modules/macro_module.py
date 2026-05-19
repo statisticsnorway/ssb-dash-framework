@@ -385,7 +385,7 @@ class MacroModule:
                                     className="macromodule-label",
                                 ),
                                 dcc.Dropdown(
-                                    className="macromodule-dropdown",
+                                    className="ssb-dropdown",
                                     options=[
                                         {"label": k, "value": k}
                                         for k in self.macro_filter_options.keys()
@@ -398,7 +398,7 @@ class MacroModule:
                                     className="macromodule-label",
                                 ),
                                 dcc.Dropdown(
-                                    className="macromodule-dropdown",
+                                    className="ssb-dropdown",
                                     options=[
                                         {
                                             "label": self.heatmap_variables.get(v, v),
@@ -415,7 +415,7 @@ class MacroModule:
                                 ),
                                 dcc.Dropdown(
                                     id="macromodule-naring-velger",
-                                    className="macromodule-naring-dropdown",
+                                    className="ssb-dropdown",
                                     options=[],
                                     multi=True,
                                     value=[],

@@ -5,6 +5,7 @@ from typing import Annotated
 from typing import Literal
 
 import dash_bootstrap_components as dbc
+from dash import dcc
 from dash import Input
 from dash import State
 from dash import Output
@@ -223,7 +224,7 @@ class InputField(BaseNode):
                     + (" microlayout-input-readonly" if self.readonly else ""),
                 ),
             ],
-            className="microlayout-input",
+            className="ssb-input",
         )
 
 
@@ -328,9 +329,14 @@ class CalculatedField(BaseNode):
                         "visibility": "hidden" if self.hidelabel else "visible",
                     },
                 ),
-                dbc.Input(id=self._id, style={"width": "100%"}, readonly=True),
+                dbc.Input(
+                    id=self._id,
+                    style={"width": "100%"},
+                    readonly=True,
+                    className="microlayout-input-readonly",
+                ),
             ],
-            className="microlayout-calculated-field",
+            className="ssb-input",
         )
 
     def __str__(self, prefix: str = "", is_last: bool = True) -> str:
@@ -402,6 +408,7 @@ class ChecklistComponent(BaseNode):
 
     type: Literal["checklist"]
     label: str
+    hidelabel: bool = False
     options: list[dict]
     field_settings: EditableField
 
@@ -450,15 +457,39 @@ class ChecklistComponent(BaseNode):
             states,
             getter_args,
         )
+
+        if len(self.options) == 1:
+            children = [
+                dcc.Checklist(
+                    options=[{**opt, "label": ""} for opt in self.options],
+                    id=self.field_settings._id,
+                ),
+                html.Label(
+                    self.options[0]["label"],
+                    className="mb-1 ms-2",
+                ),
+            ]
+        else:
+            children = [
+                dcc.Checklist(
+                    options=self.options,
+                    id=self.field_settings._id,
+                ),
+            ]
+
         return html.Div(
             [
-                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
-                dbc.Checklist(
-                    options=self.options, switch=False, id=self.field_settings._id
-                ),  # pyright: ignore
+                html.Label(
+                    self.label,
+                    title=self.field_settings._id.split("[")[0],
+                    style={"visibility": "hidden" if self.hidelabel else "visible"},
+                ),
+                html.Div(
+                    className="ssb-checkbox d-flex align-items-center",
+                    children=children,
+                ),
             ],
-            className="microlayout-checklist",
-            style={"display": "block"},
+            className="ssb-input",
         )
 
 
@@ -499,6 +530,7 @@ class KlassDropdown(BaseNode):
 class Textarea(BaseNode):
     type: Literal["textarea"]
     label: str
+    hidelabel: bool = False
     value: str | None = ""
     field_settings: EditableField
     readonly: bool = False
@@ -519,7 +551,14 @@ class Textarea(BaseNode):
         )
         return html.Div(
             [
-                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
+                html.Label(
+                    self.label,
+                    title=self.field_settings._id.split("[")[0],
+                    style={
+                        "visibility": "hidden" if self.hidelabel else "visible",
+                    },
+                    className="ssb-input",
+                ),
                 dbc.Textarea(
                     style={"width": "100%"},
                     id=self.field_settings._id,

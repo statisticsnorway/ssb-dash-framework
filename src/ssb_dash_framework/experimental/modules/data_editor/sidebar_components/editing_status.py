@@ -30,6 +30,7 @@ from .....utils.config_tools.set_variables import get_time_units
 from .....utils.core_models import UpdateSkjemamottakAktiv
 from .....utils.core_models import UpdateSkjemamottakStatus
 from ..core import DataEditorHelperSidebar
+from ssb_dash_framework.modules.nspek.nspek import Naeringsspesifikasjon
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,13 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         DataEditorSidebarEditingStatus._id_number += 1
 
         self.variableselector = VariableSelector(
-            selected_inputs=[], selected_states=[get_ident(), *get_time_units().keys(), "altinnskjema", "refnr"]
+            selected_inputs=[],
+            selected_states=[
+                get_ident(),
+                *get_time_units().keys(),
+                "altinnskjema",
+                "refnr",
+            ],
         )
 
         self.status_options = (
@@ -85,6 +92,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     [
                         dag.AgGrid(
                             id=f"{self.module_name}-{self.module_number}-form-table",
+                            className="ag-theme-alpine ag-theme-ssb mb-2",
                             columnSize="responsiveSizeToFit",
                             dashGridOptions={"rowSelection": "single"},
                         )
@@ -106,6 +114,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     dbc.Button(
                         id=f"{self.module_name}-{self.module_number}-button",
                         children="Se innsendinger",
+                        className="ssb-btn primary-btn",
                     )
                 ),
                 dbc.Row(
@@ -127,11 +136,15 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                             [
                                 dbc.Row("Aktiv"),
                                 dbc.Row(
-                                    dcc.Checklist(
-                                        id=f"{self.module_name}-{self.module_number}-checkbox",
-                                        options={"Aktiv": True},
-                                        inputStyle={"margin-right": "8px"},
-                                        labelStyle={"white-space": "nowrap"},
+                                    html.Div(
+                                        className="ssb-checkbox d-flex align-items-center",
+                                        children=[
+                                            dcc.Checklist(
+                                                id=f"{self.module_name}-{self.module_number}-checkbox",
+                                                options=[{"label": "", "value": "Aktiv"}],
+                                            ),
+                                            html.Label("Ja", className="mb-1 ms-2"),
+                                        ],
                                     )
                                 ),
                             ]
@@ -260,17 +273,27 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     .dt.tz_localize(None)
                     .dt.strftime("%Y-%m-%d %H:%M:%S")
                 )
-            return data.to_dict("records"), [{"field": x, "headerName": x} for x in data.columns], True
-        
+            return (
+                data.to_dict("records"),
+                [{"field": x, "headerName": x} for x in data.columns],
+                True,
+            )
+
         @callback(  # type: ignore[misc]
-            self.variableselector.get_output_object("refnr"), # oppdater refnr
-            self.variableselector.get_output_object("altinnskjema"), # oppdater altinnskjema
-            Input(f"{self.module_name}-{self.module_number}-form-table", "selectedRows"),
+            self.variableselector.get_output_object("refnr"),  # oppdater refnr
+            self.variableselector.get_output_object(
+                "altinnskjema"
+            ),  # oppdater altinnskjema
+            Input(
+                f"{self.module_name}-{self.module_number}-form-table", "selectedRows"
+            ),
             self.variableselector.get_input("refnr"),
             self.variableselector.get_input("altinnskjema"),
             prevent_initial_call=True,
         )
-        def selected_refnr(selected_row: list[dict[str, Any]], current_refnr, current_altinnskjema):
+        def selected_refnr(
+            selected_row: list[dict[str, Any]], current_refnr, current_altinnskjema
+        ):
             # print(selected_row)
             logger.debug(f"Args:\nselected_row: {selected_row}")
             if not selected_row:

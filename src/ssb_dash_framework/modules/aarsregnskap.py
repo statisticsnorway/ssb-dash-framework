@@ -99,30 +99,43 @@ class Aarsregnskap(ABC):
                             [
                                 dbc.Col(
                                     html.Div(
-                                        [
-                                            dbc.Label("år"),
-                                            dbc.Input(
-                                                id="tab-aarsregnskap-input-aar",
-                                                type="number",
+                                        className="ssb-input",
+                                        children=[
+                                            html.Label("orgnr"),
+                                            html.Div(
+                                                className="input-wrapper",
+                                                children=[
+                                                    dbc.Input(
+                                                        id="tab-aarsregnskap-input-orgnr",
+                                                        type="text",
+                                                    ),
+                                                ],
                                             ),
-                                        ]
+                                        ],
                                     )
                                 ),
                                 dbc.Col(
                                     html.Div(
-                                        [
-                                            dbc.Label("orgnr"),
-                                            dbc.Input(
-                                                id="tab-aarsregnskap-input-orgnr"
+                                        className="ssb-input",
+                                        children=[
+                                            html.Label("år"),
+                                            html.Div(
+                                                className="input-wrapper",
+                                                children=[
+                                                    dbc.Input(
+                                                        id="tab-aarsregnskap-input-aar",
+                                                        type="number",
+                                                    ),
+                                                ],
                                             ),
-                                        ]
+                                        ],
                                     )
                                 ),
                                 dbc.Col(
                                     html.A(
                                         dbc.Button(
                                             "Åpne i Brønnøysundregisteret",
-                                            color="primary",
+                                            className="ssb-btn primary-btn",
                                             size="sm",
                                         ),
                                         id="tab-aarsregnskap-brreg-link",
@@ -351,7 +364,6 @@ class Aarsregnskap(ABC):
                     create_alert(
                         message=f"Hverken PDF eller TIF av årsregnskapet funnet for årgang {aar}!",
                         color="warning",
-                        position="center",
                         duration=8,
                         ephemeral=True,
                     ),

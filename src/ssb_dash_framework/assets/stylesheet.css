@@ -1800,8 +1800,7 @@ Aarsregnskap
 
 .aarsregnskap-aar-foretak-row {
     justify-content: flex-start;
-    gap: 2rem;
-    padding: 15px;
+    padding-left: 15px;
     align-items: flex-end;
 }
 
@@ -2035,36 +2034,54 @@ DataEditor
 }
 
 .dbc input.microlayout-input-readonly:not([type=radio]):not([type=checkbox]),
-.form-control.microlayout-textarea-readonly[readonly],
-.dbc .microlayout-calculated-field .form-control[readonly],
-.dbc .microlayout-calculated-field input[readonly] {
+.form-control.microlayout-textarea-readonly[readonly] {
     background-color: #eeeff0 !important;
     color: #4a4e53 !important;
     cursor: not-allowed;
 }
 
-/* Spacing between microlayout items */
-.DataEditor-main-view .microlayout-calculated-field,
-.DataEditor-main-view .microlayout-input {
-    max-width: 13rem;
+.DataEditor-main-view .ssb-input {
+    max-width: 10rem;
 }
 
 .microlayout-label {
+    font-family: "Open Sans", sans-serif !important;
     display: flex;
     align-items: center;
     height: 62px;
-    margin-top: 0.1rem;
+    font-size: 14px;
+    margin-top: 0.25rem;
 }
 
 .DataEditor-main-view .microlayout-textarea textarea {
     min-height: 7rem;
-    max-width: 13rem;
+    max-width: 10rem;
+}
+
+.microlayout-textarea textarea {
+  font-family: "Roboto", sans-serif !important;
+  background: #fff;
+  border: 1px solid #274247;
+  box-sizing: border-box;
+  color: #162327;
+  font-size: 15px;
+  padding: 12px;
+  resize: vertical;
+}
+
+.microlayout-textarea:hover textarea {
+  border: 1px solid #00824d;
+  outline: 1px solid #00824d;
+}
+
+.microlayout-textarea label {
+  color: #162327;
+  font-size: 14px;
+  margin-bottom: 5px;
 }
 
 .DataEditor-main-view .row {
     margin-bottom: 1rem;
-    /* flex-wrap: nowrap;  */
-    /* gap: 2rem; */
 }
 
 .DataEditor-main-view .col {
@@ -2118,7 +2135,7 @@ DataEditor
 }
 
 .DataEditor-sidebar {
-    flex: 0 0 250px;
+    flex: 0 0 225px;
 }
 
 .DataEditor-sidebar-modules {
@@ -2128,12 +2145,7 @@ DataEditor
 
 .DataEditor-header {
     font-size: 1.5rem;
-    margin-top: 15px;
     margin-left: 15px;
-}
-
-.DataEditorSidebarComment-comment-text {
-    min-height: 100px;
 }
 
 /*
@@ -2165,14 +2177,18 @@ MacroModule
 }
 
 .macromodule-sidebar h1 {
-    font-size: 35px;
-    margin-bottom: 30px;
+    font-size: 25px;
+    margin-bottom: 32px;
+    font-weight: bold;
+    font-family: "Open Sans", sans-serif !important;
 }
 
 .macromodule-label {
-    font-size: 18px;
     font-weight: bold;
-    margin-bottom: 6px;
+    font-family: "Open Sans", sans-serif !important;
+	  font-size: 16px;
+    padding-top: 15px;
+	  font-stretch: normal;
 }
 
 .macromodule-dropdown,

@@ -54,13 +54,16 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                     [
                         dbc.Col(
                             dcc.Dropdown(
-                                id=f"{self.module_name}-{self.module_number}-dropdown-refnr"
+                                id=f"{self.module_name}-{self.module_number}-dropdown-refnr",
+                                className="ssb-dropdown",
+                                
                             )
                         ),
                         dbc.Col(
                             dbc.Button(
                                 "Lagre",
                                 id=f"{self.module_name}-{self.module_number}-save-button",
+                                className="ssb-btn primary-btn",
                             )
                         ),
                     ]
@@ -68,7 +71,9 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 dbc.Row(
                     dcc.Textarea(
                         id=f"{self.module_name}-{self.module_number}-comment-text",
-                        className=f"{self.module_name}-comment-text",  # TODO: Style in the css
+                        placeholder="Skriv kommentar her...",
+                        className="comment-textarea",
+                        style={"height": "150px"},
                     )
                 ),
             ]

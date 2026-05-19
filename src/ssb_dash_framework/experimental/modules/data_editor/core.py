@@ -357,6 +357,7 @@ class DataEditorTableSelector:
                     id="dataeditortableselector",
                     options=self.table_options,
                     value=self.starting_table,
+                    className="ssb-dropdown",
                 ),
             ]
         )
@@ -527,7 +528,8 @@ class DataEditorHelperButton:
         return html.Div(
             [
                 dbc.Button(
-                    self.label, id=f"{self.module_name}-{self.module_number}-button"
+                    self.label, id=f"{self.module_name}-{self.module_number}-button",
+                    className="ssb-btn primary-btn",
                 ),
                 dbc.Modal(
                     [
