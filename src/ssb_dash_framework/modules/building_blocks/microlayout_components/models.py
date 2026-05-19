@@ -465,7 +465,7 @@ class ChecklistComponent(BaseNode):
                     id=self.field_settings._id,
                 ),
                 html.Label(
-                    self.options[0]["label"],
+                    self.options[0].get("label", ""),
                     className="mb-1 ms-2",
                 ),
             ]
