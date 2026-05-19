@@ -1351,7 +1351,7 @@ class MacroModule:
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
             Output("var-bedrift", "value", allow_duplicate=True),
-            Output("altinnedit-option1", "value", allow_duplicate=True),
+            Output("dataeditortableselector", "value", allow_duplicate=True),
             Output("macromodule-pending-click-store", "data", allow_duplicate=True),
             Input("macromodule-bruk-button", "n_clicks"),
             State("macromodule-pending-click-store", "data"),

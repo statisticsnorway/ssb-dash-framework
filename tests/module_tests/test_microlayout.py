@@ -57,12 +57,12 @@ def test_editable_field_defaults():
         default_updater,
     )
     from ssb_dash_framework.modules.building_blocks.microlayout_components.editable_field_model import (
-        defult_getter,
+        default_getter,
     )
 
     field = EditableField(field_path="my_field")
     assert field.field_path == "my_field"
-    assert field.getter_func is defult_getter
+    assert field.getter_func is default_getter
     assert field.update_func is default_updater
     assert field.applies_to_tables == []
     assert field.applies_to_forms == []
@@ -121,9 +121,15 @@ def test_row_node():
 
 
 def test_layout_parses_and_builds(callback_settings):
+    from ssb_dash_framework.setup import set_variables, VariableSelector
     from ssb_dash_framework.modules.building_blocks.microlayout_components.models import (
         Layout,
     )
+
+    registered = [o.title for o in VariableSelector._variableselectoroptions]
+    for var in ["ident", "altinnskjema", "variabel"]:
+        if var not in registered:
+            set_variables(var)
 
     layout = Layout(
         [
