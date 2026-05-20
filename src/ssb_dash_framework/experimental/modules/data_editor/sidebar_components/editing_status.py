@@ -30,7 +30,6 @@ from .....utils.config_tools.set_variables import get_time_units
 from .....utils.core_models import UpdateSkjemamottakAktiv
 from .....utils.core_models import UpdateSkjemamottakStatus
 from ..core import DataEditorHelperSidebar
-from ssb_dash_framework.modules.nspek.nspek import Naeringsspesifikasjon
 
 logger = logging.getLogger(__name__)
 
