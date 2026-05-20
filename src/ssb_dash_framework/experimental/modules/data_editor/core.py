@@ -170,13 +170,8 @@ class DataEditor:
 
     def _create_layout(self) -> dbc.Container:
         """Creates the layout for the DataEditor module."""
-
-        from ssb_dash_framework.modules.building_blocks.microlayout_components.microlayout_data_stores import _STORE_CONFIGS
-        stores = [dcc.Store(id=f"store-{table}") for table in _STORE_CONFIGS]
-
         return dbc.Container(
             [
-                *stores,
                 dbc.Row(html.H1(id=f"{self.module_name}-{self.module_number}-header", className=f"{self.module_name}-header")),
                 dbc.Row(self.info_view),
                 dbc.Row(

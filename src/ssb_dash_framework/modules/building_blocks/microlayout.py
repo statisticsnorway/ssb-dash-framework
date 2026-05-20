@@ -8,11 +8,9 @@ from dash import html
 
 from .microlayout_components.editable_field_model import CallbackSettings
 from .microlayout_components.models import Layout
-from .microlayout_components.microlayout_data_stores import _STORE_CONFIGS, store_getter
-from .microlayout_components.editable_field_model import default_getter
-
 
 logger = logging.getLogger(__name__)
+
 
 class MicroLayoutAIO(html.Div):
     """A class for generating a dash layout and callbacks without interacting with Dash.
@@ -24,9 +22,9 @@ class MicroLayoutAIO(html.Div):
     def __init__(
         self,
         layout: list[dict] | Layout,
-        form_reference_input_id: str,
+        getter_func: Callable[..., tuple],
         update_func: Callable[..., tuple | None],
-        getter_func: Callable[..., tuple] = default_getter,
+        form_reference_input_id: str,
         inputs: list[Input] | None = None,
         states: list[State] | None = None,
         getter_args: None | list = None,
@@ -67,13 +65,10 @@ class MicroLayoutAIO(html.Div):
             model = Layout(layout)
         self._model = model  # Just for __str__ dunder
 
-        default_store_args = [State(f"store-{table}", "data") for table in _STORE_CONFIGS]
-        extra_args = (getter_args or []) + default_store_args
-    
-        # if getter_args:
-        #     extra_args = getter_args
-        # else:
-        #     extra_args = []
+        if getter_args:
+            extra_args = getter_args
+        else:
+            extra_args = []
         common_settings = CallbackSettings(
             form_data_table=form_data_table,
             form_reference_input_id=form_reference_input_id,
