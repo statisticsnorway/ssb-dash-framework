@@ -388,6 +388,7 @@ class HBMethodWindow(WindowImplementation, HBMethod):
         time_units: list[str],
         varselector_variable: str = "statistikkvariabel",
         output: str = "ident",
+        **kwargs: Any
     ) -> None:
         """Initializes the HB method module.
 
@@ -406,4 +407,5 @@ class HBMethodWindow(WindowImplementation, HBMethod):
         )
         WindowImplementation.__init__(
             self,
+            **kwargs
         )

@@ -1419,6 +1419,7 @@ class MacroModuleWindow(WindowImplementation, MacroModule):
         heatmap_variables: dict[str, str],
         file_path_resolver: Callable[[int, str], str],
         consolidated: bool,
+        **kwargs: Any
     ) -> None:
         """Initializes the MacroModuleWindow class."""
         MacroModule.__init__(
@@ -1429,4 +1430,4 @@ class MacroModuleWindow(WindowImplementation, MacroModule):
             file_path_resolver=file_path_resolver,
             consolidated=consolidated,
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

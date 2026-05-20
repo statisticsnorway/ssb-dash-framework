@@ -139,8 +139,6 @@ class WindowImplementation:
     def __init__(
         self,
         window_scrollable: bool | None = None,
-        *args,
-        **kwargs
     ) -> None:
         """Initialize the window implementation.
 
