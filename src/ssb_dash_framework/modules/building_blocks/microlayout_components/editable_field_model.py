@@ -100,9 +100,7 @@ class FormGetterCached:
 
 
 def default_getter(
-    skjema: str,
     refnr: str,
-    ident: str,
     settings: CallbackSettings,
     field_path: str,
     time_units: dict,
@@ -157,7 +155,7 @@ def default_updater(
 
     logger.debug(f"Raw incoming value: {value!r}, type: {type(value)}")
     old_value = default_getter(
-        skjema, refnr, ident, settings, field_path, time_units, *args
+        refnr, settings, field_path, time_units, *args
     )
     logger.debug(f"Old value from DB: {old_value!r}, type: {type(old_value)}")
 
@@ -313,9 +311,7 @@ class EditableField(BaseModel):
                 return no_update, alert_log
             else:
                 result = self.getter_func(
-                    skjema,
                     refnr,
-                    ident,
                     settings,
                     self.field_path,
                     time_units,

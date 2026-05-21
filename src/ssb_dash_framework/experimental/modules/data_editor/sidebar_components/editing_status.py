@@ -125,8 +125,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                                     dcc.RadioItems(
                                         id=f"{self.module_name}-{self.module_number}-radioitems",
                                         options=self.status_options,
-                                        inputStyle={"margin-right": "8px"},
-                                        labelStyle={"white-space": "nowrap"},
+                                        className="ssb-radio-buttons",
                                     )
                                 ),
                             ]
