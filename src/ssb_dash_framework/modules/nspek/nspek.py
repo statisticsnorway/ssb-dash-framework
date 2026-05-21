@@ -1965,6 +1965,12 @@ class Naeringsspesifikasjon:
             """Returns a tuple of strings with the values for info cards for the top of the nspek module.
             These cards will hold virksomhetsinfo for the foretak.
             """
+            if not aar or not orgnr_foretak or not sekvensnummer:
+                return "", "", "", "", ""
+
+            if not has_data(self.conn, orgnr_foretak, aar):
+                return "", "", "", "", ""
+
             df = get_virksomhetsinfo(
                 conn=self.conn,
                 variables_to_fetch=virksomhetsinfo_variabler,
@@ -1972,6 +1978,9 @@ class Naeringsspesifikasjon:
                 aar=aar,
                 sekvensnummer=sekvensnummer,
             )
+
+            if df.empty:
+                return "", "", "", "", ""
 
             virksomhetstype = df[df["felt"] == "virksomhetstype"]["char_verdi"].iloc[0]
             regeltype = df[df["felt"] == "regeltypeForAarsregnskap"]["char_verdi"].iloc[
