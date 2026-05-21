@@ -37,6 +37,7 @@ from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
 logger = logging.getLogger(__name__)
 
+
 class CallbackSettings(BaseModel):
     form_data_table: str
     form_reference_input_id: str
@@ -53,6 +54,7 @@ class CacheEntry:
     entry: Table
     last_cache_hit: float
 
+
 class FormGetterCached:
     data: dict[str, CacheEntry] = {}
 
@@ -60,7 +62,9 @@ class FormGetterCached:
     def get_table(refnr: str, settings: CallbackSettings) -> Table:
         with get_connection() as conn:
             t = conn.table(settings.form_data_table)
-            if settings.form_reference_number_column not in t.columns: # catch errors with querying from wrong table
+            if (
+                settings.form_reference_number_column not in t.columns
+            ):  # catch errors with querying from wrong table
                 raise ValueError(
                     f"Column '{settings.form_reference_number_column}' not in table "
                     f"'{settings.form_data_table}'. Available: {t.columns}"
@@ -79,7 +83,9 @@ class FormGetterCached:
 
     @classmethod
     def get_form(cls, refnr: str, settings: CallbackSettings) -> Table:
-        cache_key = f"{settings.form_data_table}::{refnr}" # for tables not querying skjemadata
+        cache_key = (
+            f"{settings.form_data_table}::{refnr}"  # for tables not querying skjemadata
+        )
         entry = cls.data.get(cache_key)
 
         if (entry is None) or ((time.perf_counter() - entry.last_cache_hit) > 5.0):
@@ -92,30 +98,52 @@ class FormGetterCached:
         cls.clean_cache()
         return entry.entry
 
-def default_getter(skjema: str, refnr: str, ident: str, settings: CallbackSettings, field_path: str, time_units: dict, *args: list[Any]) -> Any:
+
+def default_getter(
+    skjema: str,
+    refnr: str,
+    ident: str,
+    settings: CallbackSettings,
+    field_path: str,
+    time_units: dict,
+    *args: list[Any],
+) -> Any:
     logger.debug(f"Getting {field_path} for refnr: {refnr}")
 
     t = FormGetterCached.get_form(refnr, settings)
     filters = [
-            t[settings.form_reference_number_column] == refnr,
-            t[settings.formdata_fieldname_column] == field_path,
-        ]
-    if settings.form_reference_number_column != "refnr": # apply time_units filter if refnr is not used
+        t[settings.form_reference_number_column] == refnr,
+        t[settings.formdata_fieldname_column] == field_path,
+    ]
+    if (
+        settings.form_reference_number_column != "refnr"
+    ):  # apply time_units filter if refnr is not used
         for unit, value in time_units.items():
             if value and unit in t.columns:
                 filters.append(t[unit] == value)
-    res: Series | Any = t.filter(filters).select(settings.formdata_field_value_column_name).to_pandas()
+    res: Series | Any = (
+        t.filter(filters).select(settings.formdata_field_value_column_name).to_pandas()
+    )
     logger.debug(f"Returning:\n{res}")
 
     if res.empty:
         return None
-    if len(res) > 1: # catch potential duplicates
-        logger.error(f"Multiple rows returned for {field_path}, refnr={refnr}. Using first row.")
+    if len(res) > 1:  # catch potential duplicates
+        logger.error(
+            f"Multiple rows returned for {field_path}, refnr={refnr}. Using first row."
+        )
     return res.iloc[0, 0]
 
 
 def default_updater(
-    value: Any, skjema: str, refnr: str, ident: str, settings: CallbackSettings, field_path: str, time_units: dict, *args: list[Any]
+    value: Any,
+    skjema: str,
+    refnr: str,
+    ident: str,
+    settings: CallbackSettings,
+    field_path: str,
+    time_units: dict,
+    *args: list[Any],
 ) -> None:
     """
     Args:
@@ -128,7 +156,9 @@ def default_updater(
     logger.debug(f"Updating {field_path}")
 
     logger.debug(f"Raw incoming value: {value!r}, type: {type(value)}")
-    old_value = default_getter(skjema, refnr, ident, settings, field_path, time_units, *args)
+    old_value = default_getter(
+        skjema, refnr, ident, settings, field_path, time_units, *args
+    )
     logger.debug(f"Old value from DB: {old_value!r}, type: {type(old_value)}")
 
     if value == old_value or (value == "" and not old_value):
@@ -172,7 +202,9 @@ class EditableField(BaseModel):
     @computed_field
     @property
     def _id(self) -> str:
-        return self.field_path + str(self.applies_to_tables) + str(self.applies_to_forms)
+        return (
+            self.field_path + str(self.applies_to_tables) + str(self.applies_to_forms)
+        )
 
     def __str__(self) -> str:
         parts = [f"EditableField(path='{self.field_path}')"]
@@ -201,7 +233,9 @@ class EditableField(BaseModel):
             guard_states.append(State(settings.form_selector_id, "value"))
         return guard_states
 
-    def _check_guard(self, settings: CallbackSettings, *guard_values: list[Any]) -> bool:
+    def _check_guard(
+        self, settings: CallbackSettings, *guard_values: list[Any]
+    ) -> bool:
         """Returns True if the guard passes (i.e. we should proceed)."""
         idx = 0
         if settings.table_selector_id and self.applies_to_tables:
@@ -224,7 +258,9 @@ class EditableField(BaseModel):
         getter_args: None | list[Any] = None,
     ) -> None:
         guard_states = self._build_guard_states(settings)
-        variableselector = VariableSelector(selected_inputs=[], selected_states=["ident", "altinnskjema"])
+        variableselector = VariableSelector(
+            selected_inputs=[], selected_states=["ident", "altinnskjema"]
+        )
 
         @callback(
             Output(self._id, "value", allow_duplicate=True),
@@ -240,12 +276,16 @@ class EditableField(BaseModel):
             State("alert_store", "data"),
             prevent_initial_call="initial_duplicate",
         )
-        def populate_field(refnr: str, ident: str, skjema: str, value: Any, *args: list[Any]):
+        def populate_field(
+            refnr: str, ident: str, skjema: str, value: Any, *args: list[Any]
+        ):
             # Peel guard values off the end of args
             n_guard = len(guard_states)
             alert_log = args[-1]
-            guard_values = args[-(n_guard + 1):-1] if n_guard else ()
-            real_args = args[:-(n_guard + 1)] if n_guard else args[:-1] # exclude alert_log
+            guard_values = args[-(n_guard + 1) : -1] if n_guard else ()
+            real_args = (
+                args[: -(n_guard + 1)] if n_guard else args[:-1]
+            )  # exclude alert_log
 
             time_unit_keys = list(get_time_units().keys())
             time_units = dict(zip(time_unit_keys, real_args))
@@ -282,9 +322,11 @@ class EditableField(BaseModel):
                     *real_args,
                     *getter_args if getter_args else [],
                 )
-                logger.info(f"getter returned {result!r} for {self.field_path}, refnr={refnr}")
+                logger.info(
+                    f"getter returned {result!r} for {self.field_path}, refnr={refnr}"
+                )
                 return result, no_update
-        
+
         @callback(
             variableselector.get_output_object("variabel"),
             Input(self._id, self.variabel_trigger),
@@ -292,4 +334,5 @@ class EditableField(BaseModel):
         )
         def update_variabel(_):
             return self.field_path
+
         update_variabel.__name__ = f"update_variabel_{self._id}"
