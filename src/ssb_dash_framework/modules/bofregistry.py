@@ -637,7 +637,7 @@ class BofInformationWindow(WindowImplementation, BofInformation):
     """A class to implement a bof information module as a window."""
 
     def __init__(
-        self, label: str | None = None, variableselector_foretak_name: str | None = None
+        self, label: str | None = None, variableselector_foretak_name: str | None = None, **kwargs: Any
     ) -> None:
         """Initialize the BofInformationTab.
 
@@ -648,4 +648,4 @@ class BofInformationWindow(WindowImplementation, BofInformation):
             label=label,
             variableselector_foretak_name=variableselector_foretak_name,
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

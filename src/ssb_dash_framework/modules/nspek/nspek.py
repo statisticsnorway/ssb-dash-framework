@@ -4,6 +4,7 @@ import re
 import time
 from pathlib import Path
 from typing import ClassVar
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import ibis
@@ -3098,7 +3099,7 @@ class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
 class NaeringsspesifikasjonWindow(WindowImplementation, Naeringsspesifikasjon):
     """NaeringsspesifikasjonWindow is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
+    def __init__(self, time_units: list[str], db_user: str | None = None, **kwargs: Any) -> None:
         """Initializes the NaeringsspesifikasjonWindow class."""
         Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)
