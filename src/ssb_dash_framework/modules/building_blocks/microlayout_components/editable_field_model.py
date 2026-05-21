@@ -1,6 +1,16 @@
+from ibis.expr.types.relations import Table
+
+
+from ibis.expr.types.relations import Table
+
+
 import logging
 from collections.abc import Callable
 from typing import Any
+from functools import cache
+import time
+
+from ibis import Table
 
 from dash import Input
 from dash import Output
@@ -37,29 +47,77 @@ class CallbackSettings(BaseModel):
     form_selector_id: str | None = None
 
 
-def default_getter(skjema: str, refnr: str, ident: str, settings: CallbackSettings, field_path: str, time_units: dict, *args: list[Any]) -> Any:
+from dataclasses import dataclass
+from typing import Any
+
+
+@dataclass
+class CacheEntry:
+    entry: Table
+    last_cache_hit: float
+
+
+class FormGetterCached:
+    data: dict[str, CacheEntry] = {}
+
+    @staticmethod
+    def get_table(refnr: str, settings: CallbackSettings) -> Table:
+        with get_connection() as conn:
+            t = conn.table(settings.form_data_table)
+            res = t.filter(
+                t[settings.form_reference_number_column] == refnr,
+            )
+        return res
+
+    @classmethod
+    def clean_cache(cls):
+        max_size = 10
+        if len(cls.data.keys()) > max_size:
+            key, _ = min(cls.data.items(), key=lambda x: x[1].last_cache_hit)
+            cls.data.pop(key)
+
+    @classmethod
+    def get_form(cls, refnr: str, settings: CallbackSettings) -> Table:
+        entry = cls.data.get(refnr)
+
+        if (entry is None) or ((time.perf_counter() - entry.last_cache_hit) > 5.0):
+            table = FormGetterCached.get_table(refnr, settings)
+            cls.data[refnr] = CacheEntry(
+                entry=table, last_cache_hit=time.perf_counter()
+            )
+            cls.clean_cache()
+            return cls.data[refnr].entry
+        cls.clean_cache()
+        return entry.entry
+
+
+def default_getter(
+    refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]
+) -> Any:
+
     logger.debug(f"Getting {field_path} for refnr: {refnr}")
-    
-    with get_connection() as conn:
-        t = conn.table(settings.form_data_table)
-        filters = [
-            t[settings.form_reference_number_column] == refnr,
-            t[settings.formdata_fieldname_column] == field_path,
-        ]
-        if settings.form_reference_number_column != "refnr": # apply time_units filter if refnr is not used
-            for unit, value in time_units.items():
-                if value and unit in t.columns:
-                    filters.append(t[unit] == value)
-        res = t.filter(filters).select(settings.formdata_field_value_column_name).to_pandas()
-    logger.debug(f"Returning:\n{res}") 
-    # return res
-    if res.empty:
-        return None
-    return res.iloc[0, 0]
+    t = FormGetterCached.get_form(refnr, settings)
+    res = (
+        t.filter(
+            [
+                t[settings.form_reference_number_column] == refnr,
+                t[settings.formdata_fieldname_column] == field_path,
+            ]
+        )
+        .select(settings.formdata_field_value_column_name)
+        .as_scalar()
+        .to_pandas()
+    )
+    logger.debug(f"Returning:\n{res}")
+    return res
 
 
 def default_updater(
-    value: Any, skjema: str, refnr: str, ident: str, settings: CallbackSettings, field_path: str, time_units: dict, *args: list[Any]
+    value: Any,
+    refnr: str,
+    settings: CallbackSettings,
+    field_path: str,
+    *args: list[Any],
 ) -> None:
     """
     Args:
@@ -116,7 +174,9 @@ class EditableField(BaseModel):
     @computed_field
     @property
     def _id(self) -> str:
-        return self.field_path + str(self.applies_to_tables) + str(self.applies_to_forms)
+        return (
+            self.field_path + str(self.applies_to_tables) + str(self.applies_to_forms)
+        )
 
     def __str__(self) -> str:
         parts = [f"EditableField(path='{self.field_path}')"]
@@ -145,7 +205,9 @@ class EditableField(BaseModel):
             guard_states.append(State(settings.form_selector_id, "value"))
         return guard_states
 
-    def _check_guard(self, settings: CallbackSettings, *guard_values: list[Any]) -> bool:
+    def _check_guard(
+        self, settings: CallbackSettings, *guard_values: list[Any]
+    ) -> bool:
         """Returns True if the guard passes (i.e. we should proceed)."""
         idx = 0
         if settings.table_selector_id and self.applies_to_tables:
