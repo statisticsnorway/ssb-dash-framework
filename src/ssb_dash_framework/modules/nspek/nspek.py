@@ -2375,7 +2375,13 @@ class Naeringsspesifikasjon:
             if not orgnr or not aar:
                 raise PreventUpdate
 
+            if not has_data(self.conn, orgnr, aar):
+                return [], None
+
             df = get_versions(self.conn, orgnr, aar)
+
+            if df.empty:
+                return [], None
 
             sekvens_liste = df["sekvensnummer"].tolist()
 
@@ -2430,7 +2436,14 @@ class Naeringsspesifikasjon:
             if not selected_sekvens or not orgnr or not aar:
                 return {"display": "none"}, "", False
 
+            if not has_data(self.conn, orgnr, aar):
+                return {"display": "none"}, "", False
+
             df = get_versions(self.conn, orgnr, aar)
+
+            if df.empty:
+                return {"display": "none"}, "", False
+
             latest_sekvens = df.sort_values(
                 by=["dato_mottatt", "sekvensnummer"], ascending=[False, False]
             ).iloc[0]["sekvensnummer"]
