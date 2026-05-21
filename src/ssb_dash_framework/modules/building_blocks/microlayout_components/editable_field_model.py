@@ -104,11 +104,14 @@ def default_getter(skjema: str, refnr: str, ident: str, settings: CallbackSettin
         for unit, value in time_units.items():
             if value and unit in t.columns:
                 filters.append(t[unit] == value)
-    print(f"settings.formdata_field_value_column_name: {settings.formdata_field_value_column_name}")
-    res: Series | Any = t.filter(filters).select(settings.formdata_field_value_column_name).as_scalar().to_pandas()
+    res: Series | Any = t.filter(filters).select(settings.formdata_field_value_column_name).to_pandas()
     logger.debug(f"Returning:\n{res}")
-    print(f"Returning:\n{res}")
-    return res
+
+    if res.empty:
+        return None
+    if len(res) > 1: # catch potential duplicates
+        logger.error(f"Multiple rows returned for {field_path}, refnr={refnr}. Using first row.")
+    return res.iloc[0, 0]
 
 
 def default_updater(

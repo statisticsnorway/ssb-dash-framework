@@ -176,20 +176,34 @@ class WindowImplementation:
                             dbc.ModalTitle(
                                 dbc.Row(
                                     [
-                                        dbc.Col(f"{self.icon} {self.label}"),
+                                        dbc.Col(
+                                            [
+                                                html.Span(
+                                                    self.icon,
+                                                    className="modal-title-icon",
+                                                ),
+                                                html.Span(
+                                                    self.label,
+                                                    className="modal-title-text",
+                                                ),
+                                            ],
+                                            className="window-implementation-modal-title",
+                                            width="auto",
+                                        ),
                                         dbc.Col(
                                             dbc.Button(
                                                 "Fullscreen visning",
                                                 id=f"{self._window_n}-{self.module_name}-modal-fullscreen",
                                                 className="ssb-btn primary-btn",
                                             ),
+                                            width="auto",
+                                            className="ms-auto",
                                         ),
                                     ],
                                     align="center",
-                                    justify="between",
-                                    className="w-100",
+                                    className="w-100 flex-nowrap",
                                 )
-                            )
+                            ),
                         ),
                         dbc.ModalBody(
                             html.Div(

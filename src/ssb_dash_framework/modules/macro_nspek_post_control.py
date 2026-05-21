@@ -226,7 +226,18 @@ class MacroNspekPostControl:
                                     [
                                         "Sjekk aggregerte",
                                         html.Br(),
-                                        "næringsoppgaveposter",
+                                        "nspekposter",
+                                        *(
+                                            [
+                                                html.Br(),
+                                                html.Span(
+                                                    "(Konsoliderte tall)",
+                                                    className="macromodule-konsolidert-label",
+                                                ),
+                                            ]
+                                            if self.consolidated
+                                            else []
+                                        ),
                                     ],
                                 ),
                                 html.Label(
@@ -235,7 +246,7 @@ class MacroNspekPostControl:
                                 ),
                                 dcc.RadioItems(
                                     id="macromodule-nopost-foretak-or-bedrift",
-                                    className="macromodule-radio-buttons",
+                                    className="ssb-radio-buttons",
                                     options=[
                                         {"label": k, "value": v}
                                         for k, v in FORETAK_OR_BEDRIFT.items()
@@ -274,7 +285,7 @@ class MacroNspekPostControl:
                                 ),
                                 dcc.RadioItems(
                                     id="macromodule-nopost-nace-siffer-velger",
-                                    className="macromodule-radio-buttons",
+                                    className="ssb-radio-buttons",
                                     options=[
                                         {"label": k, "value": v}
                                         for k, v in NACE_LEVEL_OPTIONS.items()
