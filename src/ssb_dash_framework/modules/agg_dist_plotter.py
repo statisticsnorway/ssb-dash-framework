@@ -554,10 +554,10 @@ class AggDistPlotterWindow(WindowImplementation, AggDistPlotter):
     """AggDistPlotterWindow is an implementation of the AggDistPlotter module as a tab in a Dash application."""
 
     def __init__(
-        self, time_units: list[str], main_table_name="skjemadata_hoved"
+        self, time_units: list[str], main_table_name="skjemadata_hoved", **kwargs: Any
     ) -> None:
         """Initializes the AggDistPlotterWindow class."""
         AggDistPlotter.__init__(
             self, time_units=time_units, main_table_name=main_table_name
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

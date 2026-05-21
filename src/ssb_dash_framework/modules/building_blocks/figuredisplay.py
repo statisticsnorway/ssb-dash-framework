@@ -194,7 +194,7 @@ class FigureDisplayWindow(WindowImplementation, FigureDisplay):
         inputs: list[str],
         states: list[str] | None = None,
         output: str | None = None,
-        clickdata_func: Callable[..., Any] | None = None,
+        clickdata_func: Callable[..., Any] | None = None, **kwargs: Any
     ) -> None:
         """Initializes FigureDisplayWindow."""
         FigureDisplay.__init__(
@@ -206,4 +206,4 @@ class FigureDisplayWindow(WindowImplementation, FigureDisplay):
             output=output,
             clickdata_func=clickdata_func,
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)
