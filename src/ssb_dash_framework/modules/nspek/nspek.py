@@ -1966,6 +1966,12 @@ class Naeringsspesifikasjon:
             """Returns a tuple of strings with the values for info cards for the top of the nspek module.
             These cards will hold virksomhetsinfo for the foretak.
             """
+            if not aar or not orgnr_foretak or not sekvensnummer:
+                return "", "", "", "", ""
+
+            if not has_data(self.conn, orgnr_foretak, aar):
+                return "", "", "", "", ""
+
             df = get_virksomhetsinfo(
                 conn=self.conn,
                 variables_to_fetch=virksomhetsinfo_variabler,
@@ -1973,6 +1979,9 @@ class Naeringsspesifikasjon:
                 aar=aar,
                 sekvensnummer=sekvensnummer,
             )
+
+            if df.empty:
+                return "", "", "", "", ""
 
             virksomhetstype = df[df["felt"] == "virksomhetstype"]["char_verdi"].iloc[0]
             regeltype = df[df["felt"] == "regeltypeForAarsregnskap"]["char_verdi"].iloc[
@@ -2376,7 +2385,13 @@ class Naeringsspesifikasjon:
             if not orgnr or not aar:
                 raise PreventUpdate
 
+            if not has_data(self.conn, orgnr, aar):
+                return [], None
+
             df = get_versions(self.conn, orgnr, aar)
+
+            if df.empty:
+                return [], None
 
             sekvens_liste = df["sekvensnummer"].tolist()
 
@@ -2431,7 +2446,14 @@ class Naeringsspesifikasjon:
             if not selected_sekvens or not orgnr or not aar:
                 return {"display": "none"}, "", False
 
+            if not has_data(self.conn, orgnr, aar):
+                return {"display": "none"}, "", False
+
             df = get_versions(self.conn, orgnr, aar)
+
+            if df.empty:
+                return {"display": "none"}, "", False
+
             latest_sekvens = df.sort_values(
                 by=["dato_mottatt", "sekvensnummer"], ascending=[False, False]
             ).iloc[0]["sekvensnummer"]
@@ -3085,6 +3107,47 @@ class Naeringsspesifikasjon:
             tab_label = "⚠️ Kontrollutslag" if has_issues else "Kontrollutslag"
 
             return df.to_dict("records"), tab_label
+
+        @callback(
+            Output("alert_store", "data", allow_duplicate=True),
+            Output("refresh-manager", "data", allow_duplicate=True),
+            Input("var-ident", "value"),
+            Input("var-aar", "value"),
+            State("alert_store", "data"),
+            State("refresh-manager", "data"),
+            prevent_initial_call=True,
+        )
+        def validate_nspek_data_exists(orgnr, aar, alert_store, refresh_data):
+            """Validates that orgnr/year exists in NSPEK registrering table.
+
+            Example use: triggered when variable selector updates.
+            """
+            alert_store = alert_store or []
+
+            if not orgnr or not aar:
+                raise PreventUpdate
+
+            if not has_data(self.conn, orgnr, aar):
+
+                refresh_data = trigger_refresh(refresh_data, "invalid_search")
+
+                alert_store = [
+                    create_alert(
+                        (
+                            f"Ingen data funnet for "
+                            f"orgnr {orgnr} og år {aar} i NSPEK"
+                        ),
+                        "danger",
+                        ephemeral=True,
+                    ),
+                    *alert_store,
+                ]
+
+                return alert_store, refresh_data
+
+            refresh_data = trigger_refresh(refresh_data, "valid_search")
+
+            return alert_store, refresh_data
 
 
 class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
