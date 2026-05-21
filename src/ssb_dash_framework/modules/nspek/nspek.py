@@ -3117,12 +3117,10 @@ class Naeringsspesifikasjon:
             prevent_initial_call=True,
         )
         def validate_nspek_data_exists(orgnr, aar, alert_store, refresh_data):
-            """
-            Validates that orgnr/year exists in NSPEK registrering table.
+            """Validates that orgnr/year exists in NSPEK registrering table.
 
             Example use: triggered when variable selector updates.
             """
-
             alert_store = alert_store or []
 
             if not orgnr or not aar:
@@ -3130,10 +3128,7 @@ class Naeringsspesifikasjon:
 
             if not has_data(self.conn, orgnr, aar):
 
-                refresh_data = trigger_refresh(
-                    refresh_data,
-                    "invalid_search"
-                )
+                refresh_data = trigger_refresh(refresh_data, "invalid_search")
 
                 alert_store = [
                     create_alert(
@@ -3149,10 +3144,7 @@ class Naeringsspesifikasjon:
 
                 return alert_store, refresh_data
 
-            refresh_data = trigger_refresh(
-                refresh_data,
-                "valid_search"
-            )
+            refresh_data = trigger_refresh(refresh_data, "valid_search")
 
             return alert_store, refresh_data
 

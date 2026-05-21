@@ -3,7 +3,6 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 from urllib.parse import quote_plus
-import os
 
 import pandas as pd
 from ibis import BaseBackend
