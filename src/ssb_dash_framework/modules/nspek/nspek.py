@@ -1917,7 +1917,17 @@ class Naeringsspesifikasjon:
             """Returns a tuple of strings with the values for info cards for the top of the bof accordion.
             These cards will hold bof information for the foretak.
             """
+            if not orgnr_foretak:
+                    return ("", "", "", "", "", "", "", "", "")
+
+            ok_orgnr, _ = validate_orgnr(orgnr_foretak)
+            if not ok_orgnr:
+                return ("", "", "", "", "", "", "", "", "")
+
             df = get_bofinfo(ident=orgnr_foretak)
+            
+            if df.empty:
+                    return ("", "", "", "", "", "", "", "", "")
 
             orgnr = df["orgnr"].iloc[0]
             navn = df["navn"].iloc[0]
