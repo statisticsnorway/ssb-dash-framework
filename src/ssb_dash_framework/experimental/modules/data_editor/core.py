@@ -20,6 +20,7 @@ from ssb_dash_framework.utils.config_tools.set_variables import get_ident
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
 from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
+from ssb_dash_framework.utils.alert_handler import create_alert
 
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
@@ -98,7 +99,6 @@ class DataEditor:
         )
         self.info_view = html.Div(
             [module.layout() for module in DataEditorRegistry.info_fields],
-            className="dataeditor-info-view",
         )
         self.helper_row = dbc.Row(
             [dbc.Col(module.layout()) for module in DataEditorRegistry.helper_modules]
@@ -107,7 +107,8 @@ class DataEditor:
             [
                 dbc.Card(dbc.CardBody(module.layout()))
                 for module in DataEditorRegistry.sidebar_modules
-            ]
+            ],
+            className=f"{self.module_name}-sidebar-modules"
         )
         _existing_views = []
         main_views = []
@@ -171,17 +172,16 @@ class DataEditor:
         """Creates the layout for the DataEditor module."""
         return dbc.Container(
             [
-                dbc.Row(html.H1(id=f"{self.module_name}-{self.module_number}-header")),
+                dbc.Row(html.H1(id=f"{self.module_name}-{self.module_number}-header", className=f"{self.module_name}-header")),
                 dbc.Row(self.info_view),
                 dbc.Row(
                     [
-                        dbc.Col(self.sidebar, width=2),
+                        dbc.Col(self.sidebar, className=f"{self.module_name}-sidebar"),
                         dbc.Col(
                             [
-                                dbc.Row(dbc.Card(dbc.CardBody(self.helper_row))),
-                                dbc.Row(dbc.Card(dbc.CardBody(self.main_view))),
+                                dbc.Row(dbc.Card(dbc.CardBody(self.helper_row), className=f"{self.module_name}-helper-row")),
+                                dbc.Row(dbc.Card(dbc.CardBody(self.main_view), className=f"{self.module_name}-main-view")),
                             ],
-                            width=10,
                         ),
                     ]
                 ),
@@ -195,6 +195,22 @@ class DataEditor:
 
     def module_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor."""
+        
+        @callback(
+            VariableSelector([], []).get_output_object("refnr"),
+            VariableSelector([], []).get_output_object("altinnskjema"),
+            VariableSelector([], []).get_input(get_ident()),
+            prevent_initial_call=True,
+        )
+        def clear_on_missing_ident(ident: str):
+            if not ident:
+                raise PreventUpdate
+            with get_connection() as conn:
+                t = conn.table("skjemamottak")
+                result = t.filter(_.ident == ident).limit(1).to_pandas()
+            if result.empty:
+                return "", ""
+            raise PreventUpdate
 
         @callback(
             *[
@@ -214,13 +230,23 @@ class DataEditor:
             logger.debug(f"Selected table: {selected_table}")
             styles: list[dict[str, Any]] = []
             for divname in DataEditorRegistry.main_views:
-                if (
-                    selected_table in DataEditorRegistry.main_views[divname]["tables"]
-                    and selected_form in DataEditorRegistry.main_views[divname]["forms"]
-                ):
+                forms = DataEditorRegistry.main_views[divname]["forms"]
+                tables = DataEditorRegistry.main_views[divname]["tables"]
+
+                table_match = selected_table in tables
+                form_match = (not forms and not selected_form) or selected_form in forms
+
+                if table_match and form_match:
                     styles.append({"display": "block"})
                 else:
                     styles.append({"display": "none"})
+                # if (
+                #     selected_table in DataEditorRegistry.main_views[divname]["tables"]
+                #     and selected_form in DataEditorRegistry.main_views[divname]["forms"]
+                # ):
+                #     styles.append({"display": "block"})
+                # else:
+                #     styles.append({"display": "none"})
             if all(style == {"display": "none"} for style in styles):
                 message = f"No main_view defined for {selected_table} - {selected_form}"
                 logger.error(message)
@@ -242,7 +268,7 @@ class DataEditor:
         )
         def update_header(
             selected_table: str, selected_form: str
-        ) -> str:  # TODO: make prettier
+        ) -> str:
             """Show an info message telling the user which form and table are currently selected."""
             return f"Viser data for {selected_form} fra tabell {selected_table}"
 
@@ -388,7 +414,7 @@ class DataEditorInfoRow:
                 )
             )
 
-        return dbc.Row(dbc.CardGroup(info_fields))
+        return dbc.Row(dbc.CardGroup(info_fields), className=f"{self.module_name}-info-row")
 
     def layout(self) -> dbc.Row:
         """Returns the module layout."""
@@ -411,11 +437,12 @@ class DataEditorInfoRow:
                 for info_var in self.info_variables
             ],
             variableselector.get_input(get_ident()),
+            variableselector.get_input("refnr"),
             *[variableselector.get_input(unit) for unit in get_time_units().keys()],
             *[variableselector.get_all_states()],
         )
         def get_data_for_info_row_fields(
-            ident: str, *args: Any
+            ident: str, altinnskjema: str, *args: Any
         ) -> list[str | int | float | bool | None]:
             logger.debug(f"ident: {ident}\nargs: {args}")
             info_values = []
@@ -478,7 +505,7 @@ class DataEditorHelperButton:
                     ],
                     id=f"{self.module_name}-{self.module_number}-modal",
                     is_open=False,
-                    className="dataeditor-helper-button-modal",
+                    className=f"{self.module_name}-helper-modal",
                 ),
             ]
         )
@@ -562,11 +589,8 @@ class DataEditorDataView(ABC):
                     f"Expected all tables to be strings. Received: '{table}' of type '{type(table)}'"
                 )
             for form in self.applies_to_forms:
-                if not isinstance(form, str):
-                    raise TypeError(
-                        f"Expected all forms to be strings. Received: '{form}' of type '{type(form)}'"
-                    )
-                DataEditorRegistry._table_form_covered.append((table, form))
+                if form is not None:
+                    DataEditorRegistry._table_form_covered.append(tuple((table, form)))
 
     @abstractmethod
     def _create_layout(self) -> None:

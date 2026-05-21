@@ -1,3 +1,21 @@
+window.dash_clientside = window.dash_clientside || {};
+window.dash_clientside.aarsregnskap = {
+    zoom: function(n_plus, n_minus) {
+        if (!n_plus && !n_minus) return window.dash_clientside.no_update;
+        const container = document.getElementById('tab-aarsregnskap-img-container');
+        const label = document.getElementById('tab-aarsregnskap-zoom-label');
+        if (!container) return window.dash_clientside.no_update;
+        let zoom = parseFloat(container.dataset.zoom || 100);
+        const triggered = window.dash_clientside.callback_context.triggered[0].prop_id;
+        if (triggered.includes('zoom-in')) zoom = Math.min(zoom + 10, 300);
+        if (triggered.includes('zoom-out')) zoom = Math.max(zoom - 10, 20);
+        container.dataset.zoom = zoom;
+        container.querySelectorAll('img').forEach(img => img.style.width = zoom + '%');
+        label.textContent = zoom + '%';
+        return zoom;
+    }
+};
+
 window.dashAgGridFunctions = window.dashAgGridFunctions || {};
 
 /* -----------------------------------------------------------------------
