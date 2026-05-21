@@ -191,8 +191,7 @@ class Tabs(ContainerNode):
 class Header(BaseNode):
     type: Literal["header"]
     label: str
-
-    size: Literal["sm", "md", "lg"] = "md"
+    size: Literal["xs", "sm", "md", "lg"] = "md"
 
     def create(
         self,
@@ -200,14 +199,36 @@ class Header(BaseNode):
         inputs: list[Input] | None = None,
         states: list[State] | None = None,
         getter_args: None | list = None,
-    ) -> html.H1 | html.H2 | html.H3:
+    ) -> html.H1 | html.H2 | html.H3 | html.H4:
         """A method for creating the layout."""
         if self.size == "lg":
             return html.H1(self.label)
         elif self.size == "md":
             return html.H2(self.label)
-        else:
+        elif self.size == "sm":
             return html.H3(self.label)
+        else:
+            return html.H4(self.label)
+
+
+class Label(BaseNode):
+    type: Literal["label"]
+    label: str
+    bold: bool = False
+
+    def create(
+        self,
+        settings: CallbackSettings,
+        inputs: list[Input] | None = None,
+        states: list[State] | None = None,
+        getter_args: None | list = None,
+    ) -> html.Div:
+        return html.Div(
+            html.Label(
+                self.label, style={"fontWeight": "bold" if self.bold else "normal"}
+            ),
+            className="microlayout-label",
+        )
 
 
 class InputField(BaseNode):
@@ -215,6 +236,8 @@ class InputField(BaseNode):
     label: str
     value: str | None = ""
     field_settings: EditableField
+    hidelabel: bool = False
+    readonly: bool = False
 
     def create(
         self,
@@ -232,17 +255,30 @@ class InputField(BaseNode):
         )
         return html.Div(
             [
-                dbc.Label(self.label),
-                dbc.Input(
-                    style={"width": "100%"}, id=self.field_settings._id, debounce=True
+                html.Label(
+                    self.label,
+                    title=self.field_settings._id.split("[")[0],
+                    style={
+                        "visibility": "hidden" if self.hidelabel else "visible",
+                    },
                 ),
-            ]
+                dbc.Input(
+                    style={"width": "100%"},
+                    id=self.field_settings._id,
+                    debounce=True,
+                    readonly=self.readonly,
+                    className="microlayout-input-field"
+                    + (" microlayout-input-readonly" if self.readonly else ""),
+                ),
+            ],
+            className="microlayout-input",
         )
 
 
 class CalculatedField(BaseNode):
     type: Literal["calculated-field"]
     label: str
+    hidelabel: bool = False
     applies_to_tables: list[str] = Field(default_factory=list)
     applies_to_forms: list[str] = Field(default_factory=list)
     exponents: list[str | InputField] = Field(default_factory=list)
@@ -291,13 +327,15 @@ class CalculatedField(BaseNode):
         }
 
         for (op, _), value in zip(op_id_pairs, values):
-            if value is not None:
+            if value is not None and str(value).strip() != "":
                 op_values[op].append(float(value))
 
         result = 0
-        for base in op_values["exponent"]: # Kept for future implementation
+        for base in op_values["exponent"]:  # Kept for future implementation
             result **= base
-            raise NotImplementedError("Currently formulas involving 'exponent' is not implemented.")
+            raise NotImplementedError(
+                "Currently formulas involving 'exponent' is not implemented."
+            )
         for val in op_values["multiplication"]:
             result *= val
         for val in op_values["division"]:
@@ -331,11 +369,17 @@ class CalculatedField(BaseNode):
         self.create_callback()
         return html.Div(
             [
-                dbc.Label(self.label),
+                html.Label(
+                    self.label,
+                    title=", ".join(id_ for _, id_ in self._get_all_ids()),
+                    style={
+                        "visibility": "hidden" if self.hidelabel else "visible",
+                    },
+                ),
                 dbc.Input(id=self._id, style={"width": "100%"}, readonly=True),
-            ]
+            ],
+            className="microlayout-calculated-field",
         )
-
 
     def __str__(self, prefix: str = "", is_last: bool = True) -> str:
         branch = "└─ " if is_last else "├─ "
@@ -381,6 +425,7 @@ class DropdownComponent(BaseNode):
     ) -> html.Div:
         """A method for creating the layout."""
         _id = str(uuid.uuid4())
+        self.field_settings.variabel_trigger = "value"
         self.field_settings.create_callback(
             settings,
             inputs,
@@ -389,13 +434,14 @@ class DropdownComponent(BaseNode):
         )
         return html.Div(
             [
-                dbc.Label(self.label),
+                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
                 dbc.Select(
                     options=self.options,
                     id=self.field_settings._id,
                     style={"width": "100%"},
                 ),  # pyright: ignore
-            ]
+            ],
+            className="microlayout-dropdown",
         )
 
 
@@ -415,6 +461,37 @@ class ChecklistComponent(BaseNode):
         getter_args: None | list = None,
     ) -> html.Div:
         """A method for creating the layout."""
+
+        original_getter = self.field_settings.getter_func
+        original_updater = self.field_settings.update_func
+
+        def wrapped_getter(*args, **kwargs):
+            result = original_getter(*args, **kwargs)
+            if result is None or str(result).lower() in ("0", "false", ""):
+                return []
+            first = self.options[0]["value"] if self.options else 1
+            if isinstance(first, bool):
+                return [bool(result)]
+            if isinstance(first, int):
+                return [int(result)]
+            return [str(result)]
+
+        def wrapped_updater(value, *args, **kwargs):
+            if isinstance(value, list):
+                first = self.options[0]["value"] if self.options else 1
+                if isinstance(first, bool):
+                    value = bool(value)
+                elif isinstance(first, int):
+                    value = 1 if value else 0
+                elif first in ("1", "0"):
+                    value = "1" if value else "0"
+                else:
+                    value = "true" if value else "false"
+            return original_updater(value, *args, **kwargs)
+
+        self.field_settings.getter_func = wrapped_getter
+        self.field_settings.update_func = wrapped_updater
+        self.field_settings.variabel_trigger = "value"
         self.field_settings.create_callback(
             settings,
             inputs,
@@ -423,11 +500,12 @@ class ChecklistComponent(BaseNode):
         )
         return html.Div(
             [
-                dbc.Label(self.label),
+                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
                 dbc.Checklist(
                     options=self.options, switch=False, id=self.field_settings._id
                 ),  # pyright: ignore
             ],
+            className="microlayout-checklist",
             style={"display": "block"},
         )
 
@@ -471,6 +549,7 @@ class Textarea(BaseNode):
     label: str
     value: str | None = ""
     field_settings: EditableField
+    readonly: bool = False
 
     def create(
         self,
@@ -488,11 +567,17 @@ class Textarea(BaseNode):
         )
         return html.Div(
             [
-                dbc.Label(self.label),
+                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
                 dbc.Textarea(
-                    style={"width": "100%"}, id=self.field_settings._id, debounce=True
+                    style={"width": "100%"},
+                    id=self.field_settings._id,
+                    debounce=True,
+                    readonly=self.readonly,
+                    className="microlayout-textarea-field"
+                    + (" microlayout-textarea-readonly" if self.readonly else ""),
                 ),
-            ]
+            ],
+            className="microlayout-textarea",
         )
 
 
@@ -557,6 +642,7 @@ Node = Annotated[
     Row
     | Col
     | Header
+    | Label
     | InputField
     | CalculatedField
     | KlassDropdown
@@ -574,6 +660,7 @@ for m in (
     Row,
     Col,
     Header,
+    Label,
     InputField,
     KlassDropdown,
     Textarea,

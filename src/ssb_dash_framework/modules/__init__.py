@@ -52,6 +52,9 @@ from .macro_nspek_post_control import MacroNspekPostControlWindow
 from .nspek import Naeringsspesifikasjon
 from .nspek import NaeringsspesifikasjonTab
 from .nspek import NaeringsspesifikasjonWindow
+from .nspek import NspekControls
+from .nspek import NspekControlViewTab
+from .nspek import NspekControlViewWindow
 from .parquet_editor import ParquetEditor
 from .parquet_editor import ParquetEditorChangelog
 from .parquet_editor import apply_edits
@@ -118,6 +121,9 @@ __all__ = [
     "Naeringsspesifikasjon",
     "NaeringsspesifikasjonTab",
     "NaeringsspesifikasjonWindow",
+    "NspekControlViewTab",
+    "NspekControlViewWindow",
+    "NspekControls",
     "ParquetEditor",
     "ParquetEditorChangelog",
     "PimemorizerTab",
