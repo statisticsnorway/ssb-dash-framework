@@ -295,9 +295,9 @@ class CalculatedField(BaseNode):
 
     def _get_all_ids(self) -> list[tuple[str, str]]:
         """Returns (operation, _id) pairs for all entries, resolving InputField to its _id."""
-        # print("TEST TEST")
-        # print(self.applies_to_tables)
-        # print(self.applies_to_forms)
+        print("TEST TEST")
+        print(self.applies_to_tables)
+        print(self.applies_to_forms)
         result = []
         for op, fields in [
             ("exponent", self.exponents),
