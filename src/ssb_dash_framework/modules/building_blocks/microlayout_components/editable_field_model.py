@@ -91,7 +91,7 @@ class FormGetterCached:
         return entry.entry
 
 
-def defult_getter(
+def default_getter(
     refnr: str, settings: CallbackSettings, field_path: str, *args: list[Any]
 ) -> Any:
 
