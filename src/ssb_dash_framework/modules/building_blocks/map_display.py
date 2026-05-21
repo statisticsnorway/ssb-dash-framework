@@ -327,7 +327,7 @@ class MapDisplayWindow(WindowImplementation, MapDisplay):
         clickdata_func: Callable[..., Any] | None = None,
         output_var: str | None = None,
         label: str | None = None,
-        colorscale: str = _DEFAULT_COLORSCALE,
+        colorscale: str = _DEFAULT_COLORSCALE, **kwargs: Any
     ) -> None:
         """Initialize the MapDisplayWindow module.
 
@@ -380,4 +380,4 @@ class MapDisplayWindow(WindowImplementation, MapDisplay):
             label=label,
             colorscale=_DEFAULT_COLORSCALE,
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

@@ -300,11 +300,11 @@ class NspekControlViewTab(TabImplementation, NspekControlView):
 
 
 class NspekControlViewWindow(WindowImplementation, NspekControlView):
-    def __init__(self, time_units: list[str], control_dict: dict[str, Any]):
+    def __init__(self, time_units: list[str], control_dict: dict[str, Any], **kwargs: Any):
 
         NspekControlView.__init__(
             self,
             time_units=time_units,
             control_dict=control_dict,
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

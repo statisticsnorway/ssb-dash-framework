@@ -140,6 +140,54 @@ class Col(ContainerNode):
             ]
         )
 
+class Tab(ContainerNode):
+    type: Literal["tab"]
+    label: str
+    def create(
+        self,
+        settings: CallbackSettings,
+        inputs: list[Input] | None = None,
+        states: list[State] | None = None,
+        getter_args: None | list = None,
+    ) -> dbc.Tab:
+        """A method for creating the layout."""
+        return dbc.Tab(
+            [
+                child.create(
+                    settings,
+                    inputs,
+                    states,
+                    getter_args,
+                )
+                for child in self.children
+            ],
+            label=self.label
+        )
+
+class Tabs(ContainerNode):
+    type: Literal["tabs"]
+    tabs: list[Tab]
+
+    def create(
+        self,
+        settings: CallbackSettings,
+        inputs: list[Input] | None = None,
+        states: list[State] | None = None,
+        getter_args: None | list = None,
+    ) -> dbc.Tabs:
+        """A method for creating the layout."""
+        return dbc.Tabs(
+            [
+                child.create(
+                    settings,
+                    inputs,
+                    states,
+                    getter_args,
+                )
+                for child in self.tabs
+            ]
+        )
+
 
 class Header(BaseNode):
     type: Literal["header"]
@@ -640,7 +688,9 @@ Node = Annotated[
     | Textarea
     | KlassChecklist
     | ChecklistComponent
-    | DropdownComponent,
+    | DropdownComponent
+    | Tabs
+    | Tab,
     Field(discriminator="type"),
 ]
 
@@ -656,6 +706,8 @@ for m in (
     KlassChecklist,
     ChecklistComponent,
     DropdownComponent,
+    Tabs,
+    Tab,
 ):
     m.model_rebuild()
 

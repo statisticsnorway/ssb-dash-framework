@@ -138,6 +138,7 @@ class WindowImplementation:
 
     def __init__(
         self,
+        window_scrollable: bool | None = None,
     ) -> None:
         """Initialize the window implementation.
 
@@ -154,6 +155,7 @@ class WindowImplementation:
         if not hasattr(self, "icon"):
             self.icon = ""
 
+        self.window_scrollable = window_scrollable if window_scrollable is not None else True
         self._window_n = WindowImplementation._window_number
         self.window_callbacks()
         WindowImplementation._window_number += 1
@@ -215,6 +217,7 @@ class WindowImplementation:
                     id=f"{self._window_n}-{self.module_name}-modal",
                     size="xl",
                     fullscreen="xxl-down",
+                    scrollable=self.window_scrollable,
                 ),
                 sidebar_button(
                     f"{self.icon}",

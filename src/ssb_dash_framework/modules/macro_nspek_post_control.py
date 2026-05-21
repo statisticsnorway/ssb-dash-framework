@@ -860,6 +860,7 @@ class MacroNspekPostControlWindow(WindowImplementation, MacroNspekPostControl):
         conn: object,
         file_path_resolver: Callable[[int, str], str],
         consolidated: bool = False,
+        **kwargs: Any
     ) -> None:
         """Initializes the MacroNspekPostControlWindow class."""
         MacroNspekPostControl.__init__(
@@ -869,4 +870,4 @@ class MacroNspekPostControlWindow(WindowImplementation, MacroNspekPostControl):
             file_path_resolver=file_path_resolver,
             consolidated=consolidated,
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

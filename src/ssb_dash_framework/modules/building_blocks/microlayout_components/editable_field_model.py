@@ -1,17 +1,14 @@
+from ibis.expr.types.relations import Table
+
 import logging
 from collections.abc import Callable
 from pandas.core.series import Series
 from typing import Any
 from ibis.expr.types.relations import Table
-
-import logging
-from collections.abc import Callable
-from typing import Any
 from functools import cache
-import time
 from ibis import Table
 from dataclasses import dataclass
-from typing import Any
+import time
 
 from dash import Input
 from dash import Output
@@ -32,7 +29,6 @@ from ....utils.core_models import UpdateSkjemadata
 from ....utils.config_tools.connection import _get_connection_object
 from ....utils.alert_handler import create_alert
 from ....utils.config_tools.connection import get_connection
-from .microlayout_data_stores import _STORE_CONFIGS, store_getter
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
 logger = logging.getLogger(__name__)

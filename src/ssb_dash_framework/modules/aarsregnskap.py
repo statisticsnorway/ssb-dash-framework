@@ -3,6 +3,7 @@ import logging
 from abc import ABC
 from abc import abstractmethod
 from typing import ClassVar
+from typing import Any
 from PIL import Image
 import io
 
@@ -399,7 +400,7 @@ class AarsregnskapTab(TabImplementation, Aarsregnskap):
 class AarsregnskapWindow(WindowImplementation, Aarsregnskap):
     """AarsregnskapWindow is an implementation of the Aarsregnskap module as a window in a Dash application."""
 
-    def __init__(self) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """Initializes the AarsregnskapWindow class."""
         Aarsregnskap.__init__(self)
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)
