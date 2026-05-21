@@ -3085,6 +3085,55 @@ class Naeringsspesifikasjon:
 
             return df.to_dict("records"), tab_label
 
+        @callback(
+            Output("alert_store", "data", allow_duplicate=True),
+            Output("refresh-manager", "data", allow_duplicate=True),
+            Input("var-ident", "value"),
+            Input("var-aar", "value"),
+            State("alert_store", "data"),
+            State("refresh-manager", "data"),
+            prevent_initial_call=True,
+        )
+        def validate_nspek_data_exists(orgnr, aar, alert_store, refresh_data):
+            """
+            Validates that orgnr/year exists in NSPEK registrering table.
+
+            Example use: triggered when variable selector updates.
+            """
+
+            alert_store = alert_store or []
+
+            if not orgnr or not aar:
+                raise PreventUpdate
+
+            if not has_data(self.conn, orgnr, aar):
+
+                refresh_data = trigger_refresh(
+                    refresh_data,
+                    "invalid_search"
+                )
+
+                alert_store = [
+                    create_alert(
+                        (
+                            f"Ingen data funnet for "
+                            f"orgnr {orgnr} og år {aar} i NSPEK"
+                        ),
+                        "danger",
+                        ephemeral=True,
+                    ),
+                    *alert_store,
+                ]
+
+                return alert_store, refresh_data
+
+            refresh_data = trigger_refresh(
+                refresh_data,
+                "valid_search"
+            )
+
+            return alert_store, refresh_data
+
 
 class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
     """NaeringsspesifikasjonTab is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
