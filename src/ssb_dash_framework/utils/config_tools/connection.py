@@ -178,6 +178,12 @@ def set_eimerdb_connection(
                 partition_select=partition_select,
             )
             conn.create_table("enheter", enheter)
+        if "enhetsinfo" in tables_to_read:
+            enheter = _CONNECTION.query(
+                "SELECT * FROM enhetsinfo",
+                partition_select=partition_select,
+            )
+            conn.create_table("enhetsinfo", enheter)
         if "kontaktinfo" in tables_to_read:
             kontaktinfo = _CONNECTION.query(
                 "SELECT * FROM kontaktinfo",

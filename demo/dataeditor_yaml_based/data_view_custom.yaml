@@ -1,0 +1,70 @@
+- type: CustomView
+  applies_to_tables:
+    - skjemadata_hoved
+  applies_to_forms:
+    - RA-7357
+  layout:
+    - row:
+        - col:
+            type: microlayout
+            label: Tre variabler
+            form_data_table: skjemadata_hoved
+            form_data_field_name_column: variabel
+            layout:
+            - type: row
+              children:
+              - type: col
+                children:
+                - type: input
+                  label: "Totalareal"
+                  variable: totalareal
+                - type: input
+                  label: "Fulldyrket"
+                  variable: fulldyrket
+                - type: input
+                  label: "Innmarksbeite"
+                  variable: innmarksbeite
+                - type: tabs
+                  tabs:
+                    - type: tab
+                      label: "tab 1"
+                      children:
+                      - type: input
+                        label: "Innmarksbeite"
+                        variable: innmarksbeite¨
+                        field_settings:
+                          field_path: "rt"
+                    - type: tab
+                      label: "tab 2"
+                      children:
+                      - type: input
+                        label: "Innmarksbeite 1"
+                        variable: innmarksbeite
+                        field_settings:
+                          field_path: "rtjr"
+                      - type: row
+                        children:
+                        - type: col
+                          children:
+                          - type: input
+                            label: "Totalareal"
+                            variable: totalareal
+                            field_settings:
+                              field_path: "wew"
+                          - type: input
+                            label: "Totalareal 2"
+                            variable: totalareal
+                            field_settings:
+                              field_path: "wregerew"
+                        - type: col
+                          children:
+                          - type: input
+                            label: "Totalareal"
+                            variable: totalareal
+                            field_settings:
+                              field_path: "wew"
+                          - type: input
+                            label: "Totalareal 2"
+                            variable: totalareal
+                            field_settings:
+                              field_path: "wregerew"

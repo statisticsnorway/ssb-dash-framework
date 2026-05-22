@@ -1,4 +1,72 @@
+window.dash_clientside = window.dash_clientside || {};
+window.dash_clientside.aarsregnskap = {
+    zoom: function(n_plus, n_minus) {
+        if (!n_plus && !n_minus) return window.dash_clientside.no_update;
+        const container = document.getElementById('tab-aarsregnskap-img-container');
+        const label = document.getElementById('tab-aarsregnskap-zoom-label');
+        if (!container) return window.dash_clientside.no_update;
+        let zoom = parseFloat(container.dataset.zoom || 100);
+        const triggered = window.dash_clientside.callback_context.triggered[0].prop_id;
+        if (triggered.includes('zoom-in')) zoom = Math.min(zoom + 10, 300);
+        if (triggered.includes('zoom-out')) zoom = Math.max(zoom - 10, 20);
+        container.dataset.zoom = zoom;
+        container.querySelectorAll('img').forEach(img => img.style.width = zoom + '%');
+        label.textContent = zoom + '%';
+        return zoom;
+    }
+};
+
 window.dashAgGridFunctions = window.dashAgGridFunctions || {};
+
+/* -----------------------------------------------------------------------
+ * Right-click → copy cell value for all AG Grid tables in the app.
+ * Applies globally.
+ * ----------------------------------------------------------------------- */
+(function () {
+    function showCopyNotification(value) {
+        var container = document.getElementById('alert-container-bottom-left');
+        if (!container) return;
+        var now = new Date();
+        var ts = now.getFullYear() + '-' +
+            String(now.getMonth() + 1).padStart(2, '0') + '-' +
+            String(now.getDate()).padStart(2, '0') + ' ' +
+            String(now.getHours()).padStart(2, '0') + ':' +
+            String(now.getMinutes()).padStart(2, '0') + ':' +
+            String(now.getSeconds()).padStart(2, '0');
+        var el = document.createElement('div');
+        el.className = 'alert alert-info mb-2';
+        el.setAttribute('role', 'alert');
+        var small = document.createElement('small');
+        small.className = 'text-muted';
+        small.textContent = ts + ': ';
+        el.appendChild(small);
+        el.appendChild(document.createTextNode('Kopiert: ' + value));
+        container.appendChild(el);
+        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 4000);
+    }
+
+    document.addEventListener('contextmenu', function (e) {
+        if (typeof e.target.closest !== 'function') return;
+        var cell = e.target.closest('.ag-cell') || e.target.closest('[col-id]');
+        if (!cell) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var valueEl = cell.querySelector('.ag-cell-value') || cell;
+        var value = (valueEl.textContent || '').trim();
+        navigator.clipboard.writeText(value).catch(function () {
+            var ta = document.createElement('textarea');
+            ta.value = value;
+            ta.style.cssText = 'position:fixed;opacity:0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        });
+        showCopyNotification(value);
+    }, true);
+
+    console.log('[ag-grid copy] context menu listener registered');
+}());
 
 // MacroModule
 window.dashAgGridFunctions.MacroModule = {
@@ -52,10 +120,10 @@ window.dashAgGridFunctions.MacroModule = {
     // === Function displayDiffHeatMap (Heatmap colouring for a matrix-table with +/- 30% diff threshold) ===
     displayDiffHeatMap(props) {
 
-        // Special handling for count row
+        // Special handling for count row — inherit color so dark mode works
         if (props.data && props.data.id === 'count_row') {
             return {
-                color: 'black',
+                color: 'inherit',
             };
         }
 
@@ -112,10 +180,10 @@ window.dashAgGridFunctions.MacroModule = {
     // === Function displaySimpleHeatMap (Simple 2-choice (cold/warm for neg/pos) heatmap) ===
     displaySimpleHeatMap(props) {
 
-        // Special handling for count row
+        // Special handling for count row — inherit color so dark mode works
         if (props.data && props.data.id === 'count_row') {
             return {
-                color: 'black',
+                color: 'inherit',
             };
         }
 
@@ -223,6 +291,64 @@ window.dashAgGridFunctions.MacroModule = {
         return prefixB !== prefixF;
     },
 
+    // === Function showClickPopup (Show confirmation popup when a name/orgnr cell is clicked in the detail grid) ===
+    showClickPopup(cellClicked, rowData, orgnrFCol, orgnrBCol, namedCol) {
+        var noShow = [null, '', {display: 'none'}];
+        if (!cellClicked || !rowData) return noShow;
+
+        var colId = cellClicked.colId;
+        var rowId = cellClicked.rowId;
+        if (rowId == null || [orgnrFCol, orgnrBCol, namedCol].indexOf(colId) === -1) {
+            return noShow;
+        }
+
+        var rowIdx = parseInt(rowId);
+        if (isNaN(rowIdx) || rowIdx >= rowData.length) return noShow;
+
+        var row = rowData[rowIdx];
+        var navn = row[namedCol] || '';
+        var label;
+        if (colId === orgnrBCol) {
+            label = 'Bedrift: ' + navn + ' (' + (row[orgnrBCol] || '') + ')';
+        } else {
+            label = 'Foretak: ' + navn + ' (' + (row[orgnrFCol] || '') + ')';
+        }
+
+        var pendingData = {rowId: rowId, colId: colId, rowData: row};
+
+        // Position relative to the detail grid container so the popup
+        // scrolls with the page instead of floating over it.
+        var containerEl = document.querySelector('.macromodule-detail-grid-container');
+        var style;
+        if (containerEl) {
+            var rect = containerEl.getBoundingClientRect();
+            var relX = (window._macroModuleLastClickX || 0) - rect.left;
+            var relY = (window._macroModuleLastClickY || 0) - rect.top;
+            style = {
+                display: 'flex',
+                position: 'absolute',
+                top: (relY + 12) + 'px',
+                left: relX + 'px',
+                zIndex: '9999'
+            };
+        } else {
+            style = {
+                display: 'flex',
+                position: 'fixed',
+                top: ((window._macroModuleLastClickY || 0) + 12) + 'px',
+                left: (window._macroModuleLastClickX || 0) + 'px',
+                zIndex: '9999'
+            };
+        }
+        return [pendingData, label, style];
+    },
+
+    // === Function hidePopupOnClear (Hide the confirmation popup when pending data is cleared) ===
+    hidePopupOnClear(pendingData) {
+        if (!pendingData) return {display: 'none'};
+        return window.dash_clientside.no_update;
+    },
+
     // === Function displayDiffColumnHighlight (Mark tilgang & avgang on the diff-column) ===
     displayDiffColumnHighlight(props) {
         if (!props.data) return {};
@@ -256,5 +382,10 @@ window.dashAgGridFunctions.MacroModule = {
 
         return {};
     }
-
 };
+
+// Track last mouse click position so the popup can be anchored to the clicked cell
+document.addEventListener('click', function(e) {
+    window._macroModuleLastClickX = e.clientX;
+    window._macroModuleLastClickY = e.clientY;
+});

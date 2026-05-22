@@ -1,6 +1,7 @@
 import logging
 from abc import ABC
 from abc import abstractmethod
+from typing import Any
 
 from dash import html
 
@@ -76,7 +77,7 @@ class CanvasTab(TabImplementation, Canvas):
 class CanvasWindow(WindowImplementation, Canvas):
     """Implements the Canvas module as a tab."""
 
-    def __init__(self, label: str, content: html.Div) -> None:
+    def __init__(self, label: str, content: html.Div, **kwargs: Any) -> None:
         """Initializes the CanvasWindow module.
 
         Args:
@@ -84,4 +85,4 @@ class CanvasWindow(WindowImplementation, Canvas):
             content: A Dash layout that will be displayed in the canvas tab. Can contain other building block modules.
         """
         Canvas.__init__(self, label=label, content=content)
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

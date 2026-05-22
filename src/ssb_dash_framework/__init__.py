@@ -39,20 +39,24 @@ from .modules import FreeSearchWindow
 from .modules import HBMethod
 from .modules import HBMethodWindow
 from .modules import MacroModule
-from .modules import MacroModuleConsolidated
-from .modules import MacroModuleConsolidatedTab
-from .modules import MacroModuleConsolidatedWindow
 from .modules import MacroModuleTab
 from .modules import MacroModuleWindow
+from .modules import MacroNspekPostControl
+from .modules import MacroNspekPostControlTab
+from .modules import MacroNspekPostControlWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
+from .modules import MicroLayoutAIO
 from .modules import MultiModule
 from .modules import MultiModuleTab
 from .modules import MultiModuleWindow
 from .modules import Naeringsspesifikasjon
 from .modules import NaeringsspesifikasjonTab
 from .modules import NaeringsspesifikasjonWindow
+from .modules import NspekControls
+from .modules import NspekControlViewTab
+from .modules import NspekControlViewWindow
 from .modules import ParquetEditor
 from .modules import ParquetEditorChangelog
 from .modules import PimemorizerTab
@@ -139,14 +143,15 @@ __all__ = [
     "HBMethod",
     "HBMethodWindow",
     "MacroModule",
-    "MacroModuleConsolidated",
-    "MacroModuleConsolidatedTab",
-    "MacroModuleConsolidatedWindow",
     "MacroModuleTab",
     "MacroModuleWindow",
+    "MacroNspekPostControl",
+    "MacroNspekPostControlTab",
+    "MacroNspekPostControlWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
+    "MicroLayoutAIO",
     "MultiModule",
     "MultiModule",
     "MultiModuleTab",
@@ -157,6 +162,9 @@ __all__ = [
     "Naeringsspesifikasjon",
     "NaeringsspesifikasjonTab",
     "NaeringsspesifikasjonWindow",
+    "NspekControlViewTab",
+    "NspekControlViewWindow",
+    "NspekControls",
     "ParquetEditor",
     "ParquetEditorChangelog",
     "PimemorizerTab",

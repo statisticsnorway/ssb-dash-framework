@@ -7,7 +7,7 @@ from ssb_dash_framework.utils.alert_handler import create_alert
 def test_create_alert() -> None:
     alert = create_alert("Test message", "info", True)
     assert isinstance(alert, dict)
-    assert len(alert.keys()) == 5
+    assert len(alert.keys()) == 8
 
 
 def test_alerthandler() -> None:

@@ -84,6 +84,7 @@ class ParquetEditor:
         allow_risky_column_names: bool = False,
         allow_integer: bool = False,
         allow_float: bool = False,
+        height: str = "400px",  # Default value of AgGrid
     ) -> None:
         """Initializes the module and makes a few validation checks before moving on.
 
@@ -98,6 +99,7 @@ class ParquetEditor:
             allow_risky_column_names: Controls whether or not ParquetEditor allows potentially bug-inducing column names. Defaults to False.
             allow_integer: Toggles whether or not columns with integer datatype are allowed as id_vars. This is a somewhat risky choice so be aware it can cause issues. Defaults to False.
             allow_float: Toggles whether or not columns with float datatype are allowed as id_vars. This is a risky choice so be aware it can cause issues. Defaults to False.
+            height: AgGrid defaults to 400px height. This argument allows us to specify other params for height.
         """
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
@@ -106,6 +108,8 @@ class ParquetEditor:
         self.allow_risky_column_names = allow_risky_column_names
         self.allow_integer = allow_integer
         self.allow_float = allow_float
+        self._height = height
+
         check_for_bucket_path(data_source)
         if "/inndata/" not in data_source:
             logger.warning(
@@ -261,7 +265,10 @@ class ParquetEditor:
                     persistence=True,
                     persisted_props=["filterModel"],
                 ),
-            ]
+            ],
+            style={
+                "height": self._height
+            },  # This is an exception. Styles should be in stylesheet.css
         )
 
     def layout(self) -> html.Div:

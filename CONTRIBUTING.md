@@ -38,7 +38,7 @@ In order to keep this library stable for production apps, follow these steps bef
 
 ## How to set up your development environment
 
-You need Python 3.10+ and the following tools:
+You need Python 3.12+ and the following tools:
 
 - [Poetry]
 - [Nox]

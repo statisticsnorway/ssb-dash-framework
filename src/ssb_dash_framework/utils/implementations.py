@@ -138,6 +138,7 @@ class WindowImplementation:
 
     def __init__(
         self,
+        window_scrollable: bool | None = None,
     ) -> None:
         """Initialize the window implementation.
 
@@ -154,6 +155,7 @@ class WindowImplementation:
         if not hasattr(self, "icon"):
             self.icon = ""
 
+        self.window_scrollable = window_scrollable if window_scrollable is not None else True
         self._window_n = WindowImplementation._window_number
         self.window_callbacks()
         WindowImplementation._window_number += 1
@@ -181,6 +183,7 @@ class WindowImplementation:
                                             dbc.Button(
                                                 "Fullscreen visning",
                                                 id=f"{self._window_n}-{self.module_name}-modal-fullscreen",
+                                                className="ssb-btn primary-btn",
                                             ),
                                         ),
                                     ],
@@ -200,6 +203,7 @@ class WindowImplementation:
                     id=f"{self._window_n}-{self.module_name}-modal",
                     size="xl",
                     fullscreen="xxl-down",
+                    scrollable=self.window_scrollable,
                 ),
                 sidebar_button(
                     f"{self.icon}",
@@ -252,18 +256,21 @@ class WindowImplementation:
 
         @callback(  # type: ignore[misc]
             Output(f"{self._window_n}-{self.module_name}-modal", "fullscreen"),
+            Output(f"{self._window_n}-{self.module_name}-modal-fullscreen", "children"),
             Input(f"{self._window_n}-{self.module_name}-modal-fullscreen", "n_clicks"),
             State(f"{self._window_n}-{self.module_name}-modal", "fullscreen"),
         )
         def toggle_fullscreen_modal(
             n_clicks: int, fullscreen_state: str | bool
-        ) -> str | bool:
+        ) -> tuple:
             fullscreen: str | bool
             if n_clicks and n_clicks > 0:
                 if fullscreen_state is True:
                     fullscreen = "xxl-down"
+                    label = "Fullscreen visning"
                 else:
                     fullscreen = True
-                return fullscreen
+                    label = "Minimer vindu"
+                return fullscreen, label
             else:
                 raise PreventUpdate

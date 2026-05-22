@@ -275,9 +275,12 @@ class AltinnEditorPrimaryTable:
             Output("var-statistikkvariabel", "value"),
             Input("altinnedit-table-skjemadata", "cellClicked"),
             State("altinnedit-table-skjemadata", "rowData"),
+            State("var-statistikkvariabel", "value"),
         )
         def select_variabel(
-            click: dict[str, Any], row_data: list[dict[str, Any]]
+            click: dict[str, Any],
+            row_data: list[dict[str, Any]],
+            statistikkvariabel: str,
         ) -> str:
             logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")
 
@@ -288,9 +291,15 @@ class AltinnEditorPrimaryTable:
 
             long_format = "variabel" in columns and "verdi" in columns
             if long_format:
-                return str(row_data[click["rowIndex"]]["variabel"])
+                variable = str(row_data[click["rowIndex"]]["variabel"])
+                if variable == statistikkvariabel:
+                    raise PreventUpdate
+                return variable
 
             column = click.get("colId")  # wide format
+            if column == statistikkvariabel:
+                raise PreventUpdate
+
             if column in ("aar", "ident", "skjema", "refnr", "tabell"):
                 raise PreventUpdate
 
@@ -332,7 +341,22 @@ class AltinnEditorPrimaryTable:
                     old_value = edited[0]["oldValue"]
                     condition_str = " AND ".join(period_where)
                     columns = conn.table(tabell).columns
+
+                    ILLEGAL_COLUMNS = {"id", "ident", "refnr", "skjema", "variabel"}
+                    edited_column = edited[0]["colId"]
+
                     if "variabel" in columns and "verdi" in columns:
+                        # long format
+                        if edited_column != "verdi":
+                            alert_store = [
+                                create_alert(
+                                    f"Kolonnen {edited_column} kan ikke editeres!",
+                                    "danger",
+                                    ephemeral=True,
+                                ),
+                                *alert_store,
+                            ]
+                            return alert_store
                         try:
                             variable = edited[0]["data"]["variabel"]
                             query = f"""
@@ -340,36 +364,80 @@ class AltinnEditorPrimaryTable:
                                 SET verdi = '{value}'
                                 WHERE variabel = '{variable}' AND ident = '{ident}' AND refnr = '{refnr}' AND {condition_str}
                             """
-                            conn.raw_sql(query)
+                            result = conn.raw_sql(query)
+                            if result.rowcount == 0:
+                                alert_store = [
+                                    create_alert(
+                                        f"Oppdateringa gikk ikke gjennom (ingen rader påvirket).",
+                                        "danger",
+                                        ephemeral=True,
+                                    ),
+                                    *alert_store,
+                                ]
+                            else:
+                                alert_store = [
+                                    create_alert(
+                                        f"ident: {ident}, variabel: {variable} er oppdatert fra {old_value} til {value}!",
+                                        "success",
+                                        ephemeral=True,
+                                    ),
+                                    *alert_store,
+                                ]
+                        except Exception as e:
                             alert_store = [
                                 create_alert(
-                                    f"ident: {ident}, variabel: {variable} er oppdatert fra {old_value} til {value}!",
-                                    "success",
+                                    f"Oppdateringa feilet: {str(e)[:120]}",
+                                    "danger",
                                     ephemeral=True,
                                 ),
                                 *alert_store,
                             ]
-                        except Exception as e:
-                            raise e
                     else:
+                        # wide format
+                        if edited_column in ILLEGAL_COLUMNS:
+                            alert_store = [
+                                create_alert(
+                                    f"Kolonnen {edited_column} kan ikke editeres!",
+                                    "danger",
+                                    ephemeral=True,
+                                ),
+                                *alert_store,
+                            ]
+                            return alert_store
                         try:
-                            variable = edited[0]["colId"]
                             query = f"""
                                 UPDATE {tabell}
-                                SET {variable} = '{value}'
+                                SET {edited_column} = '{value}'
                                 WHERE ident = '{ident}' AND refnr = '{refnr}' AND {condition_str}
                             """
-                            conn.raw_sql(query)
+                            result = conn.raw_sql(query)
+                            if result.rowcount == 0:
+                                alert_store = [
+                                    create_alert(
+                                        f"Oppdateringa gikk ikke gjennom (ingen rader påvirket).",
+                                        "danger",
+                                        ephemeral=True,
+                                    ),
+                                    *alert_store,
+                                ]
+                            else:
+                                alert_store = [
+                                    create_alert(
+                                        f"ident: {ident}, {edited_column} er oppdatert fra {old_value} til {value}!",
+                                        "success",
+                                        ephemeral=True,
+                                    ),
+                                    *alert_store,
+                                ]
+                        except Exception as e:
                             alert_store = [
                                 create_alert(
-                                    f"ident: {ident}, {variable} er oppdatert fra {old_value} til {value}!",
-                                    "success",
+                                    f"Oppdateringa feilet. {str(e)[:120]}",
+                                    "danger",
                                     ephemeral=True,
                                 ),
                                 *alert_store,
                             ]
-                        except Exception as e:
-                            raise e
                     return alert_store
 
             elif isinstance(connection_object, EimerDBInstance):

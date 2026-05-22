@@ -2,13 +2,14 @@ import base64
 import logging
 from abc import ABC
 from abc import abstractmethod
+from typing import Any
 
 import dash_bootstrap_components as dbc
-from dapla import FileClient
 from dash import callback
 from dash import html
 from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
+import gcsfs
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
@@ -156,7 +157,7 @@ class SkjemapdfViewer(ABC):
             path_to_file = f"{self.pdf_folder_path}/{form_identifier}.pdf"
             logger.debug(f"Trying to open file: {path_to_file}")
             try:
-                fs = FileClient.get_gcs_file_system()
+                fs = gcsfs.GCSFileSystem()
                 with fs.open(
                     f"{self.pdf_folder_path}/{form_identifier}.pdf",
                     "rb",
@@ -193,7 +194,7 @@ class SkjemapdfViewerTab(TabImplementation, SkjemapdfViewer):
 class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
     """Implementation of the SkjemapdfViewer as a window."""
 
-    def __init__(self, pdf_folder_path: str, form_identifier: str = "refnr") -> None:
+    def __init__(self, pdf_folder_path: str, form_identifier: str = "refnr", **kwargs: Any) -> None:
         """Initialize the SkjemapdfViewerWindow class.
 
         This class is a subclass of SkjemapdfViewer and is used to create a window for viewing PDF files.
@@ -205,4 +206,5 @@ class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
         SkjemapdfViewer.__init__(self, form_identifier, pdf_folder_path)
         WindowImplementation.__init__(
             self,
+            **kwargs
         )

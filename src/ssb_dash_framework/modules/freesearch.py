@@ -197,7 +197,7 @@ class FreeSearchTab(TabImplementation, FreeSearch):
 class FreeSearchWindow(WindowImplementation, FreeSearch):
     """FreeSearchWindow is a class that creates a modal based on the FreeSearch module."""
 
-    def __init__(self, conn: Any | None = None) -> None:
+    def __init__(self, conn: Any | None = None, **kwargs: Any) -> None:
         """Initialize the FreeSearchWindow class.
 
         Args:
@@ -205,5 +205,5 @@ class FreeSearchWindow(WindowImplementation, FreeSearch):
         """
         FreeSearch.__init__(self, conn=conn)
         WindowImplementation.__init__(
-            self,
+            self, **kwargs
         )

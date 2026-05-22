@@ -481,7 +481,7 @@ class AltinnControlViewWindow(WindowImplementation, ControlView):
     def __init__(
         self,
         time_units: list[str],
-        control_dict: dict[str, Any],
+        control_dict: dict[str, Any], **kwargs: Any
     ) -> None:
         """Initializes the ControlViewWindow module."""
         warnings.warn(
@@ -495,4 +495,4 @@ class AltinnControlViewWindow(WindowImplementation, ControlView):
             time_units=time_units,
             control_dict=control_dict,
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)
