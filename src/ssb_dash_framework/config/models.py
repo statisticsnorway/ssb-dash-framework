@@ -1,3 +1,4 @@
+import os
 from typing import Any
 from typing import Literal
 
@@ -31,24 +32,6 @@ class VariableSelectorConfig(BaseModel):  # TODO Add default templates?
     def model_post_init(self, __context: Any) -> None:
         apply_config(self)
 
-    # @classmethod
-    # def from_yaml(cls, yaml_path: str) -> "VariableSelectorConfig":
-    #     import yaml
-
-    #     with open(yaml_path) as f:
-    #         config = yaml.safe_load(f)
-    #     for unit in config["time_units"]:
-    #         if config["time_units"][unit] == "year":
-    #             config["time_units"][unit] = TimeUnitType.YEAR
-    #     return cls(**config)
-
-    # @classmethod
-    # def from_dict(cls, config) -> "VariableSelectorConfig":
-    #     for unit in config["time_units"]:
-    #         if config["time_units"][unit] == "year":
-    #             config["time_units"][unit] = TimeUnitType.YEAR
-    #     return cls(**config)
-
     def __str__(self) -> str:
         lines = [
             "VariableSelectorConfig",
@@ -72,7 +55,7 @@ class AppSettings(BaseModel):
     """Maps 1-to-1 onto the arguments of app_setup()."""
 
     port: int
-    service_prefix: str | None = None
+    service_prefix: str = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
     stylesheet: str = "darkly"
     enable_logging: bool = True
     logging_level: Literal["debug", "info", "warning", "error", "critical"] = "info"
@@ -85,6 +68,23 @@ class AppSettings(BaseModel):
         if not (1024 <= v <= 65535):
             raise ValueError(f"port must be between 1024 and 65535, got {v}")
         return v
+
+    def __str__(self) -> str:
+        lines = [
+            "AppSettings",
+            f"  port:               {self.port}",
+            f"  service_prefix:     {self.service_prefix}",
+            f"  stylesheet:         {self.stylesheet}",
+            f"  enable_logging:     {self.enable_logging}",
+            f"  logging_level:      {self.logging_level}",
+            f"  log_to_file:        {self.log_to_file}",
+            "  variableselector:",
+        ]
+
+        vs_str = str(self.variableselector).splitlines()
+        lines.extend(f"    {line}" for line in vs_str)
+
+        return "\n".join(lines)
 
 
 class ModuleConfig(BaseModel):
@@ -122,6 +122,14 @@ class ModuleConfig(BaseModel):
         """Return all fields that are NOT 'type', to be forwarded as **kwargs."""
         return {k: v for k, v in self.model_dump().items() if k != "type"}
 
+    def __str__(self) -> str:
+        lines = [self.type]
+
+        for key, value in self.extra_kwargs.items():
+            lines.append(f"    {key}={value!r}")
+
+        return "\n".join(lines)
+
 
 class AppModules(BaseModel):
     """Describes which modules appear as tabs and which as sidebar windows.
@@ -133,9 +141,54 @@ class AppModules(BaseModel):
     tabs: list[ModuleConfig] = []
     windows: list[ModuleConfig] = []
 
+    def __str__(self) -> str:
+        lines = [
+            "AppModules",
+            f"  tabs ({len(self.tabs)}):",
+        ]
+
+        if self.tabs:
+            for module in self.tabs:
+                module_lines = str(module).splitlines()
+
+                lines.append(f"    - {module_lines[0]}")
+
+                for line in module_lines[1:]:
+                    lines.append(f"      {line}")
+
+        else:
+            lines.append("    (none)")
+
+        lines.append(f"  windows ({len(self.windows)}):")
+
+        if self.windows:
+            for module in self.windows:
+                module_lines = str(module).splitlines()
+
+                lines.append(f"    - {module_lines[0]}")
+
+                for line in module_lines[1:]:
+                    lines.append(f"      {line}")
+
+        else:
+            lines.append("    (none)")
+
+        return "\n".join(lines)
+
 
 class AppConfig(BaseModel):
     """Root model — the entire YAML file maps onto this."""
 
     app_settings: AppSettings
     modules: AppModules = AppModules()
+
+    def __str__(self) -> str:
+        lines = [
+            "AppConfig",
+            "",
+            str(self.app_settings),
+            "",
+            str(self.modules),
+        ]
+
+        return "\n".join(lines)
