@@ -592,8 +592,8 @@ def build_column_defs(sekvens_compare=None):
                     {
                         "condition": "params.colDef.field === 'diff' && params.value > 0",
                         "style": {
-                            "backgroundColor": "#e8f5e9",
-                            "color": "#2e7d32",
+                            #"backgroundColor": "#e8f5e9",
+                            "color": "#1A9D49",
                             "fontWeight": "bold",
                             "textAlign": "right",
                             "paddingRight": "10px",
@@ -602,8 +602,8 @@ def build_column_defs(sekvens_compare=None):
                     {
                         "condition": "params.colDef.field === 'diff' && params.value < 0",
                         "style": {
-                            "backgroundColor": "#ffebee",
-                            "color": "#c62828",
+                            #"backgroundColor": "#ffebee",
+                            "color": "#DC3400",
                             "fontWeight": "bold",
                             "textAlign": "right",
                             "paddingRight": "10px",
@@ -1720,7 +1720,7 @@ class Naeringsspesifikasjon:
                                         dbc.Col(
                                             self.create_checkbox(
                                                 component_id="toggle-show-blank-values-resultat",
-                                                label="Vis blanke verdier 👻",
+                                                label="Vis blanke verdier",
                                                 value="show_blank",
                                                 checked=True,
                                             ),
@@ -1729,7 +1729,7 @@ class Naeringsspesifikasjon:
                                         dbc.Col(
                                             self.create_checkbox(
                                                 component_id="toggle-show-petroleum-fields-resultat",
-                                                label="Vis petroleumsposter 🛢️",
+                                                label="Vis petroleumsposter",
                                                 value="show_petroleum",
                                                 checked=False,
                                             ),
@@ -1768,7 +1768,7 @@ class Naeringsspesifikasjon:
                                         dbc.Col(
                                             self.create_checkbox(
                                                 component_id="toggle-show-blank-values-balanse",
-                                                label="Vis blanke verdier 👻",
+                                                label="Vis blanke verdier",
                                                 value="show_blank",
                                                 checked=True,
                                             ),
@@ -1777,7 +1777,7 @@ class Naeringsspesifikasjon:
                                         dbc.Col(
                                             self.create_checkbox(
                                                 component_id="toggle-show-petroleum-fields-balanse",
-                                                label="Vis petroleumsposter 🛢️",
+                                                label="Vis petroleumsposter",
                                                 value="show_petroleum",
                                                 checked=False,
                                             ),
@@ -1865,7 +1865,7 @@ class Naeringsspesifikasjon:
                                         "rowSelection": "single",
                                         "animateRows": True,
                                     },
-                                    getRowStyle=self.get_row_style_kontrollutslag(),
+                                    #getRowStyle=self.get_row_style_kontrollutslag(),
                                     style={
                                         "height": "50vh",
                                         "width": "100%",
