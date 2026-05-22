@@ -1,15 +1,24 @@
 from collections.abc import Generator
 from contextlib import contextmanager
+from pathlib import Path
 
 import ibis
 import pytest
+import yaml
 
 from ssb_dash_framework import VariableSelector
 from ssb_dash_framework import set_connection
 
 
+@pytest.fixture
+def config_yaml():
+    yaml_file = Path(__file__).parent / "config" / "example_config.yaml"
+    with open(yaml_file) as f:
+        return yaml.safe_load(f)
+
+
 @pytest.fixture(autouse=True)
-def clear_VariableSelector_variableselectoroptions() -> Generator[None, None, None]:
+def clear_VariableSelector_variableselectoroptions() -> Generator[None]:
     """Automatically clears the VariableSelector registry before each test.
 
     This ensures that each test starts with an empty codelist (so VariableSelector
