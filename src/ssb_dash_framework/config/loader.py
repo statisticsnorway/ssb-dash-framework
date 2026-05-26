@@ -1,10 +1,10 @@
 import os
-
+from typing import Literal
 from ..setup.app_setup import app_setup
 from .models import AppConfig
 from .models import AppModules
 from .models import AppSettings
-from .models import VariableSelectorConfig
+from .models import VariableSelectorConfig, ModuleConfig
 from .yaml_parser import config_parser_yaml
 
 
@@ -27,8 +27,15 @@ def setup_variableselector(
     ...
 
 
-def instantiate_modules(modules_to_instantiate: AppModules): ...
+def instantiate_module(module: ModuleConfig, type: Literal["tab", "window"]):
 
+
+
+def build_modules(modules: AppModules):
+    for module in modules.tabs:
+        instantiate_module(module)
+    for module in modules.windows:
+        instantiate_module(module)
 
 def build_app_from_config(config: AppConfig):
     app = apply_app_settings(config.app_settings)
