@@ -52,7 +52,7 @@ class NspekControlView(ABC):
         )
 
         if outputs is None:
-            outputs = ["ident", "aar"]
+            outputs = ["ident", "foretak", "aar"]
         self.module_number = NspekControlView._id_number
         self.module_name = self.__class__.__name__
         NspekControlView._id_number += 1
@@ -101,6 +101,7 @@ class NspekControlView(ABC):
                                 className="ssb-btn primary-btn",
                             ),
                             width="auto",
+                            style={"display": "none"},
                         ),
                         dbc.Col(html.P(id=f"{self.module_number}-kontroll-var")),
                     ],
@@ -137,7 +138,7 @@ class NspekControlView(ABC):
                                 "rowSelection": "single",
                                 "rowHeight": 30,
                             },
-                            style={"height": "600px"},
+                            style={"height": "500px"},
                         ),
                         width=12,
                     )
@@ -250,12 +251,18 @@ class NspekControlView(ABC):
 
             if df is None or df.empty:
                 return [], []
+            
+            df["foretak"] = df["ident"]
 
             columns = [{"headerName": c, "field": c} for c in df.columns]
 
             if len(columns) > 0:
                 columns[0]["checkboxSelection"] = True
                 columns[0]["headerCheckboxSelection"] = True
+            
+            for col in columns:
+                if col["field"] == "foretak":
+                    col["hide"] = True
 
             return df.to_dict("records"), columns
 
