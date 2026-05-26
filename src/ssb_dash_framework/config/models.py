@@ -11,6 +11,33 @@ from ..utils.config_tools.set_variables import TimeUnitType
 from ..utils.config_tools.set_variables import apply_config
 
 
+class RegisteredModule(BaseModel):
+    type: str
+    available_as_tab: bool
+    available_as_window: bool
+    kwargs: list[str]
+
+
+_MODULE_REGISTRY: list[RegisteredModule] = list()
+
+def _get_module_registry():
+    global _MODULE_REGISTRY
+    return _MODULE_REGISTRY
+
+import inspect
+
+def register_module(cls) -> None:
+    global _MODULE_REGISTRY
+    _MODULE_REGISTRY.append(
+        RegisteredModule(
+            type=cls.__name__,
+            available_as_tab="TabImplementation" in [x.__name__ for x in cls.__bases__],
+            available_as_window="WindowImplementation" in [x.__name__ for x in cls.__bases__],
+            kwargs=list(inspect.signature(cls).parameters.keys())
+        )
+    )
+
+
 class VariableSelectorConfig(BaseModel):  # TODO Add default templates?
     """Configuration for the variable selector."""
 
@@ -146,7 +173,6 @@ class AppModules(BaseModel):
             "AppModules",
             f"  tabs ({len(self.tabs)}):",
         ]
-
         if self.tabs:
             for module in self.tabs:
                 module_lines = str(module).splitlines()
@@ -155,12 +181,9 @@ class AppModules(BaseModel):
 
                 for line in module_lines[1:]:
                     lines.append(f"      {line}")
-
         else:
             lines.append("    (none)")
-
         lines.append(f"  windows ({len(self.windows)}):")
-
         if self.windows:
             for module in self.windows:
                 module_lines = str(module).splitlines()
@@ -169,10 +192,8 @@ class AppModules(BaseModel):
 
                 for line in module_lines[1:]:
                     lines.append(f"      {line}")
-
         else:
             lines.append("    (none)")
-
         return "\n".join(lines)
 
 
