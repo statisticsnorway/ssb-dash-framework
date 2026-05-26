@@ -195,21 +195,44 @@ class DataEditor:
 
     def module_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor."""
+
+        variableselector = VariableSelector(
+            selected_inputs=[*get_time_units().keys()],
+            selected_states=[],
+        )
         
         @callback(
             VariableSelector([], []).get_output_object("refnr"),
             VariableSelector([], []).get_output_object("altinnskjema"),
             VariableSelector([], []).get_input(get_ident()),
+            variableselector.get_all_inputs(),
             prevent_initial_call=True,
         )
-        def clear_on_missing_ident(ident: str):
+        def clear_on_missing_ident(ident: str, *time_unit_values):
+            time_unit_keys = list(get_time_units().keys())
+            time_units = dict(zip(time_unit_keys, time_unit_values))
+
+            print(time_units)
+
+            print(f"time_unit_keys: {time_unit_keys}")
             if not ident:
                 raise PreventUpdate
             with get_connection() as conn:
                 t = conn.table("skjemamottak")
-                result = t.filter(_.ident == ident).limit(1).to_pandas()
-            if result.empty:
+                expr = _.ident == ident
+
+                for key, value in time_units.items():
+                    expr &= getattr(_, key) == value
+
+                result = t.filter(expr).limit(1).to_pandas()
+
+            if len(result) == 1:
+                row = result.iloc[0]
+                return row["refnr"], row["skjema"]
+
+            elif result.empty:
                 return "", ""
+
             raise PreventUpdate
 
         @callback(
@@ -249,8 +272,11 @@ class DataEditor:
                 #     styles.append({"display": "none"})
             if all(style == {"display": "none"} for style in styles):
                 message = f"No main_view defined for {selected_table} - {selected_form}"
-                logger.error(message)
-                raise ValueError(message)
+                # logger.error(message)
+                # raise ValueError(message)
+                if len(styles) == 1:
+                    return styles[0]
+                return styles
             if len(DataEditorRegistry.main_views) == 1:
                 logger.debug(
                     "Returning a single dict due to only one main_view being defined"
@@ -326,6 +352,7 @@ class DataEditorTableSelector:
                     id="dataeditortableselector",
                     options=self.table_options,
                     value=self.starting_table,
+                    className="ssb-dropdown",
                 ),
             ]
         )
@@ -496,7 +523,8 @@ class DataEditorHelperButton:
         return html.Div(
             [
                 dbc.Button(
-                    self.label, id=f"{self.module_name}-{self.module_number}-button"
+                    self.label, id=f"{self.module_name}-{self.module_number}-button",
+                    className="ssb-btn primary-btn",
                 ),
                 dbc.Modal(
                     [

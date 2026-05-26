@@ -54,13 +54,16 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                     [
                         dbc.Col(
                             dcc.Dropdown(
-                                id=f"{self.module_name}-{self.module_number}-dropdown-refnr"
+                                id=f"{self.module_name}-{self.module_number}-dropdown-refnr",
+                                className="ssb-dropdown",
+                                
                             )
                         ),
                         dbc.Col(
                             dbc.Button(
                                 "Lagre",
                                 id=f"{self.module_name}-{self.module_number}-save-button",
+                                className="ssb-btn primary-btn",
                             )
                         ),
                     ]
@@ -68,7 +71,9 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 dbc.Row(
                     dcc.Textarea(
                         id=f"{self.module_name}-{self.module_number}-comment-text",
-                        className=f"{self.module_name}-comment-text",  # TODO: Style in the css
+                        placeholder="Skriv kommentar her...",
+                        className="comment-textarea",
+                        style={"height": "150px"},
                     )
                 ),
             ]
@@ -98,11 +103,11 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 args_before_timeunits = 1
                 N = len(get_time_units())
                 args = list(args)
-                print(f"Utklipp: {args[args_before_timeunits:N+args_before_timeunits]}")
+                # print(f"Utklipp: {args[args_before_timeunits:N+args_before_timeunits]}")
                 args[args_before_timeunits : N + args_before_timeunits] = list(
                     map(int, args[args_before_timeunits : N + args_before_timeunits])
                 )
-                print(f"test: {args}")
+                # print(f"test: {args}")
 
             filterdict = create_filter_dict(
                 ["skjema", get_ident(), *get_time_units()], [skjema, *args]
@@ -127,11 +132,18 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 comment = (
                     s.filter(_.refnr == refnr)
                     .select("kommentar")
+                    .limit(1)
                     .to_pandas()["kommentar"]
-                    .item()
                 )
-            print(f"comment: {comment}")
-            return comment
+                print(f"comment: {comment}")
+            if len(comment) == 0:
+                return ""
+
+            if len(comment) > 1:
+                print(f"Multiple comments found for refnr={refnr}: {comment}")
+
+            return comment[0]
+
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),

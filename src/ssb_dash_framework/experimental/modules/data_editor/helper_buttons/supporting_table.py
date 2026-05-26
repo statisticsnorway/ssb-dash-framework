@@ -58,6 +58,7 @@ class DataEditorSupportTable:
         """The content to show in the support table."""
         return html.Div(
             dag.AgGrid(
+                className="ag-theme-alpine ag-theme-ssb mb-2",
                 defaultColDef={"editable": False, "filter": True},
                 dashGridOptions={"enableCellTextSelection": True},
                 id=f"support-table-{self.suptable_id}",

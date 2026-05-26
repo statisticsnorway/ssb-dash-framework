@@ -23,7 +23,10 @@ from .....modules.building_blocks.microlayout_components.editable_field_model im
 from .....modules.building_blocks.microlayout_components.editable_field_model import (
     default_getter,
 )
-from .....modules.building_blocks.microlayout_components.models import CalculatedField, Layout
+from .....modules.building_blocks.microlayout_components.models import (
+    CalculatedField,
+    Layout,
+)
 from ..core import DataEditorDataView
 
 logger = logging.getLogger(__name__)
@@ -96,7 +99,10 @@ class DataViewCustomTable:
         return html.Div(
             [
                 self.label,
-                dag.AgGrid(id=f"{self.module_name}-{self.module_number}-table"),
+                dag.AgGrid(
+                    id=f"{self.module_name}-{self.module_number}-table",
+                    className="ag-theme-alpine ag-theme-ssb mb-2",
+                ),
             ]
         )
 
@@ -261,7 +267,7 @@ class DataViewCustom(DataEditorDataView):
         # guard against strings and other primitives
         if not isinstance(layout, (dict, list)):
             return components
-            
+
         if isinstance(layout, list):
             for item in layout:
                 components.extend(self.build_layout(item))
@@ -312,8 +318,12 @@ class DataViewCustom(DataEditorDataView):
                     form_data_field_name_column=value.get(
                         "form_data_field_name_column"
                     ),
-                    form_reference_number_column=value.get("form_reference_number_column", "refnr"),
-                    form_reference_input_id=value.get("form_reference_input_id", "var-refnr"), 
+                    form_reference_number_column=value.get(
+                        "form_reference_number_column", "refnr"
+                    ),
+                    form_reference_input_id=value.get(
+                        "form_reference_input_id", "var-refnr"
+                    ),
                     inputs=[Input(f"var-{unit}", "value") for unit in get_time_units()],
                 )
                 logger.debug(f"Built microlayout:\n{microlayout}")
@@ -324,7 +334,9 @@ class DataViewCustom(DataEditorDataView):
         return components
 
     def _create_layout(self) -> html.Div:
-        return html.Div(id=self.divname, children=self.created_layout)
+        return html.Div(
+            id=self.divname, children=self.created_layout, style={"display": "none"}
+        )
 
     def layout(self):
         """Returns the layout of the module."""
@@ -371,7 +383,6 @@ class DataViewCustom(DataEditorDataView):
     @classmethod
     def from_yaml(cls, yaml_path: str) -> "DataViewCustom":
 
-        
         config = config_parser_yaml(yaml_path)
 
         # Handle both a top-level dict and a single-item list
@@ -445,9 +456,9 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
     logger.debug(
         f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
     )
-    print(
-        f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
-    )
+    # print(
+    #     f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
+    # )
     if applies_to_tables is None:
         applies_to_tables = []
     if applies_to_forms is None:
@@ -455,16 +466,14 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
     if "type" in node and node["type"] == "calculated-field":
         node["applies_to_tables"] = applies_to_tables
         node["applies_to_forms"] = applies_to_forms
-        
+
     if "variable" in node:
         node = convert_node_build_field_settings(node, "field_path", node["variable"])
         node = convert_node_build_field_settings(
             node, "applies_to_tables", applies_to_tables
         )
         clean_forms = [f for f in applies_to_forms if f is not None]
-        node = convert_node_build_field_settings(
-            node, "applies_to_forms", clean_forms
-        )
+        node = convert_node_build_field_settings(node, "applies_to_forms", clean_forms)
 
     if "children" in node:
         node["children"] = [

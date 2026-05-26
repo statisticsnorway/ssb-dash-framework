@@ -680,6 +680,59 @@ ssb-dialog
 }
 
 /*
+Dash override for ssb-radio buttons
+*/
+
+.ssb-radio-buttons label {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    position: relative;
+    font-size: 16px;
+    font-family: "Roboto", sans-serif;
+    font-stretch: normal;
+    font-weight: normal;
+    color: #162327;
+}
+
+.ssb-radio-buttons input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #c0c0c0;
+    background: white;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.15s, border-width 0.15s;
+}
+
+.ssb-radio-buttons label:hover input[type="radio"]:not(:disabled) {
+    border-color: #1a9b6c;
+    border-width: 2px;
+}
+
+.ssb-radio-buttons input[type="radio"]:checked {
+    border-color: #1d3c34;
+    border-width: 2px;
+    background: radial-gradient(circle, #1d3c34 45%, white 46%);
+}
+
+.ssb-radio-buttons input[type="radio"]:disabled {
+    border-color: #d0d0d0;
+    background: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.ssb-radio-buttons label:has(input:disabled) {
+    color: #b0b0b0;
+    cursor: not-allowed;
+}
+
+/*
 Dash override for ssb-dialog
 */
 .ssb-dialog {
@@ -1780,6 +1833,17 @@ Implementations
     display: flex;
 }
 
+.window-implementation-modal-title {
+    font-size: 20px;
+    line-height: 32px;
+    font-weight: bold;
+    font-family: "Roboto", sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
 /*
 Aarsregnskap
 */
@@ -1800,8 +1864,7 @@ Aarsregnskap
 
 .aarsregnskap-aar-foretak-row {
     justify-content: flex-start;
-    gap: 2rem;
-    padding: 15px;
+    padding-left: 15px;
     align-items: flex-end;
 }
 
@@ -2035,36 +2098,55 @@ DataEditor
 }
 
 .dbc input.microlayout-input-readonly:not([type=radio]):not([type=checkbox]),
-.form-control.microlayout-textarea-readonly[readonly],
-.dbc .microlayout-calculated-field .form-control[readonly],
-.dbc .microlayout-calculated-field input[readonly] {
+.form-control.microlayout-textarea-readonly[readonly] {
     background-color: #eeeff0 !important;
     color: #4a4e53 !important;
     cursor: not-allowed;
 }
 
-/* Spacing between microlayout items */
-.DataEditor-main-view .microlayout-calculated-field,
-.DataEditor-main-view .microlayout-input {
-    max-width: 13rem;
+.DataEditor-main-view .ssb-input {
+    max-width: 12rem;
+    margin-bottom: 3px;
 }
 
 .microlayout-label {
+    font-family: "Open Sans", sans-serif !important;
     display: flex;
     align-items: center;
     height: 62px;
-    margin-top: 0.1rem;
+    font-size: 14px;
+    margin-top: 0.45rem;
 }
 
 .DataEditor-main-view .microlayout-textarea textarea {
     min-height: 7rem;
-    max-width: 13rem;
+    max-width: 10rem;
+}
+
+.microlayout-textarea textarea {
+  font-family: "Roboto", sans-serif !important;
+  background: #fff;
+  border: 1px solid #274247;
+  box-sizing: border-box;
+  color: #162327;
+  font-size: 15px;
+  padding: 12px;
+  resize: vertical;
+}
+
+.microlayout-textarea:hover textarea {
+  border: 1px solid #00824d;
+  outline: 1px solid #00824d;
+}
+
+.microlayout-textarea label {
+  color: #162327;
+  font-size: 14px;
+  margin-bottom: 5px;
 }
 
 .DataEditor-main-view .row {
     margin-bottom: 1rem;
-    /* flex-wrap: nowrap;  */
-    /* gap: 2rem; */
 }
 
 .DataEditor-main-view .col {
@@ -2092,7 +2174,7 @@ DataEditor
 .DataEditor-helper-row,
 .DataEditor-main-view.card {
     border-radius: 8px;
-    background-color: #f3f4f5;
+    background-color: #F0F8F9;
     border: none;
     margin-bottom: 0.6rem;
     color: #2e2e2e;
@@ -2118,7 +2200,7 @@ DataEditor
 }
 
 .DataEditor-sidebar {
-    flex: 0 0 250px;
+    flex: 0 0 225px;
 }
 
 .DataEditor-sidebar-modules {
@@ -2127,13 +2209,10 @@ DataEditor
 }
 
 .DataEditor-header {
-    font-size: 1.5rem;
-    margin-top: 15px;
     margin-left: 15px;
-}
-
-.DataEditorSidebarComment-comment-text {
-    min-height: 100px;
+    font-family: "Roboto", sans-serif !important;
+    font-size: 20px;
+    line-height: 32px;
 }
 
 /*
@@ -2165,56 +2244,30 @@ MacroModule
 }
 
 .macromodule-sidebar h1 {
-    font-size: 35px;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
+    font-size: 28px;
+    line-height: 40px;
+    font-weight: 700;
+    font-family: "Roboto Condensed", sans-serif !important;
+    color: #000;
+}
+
+.macromodule-konsolidert-label {
+    font-family: "Roboto", sans-serif !important;
+    font-weight: bold;
+    font-size: 20px;
+    font-weight: normal;
+    line-height:32px;
 }
 
 .macromodule-label {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
-    margin-bottom: 6px;
-}
-
-.macromodule-dropdown,
-.macromodule-naring-dropdown,
-.macromodule-radio-buttons {
-    margin-bottom: 20px;
-}
-
-/* Radio button styling */
-.macromodule-radio-buttons label {
-    display: inline-block;
-    padding: 10px 20px;
-    border: 1px solid #ccc;
-    margin-right: 10px;
-    cursor: pointer;
-    border-radius: 4px;
-}
-
-.macromodule-radio-buttons input[type="radio"] {
-    display: none;
-}
-
-.macromodule-radio-buttons label:has(input[type="radio"]:checked) {
-    background-color: #d4d4d4;
-    color: #2c2c2c;
-    font-weight: bold;
-    border-color: #000;
-}
-
-/* Multi-select dropdown styling */
-.macromodule-naring-dropdown .Select-value {
-    background-color: #eee !important;
-    border-radius: 4px;
-    padding: 2px 6px;
-}
-
-.macromodule-naring-dropdown .Select-value-label {
-    color: #313131 !important;
-}
-
-.macromodule-naring-dropdown .Select-value-icon {
-    color: #000 !important;
+    margin-bottom: 8px;
+    padding-top: 20px;
+    font-family: "Roboto", sans-serif !important;
+	  font-stretch: normal;
+    line-height: 28px;
 }
 
 /* Grid containers */
@@ -2239,6 +2292,10 @@ MacroModule
 
 .macromodule-detail-grid-container h5 {
     margin-top: 10px;
+    font-family: "Roboto", sans-serif !important;
+    font-size: 20px;
+    line-height: 32px;
+    font-weight: bold;
 }
 
 /* Row styling */
@@ -2251,8 +2308,7 @@ MacroModule
     align-items: center;
     gap: 10px;
     background: #ffffff;
-    border: 1px solid #b0b0b0;
-    border-radius: 5px;
+    border: 1px solid #000000;
     padding: 7px 12px;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
     white-space: nowrap;
@@ -2265,18 +2321,7 @@ MacroModule
     max-width: 320px;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.macromodule-bruk-button {
-    color: #2c2c2c !important;
-    background-color: #d4d4d4 !important;
-    border-color: #000 !important;
-    padding: 5px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: bold;
-    flex-shrink: 0;
+    font-family: "Roboto", sans-serif !important;
 }
 
 /*

@@ -73,6 +73,7 @@ class DataEditorHistory(DataEditorHelperButton):
                 html.Div(
                     dag.AgGrid(
                         id=f"{self.module_name}-{self.module_number}-table",
+                        className="ag-theme-alpine ag-theme-ssb mb-2",
                         dashGridOptions={"enableCellTextSelection": True},
                         defaultColDef={"filter": True, "resizable": True},
                         columnSize="responsiveSizeToFit",
