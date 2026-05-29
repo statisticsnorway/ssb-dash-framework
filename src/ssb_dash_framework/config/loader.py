@@ -76,13 +76,12 @@ def build_app_from_config(config: AppConfig):
 
 def run_app_from_config(path: str):
     if path.endswith(".yaml"):
-        config = config_parser_yaml(path)
+        yaml_content = config_parser_yaml(path)
+        config = AppConfig(**yaml_content)
     else:
         raise NotImplementedError
 
-    app, instantiated_tabs, instantiated_windows = build_app_from_config(
-        AppConfig(**config)
-    )
+    app, instantiated_tabs, instantiated_windows = build_app_from_config(config)
 
     app.layout = main_layout(
         window_list=instantiated_windows, tab_list=instantiated_tabs
