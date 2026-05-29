@@ -9,6 +9,7 @@ Module containing utility and helper functions shared between components in the 
 
    Alert_handler <alert_handler>
    App_logger <app_logger>
+   Core_query_functions <core_query_functions>
    Datahelper <datahelper>
    Debugger_modal <debugger_modal>
    Eimerdb_helpers <eimerdb_helpers>
