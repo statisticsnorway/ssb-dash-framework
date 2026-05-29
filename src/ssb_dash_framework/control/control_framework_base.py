@@ -224,7 +224,16 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         if isinstance(connection_object, EimerDBInstance):
             connection_object.insert("kontroller", rows_to_register)
         elif isinstance(connection_object, ConnectionPool):
-            connection_object.insert("kontroller", rows_to_register)
+            with get_connection() as conn:
+                values = ", ".join(
+                    str(tuple(row))
+                    for _, row in rows_to_register.iterrows()
+                )
+
+                conn.raw_sql(f"""
+                    INSERT INTO kontroller (kontrollid, type, beskrivelse, sorting_var, sorting_order, aar, skjema)
+                    VALUES {values}
+                """)
         else:
             raise NotImplementedError(
                 f"Connection type '{type(connection_object)}' is currently not implemented."
@@ -421,11 +430,22 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             return None
         # Now to insert new rows into the table.
         logger.debug(f"Inserting {control_results.shape[0]} new rows.")
+        print(control_results)
         connection_object = _get_connection_object()
         if isinstance(connection_object, EimerDBInstance):
             connection_object.insert("kontrollutslag", control_results)
         elif isinstance(connection_object, ConnectionPool):
-            connection_object.insert("kontrollutslag", control_results)
+            with get_connection() as conn:
+                values = ", ".join(
+                    str(tuple(row))
+                    for _, row in control_results.iterrows()
+                )
+                print(values)
+
+                conn.raw_sql(f"""
+                    INSERT INTO kontrollutslag (aar, ident, skjema, refnr, utslag, kontrollid)
+                    VALUES {values}
+                """)
         else:
             raise NotImplementedError(
                 f"Connection type '{type(connection_object)}' is currently not implemented."
