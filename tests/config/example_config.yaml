@@ -2,7 +2,7 @@ app_settings:
   port: 8000
   # service_prefix: None
   # stylesheet: None
-  enable_logging: true
+  enable_logging: false
   logging_level: warning
   log_to_file: false
   variableselector: !include variableselector.yaml
@@ -13,7 +13,6 @@ modules:
   dataeditor_components:
     !include customview_skjemadata_hoved_ra-7357.yaml
   windows:
-    - type: BofInformation
-      variableselector_foretak_name: ident
+    - type: FreeSearch
   tabs:
     - type: DataEditor
