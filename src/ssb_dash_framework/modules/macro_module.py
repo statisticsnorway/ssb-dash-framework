@@ -358,13 +358,19 @@ class MacroModule:
                                 html.H1(
                                     [
                                         "Aggregerte",
+                                        html.Br(),
+                                        "næringsendringer",
                                         *(
-                                            [html.Br(), "konsoliderte,"]
+                                            [
+                                                html.Br(),
+                                                html.Span(
+                                                    "(Konsoliderte tall)",
+                                                    className="macromodule-konsolidert-label",
+                                                ),
+                                            ]
                                             if self.consolidated
                                             else []
                                         ),
-                                        html.Br(),
-                                        "næringsendringer",
                                     ],
                                 ),
                                 html.Label(
@@ -373,7 +379,7 @@ class MacroModule:
                                 ),
                                 dcc.RadioItems(
                                     id="macromodule-foretak-or-bedrift",
-                                    className="macromodule-radio-buttons",
+                                    className="ssb-radio-buttons",
                                     options=[
                                         {"label": k, "value": v}
                                         for k, v in FORETAK_OR_BEDRIFT.items()
@@ -385,7 +391,7 @@ class MacroModule:
                                     className="macromodule-label",
                                 ),
                                 dcc.Dropdown(
-                                    className="macromodule-dropdown",
+                                    className="ssb-dropdown",
                                     options=[
                                         {"label": k, "value": k}
                                         for k in self.macro_filter_options.keys()
@@ -398,7 +404,7 @@ class MacroModule:
                                     className="macromodule-label",
                                 ),
                                 dcc.Dropdown(
-                                    className="macromodule-dropdown",
+                                    className="ssb-dropdown",
                                     options=[
                                         {
                                             "label": self.heatmap_variables.get(v, v),
@@ -415,7 +421,7 @@ class MacroModule:
                                 ),
                                 dcc.Dropdown(
                                     id="macromodule-naring-velger",
-                                    className="macromodule-naring-dropdown",
+                                    className="ssb-dropdown",
                                     options=[],
                                     multi=True,
                                     value=[],
@@ -428,7 +434,7 @@ class MacroModule:
                                 ),
                                 dcc.RadioItems(
                                     id="macromodule-nace-siffer-velger",
-                                    className="macromodule-radio-buttons",
+                                    className="ssb-radio-buttons",
                                     options=[
                                         {"label": k, "value": v}
                                         for k, v in NACE_LEVEL_OPTIONS.items()
@@ -441,7 +447,7 @@ class MacroModule:
                                 ),
                                 dcc.RadioItems(
                                     id="macromodule-tall-visning-velger",
-                                    className="macromodule-radio-buttons",
+                                    className="ssb-radio-buttons",
                                     options=[
                                         {"label": k, "value": v}
                                         for k, v in HEATMAP_NUMBER_FORMAT.items()
@@ -524,7 +530,7 @@ class MacroModule:
                                 html.Button(
                                     "Velg",
                                     id="macromodule-bruk-button",
-                                    className="macromodule-bruk-button",
+                                    className="ssb-btn primary-btn",
                                     n_clicks=0,
                                 ),
                             ],
@@ -1314,7 +1320,9 @@ class MacroModule:
             Input("macromodule-macro-variable", "value"),
             prevent_initial_call=True,
         )
-        def reset_detail_grid_on_filter_change(*args: Any) -> tuple[list, list, str, None]:
+        def reset_detail_grid_on_filter_change(
+            *args: Any,
+        ) -> tuple[list, list, str, None]:
             """Reset detail grid and dismiss popup when any filter changes."""
             return [], [], "", None
 
@@ -1351,7 +1359,7 @@ class MacroModule:
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
             Output("var-bedrift", "value", allow_duplicate=True),
-            Output("altinnedit-option1", "value", allow_duplicate=True),
+            Output("dataeditortableselector", "value", allow_duplicate=True),
             Output("macromodule-pending-click-store", "data", allow_duplicate=True),
             Input("macromodule-bruk-button", "n_clicks"),
             State("macromodule-pending-click-store", "data"),
@@ -1419,6 +1427,7 @@ class MacroModuleWindow(WindowImplementation, MacroModule):
         heatmap_variables: dict[str, str],
         file_path_resolver: Callable[[int, str], str],
         consolidated: bool,
+        **kwargs: Any
     ) -> None:
         """Initializes the MacroModuleWindow class."""
         MacroModule.__init__(
@@ -1429,4 +1438,4 @@ class MacroModuleWindow(WindowImplementation, MacroModule):
             file_path_resolver=file_path_resolver,
             consolidated=consolidated,
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

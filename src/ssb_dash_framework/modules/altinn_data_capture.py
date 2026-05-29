@@ -378,6 +378,7 @@ class AltinnDataCaptureWindow(WindowImplementation, AltinnDataCapture):
         label: str = "Datafangst",
         database_type: str | None = "altinn_default",
         database: object | None = None,
+        **kwargs: Any
     ) -> None:
         """Initializes the AltinnDataCaptureWindow module."""
         AltinnDataCapture.__init__(
@@ -387,4 +388,4 @@ class AltinnDataCaptureWindow(WindowImplementation, AltinnDataCapture):
             database_type=database_type,
             database=database,
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

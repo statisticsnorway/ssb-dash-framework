@@ -38,7 +38,7 @@ def sidebar_button(
                 html.Span(text, className="sidebar-button-label-spot"),
             ],
             id=component_id,
-            className="sidebar-button-button",
+            className="sidebar-button-button ssb-btn primary-btn mr-4",
             style={
                 **additional_styling,
             },

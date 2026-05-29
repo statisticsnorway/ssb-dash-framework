@@ -1,4 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css?family=Open+Sans:400,700&display=swap");
+@import url("https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap");
+@import url("https://fonts.googleapis.com/css?family=Roboto+Condensed:700&display=swap");
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 /*
 The idea with this file is to have all the style rules that are used in the SSB Dash Framework in one place.
@@ -7,6 +18,1591 @@ Creating a css class for each component used instead of using inline styles keep
 
 Another upside is that updating the stylesheet.css instantly makes visible the changes you've made in the running app, making it easier to develop and nitpick.
 */
+
+/*
+ssb bundle.css
+*/
+body {
+  font-family: "Open Sans", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  color: #162327;
+}
+
+a {
+  text-decoration: none;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.justify-space-between {
+  justify-content: space-between;
+}
+
+.justify-space-around {
+  justify-content: space-around;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.no-margin {
+  margin: 0 !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/*
+ssb-accordion
+*/
+
+.ssb-accordion {
+  display: grid;
+  width: 100%;
+}
+.ssb-accordion .accordion-header {
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  text-align: left;
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  font-size: 20px;
+  font-weight: bold;
+  /*padding: 20px 0;*/
+}
+.ssb-accordion .accordion-header .button-grid {
+  align-items: center;
+  cursor: pointer;
+  display: grid;
+  column-gap: 28px;
+  grid-template-columns: auto 20px;
+  margin-right: 12px;
+}
+.ssb-accordion .accordion-header .expand-icon * {
+  color: #00824d;
+  font-size: 20px;
+}
+.ssb-accordion .accordion-header .header-text {
+  color: #162327;
+}
+.ssb-accordion .accordion-header .sub-header {
+  color: #00824d;
+}
+.ssb-accordion .accordion-header:hover .header-text,
+.ssb-accordion .accordion-header:hover .sub-header {
+  color: #00824d;
+}
+.ssb-accordion .accordion-header:focus {
+  outline: #9272fc solid 2px;
+  outline-offset: 2px;
+}
+.ssb-accordion:not(.without-borders)::before {
+  border-top: 1px solid #c3dcdc;
+  content: "";
+  height: 2px;
+}
+.ssb-accordion:not(.without-borders)::after {
+  border-bottom: 1px solid #c3dcdc;
+  content: "";
+  height: 2px;
+  margin-bottom: -1px;
+}
+.ssb-accordion.with-sub-header .button-grid {
+  grid-template-columns: fit-content(100px) auto 20px;
+}
+.ssb-accordion.with-sub-header .accordion-header .header-text {
+  grid-column-start: 2;
+}
+.ssb-accordion.with-sub-header .accordion-header .sub-header {
+  align-self: start;
+  grid-column-start: 1;
+}
+@media screen and (max-width: 767px) {
+  .ssb-accordion.with-sub-header .accordion-header .button-grid {
+    grid-template-columns: auto 20px;
+    column-gap: 0;
+  }
+  .ssb-accordion.with-sub-header .accordion-header .sub-header {
+    grid-column-start: 1;
+    grid-row-start: 1;
+  }
+  .ssb-accordion.with-sub-header .accordion-header .header-text {
+    margin-top: 8px;
+    grid-column-start: 1;
+    grid-row-start: 2;
+  }
+}
+.ssb-accordion .accordion-body {
+  overflow-x: auto;
+  font-family: "Open Sans", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  color: #162327;
+  font-size: 16px;
+  padding: 8px 50px 8px 0;
+}
+.ssb-accordion .accordion-body.closed {
+  display: none;
+  height: 0;
+}
+
+/*
+DASH custom styling for ssb-accordion
+*/
+
+/* Fjern ramme rundt accordion*/
+.ssb-accordion,
+.ssb-accordion .accordion {
+    border: none !important;
+}
+
+/* Fjern header styling */
+.ssb-accordion .accordion-button {
+    background: transparent !important;
+}
+
+/* Fjern focus/active styling */
+.ssb-accordion .accordion-button:focus {
+    box-shadow: none !important;
+    color: #162327;
+}
+
+/* Fjern focus/active styling */
+.ssb-accordion .accordion-button:hover {
+    color: #00824d;
+}
+
+
+/* fet skrift på accordion header*/
+.ssb-accordion .accordion-button {
+    font-size: 18px;
+    font-weight: bold !important;
+}
+
+.ssb-accordion .accordion-body {
+    padding: 12px 20px !important;
+}
+
+/*
+ssb-btn
+*/
+
+.ssb-btn {
+  font-family: "Open Sans", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  text-align: left;
+  align-items: center;
+  background: #fff;
+  border: 2px solid #00824d;
+  border-radius: 2px;
+  color: #00824d;
+  display: flex;
+  font-size: 16px;
+  font-weight: bold;
+  height: fit-content;
+  line-height: 1.25;
+  min-height: 40px;
+  padding: 12px 20px;
+  text-align: center;
+  text-underline-position: under;
+  transition: background 0.18s, color 0.18s;
+  white-space: nowrap;
+}
+.ssb-btn:hover, .ssb-btn:active {
+  cursor: pointer;
+}
+.ssb-btn:hover, .ssb-btn:focus {
+  background: #00824d;
+  color: #fff;
+  text-decoration: underline;
+}
+.ssb-btn:focus {
+  outline: #9272fc solid 2px;
+  outline-offset: 2px;
+}
+.ssb-btn:active {
+  background: #274247;
+  border: 2px solid #274247;
+  color: #fff;
+}
+.ssb-btn:disabled {
+  background: #fff;
+  border-color: #c3dcdc;
+  color: #c3dcdc;
+  cursor: not-allowed;
+  font-weight: normal;
+}
+.ssb-btn:disabled:hover, .ssb-btn:disabled:focus {
+  text-decoration: none;
+}
+.ssb-btn.negative {
+  background: #274247;
+  color: #b6e8b8;
+  border-color: #b6e8b8;
+}
+.ssb-btn.negative:hover, .ssb-btn.negative:focus {
+  background: #b6e8b8;
+  color: #274247;
+}
+.ssb-btn.negative:active {
+  background: #fff;
+  color: #274247;
+}
+.ssb-btn.negative:disabled {
+  background: #274247;
+  border-color: #2d6975;
+  color: #2d6975;
+  font-weight: normal;
+}
+.ssb-btn.negative:disabled:hover, .ssb-btn.negative:disabled:focus {
+  text-decoration: none;
+}
+.ssb-btn.primary-btn {
+  background: #00824d;
+  border: 2px solid #00824d;
+  color: #fff;
+}
+.ssb-btn.primary-btn:hover, .ssb-btn.primary-btn:active, .ssb-btn.primary-btn:focus {
+  background: #274247;
+  border: 2px solid #274247;
+  text-decoration: underline;
+}
+.ssb-btn.primary-btn:disabled {
+  background: #c3dcdc;
+  border: 2px solid #c3dcdc;
+  color: #fff;
+  cursor: not-allowed;
+  font-weight: normal;
+}
+.ssb-btn.primary-btn:disabled:hover, .ssb-btn.primary-btn:disabled:focus {
+  text-decoration: none;
+}
+.ssb-btn.primary-btn.negative {
+  background: #b6e8b8;
+  border: 2px solid #b6e8b8;
+  color: #274247;
+}
+.ssb-btn.primary-btn.negative:hover, .ssb-btn.primary-btn.negative:active, .ssb-btn.primary-btn.negative:focus {
+  background: #fff;
+  border: 2px solid #fff;
+}
+.ssb-btn.primary-btn.negative:disabled {
+  background: #2d6975;
+  border-color: #2d6975;
+  color: #274247;
+  font-weight: normal;
+}
+.ssb-btn .sb-icon {
+  display: inline-flex;
+  font-size: 18px;
+  margin-right: 5px;
+}
+
+.ssb-btn-tertiary .button-header {
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  text-align: left;
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  font-family: "Open Sans", sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 20px;
+}
+.ssb-btn-tertiary .button-header .button-grid {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  column-gap: 6px;
+}
+.ssb-btn-tertiary .button-header svg {
+  color: #00824d;
+  font-size: 20px;
+}
+.ssb-btn-tertiary .button-header .header-text {
+  color: #162327;
+}
+.ssb-btn-tertiary .button-header:hover .header-text, .ssb-btn-tertiary .button-header:focus .header-text {
+  color: #00824d;
+  text-decoration: underline;
+  text-underline-position: under;
+}
+.ssb-btn-tertiary .button-header:focus {
+  outline: #9272fc solid 2px;
+  outline-offset: 2px;
+}
+.ssb-btn-tertiary .button-header.no-icon {
+  text-decoration: underline;
+  text-underline-position: under;
+}
+.ssb-btn-tertiary .button-header:disabled .button-grid {
+  cursor: not-allowed;
+}
+.ssb-btn-tertiary .button-header:disabled .button-grid .header-text {
+  color: #c3dcdc;
+  text-decoration: none;
+}
+.ssb-btn-tertiary .button-header:disabled .button-grid .expand-icon * {
+  color: #c3dcdc;
+}
+.ssb-btn-tertiary .accordion-body {
+  font-family: "Open Sans", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  color: #162327;
+  font-size: 16px;
+}
+.ssb-btn-tertiary .accordion-body.closed {
+  display: none;
+  height: 0;
+}
+.ssb-btn-tertiary.negative .button-header.no-icon {
+  text-decoration: underline;
+  text-decoration-color: #fff;
+}
+.ssb-btn-tertiary.negative .button-header .button-grid .header-text {
+  color: #fff;
+}
+.ssb-btn-tertiary.negative .button-header .button-grid svg {
+  color: #b6e8b8;
+}
+.ssb-btn-tertiary.negative .button-header:disabled .button-grid {
+  cursor: not-allowed;
+}
+.ssb-btn-tertiary.negative .button-header:disabled .button-grid .header-text {
+  color: #2d6975 !important;
+  text-decoration: none;
+}
+.ssb-btn-tertiary.negative .button-header:disabled .button-grid svg {
+  color: #2d6975;
+}
+.ssb-btn-tertiary.negative .button-header:disabled .button-grid .expand-icon * {
+  color: #2d6975;
+}
+.ssb-btn-tertiary.negative .button-header:disabled.no-icon .button-grid .header-text {
+  text-decoration: underline;
+}
+.ssb-btn-tertiary.negative .accordion-body {
+  color: #fff;
+}
+
+/*
+dash override for ssb-btn
+*/
+/* Juster knapphøyde i forms */
+.ssb-btn {
+    height: 44px;           /* matcher Bootstrap input height */
+    padding: 6px 12px;      /* litt mindre padding */
+    display: flex;
+    align-items: center;    /* vertikal sentrering av tekst */
+    text-transform: none !important;
+    font-family: "Open Sans", sans-serif !important;
+}
+
+/*
+ssb-checkboxes
+*/
+.ssb-checkbox {
+  font-family: "Open Sans", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  color: #162327;
+  cursor: pointer;
+  display: block;
+  font-size: 16px;
+  min-width: 200px;
+  outline: none;
+  position: relative;
+  text-align: left;
+  user-select: none;
+}
+.ssb-checkbox:hover .checkbox-label::before, .ssb-checkbox:focus .checkbox-label::before {
+  border: 2px solid #00824d;
+}
+.ssb-checkbox input[type=checkbox] {
+  cursor: pointer;
+  opacity: 0;
+  position: absolute;
+}
+.ssb-checkbox input[type=checkbox]:focus + .checkbox-label::before {
+  border: 2px solid #00824d;
+}
+.ssb-checkbox input[type=checkbox]:checked + .checkbox-label {
+  -webkit-print-color-adjust: exact;
+  color-adjust: exact;
+}
+.ssb-checkbox input[type=checkbox]:checked + .checkbox-label::before {
+  background: #274247;
+}
+.ssb-checkbox input[type=checkbox]:checked + .checkbox-label::after {
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  box-sizing: initial;
+  content: "";
+  display: block;
+  height: 10px;
+  left: 6px;
+  position: absolute;
+  top: 2px;
+  transform: rotate(45deg);
+  width: 6px;
+}
+.ssb-checkbox input[type=checkbox]:disabled + .checkbox-label {
+  background: #fff;
+  color: #c3dcdc;
+  cursor: default;
+}
+.ssb-checkbox input[type=checkbox]:disabled + .checkbox-label::before {
+  border: 1px solid #c3dcdc;
+}
+.ssb-checkbox .checkbox-label {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  margin-bottom: 12px;
+  position: relative;
+}
+.ssb-checkbox .checkbox-label::before {
+  background: #fff;
+  border: 1px solid #274247;
+  border-radius: 2px;
+  box-sizing: border-box;
+  content: "";
+  display: block;
+  height: 20px;
+  margin-right: 12px;
+  width: 20px;
+}
+
+.ssb-checkbox-group {
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  display: inline-block;
+}
+.ssb-checkbox-group .boxes {
+  display: flex;
+}
+.ssb-checkbox-group .checkbox-group-header {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+.ssb-checkbox-group input {
+  margin: 3px 3px 3px 4px;
+}
+
+/*
+Dash override for ssb-checkbox
+*/
+.ssb-checkbox .form-check {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* checkbox base */
+.ssb-checkbox input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 1px solid #274247;
+    border-radius: 2px;
+    background: #fff;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* hover */
+.ssb-checkbox input[type="checkbox"]:hover {
+    border: 2px solid #00824d;
+}
+
+/* checked state */
+.ssb-checkbox input[type="checkbox"]:checked {
+    background: #274247;
+    border: 1px solid #274247;
+}
+
+/* checkmark */
+.ssb-checkbox input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 6px;
+    height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* label alignment (Dash auto-generert label) */
+.ssb-checkbox label {
+    margin: 5;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 16px;
+    color: #162327;
+}
+
+/* spacing mellom checkbox og tekst */
+.ssb-checkbox input[type="checkbox"] {
+    margin: 0;
+}
+
+/* disable conflicting SSB checkbox styling */
+.ssb-checkbox .checkbox-label::before,
+.ssb-checkbox .checkbox-label::after {
+    content: none !important;
+    display: none !important;
+}
+
+/* disable hidden input trick */
+.ssb-checkbox input[type="checkbox"] {
+    opacity: 1 !important;
+    position: relative !important;
+}
+
+.ssb-checkbox .form-check {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.ssb-checkbox .form-check input {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.ssb-checkbox .form-check label {
+    margin: 0;
+    line-height: 20px;
+    display: flex;
+    align-items: center;
+}
+
+/*
+ssb-dialog
+*/
+.ssb-dialog {
+  font-family: "Open Sans", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  display: flex;
+  max-width: 1180px;
+  min-width: 100%;
+  min-height: 80px;
+  width: 100%;
+}
+.ssb-dialog .icon-panel {
+  color: #fff;
+  display: flex;
+  flex-shrink: 0;
+  font-size: 36px;
+  justify-content: center;
+  padding-top: 20px;
+  width: 90px;
+}
+.ssb-dialog .icon-panel .icon {
+  font-size: 40px;
+}
+.ssb-dialog .dialog-content {
+  font-size: 16px;
+  padding: 16px;
+}
+.ssb-dialog .dialog-content .dialog-title {
+  font-weight: bold;
+}
+.ssb-dialog .dialog-content .content {
+  margin-top: 8px;
+}
+.ssb-dialog.warning {
+  border: 2px solid #dc3400;
+}
+.ssb-dialog.warning .icon-panel {
+  background: #dc3400;
+}
+.ssb-dialog.info {
+  border: 2px solid #3396d2;
+}
+.ssb-dialog.info .icon-panel {
+  background: #3396d2;
+}
+
+/*
+Dash override for ssb-radio buttons
+*/
+
+.ssb-radio-buttons label {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    position: relative;
+    font-size: 16px;
+    font-family: "Roboto", sans-serif;
+    font-stretch: normal;
+    font-weight: normal;
+    color: #162327;
+}
+
+.ssb-radio-buttons input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #c0c0c0;
+    background: white;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.15s, border-width 0.15s;
+}
+
+.ssb-radio-buttons label:hover input[type="radio"]:not(:disabled) {
+    border-color: #1a9b6c;
+    border-width: 2px;
+}
+
+.ssb-radio-buttons input[type="radio"]:checked {
+    border-color: #1d3c34;
+    border-width: 2px;
+    background: radial-gradient(circle, #1d3c34 45%, white 46%);
+}
+
+.ssb-radio-buttons input[type="radio"]:disabled {
+    border-color: #d0d0d0;
+    background: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.ssb-radio-buttons label:has(input:disabled) {
+    color: #b0b0b0;
+    cursor: not-allowed;
+}
+
+/*
+Dash override for ssb-dialog
+*/
+.ssb-dialog {
+  position: relative;
+}
+
+.ssb-dialog .dialog-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.ssb-dialog .icon-panel {
+  display: flex;
+}
+
+.ssb-dialog .dialog-close:hover {
+  opacity: 0.7;
+}
+
+/*
+ssb-dropdown
+*/
+
+.ssb-dropdown {
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease-in-out;
+  max-width: 350px;
+  min-width: 230px;
+  position: relative;
+}
+.ssb-dropdown label,
+.ssb-dropdown .dropdown-label {
+  font-size: 14px;
+  line-height: normal;
+  margin-bottom: 5px;
+}
+.ssb-dropdown .dropdown-interactive-area {
+  cursor: pointer;
+  position: relative;
+}
+.ssb-dropdown .dropdown-interactive-area button {
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+  background-color: #fff;
+  border: 1px solid #162327;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-size: 16px;
+  min-height: 44px;
+  padding: 4px 44px 4px 12px;
+  text-overflow: ellipsis;
+}
+.ssb-dropdown .dropdown-interactive-area button:hover, .ssb-dropdown .dropdown-interactive-area button:focus {
+  border: 1px solid #00824d;
+  outline: 1px solid #00824d;
+}
+.ssb-dropdown .dropdown-interactive-area .dd-icon {
+  color: #00824d;
+  font-size: 24px;
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  pointer-events: none;
+}
+.ssb-dropdown .dropdown-interactive-area input {
+  background-color: #fff;
+  border: 1px solid #162327;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-size: 16px;
+  height: 44px;
+  padding: 4px 44px 4px 12px;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+.ssb-dropdown .dropdown-interactive-area input::placeholder {
+  color: #2d6975;
+}
+.ssb-dropdown .dropdown-interactive-area input:hover, .ssb-dropdown .dropdown-interactive-area input:focus {
+  border: 1px solid #00824d;
+  outline: 1px solid #00824d;
+}
+.ssb-dropdown.error input,
+.ssb-dropdown.error button.opener {
+  border: 1px solid #dc3400;
+  outline: 1px solid #dc3400;
+}
+.ssb-dropdown .list-of-options {
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  background: #fff;
+  border: 1px solid #162327;
+  left: 0;
+  list-style: none;
+  margin: 0;
+  max-height: 290px;
+  min-width: 150px;
+  overflow-y: auto;
+  padding-left: 0;
+  position: absolute;
+  scrollbar-color: #b0b0b0 #fff;
+  scrollbar-width: thin;
+  top: 44px;
+  z-index: 9999;
+  width: 100%;
+}
+.ssb-dropdown .list-of-options .option-list-element {
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  background: #fff;
+  cursor: pointer;
+  display: block;
+  font-size: 16px;
+  font-weight: normal;
+  line-height: 1.25;
+  overflow: hidden;
+  padding: 12px;
+  text-overflow: ellipsis;
+  transition: all 0.18s;
+  box-sizing: border-box;
+  width: 100%;
+}
+.ssb-dropdown .list-of-options .option-list-element:hover, .ssb-dropdown .list-of-options .option-list-element:focus, .ssb-dropdown .list-of-options .option-list-element.active {
+  background: #274247;
+  color: #fff;
+  z-index: 2;
+}
+.ssb-dropdown .list-of-options .option-list-element.disabled {
+  background: #fff;
+  color: #c3dcdc;
+  cursor: not-allowed;
+  font-weight: normal;
+  pointer-events: none;
+}
+.ssb-dropdown .list-of-options .option-list-element.disabled:hover, .ssb-dropdown .list-of-options .option-list-element.disabled:focus {
+  text-decoration: none;
+  background: none;
+}
+.ssb-dropdown .list-of-options .option-list-element.selected {
+  background: #00824d;
+  color: #fff;
+  font-weight: bold;
+}
+.ssb-dropdown ::-webkit-scrollbar {
+  width: 6px;
+}
+.ssb-dropdown ::-webkit-scrollbar-track {
+  background: #fff;
+  border-bottom: 1px solid #162327;
+}
+.ssb-dropdown ::-webkit-scrollbar-thumb {
+  background: #b0b0b0;
+  border-radius: 3px;
+}
+.ssb-dropdown.large {
+  max-width: 100%;
+  width: 100%;
+}
+.ssb-dropdown.large .dropdown-interactive-area button {
+  max-width: 100%;
+  padding: 29px 40px;
+  font-size: 20px;
+}
+.ssb-dropdown.large .list-of-options {
+  max-width: 100%;
+  width: 100%;
+  top: auto;
+}
+.ssb-dropdown.large .list-of-options .option-list-element {
+  max-width: 100%;
+  width: 100%;
+}
+.ssb-dropdown.large .dd-icon {
+  box-sizing: initial;
+  top: 1px;
+  padding: 15px;
+}
+.ssb-dropdown.large input {
+  padding: 40px;
+  font-size: 20px;
+}
+
+/*
+Dash override for ssb-droppdown
+*/
+.ssb-dropdown .Select-value {
+    display: flex !important;
+    align-items: center !important;
+    height: 100%;
+}
+
+.ssb-dropdown .Select-value-label {
+    display: flex;
+    align-items: center;
+}
+
+.ssb-dropdown .Select-placeholder {
+    display: flex;
+    align-items: center;
+}
+
+.ssb-dropdown .Select-control {
+    border: 1px solid #162327 !important;
+    border-radius: 0 !important;
+    min-height: 44px;
+    height: 44px;
+    box-shadow: none !important;
+    font-size: 16px;
+}
+
+/* hover/focus */
+.ssb-dropdown .Select-control:hover {
+    outline: 1px solid #00824d !important;
+    border: 1px solid #00824d !important;
+}
+
+/* selected value */
+.ssb-dropdown .Select-value-label {
+    color: #162327 !important;
+    font-weight: 400;
+}
+
+/* dropdown arrow */
+.ssb-dropdown .Select-arrow {
+    color: #00824d !important;
+}
+
+/* menu (dropdown list) */
+.ssb-dropdown .Select-menu-outer {
+    border: 1px solid #162327 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+/* option */
+.ssb-dropdown .VirtualizedSelectOption {
+    font-size: 16px;
+    padding: 12px;
+}
+
+/* hover option */
+.ssb-dropdown .VirtualizedSelectFocusedOption {
+    background-color: #274247 !important;
+    color: #fff !important;
+}
+
+/* selected option */
+.ssb-dropdown .VirtualizedSelectSelectedOption {
+    background-color: #00824d !important;
+    color: #fff !important;
+    font-weight: bold;
+}
+
+/*
+ssb-input
+*/
+
+.ssb-input {
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  cursor: text;
+  display: flex;
+  flex-direction: column;
+  max-width: 400px;
+  position: relative;
+  width: 100%;
+}
+.ssb-input:hover input {
+  border: 1px solid #00824d;
+  outline: 1px solid #00824d;
+}
+.ssb-input:hover input:disabled {
+  border: 1px solid #274247;
+}
+.ssb-input .input-wrapper {
+  display: flex;
+}
+.ssb-input .input-wrapper ::placeholder {
+  color: #2d6975;
+  font-size: 14px;
+  opacity: 1;
+}
+.ssb-input label {
+  color: #162327;
+  cursor: text;
+  font-size: 14px;
+  margin-bottom: 5px;
+  user-select: none;
+}
+.ssb-input input {
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  background: #fff;
+  border: 1px solid #274247;
+  box-sizing: border-box;
+  color: #162327;
+  font-size: 16px;
+  height: 44px;
+  padding: 12px;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+.ssb-input input.with-icon {
+  padding: 4px 44px 4px 10px;
+}
+.ssb-input input:disabled {
+  border: 1px solid #274247;
+  cursor: not-allowed;
+}
+.ssb-input input:focus {
+  border: 1px solid #00824d;
+  outline: 1px solid #00824d;
+  outline-offset: 0;
+}
+.ssb-input.negative .input-wrapper ::placeholder {
+  color: #fff;
+  opacity: 1;
+}
+.ssb-input.negative:hover input {
+  border: 1px solid #b6e8b8;
+  outline: 1px solid #b6e8b8;
+}
+.ssb-input.negative:hover input:disabled {
+  border: 1px solid #fff;
+}
+.ssb-input.negative label {
+  color: #fff;
+}
+.ssb-input.negative input {
+  background: transparent;
+  border: 1px solid #fff;
+  color: #fff;
+}
+.ssb-input.negative input:disabled {
+  border: 1px solid #fff;
+}
+.ssb-input.negative input:focus {
+  border: 1px solid #b6e8b8;
+  outline: 1px solid #b6e8b8;
+  outline-offset: 0;
+}
+.ssb-input.negative .icon-wrapper > * {
+  color: #b6e8b8;
+}
+.ssb-input.negative .icon-wrapper.search-icon {
+  cursor: pointer;
+}
+.ssb-input.negative .icon-wrapper.search-icon:hover, .ssb-input.negative .icon-wrapper.search-icon:focus {
+  background: #fff;
+}
+.ssb-input.negative .icon-wrapper.search-icon:hover > *, .ssb-input.negative .icon-wrapper.search-icon:focus > * {
+  color: #274247;
+}
+.ssb-input.negative.error input {
+  border: 1px solid #dc3400;
+  outline: 1px solid #dc3400;
+}
+.ssb-input.negative.error .icon-wrapper > * {
+  color: #dc3400;
+}
+.ssb-input.error input {
+  border: 1px solid #dc3400;
+  outline: 1px solid #dc3400;
+}
+.ssb-input.error .icon-wrapper > * {
+  color: #dc3400;
+}
+.ssb-input .icon-wrapper {
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  text-align: left;
+  align-items: center;
+  display: flex;
+  font-size: 18px;
+  height: 44px;
+  justify-content: center;
+  margin-left: -44px;
+  width: 44px;
+}
+.ssb-input .icon-wrapper > * {
+  color: #00824d;
+}
+.ssb-input .icon-wrapper.search-icon {
+  cursor: pointer;
+}
+.ssb-input .icon-wrapper.search-icon:hover, .ssb-input .icon-wrapper.search-icon:focus {
+  background: #00824d;
+}
+.ssb-input .icon-wrapper.search-icon:hover > *, .ssb-input .icon-wrapper.search-icon:focus > * {
+  color: #fff;
+}
+.ssb-input .icon-wrapper:focus {
+  outline: #9272fc solid 2px;
+  outline-offset: 2px;
+}
+.ssb-input.input-lg {
+  max-width: 100%;
+}
+.ssb-input.input-lg .search-icon {
+  margin-left: -78px;
+  height: 77px;
+  width: 77px;
+  padding: 17px;
+}
+.ssb-input.input-lg input {
+  width: 100%;
+  padding: 38px 40px;
+  font-weight: bold;
+  font-size: 20px;
+}
+.ssb-input.input-lg input::placeholder {
+  font-weight: normal;
+  font-size: 20px;
+}
+
+.ssb-input-error {
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  background: #dc3400;
+  color: #fff;
+  display: flex;
+  font-size: 14px;
+  font-weight: bold;
+  justify-content: center;
+  line-height: normal;
+  margin-top: 12px;
+  padding: 4px 8px;
+  position: relative;
+}
+.ssb-input-error.negative {
+  color: #274247;
+}
+.ssb-input-error::before {
+  border-color: transparent transparent #dc3400;
+  border-style: solid;
+  border-width: 8px;
+  content: "";
+  position: absolute;
+  top: -16px;
+}
+
+/*
+Dash override for ssb-input
+*/
+
+.ssb-input label,
+.ssb-dropdown .dropdown-label {
+    font-size: 14px;
+    margin-bottom: 4px;  /* litt tighter enn 5px */
+    line-height: 1.2;
+}
+
+.ssb-input {
+    width: 100%;
+    max-width: none;
+}
+
+.ssb-input input {
+    border-radius: 0 !important;
+}
+
+/*
+ssb-nested-accordions
+*/
+.ssb-nested-accordion {
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  display: grid;
+  margin-top: 8px;
+  min-width: 300px;
+  width: 100%;
+}
+.ssb-nested-accordion .nested-accordion-header {
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  text-align: left;
+}
+.ssb-nested-accordion .nested-accordion-header .button-grid {
+  align-items: center;
+  cursor: pointer;
+  display: grid;
+  column-gap: 16px;
+  grid-template-columns: 15px 1fr;
+}
+.ssb-nested-accordion .nested-accordion-header .expand-icon {
+  color: #00824d;
+  font-size: 16px;
+}
+.ssb-nested-accordion .nested-accordion-header .header-text {
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  color: #162327;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1.25;
+}
+.ssb-nested-accordion .nested-accordion-header:hover .header-text {
+  color: #00824d;
+}
+.ssb-nested-accordion .nested-accordion-header.open .header-text,
+.ssb-nested-accordion .nested-accordion-header.open .sub-header {
+  color: #00824d;
+}
+.ssb-nested-accordion .nested-accordion-header:focus {
+  outline: #9272fc solid 2px;
+  outline-offset: 2px;
+}
+.ssb-nested-accordion .nested-accordion-body {
+  font-family: "Open Sans", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  color: #162327;
+  font-size: 16px;
+  padding: 10px 10px 10px 30px;
+  overflow-x: auto;
+}
+.ssb-nested-accordion .nested-accordion-body.closed {
+  display: none;
+  height: 0;
+}
+
+/*
+Dash override for ssb-nested-accordion
+*/
+.ssb-nested-accordion .accordion-item {
+    border: none !important;
+}
+
+.ssb-nested-accordion .accordion-button {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 8px 0 !important;
+}
+
+.ssb-nested-accordion .accordion-body {
+    padding: 10px 10px 10px 30px !important;
+}
+
+/* Nested accordion button */
+.ssb-nested-accordion .accordion-button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* viktig */
+    gap: 8px;
+    padding-left: 0;
+}
+
+/* Flytt caret til venstre */
+.ssb-nested-accordion .accordion-button::after {
+    order: -1;                /* flytter ikonet foran teksten */
+    margin-left: 0;
+    margin-right: 8px;        /* spacing til tekst */
+}
+
+/* Sørg for riktig rotasjon */
+.ssb-nested-accordion .accordion-button:not(.collapsed)::after {
+    transform: rotate(180deg);
+}
+
+/*
+ssb-tabs
+*/
+.ssb-tabs {
+  display: flex;
+  flex-direction: row;
+}
+.ssb-tabs .navigation-item {
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  text-align: left;
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  font-size: 16px;
+  font-weight: bold;
+  justify-content: center;
+  line-height: 1.25;
+  outline: none;
+  padding: 20px 0;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.ssb-tabs .navigation-item:not(:last-of-type) {
+  margin-right: 40px;
+}
+@media screen and (max-width: 767px) {
+  .ssb-tabs .navigation-item:not(:last-of-type) {
+    margin-right: 0;
+  }
+}
+.ssb-tabs .navigation-item::before {
+  background: #274247;
+  bottom: 0;
+  content: "";
+  display: block;
+  height: 0;
+  left: 0;
+  position: absolute;
+  transition: all 0.2s;
+  width: 100%;
+}
+.ssb-tabs .navigation-item.active::before {
+  background: #1a9d49;
+  height: 4px;
+}
+@media screen and (max-width: 767px) {
+  .ssb-tabs .navigation-item {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+.ssb-tabs .navigation-item:hover::before, .ssb-tabs .navigation-item:focus::before {
+  height: 4px;
+}
+
+/*
+Dash override for ssb-tabs DCC
+*/
+
+/* container */
+.ssb-tabs .tab-container,
+.ssb-tabs .tab,
+.ssb-tabs .tab-parent {
+    border: none !important;
+}
+
+/* tab base */
+.ssb-tabs .tab {
+    font-family: "Roboto", sans-serif;
+    font-weight: bold;
+    font-size: 18px;
+    color: #162327;
+    background: transparent !important;
+    border: none !important;
+    padding: 20px 0;
+    margin-right: 40px;
+    position: relative;
+}
+
+/* remove Dash default underline/box */
+.ssb-tabs .tab--selected {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* underline effect (SSB style) */
+.ssb-tabs .tab::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 0;
+    width: 100%;
+    background: #274247;
+    transition: all 0.2s;
+}
+
+/* hover + focus */
+.ssb-tabs .tab:hover::after,
+.ssb-tabs .tab:focus::after {
+    height: 4px;
+}
+
+/* active tab */
+.ssb-tabs .tab--selected::after {
+    height: 4px;
+    background: #1a9d49;
+}
+
+/* spacing fix mobile-ish behavior */
+.ssb-tabs .tab:last-child {
+    margin-right: 0;
+}
+
+/* Tabs skal ikke fylle hele bredden */
+#main-layout-tab-list,
+#main-layout-tab-list * {
+  max-width: 600px;
+}
+
+/*
+ssb-text-area
+*/
+.ssb-text-area {
+  font-family: "Roboto", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  cursor: text;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  position: relative;
+}
+.ssb-text-area:hover textarea {
+  border: 1px solid #00824d;
+  outline: 2px solid #00824d;
+}
+.ssb-text-area:hover textarea:disabled {
+  border: 1px solid #274247;
+}
+.ssb-text-area textarea {
+  font-family: "Open Sans", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  background: #fff;
+  border: 1px solid #274247;
+  box-sizing: border-box;
+  color: #162327;
+  font-size: 16px;
+  line-height: 1.25;
+  min-height: 44px;
+  min-width: 200px;
+  padding: 11px 12px;
+  width: 100%;
+}
+.ssb-text-area textarea:focus {
+  border: 1px solid #00824d;
+  outline: 1px solid #00824d;
+  outline-offset: 0;
+}
+.ssb-text-area label {
+  color: #162327;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+.ssb-text-area.negative .text-area-wrapper ::placeholder {
+  color: #fff;
+  opacity: 1;
+}
+.ssb-text-area.negative:hover textarea {
+  border: 1px solid #b6e8b8;
+  outline: 2px solid #b6e8b8;
+}
+.ssb-text-area.negative:hover textarea:disabled {
+  border: 1px solid #fff;
+}
+.ssb-text-area.negative label {
+  color: #fff;
+}
+.ssb-text-area.negative textarea {
+  background: transparent;
+  border: 1px solid #fff;
+  color: #fff;
+}
+.ssb-text-area.negative textarea:disabled {
+  border: 1px solid #fff;
+}
+.ssb-text-area.negative textarea:focus {
+  border: 1px solid #b6e8b8;
+  outline: 1px solid #b6e8b8;
+  outline-offset: 0;
+}
+.ssb-text-area.negative.error textarea {
+  border: 1px solid #dc3400;
+  outline: 1px solid #dc3400;
+}
+.ssb-text-area.error textarea {
+  border: 1px solid #dc3400;
+  outline: 1px solid #dc3400;
+}
+
+/*
+Dash override for ssb-text-area
+*/
+.ssb-text-area {
+    width: 100%;
+    max-width: 100%;
+    border: 1px solid #274247;
+}
+
+.ssb-text-area textarea,
+.ssb-text-area .comment-textarea {
+    width: 100%;
+    height: 200px;
+    min-height: 44px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+/* =========================
+   SSB AG GRID THEME
+   ========================= */
+
+/* Arver Alpine (viktig!) */
+.ag-theme-ssb {
+    /* dette gjør at du får hele Alpine base */
+    --ag-foreground-color: #162327;
+    --ag-background-color: #ffffff;
+    --ag-header-background-color: #ffffff;
+    --ag-header-foreground-color: #162327;
+    --ag-border-color: #274247;
+    --ag-row-hover-color: #f2f0ff;
+    --ag-selected-row-background-color: #e6f4ea;
+}
+
+/* Wrapper look (SSB table wrapper feel) */
+.ag-theme-ssb {
+    border: 1px solid #274247;
+}
+
+/* Header styling */
+.ag-theme-ssb .ag-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid #274247;
+    font-weight: bold;
+    font-family: "Roboto", sans-serif !important;
+}
+
+/* Alternating rows (SSB-style striping) */
+.ag-theme-ssb .ag-row:nth-child(odd) {
+    background-color: #ecfeed;
+}
+
+.ag-theme-ssb .ag-row {
+    border-bottom: 1px solid #c3dcdc;
+}
+
+/* Hover */
+.ag-theme-ssb .ag-row:hover {
+    background-color: #f2f0ff;
+}
 
 /*
 Theme consistency — normalize dark theme to match light (Lumen) standards
@@ -51,6 +1647,7 @@ Main layout
 
 .main-layout-tab-container {
     height: 5vh;
+    padding-left: 1rem;
 }
 
 /*
@@ -199,6 +1796,8 @@ Sidebar button
 
 .sidebar-button-button {
     display: flex;
+    min-height: 66px;
+    height: auto !important;
     flex-direction: column;
     align-items: center;
     word-break: break-all;
@@ -214,6 +1813,7 @@ Sidebar button
 .sidebar-button-label-spot {
     display: block;
     font-size: 0.7rem;
+    white-space: normal !important;
     word-break: break-word;
 }
 
@@ -233,6 +1833,17 @@ Implementations
     display: flex;
 }
 
+.window-implementation-modal-title {
+    font-size: 20px;
+    line-height: 32px;
+    font-weight: bold;
+    font-family: "Roboto", sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
 /*
 Aarsregnskap
 */
@@ -240,6 +1851,7 @@ Aarsregnskap
 .aarsregnskap {
     height: 100%;
     display: flex;
+    width: 100%;
     flex-direction: column;
 }
 
@@ -247,27 +1859,119 @@ Aarsregnskap
     display: flex;
     flex-direction: column;
     flex: 1;
+    
 }
 
 .aarsregnskap-aar-foretak-row {
+    justify-content: flex-start;
+    padding-left: 15px;
+    align-items: flex-end;
+}
+
+#tab-aarsregnskap-input-orgnr,
+#tab-aarsregnskap-input-aar {
+    max-width: 10rem;
+}
+
+.aarsregnskap-aar-foretak-row .col {
     flex: 0 0 auto;
+    width: auto;
 }
 
 .aarsregnskap-pdf-row {
     flex: 1;
+    min-height: 0;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.aarsregnskap-pdf-row .row {
+    flex: 1;
+    min-height: 0;
+    display: flex;
 }
 
 .aarsregnskap-pdf-col {
     padding: 15px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#tab-aarsregnskap-img-container {
+    padding: 15px;
+    width: 60%;
     flex: 1;
     min-height: 0;
+    overflow-y: scroll;
+}
+
+#tab-aarsregnskap-img-container img {
+    width: 100%;
+    display: block;
+    margin-bottom: 12px;
+    border: 1px solid #bebebe;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+#tab-aarsregnskap-zoom-slider {
+    padding: 15px;
+    width: 450px;
 }
 
 .aarsregnskap-pdf-iframe {
-    width: 120vh;
+    width: 100%;
     height: 100%;
+    min-height: 0;
     border: none;
+    padding: 15px;
+}
+
+#tab-aarsregnskap-brreg-link .btn {
+    padding: 10px;
+    margin-top: 15px;
+    font-size: 15px;
+}
+
+#tab-aarsregnskap-zoom-controls .btn {
+    background-color: #686868;
+    color: #ffffff;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 3px;
+    font-size: 1.2rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+#tab-aarsregnskap-zoom-controls {
+    padding: 15px;
+    background-color: #3d3d3d;
+    width: 59%;
+    padding: 7px 12px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    margin-left: 15px;
+}
+#tab-aarsregnskap-zoom-controls .btn:hover {
+    background-color: #505050;
+    align-items: center;
+    justify-content: center;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+#tab-aarsregnskap-zoom-label {
+    color: white;
+    font-size: 0.9rem;
+    min-width: 40px;
+    text-align: center;
 }
 
 /*
@@ -370,14 +2074,145 @@ Altinn Editor Support Tables
     overflow: hidden;
 }
 
-.dataeditor-helper-button-modal .modal-dialog {
+/* 
+DataEditor 
+*/
+
+.DataEditorHistory-toggle-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-bottom: 10px;
+    padding-right: 10px;
+}
+
+.DataEditorHistory-helper-modal .modal-dialog,
+.DataEditorSupportTables-helper-modal .modal-dialog {
     max-width: 90vw !important;
     width: 90vw !important;
 }
 
-.dataeditor-helper-button-modal .modal-content {
-    height: 80vh !important;
+.DataEditorHistory-helper-modal .modal-content,
+.DataEditorSupportTables-helper-modal .modal-content {
     overflow: hidden;
+}
+
+.dbc input.microlayout-input-readonly:not([type=radio]):not([type=checkbox]),
+.form-control.microlayout-textarea-readonly[readonly] {
+    background-color: #eeeff0 !important;
+    color: #4a4e53 !important;
+    cursor: not-allowed;
+}
+
+.DataEditor-main-view .ssb-input {
+    max-width: 12rem;
+    margin-bottom: 3px;
+}
+
+.microlayout-label {
+    font-family: "Open Sans", sans-serif !important;
+    display: flex;
+    align-items: center;
+    height: 62px;
+    font-size: 14px;
+    margin-top: 0.45rem;
+}
+
+.DataEditor-main-view .microlayout-textarea textarea {
+    min-height: 7rem;
+    max-width: 10rem;
+}
+
+.microlayout-textarea textarea {
+  font-family: "Roboto", sans-serif !important;
+  background: #fff;
+  border: 1px solid #274247;
+  box-sizing: border-box;
+  color: #162327;
+  font-size: 15px;
+  padding: 12px;
+  resize: vertical;
+}
+
+.microlayout-textarea:hover textarea {
+  border: 1px solid #00824d;
+  outline: 1px solid #00824d;
+}
+
+.microlayout-textarea label {
+  color: #162327;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.DataEditor-main-view .row {
+    margin-bottom: 1rem;
+}
+
+.DataEditor-main-view .col {
+    flex: 0 0 auto;
+    width: auto;
+}
+
+.DataEditor-main-view h2 {
+    font-size: 1.4rem;
+    font-weight: bold;
+}
+
+.DataEditor-main-view h3 {
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+.DataEditor-main-view h4 {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.DataEditorInfoRow-info-row .card,
+.DataEditor-sidebar .card,
+.DataEditor-helper-row,
+.DataEditor-main-view.card {
+    border-radius: 8px;
+    background-color: #F0F8F9;
+    border: none;
+    margin-bottom: 0.6rem;
+    color: #2e2e2e;
+
+}
+
+.DataEditorInfoRow-info-row .card-header {
+    background-color: transparent;
+    border-bottom: none;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.DataEditorInfoRow-info-row .card-body {
+    font-size: 16px;
+    font-weight: 500;
+    padding-top: 0.25rem;
+}
+
+.DataEditor-sidebar .row {
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+}
+
+.DataEditor-sidebar {
+    flex: 0 0 225px;
+}
+
+.DataEditor-sidebar-modules {
+    display: flex;
+    flex-direction: column;
+}
+
+.DataEditor-header {
+    margin-left: 15px;
+    font-family: "Roboto", sans-serif !important;
+    font-size: 20px;
+    line-height: 32px;
 }
 
 /*
@@ -409,56 +2244,30 @@ MacroModule
 }
 
 .macromodule-sidebar h1 {
-    font-size: 35px;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
+    font-size: 28px;
+    line-height: 40px;
+    font-weight: 700;
+    font-family: "Roboto Condensed", sans-serif !important;
+    color: #000;
+}
+
+.macromodule-konsolidert-label {
+    font-family: "Roboto", sans-serif !important;
+    font-weight: bold;
+    font-size: 20px;
+    font-weight: normal;
+    line-height:32px;
 }
 
 .macromodule-label {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
-    margin-bottom: 6px;
-}
-
-.macromodule-dropdown,
-.macromodule-naring-dropdown,
-.macromodule-radio-buttons {
-    margin-bottom: 20px;
-}
-
-/* Radio button styling */
-.macromodule-radio-buttons label {
-    display: inline-block;
-    padding: 10px 20px;
-    border: 1px solid #ccc;
-    margin-right: 10px;
-    cursor: pointer;
-    border-radius: 4px;
-}
-
-.macromodule-radio-buttons input[type="radio"] {
-    display: none;
-}
-
-.macromodule-radio-buttons label:has(input[type="radio"]:checked) {
-    background-color: #d4d4d4;
-    color: #2c2c2c;
-    font-weight: bold;
-    border-color: #000;
-}
-
-/* Multi-select dropdown styling */
-.macromodule-naring-dropdown .Select-value {
-    background-color: #eee !important;
-    border-radius: 4px;
-    padding: 2px 6px;
-}
-
-.macromodule-naring-dropdown .Select-value-label {
-    color: #313131 !important;
-}
-
-.macromodule-naring-dropdown .Select-value-icon {
-    color: #000 !important;
+    margin-bottom: 8px;
+    padding-top: 20px;
+    font-family: "Roboto", sans-serif !important;
+	  font-stretch: normal;
+    line-height: 28px;
 }
 
 /* Grid containers */
@@ -483,6 +2292,10 @@ MacroModule
 
 .macromodule-detail-grid-container h5 {
     margin-top: 10px;
+    font-family: "Roboto", sans-serif !important;
+    font-size: 20px;
+    line-height: 32px;
+    font-weight: bold;
 }
 
 /* Row styling */
@@ -495,8 +2308,7 @@ MacroModule
     align-items: center;
     gap: 10px;
     background: #ffffff;
-    border: 1px solid #b0b0b0;
-    border-radius: 5px;
+    border: 1px solid #000000;
     padding: 7px 12px;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
     white-space: nowrap;
@@ -509,18 +2321,7 @@ MacroModule
     max-width: 320px;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.macromodule-bruk-button {
-    color: #2c2c2c !important;
-    background-color: #d4d4d4 !important;
-    border-color: #000 !important;
-    padding: 5px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: bold;
-    flex-shrink: 0;
+    font-family: "Roboto", sans-serif !important;
 }
 
 /*
@@ -719,5 +2520,3 @@ so replicate it here using darkly's own CSS variables.
     color: var(--bs-body-color);
     border-bottom-color: transparent;
 }
-
-

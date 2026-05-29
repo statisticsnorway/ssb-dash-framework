@@ -226,7 +226,18 @@ class MacroNspekPostControl:
                                     [
                                         "Sjekk aggregerte",
                                         html.Br(),
-                                        "næringsoppgaveposter",
+                                        "nspekposter",
+                                        *(
+                                            [
+                                                html.Br(),
+                                                html.Span(
+                                                    "(Konsoliderte tall)",
+                                                    className="macromodule-konsolidert-label",
+                                                ),
+                                            ]
+                                            if self.consolidated
+                                            else []
+                                        ),
                                     ],
                                 ),
                                 html.Label(
@@ -235,7 +246,7 @@ class MacroNspekPostControl:
                                 ),
                                 dcc.RadioItems(
                                     id="macromodule-nopost-foretak-or-bedrift",
-                                    className="macromodule-radio-buttons",
+                                    className="ssb-radio-buttons",
                                     options=[
                                         {"label": k, "value": v}
                                         for k, v in FORETAK_OR_BEDRIFT.items()
@@ -247,7 +258,7 @@ class MacroNspekPostControl:
                                     className="macromodule-label",
                                 ),
                                 dcc.Dropdown(
-                                    className="macromodule-dropdown",
+                                    className="ssb-dropdown",
                                     options=[
                                         {"label": k, "value": k}
                                         for k in MACRO_FILTER_OPTIONS.keys()
@@ -261,7 +272,7 @@ class MacroNspekPostControl:
                                 ),
                                 dcc.Dropdown(
                                     id="macromodule-nopost-naring-velger",
-                                    className="macromodule-naring-dropdown",
+                                    className="ssb-dropdown",
                                     options=[],
                                     multi=True,
                                     value=[],
@@ -274,7 +285,7 @@ class MacroNspekPostControl:
                                 ),
                                 dcc.RadioItems(
                                     id="macromodule-nopost-nace-siffer-velger",
-                                    className="macromodule-radio-buttons",
+                                    className="ssb-radio-buttons",
                                     options=[
                                         {"label": k, "value": v}
                                         for k, v in NACE_LEVEL_OPTIONS.items()
@@ -777,7 +788,7 @@ class MacroNspekPostControl:
         @callback(  # type: ignore[misc]
             Output("var-ident", "value", allow_duplicate=True),
             Output("var-bedrift", "value", allow_duplicate=True),
-            Output("altinnedit-option1", "value", allow_duplicate=True),
+            Output("dataeditortableselector", "value", allow_duplicate=True),
             Input("macromodule-nopost-detail-grid", "cellClicked"),
             State("macromodule-nopost-detail-grid", "rowData"),
             prevent_initial_call=True,
@@ -849,6 +860,7 @@ class MacroNspekPostControlWindow(WindowImplementation, MacroNspekPostControl):
         conn: object,
         file_path_resolver: Callable[[int, str], str],
         consolidated: bool = False,
+        **kwargs: Any
     ) -> None:
         """Initializes the MacroNspekPostControlWindow class."""
         MacroNspekPostControl.__init__(
@@ -858,4 +870,4 @@ class MacroNspekPostControlWindow(WindowImplementation, MacroNspekPostControl):
             file_path_resolver=file_path_resolver,
             consolidated=consolidated,
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

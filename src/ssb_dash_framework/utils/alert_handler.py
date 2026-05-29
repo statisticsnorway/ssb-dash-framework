@@ -138,13 +138,17 @@ class AlertHandler:
                                     [
                                         dbc.Col(
                                             dbc.Button(
-                                                "Vis alle", id="alert_filter_all"
+                                                "Vis alle",
+                                                id="alert_filter_all",
+                                                className="ssb-btn primary-btn",
                                             ),
                                             width="auto",
                                         ),
                                         dbc.Col(
                                             dbc.Button(
-                                                "Vis kun info", id="alert_filter_info"
+                                                "Vis kun info",
+                                                id="alert_filter_info",
+                                                className="ssb-btn primary-btn",
                                             ),
                                             width="auto",
                                         ),
@@ -152,6 +156,7 @@ class AlertHandler:
                                             dbc.Button(
                                                 "Vis kun editeringer",
                                                 id="alert_filter_success",
+                                                className="ssb-btn primary-btn",
                                             ),
                                             width="auto",
                                         ),
@@ -159,12 +164,15 @@ class AlertHandler:
                                             dbc.Button(
                                                 "Vis kun advarsel",
                                                 id="alert_filter_warning",
+                                                className="ssb-btn primary-btn",
                                             ),
                                             width="auto",
                                         ),
                                         dbc.Col(
                                             dbc.Button(
-                                                "Vis kun feil", id="alert_filter_danger"
+                                                "Vis kun feil",
+                                                id="alert_filter_danger",
+                                                className="ssb-btn primary-btn",
                                             ),
                                             width="auto",
                                         ),

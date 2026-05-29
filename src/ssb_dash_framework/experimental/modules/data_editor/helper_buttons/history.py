@@ -9,6 +9,7 @@ from dash import callback
 from dash import html
 from ibis import _
 from psycopg_pool import ConnectionPool
+import dash_bootstrap_components as dbc
 
 from ssb_dash_framework import VariableSelector
 from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
@@ -55,7 +56,32 @@ class DataEditorHistory(DataEditorHelperButton):
 
     def _create_modal_body(self) -> html.Div:
         return html.Div(
-            [dag.AgGrid(id=f"{self.module_name}-{self.module_number}-table")],
+            [
+                html.Div(
+                    [
+                        dbc.Label("Skjul insert-data"),
+                        dbc.Checklist(
+                            options=[{"label": "Altinn3", "value": 1}],
+                            value=[1],
+                            id=f"{self.module_name}-{self.module_number}-toggle",
+                            inline=True,
+                            switch=True,
+                        ),
+                    ],
+                    className=f"{self.module_name}-toggle-bar",
+                ),
+                html.Div(
+                    dag.AgGrid(
+                        id=f"{self.module_name}-{self.module_number}-table",
+                        className="ag-theme-alpine ag-theme-ssb mb-2",
+                        dashGridOptions={"enableCellTextSelection": True},
+                        defaultColDef={"filter": True, "resizable": True},
+                        columnSize="responsiveSizeToFit",
+                    ),
+                    className=f"{self.module_name}-table",
+                ),
+            ],
+            className=f"{self.module_name}-body",
         )
 
     def module_callbacks(self):
@@ -65,22 +91,21 @@ class DataEditorHistory(DataEditorHelperButton):
             Output(f"{self.module_name}-{self.module_number}-table", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-table", "columnDefs"),
             Input(f"{self.module_name}-{self.module_number}-modal", "is_open"),
+            Input(f"{self.module_name}-{self.module_number}-toggle", "value"),
             *self.variableselector.get_all_callback_objects(),
         )
-        def update_history_view(is_open, refnr, *args):
+        def update_history_view(is_open, insert_toggle: bool, refnr, *args):
 
             if isinstance(connection_object, ConnectionPool):
                 logger.debug("Using ConnectionPool logic.")
                 with get_connection() as conn:
                     t = conn.table("skjemadataendringshistorikk")
-                    df = (
-                        t.filter(_.refnr == refnr)
-                        .filter(
+                    query = t.filter(_.refnr == refnr).order_by(_.endret_tid.desc())
+                    if insert_toggle:
+                        query = query.filter(
                             _.process_type != "Altinn3"
                         )  # Filtering here to not show the original insert in the history table as the original data will be visible as "old value" in the changelog.
-                        .order_by(_.endret_tid.desc())
-                        .to_pandas()
-                    )
+                    df = query.to_pandas()
                     df["endret_tid"] = (
                         pd.to_datetime(df["endret_tid"], utc=True)
                         .dt.tz_convert(local_tz)
@@ -94,6 +119,11 @@ class DataEditorHistory(DataEditorHelperButton):
                             "field": col,
                             "filter": True,
                             "resizable": True,
+                            "hide": col
+                            in [
+                                "skjema",
+                                "refnr",
+                            ],
                         }
                         for col in df.columns
                     ]

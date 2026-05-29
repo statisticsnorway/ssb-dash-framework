@@ -19,10 +19,10 @@ from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 from .....config.models import register_module
 from .....modules.building_blocks.microlayout import MicroLayoutAIO
 from .....modules.building_blocks.microlayout_components.editable_field_model import (
-    default_updater,
+    default_getter,
 )
 from .....modules.building_blocks.microlayout_components.editable_field_model import (
-    defult_getter,
+    default_updater,
 )
 from .....modules.building_blocks.microlayout_components.models import Layout
 from ..core import DataEditorDataView
@@ -81,7 +81,6 @@ class DataViewCustomFigure:
 
 
 class DataViewCustomTable:
-
     def __init__(self, label, table_func, applies_to_tables, applies_to_forms) -> None:
         self.module_number = DataViewCustomFigure._id_number
         self.module_name = self.__class__.__name__
@@ -97,7 +96,10 @@ class DataViewCustomTable:
         return html.Div(
             [
                 self.label,
-                dag.AgGrid(id=f"{self.module_name}-{self.module_number}-table"),
+                dag.AgGrid(
+                    id=f"{self.module_name}-{self.module_number}-table",
+                    className="ag-theme-alpine ag-theme-ssb mb-2",
+                ),
             ]
         )
 
@@ -155,7 +157,7 @@ class DataViewCustomMicroLayout(MicroLayoutAIO):
         aio_id: str | None = None,
         horizontal: bool = False,
         form_data_table: str = "skjemadata",
-        form_reference_number_column: str = "refnr",
+        form_reference_number_column: str | None = "refnr",
         form_data_field_name_column: str = "feltnavn",
         formdata_field_value_column_name: str = "verdi",
         table_selector_id: str | None = "dataeditortableselector",
@@ -240,6 +242,10 @@ class DataViewCustom(DataEditorDataView):
         """Builds the layout for the custom view."""
         components = []
 
+        # guard against strings and other primitives
+        if not isinstance(layout, (dict, list)):
+            return components
+
         if isinstance(layout, list):
             for item in layout:
                 components.extend(self.build_layout(item))
@@ -264,29 +270,38 @@ class DataViewCustom(DataEditorDataView):
                         )
                     ]
                     logger.debug(
-                        f"Done converting:\n{json.dumps(layout["layout"], indent=2, ensure_ascii=False)}"
+                        f"Done converting:\n{json.dumps(layout['layout'], indent=2, ensure_ascii=False)}"
                     )
                 microlayout = DataViewCustomMicroLayout(
                     applies_to_tables=self.applies_to_tables,
                     applies_to_forms=self.applies_to_forms,
                     layout=layout["layout"],
-                    getter_func=layout.get("getter_func", defult_getter),
+                    getter_func=layout.get("getter_func", default_getter),
                     update_func=layout.get("update_func", default_updater),
                     form_data_table=layout.get("form_data_table"),
                     form_data_field_name_column=layout.get(
                         "form_data_field_name_column"
                     ),
+                    form_reference_number_column=value.get(
+                        "form_reference_number_column", "refnr"
+                    ),
+                    form_reference_input_id=value.get(
+                        "form_reference_input_id", "var-refnr"
+                    ),
+                    inputs=[Input(f"var-{unit}", "value") for unit in get_time_units()],
                 )
                 components.append(microlayout)
             else:
                 raise ValueError(
-                    f"Value for 'type' must be a valid component. Found type '{layout["type"]}'"
+                    f"Value for 'type' must be a valid component. Found type '{layout['type']}'"
                 )
 
         return components
 
     def _create_layout(self) -> html.Div:
-        return html.Div(id=self.divname, children=self.created_layout)
+        return html.Div(
+            id=self.divname, children=self.created_layout, style={"display": "none"}
+        )
 
     def layout(self):
         """Returns the layout of the module."""
@@ -364,7 +379,6 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
     logger.debug(
         f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
     )
-
     if applies_to_tables is None:
         applies_to_tables = []
     if applies_to_forms is None:
@@ -389,9 +403,8 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
         node = convert_node_build_field_settings(
             node, "applies_to_tables", applies_to_tables
         )
-        node = convert_node_build_field_settings(
-            node, "applies_to_forms", applies_to_forms
-        )
+        clean_forms = [f for f in applies_to_forms if f is not None]
+        node = convert_node_build_field_settings(node, "applies_to_forms", clean_forms)
 
     if "children" in node:
         node["children"] = [

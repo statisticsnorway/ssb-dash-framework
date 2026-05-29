@@ -13,9 +13,11 @@ from dash import dcc
 from dash import html
 from dash import no_update
 from dash.exceptions import PreventUpdate
+import ibis.selectors as s
 from eimerdb import EimerDBInstance
 from ibis import _
 from psycopg_pool import ConnectionPool
+import tzlocal
 
 from ssb_dash_framework import VariableSelector
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
@@ -30,6 +32,8 @@ from .....utils.core_models import UpdateSkjemamottakStatus
 from ..core import DataEditorHelperSidebar
 
 logger = logging.getLogger(__name__)
+
+local_tz = tzlocal.get_localzone()
 
 
 class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
@@ -57,7 +61,13 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         DataEditorSidebarEditingStatus._id_number += 1
 
         self.variableselector = VariableSelector(
-            selected_inputs=[], selected_states=[get_ident(), *get_time_units().keys()]
+            selected_inputs=[],
+            selected_states=[
+                get_ident(),
+                *get_time_units().keys(),
+                "altinnskjema",
+                "refnr",
+            ],
         )
 
         self.status_options = (
@@ -80,7 +90,10 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 dbc.ModalBody(
                     [
                         dag.AgGrid(
-                            id=f"{self.module_name}-{self.module_number}-form-table"
+                            id=f"{self.module_name}-{self.module_number}-form-table",
+                            className="ag-theme-alpine ag-theme-ssb mb-2",
+                            columnSize="responsiveSizeToFit",
+                            dashGridOptions={"rowSelection": "single"},
                         )
                     ]
                 ),
@@ -100,6 +113,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     dbc.Button(
                         id=f"{self.module_name}-{self.module_number}-button",
                         children="Se innsendinger",
+                        className="ssb-btn primary-btn",
                     )
                 ),
                 dbc.Row(
@@ -111,6 +125,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                                     dcc.RadioItems(
                                         id=f"{self.module_name}-{self.module_number}-radioitems",
                                         options=self.status_options,
+                                        className="ssb-radio-buttons",
                                     )
                                 ),
                             ]
@@ -119,9 +134,15 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                             [
                                 dbc.Row("Aktiv"),
                                 dbc.Row(
-                                    dcc.Checklist(
-                                        id=f"{self.module_name}-{self.module_number}-checkbox",
-                                        options={"Aktiv": True},
+                                    html.Div(
+                                        className="ssb-checkbox d-flex align-items-center",
+                                        children=[
+                                            dcc.Checklist(
+                                                id=f"{self.module_name}-{self.module_number}-checkbox",
+                                                options=[{"label": "", "value": "Aktiv"}],
+                                            ),
+                                            html.Label("Ja", className="mb-1 ms-2"),
+                                        ],
                                     )
                                 ),
                             ]
@@ -140,54 +161,72 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             Output(
                 f"{self.module_name}-{self.module_number}-refnr-text-row", "children"
             ),
-            Output("alert_store", "data", allow_duplicate=True),
             self.variableselector.get_input("refnr"),
+        )
+        def set_initial_status(refnr):
+
+            if not refnr:
+                raise PreventUpdate
+
+            with get_connection() as conn:
+                t = conn.table("skjemamottak")
+                data = t.filter(_.refnr == refnr).to_pandas()
+
+            if data.empty:
+                raise PreventUpdate
+
+            row = data.iloc[0]
+
+            return (
+                ["Aktiv"] if row["aktiv"] else [],
+                row["status"],
+                f'Viser skjema: {row["skjema"]}',
+            )
+
+        @callback(
+            Output("alert_store", "data", allow_duplicate=True),
             Input(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             Input(f"{self.module_name}-{self.module_number}-radioitems", "value"),
+            State(self.variableselector.get_input("refnr").component_id, "value"),
             State("alert_store", "data"),
             prevent_initial_call=True,
         )
-        def set_initial_values_and_update_status(
-            refnr: str, aktiv_status: bool, status_code: str, alert_store
-        ) -> (
-            tuple[list[str], Literal["Ferdig", "Ikke påbegynt"], str, Any]
-            | tuple[Any, Any, Any, list[Any]]
+        def update_status(
+            aktiv_status,
+            status_code,
+            refnr,
+            alert_store,
         ):
-            """Sets the initial values for the components and handles updates to them."""
-            triggered_id = ctx.triggered_id
-            refnr_input_id = self.variableselector.get_input("refnr").component_id
 
-            if triggered_id == refnr_input_id:
-                with get_connection() as conn:
-                    t = conn.table("skjemamottak")
-                    data = t.filter(_.refnr == refnr).to_pandas()
-                return (
-                    ["Aktiv"] if data["aktiv"].item() else [],
-                    data["status"].item(),
-                    f"Viser for {refnr}",
-                    no_update,
-                )
+            triggered_id = ctx.triggered_id
 
             if triggered_id == f"{self.module_name}-{self.module_number}-checkbox":
+
                 update_to_apply = UpdateSkjemamottakAktiv(
-                    refnr=refnr, value=True if aktiv_status else False
+                    refnr=refnr,
+                    value=bool(aktiv_status),
                 )
+
             elif triggered_id == f"{self.module_name}-{self.module_number}-radioitems":
+
                 update_to_apply = UpdateSkjemamottakStatus(
-                    refnr=refnr, value=status_code
+                    refnr=refnr,
+                    value=status_code,
                 )
+
+            else:
+                raise PreventUpdate
 
             if isinstance(_get_connection_object(), EimerDBInstance):
                 feedback = update_to_apply.update_eimer()
-            elif isinstance(_get_connection_object(), ConnectionPool):
-                logger.debug("Attempting to update using ibis logic.")
-                feedback = update_to_apply.update_ibis()
-            else:
-                raise NotImplementedError(
-                    f"Connection of type '{type(_get_connection_object())}' is not implemented yet."
-                )
 
-            return no_update, no_update, no_update, [feedback, *alert_store]
+            elif isinstance(_get_connection_object(), ConnectionPool):
+                feedback = update_to_apply.update_ibis()
+
+            else:
+                raise NotImplementedError
+
+            return [feedback, *alert_store]
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-form-table", "rowData"),
@@ -213,5 +252,56 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             filterdict = create_filter_dict([get_ident(), *get_time_units()], [*args])
             with get_connection() as conn:
                 t = conn.table("skjemamottak")
-                data = t.filter(ibis_filter_with_dict(filterdict)).to_pandas()
-            return data.to_dict("records"), [{"field": x} for x in data.columns], True
+                data = (
+                    t.filter(ibis_filter_with_dict(filterdict))
+                    .order_by(_.dato_mottatt.desc())
+                    .select(
+                        "skjema",
+                        "dato_mottatt",
+                        "refnr",
+                        s.matches(r"^(editert|status)$"),
+                        "kommentar",
+                        "aktiv",
+                    )
+                    .to_pandas()
+                )
+                data["dato_mottatt"] = (
+                    data["dato_mottatt"]
+                    .dt.tz_convert(local_tz)
+                    .dt.tz_localize(None)
+                    .dt.strftime("%Y-%m-%d %H:%M:%S")
+                )
+            return (
+                data.to_dict("records"),
+                [{"field": x, "headerName": x} for x in data.columns],
+                True,
+            )
+
+        @callback(  # type: ignore[misc]
+            self.variableselector.get_output_object("refnr"),  # oppdater refnr
+            self.variableselector.get_output_object(
+                "altinnskjema"
+            ),  # oppdater altinnskjema
+            Input(
+                f"{self.module_name}-{self.module_number}-form-table", "selectedRows"
+            ),
+            self.variableselector.get_input("refnr"),
+            self.variableselector.get_input("altinnskjema"),
+            prevent_initial_call=True,
+        )
+        def selected_refnr(
+            selected_row: list[dict[str, Any]], current_refnr, current_altinnskjema
+        ):
+            # print(selected_row)
+            logger.debug(f"Args:\nselected_row: {selected_row}")
+            if not selected_row:
+                logger.debug("Raised PreventUpdate")
+                raise PreventUpdate
+
+            refnr = selected_row[0]["refnr"]
+            skjema = selected_row[0]["skjema"]
+
+            return (
+                refnr if refnr != current_refnr else no_update,
+                skjema if skjema != current_altinnskjema else no_update,
+            )

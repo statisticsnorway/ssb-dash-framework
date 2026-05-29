@@ -269,7 +269,7 @@ class VariableSelector:
                     children=[
                         html.H5(text, className="card-title"),
                         html.Div(
-                            className="variable-selector-cardbody-content",
+                            className="ssb-input",
                             children=[
                                 dbc.Input(
                                     value=value,
