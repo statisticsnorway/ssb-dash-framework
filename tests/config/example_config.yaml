@@ -5,14 +5,7 @@ app_settings:
   enable_logging: true
   logging_level: warning
   log_to_file: false
-  variableselector:
-    refnr: refnr
-    ident: ident
-    time_units: # Might be possible to find automatically
-      aar: 1
-    grouping_variables:
-      - altinnskjema
-      - variabel
+  variableselector: !include /home/dor/ssb-dash-framework/tests/config/variableselector.yaml
   connection:
     type: postgres
     database_url: test
