@@ -10,9 +10,9 @@ app_settings:
     type: postgres
     database_url: test
 modules:
-  # windows:
-    # - type: BofInformation
-    #   variableselector_foretak_name: ident
+  windows:
+    - type: BofInformation
+      variableselector_foretak_name: ident
   tabs:
     - type: DataEditor
       # layout:
