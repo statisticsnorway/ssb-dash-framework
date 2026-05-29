@@ -4,17 +4,16 @@ from pathlib import Path
 
 import ibis
 import pytest
-import yaml
 
 from ssb_dash_framework import VariableSelector
+from ssb_dash_framework import config_parser_yaml
 from ssb_dash_framework import set_connection
 
 
 @pytest.fixture
 def config_yaml():
     yaml_file = Path(__file__).parent / "config" / "example_config.yaml"
-    with open(yaml_file) as f:
-        return yaml.safe_load(f)
+    return config_parser_yaml(yaml_file)
 
 
 @pytest.fixture(autouse=True)

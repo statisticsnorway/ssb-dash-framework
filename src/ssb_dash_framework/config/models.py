@@ -24,7 +24,7 @@ class RegisteredModule(BaseModel):
 _MODULE_REGISTRY: list[RegisteredModule] = list()
 
 
-def _get_module_registry():
+def get_module_registry():
     global _MODULE_REGISTRY
     return _MODULE_REGISTRY
 
@@ -46,7 +46,7 @@ def register_module(as_tab: str | None = None, as_window: str | None = None):
     """Decorator for registering a module that does not use TabImplementation or WindowImplementation."""
 
     def decorator(module):
-        registry = _get_module_registry()
+        registry = get_module_registry()
         if module.__name__ in [
             registered_module.type for registered_module in registry
         ]:
@@ -81,7 +81,7 @@ def register_implementation_modules():
     modules = list(set(tabs) | set(windows))
     for module in modules:
         if module.__name__ in [
-            registered_module.type for registered_module in _get_module_registry()
+            registered_module.type for registered_module in get_module_registry()
         ]:
             raise ValueError(f"Module '{module.__name__}' is already registered")
         model_signature = inspect.signature(module)

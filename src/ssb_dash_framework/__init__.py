@@ -1,5 +1,21 @@
 """SSB Dash Framework."""
 
+from .config import AppConfig
+from .config import AppModules
+from .config import AppSettings
+from .config import ModuleConfig
+from .config import RegisteredModule
+from .config import VariableSelectorConfig
+from .config import apply_app_settings
+from .config import build_app_from_config
+from .config import build_modules
+from .config import config_parser_yaml
+from .config import get_from_module_registry
+from .config import get_module_registry
+from .config import instantiate_module
+from .config import register_implementation_modules
+from .config import register_module
+from .config import register_modules
 from .config import run_app_from_config
 from .config.models import register_modules
 from .control import ControlFrameworkBase
@@ -115,6 +131,9 @@ __all__ = [
     "AltinnDataCaptureWindow",
     "AltinnSkjemadataEditor",
     "AltinnSupportTable",
+    "AppConfig",
+    "AppModules",
+    "AppSettings",
     "Bedriftstabell",
     "BedriftstabellTab",
     "BedriftstabellWindow",
@@ -153,6 +172,7 @@ __all__ = [
     "MapDisplayTab",
     "MapDisplayWindow",
     "MicroLayoutAIO",
+    "ModuleConfig",
     "MultiModule",
     "MultiModule",
     "MultiModuleTab",
@@ -166,11 +186,13 @@ __all__ = [
     "ParquetEditor",
     "ParquetEditorChangelog",
     "PimemorizerTab",
+    "RegisteredModule",
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",
     "TabImplementation",
     "VariableSelector",
+    "VariableSelectorConfig",
     "VariableSelectorOption",
     "VisualizationBuilder",
     "VisualizationBuilderWindow",
@@ -179,7 +201,11 @@ __all__ = [
     "_get_connection_object",
     "active_no_duplicates_refnr_list",
     "app_setup",
+    "apply_app_settings",
     "apply_edits",
+    "build_app_from_config",
+    "build_modules",
+    "config_parser_yaml",
     "conn_is_ibis",
     "create_alert",
     "create_database",
@@ -188,11 +214,18 @@ __all__ = [
     "export_from_parqueteditor",
     "get_connection",
     "get_export_log_path",
+    "get_from_module_registry",
     "get_log_path",
+    "get_module_registry",
     "ibis_filter_with_dict",
+    "instantiate_module",
     "main_layout",
     "module_validator",
     "register_control",
+    "register_implementation_modules",
+    "register_module",
+    "register_modules",
+    "run_app_from_config",
     "run_app_from_config",
     "set_connection",
     "set_eimerdb_connection",
