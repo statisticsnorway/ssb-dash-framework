@@ -16,8 +16,8 @@ from ..utils.implementations import WindowImplementation
 
 class RegisteredModule(BaseModel):
     type: str
-    available_as_tab: bool
-    available_as_window: bool
+    as_tab: str | None
+    as_window: str | None
     kwargs: list[str]
 
 
@@ -40,7 +40,7 @@ def get_from_module_registry(module_name: str) -> RegisteredModule:
     return hits[0]
 
 
-def register_module(available_as_tab, available_as_window):
+def register_module(as_tab: str | None = None, as_window: str | None = None):
     # TODO: consider gathering all modules to be registered to a list, and then registering after
     # running 'register_implementation_modules()' to prevent unnecessary manual registering.
     """Decorator for registering a module that does not use TabImplementation or WindowImplementation."""
@@ -55,8 +55,8 @@ def register_module(available_as_tab, available_as_window):
         registry.append(
             RegisteredModule(
                 type=module.__name__,
-                available_as_tab=available_as_tab,
-                available_as_window=available_as_window,
+                as_tab=as_tab,
+                as_window=as_window,
                 kwargs=list(model_signature.parameters.keys()),
             )
         )
@@ -66,18 +66,18 @@ def register_module(available_as_tab, available_as_window):
 
 
 def register_implementation_modules():
-    tabs = [
-        base
+    tabs = {
+        base: cls
         for cls in TabImplementation.__subclasses__()
         for base in cls.__bases__
         if base is not TabImplementation
-    ]
-    windows = [
-        base
+    }
+    windows = {
+        base: cls
         for cls in WindowImplementation.__subclasses__()
         for base in cls.__bases__
         if base is not WindowImplementation
-    ]
+    }
     modules = list(set(tabs) | set(windows))
     for module in modules:
         if module.__name__ in [
@@ -88,8 +88,8 @@ def register_implementation_modules():
         _MODULE_REGISTRY.append(
             RegisteredModule(
                 type=module.__name__,
-                available_as_tab=True if module in tabs else False,
-                available_as_window=True if module in windows else False,
+                as_tab=tabs[module].__name__ if module in tabs else None,
+                as_window=windows[module].__name__ if module in windows else None,
                 kwargs=list(model_signature.parameters.keys()),
             )
         )

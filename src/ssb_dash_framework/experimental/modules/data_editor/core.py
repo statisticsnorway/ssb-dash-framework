@@ -15,22 +15,20 @@ from dash import html
 from dash.exceptions import PreventUpdate
 from ibis import _
 
-from ssb_dash_framework import VariableSelector
-from ssb_dash_framework.utils.config_tools.set_variables import get_ident
-from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
-from ssb_dash_framework.utils.core_query_functions import create_filter_dict
-from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
-
 from ....config.models import register_module
+from ....setup.variableselector import VariableSelector
 from ....utils.config_tools.connection import get_connection
+from ....utils.config_tools.set_variables import get_ident
+from ....utils.config_tools.set_variables import get_time_units
+from ....utils.core_query_functions import create_filter_dict
+from ....utils.core_query_functions import ibis_filter_with_dict
 from .registry import DataEditorRegistry
 
 logger = logging.getLogger(__name__)
 
 
 @register_module(
-    available_as_tab=True,
-    available_as_window=False,
+    as_tab="DataEditor",
 )
 class DataEditor:
     """A module designed as a modular catch-all for micro-focused tasks.

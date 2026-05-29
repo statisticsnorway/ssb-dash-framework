@@ -16,7 +16,7 @@ app_settings:
 modules:
   windows:
     - type: BofInformation
-      variableselector_foretak_name: foretak
+      variableselector_foretak_name: ident
   tabs:
     - type: DataEditor
       # layout:

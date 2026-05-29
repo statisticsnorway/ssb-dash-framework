@@ -1,3 +1,4 @@
+import importlib
 import logging
 import os
 from typing import Literal
@@ -39,20 +40,21 @@ def instantiate_module(module: ModuleConfig, type: Literal["tab", "window"]):
         raise ValueError("'type' must be either 'tab' or 'window'.")
 
     validation_model = get_from_module_registry(module.type)
-    print(validation_model)
 
-    if type == "tab" and not validation_model.available_as_tab:
-        raise ValueError(f"{module.type} is not available as a tab.")
-    elif type == "window" and not validation_model.available_as_window:
-        raise ValueError(f"{module.type} is not available as a window.")
+    if type == "tab":
+        if not validation_model.as_tab:
+            raise ValueError(f"{module.type} is not available as a tab.")
+        class_name = validation_model.as_tab
+    elif type == "window":
+        if not validation_model.as_window:
+            raise ValueError(f"{module.type} is not available as a window.")
+        class_name = validation_model.as_window
 
-    if module.type in ["DataEditor"]:
-        logger.debug(
-            f"Skipping usage of implementation 'type' in class name due to '{module.type}' being special."
-        )
-        cls = globals()[module.type]
-    else:
-        cls = globals()[f"{module.type}{type}"]
+    library = importlib.import_module("ssb_dash_framework")
+    cls = getattr(library, class_name, None)
+    if cls is None:
+        raise ValueError(f"No class named '{class_name}' found in ssb_dash_framework.")
+
     return cls(**module.extra_kwargs)
 
 
