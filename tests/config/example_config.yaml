@@ -1,7 +1,7 @@
 app_settings:
   port: 8000
-  service_prefix: None
-  stylesheet: None
+  # service_prefix: None
+  # stylesheet: None
   enable_logging: true
   logging_level: warning
   log_to_file: false
@@ -15,34 +15,34 @@ app_settings:
       - variabel
 modules:
   windows:
-    - type: bof
+    - type: BofInformation
       variableselector_foretak_name: foretak
   tabs:
-    - type: dataeditor
-      layout:
-      - type: CustomView
-        applies_to_tables:
-          - skjemadata_hoved
-        applies_to_forms:
-          - RA-7357
-        layout:
-          - row:
-              - col:
-                  type: microlayout
-                  label: Tre variabler
-                  form_data_table: skjemadata_hoved
-                  form_data_field_name_column: variabel
-                  layout:
-                  - type: row
-                    children:
-                    - type: col
-                      children:
-                      - type: input
-                        label: Totalareal
-                        variable: totalareal
-                      - type: input
-                        label: Fulldyrket
-                        variable: fulldyrket
-                      - type: input
-                        label: Innmarksbeite
-                        variable: innmarksbeite
+    - type: DataEditor
+      # layout:
+      # - type: CustomView
+      #   applies_to_tables:
+      #     - skjemadata_hoved
+      #   applies_to_forms:
+      #     - RA-7357
+      #   layout:
+      #     - row:
+      #         - col:
+      #             type: microlayout
+      #             label: Tre variabler
+      #             form_data_table: skjemadata_hoved
+      #             form_data_field_name_column: variabel
+      #             layout:
+      #             - type: row
+      #               children:
+      #               - type: col
+      #                 children:
+      #                 - type: input
+      #                   label: Totalareal
+      #                   variable: totalareal
+      #                 - type: input
+      #                   label: Fulldyrket
+      #                   variable: fulldyrket
+      #                 - type: input
+      #                   label: Innmarksbeite
+      #                   variable: innmarksbeite

@@ -1,11 +1,18 @@
+import logging
 import os
 from typing import Literal
+
 from ..setup.app_setup import app_setup
+from ..setup.main_layout import main_layout
 from .models import AppConfig
 from .models import AppModules
 from .models import AppSettings
-from .models import VariableSelectorConfig, ModuleConfig
+from .models import ModuleConfig
+from .models import VariableSelectorConfig
+from .models import get_from_module_registry
 from .yaml_parser import config_parser_yaml
+
+logger = logging.getLogger(__name__)
 
 
 def apply_app_settings(settings: AppSettings):
@@ -28,26 +35,56 @@ def setup_variableselector(
 
 
 def instantiate_module(module: ModuleConfig, type: Literal["tab", "window"]):
+    if type not in ["tab", "window"]:
+        raise ValueError("'type' must be either 'tab' or 'window'.")
 
+    validation_model = get_from_module_registry(module.type)
+    print(validation_model)
+
+    if type == "tab" and not validation_model.available_as_tab:
+        raise ValueError(f"{module.type} is not available as a tab.")
+    elif type == "window" and not validation_model.available_as_window:
+        raise ValueError(f"{module.type} is not available as a window.")
+
+    if module.type in ["DataEditor"]:
+        logger.debug(
+            f"Skipping usage of implementation 'type' in class name due to '{module.type}' being special."
+        )
+        cls = globals()[module.type]
+    else:
+        cls = globals()[f"{module.type}{type}"]
+    return cls(**module.extra_kwargs)
 
 
 def build_modules(modules: AppModules):
+    instantiated_tabs = []
+    instantiated_windows = []
     for module in modules.tabs:
-        instantiate_module(module)
+        instantiated_tabs.append(instantiate_module(module, type="tab"))
     for module in modules.windows:
-        instantiate_module(module)
+        instantiated_windows.append(instantiate_module(module, type="window"))
+    return instantiated_tabs, instantiated_windows
+
 
 def build_app_from_config(config: AppConfig):
     app = apply_app_settings(config.app_settings)
-    instantiate_modules(config.modules)
-    return app
+    instantiated_tabs, instantiated_windows = build_modules(config.modules)
+    return app, instantiated_tabs, instantiated_windows
 
 
 def run_app_from_config(path: str):
     if path.endswith(".yaml"):
         config = config_parser_yaml(path)
+    else:
+        raise NotImplementedError
 
-    app = build_app_from_config(config)
+    app, instantiated_tabs, instantiated_windows = build_app_from_config(
+        AppConfig(**config)
+    )
+
+    app.layout = main_layout(
+        window_list=instantiated_windows, tab_list=instantiated_tabs
+    )
 
     app.run(
         debug=True,

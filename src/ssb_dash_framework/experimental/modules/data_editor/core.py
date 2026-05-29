@@ -21,12 +21,17 @@ from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
 from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
 
+from ....config.models import register_module
 from ....utils.config_tools.connection import get_connection
 from .registry import DataEditorRegistry
 
 logger = logging.getLogger(__name__)
 
 
+@register_module(
+    available_as_tab=True,
+    available_as_window=False,
+)
 class DataEditor:
     """A module designed as a modular catch-all for micro-focused tasks.
 

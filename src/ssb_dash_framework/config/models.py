@@ -1,3 +1,4 @@
+import inspect
 import os
 from typing import Any
 from typing import Literal
@@ -9,6 +10,8 @@ from pydantic import model_validator
 
 from ..utils.config_tools.set_variables import TimeUnitType
 from ..utils.config_tools.set_variables import apply_config
+from ..utils.implementations import TabImplementation
+from ..utils.implementations import WindowImplementation
 
 
 class RegisteredModule(BaseModel):
@@ -20,22 +23,80 @@ class RegisteredModule(BaseModel):
 
 _MODULE_REGISTRY: list[RegisteredModule] = list()
 
+
 def _get_module_registry():
     global _MODULE_REGISTRY
     return _MODULE_REGISTRY
 
-import inspect
 
-def register_module(cls) -> None:
+def get_from_module_registry(module_name: str) -> RegisteredModule:
+    """Gets a registered module from the registry."""
     global _MODULE_REGISTRY
-    _MODULE_REGISTRY.append(
-        RegisteredModule(
-            type=cls.__name__,
-            available_as_tab="TabImplementation" in [x.__name__ for x in cls.__bases__],
-            available_as_window="WindowImplementation" in [x.__name__ for x in cls.__bases__],
-            kwargs=list(inspect.signature(cls).parameters.keys())
+    hits = [module for module in _MODULE_REGISTRY if module.type == module_name]
+    if len(hits) < 1:
+        raise ValueError(f"No module named '{module_name}' found.")
+    if len(hits) > 1:
+        raise ValueError(f"Several modules found for name '{module_name}': {hits}")
+    return hits[0]
+
+
+def register_module(available_as_tab, available_as_window):
+    # TODO: consider gathering all modules to be registered to a list, and then registering after
+    # running 'register_implementation_modules()' to prevent unnecessary manual registering.
+    """Decorator for registering a module that does not use TabImplementation or WindowImplementation."""
+
+    def decorator(module):
+        registry = _get_module_registry()
+        if module.__name__ in [
+            registered_module.type for registered_module in registry
+        ]:
+            raise ValueError(f"Module '{module.__name__}' is already registered")
+        model_signature = inspect.signature(module)
+        registry.append(
+            RegisteredModule(
+                type=module.__name__,
+                available_as_tab=available_as_tab,
+                available_as_window=available_as_window,
+                kwargs=list(model_signature.parameters.keys()),
+            )
         )
-    )
+        return module
+
+    return decorator
+
+
+def register_implementation_modules():
+    tabs = [
+        base
+        for cls in TabImplementation.__subclasses__()
+        for base in cls.__bases__
+        if base is not TabImplementation
+    ]
+    windows = [
+        base
+        for cls in WindowImplementation.__subclasses__()
+        for base in cls.__bases__
+        if base is not WindowImplementation
+    ]
+    modules = list(set(tabs) | set(windows))
+    for module in modules:
+        if module.__name__ in [
+            registered_module.type for registered_module in _get_module_registry()
+        ]:
+            raise ValueError(f"Module '{module.__name__}' is already registered")
+        model_signature = inspect.signature(module)
+        _MODULE_REGISTRY.append(
+            RegisteredModule(
+                type=module.__name__,
+                available_as_tab=True if module in tabs else False,
+                available_as_window=True if module in windows else False,
+                kwargs=list(model_signature.parameters.keys()),
+            )
+        )
+
+
+def register_modules():
+    register_implementation_modules()
 
 
 class VariableSelectorConfig(BaseModel):  # TODO Add default templates?
@@ -117,24 +178,23 @@ class AppSettings(BaseModel):
 class ModuleConfig(BaseModel):
     """Represents one module entry in the YAML.
 
-    The ``type`` field must match the class name exactly (e.g. ``FreeSearchTab``).
+    The ``type`` field must match the class name exactly (e.g. ``FreeSearch``).
     All other keys in the YAML block become keyword arguments passed to the
     class constructor.
 
     Example YAML::
 
-        - type: FreeSearchTab
+        - type: FreeSearch
           conn: null
 
-        - type: HbMethodTab
+        - type: HbMethod
           label: "HB Method"
           some_param: 42
     """
 
-    model_config = {"extra": "allow"}  # allow arbitrary kwargs
+    model_config = {"extra": "allow"}
 
     type: str
-    # Everything else is captured as extra fields and exposed via `extra_kwargs`.
 
     @model_validator(mode="before")
     @classmethod
@@ -144,10 +204,21 @@ class ModuleConfig(BaseModel):
             raise ValueError("Each module entry must have a 'type' key.")
         return data
 
+    @model_validator(mode="after")
+    def _validate_kwargs_against_registry(self) -> "ModuleConfig":
+        registered = get_from_module_registry(self.type)
+        invalid = set(self.extra_kwargs) - set(registered.kwargs)
+        if invalid:
+            raise ValueError(
+                f"Module {self.type!r} received unexpected kwargs: {invalid}. "
+                f"Valid kwargs are: {registered.kwargs}"
+            )
+        return self
+
     @property
     def extra_kwargs(self) -> dict[str, Any]:
         """Return all fields that are NOT 'type', to be forwarded as **kwargs."""
-        return {k: v for k, v in self.model_dump().items() if k != "type"}
+        return self.model_extra or {}
 
     def __str__(self) -> str:
         lines = [self.type]
