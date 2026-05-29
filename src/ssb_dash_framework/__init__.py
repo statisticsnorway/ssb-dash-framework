@@ -20,6 +20,7 @@ from .config import run_app_from_config
 from .control import ControlFrameworkBase
 from .control import register_control
 from .experimental.modules.data_editor.core import DataEditor
+from .experimental.modules.data_editor.data_view.data_view_custom import DataViewCustom
 from .modules import Aarsregnskap
 from .modules import AarsregnskapTab
 from .modules import AarsregnskapWindow
@@ -147,6 +148,7 @@ __all__ = [
     "ControlViewTab",
     "ControlViewWindow",
     "DataEditor",
+    "DataViewCustom",
     "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
     "DemoDataCreator",

@@ -1,6 +1,6 @@
+import json
 import logging
 from collections.abc import Callable
-import json
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -13,10 +13,10 @@ from dash import html
 from dash.exceptions import PreventUpdate
 
 from ssb_dash_framework.setup import VariableSelector
-from ssb_dash_framework.utils.config_tools.config_file_handler import config_parser_yaml
 from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
+from .....config.models import register_module
 from .....modules.building_blocks.microlayout import MicroLayoutAIO
 from .....modules.building_blocks.microlayout_components.editable_field_model import (
     default_updater,
@@ -24,10 +24,7 @@ from .....modules.building_blocks.microlayout_components.editable_field_model im
 from .....modules.building_blocks.microlayout_components.editable_field_model import (
     defult_getter,
 )
-from .....modules.building_blocks.microlayout_components.models import (
-    CalculatedField,
-    Layout,
-)
+from .....modules.building_blocks.microlayout_components.models import Layout
 from ..core import DataEditorDataView
 
 logger = logging.getLogger(__name__)
@@ -205,6 +202,7 @@ class DataViewCustomMicroLayout(MicroLayoutAIO):
         return "\n".join(lines)
 
 
+@register_module()
 class DataViewCustom(DataEditorDataView):
     """DataView with a very flexible layout made to be tailored to specific needs."""
 
@@ -247,11 +245,10 @@ class DataViewCustom(DataEditorDataView):
                 components.extend(self.build_layout(item))
             return components
 
-
         if isinstance(layout, dict):
-            if layout["type"] == "row":                
+            if layout["type"] == "row":
                 components.append(dbc.Row(self.build_layout(layout["children"])))
-            elif layout["type"] == "col":                
+            elif layout["type"] == "col":
                 components.append(dbc.Col(self.build_layout(layout["children"])))
 
             elif layout["type"] == "microlayout":
@@ -259,11 +256,13 @@ class DataViewCustom(DataEditorDataView):
                     logger.debug(
                         "Converting 'layout' from config file structure to Microlayout compatible Layout object."
                     )
-                    layout["layout"] = [convert_node( # Wraps in a list to work properly with Layout from microlayout models.
-                        layout["layout"],
-                        applies_to_tables=self.applies_to_tables,
-                        applies_to_forms=self.applies_to_forms,
-                    )]
+                    layout["layout"] = [
+                        convert_node(  # Wraps in a list to work properly with Layout from microlayout models.
+                            layout["layout"],
+                            applies_to_tables=self.applies_to_tables,
+                            applies_to_forms=self.applies_to_forms,
+                        )
+                    ]
                     logger.debug(
                         f"Done converting:\n{json.dumps(layout["layout"], indent=2, ensure_ascii=False)}"
                     )
@@ -280,7 +279,9 @@ class DataViewCustom(DataEditorDataView):
                 )
                 components.append(microlayout)
             else:
-                raise ValueError(f"Value for 'type' must be a valid component. Found type '{layout["type"]}'")
+                raise ValueError(
+                    f"Value for 'type' must be a valid component. Found type '{layout["type"]}'"
+                )
 
         return components
 
@@ -371,7 +372,11 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
 
     if isinstance(node, list):
         for listed_node in node:
-            node = convert_node(listed_node, applies_to_tables = applies_to_tables, applies_to_forms = applies_to_forms)
+            node = convert_node(
+                listed_node,
+                applies_to_tables=applies_to_tables,
+                applies_to_forms=applies_to_forms,
+            )
 
     if "type" in node and node["type"] == "calculated-field":
         node["applies_to_tables"] = applies_to_tables

@@ -34,6 +34,8 @@ def get_from_module_registry(module_name: str) -> RegisteredModule:
     global _MODULE_REGISTRY
     hits = [module for module in _MODULE_REGISTRY if module.type == module_name]
     if len(hits) < 1:
+        for i in _MODULE_REGISTRY:
+            print(i)
         raise ValueError(f"No module named '{module_name}' found.")
     if len(hits) > 1:
         raise ValueError(f"Several modules found for name '{module_name}': {hits}")
@@ -236,6 +238,7 @@ class AppModules(BaseModel):
     ``windows`` → passed as ``window_list`` to main_layout()
     """
 
+    dataeditor_components: list[ModuleConfig] = []
     tabs: list[ModuleConfig] = []
     windows: list[ModuleConfig] = []
 
