@@ -17,7 +17,6 @@ from .config import register_implementation_modules
 from .config import register_module
 from .config import register_modules
 from .config import run_app_from_config
-from .config.models import register_modules
 from .control import ControlFrameworkBase
 from .control import register_control
 from .experimental.modules.data_editor.core import DataEditor
@@ -225,7 +224,6 @@ __all__ = [
     "register_implementation_modules",
     "register_module",
     "register_modules",
-    "run_app_from_config",
     "run_app_from_config",
     "set_connection",
     "set_eimerdb_connection",
