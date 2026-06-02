@@ -262,13 +262,12 @@ class DataViewCustom(DataEditorDataView):
                     logger.debug(
                         "Converting 'layout' from config file structure to Microlayout compatible Layout object."
                     )
-                    layout["layout"] = [
-                        convert_node(  # Wraps in a list to work properly with Layout from microlayout models.
-                            layout["layout"],
-                            applies_to_tables=self.applies_to_tables,
-                            applies_to_forms=self.applies_to_forms,
-                        )
-                    ]
+                    converted = convert_node(
+                        layout["layout"],
+                        applies_to_tables=self.applies_to_tables,
+                        applies_to_forms=self.applies_to_forms,
+                    )
+                    layout["layout"] = converted if isinstance(converted, list) else [converted]
                     logger.debug(
                         f"Done converting:\n{json.dumps(layout['layout'], indent=2, ensure_ascii=False)}"
                     )
@@ -282,10 +281,10 @@ class DataViewCustom(DataEditorDataView):
                     form_data_field_name_column=layout.get(
                         "form_data_field_name_column"
                     ),
-                    form_reference_number_column=value.get(
+                    form_reference_number_column=layout.get(
                         "form_reference_number_column", "refnr"
                     ),
-                    form_reference_input_id=value.get(
+                    form_reference_input_id=layout.get(
                         "form_reference_input_id", "var-refnr"
                     ),
                     inputs=[Input(f"var-{unit}", "value") for unit in get_time_units()],
@@ -385,12 +384,14 @@ def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> d
         applies_to_forms = []
 
     if isinstance(node, list):
-        for listed_node in node:
-            node = convert_node(
+        return [
+            convert_node(
                 listed_node,
                 applies_to_tables=applies_to_tables,
                 applies_to_forms=applies_to_forms,
             )
+            for listed_node in node
+        ]
 
     if "type" in node and node["type"] == "calculated-field":
         node["applies_to_tables"] = applies_to_tables
