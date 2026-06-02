@@ -219,7 +219,7 @@ class Header(BaseNode):
 
 class Label(BaseNode):
     type: Literal["label"]
-    label: str
+    label: str = "" # acts as a placeholder if not specified
     bold: bool = False
 
     def create(
@@ -231,7 +231,7 @@ class Label(BaseNode):
     ) -> html.Div:
         return html.Div(
             html.Label(
-                self.label, style={"fontWeight": "bold" if self.bold else "normal"}
+                self.label if self.label else "\u00A0", style={"fontWeight": "bold" if self.bold else "normal"}
             ),
             className="microlayout-label",
         )
@@ -567,6 +567,7 @@ class ChecklistComponent(BaseNode):
                 html.Div(
                     className="ssb-checkbox d-flex align-items-center",
                     children=children,
+                    style={"height": "44px"}, # to match ssb-input
                 ),
             ],
             className="ssb-input",

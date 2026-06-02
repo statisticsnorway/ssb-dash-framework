@@ -2113,9 +2113,13 @@ DataEditor
     font-family: "Open Sans", sans-serif !important;
     display: flex;
     align-items: center;
-    height: 62px;
+    height: 64.8px;
     font-size: 14px;
-    margin-top: 0.45rem;
+    margin-bottom: 3px;
+}
+
+.microlayout-label label{
+    margin-top: 10px;
 }
 
 .DataEditor-main-view .microlayout-textarea textarea {
