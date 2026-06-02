@@ -15,19 +15,21 @@ from dash import html
 from dash.exceptions import PreventUpdate
 from ibis import _
 
-from ssb_dash_framework import VariableSelector
-from ssb_dash_framework.utils.config_tools.set_variables import get_ident
-from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
-from ssb_dash_framework.utils.core_query_functions import create_filter_dict
-from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
-from ssb_dash_framework.utils.alert_handler import create_alert
-
+from ....config.models import register_module
+from ....setup.variableselector import VariableSelector
 from ....utils.config_tools.connection import get_connection
+from ....utils.config_tools.set_variables import get_ident
+from ....utils.config_tools.set_variables import get_time_units
+from ....utils.core_query_functions import create_filter_dict
+from ....utils.core_query_functions import ibis_filter_with_dict
 from .registry import DataEditorRegistry
 
 logger = logging.getLogger(__name__)
 
 
+@register_module(
+    as_tab="DataEditor",
+)
 class DataEditor:
     """A module designed as a modular catch-all for micro-focused tasks.
 
@@ -108,7 +110,7 @@ class DataEditor:
                 dbc.Card(dbc.CardBody(module.layout()))
                 for module in DataEditorRegistry.sidebar_modules
             ],
-            className=f"{self.module_name}-sidebar-modules"
+            className=f"{self.module_name}-sidebar-modules",
         )
         _existing_views = []
         main_views = []
@@ -172,15 +174,30 @@ class DataEditor:
         """Creates the layout for the DataEditor module."""
         return dbc.Container(
             [
-                dbc.Row(html.H1(id=f"{self.module_name}-{self.module_number}-header", className=f"{self.module_name}-header")),
+                dbc.Row(
+                    html.H1(
+                        id=f"{self.module_name}-{self.module_number}-header",
+                        className=f"{self.module_name}-header",
+                    )
+                ),
                 dbc.Row(self.info_view),
                 dbc.Row(
                     [
                         dbc.Col(self.sidebar, className=f"{self.module_name}-sidebar"),
                         dbc.Col(
                             [
-                                dbc.Row(dbc.Card(dbc.CardBody(self.helper_row), className=f"{self.module_name}-helper-row")),
-                                dbc.Row(dbc.Card(dbc.CardBody(self.main_view), className=f"{self.module_name}-main-view")),
+                                dbc.Row(
+                                    dbc.Card(
+                                        dbc.CardBody(self.helper_row),
+                                        className=f"{self.module_name}-helper-row",
+                                    )
+                                ),
+                                dbc.Row(
+                                    dbc.Card(
+                                        dbc.CardBody(self.main_view),
+                                        className=f"{self.module_name}-main-view",
+                                    )
+                                ),
                             ],
                         ),
                     ]
@@ -195,12 +212,11 @@ class DataEditor:
 
     def module_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor."""
-
         variableselector = VariableSelector(
             selected_inputs=[*get_time_units().keys()],
             selected_states=[],
         )
-        
+
         @callback(
             VariableSelector([], []).get_output_object("refnr"),
             VariableSelector([], []).get_output_object("altinnskjema"),
@@ -212,9 +228,6 @@ class DataEditor:
             time_unit_keys = list(get_time_units().keys())
             time_units = dict(zip(time_unit_keys, time_unit_values))
 
-            print(time_units)
-
-            print(f"time_unit_keys: {time_unit_keys}")
             if not ident:
                 raise PreventUpdate
             with get_connection() as conn:
@@ -292,9 +305,7 @@ class DataEditor:
             Input("dataeditortableselector", "value"),
             VariableSelector([], []).get_input("altinnskjema"),
         )
-        def update_header(
-            selected_table: str, selected_form: str
-        ) -> str:
+        def update_header(selected_table: str, selected_form: str) -> str:
             """Show an info message telling the user which form and table are currently selected."""
             return f"Viser data for {selected_form} fra tabell {selected_table}"
 
@@ -441,7 +452,9 @@ class DataEditorInfoRow:
                 )
             )
 
-        return dbc.Row(dbc.CardGroup(info_fields), className=f"{self.module_name}-info-row")
+        return dbc.Row(
+            dbc.CardGroup(info_fields), className=f"{self.module_name}-info-row"
+        )
 
     def layout(self) -> dbc.Row:
         """Returns the module layout."""
@@ -523,7 +536,8 @@ class DataEditorHelperButton:
         return html.Div(
             [
                 dbc.Button(
-                    self.label, id=f"{self.module_name}-{self.module_number}-button",
+                    self.label,
+                    id=f"{self.module_name}-{self.module_number}-button",
                     className="ssb-btn primary-btn",
                 ),
                 dbc.Modal(
