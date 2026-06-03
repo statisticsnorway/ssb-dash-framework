@@ -374,7 +374,7 @@ def convert_node_build_field_settings(node, attribute, value):
     return node
 
 
-def convert_node(node: dict, applies_to_tables=None, applies_to_forms=None) -> dict:
+def convert_node(node: dict | list, applies_to_tables=None, applies_to_forms=None) -> dict | list:
     logger.debug(
         f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
     )
