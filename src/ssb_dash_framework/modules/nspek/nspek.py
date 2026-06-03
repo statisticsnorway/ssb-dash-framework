@@ -440,20 +440,112 @@ def get_virksomhetsinfo(
 
     return df
 
-
-def get_bofinfo(ident: str) -> pd.DataFrame:
-    """Fetch and return pandas dataframe containing BOF info from ssb_foretak.db for a given orgnr as a pandas dataframe.
-
-    Example use: get_bofinfo("979443137")
+def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
     """
-    config = TYPE_REGNSKAP_TABLE["virksomhet"]
+    Fetch and return pandas dataframe containing BOF info from parquet or sqlite fallback for a given orgnr.
 
-    conn = ibis.sqlite.connect("/buckets/shared/vof/oracle-hns/ssb_foretak.db")
-    t = conn.table("ssb_foretak")
-    filtered = t.filter(_.orgnr == ident)
-    df = filtered.execute()
+    Example use: get_bofinfo("979443137", "2024")
+    """
 
-    return df
+    year = str(aar)
+
+    parquet_paths = [
+        (
+            f"/buckets/shared/vof/"
+            f"situttak/vof-aarsfil_data/"
+            f"klargjorte-data/parquet/"
+            f"vof-aarsfil_p{year}_v1.parquet"
+        ),
+        (
+            f"/buckets/shared/vof/"
+            f"situttak/vof-aarsfil_data/"
+            f"klargjorte-data/parquet/"
+            f"vof-aarsfil-forelopig_p{year}_v1.parquet"
+        ),
+    ]
+
+    rename_map = {
+        "org_nr": "orgnr",
+        "navn": "navn",
+        "org_form": "org_form",
+        "sn2025_1": "sn2025_1",
+        "nace1_sn07": "sn07_1",
+        "reg_type": "sf_type",
+        "fkommune": "f_kommunenr",
+        "status": "statuskode",
+        "syss": "sysselsatte",
+        "sektor_2014": "sektor_2014",
+        "undersektor_2014": "undersektor_2014",
+    }
+
+    expected_columns = [
+        "orgnr",
+        "navn",
+        "org_form",
+        "sn2025_1",
+        "sn07_1",
+        "sf_type",
+        "f_kommunenr",
+        "statuskode",
+        "sysselsatte",
+        "sektor_2014",
+        "undersektor_2014",
+    ]
+
+    for path in parquet_paths:
+
+        if not Path(path).exists():
+            continue
+
+        try:
+            conn = ibis.duckdb.connect()
+
+            t = conn.read_parquet(path)
+
+            df = (
+                t.filter(_.org_nr == str(ident))
+                .execute()
+            )
+
+            if df.empty:
+                return pd.DataFrame(columns=expected_columns)
+
+            df = df.rename(columns=rename_map)
+
+            for col in expected_columns:
+                if col not in df.columns:
+                    df[col] = ""
+
+            return df[expected_columns]
+
+        except Exception as e:
+            logger.error(
+                f"Failed reading parquet {path}: {e}",
+                exc_info=True,
+            )
+
+    # fallback sqlite
+    try:
+        conn = ibis.sqlite.connect(
+            "/buckets/shared/vof/oracle-hns/ssb_foretak.db"
+        )
+
+        t = conn.table("ssb_foretak")
+
+        df = (
+            t.filter(_.orgnr == ident)
+            .execute()
+        )
+
+        return df
+
+    except Exception as e:
+        logger.error(
+            f"Failed reading sqlite fallback: {e}",
+            exc_info=True,
+        )
+
+        return pd.DataFrame(columns=expected_columns)
 
 
 def post_description_data(regnskapstype: str) -> DataFrame:
@@ -1444,16 +1536,16 @@ class Naeringsspesifikasjon:
                                     ),
                                     dbc.Col(
                                         self.create_info_card(
-                                            title="Næringskode",
-                                            component_id="bof-info-card-naringskode",
+                                            title="Næringskode SN25",
+                                            component_id="bof-info-card-naringskode25",
                                             var_type="text",
                                         ),
                                         width=2,
                                     ),
                                     dbc.Col(
                                         self.create_info_card(
-                                            title="Sektorkode",
-                                            component_id="bof-info-card-sektorkode",
+                                            title="Næringskode SN07",
+                                            component_id="bof-info-card-naringskode07",
                                             var_type="text",
                                         ),
                                         width=2,
@@ -1486,6 +1578,22 @@ class Naeringsspesifikasjon:
                                         self.create_info_card(
                                             title="Sysselsatte",
                                             component_id="bof-info-card-sysselsatte",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Sektorkode",
+                                            component_id="bof-info-card-sektorkode",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Undersektorkode",
+                                            component_id="bof-info-card-undersektorkode",
                                             var_type="text",
                                         ),
                                         width=2,
@@ -1900,9 +2008,11 @@ class Naeringsspesifikasjon:
                 component_property="value",
             ),
             Output(
-                component_id="bof-info-card-naringskode", component_property="value"
+                component_id="bof-info-card-naringskode25", component_property="value"
             ),
-            Output(component_id="bof-info-card-sektorkode", component_property="value"),
+            Output(
+                component_id="bof-info-card-naringskode07", component_property="value"
+            ),
             Output(component_id="bof-info-card-typekode", component_property="value"),
             Output(
                 component_id="bof-info-card-kommunekode", component_property="value"
@@ -1911,34 +2021,48 @@ class Naeringsspesifikasjon:
             Output(
                 component_id="bof-info-card-sysselsatte", component_property="value"
             ),
+            Output(component_id="bof-info-card-sektorkode", component_property="value"),
+            Output(component_id="bof-info-card-undersektorkode", component_property="value"),
             Input("var-ident", "value"),
+            Input("var-aar", "value"),
         )
         def create_info_cards_bof(orgnr_foretak: str) -> tuple[str, str, str, str, str]:
             """Returns a tuple of strings with the values for info cards for the top of the bof accordion.
             These cards will hold bof information for the foretak.
             """
-            df = get_bofinfo(ident=orgnr_foretak)
+
+            if not orgnr_foretak or not aar:
+                raise PreventUpdate
+
+            df = get_bofinfo(ident=orgnr_foretak, aar=aar)
+
+            if df.empty:
+                return ("", "", "", "", "", "", "", "", "", "", "")
 
             orgnr = df["orgnr"].iloc[0]
             navn = df["navn"].iloc[0]
             org_form = df["org_form"].iloc[0]
             sn2025_1 = df["sn2025_1"].iloc[0]
-            sektor_2014 = df["sektor_2014"].iloc[0]
+            sn07_1 = df["sn07_1"].iloc[0]
             sf_type = df["sf_type"].iloc[0]
             f_kommunenr = df["f_kommunenr"].iloc[0]
             statuskode = df["statuskode"].iloc[0]
             sysselsatte = df["sysselsatte"].iloc[0]
+            sektor_2014 = df["sektor_2014"].iloc[0]
+            undersektor_2014 = df["undersektor_2014"].iloc[0]
 
             return (
                 orgnr,
                 navn,
                 org_form,
                 sn2025_1,
-                sektor_2014,
+                sn07_1,
                 sf_type,
                 f_kommunenr,
                 statuskode,
                 sysselsatte,
+                sektor_2014,
+                undersektor_2014,
             )
 
         @callback(
