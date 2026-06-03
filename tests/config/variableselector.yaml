@@ -1,0 +1,7 @@
+refnr: refnr
+ident: ident
+time_units: # Might be possible to find automatically
+  aar: 1
+grouping_variables:
+  - altinnskjema
+  - variabel

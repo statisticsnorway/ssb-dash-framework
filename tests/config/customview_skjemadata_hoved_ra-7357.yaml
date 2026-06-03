@@ -1,4 +1,4 @@
-- type: CustomView
+- type: DataViewCustom
   applies_to_tables:
     - skjemadata_hoved
   applies_to_forms:
@@ -16,13 +16,13 @@
               - type: col
                 children:
                 - type: input
-                  label: "Totalareal"
+                  label: Totalareal
                   variable: totalareal
                 - type: input
-                  label: "Fulldyrket"
+                  label: Fulldyrket
                   variable: fulldyrket
                 - type: input
-                  label: "Innmarksbeite"
+                  label: Innmarksbeite
                   variable: innmarksbeite
                 - type: tabs
                   tabs:
