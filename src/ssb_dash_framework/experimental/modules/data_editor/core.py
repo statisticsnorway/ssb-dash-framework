@@ -228,9 +228,6 @@ class DataEditor:
             time_unit_keys = list(get_time_units().keys())
             time_units = dict(zip(time_unit_keys, time_unit_values))
 
-            print(time_units)
-
-            print(f"time_unit_keys: {time_unit_keys}")
             if not ident:
                 raise PreventUpdate
             with get_connection() as conn:
