@@ -702,6 +702,10 @@ def build_column_defs(sekvens_compare=None):
                         },
                     },
                     {
+                        "condition": "['verdi','verdi_compare','diff'].includes(params.colDef.field)",
+                        "style": {"textAlign": "right", "paddingRight": "10px"},
+                    },
+                    {
                         "condition": "params.data.beskrivelse && params.data.beskrivelse.startsWith('SUM') && ['verdi','verdi_compare','diff'].includes(params.colDef.field)",
                         "style": {
                             "fontWeight": "bold",
@@ -716,10 +720,6 @@ def build_column_defs(sekvens_compare=None):
                     {
                         "condition": f"params.data && {subheader_rows}.includes(params.data.beskrivelse)",
                         "style": {"fontWeight": "bold", "paddingLeft": "30px"},
-                    },
-                    {
-                        "condition": "['verdi','verdi_compare','diff'].includes(params.colDef.field)",
-                        "style": {"textAlign": "right", "paddingRight": "10px"},
                     },
                     {
                         "condition": "params.colDef.field === 'beskrivelse'",
