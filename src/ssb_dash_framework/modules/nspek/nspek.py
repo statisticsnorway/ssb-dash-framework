@@ -433,12 +433,28 @@ def get_virksomhetsinfo(
 
     t = conn.table(config["table"], database=config["database"])
     t = t.filter(_.sekvensnummer == sekvensnummer)
-    filtered = t.filter(t["felt"].isin(variables_to_fetch)).select(
-        ["felt", "char_verdi"]
-    )
+    filtered = t.filter(t["felt"].isin(variables_to_fetch)).select(["felt", "char_verdi"])
     df = filtered.execute()
 
     return df
+
+
+def get_skjoennslignet(
+    conn, ident: str, aar: str, sekvensnummer: int
+) -> pd.DataFrame:
+    """Fetch and return pandas dataframe containing virksomhetsinfo from nspek files for specified variables for a unit.
+
+    Example use: get_skjoennslignet(self.conn, virksomhetsinfo_variabler, "979443137", "2024", 2291859)
+    """
+    config = TYPE_REGNSKAP_TABLE["enhet_opplysninger"]
+
+    t = conn.table(config["table"], database=config["database"])
+    t = t.filter(_.sekvensnummer == sekvensnummer)
+    filtered = t.filter(_.opplysning == "skjoennslignet").select(["opplysning"])
+    df = filtered.execute()
+
+    return df
+
 
 def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
     """
@@ -546,6 +562,11 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
         )
 
         return pd.DataFrame(columns=expected_columns)
+
+
+def get_value(series) -> str:
+    """Return first value or empty string if no match."""
+    return "" if series.empty else str(series.iloc[0])
 
 
 def post_description_data(regnskapstype: str) -> DataFrame:
@@ -1629,7 +1650,15 @@ class Naeringsspesifikasjon:
                                             component_id="nspek-info-card-regnskapspliktstype",
                                             var_type="text",
                                         ),
-                                        width=2,
+                                        width=3,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Skjønnslignet av SKE",
+                                            component_id="nspek-info-card-skjoennslignet",
+                                            var_type="text",
+                                        ),
+                                        width=3,
                                     ),
                                     dbc.Col(
                                         self.create_info_card(
@@ -2039,17 +2068,17 @@ class Naeringsspesifikasjon:
             if df.empty:
                 return ("", "", "", "", "", "", "", "", "", "", "")
 
-            orgnr = df["orgnr"].iloc[0]
-            navn = df["navn"].iloc[0]
-            org_form = df["org_form"].iloc[0]
-            sn2025_1 = df["sn2025_1"].iloc[0]
-            sn07_1 = df["sn07_1"].iloc[0]
-            sf_type = df["sf_type"].iloc[0]
-            f_kommunenr = df["f_kommunenr"].iloc[0]
-            statuskode = df["statuskode"].iloc[0]
-            sysselsatte = df["sysselsatte"].iloc[0]
-            sektor_2014 = df["sektor_2014"].iloc[0]
-            undersektor_2014 = df["undersektor_2014"].iloc[0]
+            orgnr = get_value(df["orgnr"])
+            navn = get_value(df["navn"])
+            org_form = get_value(df["org_form"])
+            sn2025_1 = get_value(df["sn2025_1"])
+            sn07_1 = get_value(df["sn07_1"])
+            sf_type = get_value(df["sf_type"])
+            f_kommunenr = get_value(df["f_kommunenr"])
+            statuskode = get_value(df["statuskode"])
+            sysselsatte = get_value(df["sysselsatte"])
+            sektor_2014 = get_value(df["sektor_2014"])
+            undersektor_2014 = get_value(df["undersektor_2014"])
 
             return (
                 orgnr,
@@ -2107,17 +2136,46 @@ class Naeringsspesifikasjon:
             if df.empty:
                 return "", "", "", "", ""
 
-            virksomhetstype = df[df["felt"] == "virksomhetstype"]["char_verdi"].iloc[0]
-            regeltype = df[df["felt"] == "regeltypeForAarsregnskap"]["char_verdi"].iloc[
-                0
-            ]
-            regnskapspliktstype = df[df["felt"] == "regnskapspliktstype"][
-                "char_verdi"
-            ].iloc[0]
-            start = df[df["felt"] == "start"]["char_verdi"].iloc[0]
-            slutt = df[df["felt"] == "slutt"]["char_verdi"].iloc[0]
+            virksomhetstype = get_value(df[df["felt"] == "virksomhetstype"]["char_verdi"])
+            regeltype = get_value(df[df["felt"] == "regeltypeForAarsregnskap"]["char_verdi"])
+            regnskapspliktstype = get_value(df[df["felt"] == "regnskapspliktstype"]["char_verdi"])
+            start = get_value(df[df["felt"] == "start"]["char_verdi"])
+            slutt = get_value(df[df["felt"] == "slutt"]["char_verdi"])
 
             return (virksomhetstype, regeltype, regnskapspliktstype, start, slutt)
+
+        @callback(
+            Output(
+                component_id="nspek-info-card-skjoennslignet",
+                component_property="value",
+            ),
+            Input("var-aar", "value"),
+            Input("var-ident", "value"),
+            Input("nspek-versjon-dropdown", "value"),
+        )
+        def create_info_cards_skjoennslignet(
+            aar: str, orgnr_foretak: str, sekvensnummer: int
+        ) -> str:
+            """Returns a with the values for info card skjoennslignet inn the nspek module."""
+            if not aar or not orgnr_foretak or not sekvensnummer:
+                return ""
+
+            if not has_data(self.conn, orgnr_foretak, aar):
+                return ""
+
+            df = get_skjoennslignet(
+                conn=self.conn,
+                ident=orgnr_foretak,
+                aar=aar,
+                sekvensnummer=sekvensnummer,
+            )
+
+            if df.empty:
+                return "Nei"
+
+            skjoennslignet = "Ja"
+
+            return skjoennslignet
 
         @callback(
             Output("nspek-balansedata-grid", "rowData"),
