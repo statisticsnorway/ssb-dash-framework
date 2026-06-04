@@ -893,7 +893,7 @@ def validate_aar(aar: str) -> tuple[bool, str]:
     except ValueError:
         return False, "År må være et tall"
 
-    if aar_int < 2024 or aar_int > 2024:
+    if aar_int < 2024 or aar_int > 2025:
         return False, "Årgangen finnes ikke i NSPEK enda."
 
     return True, ""
