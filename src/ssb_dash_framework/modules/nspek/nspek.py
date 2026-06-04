@@ -393,6 +393,10 @@ TYPE_REGNSKAP_TABLE = {  # type: {database: exampleregnskap, table: tema_example
         "database": "resultatregnskap",
         "table": "tema_resultat",
     },
+    "enhet_opplysninger": {
+        "database": "nspek_core",
+        "table": "enhet_opplysninger",
+    },
 }
 
 
