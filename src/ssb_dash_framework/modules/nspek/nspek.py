@@ -2026,7 +2026,7 @@ class Naeringsspesifikasjon:
             Input("var-ident", "value"),
             Input("var-aar", "value"),
         )
-        def create_info_cards_bof(orgnr_foretak: str) -> tuple[str, str, str, str, str]:
+        def create_info_cards_bof(orgnr_foretak: str, aar: str) -> tuple[str, str, str, str, str]:
             """Returns a tuple of strings with the values for info cards for the top of the bof accordion.
             These cards will hold bof information for the foretak.
             """
