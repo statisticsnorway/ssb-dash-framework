@@ -952,12 +952,12 @@ def handle_regnskap_edit(
     Example use:
     handle_regnskap_edit(..., "balanseregnskap", "balanse")
     """
-    if edited[0]["data"].get("is_ui_sum"):
-        raise PreventUpdate
-
     alert_store = alert_store or []
 
     row = edited[0]["data"]
+
+    if row.get("is_ui_sum") or not str(row.get("post", "")).strip():
+        raise PreventUpdate
 
     ident = row["sekvensnummer"]
     sekvensnummer = row["sekvensnummer"]
