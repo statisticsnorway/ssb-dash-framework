@@ -424,12 +424,18 @@ def run_all_controls_for_sekvensnummer(conn: BaseBackend, sekvensnummer: int) ->
 
     return df_kontrollutslag
 
-def run_controls_changed_fields_for_sekvensnummer(conn: BaseBackend, sekvensnummer: int, changed_fields: list[str]) -> pd.DataFrame:
+
+def run_controls_changed_fields_for_sekvensnummer(conn: BaseBackend, sekvensnummer: int, changed_fields: list[str]) -> None:
 
     scope_df = get_scope_for_sekvensnummer(conn, sekvensnummer)
 
     df_resultat = get_regnskaps_data(conn, scope_df, "resultatregnskap")
     df_balanse = get_regnskaps_data(conn, scope_df, "balanseregnskap")
+    df_kontrollutslag = run_controls_for_changed_fields(changed_fields, df_resultat, df_balanse)
+    
+    kontrollids = set()
 
-    kontrollutslag = run_controls_for_changed_fields(changed_fields, df_resultat, df_balanse)
-    return kontrollutslag
+    for field in changed_fields:
+        kontrollids.update(get_controls_for_field(field))
+    
+    save_incremental_control_db(conn, sekvensnummer, sorted(kontrollids), df_kontrollutslag)

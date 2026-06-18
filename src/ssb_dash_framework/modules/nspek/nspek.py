@@ -1038,6 +1038,8 @@ def handle_regnskap_edit(
 
             save_regnskap_value(conn, regnskapstype, sekvensnummer, post, value)
 
+            run_controls_changed_fields_for_sekvensnummer(conn, sekvensnummer, changed_fields=[post])
+
         alert_store = [
             create_alert(
                 f"{post} oppdatert fra {old_value} til {value}",
