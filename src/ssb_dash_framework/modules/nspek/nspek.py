@@ -13,6 +13,7 @@ from dash import callback
 from dash import dcc
 from dash import html
 from dash import no_update
+from dash import ctx
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
@@ -31,6 +32,8 @@ from ...utils.module_validation import module_validator
 from .nspek_controls import NspekControls
 from .nspek_utils import get_nspek_connection
 from .nspek_utils import set_nspek_connection
+from .nspek_control_engine import run_all_controls_for_sekvensnummer
+from .nspek_control_engine import run_controls_changed_fields_for_sekvensnummer
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
@@ -1953,66 +1956,48 @@ class Naeringsspesifikasjon:
                             label="Kontrollutslag",
                             value="kontrollutslag",
                             children=[
-                                AgGrid(
-                                    id="nspek-kontrollutslag-grid",
-                                    className="ag-theme-alpine ag-theme-ssb mb-2",
-                                    defaultColDef={
-                                        "resizable": True,
-                                        "sortable": True,
-                                    },
-                                    columnDefs=[
-                                        {
-                                            "field": "aar",
-                                            "headerName": "År",
-                                            "hide": True,
-                                        },
-                                        {
-                                            "field": "kontrollid",
-                                            "headerName": "Kontroll",
-                                            "flex": 1,
-                                            "minWidth": 250,
-                                        },
-                                        {
-                                            "field": "tema",
-                                            "headerName": "Tema",
-                                            "flex": 1,
-                                            "minWidth": 120,
-                                        },
-                                        {
-                                            "field": "skildring",
-                                            "headerName": "Beskrivelse",
-                                            "flex": 4,
-                                            "minWidth": 200,
-                                        },
-                                        {
-                                            "field": "ident",
-                                            "headerName": "Ident",
-                                            "hide": True,
-                                        },
-                                        {
-                                            "field": "utslag",
-                                            "headerName": "Utslag",
-                                            "flex": 1,
-                                            "minWidth": 100,
-                                        },
-                                        {
-                                            "field": "verdi",
-                                            "headerName": "Verdi",
-                                            "flex": 1,
-                                            "minWidth": 100,
-                                        },
-                                    ],
-                                    dashGridOptions={
-                                        "rowSelection": "single",
-                                        "animateRows": True,
-                                    },
-                                    #getRowStyle=self.get_row_style_kontrollutslag(),
-                                    style={
-                                        "height": "50vh",
-                                        "width": "100%",
-                                        #'display': 'none',
-                                    },
+                                dbc.Button(
+                                    "Kjør kontroller",
+                                    id="run-controls-btn",
+                                    n_clicks=0,
+                                    className="ssb-btn primary-btn mb-2",
                                 ),
+
+                                dcc.Loading(
+                                    id="kontrollutslag-loading",
+                                    type="default",
+                                    overlay_style={
+                                        "visibility": "visible",
+                                        "filter": "blur(2px)"
+                                    },
+                                    children=[
+                                        AgGrid(
+                                            id="nspek-kontrollutslag-grid",
+                                            className="ag-theme-alpine ag-theme-ssb mb-2",
+                                            defaultColDef={
+                                                "resizable": True,
+                                                "sortable": True,
+                                            },
+                                            columnDefs=[
+                                                {"field": "aar", "headerName": "År", "hide": True},
+                                                {"field": "kontrollid", "headerName": "Kontroll", "flex": 1, "minWidth": 250},
+                                                {"field": "tema", "headerName": "Tema", "flex": 1, "minWidth": 120},
+                                                {"field": "skildring", "headerName": "Beskrivelse", "flex": 4, "minWidth": 200},
+                                                {"field": "ident", "headerName": "Ident", "hide": True},
+                                                {"field": "utslag", "headerName": "Utslag", "flex": 1, "minWidth": 100},
+                                                {"field": "verdi", "headerName": "Verdi", "flex": 1, "minWidth": 100},
+                                            ],
+                                            dashGridOptions={
+                                                "rowSelection": "single",
+                                                "animateRows": True,
+                                            },
+                                            style={
+                                                "height": "50vh",
+                                                "width": "100%",
+                                            },
+                                        )
+                                    ],
+                                )
                             ],
                         ),
                     ],
@@ -3256,28 +3241,32 @@ class Naeringsspesifikasjon:
         @callback(
             Output("nspek-kontrollutslag-grid", "rowData"),
             Output("kontrollutslag-tab", "label"),
-            Input("var-ident", "value"),
-            Input("var-aar", "value"),
+            Input("run-controls-btn", "n_clicks"),
             Input("refresh-manager", "data"),
+            Input("nspek-versjon-dropdown", "value"),
         )
-        def load_kontrollutslag(ident, aar, refresh_data):
-
-            if not ident or not aar:
+        def load_or_run_kontrollutslag(n_clicks, refresh_data, sekvensnummer):
+            if not sekvensnummer:
                 return [], "Kontrollutslag"
 
             if refresh_data and refresh_data.get("status") == "invalid_search":
                 return [], "Kontrollutslag"
 
-            instance = NspekControls(
-                time_units=["aar"],
-                applies_to_subset={"aar": [int(aar)]},
-            )
+            with get_nspek_connection() as conn:
+                instance = NspekControls(
+                    time_units=["aar"],
+                    applies_to_subset={},
+                )
 
-            kontroller_df = instance.get_current_kontroller()
-            kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict("index")
+                kontroller_df = instance.get_current_kontroller()
+                kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict("index")
 
-            df = instance.get_current_kontrollutslag()
-            df = df[df["ident"] == str(ident)]
+                if ctx.triggered_id == "run-controls-btn":
+                    run_all_controls_for_sekvensnummer(conn, int(sekvensnummer))
+
+                df = instance.get_current_kontrollutslag()
+
+            df = df[df["sekvensnummer"] == int(sekvensnummer)]
 
             if df.empty:
                 return [], "Kontrollutslag"
