@@ -189,25 +189,24 @@ class UpdateSkjemadata(BaseModel):
             return self.to_alert(long, success=False)
 
 
-    def _get_skjema_navn(self, conn) -> str:
+    def _get_feltsti(self, conn) -> str:
         """Looks up the long variable name from mapping_variabelnavn."""
         df = conn.table("mapping_variabelnavn")
         result = (
             df.filter(_.aar == (self.time_units or {}).get("aar"))
-            .filter(_.skjema_kortnavn == self.variable)
+            .filter(_.variabel == self.variable)
             .filter(_.skjema == self.skjema)
-            .select(["skjema_navn"])
+            .select(["feltsti"])
             .limit(1)
             .execute()
         )
-        print(f"result: {result}")
         if result.empty:
             logger.warning(
-                f"No skjema_navn found for kortnavn='{self.variable}', "
+                f"No feltsti found for kortnavn='{self.variable}', "
                 f"aar='{(self.time_units or {}).get('aar')}'. Falling back to kortnavn."
             )
             return self.variable
-        return result["skjema_navn"].iloc[0]
+        return result["feltsti"].iloc[0]
 
     def _insert_ibis(self, conn, long):
         """
@@ -220,13 +219,14 @@ class UpdateSkjemadata(BaseModel):
             raise PreventUpdate
 
         if self.table.startswith("skjemadata"):
-            variabel = self._get_skjema_navn(conn)
+            feltsti: str = self._get_feltsti(conn)
             columns = {
                 **{unit: f"'{val}'" for unit, val in (self.time_units or {}).items() if val},
                 "skjema": f"'{self.skjema}'",
-                "refnr": f"'{self.refnr}'",
                 "ident": f"'{self.ident}'",
-                "variabel": f"'{variabel}'",
+                "refnr": f"'{self.refnr}'",
+                "feltsti": f"'{feltsti}'",
+                "variabel": f"'{self.variable}'",
                 "verdi": f"'{self.value}'",
             }
             insert_query = f"""
