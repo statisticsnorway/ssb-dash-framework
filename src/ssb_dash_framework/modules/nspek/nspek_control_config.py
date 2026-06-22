@@ -1,12 +1,9 @@
 from collections import defaultdict
-from typing import Dict, List, Optional
 
 CONTROL_RULES = [
-
     # =========================
     # RESULTATREGNSKAP
     # =========================
-
     {
         "kontrollid": "kontroll_driftsinntekt",
         "tema": "Resultat",
@@ -46,7 +43,6 @@ CONTROL_RULES = [
             ("3911", 1),
         ],
     },
-
     {
         "kontrollid": "kontroll_driftskostnad",
         "tema": "Resultat",
@@ -140,7 +136,6 @@ CONTROL_RULES = [
             ("7913", 1),
         ],
     },
-
     {
         "kontrollid": "kontroll_finansinntekt",
         "tema": "Resultat",
@@ -163,7 +158,6 @@ CONTROL_RULES = [
             ("8091", 1),
         ],
     },
-
     {
         "kontrollid": "kontroll_finanskostnad",
         "tema": "Resultat",
@@ -186,7 +180,6 @@ CONTROL_RULES = [
             ("8179", 1),
         ],
     },
-
     {
         "kontrollid": "kontroll_skattekostnad",
         "tema": "Resultat",
@@ -202,7 +195,6 @@ CONTROL_RULES = [
             ("8324", -1),
         ],
     },
-
     {
         "kontrollid": "kontroll_aarsresultat",
         "tema": "Resultat",
@@ -218,11 +210,9 @@ CONTROL_RULES = [
             ("sumSkattekostnad", -1),
         ],
     },
-
     # =========================
     # BALANSE
     # =========================
-
     {
         "kontrollid": "kontroll_anleggsmidler",
         "tema": "Balanse",
@@ -272,7 +262,6 @@ CONTROL_RULES = [
             ("1395", 1),
         ],
     },
-
     {
         "kontrollid": "kontroll_omloepsmidler",
         "tema": "Balanse",
@@ -303,7 +292,6 @@ CONTROL_RULES = [
             ("1950", 1),
         ],
     },
-
     {
         "kontrollid": "kontroll_eiendeler",
         "tema": "Balanse",
@@ -316,7 +304,6 @@ CONTROL_RULES = [
             ("sumBalanseverdiForOmloepsmiddel", 1),
         ],
     },
-
     {
         "kontrollid": "kontroll_egenkapital",
         "tema": "Balanse",
@@ -343,7 +330,6 @@ CONTROL_RULES = [
             ("2098", 1),
         ],
     },
-
     {
         "kontrollid": "kontroll_langsiktig_gjeld",
         "tema": "Balanse",
@@ -367,7 +353,6 @@ CONTROL_RULES = [
             ("2290", 1),
         ],
     },
-
     {
         "kontrollid": "kontroll_kortsiktig_gjeld",
         "tema": "Balanse",
@@ -401,7 +386,6 @@ CONTROL_RULES = [
             ("2990", 1),
         ],
     },
-
     {
         "kontrollid": "kontroll_gjeld_og_egenkapital",
         "tema": "Balanse",
@@ -415,7 +399,6 @@ CONTROL_RULES = [
             ("sumKortsiktigGjeld", 1),
         ],
     },
-
     {
         "kontrollid": "kontroll_ubalanse",
         "tema": "Balanse",
@@ -427,15 +410,11 @@ CONTROL_RULES = [
             ("sumBalanseverdiForEiendel", 1),
         ],
     },
-
 ]
 
 
-def build_field_to_controls(rules: list[dict]) -> Dict[str, List[str]]:
-    """
-    Lager mapping fra felt → kontrollid automatisk fra CONTROL_RULES.
-    """
-
+def build_field_to_controls(rules: list[dict]) -> dict[str, list[str]]:
+    """Lager mapping fra felt → kontrollid automatisk fra CONTROL_RULES."""
     mapping: dict[str, set[str]] = defaultdict(set)
 
     for rule in rules:
@@ -448,19 +427,19 @@ def build_field_to_controls(rules: list[dict]) -> Dict[str, List[str]]:
         for field, _sign in rule.get("terms", []):
             mapping[field].add(kontrollid)
 
-    return {
-        field: sorted(list(ctrls))
-        for field, ctrls in mapping.items()
-    }
+    return {field: sorted(list(ctrls)) for field, ctrls in mapping.items()}
 
 
-FIELD_TO_CONTROLS: Dict[str, List[str]] = build_field_to_controls(CONTROL_RULES)
+FIELD_TO_CONTROLS: dict[str, list[str]] = build_field_to_controls(CONTROL_RULES)
 
-def get_controls_for_field(field: str) -> List[str]:
+
+def get_controls_for_field(field: str) -> list[str]:
     return FIELD_TO_CONTROLS.get(field, [])
 
 
-def get_rule_by_id(kontrollid: str,) -> Optional[dict]:
+def get_rule_by_id(
+    kontrollid: str,
+) -> dict | None:
     for rule in CONTROL_RULES:
         if rule["kontrollid"] == kontrollid:
             return rule

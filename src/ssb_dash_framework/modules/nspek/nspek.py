@@ -3,17 +3,17 @@ import os
 import re
 import time
 from pathlib import Path
-from typing import ClassVar
 from typing import Any
+from typing import ClassVar
 
 import dash_bootstrap_components as dbc
 import ibis
 import pandas as pd
 from dash import callback
+from dash import ctx
 from dash import dcc
 from dash import html
 from dash import no_update
-from dash import ctx
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
@@ -29,11 +29,11 @@ from ...utils import TabImplementation
 from ...utils import WindowImplementation
 from ...utils.alert_handler import create_alert
 from ...utils.module_validation import module_validator
+from .nspek_control_engine import run_all_controls_for_sekvensnummer
+from .nspek_control_engine import run_controls_changed_fields_for_sekvensnummer
 from .nspek_controls import NspekControls
 from .nspek_utils import get_nspek_connection
 from .nspek_utils import set_nspek_connection
-from .nspek_control_engine import run_all_controls_for_sekvensnummer
-from .nspek_control_engine import run_controls_changed_fields_for_sekvensnummer
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
@@ -440,15 +440,15 @@ def get_virksomhetsinfo(
 
     t = conn.table(config["table"], database=config["database"])
     t = t.filter(_.sekvensnummer == sekvensnummer)
-    filtered = t.filter(t["felt"].isin(variables_to_fetch)).select(["felt", "char_verdi"])
+    filtered = t.filter(t["felt"].isin(variables_to_fetch)).select(
+        ["felt", "char_verdi"]
+    )
     df = filtered.execute()
 
     return df
 
 
-def get_skjoennslignet(
-    conn, ident: str, aar: str, sekvensnummer: int
-) -> pd.DataFrame:
+def get_skjoennslignet(conn, ident: str, aar: str, sekvensnummer: int) -> pd.DataFrame:
     """Fetch and return pandas dataframe containing virksomhetsinfo from nspek files for specified variables for a unit.
 
     Example use: get_skjoennslignet(self.conn, virksomhetsinfo_variabler, "979443137", "2024", 2291859)
@@ -464,12 +464,10 @@ def get_skjoennslignet(
 
 
 def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
-    """
-    Fetch and return pandas dataframe containing BOF info from parquet or sqlite fallback for a given orgnr.
+    """Fetch and return pandas dataframe containing BOF info from parquet or sqlite fallback for a given orgnr.
 
     Example use: get_bofinfo("979443137", "2024")
     """
-
     year = str(aar)
 
     parquet_paths = [
@@ -525,10 +523,7 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
 
             t = conn.read_parquet(path)
 
-            df = (
-                t.filter(_.org_nr == str(ident))
-                .execute()
-            )
+            df = t.filter(_.org_nr == str(ident)).execute()
 
             if df.empty:
                 return pd.DataFrame(columns=expected_columns)
@@ -549,16 +544,11 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
 
     # fallback sqlite
     try:
-        conn = ibis.sqlite.connect(
-            "/buckets/shared/vof/oracle-hns/ssb_foretak.db"
-        )
+        conn = ibis.sqlite.connect("/buckets/shared/vof/oracle-hns/ssb_foretak.db")
 
         t = conn.table("ssb_foretak")
 
-        df = (
-            t.filter(_.orgnr == ident)
-            .execute()
-        )
+        df = t.filter(_.orgnr == ident).execute()
 
         return df
 
@@ -712,7 +702,7 @@ def build_column_defs(sekvens_compare=None):
                     {
                         "condition": "params.colDef.field === 'diff' && params.value > 0",
                         "style": {
-                            #"backgroundColor": "#e8f5e9",
+                            # "backgroundColor": "#e8f5e9",
                             "color": "#1A9D49",
                             "fontWeight": "bold",
                             "textAlign": "right",
@@ -722,7 +712,7 @@ def build_column_defs(sekvens_compare=None):
                     {
                         "condition": "params.colDef.field === 'diff' && params.value < 0",
                         "style": {
-                            #"backgroundColor": "#ffebee",
+                            # "backgroundColor": "#ffebee",
                             "color": "#DC3400",
                             "fontWeight": "bold",
                             "textAlign": "right",
@@ -1038,7 +1028,9 @@ def handle_regnskap_edit(
 
             save_regnskap_value(conn, regnskapstype, sekvensnummer, post, value)
 
-            run_controls_changed_fields_for_sekvensnummer(conn, sekvensnummer, changed_fields=[post])
+            run_controls_changed_fields_for_sekvensnummer(
+                conn, sekvensnummer, changed_fields=[post]
+            )
 
         alert_store = [
             create_alert(
@@ -1964,13 +1956,12 @@ class Naeringsspesifikasjon:
                                     n_clicks=0,
                                     className="ssb-btn primary-btn mb-2",
                                 ),
-
                                 dcc.Loading(
                                     id="kontrollutslag-loading",
                                     type="default",
                                     overlay_style={
                                         "visibility": "visible",
-                                        "filter": "blur(2px)"
+                                        "filter": "blur(2px)",
                                     },
                                     children=[
                                         AgGrid(
@@ -1981,13 +1972,46 @@ class Naeringsspesifikasjon:
                                                 "sortable": True,
                                             },
                                             columnDefs=[
-                                                {"field": "aar", "headerName": "År", "hide": True},
-                                                {"field": "kontrollid", "headerName": "Kontroll", "flex": 1, "minWidth": 250},
-                                                {"field": "tema", "headerName": "Tema", "flex": 1, "minWidth": 120},
-                                                {"field": "skildring", "headerName": "Beskrivelse", "flex": 4, "minWidth": 200},
-                                                {"field": "ident", "headerName": "Ident", "hide": True},
-                                                {"field": "utslag", "headerName": "Utslag", "flex": 1, "minWidth": 100},
-                                                {"field": "verdi", "headerName": "Verdi", "flex": 1, "minWidth": 100},
+                                                {
+                                                    "field": "aar",
+                                                    "headerName": "År",
+                                                    "hide": True,
+                                                },
+                                                {
+                                                    "field": "kontrollid",
+                                                    "headerName": "Kontroll",
+                                                    "flex": 1,
+                                                    "minWidth": 250,
+                                                },
+                                                {
+                                                    "field": "tema",
+                                                    "headerName": "Tema",
+                                                    "flex": 1,
+                                                    "minWidth": 120,
+                                                },
+                                                {
+                                                    "field": "skildring",
+                                                    "headerName": "Beskrivelse",
+                                                    "flex": 4,
+                                                    "minWidth": 200,
+                                                },
+                                                {
+                                                    "field": "ident",
+                                                    "headerName": "Ident",
+                                                    "hide": True,
+                                                },
+                                                {
+                                                    "field": "utslag",
+                                                    "headerName": "Utslag",
+                                                    "flex": 1,
+                                                    "minWidth": 100,
+                                                },
+                                                {
+                                                    "field": "verdi",
+                                                    "headerName": "Verdi",
+                                                    "flex": 1,
+                                                    "minWidth": 100,
+                                                },
                                             ],
                                             dashGridOptions={
                                                 "rowSelection": "single",
@@ -1999,7 +2023,7 @@ class Naeringsspesifikasjon:
                                             },
                                         )
                                     ],
-                                )
+                                ),
                             ],
                         ),
                     ],
@@ -2042,15 +2066,18 @@ class Naeringsspesifikasjon:
                 component_id="bof-info-card-sysselsatte", component_property="value"
             ),
             Output(component_id="bof-info-card-sektorkode", component_property="value"),
-            Output(component_id="bof-info-card-undersektorkode", component_property="value"),
+            Output(
+                component_id="bof-info-card-undersektorkode", component_property="value"
+            ),
             Input("var-ident", "value"),
             Input("var-aar", "value"),
         )
-        def create_info_cards_bof(orgnr_foretak: str, aar: str) -> tuple[str, str, str, str, str]:
+        def create_info_cards_bof(
+            orgnr_foretak: str, aar: str
+        ) -> tuple[str, str, str, str, str]:
             """Returns a tuple of strings with the values for info cards for the top of the bof accordion.
             These cards will hold bof information for the foretak.
             """
-
             if not orgnr_foretak or not aar:
                 raise PreventUpdate
 
@@ -2127,9 +2154,15 @@ class Naeringsspesifikasjon:
             if df.empty:
                 return "", "", "", "", ""
 
-            virksomhetstype = get_value(df[df["felt"] == "virksomhetstype"]["char_verdi"])
-            regeltype = get_value(df[df["felt"] == "regeltypeForAarsregnskap"]["char_verdi"])
-            regnskapspliktstype = get_value(df[df["felt"] == "regnskapspliktstype"]["char_verdi"])
+            virksomhetstype = get_value(
+                df[df["felt"] == "virksomhetstype"]["char_verdi"]
+            )
+            regeltype = get_value(
+                df[df["felt"] == "regeltypeForAarsregnskap"]["char_verdi"]
+            )
+            regnskapspliktstype = get_value(
+                df[df["felt"] == "regnskapspliktstype"]["char_verdi"]
+            )
             start = get_value(df[df["felt"] == "start"]["char_verdi"])
             slutt = get_value(df[df["felt"] == "slutt"]["char_verdi"])
 
@@ -3261,7 +3294,9 @@ class Naeringsspesifikasjon:
                 )
 
                 kontroller_df = instance.get_current_kontroller()
-                kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict("index")
+                kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict(
+                    "index"
+                )
 
                 if ctx.triggered_id == "run-controls-btn":
                     run_all_controls_for_sekvensnummer(conn, int(sekvensnummer))
@@ -3339,7 +3374,9 @@ class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
 class NaeringsspesifikasjonWindow(WindowImplementation, Naeringsspesifikasjon):
     """NaeringsspesifikasjonWindow is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], db_user: str | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self, time_units: list[str], db_user: str | None = None, **kwargs: Any
+    ) -> None:
         """Initializes the NaeringsspesifikasjonWindow class."""
         Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
         WindowImplementation.__init__(self, **kwargs)
