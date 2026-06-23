@@ -304,8 +304,6 @@ class CalculatedField(BaseNode):
         Returns (operation, _id) pairs for all entries, resolving InputField to its _id.
         Numeric entries are returned as-is (float), others as string IDs.
         """
-        print(self.applies_to_tables)
-        print(self.applies_to_forms)
         result = []
         for op, fields in [
             ("exponent", self.exponents),
@@ -380,7 +378,7 @@ class CalculatedField(BaseNode):
         )
         def calculated_callback(*values):
             try:
-                if any(v is None for v in values):
+                if all(v is None for v in values):
                     return f"{0:.{self.decimals}f}"
 
                 value_iter = iter(values)
