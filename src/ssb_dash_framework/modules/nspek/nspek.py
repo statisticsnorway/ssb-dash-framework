@@ -1905,7 +1905,8 @@ class Naeringsspesifikasjon:
                                             },
                                         ),
                                     ],
-                                )
+                                ),
+                                html.Div(style={"height": "24px"}),
                             ],
                         ),
                         dcc.Tab(
@@ -1964,7 +1965,8 @@ class Naeringsspesifikasjon:
                                             },
                                         ),
                                     ]
-                                )
+                                ),
+                                html.Div(style={"height": "24px"}),
                             ],
                         ),
                         dcc.Tab(
@@ -2013,7 +2015,8 @@ class Naeringsspesifikasjon:
                                             },
                                         )
                                     ],
-                                )
+                                ),
+                                html.Div(style={"height": "24px"}),
                             ],
                         ),
                     ],
