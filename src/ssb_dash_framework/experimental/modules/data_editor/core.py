@@ -151,7 +151,7 @@ class DataEditor:
 
             undefined_view: dict[str, list[str]] = {}
             for table in [
-                table for table in conn.list_tables() if table.startswith("skjemadata_")
+                table for table in conn.list_tables() if table.startswith("skjemadata")
             ]:
                 for form in t["skjema"].unique():
                     if (table, form) not in with_view:
@@ -163,6 +163,7 @@ class DataEditor:
             )
 
             for table in undefined_view:
+                print(table)
                 DataEditorTable(
                     applies_to_tables=[table], applies_to_forms=undefined_view[table]
                 )
@@ -342,7 +343,7 @@ class DataEditorTableSelector:
                 table_list = [
                     table
                     for table in conn.list_tables()
-                    if table.startswith("skjemadata_")
+                    if table.startswith("skjemadata")
                 ]
         self.table_options = [{"label": item, "value": item} for item in table_list]
 

@@ -9,6 +9,7 @@ from functools import cache
 from ibis import Table
 from dataclasses import dataclass
 import time
+import polars as pl
 
 from dash import Input
 from dash import Output
@@ -47,7 +48,7 @@ class CallbackSettings(BaseModel):
 
 @dataclass
 class CacheEntry:
-    entry: Table
+    entry: pl.DataFrame
     last_cache_hit: float
 
 
@@ -55,7 +56,7 @@ class FormGetterCached:
     data: dict[str, CacheEntry] = {}
 
     @staticmethod
-    def get_table(refnr: str, settings: CallbackSettings) -> Table:
+    def get_table(refnr: str, settings: CallbackSettings) -> pl.DataFrame:
         with get_connection() as conn:
             t = conn.table(settings.form_data_table)
             if (
@@ -67,8 +68,8 @@ class FormGetterCached:
                 )
             res = t.filter(
                 t[settings.form_reference_number_column] == refnr,
-            )
-        return res
+            ).to_polars()
+            return res
 
     @classmethod
     def clean_cache(cls):
@@ -78,7 +79,7 @@ class FormGetterCached:
             cls.data.pop(key)
 
     @classmethod
-    def get_form(cls, refnr: str, settings: CallbackSettings) -> Table:
+    def get_form(cls, refnr: str, settings: CallbackSettings) -> pl.DataFrame:
         cache_key = (
             f"{settings.form_data_table}::{refnr}"  # for tables not querying skjemadata
         )
@@ -106,9 +107,10 @@ def default_getter(
 
     t = FormGetterCached.get_form(refnr, settings)
     filters = [
-        t[settings.form_reference_number_column] == refnr,
-        t[settings.formdata_fieldname_column] == field_path,
+        pl.col(settings.form_reference_number_column) == refnr,
+        pl.col(settings.formdata_fieldname_column) == field_path,
     ]
+    print(time_units)
     if (
         settings.form_reference_number_column != "refnr"
     ):  # apply time_units filter if refnr is not used
@@ -116,7 +118,7 @@ def default_getter(
             if value and unit in t.columns:
                 filters.append(t[unit] == value)
     res: Series | Any = (
-        t.filter(filters).select(settings.formdata_field_value_column_name).to_pandas()
+        t.filter(*filters).select(settings.formdata_field_value_column_name).to_pandas()
     )
     logger.debug(f"Returning:\n{res}")
 

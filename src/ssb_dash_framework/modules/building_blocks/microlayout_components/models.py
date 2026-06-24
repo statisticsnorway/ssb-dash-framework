@@ -22,6 +22,8 @@ from pydantic import field_validator
 
 from .editable_field_model import CallbackSettings
 from .editable_field_model import EditableField
+from .timeseries_display import TimeSeriesDisplay
+from .timeseries_display import TimeseriesField
 
 
 # ---------- Base + shared ----------
@@ -219,7 +221,7 @@ class Header(BaseNode):
 
 class Label(BaseNode):
     type: Literal["label"]
-    label: str = "" # acts as a placeholder if not specified
+    label: str = ""  # acts as a placeholder if not specified
     bold: bool = False
 
     def create(
@@ -231,7 +233,8 @@ class Label(BaseNode):
     ) -> html.Div:
         return html.Div(
             html.Label(
-                self.label if self.label else "\u00A0", style={"fontWeight": "bold" if self.bold else "normal"}
+                self.label if self.label else "\u00a0",
+                style={"fontWeight": "bold" if self.bold else "normal"},
             ),
             className="microlayout-label",
         )
@@ -567,7 +570,7 @@ class ChecklistComponent(BaseNode):
                 html.Div(
                     className="ssb-checkbox d-flex align-items-center",
                     children=children,
-                    style={"height": "44px"}, # to match ssb-input
+                    style={"height": "44px"},  # to match ssb-input
                 ),
             ],
             className="ssb-input",
@@ -698,6 +701,27 @@ class KlassChecklist(BaseNode):
             )
 
 
+class TimeseriesDisplay(BaseNode):
+    type: Literal["timeseries"]
+    label: str
+    field_settings: TimeseriesField
+    value: str | None = ""
+
+    def create(
+        self,
+        settings: CallbackSettings,
+        inputs: list[Input] | None = None,
+        states: list[State] | None = None,
+        getter_args: None | list = None,
+    ) -> html.Div | html.H1 | html.H2 | html.H3 | dbc.Row | dbc.Col:
+        print(self)
+        print("self", self)
+        print(settings)
+        res = TimeSeriesDisplay(settings, self.field_settings, inputs, states, getter_args)
+        #self.field_settings.create_callback(settings, inputs, states, getter_args)
+        return res
+
+
 """class ChecklistOption(BaseModel):
     label: str
     value: str
@@ -723,7 +747,8 @@ Node = Annotated[
     | ChecklistComponent
     | DropdownComponent
     | Tabs
-    | Tab,
+    | Tab
+    | TimeseriesDisplay,
     Field(discriminator="type"),
 ]
 
@@ -741,6 +766,7 @@ for m in (
     DropdownComponent,
     Tabs,
     Tab,
+    TimeseriesDisplay,
 ):
     m.model_rebuild()
 
