@@ -1876,25 +1876,36 @@ class Naeringsspesifikasjon:
                                     ],
                                     className="g-2 mb-2",
                                 ),
-                                AgGrid(
-                                    id="nspek-resultatdata-grid",
-                                    className="ag-theme-alpine ag-theme-ssb mb-2",
-                                    # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
-                                    defaultColDef={"resizable": True},
-                                    rowData=[],
-                                    columnDefs=[],
-                                    dashGridOptions={
-                                        "rowSelection": "single",
-                                        "enableCellTextSelection": True,
-                                        "enableBrowserTooltips": True,
+                                dcc.Loading(
+                                    id="Resultatregnskap-loading",
+                                    type="default",
+                                    overlay_style={
+                                        "visibility": "visible",
+                                        "filter": "blur(2px)"
                                     },
-                                    # getRowStyle=self.get_row_style_with_comments(),
-                                    getRowStyle=self.get_row_style_ui_sums(),
-                                    style={
-                                        "height": "70vh",
-                                        "width": "100%",
-                                    },
-                                ),
+                                    children=[
+                                        AgGrid(
+                                            id="nspek-resultatdata-grid",
+                                            className="ag-theme-alpine ag-theme-ssb mb-2",
+                                            # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
+                                            defaultColDef={"resizable": True},
+                                            rowData=[],
+                                            columnDefs=[],
+                                            dashGridOptions={
+                                                "rowSelection": "single",
+                                                "enableCellTextSelection": True,
+                                                "enableBrowserTooltips": True,
+                                                "suppressScrollOnNewData": True,
+                                            },
+                                            # getRowStyle=self.get_row_style_with_comments(),
+                                            getRowStyle=self.get_row_style_ui_sums(),
+                                            style={
+                                                "height": "70vh",
+                                                "width": "100%",
+                                            },
+                                        ),
+                                    ],
+                                )
                             ],
                         ),
                         dcc.Tab(
@@ -1924,25 +1935,36 @@ class Naeringsspesifikasjon:
                                     ],
                                     className="g-2 mb-2",
                                 ),
-                                AgGrid(
-                                    id="nspek-balansedata-grid",
-                                    className="ag-theme-alpine ag-theme-ssb mb-2",
-                                    # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
-                                    defaultColDef={"resizable": True},
-                                    rowData=[],
-                                    columnDefs=[],
-                                    dashGridOptions={
-                                        "rowSelection": "single",
-                                        "enableCellTextSelection": True,
-                                        "enableBrowserTooltips": True,
+                                dcc.Loading(
+                                    id="Balanseregnskap-loading",
+                                    type="default",
+                                    overlay_style={
+                                        "visibility": "visible",
+                                        "filter": "blur(2px)"
                                     },
-                                    # getRowStyle=self.get_row_style_with_comments(),
-                                    getRowStyle=self.get_row_style_ui_sums(),
-                                    style={
-                                        "height": "70vh",
-                                        "width": "100%",
-                                    },
-                                ),
+                                    children=[
+                                    AgGrid(
+                                        id="nspek-balansedata-grid",
+                                        className="ag-theme-alpine ag-theme-ssb mb-2",
+                                        # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
+                                        defaultColDef={"resizable": True},
+                                        rowData=[],
+                                        columnDefs=[],
+                                        dashGridOptions={
+                                            "rowSelection": "single",
+                                            "enableCellTextSelection": True,
+                                            "enableBrowserTooltips": True,
+                                            "suppressScrollOnNewData": True,
+                                        },
+                                        # getRowStyle=self.get_row_style_with_comments(),
+                                        getRowStyle=self.get_row_style_ui_sums(),
+                                        style={
+                                            "height": "70vh",
+                                            "width": "100%",
+                                            },
+                                        ),
+                                    ]
+                                )
                             ],
                         ),
                         dcc.Tab(
@@ -1956,12 +1978,13 @@ class Naeringsspesifikasjon:
                                     n_clicks=0,
                                     className="ssb-btn primary-btn mb-2",
                                 ),
+
                                 dcc.Loading(
                                     id="kontrollutslag-loading",
                                     type="default",
                                     overlay_style={
                                         "visibility": "visible",
-                                        "filter": "blur(2px)",
+                                        "filter": "blur(2px)"
                                     },
                                     children=[
                                         AgGrid(
@@ -1972,46 +1995,13 @@ class Naeringsspesifikasjon:
                                                 "sortable": True,
                                             },
                                             columnDefs=[
-                                                {
-                                                    "field": "aar",
-                                                    "headerName": "År",
-                                                    "hide": True,
-                                                },
-                                                {
-                                                    "field": "kontrollid",
-                                                    "headerName": "Kontroll",
-                                                    "flex": 1,
-                                                    "minWidth": 250,
-                                                },
-                                                {
-                                                    "field": "tema",
-                                                    "headerName": "Tema",
-                                                    "flex": 1,
-                                                    "minWidth": 120,
-                                                },
-                                                {
-                                                    "field": "skildring",
-                                                    "headerName": "Beskrivelse",
-                                                    "flex": 4,
-                                                    "minWidth": 200,
-                                                },
-                                                {
-                                                    "field": "ident",
-                                                    "headerName": "Ident",
-                                                    "hide": True,
-                                                },
-                                                {
-                                                    "field": "utslag",
-                                                    "headerName": "Utslag",
-                                                    "flex": 1,
-                                                    "minWidth": 100,
-                                                },
-                                                {
-                                                    "field": "verdi",
-                                                    "headerName": "Verdi",
-                                                    "flex": 1,
-                                                    "minWidth": 100,
-                                                },
+                                                {"field": "aar", "headerName": "År", "hide": True},
+                                                {"field": "kontrollid", "headerName": "Kontroll", "flex": 1, "minWidth": 250},
+                                                {"field": "tema", "headerName": "Tema", "flex": 1, "minWidth": 120},
+                                                {"field": "skildring", "headerName": "Beskrivelse", "flex": 4, "minWidth": 200},
+                                                {"field": "ident", "headerName": "Ident", "hide": True},
+                                                {"field": "utslag", "headerName": "Utslag", "flex": 1, "minWidth": 100},
+                                                {"field": "verdi", "headerName": "Verdi", "flex": 1, "minWidth": 100},
                                             ],
                                             dashGridOptions={
                                                 "rowSelection": "single",
@@ -2023,7 +2013,7 @@ class Naeringsspesifikasjon:
                                             },
                                         )
                                     ],
-                                ),
+                                )
                             ],
                         ),
                     ],

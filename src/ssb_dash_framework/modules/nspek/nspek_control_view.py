@@ -58,7 +58,7 @@ class NspekControlView(ABC):
         NspekControlView._id_number += 1
 
         self.icon = "⚖️"
-        self.label = "Kontroll"
+        self.label = "NSPEK Kontroll"
 
         self.control_dict = control_dict
         self.outputs = outputs
