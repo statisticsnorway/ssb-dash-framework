@@ -954,10 +954,20 @@ class Naeringsspesifikasjon:
         ]
     )
 
-    def __init__(self, time_units: list[str], db_user: str | None) -> None:
+    def __init__(
+        self,
+        time_units: list[str],
+        db_user: str | None,
+        db_host: str = "localhost",
+        db_port: int = 5432,
+        db_name: str = "nspek",
+    ) -> None:
         """Explanation of module."""
         set_nspek_connection(
-            db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
+            db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam",
+            host=db_host,
+            port=db_port,
+            database=db_name,
         )
         self.module_number = Naeringsspesifikasjon._id_number
         self.module_name = self.__class__.__name__
@@ -3153,16 +3163,45 @@ class Naeringsspesifikasjon:
 class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
     """NaeringsspesifikasjonTab is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
+    def __init__(
+        self,
+        time_units: list[str],
+        db_user: str | None = None,
+        db_host: str = "localhost",
+        db_port: int = 5432,
+        db_name: str = "nspek",
+    ) -> None:
         """Initializes the NaeringsspesifikasjonTab class."""
-        Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
+        Naeringsspesifikasjon.__init__(
+            self,
+            time_units=time_units,
+            db_user=db_user,
+            db_host=db_host,
+            db_port=db_port,
+            db_name=db_name,
+        )
         TabImplementation.__init__(self)
 
 
 class NaeringsspesifikasjonWindow(WindowImplementation, Naeringsspesifikasjon):
     """NaeringsspesifikasjonWindow is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], db_user: str | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        time_units: list[str],
+        db_user: str | None = None,
+        db_host: str = "localhost",
+        db_port: int = 5432,
+        db_name: str = "nspek",
+        **kwargs: Any,
+    ) -> None:
         """Initializes the NaeringsspesifikasjonWindow class."""
-        Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
+        Naeringsspesifikasjon.__init__(
+            self,
+            time_units=time_units,
+            db_user=db_user,
+            db_host=db_host,
+            db_port=db_port,
+            db_name=db_name,
+        )
         WindowImplementation.__init__(self, **kwargs)

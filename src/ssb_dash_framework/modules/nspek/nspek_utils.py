@@ -14,11 +14,32 @@ _CONNECTION_NSPEK: object | None = None
 _CONNECTION_CALLABLE_NSPEK: Callable[..., Any] | None = None
 
 
-def set_nspek_connection(database_user: str | None = None) -> None:
-    """Helper function to configure a pooled connection to a postgres database.
+def _build_nspek_conn_url(
+    database_user: str,
+    host: str = "localhost",
+    port: int = 5432,
+    database: str = "nspek",
+) -> str:
+    """Build the psycopg ``conninfo`` URL for the nspek postgres connection."""
+    encoded_user = quote_plus(database_user)
+    return f"postgresql://{encoded_user}@{host}:{port}/{database}"
+
+
+def set_nspek_connection(
+    database_user: str | None = None,
+    host: str = "localhost",
+    port: int = 5432,
+    database: str = "nspek",
+) -> None:
+    """Helper function to configure a pooled connection to the nspek postgres database.
 
     Args:
-        database_url: Connection url for the database. Gets passed to psycopg_pool.ConnectionPool as conninfo argument.
+        database_user: Database user (IAM principal) to connect as. Defaults to the
+            ``nspek-developers`` service account.
+        host: Database host. Defaults to "localhost" (e.g. a local CloudSQL proxy).
+        port: Database port. Defaults to 5432.
+        database: Database name. Defaults to "nspek". Override this (and host/port as
+            needed) when the nspek data lives in a differently named database.
     """
     global _IS_POOLED_NSPEK, _CONNECTION_NSPEK, _CONNECTION_CALLABLE_NSPEK
 
@@ -26,10 +47,7 @@ def set_nspek_connection(database_user: str | None = None) -> None:
         database_user if database_user else "nspek-developers@dapla-group-sa-p-ye.iam"
     )
 
-    encoded_user = quote_plus(DB_USER)
-    conn_url = f"postgresql://{encoded_user}@localhost:5432/nspek"
-    if DB_USER.startswith("nspek-developers"):
-        print(conn_url)
+    conn_url = _build_nspek_conn_url(DB_USER, host=host, port=port, database=database)
 
     _IS_POOLED_NSPEK = True
 
