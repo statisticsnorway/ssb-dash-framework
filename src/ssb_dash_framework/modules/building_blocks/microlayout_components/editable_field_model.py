@@ -7,6 +7,7 @@ from typing import Any
 from ibis.expr.types.relations import Table
 from functools import cache
 from ibis import Table
+import ibis
 from dataclasses import dataclass
 import time
 
@@ -60,6 +61,19 @@ class FormGetterCached:
 
     @staticmethod
     def get_table(refnr: str, settings: CallbackSettings) -> Table:
+        """Materialize the whole refnr-filtered form in ONE query.
+
+        The per-field ``default_getter`` re-filters this result once per editable
+        field (~48 for RA-0255). Returning a *lazy* Postgres expression here means
+        each of those re-filters is a separate database round-trip on every refnr
+        change -- the dominant cost of loading the data editor.
+
+        Instead we execute a single query for the whole refnr-filtered form and
+        return an in-memory ``ibis.memtable``. The subsequent per-field
+        filter/select then run entirely in-process (DuckDB) with no further
+        database round-trips. ``get_form`` caches this materialized table; writes
+        evict it via :meth:`evict` so reads stay fresh.
+        """
         with get_connection() as conn:
             t = conn.table(settings.form_data_table)
             if (
@@ -69,10 +83,12 @@ class FormGetterCached:
                     f"Column '{settings.form_reference_number_column}' not in table "
                     f"'{settings.form_data_table}'. Available: {t.columns}"
                 )
-            res = t.filter(
+            df = t.filter(
                 t[settings.form_reference_number_column] == refnr,
-            )
-        return res
+            ).to_pandas()
+        # memtable preserves column names + dtypes; downstream filter/select run
+        # in DuckDB, so they never touch the database again.
+        return ibis.memtable(df)
 
     @classmethod
     def clean_cache(cls):
@@ -80,6 +96,16 @@ class FormGetterCached:
         if len(cls.data.keys()) > max_size:
             key, _ = min(cls.data.items(), key=lambda x: x[1].last_cache_hit)
             cls.data.pop(key)
+
+    @classmethod
+    def evict(cls, refnr: str, table: str) -> None:
+        """Drop the cached form for ``(table, refnr)`` so the next read is fresh.
+
+        Call this after a write: because :meth:`get_table` now returns a
+        materialized snapshot, an un-evicted entry would serve stale values for up
+        to the ``get_form`` TTL after an edit.
+        """
+        cls.data.pop(f"{table}::{refnr}", None)
 
     @classmethod
     def get_form(cls, refnr: str, settings: CallbackSettings) -> Table:
@@ -183,7 +209,11 @@ def default_updater(
     )
 
     if isinstance(_get_connection_object(), ConnectionPool):
-        return update.update_ibis(long=long)
+        result = update.update_ibis(long=long)
+        # get_table now returns a materialized snapshot; evict it so the next read
+        # (including the old_value lookup on the very next edit) sees the new value.
+        FormGetterCached.evict(refnr, settings.form_data_table)
+        return result
     else:
         raise NotImplementedError(
             f"Connection of type '{type(_get_connection_object())}' is not implemented yet."
