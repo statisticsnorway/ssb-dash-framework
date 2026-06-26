@@ -2087,7 +2087,8 @@ DataEditor
 }
 
 .DataEditorHistory-helper-modal .modal-dialog,
-.DataEditorSupportTables-helper-modal .modal-dialog {
+.DataEditorSupportTables-helper-modal .modal-dialog,
+.DataEditorContactInfo-helper-modal .modal-dialog {
     max-width: 90vw !important;
     width: 90vw !important;
 }
