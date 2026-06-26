@@ -42,6 +42,10 @@ class CallbackSettings(BaseModel):
     formdata_field_value_column_name: str
     formdata_fieldname_column: str
 
+    mapping_table: str = "mapping_variabelnavn"
+    mapping_match_column: str = "variabel"
+    mapping_result_column: str = "feltsti"
+
     table_selector_id: str | None = None
     form_selector_id: str | None = None
 
@@ -199,6 +203,9 @@ def default_updater(
         value=value,
         old_value=old_value,
         long=long,
+        mapping_table=settings.mapping_table,
+        mapping_match_column=settings.mapping_match_column,
+        mapping_result_column=settings.mapping_result_column,
     )
 
     if isinstance(_get_connection_object(), ConnectionPool):
