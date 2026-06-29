@@ -8,6 +8,7 @@ import ibis
 from eimerdb import EimerDBInstance
 from ibis.backends import BaseBackend
 from ibis.backends.postgres import Backend
+from psycopg import Connection
 from psycopg_pool import ConnectionPool
 
 _IS_POOLED: bool | None = None
@@ -85,7 +86,10 @@ def set_connection(
 
 
 def set_postgres_connection(
-    database_url: str, pool_min_size: int = 1, pool_max_size: int = 1
+    database_url: str,
+    pool_min_size: int = 1,
+    pool_max_size: int = 1,
+    configure: Callable[[Connection], None] | None = None,
 ) -> None:
     """Helper function to configure a pooled connection to a postgres database.
 
@@ -93,12 +97,21 @@ def set_postgres_connection(
         database_url: Connection url for the database. Gets passed to psycopg_pool.ConnectionPool as conninfo argument.
         pool_min_size: The minimum size of the pool. Defaults to 1.
         pool_max_size: The maximum size of the pool. Defaults to 1.
+        configure: Optional callback the pool runs on every new connection, receiving
+            the raw ``psycopg.Connection``. Use it for per-connection session setup that
+            must apply to *all* pooled connections -- e.g. setting a session GUC for an
+            audit trail (``SET ...``) when ``pool_max_size > 1``. Passed straight through
+            to ``psycopg_pool.ConnectionPool``; defaults to ``None`` (no-op), so existing
+            callers are unaffected.
     """
     global _IS_POOLED, _CONNECTION, _CONNECTION_CALLABLE
     _IS_POOLED = True
 
     pool = ConnectionPool(
-        conninfo=database_url, min_size=pool_min_size, max_size=pool_max_size
+        conninfo=database_url,
+        min_size=pool_min_size,
+        max_size=pool_max_size,
+        configure=configure,
     )
     _CONNECTION = pool
 
