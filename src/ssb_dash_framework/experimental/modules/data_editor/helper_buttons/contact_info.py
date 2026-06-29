@@ -7,6 +7,7 @@ from dash import Input
 from dash import Output
 from dash import callback
 from dash import html
+from dash.exceptions import PreventUpdate
 from ibis import _
 from psycopg_pool import ConnectionPool
 import dash_bootstrap_components as dbc
@@ -17,10 +18,13 @@ from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
 from ssb_dash_framework.utils.config_tools.set_variables import get_ident
-from ssb_dash_framework.utils.core_query_functions import create_filter_dict, ibis_filter_with_dict
+from ssb_dash_framework.utils.core_query_functions import (
+    create_filter_dict,
+    ibis_filter_with_dict,
+)
 
-from  ssb_dash_framework.utils.config_tools.connection import _get_connection_object
-from  ssb_dash_framework.utils.config_tools.connection import get_connection
+from ssb_dash_framework.utils.config_tools.connection import _get_connection_object
+from ssb_dash_framework.utils.config_tools.connection import get_connection
 from ..core import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)
@@ -55,7 +59,9 @@ class DataEditorContactInfo(DataEditorHelperButton):
 
         self.module_callbacks()
 
-    def create_info_card(self, title: str, component_id: str, var_type: str):
+    def create_info_card(
+        self, title: str, component_id: str, var_type: str, style: dict | None = None
+    ):
         card_info = html.Div(
             className="ssb-input",
             children=[
@@ -66,6 +72,8 @@ class DataEditorContactInfo(DataEditorHelperButton):
                         dbc.Input(
                             id=component_id,
                             type=var_type,
+                            style=style,
+                            readonly=True,
                         )
                     ],
                 ),
@@ -93,15 +101,16 @@ class DataEditorContactInfo(DataEditorHelperButton):
                                     component_id="dataeditor-kontaktinfo-card-skjema",
                                     var_type="text",
                                 ),
-                                width=2,
+                                width=1,
                             ),
+                            
                             dbc.Col(
                                 self.create_info_card(
                                     title="Kontaktperson",
                                     component_id="dataeditor-kontaktinfo-card-kontaktperson",
-                                    var_type="number",
+                                    var_type="text",
                                 ),
-                                width=2,
+                                width=3,
                             ),
                             dbc.Col(
                                 self.create_info_card(
@@ -109,7 +118,7 @@ class DataEditorContactInfo(DataEditorHelperButton):
                                     component_id="dataeditor-kontaktinfo-card-epost",
                                     var_type="text",
                                 ),
-                                width=2,
+                                width=3,
                             ),
                             dbc.Col(
                                 self.create_info_card(
@@ -117,41 +126,78 @@ class DataEditorContactInfo(DataEditorHelperButton):
                                     component_id="dataeditor-kontaktinfo-card-tlf",
                                     var_type="text",
                                 ),
+                                width=1,
+                            ),
+                            dbc.Col(
+                                html.Div(
+                                    [
+                                        html.Label(
+                                            "Kontaktinfo bekreftet?",
+                                            style={"visibility": "visible"},
+                                        ),
+                                        html.Div(
+                                            className="ssb-checkbox d-flex align-items-center",
+                                            children=[
+                                                dcc.Checklist(
+                                                    id="dataeditor-kontaktinfo-bekreftet",
+                                                    options=[
+                                                        {"label": "", "value": "1", "disabled": True}
+                                                    ],
+                                                    value=[],
+                                                ),
+                                            ],
+                                            style={"height": "44px"},
+                                        ),
+                                    ],
+                                    className="ssb-input",
+                                ),
                                 width=2,
                             ),
                         ],
-                        className="g-2 align-items-end",
+                        className="mb-2",
                     ),
                     dbc.Row(
                         [
                             dbc.Col(
-                                self.create_info_card(
-                                    title="Kommentar kontaktinfo",
-                                    component_id="dataeditor-kontaktinfo-card-kommentar",
-                                    var_type="text",
-                                ),
-                                width=2,
+                                [
+                                    html.Label(
+                                        "Generell kommentar",
+                                        className="ssb-input",
+                                    ),
+                                    dbc.Textarea(
+                                        id="dataeditor-kontaktinfo-card-kommentar",
+                                        className="microlayout-textarea-field",
+                                        readonly=True,
+                                    ),
+                                ],
+                                className="microlayout-textarea",
                             ),
                             dbc.Col(
-                                self.create_info_card(
-                                    title="Kommentar krevende",
-                                    component_id="dataeditor-kontaktinfo-card-krevende",
-                                    var_type="text",
-                                ),
-                                width=2,
+                                [
+                                    html.Label(
+                                        "Kommentar krevende",
+                                        className="ssb-input",
+                                    ),
+                                    dbc.Textarea(
+                                        id="dataeditor-kontaktinfo-card-krevende",
+                                        className="microlayout-textarea-field",
+                                        readonly=True,
+                                    ),
+                                ],
+                                className="microlayout-textarea",
                             ),
                         ],
-                        className="g-2 align-items-end",
+                        className="mb-2",
                     ),
-                ]
+                ],
+                className=f"{self.module_name}-body",
             ),
-            className=f"{self.module_name}-body",
         )
 
     def module_callbacks(self):
         connection_object = _get_connection_object()
         variableselector = VariableSelector(
-            selected_inputs=["ident", *get_time_units().keys()],
+            selected_inputs=["refnr"],
             selected_states=[],
         )
 
@@ -160,50 +206,77 @@ class DataEditorContactInfo(DataEditorHelperButton):
                 component_id="dataeditor-kontaktinfo-card-organisasjonsnummer",
                 component_property="value",
             ),
-            Output(component_id="dataeditor-kontaktinfo-card-skjema", component_property="value"),
+            Output(
+                component_id="dataeditor-kontaktinfo-card-skjema",
+                component_property="value",
+            ),
             Output(
                 component_id="dataeditor-kontaktinfo-card-kontaktperson",
                 component_property="value",
             ),
             Output(
-                component_id="dataeditor-kontaktinfo-card-epost", component_property="value"
+                component_id="dataeditor-kontaktinfo-card-epost",
+                component_property="value",
             ),
-            Output(component_id="dataeditor-kontaktinfo-card-tlf", component_property="value"),
-            Output(component_id="dataeditor-kontaktinfo-card-kommentar", component_property="value"),
             Output(
-                component_id="dataeditor-kontaktinfo-card-krevende", component_property="value"
+                component_id="dataeditor-kontaktinfo-card-tlf",
+                component_property="value",
             ),
-            variableselector.get_input(get_ident()),
-            *[variableselector.get_input(unit) for unit in get_time_units().keys()],
-
+            Output(
+                component_id="dataeditor-kontaktinfo-bekreftet",
+                component_property="value",
+            ),
+            Output(
+                component_id="dataeditor-kontaktinfo-card-kommentar",
+                component_property="value",
+            ),
+            Output(
+                component_id="dataeditor-kontaktinfo-card-krevende",
+                component_property="value",
+            ),
+            Output(
+                component_id=f"{self.module_name}-{self.module_number}-indicator",
+                component_property="style",
+            ),
+            Output(
+                component_id=f"{self.module_name}-{self.module_number}-indicator",
+                component_property="children",
+            ),
+            variableselector.get_input(get_refnr()),
         )
-        def create_info_cards_kontaktinfo(ident: str, *args: Any) -> tuple[str, str, str, str, str, str, str]:
+        def create_info_cards_kontaktinfo(
+            refnr: str,
+        ) -> tuple[str, str, str, str, str, list[str], str, str, dict[str, str], str]:
             """Returns a tuple of strings with the values for info cards for the kontaktinfo module in DataEditor.
             These cards will hold kontaktinfo foretak.
             """
-            time_unit_list = [x for x in get_time_units().keys()]
-            time_units = args[: len(time_unit_list)]
-            print(time_units)
-
-            filter_dict = create_filter_dict(time_unit_list, time_units)
-            print(filter_dict)
+            if not refnr:
+                raise PreventUpdate
 
             if isinstance(connection_object, ConnectionPool):
                 logger.debug("Using ConnectionPool logic.")
                 with get_connection(necessary_tables=["kontaktinfo"]) as conn:
                     t = conn.table("kontaktinfo")
-                    data = t.filter(_.ident == ident).filter(
-                            ibis_filter_with_dict(filter_dict)
-                        ).execute()
-                print(data)
+                    data = t.filter(_.refnr == refnr).execute()
 
                 orgnr = data["ident"].iloc[0]
                 skjema = data["skjema"].iloc[0]
                 kontaktperson = data["kontaktperson"].iloc[0]
                 epost = data["epost"].iloc[0]
                 tlf = data["telefon"].iloc[0]
+                bekreftet = data["bekreftet_kontaktinfo"].iloc[0]
                 kommentar_kontaktinfo = data["kommentar_kontaktinfo"].iloc[0]
                 kommentar_krevende = data["kommentar_krevende"].iloc[0]
+                comment_count = sum(
+                    [
+                        bool(kommentar_kontaktinfo),
+                        bool(kommentar_krevende),
+                    ]
+                )
+                indicator_style = (
+                    {"display": "block"} if comment_count > 0 else {"display": "none"}
+                )
+                print(f"comment_count: {comment_count}")
 
                 return (
                     orgnr,
@@ -211,8 +284,11 @@ class DataEditorContactInfo(DataEditorHelperButton):
                     kontaktperson,
                     epost,
                     tlf,
+                    [bekreftet] if bekreftet else [],
                     kommentar_kontaktinfo,
                     kommentar_krevende,
+                    indicator_style,
+                    str(comment_count) if comment_count > 0 else "",
                 )
 
             else:

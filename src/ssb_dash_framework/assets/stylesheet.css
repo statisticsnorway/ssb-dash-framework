@@ -1042,7 +1042,7 @@ ssb-input
   cursor: text;
   font-size: 14px;
   margin-bottom: 5px;
-  user-select: none;
+  user-select: text;
 }
 .ssb-input input {
   font-family: "Roboto", sans-serif !important;
@@ -2078,6 +2078,25 @@ Altinn Editor Support Tables
 DataEditor 
 */
 
+.helper-button-indicator {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #3396D2;
+    color: #fff;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    text-align: center;
+    padding-top: 3px;
+    box-shadow: 0 3px 3px rgba(0, 0, 0, 0.3);
+}
+
 .DataEditorHistory-toggle-bar {
     display: flex;
     flex-direction: column;
@@ -2172,6 +2191,13 @@ DataEditor
 .DataEditor-main-view h4 {
     font-size: 1rem;
     font-weight: bold;
+}
+
+.DataEditorContactInfo-body {
+  padding: 15px
+}
+.DataEditorContactInfo-body .col {
+  padding: 10px
 }
 
 .DataEditorInfoRow-info-row .card,
