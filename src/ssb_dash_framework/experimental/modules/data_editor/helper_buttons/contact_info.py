@@ -60,7 +60,7 @@ class DataEditorContactInfo(DataEditorHelperButton):
         self.module_callbacks()
 
     def create_info_card(
-        self, title: str, component_id: str, var_type: str, style: dict | None = None
+        self, title: str, component_id: str, var_type: str | int, style: dict | None = None
     ):
         card_info = html.Div(
             className="ssb-input",
@@ -259,14 +259,14 @@ class DataEditorContactInfo(DataEditorHelperButton):
                     t = conn.table("kontaktinfo")
                     data = t.filter(_.refnr == refnr).execute()
 
-                orgnr = data["ident"].iloc[0]
-                skjema = data["skjema"].iloc[0]
-                kontaktperson = data["kontaktperson"].iloc[0]
-                epost = data["epost"].iloc[0]
-                tlf = data["telefon"].iloc[0]
-                bekreftet = data["bekreftet_kontaktinfo"].iloc[0]
-                kommentar_kontaktinfo = data["kommentar_kontaktinfo"].iloc[0]
-                kommentar_krevende = data["kommentar_krevende"].iloc[0]
+                orgnr = data["ident"].item()
+                skjema = data["skjema"].item()
+                kontaktperson = data["kontaktperson"].item()
+                epost = data["epost"].item()
+                tlf = data["telefon"].item()
+                bekreftet = data["bekreftet_kontaktinfo"].item()
+                kommentar_kontaktinfo = data["kommentar_kontaktinfo"].item()
+                kommentar_krevende = data["kommentar_krevende"].item()
                 comment_count = sum(
                     [
                         bool(kommentar_kontaktinfo),
