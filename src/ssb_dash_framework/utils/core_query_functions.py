@@ -49,7 +49,7 @@ def ibis_filter_with_dict(periods_dict: dict[str, Any]) -> list[Any]:
         t.filter(ibis_filter_with_dict(filter_dict))
     """
     filters = []
-    print("Filtrerings dict")
+    logger.debug("Filtrerings dict")
     for key, value in periods_dict.items():
         col = getattr(_, key)
         if isinstance(value, list):
@@ -57,7 +57,7 @@ def ibis_filter_with_dict(periods_dict: dict[str, Any]) -> list[Any]:
         else:
             expr = col == value
         filters.append(expr)
-    print(filters)
+    logger.debug(filters)
     return filters
 
 
