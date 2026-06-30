@@ -9,8 +9,8 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import callback
 from dash import html
-from dash.dependencies import Output
-
+from dash.dependencies import Output, Input
+from dash.exceptions import PreventUpdate
 from ssb_dash_framework.setup import VariableSelector
 
 from ..core import DataEditorHelperButton
@@ -72,9 +72,13 @@ class DataEditorSupportTable:
         @callback(  # TODO: Prevent update if table is not needed for current table and form
             Output(f"support-table-{self.suptable_id}", "rowData"),
             Output(f"support-table-{self.suptable_id}", "columnDefs"),
+            Input(f"{DataEditorSupportTables.__name__}-0-modal", "is_open"),
             *self.variableselector.get_all_callback_objects(),
+            prevent_initial_call=True,
         )
-        def load_support_table_data(*args: Any):
+        def load_support_table_data(is_open: bool, *args: Any):
+            if not is_open:
+                raise PreventUpdate
             logger.info(
                 f"Running get_data_func for table '{self.label}' using args: {args}"
             )
@@ -103,7 +107,7 @@ class DataEditorSupportTable:
 class DataEditorSupportTables(DataEditorHelperButton):
     """This module provides supporting tables for the DataEditor.
 
-    It adds a button that opens a modal with tabs containing tables with extra informatiion.
+    It adds a button that opens a modal with tabs containing tables with extra information.
 
     Note:
         Adding your own supporting tables is not supported at this time.
