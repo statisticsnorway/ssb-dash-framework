@@ -3,13 +3,14 @@ import os
 import re
 import time
 from pathlib import Path
-from typing import ClassVar
 from typing import Any
+from typing import ClassVar
 
 import dash_bootstrap_components as dbc
 import ibis
 import pandas as pd
 from dash import callback
+from dash import ctx
 from dash import dcc
 from dash import html
 from dash import no_update
@@ -28,6 +29,8 @@ from ...utils import TabImplementation
 from ...utils import WindowImplementation
 from ...utils.alert_handler import create_alert
 from ...utils.module_validation import module_validator
+from .nspek_control_engine import run_all_controls_for_sekvensnummer
+from .nspek_control_engine import run_controls_changed_fields_for_sekvensnummer
 from .nspek_controls import NspekControls
 from .nspek_utils import get_nspek_connection
 from .nspek_utils import set_nspek_connection
@@ -393,6 +396,10 @@ TYPE_REGNSKAP_TABLE = {  # type: {database: exampleregnskap, table: tema_example
         "database": "resultatregnskap",
         "table": "tema_resultat",
     },
+    "enhet_opplysninger": {
+        "database": "nspek_core",
+        "table": "enhet_opplysninger",
+    },
 }
 
 
@@ -441,19 +448,122 @@ def get_virksomhetsinfo(
     return df
 
 
-def get_bofinfo(ident: str) -> pd.DataFrame:
-    """Fetch and return pandas dataframe containing BOF info from ssb_foretak.db for a given orgnr as a pandas dataframe.
+def get_skjoennslignet(conn, ident: str, aar: str, sekvensnummer: int) -> pd.DataFrame:
+    """Fetch and return pandas dataframe containing virksomhetsinfo from nspek files for specified variables for a unit.
 
-    Example use: get_bofinfo("979443137")
+    Example use: get_skjoennslignet(self.conn, virksomhetsinfo_variabler, "979443137", "2024", 2291859)
     """
-    config = TYPE_REGNSKAP_TABLE["virksomhet"]
+    config = TYPE_REGNSKAP_TABLE["enhet_opplysninger"]
 
-    conn = ibis.sqlite.connect("/buckets/shared/vof/oracle-hns/ssb_foretak.db")
-    t = conn.table("ssb_foretak")
-    filtered = t.filter(_.orgnr == ident)
+    t = conn.table(config["table"], database=config["database"])
+    t = t.filter(_.sekvensnummer == sekvensnummer)
+    filtered = t.filter(_.opplysning == "skjoennslignet").select(["opplysning"])
     df = filtered.execute()
 
     return df
+
+
+def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
+    """Fetch and return pandas dataframe containing BOF info from parquet or sqlite fallback for a given orgnr.
+
+    Example use: get_bofinfo("979443137", "2024")
+    """
+    year = str(aar)
+
+    parquet_paths = [
+        (
+            f"/buckets/shared/vof/"
+            f"situttak/vof-aarsfil_data/"
+            f"klargjorte-data/parquet/"
+            f"vof-aarsfil_p{year}_v1.parquet"
+        ),
+        (
+            f"/buckets/shared/vof/"
+            f"situttak/vof-aarsfil_data/"
+            f"klargjorte-data/parquet/"
+            f"vof-aarsfil-forelopig_p{year}_v1.parquet"
+        ),
+    ]
+
+    rename_map = {
+        "org_nr": "orgnr",
+        "navn": "navn",
+        "org_form": "org_form",
+        "sn2025_1": "sn2025_1",
+        "nace1_sn07": "sn07_1",
+        "reg_type": "sf_type",
+        "fkommune": "f_kommunenr",
+        "status": "statuskode",
+        "syss": "sysselsatte",
+        "sektor_2014": "sektor_2014",
+        "undersektor_2014": "undersektor_2014",
+    }
+
+    expected_columns = [
+        "orgnr",
+        "navn",
+        "org_form",
+        "sn2025_1",
+        "sn07_1",
+        "sf_type",
+        "f_kommunenr",
+        "statuskode",
+        "sysselsatte",
+        "sektor_2014",
+        "undersektor_2014",
+    ]
+
+    for path in parquet_paths:
+
+        if not Path(path).exists():
+            continue
+
+        try:
+            conn = ibis.duckdb.connect()
+
+            t = conn.read_parquet(path)
+
+            df = t.filter(_.org_nr == str(ident)).execute()
+
+            if df.empty:
+                return pd.DataFrame(columns=expected_columns)
+
+            df = df.rename(columns=rename_map)
+
+            for col in expected_columns:
+                if col not in df.columns:
+                    df[col] = ""
+
+            return df[expected_columns]
+
+        except Exception as e:
+            logger.error(
+                f"Failed reading parquet {path}: {e}",
+                exc_info=True,
+            )
+
+    # fallback sqlite
+    try:
+        conn = ibis.sqlite.connect("/buckets/shared/vof/oracle-hns/ssb_foretak.db")
+
+        t = conn.table("ssb_foretak")
+
+        df = t.filter(_.orgnr == ident).execute()
+
+        return df
+
+    except Exception as e:
+        logger.error(
+            f"Failed reading sqlite fallback: {e}",
+            exc_info=True,
+        )
+
+        return pd.DataFrame(columns=expected_columns)
+
+
+def get_value(series) -> str:
+    """Return first value or empty string if no match."""
+    return "" if series.empty else str(series.iloc[0])
 
 
 def post_description_data(regnskapstype: str) -> DataFrame:
@@ -592,7 +702,7 @@ def build_column_defs(sekvens_compare=None):
                     {
                         "condition": "params.colDef.field === 'diff' && params.value > 0",
                         "style": {
-                            #"backgroundColor": "#e8f5e9",
+                            # "backgroundColor": "#e8f5e9",
                             "color": "#1A9D49",
                             "fontWeight": "bold",
                             "textAlign": "right",
@@ -602,12 +712,16 @@ def build_column_defs(sekvens_compare=None):
                     {
                         "condition": "params.colDef.field === 'diff' && params.value < 0",
                         "style": {
-                            #"backgroundColor": "#ffebee",
+                            # "backgroundColor": "#ffebee",
                             "color": "#DC3400",
                             "fontWeight": "bold",
                             "textAlign": "right",
                             "paddingRight": "10px",
                         },
+                    },
+                    {
+                        "condition": "['verdi','verdi_compare','diff'].includes(params.colDef.field)",
+                        "style": {"textAlign": "right", "paddingRight": "10px"},
                     },
                     {
                         "condition": "params.data.beskrivelse && params.data.beskrivelse.startsWith('SUM') && ['verdi','verdi_compare','diff'].includes(params.colDef.field)",
@@ -624,10 +738,6 @@ def build_column_defs(sekvens_compare=None):
                     {
                         "condition": f"params.data && {subheader_rows}.includes(params.data.beskrivelse)",
                         "style": {"fontWeight": "bold", "paddingLeft": "30px"},
-                    },
-                    {
-                        "condition": "['verdi','verdi_compare','diff'].includes(params.colDef.field)",
-                        "style": {"textAlign": "right", "paddingRight": "10px"},
                     },
                     {
                         "condition": "params.colDef.field === 'beskrivelse'",
@@ -776,7 +886,7 @@ def validate_aar(aar: str) -> tuple[bool, str]:
     except ValueError:
         return False, "År må være et tall"
 
-    if aar_int < 2024 or aar_int > 2024:
+    if aar_int < 2024 or aar_int > 2025:
         return False, "Årgangen finnes ikke i NSPEK enda."
 
     return True, ""
@@ -860,12 +970,12 @@ def handle_regnskap_edit(
     Example use:
     handle_regnskap_edit(..., "balanseregnskap", "balanse")
     """
-    if edited[0]["data"].get("is_ui_sum"):
-        raise PreventUpdate
-
     alert_store = alert_store or []
 
     row = edited[0]["data"]
+
+    if row.get("is_ui_sum") or not str(row.get("post", "")).strip():
+        raise PreventUpdate
 
     ident = row["sekvensnummer"]
     sekvensnummer = row["sekvensnummer"]
@@ -917,6 +1027,10 @@ def handle_regnskap_edit(
             conn.raw_sql("SET nspek_app.process_type = 'editering'")
 
             save_regnskap_value(conn, regnskapstype, sekvensnummer, post, value)
+
+            run_controls_changed_fields_for_sekvensnummer(
+                conn, sekvensnummer, changed_fields=[post]
+            )
 
         alert_store = [
             create_alert(
@@ -1444,16 +1558,16 @@ class Naeringsspesifikasjon:
                                     ),
                                     dbc.Col(
                                         self.create_info_card(
-                                            title="Næringskode",
-                                            component_id="bof-info-card-naringskode",
+                                            title="Næringskode SN25",
+                                            component_id="bof-info-card-naringskode25",
                                             var_type="text",
                                         ),
                                         width=2,
                                     ),
                                     dbc.Col(
                                         self.create_info_card(
-                                            title="Sektorkode",
-                                            component_id="bof-info-card-sektorkode",
+                                            title="Næringskode SN07",
+                                            component_id="bof-info-card-naringskode07",
                                             var_type="text",
                                         ),
                                         width=2,
@@ -1490,6 +1604,22 @@ class Naeringsspesifikasjon:
                                         ),
                                         width=2,
                                     ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Sektorkode",
+                                            component_id="bof-info-card-sektorkode",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Undersektorkode",
+                                            component_id="bof-info-card-undersektorkode",
+                                            var_type="text",
+                                        ),
+                                        width=2,
+                                    ),
                                 ],
                                 className="bof-info-cards gy-2",
                             ),
@@ -1521,7 +1651,15 @@ class Naeringsspesifikasjon:
                                             component_id="nspek-info-card-regnskapspliktstype",
                                             var_type="text",
                                         ),
-                                        width=2,
+                                        width=3,
+                                    ),
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Skjønnslignet av SKE",
+                                            component_id="nspek-info-card-skjoennslignet",
+                                            var_type="text",
+                                        ),
+                                        width=3,
                                     ),
                                     dbc.Col(
                                         self.create_info_card(
@@ -1738,25 +1876,37 @@ class Naeringsspesifikasjon:
                                     ],
                                     className="g-2 mb-2",
                                 ),
-                                AgGrid(
-                                    id="nspek-resultatdata-grid",
-                                    className="ag-theme-alpine ag-theme-ssb mb-2",
-                                    # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
-                                    defaultColDef={"resizable": True},
-                                    rowData=[],
-                                    columnDefs=[],
-                                    dashGridOptions={
-                                        "rowSelection": "single",
-                                        "enableCellTextSelection": True,
-                                        "enableBrowserTooltips": True,
+                                dcc.Loading(
+                                    id="Resultatregnskap-loading",
+                                    type="default",
+                                    overlay_style={
+                                        "visibility": "visible",
+                                        "filter": "blur(2px)"
                                     },
-                                    # getRowStyle=self.get_row_style_with_comments(),
-                                    getRowStyle=self.get_row_style_ui_sums(),
-                                    style={
-                                        "height": "70vh",
-                                        "width": "100%",
-                                    },
+                                    children=[
+                                        AgGrid(
+                                            id="nspek-resultatdata-grid",
+                                            className="ag-theme-alpine ag-theme-ssb mb-2",
+                                            # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
+                                            defaultColDef={"resizable": True},
+                                            rowData=[],
+                                            columnDefs=[],
+                                            dashGridOptions={
+                                                "rowSelection": "single",
+                                                "enableCellTextSelection": True,
+                                                "enableBrowserTooltips": True,
+                                                "suppressScrollOnNewData": True,
+                                            },
+                                            # getRowStyle=self.get_row_style_with_comments(),
+                                            getRowStyle=self.get_row_style_ui_sums(),
+                                            style={
+                                                "height": "70vh",
+                                                "width": "100%",
+                                            },
+                                        ),
+                                    ],
                                 ),
+                                html.Div(style={"height": "24px"}),
                             ],
                         ),
                         dcc.Tab(
@@ -1786,25 +1936,37 @@ class Naeringsspesifikasjon:
                                     ],
                                     className="g-2 mb-2",
                                 ),
-                                AgGrid(
-                                    id="nspek-balansedata-grid",
-                                    className="ag-theme-alpine ag-theme-ssb mb-2",
-                                    # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
-                                    defaultColDef={"resizable": True},
-                                    rowData=[],
-                                    columnDefs=[],
-                                    dashGridOptions={
-                                        "rowSelection": "single",
-                                        "enableCellTextSelection": True,
-                                        "enableBrowserTooltips": True,
+                                dcc.Loading(
+                                    id="Balanseregnskap-loading",
+                                    type="default",
+                                    overlay_style={
+                                        "visibility": "visible",
+                                        "filter": "blur(2px)"
                                     },
-                                    # getRowStyle=self.get_row_style_with_comments(),
-                                    getRowStyle=self.get_row_style_ui_sums(),
-                                    style={
-                                        "height": "70vh",
-                                        "width": "100%",
-                                    },
+                                    children=[
+                                    AgGrid(
+                                        id="nspek-balansedata-grid",
+                                        className="ag-theme-alpine ag-theme-ssb mb-2",
+                                        # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
+                                        defaultColDef={"resizable": True},
+                                        rowData=[],
+                                        columnDefs=[],
+                                        dashGridOptions={
+                                            "rowSelection": "single",
+                                            "enableCellTextSelection": True,
+                                            "enableBrowserTooltips": True,
+                                            "suppressScrollOnNewData": True,
+                                        },
+                                        # getRowStyle=self.get_row_style_with_comments(),
+                                        getRowStyle=self.get_row_style_ui_sums(),
+                                        style={
+                                            "height": "70vh",
+                                            "width": "100%",
+                                            },
+                                        ),
+                                    ]
                                 ),
+                                html.Div(style={"height": "24px"}),
                             ],
                         ),
                         dcc.Tab(
@@ -1812,66 +1974,49 @@ class Naeringsspesifikasjon:
                             label="Kontrollutslag",
                             value="kontrollutslag",
                             children=[
-                                AgGrid(
-                                    id="nspek-kontrollutslag-grid",
-                                    className="ag-theme-alpine ag-theme-ssb mb-2",
-                                    defaultColDef={
-                                        "resizable": True,
-                                        "sortable": True,
-                                    },
-                                    columnDefs=[
-                                        {
-                                            "field": "aar",
-                                            "headerName": "År",
-                                            "hide": True,
-                                        },
-                                        {
-                                            "field": "kontrollid",
-                                            "headerName": "Kontroll",
-                                            "flex": 1,
-                                            "minWidth": 250,
-                                        },
-                                        {
-                                            "field": "tema",
-                                            "headerName": "Tema",
-                                            "flex": 1,
-                                            "minWidth": 120,
-                                        },
-                                        {
-                                            "field": "skildring",
-                                            "headerName": "Beskrivelse",
-                                            "flex": 4,
-                                            "minWidth": 200,
-                                        },
-                                        {
-                                            "field": "ident",
-                                            "headerName": "Ident",
-                                            "hide": True,
-                                        },
-                                        {
-                                            "field": "utslag",
-                                            "headerName": "Utslag",
-                                            "flex": 1,
-                                            "minWidth": 100,
-                                        },
-                                        {
-                                            "field": "verdi",
-                                            "headerName": "Verdi",
-                                            "flex": 1,
-                                            "minWidth": 100,
-                                        },
-                                    ],
-                                    dashGridOptions={
-                                        "rowSelection": "single",
-                                        "animateRows": True,
-                                    },
-                                    #getRowStyle=self.get_row_style_kontrollutslag(),
-                                    style={
-                                        "height": "50vh",
-                                        "width": "100%",
-                                        #'display': 'none',
-                                    },
+                                dbc.Button(
+                                    "Kjør kontroller",
+                                    id="run-controls-btn",
+                                    n_clicks=0,
+                                    className="ssb-btn primary-btn mb-2",
                                 ),
+
+                                dcc.Loading(
+                                    id="kontrollutslag-loading",
+                                    type="default",
+                                    overlay_style={
+                                        "visibility": "visible",
+                                        "filter": "blur(2px)"
+                                    },
+                                    children=[
+                                        AgGrid(
+                                            id="nspek-kontrollutslag-grid",
+                                            className="ag-theme-alpine ag-theme-ssb mb-2",
+                                            defaultColDef={
+                                                "resizable": True,
+                                                "sortable": True,
+                                            },
+                                            columnDefs=[
+                                                {"field": "aar", "headerName": "År", "hide": True},
+                                                {"field": "kontrollid", "headerName": "Kontroll", "flex": 1, "minWidth": 250},
+                                                {"field": "tema", "headerName": "Tema", "flex": 1, "minWidth": 120},
+                                                {"field": "skildring", "headerName": "Beskrivelse", "flex": 4, "minWidth": 200},
+                                                {"field": "ident", "headerName": "Ident", "hide": True},
+                                                {"field": "utslag", "headerName": "Utslag", "flex": 1, "minWidth": 100},
+                                                {"field": "verdi", "headerName": "Verdi", "flex": 1, "minWidth": 100},
+                                            ],
+                                            dashGridOptions={
+                                                "rowSelection": "single",
+                                                "animateRows": True,
+                                            },
+                                            style={
+                                                "height": "50vh",
+                                                "width": "100%",
+                                            },
+                                        )
+                                    ],
+                                ),
+                                html.Div(style={"height": "24px"}),
                             ],
                         ),
                     ],
@@ -1900,9 +2045,11 @@ class Naeringsspesifikasjon:
                 component_property="value",
             ),
             Output(
-                component_id="bof-info-card-naringskode", component_property="value"
+                component_id="bof-info-card-naringskode25", component_property="value"
             ),
-            Output(component_id="bof-info-card-sektorkode", component_property="value"),
+            Output(
+                component_id="bof-info-card-naringskode07", component_property="value"
+            ),
             Output(component_id="bof-info-card-typekode", component_property="value"),
             Output(
                 component_id="bof-info-card-kommunekode", component_property="value"
@@ -1911,34 +2058,51 @@ class Naeringsspesifikasjon:
             Output(
                 component_id="bof-info-card-sysselsatte", component_property="value"
             ),
+            Output(component_id="bof-info-card-sektorkode", component_property="value"),
+            Output(
+                component_id="bof-info-card-undersektorkode", component_property="value"
+            ),
             Input("var-ident", "value"),
+            Input("var-aar", "value"),
         )
-        def create_info_cards_bof(orgnr_foretak: str) -> tuple[str, str, str, str, str]:
+        def create_info_cards_bof(
+            orgnr_foretak: str, aar: str
+        ) -> tuple[str, str, str, str, str]:
             """Returns a tuple of strings with the values for info cards for the top of the bof accordion.
             These cards will hold bof information for the foretak.
             """
-            df = get_bofinfo(ident=orgnr_foretak)
+            if not orgnr_foretak or not aar:
+                raise PreventUpdate
 
-            orgnr = df["orgnr"].iloc[0]
-            navn = df["navn"].iloc[0]
-            org_form = df["org_form"].iloc[0]
-            sn2025_1 = df["sn2025_1"].iloc[0]
-            sektor_2014 = df["sektor_2014"].iloc[0]
-            sf_type = df["sf_type"].iloc[0]
-            f_kommunenr = df["f_kommunenr"].iloc[0]
-            statuskode = df["statuskode"].iloc[0]
-            sysselsatte = df["sysselsatte"].iloc[0]
+            df = get_bofinfo(ident=orgnr_foretak, aar=aar)
+
+            if df.empty:
+                return ("", "", "", "", "", "", "", "", "", "", "")
+
+            orgnr = get_value(df["orgnr"])
+            navn = get_value(df["navn"])
+            org_form = get_value(df["org_form"])
+            sn2025_1 = get_value(df["sn2025_1"])
+            sn07_1 = get_value(df["sn07_1"])
+            sf_type = get_value(df["sf_type"])
+            f_kommunenr = get_value(df["f_kommunenr"])
+            statuskode = get_value(df["statuskode"])
+            sysselsatte = get_value(df["sysselsatte"])
+            sektor_2014 = get_value(df["sektor_2014"])
+            undersektor_2014 = get_value(df["undersektor_2014"])
 
             return (
                 orgnr,
                 navn,
                 org_form,
                 sn2025_1,
-                sektor_2014,
+                sn07_1,
                 sf_type,
                 f_kommunenr,
                 statuskode,
                 sysselsatte,
+                sektor_2014,
+                undersektor_2014,
             )
 
         @callback(
@@ -1983,17 +2147,52 @@ class Naeringsspesifikasjon:
             if df.empty:
                 return "", "", "", "", ""
 
-            virksomhetstype = df[df["felt"] == "virksomhetstype"]["char_verdi"].iloc[0]
-            regeltype = df[df["felt"] == "regeltypeForAarsregnskap"]["char_verdi"].iloc[
-                0
-            ]
-            regnskapspliktstype = df[df["felt"] == "regnskapspliktstype"][
-                "char_verdi"
-            ].iloc[0]
-            start = df[df["felt"] == "start"]["char_verdi"].iloc[0]
-            slutt = df[df["felt"] == "slutt"]["char_verdi"].iloc[0]
+            virksomhetstype = get_value(
+                df[df["felt"] == "virksomhetstype"]["char_verdi"]
+            )
+            regeltype = get_value(
+                df[df["felt"] == "regeltypeForAarsregnskap"]["char_verdi"]
+            )
+            regnskapspliktstype = get_value(
+                df[df["felt"] == "regnskapspliktstype"]["char_verdi"]
+            )
+            start = get_value(df[df["felt"] == "start"]["char_verdi"])
+            slutt = get_value(df[df["felt"] == "slutt"]["char_verdi"])
 
             return (virksomhetstype, regeltype, regnskapspliktstype, start, slutt)
+
+        @callback(
+            Output(
+                component_id="nspek-info-card-skjoennslignet",
+                component_property="value",
+            ),
+            Input("var-aar", "value"),
+            Input("var-ident", "value"),
+            Input("nspek-versjon-dropdown", "value"),
+        )
+        def create_info_cards_skjoennslignet(
+            aar: str, orgnr_foretak: str, sekvensnummer: int
+        ) -> str:
+            """Returns a with the values for info card skjoennslignet inn the nspek module."""
+            if not aar or not orgnr_foretak or not sekvensnummer:
+                return ""
+
+            if not has_data(self.conn, orgnr_foretak, aar):
+                return ""
+
+            df = get_skjoennslignet(
+                conn=self.conn,
+                ident=orgnr_foretak,
+                aar=aar,
+                sekvensnummer=sekvensnummer,
+            )
+
+            if df.empty:
+                return "Nei"
+
+            skjoennslignet = "Ja"
+
+            return skjoennslignet
 
         @callback(
             Output("nspek-balansedata-grid", "rowData"),
@@ -3070,28 +3269,34 @@ class Naeringsspesifikasjon:
         @callback(
             Output("nspek-kontrollutslag-grid", "rowData"),
             Output("kontrollutslag-tab", "label"),
-            Input("var-ident", "value"),
-            Input("var-aar", "value"),
+            Input("run-controls-btn", "n_clicks"),
             Input("refresh-manager", "data"),
+            Input("nspek-versjon-dropdown", "value"),
         )
-        def load_kontrollutslag(ident, aar, refresh_data):
-
-            if not ident or not aar:
+        def load_or_run_kontrollutslag(n_clicks, refresh_data, sekvensnummer):
+            if not sekvensnummer:
                 return [], "Kontrollutslag"
 
             if refresh_data and refresh_data.get("status") == "invalid_search":
                 return [], "Kontrollutslag"
 
-            instance = NspekControls(
-                time_units=["aar"],
-                applies_to_subset={"aar": [int(aar)]},
-            )
+            with get_nspek_connection() as conn:
+                instance = NspekControls(
+                    time_units=["aar"],
+                    applies_to_subset={},
+                )
 
-            kontroller_df = instance.get_current_kontroller()
-            kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict("index")
+                kontroller_df = instance.get_current_kontroller()
+                kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict(
+                    "index"
+                )
 
-            df = instance.get_current_kontrollutslag()
-            df = df[df["ident"] == str(ident)]
+                if ctx.triggered_id == "run-controls-btn":
+                    run_all_controls_for_sekvensnummer(conn, int(sekvensnummer))
+
+                df = instance.get_current_kontrollutslag()
+
+            df = df[df["sekvensnummer"] == int(sekvensnummer)]
 
             if df.empty:
                 return [], "Kontrollutslag"
@@ -3162,7 +3367,9 @@ class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
 class NaeringsspesifikasjonWindow(WindowImplementation, Naeringsspesifikasjon):
     """NaeringsspesifikasjonWindow is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
 
-    def __init__(self, time_units: list[str], db_user: str | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self, time_units: list[str], db_user: str | None = None, **kwargs: Any
+    ) -> None:
         """Initializes the NaeringsspesifikasjonWindow class."""
         Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
         WindowImplementation.__init__(self, **kwargs)

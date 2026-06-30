@@ -58,7 +58,7 @@ class NspekControlView(ABC):
         NspekControlView._id_number += 1
 
         self.icon = "⚖️"
-        self.label = "Kontroll"
+        self.label = "NSPEK Kontroll"
 
         self.control_dict = control_dict
         self.outputs = outputs
@@ -251,7 +251,7 @@ class NspekControlView(ABC):
 
             if df is None or df.empty:
                 return [], []
-            
+
             df["foretak"] = df["ident"]
 
             columns = [{"headerName": c, "field": c} for c in df.columns]
@@ -259,7 +259,7 @@ class NspekControlView(ABC):
             if len(columns) > 0:
                 columns[0]["checkboxSelection"] = True
                 columns[0]["headerCheckboxSelection"] = True
-            
+
             for col in columns:
                 if col["field"] == "foretak":
                     col["hide"] = True
@@ -307,7 +307,9 @@ class NspekControlViewTab(TabImplementation, NspekControlView):
 
 
 class NspekControlViewWindow(WindowImplementation, NspekControlView):
-    def __init__(self, time_units: list[str], control_dict: dict[str, Any], **kwargs: Any):
+    def __init__(
+        self, time_units: list[str], control_dict: dict[str, Any], **kwargs: Any
+    ):
 
         NspekControlView.__init__(
             self,
