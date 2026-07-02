@@ -938,14 +938,14 @@ testing = ["beautifulsoup4 (>=4.8.2)", "cryptography", "dash_testing_stub (>=0.0
 
 [[package]]
 name = "dash-ag-grid"
-version = "32.3.4"
+version = "35.2.0"
 description = "Dash wrapper around AG Grid, the best interactive data grid for the web."
 optional = false
 python-versions = ">=3.6"
 groups = ["main"]
 files = [
-    {file = "dash_ag_grid-32.3.4-py3-none-any.whl", hash = "sha256:aa722086c9076a4dbf36c9c7b0c779ce1a011e69d5b6eed760580dfa077cd2ae"},
-    {file = "dash_ag_grid-32.3.4.tar.gz", hash = "sha256:406c93f78bba0f365b814cd88468fd608bd6ec5122171880644dcdeec8e88004"},
+    {file = "dash_ag_grid-35.2.0-py3-none-any.whl", hash = "sha256:b8b33780faa7322101b0559658da2a301a58a3329ff6a2c45f1490f0c3719df9"},
+    {file = "dash_ag_grid-35.2.0.tar.gz", hash = "sha256:507f5dccf7235bf1b9af2c59d4cd0f12205db03c3489f605948f13c72bcece4f"},
 ]
 
 [package.dependencies]
@@ -6194,4 +6194,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "6967a8f3668c928503214993472530f940d67f0675c87115f16f4505c18df7d5"
+content-hash = "5b2e983e3f312d6c3db4be2e200159434a4f71b02d18ea12bf533d6b6e50747f"
