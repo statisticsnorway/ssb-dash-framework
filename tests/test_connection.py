@@ -1,9 +1,16 @@
 """Tests for ``set_postgres_connection``'s optional per-connection ``configure`` hook."""
 
 from unittest.mock import patch
+import pytest
+from psycopg_pool import ConnectionPool
 
 from ssb_dash_framework.utils.config_tools import connection
 
+@pytest.fixture(autouse=True)
+def reset_connection_state():
+    connection._CONNECTION = None
+    yield
+    connection._CONNECTION = None
 
 def test_set_postgres_connection_forwards_configure_callback() -> None:
     """A provided ``configure`` callback is passed straight through to ConnectionPool."""
@@ -12,7 +19,7 @@ def test_set_postgres_connection_forwards_configure_callback() -> None:
         pass
 
     with (
-        patch.object(connection, "ConnectionPool") as pool_cls,
+        patch.object(connection, "ConnectionPool", spec=ConnectionPool) as pool_cls,
         patch.object(connection, "set_connection"),
     ):
         connection.set_postgres_connection(
@@ -33,7 +40,7 @@ def test_set_postgres_connection_forwards_configure_callback() -> None:
 def test_set_postgres_connection_defaults_configure_to_none() -> None:
     """Existing callers that omit ``configure`` still pass ``configure=None`` (no-op)."""
     with (
-        patch.object(connection, "ConnectionPool") as pool_cls,
+        patch.object(connection, "ConnectionPool", spec=ConnectionPool) as pool_cls,
         patch.object(connection, "set_connection"),
     ):
         connection.set_postgres_connection(database_url="postgresql://example")

@@ -20,7 +20,6 @@ from dash.exceptions import PreventUpdate
 from dash_ag_grid import AgGrid
 from dash_iconify import DashIconify
 from ibis import _
-from ibis.backends import BaseBackend
 from pandas.core.frame import DataFrame
 
 from ...setup.variableselector import VariableSelector
@@ -399,7 +398,7 @@ TYPE_REGNSKAP_TABLE = {  # type: {database: exampleregnskap, table: tema_example
 def get_versions(conn, ident: str, aar: str) -> pd.DataFrame:
     """Fetch and return pandas dataframe containing all sekvensnummer sorted by versjon_nr from nspek_core view v_registrering_versjon.
 
-    Example use: get_versions(self.conn, "979443137", "2024")
+    Example use: get_versions(conn, "979443137", "2024")
     """
     config = TYPE_REGNSKAP_TABLE["v_registrering_versjon"]
 
@@ -427,7 +426,7 @@ def get_virksomhetsinfo(
 ) -> pd.DataFrame:
     """Fetch and return pandas dataframe containing virksomhetsinfo from nspek files for specified variables for a unit.
 
-    Example use: get_virksomhetsinfo(self.conn, virksomhetsinfo_variabler, "979443137", "2024", 2291859)
+    Example use: get_virksomhetsinfo(conn, virksomhetsinfo_variabler, "979443137", "2024", 2291859)
     """
     config = TYPE_REGNSKAP_TABLE["virksomhet"]
 
@@ -650,7 +649,7 @@ def fetch_data_by_orgnr(
 ) -> pd.DataFrame:
     """Returns a pandas dataframe with all nspek values found in the specified regnskapstype for a unit/orgnr.
 
-    Example use: fetch_data_by_orgnr(self.conn, "resultatregnskap", "932598957", "2024", 2291859)
+    Example use: fetch_data_by_orgnr(conn, "resultatregnskap", "932598957", "2024", 2291859)
     """
     config = TYPE_REGNSKAP_TABLE[regnskapstype]
 
@@ -964,7 +963,6 @@ class Naeringsspesifikasjon:
         self.icon = "📒"
         self.label = "NSPEK"
 
-        self.conn: BaseBackend = get_nspek_connection().__enter__()
         self.variableselector = VariableSelector(
             selected_inputs=time_units, selected_states=[]
         )
@@ -1969,16 +1967,17 @@ class Naeringsspesifikasjon:
             if not aar or not orgnr_foretak or not sekvensnummer:
                 return "", "", "", "", ""
 
-            if not has_data(self.conn, orgnr_foretak, aar):
-                return "", "", "", "", ""
+            with get_nspek_connection() as conn:
+                if not has_data(conn, orgnr_foretak, aar):
+                    return "", "", "", "", ""
 
-            df = get_virksomhetsinfo(
-                conn=self.conn,
-                variables_to_fetch=virksomhetsinfo_variabler,
-                ident=orgnr_foretak,
-                aar=aar,
-                sekvensnummer=sekvensnummer,
-            )
+                df = get_virksomhetsinfo(
+                    conn=conn,
+                    variables_to_fetch=virksomhetsinfo_variabler,
+                    ident=orgnr_foretak,
+                    aar=aar,
+                    sekvensnummer=sekvensnummer,
+                )
 
             if df.empty:
                 return "", "", "", "", ""
@@ -2028,9 +2027,10 @@ class Naeringsspesifikasjon:
                 return [], []
 
             post_descriptions = post_description_data("balanseregnskap")
-            ident_data = fetch_data_by_orgnr(
-                self.conn, "balanseregnskap", orgnr_foretak, aar, sekvensnummer
-            )
+            with get_nspek_connection() as conn:
+                ident_data = fetch_data_by_orgnr(
+                    conn, "balanseregnskap", orgnr_foretak, aar, sekvensnummer
+                )
 
             post_descriptions["felt"] = post_descriptions["felt"].astype(str)
             ident_data["felt"] = ident_data["felt"].astype(str)
@@ -2042,9 +2042,10 @@ class Naeringsspesifikasjon:
             )
 
             if sekvens_compare:
-                df_compare = fetch_data_by_orgnr(
-                    self.conn, "balanseregnskap", orgnr_foretak, aar, sekvens_compare
-                )
+                with get_nspek_connection() as conn:
+                    df_compare = fetch_data_by_orgnr(
+                        conn, "balanseregnskap", orgnr_foretak, aar, sekvens_compare
+                    )
                 df_compare = df_compare.rename(
                     columns={
                         "tekst": "beskrivelse",
@@ -2069,7 +2070,8 @@ class Naeringsspesifikasjon:
             df = apply_blank_filter(df, toggle_blank)
             df = apply_petroleum_filter(df, orgnr_foretak, toggle_petroleum)
 
-            comments = get_latest_field_comments(self.conn, orgnr_foretak)
+            with get_nspek_connection() as conn:
+                comments = get_latest_field_comments(conn, orgnr_foretak)
             df["comment_icon"] = df["post"].map(lambda x: "💬" if x in comments else "")
             df["comment_text"] = df["post"].map(
                 lambda x: comments.get(x, {}).get("kommentar", "")
@@ -2113,9 +2115,10 @@ class Naeringsspesifikasjon:
                 return [], []
 
             post_descriptions = post_description_data("resultatregnskap")
-            ident_data = fetch_data_by_orgnr(
-                self.conn, "resultatregnskap", orgnr_foretak, aar, sekvensnummer
-            )
+            with get_nspek_connection() as conn:
+                ident_data = fetch_data_by_orgnr(
+                    conn, "resultatregnskap", orgnr_foretak, aar, sekvensnummer
+                )
 
             post_descriptions["felt"] = post_descriptions["felt"].astype(str)
             ident_data["felt"] = ident_data["felt"].astype(str)
@@ -2127,9 +2130,10 @@ class Naeringsspesifikasjon:
             )
 
             if sekvens_compare:
-                df_compare = fetch_data_by_orgnr(
-                    self.conn, "resultatregnskap", orgnr_foretak, aar, sekvens_compare
-                )
+                with get_nspek_connection() as conn:
+                    df_compare = fetch_data_by_orgnr(
+                        conn, "resultatregnskap", orgnr_foretak, aar, sekvens_compare
+                    )
                 df_compare = df_compare.rename(
                     columns={
                         "tekst": "beskrivelse",
@@ -2154,7 +2158,8 @@ class Naeringsspesifikasjon:
             df = apply_blank_filter(df, toggle_blank)
             df = apply_petroleum_filter(df, orgnr_foretak, toggle_petroleum)
 
-            comments = get_latest_field_comments(self.conn, orgnr_foretak)
+            with get_nspek_connection() as conn:
+                comments = get_latest_field_comments(conn, orgnr_foretak)
             df["comment_icon"] = df["post"].map(lambda x: "💬" if x in comments else "")
             df["comment_text"] = df["post"].map(
                 lambda x: comments.get(x, {}).get("kommentar", "")
@@ -2354,7 +2359,10 @@ class Naeringsspesifikasjon:
                     ],
                 )
 
-            if not has_data(self.conn, orgnr, aar):
+            with get_nspek_connection() as conn:
+                nspek_has_data = has_data(conn, orgnr, aar)
+
+            if not nspek_has_data:
                 refresh_data = trigger_refresh(refresh_data, "invalid_search")
                 return (
                     no_update,
@@ -2385,23 +2393,25 @@ class Naeringsspesifikasjon:
             if not orgnr or not aar:
                 raise PreventUpdate
 
-            if not has_data(self.conn, orgnr, aar):
-                return [], None
+            with get_nspek_connection() as conn:
+                if not has_data(conn, orgnr, aar):
+                    return [], None
 
-            df = get_versions(self.conn, orgnr, aar)
+                df = get_versions(conn, orgnr, aar)
 
             if df.empty:
                 return [], None
 
             sekvens_liste = df["sekvensnummer"].tolist()
 
-            t = self.conn.table("v_update_counts", database="nspek_core")
+            with get_nspek_connection() as conn:
+                t = conn.table("v_update_counts", database="nspek_core")
 
-            df_updates = (
-                t.filter(_.sekvensnummer.isin(sekvens_liste))
-                .select(_.sekvensnummer, _.antall_endringer)
-                .execute()
-            )
+                df_updates = (
+                    t.filter(_.sekvensnummer.isin(sekvens_liste))
+                    .select(_.sekvensnummer, _.antall_endringer)
+                    .execute()
+                )
 
             df = df.merge(df_updates, on="sekvensnummer", how="left")
             df["antall_endringer"] = df["antall_endringer"].fillna(0)
@@ -2446,10 +2456,11 @@ class Naeringsspesifikasjon:
             if not selected_sekvens or not orgnr or not aar:
                 return {"display": "none"}, "", False
 
-            if not has_data(self.conn, orgnr, aar):
-                return {"display": "none"}, "", False
+            with get_nspek_connection() as conn:
+                if not has_data(conn, orgnr, aar):
+                    return {"display": "none"}, "", False
 
-            df = get_versions(self.conn, orgnr, aar)
+                df = get_versions(conn, orgnr, aar)
 
             if df.empty:
                 return {"display": "none"}, "", False
@@ -3127,7 +3138,10 @@ class Naeringsspesifikasjon:
             if not orgnr or not aar:
                 raise PreventUpdate
 
-            if not has_data(self.conn, orgnr, aar):
+            with get_nspek_connection() as conn:
+                nspek_has_data = has_data(conn, orgnr, aar)
+
+            if not nspek_has_data:
 
                 refresh_data = trigger_refresh(refresh_data, "invalid_search")
 
