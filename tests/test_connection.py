@@ -1,9 +1,16 @@
 """Tests for ``set_postgres_connection``'s optional per-connection ``configure`` hook."""
 
 from unittest.mock import patch
+import pytest
 
 from ssb_dash_framework.utils.config_tools import connection
 
+# reset _CONNECTION in between tests
+@pytest.fixture(autouse=True)
+def reset_connection_state():
+    connection._CONNECTION = None
+    yield
+    connection._CONNECTION = None
 
 def test_set_postgres_connection_forwards_configure_callback() -> None:
     """A provided ``configure`` callback is passed straight through to ConnectionPool."""
