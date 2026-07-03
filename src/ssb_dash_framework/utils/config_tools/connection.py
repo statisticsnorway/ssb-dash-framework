@@ -13,7 +13,7 @@ from psycopg import Connection
 from psycopg_pool import ConnectionPool
 
 _IS_POOLED: bool | None = None
-_CONNECTION: object | None = None
+_CONNECTION: ConnectionPool | None = None
 _CONNECTION_CALLABLE: Callable[..., Any] | None = None
 
 
