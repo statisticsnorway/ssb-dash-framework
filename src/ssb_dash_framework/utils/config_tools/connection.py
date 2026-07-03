@@ -113,7 +113,7 @@ def set_postgres_connection(
     # because every caller borrows connections through short-lived
     # ``with get_connection() as conn:`` blocks -- nothing holds a pooled
     # connection across this reconfiguration.
-    if isinstance(_CONNECTION, ConnectionPool):
+    if _CONNECTION is not None:
         atexit.unregister(_CONNECTION.close)
         _CONNECTION.close()
 
