@@ -600,21 +600,18 @@ def feltkommentar_ikon_column():
         "cellStyle": {
             "styleConditions": [
                 {
-                    "condition": "params.data.har_feltkommentar",
+                    "condition": "params.data.post && !params.data.is_ui_sum && params.data.feltkommentar_tekst",
                     "style": {
-                        "textAlign": "center",
-                        "fontSize": "16px",
-                        "cursor": "pointer",
                         "opacity": "1",
                     },
                 },
+                {
+                    "condition": "params.data.post && !params.data.is_ui_sum && !params.data.feltkommentar_tekst",
+                    "style": {
+                        "opacity": "0.25",
+                    },
+                },
             ],
-            "defaultStyle": {
-                "textAlign": "center",
-                "fontSize": "16px",
-                "cursor": "pointer",
-                "opacity": "0.25",
-            },
         },
     }
 
@@ -2324,7 +2321,9 @@ class Naeringsspesifikasjon:
             df = apply_petroleum_filter(df, orgnr_foretak, toggle_petroleum)
 
             comments = get_latest_field_comments(self.conn, orgnr_foretak)
-            df["feltkommentar_ikon"] = "💬"
+            valid_comment_row = (df["post"].fillna("").astype(str).ne("") & ~df["is_ui_sum"].fillna(False).astype(bool))
+
+            df["feltkommentar_ikon"] = valid_comment_row.map(lambda x: "💬" if x else "")
             df["feltkommentar_tekst"] = df["post"].map(lambda x: comments.get(x, {}).get("kommentar", ""))
             df["har_feltkommentar"] = df["post"].isin(comments)
             df["feltkommentar_tooltip"] = df.apply(
@@ -2416,7 +2415,9 @@ class Naeringsspesifikasjon:
             df = apply_petroleum_filter(df, orgnr_foretak, toggle_petroleum)
 
             comments = get_latest_field_comments(self.conn, orgnr_foretak)
-            df["feltkommentar_ikon"] = "💬"
+            valid_comment_row = (df["post"].fillna("").astype(str).ne("") & ~df["is_ui_sum"].fillna(False).astype(bool))
+
+            df["feltkommentar_ikon"] = valid_comment_row.map(lambda x: "💬" if x else "")
             df["feltkommentar_tekst"] = df["post"].map(lambda x: comments.get(x, {}).get("kommentar", ""))
             df["har_feltkommentar"] = df["post"].isin(comments)
             df["feltkommentar_tooltip"] = df.apply(
@@ -3460,7 +3461,17 @@ class Naeringsspesifikasjon:
             if cell["colId"] != "feltkommentar_ikon":
                 raise PreventUpdate
 
+            if not rows:
+                raise PreventUpdate
+
             row = rows[cell["rowIndex"]]
+
+            if (
+                not row.get("post")
+                or row.get("is_ui_sum", False)
+            ):
+                raise PreventUpdate
+
 
             return {
                 "grid": grid,
