@@ -3,8 +3,10 @@ from datetime import datetime
 from typing import Any
 
 import pandas as pd
+import ibis
 from ibis import _
 from ibis.backends import BaseBackend
+from pathlib import Path
 
 from .nspek_control_config import CONTROL_RULES
 from .nspek_control_config import get_controls_for_field
@@ -153,6 +155,160 @@ def make_kontroller_df(aar: int) -> pd.DataFrame:
     return kontroll_df
 
 
+def get_bofinfo_for_idents(idents: list[str], aar: int) -> pd.DataFrame:
+    """
+    Henter BOF-karaktervariabler for organisasjonsnumre.
+    Returnerer én rad per ident.
+    """
+
+    expected_columns = [
+        "ident",
+        "org_form",
+        "sn2025_1",
+        "sn07_1",
+        "sektor_2014",
+        "undersektor_2014",
+    ]
+
+    idents = [
+        str(x)
+        for x in idents
+        if pd.notna(x)
+    ]
+
+    if not idents:
+        return pd.DataFrame(columns=expected_columns)
+
+    year = str(aar)def get_bofinfo_for_idents(idents: list[str], aar: str) -> pd.DataFrame:
+    """
+    Henter BOF-info for flere orgnr samtidig.
+
+    Prøver først parquet (VOF årsfil), og bruker SQLite som fallback.
+
+    Args:
+        idents: liste med orgnr
+        aar: år som streng/int
+
+    Returns:
+        DataFrame med én rad per ident og BOF-variabler
+    """
+
+    year = str(aar)
+
+    idents = [
+        str(x)
+        for x in idents
+        if pd.notna(x)
+    ]
+
+    expected_columns = [
+        "ident",
+        "org_form",
+        "sn2025_1",
+        "sn07_1",
+        "sektor_2014",
+        "undersektor_2014",
+    ]
+
+    if not idents:
+        return pd.DataFrame(columns=expected_columns)
+
+    parquet_paths = [
+        f"/buckets/shared/vof/situttak/vof-aarsfil_data/klargjorte-data/parquet/vof-aarsfil_p{year}_v1.parquet",
+        f"/buckets/shared/vof/situttak/vof-aarsfil_data/klargjorte-data/parquet/vof-aarsfil-forelopig_p{year}_v1.parquet",
+    ]
+
+    rename_map = {
+        "org_nr": "ident",
+        "org_form": "org_form",
+        "sn2025_1": "sn2025_1",
+        "nace1_sn07": "sn07_1",
+        "sektor_2014": "sektor_2014",
+        "undersektor_2014": "undersektor_2014",
+    }
+
+    # ---------------------------------------------------------
+    # 1. Prøv parquet
+    # ---------------------------------------------------------
+
+    for path in parquet_paths:
+
+        if not Path(path).exists():
+            continue
+
+        try:
+            conn = ibis.duckdb.connect()
+
+            t = conn.read_parquet(path)
+
+            df = (
+                t.filter(_.org_nr.isin(idents))
+                .execute()
+            )
+
+            if df.empty:
+                continue
+
+            df = df.rename(columns=rename_map)
+
+            for col in expected_columns:
+                if col not in df.columns:
+                    df[col] = ""
+
+            return (
+                df[expected_columns]
+                .drop_duplicates("ident")
+            )
+
+        except Exception as e:
+            print(f"Feil ved BOF-lesing parquet {path}: {e}")
+
+
+    # ---------------------------------------------------------
+    # 2. Fallback SQLite
+    # ---------------------------------------------------------
+
+    try:
+        conn = ibis.sqlite.connect(
+            "/buckets/shared/vof/oracle-hns/ssb_foretak.db"
+        )
+
+        t = conn.table("ssb_foretak")
+
+        df = (
+            t.filter(_.orgnr.isin(idents))
+            .execute()
+        )
+
+        if df.empty:
+            return pd.DataFrame(columns=expected_columns)
+
+        rename_sqlite = {
+            "orgnr": "ident",
+            "org_form": "org_form",
+            "sn2025_1": "sn2025_1",
+            "sn07_1": "sn07_1",
+            "sektor_2014": "sektor_2014",
+            "undersektor_2014": "undersektor_2014",
+        }
+
+        df = df.rename(columns=rename_sqlite)
+
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = ""
+
+        return (
+            df[expected_columns]
+            .drop_duplicates("ident")
+        )
+
+    except Exception as e:
+        print(f"Feil ved BOF-lesing SQLite fallback: {e}")
+
+        return pd.DataFrame(columns=expected_columns)
+
+
 def sql_value(v):
     if pd.isna(v):
         return "NULL"
@@ -237,6 +393,29 @@ def save_full_control_db(
             chunk_size=1000,
         )
 
+        if not df_kontrollutslag.empty:
+
+            bof_df = get_bofinfo_for_idents(
+                df_kontrollutslag["orgnr"].tolist(),
+                aar,
+            )
+
+            df_kontrollutslag["orgnr"] = df_kontrollutslag["orgnr"].astype(str)
+            bof_df["ident"] = bof_df["ident"].astype(str)
+
+            df_kontrollutslag = df_kontrollutslag.merge(
+                bof_df,
+                left_on="orgnr",
+                right_on="ident",
+                how="left",
+            )
+
+            df_kontrollutslag.drop(
+                columns=["ident"],
+                inplace=True,
+            )
+
+
         insert_batches(
             conn,
             "kontrollutslag",
@@ -247,6 +426,11 @@ def save_full_control_db(
                 "orgnr",
                 "utslag",
                 "verdi",
+                "org_form",
+                "sn2025_1",
+                "sn07_1",
+                "sektor_2014",
+                "undersektor_2014",
             ],
             df_kontrollutslag.to_dict("records"),
             chunk_size=5000,
@@ -279,6 +463,28 @@ def save_incremental_control_db(
             AND kontrollid IN ({kontrollids_sql})
             """)
 
+        if not df_kontrollutslag.empty:
+
+            bof_df = get_bofinfo_for_idents(
+                df_kontrollutslag["orgnr"].tolist(),
+                int(df_kontrollutslag["aar"].iloc[0]),
+            )
+
+            df_kontrollutslag["orgnr"] = df_kontrollutslag["orgnr"].astype(str)
+            bof_df["ident"] = bof_df["ident"].astype(str)
+
+            df_kontrollutslag = df_kontrollutslag.merge(
+                bof_df,
+                left_on="orgnr",
+                right_on="ident",
+                how="left",
+            )
+
+            df_kontrollutslag.drop(
+                columns=["ident"],
+                inplace=True,
+            )
+
         insert_batches(
             conn,
             "kontrollutslag",
@@ -289,6 +495,11 @@ def save_incremental_control_db(
                 "orgnr",
                 "utslag",
                 "verdi",
+                "org_form",
+                "sn2025_1",
+                "sn07_1",
+                "sektor_2014",
+                "undersektor_2014",
             ],
             df_kontrollutslag.to_dict("records"),
         )
