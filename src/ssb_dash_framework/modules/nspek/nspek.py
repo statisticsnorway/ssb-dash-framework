@@ -587,28 +587,35 @@ def post_description_data(regnskapstype: str) -> DataFrame:
     return df[["tekst", "felt"]]
 
 
-def comment_icon_column():
+def feltkommentar_ikon_column():
     return {
-        "field": "comment_icon",
+        "field": "feltkommentar_ikon",
         "headerName": "",
         "width": 60,
         "sortable": False,
         "filter": False,
-        "resizable": True,
+        "resizable": False,
         "pinned": "right",
+        "tooltipField": "feltkommentar_tooltip",
         "cellStyle": {
             "styleConditions": [
                 {
-                    "condition": "params.value",
+                    "condition": "params.data.har_feltkommentar",
                     "style": {
                         "textAlign": "center",
                         "fontSize": "16px",
                         "cursor": "pointer",
+                        "opacity": "1",
                     },
-                }
-            ]
+                },
+            ],
+            "defaultStyle": {
+                "textAlign": "center",
+                "fontSize": "16px",
+                "cursor": "pointer",
+                "opacity": "0.25",
+            },
         },
-        "tooltipField": "comment_text",
     }
 
 
@@ -750,10 +757,9 @@ def build_column_defs(sekvens_compare=None):
         for col in columns
     ]
 
-    column_defs.append(comment_icon_column())
+    column_defs.append(feltkommentar_ikon_column())
 
     return column_defs
-
 
 def fetch_data_by_orgnr(
     conn, regnskapstype: str, ident: str, aar: str, sekvensnummer: int
@@ -1206,7 +1212,7 @@ class Naeringsspesifikasjon:
         return {
             "styleConditions": [
                 {
-                    "condition": "params.data && params.data.comment_icon",
+                    "condition": "params.data && params.data.feltkommentar_ikon",
                     "style": {"backgroundColor": "#ECFEED"},  # SSB grønn 1
                 },
             ]
@@ -1259,6 +1265,7 @@ class Naeringsspesifikasjon:
                     id="pending-regnskap-edit",
                     data=None,
                 ),
+                dcc.Store(id="feltkommentar-store"),
                 html.Div(
                     [
                         dbc.Row(
@@ -1523,6 +1530,46 @@ class Naeringsspesifikasjon:
                             centered=True,
                             backdrop="static",
                             className="negative-warning-modal",
+                        ),
+                        dbc.Modal(
+                            [
+                                dbc.ModalHeader(
+                                    dbc.ModalTitle(id="feltkommentar-modal-title")
+                                ),
+                                dbc.ModalBody(
+                                    [
+                                        dcc.Textarea(
+                                            id="feltkommentar-modal-textarea",
+                                            style={
+                                                "width": "100%",
+                                                "height": "150px",
+                                            },
+                                            className="ssb-text-area",
+                                        )
+                                    ]
+                                ),
+                                dbc.ModalFooter(
+                                    [
+                                        dbc.Button(
+                                            "Avbryt",
+                                            id="feltkommentar-modal-cancel",
+                                            color="secondary",
+                                            className="ssb-btn",
+                                        ),
+                                        dbc.Button(
+                                            "Lagre",
+                                            id="feltkommentar-modal-save",
+                                            color="primary",
+                                            className="ssb-btn primary-btn",
+                                            disabled=True,
+                                        ),
+                                    ]
+                                ),
+                            ],
+                            id="feltkommentar-modal",
+                            is_open=False,
+                            centered=True,
+                            backdrop="static",
                         ),
                     ],
                     style={"marginBottom": "10px"},
@@ -2269,9 +2316,16 @@ class Naeringsspesifikasjon:
             df = apply_petroleum_filter(df, orgnr_foretak, toggle_petroleum)
 
             comments = get_latest_field_comments(self.conn, orgnr_foretak)
-            df["comment_icon"] = df["post"].map(lambda x: "💬" if x in comments else "")
-            df["comment_text"] = df["post"].map(
-                lambda x: comments.get(x, {}).get("kommentar", "")
+            df["feltkommentar_ikon"] = "💬"
+            df["feltkommentar_tekst"] = df["post"].map(lambda x: comments.get(x, {}).get("kommentar", ""))
+            df["har_feltkommentar"] = df["post"].isin(comments)
+            df["feltkommentar_tooltip"] = df.apply(
+                lambda r: (
+                    r["feltkommentar_tekst"]
+                    if r["har_feltkommentar"]
+                    else "Klikk for å legge til feltkommentar"
+                ),
+                axis=1,
             )
 
             row_data = df.to_dict("records")
@@ -2354,9 +2408,16 @@ class Naeringsspesifikasjon:
             df = apply_petroleum_filter(df, orgnr_foretak, toggle_petroleum)
 
             comments = get_latest_field_comments(self.conn, orgnr_foretak)
-            df["comment_icon"] = df["post"].map(lambda x: "💬" if x in comments else "")
-            df["comment_text"] = df["post"].map(
-                lambda x: comments.get(x, {}).get("kommentar", "")
+            df["feltkommentar_ikon"] = "💬"
+            df["feltkommentar_tekst"] = df["post"].map(lambda x: comments.get(x, {}).get("kommentar", ""))
+            df["har_feltkommentar"] = df["post"].isin(comments)
+            df["feltkommentar_tooltip"] = df.apply(
+                lambda r: (
+                    r["feltkommentar_tekst"]
+                    if r["har_feltkommentar"]
+                    else "Klikk for å legge til feltkommentar"
+                ),
+                axis=1,
             )
 
             row_data = df.to_dict("records")
@@ -2964,9 +3025,10 @@ class Naeringsspesifikasjon:
             Output("nspek-feltkommentar-grid", "rowData"),
             Input("var-ident", "value"),
             Input("btn-save-feltkommentar", "n_clicks"),
+            Input("refresh-manager", "data"),
             Input("toggle-show-inactive", "value"),
         )
-        def load_feltkommentarer(orgnr, _, toggle_inactive):
+        def load_feltkommentarer(orgnr, _, refresh_data, toggle_inactive):
 
             if not orgnr:
                 raise PreventUpdate
@@ -3075,7 +3137,7 @@ class Naeringsspesifikasjon:
                 refresh_data = trigger_refresh(refresh_data, "comments")
 
                 return (
-                    load_feltkommentarer(orgnr, None, toggle_inactive),
+                    load_feltkommentarer(orgnr, None, edited, toggle_inactive),
                     alert_store,
                     refresh_data,
                 )
@@ -3094,7 +3156,7 @@ class Naeringsspesifikasjon:
                 ]
 
                 return (
-                    load_feltkommentarer(orgnr, None, toggle_inactive),
+                    load_feltkommentarer(orgnr, None, edited, toggle_inactive),
                     alert_store,
                     refresh_data,
                 )
@@ -3353,6 +3415,209 @@ class Naeringsspesifikasjon:
             refresh_data = trigger_refresh(refresh_data, "valid_search")
 
             return alert_store, refresh_data
+
+        @callback(
+            Output("feltkommentar-store", "data"),
+            Input("nspek-resultatdata-grid", "cellClicked"),
+            Input("nspek-balansedata-grid", "cellClicked"),
+            State("nspek-resultatdata-grid", "rowData"),
+            State("nspek-balansedata-grid", "rowData"),
+            prevent_initial_call=True,
+        )
+        def open_feltkommentar(
+            resultat_cell,
+            balanse_cell,
+            resultat_rows,
+            balanse_rows,
+        ):
+
+            trigger = ctx.triggered_id
+
+            if trigger == "nspek-resultatdata-grid":
+                cell = resultat_cell
+                rows = resultat_rows
+                grid = "resultat"
+
+            elif trigger == "nspek-balansedata-grid":
+                cell = balanse_cell
+                rows = balanse_rows
+                grid = "balanse"
+
+            else:
+                raise PreventUpdate
+
+            if not cell:
+                raise PreventUpdate
+
+            if cell["colId"] != "feltkommentar_ikon":
+                raise PreventUpdate
+
+            row = rows[cell["rowIndex"]]
+
+            return {
+                "grid": grid,
+                "post": row["post"],
+                "beskrivelse": row["beskrivelse"],
+                "existing_comment": row.get("feltkommentar_tekst", ""),
+            }
+
+        @callback(
+            Output("feltkommentar-modal", "is_open"),
+            Output("feltkommentar-modal-title", "children"),
+            Output("feltkommentar-modal-textarea", "value"),
+            Input("feltkommentar-store", "data"),
+            Input("feltkommentar-modal-cancel", "n_clicks"),
+            Input("feltkommentar-modal-save", "n_clicks"),
+            prevent_initial_call=True,
+        )
+        def toggle_feltkommentar_modal(store, cancel, save):
+
+            trigger = ctx.triggered_id
+
+            if trigger in [
+                "feltkommentar-modal-cancel",
+                "feltkommentar-modal-save",
+            ]:
+                return False, "", ""
+
+            if not store:
+                raise PreventUpdate
+
+            title = (
+                f"{store['beskrivelse']} "
+                f"({store['post']})"
+            )
+
+            return (
+                True,
+                title,
+                store.get("existing_comment", ""),
+            )
+
+        @callback(
+            Output("feltkommentar-modal-save", "disabled"),
+            Input("feltkommentar-modal-textarea", "value"),
+            State("feltkommentar-store", "data"),
+            prevent_initial_call=True,
+        )
+        def toggle_feltkommentar_modal_save(text, store):
+
+            if not store:
+                return True
+
+            original = store.get("existing_comment", "")
+
+            return (
+                (text or "").strip()
+                ==
+                (original or "").strip()
+            )
+
+        @callback(
+            Output("refresh-manager", "data", allow_duplicate=True),
+            Output("alert_store", "data", allow_duplicate=True),
+            Input("feltkommentar-modal-save", "n_clicks"),
+            State("feltkommentar-modal-textarea", "value"),
+            State("feltkommentar-store", "data"),
+            State("var-ident", "value"),
+            State("alert_store", "data"),
+            State("refresh-manager", "data"),
+            prevent_initial_call=True,
+        )
+        def save_feltkommentar_modal(
+            n_clicks,
+            kommentar,
+            store,
+            orgnr,
+            alert_store,
+            refresh_data,
+        ):
+
+            if not store or not orgnr:
+                raise PreventUpdate
+
+            post = store["post"]
+            kommentar = kommentar or ""
+
+            safe_orgnr = str(orgnr).replace("'", "''")
+            safe_post = str(post).replace("'", "''")
+            safe_kommentar = kommentar.replace("'", "''")
+
+            query_deactivate = f"""
+                UPDATE nspek_core.kommentarfelt_test_2
+                SET aktiv = false
+                WHERE orgnr = '{safe_orgnr}'
+                AND nivaa = 'variabel'
+                AND variabel = '{safe_post}'
+                AND aktiv = true
+            """
+
+            query_insert = f"""
+                INSERT INTO nspek_core.kommentarfelt_test_2 (
+                    orgnr,
+                    nivaa,
+                    variabel,
+                    kommentar,
+                    versjon,
+                    aktiv,
+                    opprettet,
+                    opprettet_av
+                )
+                VALUES (
+                    '{safe_orgnr}',
+                    'variabel',
+                    '{safe_post}',
+                    '{safe_kommentar}',
+                    1,
+                    true,
+                    NOW(),
+                    current_setting('nspek_app.user_id')
+                )
+            """
+
+            try:
+                with get_nspek_connection() as conn:
+                    dapla_user = os.getenv("DAPLA_USER", None)[:3]
+                    PROCESS_TYPE = "editering"
+                    conn.raw_sql(f"SET nspek_app.user_id = {dapla_user}")
+                    conn.raw_sql(f"SET nspek_app.process_type = {PROCESS_TYPE}")
+                    conn.raw_sql(query_deactivate)
+                    conn.raw_sql(query_insert)
+
+
+                alert_store = [
+                    create_alert(
+                        "Feltkommentar lagret",
+                        "success",
+                        ephemeral=True,
+                    ),
+                    *(alert_store or []),
+                ]
+
+                refresh_data = trigger_refresh(
+                    refresh_data or {},
+                    "comments",
+                )
+
+
+            except Exception as e:
+
+                logger.error(
+                    "Lagring av feltkommentar feilet",
+                    exc_info=True,
+                )
+
+                alert_store = [
+                    create_alert(
+                        f"Feil ved lagring: {str(e)[:100]}",
+                        "danger",
+                        ephemeral=True,
+                    ),
+                    *(alert_store or []),
+                ]
+
+
+            return refresh_data, alert_store
 
 
 class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
