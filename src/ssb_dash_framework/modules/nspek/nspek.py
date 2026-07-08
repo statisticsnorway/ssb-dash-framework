@@ -1551,6 +1551,14 @@ class Naeringsspesifikasjon:
                                 dbc.ModalFooter(
                                     [
                                         dbc.Button(
+                                            "Fjern kommentar",
+                                            id="feltkommentar-modal-delete",
+                                            color="danger",
+                                            outline=True,
+                                            style={"display": "none"},
+                                            className="ssb-btn negative me-auto",
+                                        ),
+                                        dbc.Button(
                                             "Avbryt",
                                             id="feltkommentar-modal-cancel",
                                             color="secondary",
@@ -3424,7 +3432,7 @@ class Naeringsspesifikasjon:
             State("nspek-balansedata-grid", "rowData"),
             prevent_initial_call=True,
         )
-        def open_feltkommentar(
+        def open_feltkommentar_modal(
             resultat_cell,
             balanse_cell,
             resultat_rows,
@@ -3465,6 +3473,7 @@ class Naeringsspesifikasjon:
             Output("feltkommentar-modal", "is_open"),
             Output("feltkommentar-modal-title", "children"),
             Output("feltkommentar-modal-textarea", "value"),
+            Output("feltkommentar-modal-delete", "style"),
             Input("feltkommentar-store", "data"),
             Input("feltkommentar-modal-cancel", "n_clicks"),
             Input("feltkommentar-modal-save", "n_clicks"),
@@ -3477,8 +3486,9 @@ class Naeringsspesifikasjon:
             if trigger in [
                 "feltkommentar-modal-cancel",
                 "feltkommentar-modal-save",
+                "feltkommentar-modal-delete",
             ]:
-                return False, "", ""
+                return False, "", "", {"display": "none"}
 
             if not store:
                 raise PreventUpdate
@@ -3488,10 +3498,19 @@ class Naeringsspesifikasjon:
                 f"({store['post']})"
             )
 
+            existing = store.get("existing_comment", "")
+
+            delete_style = (
+                {}
+                if existing.strip()
+                else {"display": "none"}
+            )
+
             return (
                 True,
                 title,
-                store.get("existing_comment", ""),
+                existing,
+                delete_style,
             )
 
         @callback(
@@ -3618,6 +3637,86 @@ class Naeringsspesifikasjon:
 
 
             return refresh_data, alert_store
+
+        @callback(
+            Output("refresh-manager", "data", allow_duplicate=True),
+            Output("alert_store", "data", allow_duplicate=True),
+            Output("feltkommentar-modal", "is_open", allow_duplicate=True),
+            Input("feltkommentar-modal-delete", "n_clicks"),
+            State("feltkommentar-store", "data"),
+            State("var-ident", "value"),
+            State("alert_store", "data"),
+            State("refresh-manager", "data"),
+            prevent_initial_call=True,
+        )
+        def deactivate_feltkommentar_modal(
+            n_clicks,
+            store,
+            orgnr,
+            alert_store,
+            refresh_data,
+        ):
+
+            if not store or not orgnr:
+                raise PreventUpdate
+
+            post = store["post"]
+
+            safe_orgnr = str(orgnr).replace("'", "''")
+            safe_post = str(post).replace("'", "''")
+
+            query = f"""
+                UPDATE nspek_core.kommentarfelt_test_2
+                SET aktiv = false
+                WHERE orgnr = '{safe_orgnr}'
+                AND nivaa = 'variabel'
+                AND variabel = '{safe_post}'
+                AND aktiv = true
+            """
+
+            try:
+
+                with get_nspek_connection() as conn:
+                    conn.raw_sql(query)
+
+                alert_store = [
+                    create_alert(
+                        "Feltkommentar slettet",
+                        "success",
+                        ephemeral=True,
+                    ),
+                    *(alert_store or []),
+                ]
+
+                refresh_data = trigger_refresh(
+                    refresh_data or {},
+                    "comments",
+                )
+
+                return (
+                    refresh_data,
+                    alert_store,
+                    False,
+                )
+
+            except Exception as e:
+
+                logger.error(e, exc_info=True)
+
+                alert_store = [
+                    create_alert(
+                        f"Feil ved sletting: {str(e)[:100]}",
+                        "danger",
+                        ephemeral=True,
+                    ),
+                    *(alert_store or []),
+                ]
+
+                return (
+                    refresh_data,
+                    alert_store,
+                    True,
+                )
 
 
 class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
