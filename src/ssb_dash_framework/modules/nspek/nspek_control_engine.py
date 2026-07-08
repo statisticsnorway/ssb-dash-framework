@@ -179,7 +179,9 @@ def get_bofinfo_for_idents(idents: list[str], aar: int) -> pd.DataFrame:
     if not idents:
         return pd.DataFrame(columns=expected_columns)
 
-    year = str(aar)def get_bofinfo_for_idents(idents: list[str], aar: str) -> pd.DataFrame:
+    year = str(aar)
+    
+def get_bofinfo_for_idents(idents: list[str], aar: str) -> pd.DataFrame:
     """
     Henter BOF-info for flere orgnr samtidig.
 
