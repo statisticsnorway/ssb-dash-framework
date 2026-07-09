@@ -2228,8 +2228,9 @@ class Naeringsspesifikasjon:
             if not aar or not orgnr_foretak or not sekvensnummer:
                 return ""
 
-            if not has_data(self.conn, orgnr_foretak, aar):
-                return ""
+            with get_nspek_connection() as conn:
+                if not has_data(conn, orgnr_foretak, aar):
+                    return ""
 
             df = get_skjoennslignet(
                 conn=self.conn,
