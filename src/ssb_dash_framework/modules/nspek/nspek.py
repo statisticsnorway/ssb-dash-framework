@@ -2321,7 +2321,8 @@ class Naeringsspesifikasjon:
             df = apply_blank_filter(df, toggle_blank)
             df = apply_petroleum_filter(df, orgnr_foretak, toggle_petroleum)
 
-            comments = get_latest_field_comments(self.conn, orgnr_foretak)
+            with get_nspek_connection() as conn:
+                comments = get_latest_field_comments(conn, orgnr_foretak)
             valid_comment_row = (df["post"].fillna("").astype(str).ne("") & ~df["is_ui_sum"].fillna(False).astype(bool))
 
             df["feltkommentar_ikon"] = valid_comment_row.map(lambda x: "💬" if x else "")
@@ -2417,7 +2418,8 @@ class Naeringsspesifikasjon:
             df = apply_blank_filter(df, toggle_blank)
             df = apply_petroleum_filter(df, orgnr_foretak, toggle_petroleum)
 
-            comments = get_latest_field_comments(self.conn, orgnr_foretak)
+            with get_nspek_connection() as conn:
+                comments = get_latest_field_comments(conn, orgnr_foretak)
             valid_comment_row = (df["post"].fillna("").astype(str).ne("") & ~df["is_ui_sum"].fillna(False).astype(bool))
 
             df["feltkommentar_ikon"] = valid_comment_row.map(lambda x: "💬" if x else "")
