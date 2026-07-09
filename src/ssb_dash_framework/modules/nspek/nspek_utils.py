@@ -1,3 +1,4 @@
+import atexit
 from collections.abc import Callable
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -33,8 +34,27 @@ def set_nspek_connection(database_user: str | None = None) -> None:
 
     _IS_POOLED_NSPEK = True
 
+    # If a previous call already configured a pool, close it and drop its exit
+    # hook so exactly one pool (and one atexit handler) is ever live. Safe
+    # because every caller borrows connections through short-lived
+    # ``with get_nspek_connection() as conn:`` blocks -- nothing holds a pooled
+    # connection across this reconfiguration.
+    if isinstance(_CONNECTION_NSPEK, ConnectionPool):
+        atexit.unregister(_CONNECTION_NSPEK.close)
+        _CONNECTION_NSPEK.close()
+
     pool = ConnectionPool(conninfo=conn_url, min_size=1, max_size=1)
     _CONNECTION_NSPEK = pool
+
+    # psycopg_pool opens daemon worker ('pool-N-worker-M') and scheduler
+    # threads as soon as the pool is created. If the pool is never closed those
+    # threads are still running at interpreter shutdown, and psycopg_pool warns
+    # "couldn't stop thread 'pool-1-worker-0' within 5.0 seconds" on exit (e.g.
+    # when the app is stopped with Ctrl+C). Closing the pool on exit stops them
+    # cleanly. ConnectionPool.close() is idempotent, so explicit closes
+    # elsewhere stay safe. Registered before the validation below so the pool is
+    # still cleaned up if connecting fails.
+    atexit.register(pool.close)
 
     @contextmanager
     def _wrap_ibis_postgres(*args: Any, **kwargs: Any) -> Iterator[BaseBackend]:

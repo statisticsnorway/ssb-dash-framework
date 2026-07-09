@@ -108,6 +108,9 @@ class UpdateSkjemadata(BaseModel):
         value (Any): New value to write.
         old_value (Any): Previous value in the database.
         long (bool): Whether the database table is in the long format or not.
+        mapping_table (str): Lookup table mapping a variable's short name to its long name (feltsti), used by the skjemadata INSERT-fallback. Defaults to "mapping_variabelnavn".
+        mapping_match_column (str): Column in mapping_table matched against `variable` (the short name). Defaults to "variabel".
+        mapping_result_column (str): Column in mapping_table returned as the long name. Defaults to "feltsti".
     """
 
     table: str
@@ -121,6 +124,9 @@ class UpdateSkjemadata(BaseModel):
     value: Any
     old_value: Any
     long: bool
+    mapping_table: str = "mapping_variabelnavn"
+    mapping_match_column: str = "variabel"
+    mapping_result_column: str = "feltsti"
 
     def __str__(self) -> str:
         return (
@@ -189,25 +195,31 @@ class UpdateSkjemadata(BaseModel):
             return self.to_alert(long, success=False)
 
 
-    def _get_skjema_navn(self, conn) -> str:
-        """Looks up the long variable name from mapping_variabelnavn."""
-        df = conn.table("mapping_variabelnavn")
+    def _get_feltsti(self, conn) -> str:
+        """Looks up the long variable name from the mapping table.
+
+        Reads ``mapping_table`` / ``mapping_match_column`` / ``mapping_result_column``
+        so projects whose lookup table uses different column names than the default
+        ``mapping_variabelnavn`` (``variabel`` -> ``feltsti``) can configure them
+        instead of overriding this method.
+        """
+        df = conn.table(self.mapping_table)
         result = (
             df.filter(_.aar == (self.time_units or {}).get("aar"))
-            .filter(_.skjema_kortnavn == self.variable)
+            .filter(_[self.mapping_match_column] == self.variable)
             .filter(_.skjema == self.skjema)
-            .select(["skjema_navn"])
+            .select([self.mapping_result_column])
             .limit(1)
             .execute()
         )
-        print(f"result: {result}")
         if result.empty:
             logger.warning(
-                f"No skjema_navn found for kortnavn='{self.variable}', "
+                f"No {self.mapping_result_column} found for "
+                f"{self.mapping_match_column}='{self.variable}', "
                 f"aar='{(self.time_units or {}).get('aar')}'. Falling back to kortnavn."
             )
             return self.variable
-        return result["skjema_navn"].iloc[0]
+        return result[self.mapping_result_column].iloc[0]
 
     def _insert_ibis(self, conn, long):
         """
@@ -220,13 +232,14 @@ class UpdateSkjemadata(BaseModel):
             raise PreventUpdate
 
         if self.table.startswith("skjemadata"):
-            variabel = self._get_skjema_navn(conn)
+            feltsti: str = self._get_feltsti(conn)
             columns = {
                 **{unit: f"'{val}'" for unit, val in (self.time_units or {}).items() if val},
                 "skjema": f"'{self.skjema}'",
-                "refnr": f"'{self.refnr}'",
                 "ident": f"'{self.ident}'",
-                "variabel": f"'{variabel}'",
+                "refnr": f"'{self.refnr}'",
+                "feltsti": f"'{feltsti}'",
+                "variabel": f"'{self.variable}'",
                 "verdi": f"'{self.value}'",
             }
             insert_query = f"""
