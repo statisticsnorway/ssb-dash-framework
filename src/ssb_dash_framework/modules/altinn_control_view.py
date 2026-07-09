@@ -338,7 +338,7 @@ class ControlView(ABC):
             self.variableselector.get_all_inputs(),
             #            *self.create_callback_components("State"),
         )
-        def get_kontrollutslag(current_row: list[dict[Any, Any]], *args: Any):
+        def get_kontrollutslag(current_row: list[dict[Any, Any]], *args: Any): # TODO: Make sure sorting works.
             logger.debug(f"Args:\ncurrent_row: {current_row}\nargs: {args}")
             if current_row is None or len(current_row) == 0:
                 logger.debug("No current_row, raising PreventUpdate.")
