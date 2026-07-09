@@ -2232,12 +2232,12 @@ class Naeringsspesifikasjon:
                 if not has_data(conn, orgnr_foretak, aar):
                     return ""
 
-            df = get_skjoennslignet(
-                conn=self.conn,
-                ident=orgnr_foretak,
-                aar=aar,
-                sekvensnummer=sekvensnummer,
-            )
+                df = get_skjoennslignet(
+                    conn=conn,
+                    ident=orgnr_foretak,
+                    aar=aar,
+                    sekvensnummer=sekvensnummer,
+                )
 
             if df.empty:
                 return "Nei"
