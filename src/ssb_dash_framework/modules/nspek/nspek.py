@@ -1533,13 +1533,18 @@ class Naeringsspesifikasjon:
                                 ),
                                 dbc.ModalBody(
                                     [
-                                        dcc.Textarea(
-                                            id="feltkommentar-modal-textarea",
-                                            style={
-                                                "width": "100%",
-                                                "height": "150px",
-                                            },
+                                        html.Div(
                                             className="ssb-text-area",
+                                            children=[
+                                                dcc.Textarea(
+                                                    id="feltkommentar-modal-textarea",
+                                                    className="comment-textarea",
+                                                    style={
+                                                        "width": "100%",
+                                                        "height": "150px",
+                                                    },
+                                                )
+                                            ],
                                         )
                                     ]
                                 ),
@@ -1787,7 +1792,6 @@ class Naeringsspesifikasjon:
                                                                 "width": "100%",
                                                                 "height": "200px",
                                                                 "padding": "10px 12px",
-                                                                "borderRadius": "6px",
                                                             },
                                                         ),
                                                     ],
