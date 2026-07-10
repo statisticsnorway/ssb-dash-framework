@@ -908,6 +908,86 @@ def has_data(conn, orgnr: str, aar: str) -> bool:
     return not df.empty
 
 
+def get_default_version(df):
+    """
+    Returnerer sekvensnummer for siste editerte versjon,
+    ellers siste innkomne.
+    """
+
+    df = df.copy()
+
+    if not df.empty and "antall_endringer" in df.columns:
+
+        df_with_changes = df[df["antall_endringer"] > 0]
+
+        if not df_with_changes.empty:
+            return (
+                df_with_changes
+                .sort_values("dato_mottatt", ascending=False)
+                .iloc[0]["sekvensnummer"]
+            )
+
+    return (
+        df.sort_values(
+            by=["dato_mottatt", "sekvensnummer"],
+            ascending=[False, False],
+        )
+        .iloc[0]["sekvensnummer"]
+    )
+
+
+def add_update_counts(conn, df):
+    if df.empty:
+        return df
+
+    sekvens_liste = df["sekvensnummer"].tolist()
+
+    t = conn.table(
+        "v_update_counts",
+        database="nspek_core",
+    )
+
+    df_updates = (
+        t.filter(_.sekvensnummer.isin(sekvens_liste))
+        .select(
+            _.sekvensnummer,
+            _.antall_endringer,
+        )
+        .execute()
+    )
+
+    df = df.merge(
+        df_updates,
+        on="sekvensnummer",
+        how="left",
+    )
+
+    df["antall_endringer"] = (
+        df["antall_endringer"]
+        .fillna(0)
+    )
+
+    return df
+
+
+def get_available_years(conn, ident: str) -> list[int]:
+    """Return unique years available for the given orgnr from v_registrering_versjon."""
+    config = TYPE_REGNSKAP_TABLE["v_registrering_versjon"]
+    t = conn.table(config["table"], database=config["database"])
+
+    df = (
+        t.filter(_.orgnr == ident)
+        .select(_.aar)
+        .distinct()
+        .execute()
+    )
+
+    if df.empty:
+        return []
+
+    return sorted(df["aar"].dropna().astype(int).unique().tolist())
+
+
 MAX_ALLOWED_VALUE = 999_999_999_999
 
 
@@ -2678,27 +2758,17 @@ class Naeringsspesifikasjon:
                 raise PreventUpdate
 
             with get_nspek_connection() as conn:
+
                 if not has_data(conn, orgnr, aar):
                     return [], None
 
                 df = get_versions(conn, orgnr, aar)
 
-            if df.empty:
-                return [], None
+                if df.empty:
+                    return [], None
 
-            sekvens_liste = df["sekvensnummer"].tolist()
-
-            with get_nspek_connection() as conn:
-                t = conn.table("v_update_counts", database="nspek_core")
-
-                df_updates = (
-                    t.filter(_.sekvensnummer.isin(sekvens_liste))
-                    .select(_.sekvensnummer, _.antall_endringer)
-                    .execute()
-                )
-
-            df = df.merge(df_updates, on="sekvensnummer", how="left")
-            df["antall_endringer"] = df["antall_endringer"].fillna(0)
+                df = add_update_counts(conn, df)
+            
             df["label"] = df.apply(
                 lambda row: row["label"]
                 + (" (editert)" if row["antall_endringer"] > 0 else ""),
@@ -2710,16 +2780,7 @@ class Naeringsspesifikasjon:
                 for _, row in df.iterrows()
             ]
 
-            df_with_changes = df[df["antall_endringer"] > 0]
-
-            if not df_with_changes.empty:
-                default_value = df_with_changes.sort_values(
-                    "dato_mottatt", ascending=False
-                ).iloc[0]["sekvensnummer"]
-            else:
-                default_value = df.sort_values(
-                    by=["dato_mottatt", "sekvensnummer"], ascending=[False, False]
-                ).iloc[0]["sekvensnummer"]
+            default_value = get_default_version(df)
 
             return options, default_value
 
@@ -2768,10 +2829,94 @@ class Naeringsspesifikasjon:
 
         @callback(
             Output("nspek-versjon-dropdown-compare", "options"),
-            Input("nspek-versjon-dropdown", "options"),
+            Output("nspek-versjon-dropdown-compare", "value"),
+            Input("var-ident", "value"),
+            Input("var-aar", "value"),
         )
-        def sync_compare_options(options):
-            return options
+        def load_compare_options(orgnr, aar):
+
+            if not orgnr or not aar:
+                raise PreventUpdate
+
+            options = []
+
+            with get_nspek_connection() as conn:
+
+                # 1. Legg inn alle versjoner for valgt år
+                df_current = get_versions(
+                    conn,
+                    orgnr,
+                    aar,
+                )
+
+                if not df_current.empty:
+
+                    df_current = add_update_counts(
+                        conn,
+                        df_current,
+                    )
+
+                    df_current["label"] = df_current.apply(
+                        lambda row:
+                            row["label"]
+                            + (
+                                " (editert)"
+                                if row["antall_endringer"] > 0
+                                else ""
+                            ),
+                        axis=1,
+                    )
+
+                    options.extend(
+                        [
+                            {
+                                "label": row["label"],
+                                "value": row["sekvensnummer"],
+                            }
+                            for _, row in df_current.iterrows()
+                        ]
+                    )
+
+
+                # 2. Legg til én default-versjon fra andre år
+                available_years = get_available_years(
+                    conn,
+                    orgnr,
+                )
+
+                for year in available_years:
+
+                    year_str = str(year)
+
+                    if year_str == str(aar):
+                        continue
+
+                    df_year = get_versions(
+                        conn,
+                        orgnr,
+                        year_str,
+                    )
+
+                    if df_year.empty:
+                        continue
+
+                    df_year = add_update_counts(
+                        conn,
+                        df_year,
+                    )
+
+                    default_seq = get_default_version(
+                        df_year,
+                    )
+
+                    options.append(
+                        {
+                            "label": f"{year_str}",
+                            "value": default_seq,
+                        }
+                    )
+
+            return options, None
 
         @callback(
             Output("modal-editeringslogg", "is_open"),
