@@ -25,7 +25,7 @@ from ...utils.module_validation import module_validator
 logger = logging.getLogger(__name__)
 
 default_col_def = {
-    # "filter": True,
+    "filter": True,
     "resizable": True,
     "sortable": True,
     # "floatingFilter": True,
@@ -113,7 +113,7 @@ class NspekControlView(ABC):
                             id=f"{self.module_number}-kontroller",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            columnSize="responsiveSizeToFit",
+                            #columnSize="responsiveSizeToFit",
                             dashGridOptions={
                                 # "pagination": True,
                                 "rowSelection": "single",
@@ -132,7 +132,7 @@ class NspekControlView(ABC):
                             id=f"{self.module_number}-kontrollutslag",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            columnSize="responsiveSizeToFit",
+                            #columnSize="responsiveSizeToFit",
                             dashGridOptions={
                                 "pagination": True,
                                 "rowSelection": "single",
@@ -145,6 +145,81 @@ class NspekControlView(ABC):
                 ),
             ],
         )
+
+    def _create_column_defs(self, df):
+        wide = {
+            "skildring": 4,
+        }
+
+        fixed = {
+            "aar": 100,
+            "tema": 100,
+            "sist_kjoert": 140,
+            "utslag": 80,
+            "verdi": 160,
+            "kontrollid": 220,
+        }
+
+        centered = {
+            "utslag",
+        }
+
+        hidden = {
+            "foretak",
+            "utslag",
+        }
+
+        headers = {
+            "aar": "År",
+            "tema": "Tema",
+            "kontrollid": "Kontroll",
+            "skildring": "Beskrivelse",
+            "sist_kjoert": "Sist kjørt",
+            "sekvensnummer": "Sekvens",
+            "ident": "Orgnr",
+            "utslag": "Utslag",
+            "verdi": "Avvik",
+            "org_form": "Orgform",
+            "sn2025_1": "SN2025",
+            "sn07_1": "SN2007",
+            "sektor_2014": "Sektor",
+            "undersektor_2014": "Undersektor",
+        }
+
+        columns = []
+
+        for col in df.columns:
+
+            col_def = {
+                "headerName": headers.get(col, col),
+                "field": col,
+                "hide": col in hidden,
+            }
+
+            if col in fixed:
+                col_def["width"] = fixed[col]
+            else:
+                col_def["flex"] = wide.get(col, 1)
+                col_def["minWidth"] = 100
+
+            if col in centered:
+                col_def["cellStyle"] = {"textAlign": "center"}
+                col_def["headerClass"] = "ag-center-header"
+
+            if col == "verdi":
+                col_def["type"] = "numericColumn"
+                col_def["cellStyle"] = {"textAlign": "right"}
+                col_def["valueFormatter"] = {
+                    "function": "params.value == null ? '' : d3.format(',.0f')(params.value).replace(/,/g, ' ')"
+                }
+
+            columns.append(col_def)
+
+        if columns:
+            columns[0]["checkboxSelection"] = True
+            columns[0]["headerCheckboxSelection"] = True
+
+        return columns
 
     @abstractmethod
     def layout(self) -> html.Div:
@@ -215,11 +290,7 @@ class NspekControlView(ABC):
             if df is None or df.empty:
                 return [], [], store
 
-            columns = [{"headerName": c, "field": c} for c in df.columns]
-
-            if len(columns) > 0:
-                columns[0]["checkboxSelection"] = True
-                columns[0]["headerCheckboxSelection"] = True
+            columns = self._create_column_defs(df)
 
             return (
                 df.to_dict("records"),
@@ -254,15 +325,7 @@ class NspekControlView(ABC):
 
             df["foretak"] = df["ident"]
 
-            columns = [{"headerName": c, "field": c} for c in df.columns]
-
-            if len(columns) > 0:
-                columns[0]["checkboxSelection"] = True
-                columns[0]["headerCheckboxSelection"] = True
-
-            for col in columns:
-                if col["field"] == "foretak":
-                    col["hide"] = True
+            columns = self._create_column_defs(df)
 
             return df.to_dict("records"), columns
 

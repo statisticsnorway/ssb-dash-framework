@@ -2056,8 +2056,18 @@ class Naeringsspesifikasjon:
                                                 {"field": "tema", "headerName": "Tema", "flex": 1, "minWidth": 120},
                                                 {"field": "skildring", "headerName": "Beskrivelse", "flex": 4, "minWidth": 200},
                                                 {"field": "ident", "headerName": "Ident", "hide": True},
-                                                {"field": "utslag", "headerName": "Utslag", "flex": 1, "minWidth": 100},
-                                                {"field": "verdi", "headerName": "Verdi", "flex": 1, "minWidth": 100},
+                                                {"field": "utslag", "headerName": "Utslag", "hide": True},
+                                                {
+                                                    "field": "verdi",
+                                                    "headerName": "Avvik",
+                                                    "flex": 1,
+                                                    "minWidth": 160,
+                                                    "type": "numericColumn",
+                                                    "cellStyle": {"textAlign": "right"},
+                                                    "valueFormatter": {
+                                                        "function": "params.value == null ? '' : d3.format(',.0f')(params.value).replace(/,/g, ' ')"
+                                                    },
+                                                },
                                             ],
                                             dashGridOptions={
                                                 "rowSelection": "single",
