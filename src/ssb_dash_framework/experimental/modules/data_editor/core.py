@@ -535,11 +535,22 @@ class DataEditorHelperButton:
             raise AttributeError("Lacking 'modal_body' attribute.")
         return html.Div(
             [
-                dbc.Button(
-                    self.label,
-                    id=f"{self.module_name}-{self.module_number}-button",
-                    className="ssb-btn primary-btn",
-                ),
+            html.Div(
+                [
+                    dbc.Button(
+                        self.label,
+                        id=f"{self.module_name}-{self.module_number}-button",
+                        className="ssb-btn primary-btn",
+                    ),
+                    html.Span(
+                        id=f"{self.module_name}-{self.module_number}-indicator",
+                        className="helper-button-indicator",
+                        children="",
+                        style={"display": "none"},
+                    ),
+                ],
+                style={"position": "relative", "display": "inline-block"},
+            ),
                 dbc.Modal(
                     [
                         dbc.ModalHeader(dbc.ModalTitle(self.label)),

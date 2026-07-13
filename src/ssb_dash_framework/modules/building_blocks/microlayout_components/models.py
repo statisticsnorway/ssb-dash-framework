@@ -339,17 +339,27 @@ class CalculatedField(BaseNode):
             "addition": [],
             "subtraction": [],
         }
+        incomplete_multiplicative = False # handles missing -> 0 for multiplication & division
 
         for (op, _), value in zip(op_id_pairs, values):
             if value is not None and str(value).strip() != "":
-                op_values[op].append(float(value))
+                fval = float(value)
+                if op == "division" and fval == 0:
+                    incomplete_multiplicative = True
+                else:
+                    op_values[op].append(fval)
+            elif op in ("multiplication", "division", "exponent"):
+                incomplete_multiplicative = True
+
+        if incomplete_multiplicative:
+            return 0.0
 
         if op_values["multiplication"] or op_values["division"]:
             result = 1.0
             for val in op_values["multiplication"]:
                 result *= val
             for val in op_values["division"]:
-                result /= val if val != 0 else 1
+                result /= val
             # apply addition/subtraction on top
             for val in op_values["addition"]:
                 result += val

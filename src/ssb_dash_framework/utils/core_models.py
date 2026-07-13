@@ -108,6 +108,9 @@ class UpdateSkjemadata(BaseModel):
         value (Any): New value to write.
         old_value (Any): Previous value in the database.
         long (bool): Whether the database table is in the long format or not.
+        mapping_table (str): Lookup table mapping a variable's short name to its long name (feltsti), used by the skjemadata INSERT-fallback. Defaults to "mapping_variabelnavn".
+        mapping_match_column (str): Column in mapping_table matched against `variable` (the short name). Defaults to "variabel".
+        mapping_result_column (str): Column in mapping_table returned as the long name. Defaults to "feltsti".
     """
 
     table: str
@@ -121,6 +124,9 @@ class UpdateSkjemadata(BaseModel):
     value: Any
     old_value: Any
     long: bool
+    mapping_table: str = "mapping_variabelnavn"
+    mapping_match_column: str = "variabel"
+    mapping_result_column: str = "feltsti"
 
     def __str__(self) -> str:
         return (
@@ -190,23 +196,30 @@ class UpdateSkjemadata(BaseModel):
 
 
     def _get_feltsti(self, conn) -> str:
-        """Looks up the long variable name from mapping_variabelnavn."""
-        df = conn.table("mapping_variabelnavn")
+        """Looks up the long variable name from the mapping table.
+
+        Reads ``mapping_table`` / ``mapping_match_column`` / ``mapping_result_column``
+        so projects whose lookup table uses different column names than the default
+        ``mapping_variabelnavn`` (``variabel`` -> ``feltsti``) can configure them
+        instead of overriding this method.
+        """
+        df = conn.table(self.mapping_table)
         result = (
             df.filter(_.aar == (self.time_units or {}).get("aar"))
-            .filter(_.variabel == self.variable)
+            .filter(_[self.mapping_match_column] == self.variable)
             .filter(_.skjema == self.skjema)
-            .select(["feltsti"])
+            .select([self.mapping_result_column])
             .limit(1)
             .execute()
         )
         if result.empty:
             logger.warning(
-                f"No feltsti found for kortnavn='{self.variable}', "
+                f"No {self.mapping_result_column} found for "
+                f"{self.mapping_match_column}='{self.variable}', "
                 f"aar='{(self.time_units or {}).get('aar')}'. Falling back to kortnavn."
             )
             return self.variable
-        return result["feltsti"].iloc[0]
+        return result[self.mapping_result_column].iloc[0]
 
     def _insert_ibis(self, conn, long):
         """
