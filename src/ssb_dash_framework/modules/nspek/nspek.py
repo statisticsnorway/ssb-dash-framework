@@ -588,7 +588,7 @@ def post_description_data(regnskapstype: str) -> DataFrame:
 
 def feltkommentar_ikon_column():
     return {
-        "field": "feltkommentar_ikon",
+        "field": "har_feltkommentar",
         "headerName": "",
         "width": 60,
         "sortable": False,
@@ -596,22 +596,7 @@ def feltkommentar_ikon_column():
         "resizable": False,
         "pinned": "right",
         "tooltipField": "feltkommentar_tooltip",
-        "cellStyle": {
-            "styleConditions": [
-                {
-                    "condition": "params.data.post && !params.data.is_ui_sum && params.data.feltkommentar_tekst",
-                    "style": {
-                        "opacity": "1",
-                    },
-                },
-                {
-                    "condition": "params.data.post && !params.data.is_ui_sum && !params.data.feltkommentar_tekst",
-                    "style": {
-                        "opacity": "0.25",
-                    },
-                },
-            ],
-        },
+        "cellRenderer": "feltkommentarIcon",
     }
 
 
@@ -2107,6 +2092,7 @@ class Naeringsspesifikasjon:
                             id="kontrollutslag-tab",
                             label="Kontrollutslag",
                             value="kontrollutslag",
+                            className="kontrollutslag-tab",
                             children=[
                                 dbc.Button(
                                     "Kjør kontroller",
@@ -2517,7 +2503,7 @@ class Naeringsspesifikasjon:
                 comments = get_latest_field_comments(conn, orgnr_foretak)
             valid_comment_row = (df["post"].fillna("").astype(str).ne("") & ~df["is_ui_sum"].fillna(False).astype(bool))
 
-            df["feltkommentar_ikon"] = valid_comment_row.map(lambda x: "💬" if x else "")
+            df["har_feltkommentar"] = valid_comment_row
             df["feltkommentar_tekst"] = df["post"].map(lambda x: comments.get(x, {}).get("kommentar", ""))
             df["har_feltkommentar"] = df["post"].isin(comments)
             df["feltkommentar_tooltip"] = df.apply(
@@ -3510,17 +3496,19 @@ class Naeringsspesifikasjon:
 
         @callback(
             Output("nspek-kontrollutslag-grid", "rowData"),
-            Output("kontrollutslag-tab", "label"),
+            Output("kontrollutslag-tab", "className"),
             Input("run-controls-btn", "n_clicks"),
             Input("refresh-manager", "data"),
             Input("nspek-versjon-dropdown", "value"),
         )
         def load_or_run_kontrollutslag(n_clicks, refresh_data, sekvensnummer):
+            base_class = "kontrollutslag-tab"
+
             if not sekvensnummer:
-                return [], "Kontrollutslag"
+                return [], base_class
 
             if refresh_data and refresh_data.get("status") == "invalid_search":
-                return [], "Kontrollutslag"
+                return [], base_class
 
             with get_nspek_connection() as conn:
                 instance = NspekControls(
@@ -3529,9 +3517,7 @@ class Naeringsspesifikasjon:
                 )
 
                 kontroller_df = instance.get_current_kontroller()
-                kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict(
-                    "index"
-                )
+                kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict("index")
 
                 if ctx.triggered_id == "run-controls-btn":
                     run_all_controls_for_sekvensnummer(conn, int(sekvensnummer))
@@ -3541,7 +3527,7 @@ class Naeringsspesifikasjon:
             df = df[df["sekvensnummer"] == int(sekvensnummer)]
 
             if df.empty:
-                return [], "Kontrollutslag"
+                return [], base_class
 
             df["skildring"] = df["kontrollid"].map(
                 lambda x: kontroller_lookup.get(x, {}).get("skildring")
@@ -3551,9 +3537,9 @@ class Naeringsspesifikasjon:
             )
 
             has_issues = df["utslag"].any()
-            tab_label = "⚠️ Kontrollutslag" if has_issues else "Kontrollutslag"
+            tab_class = f"{base_class} has-issues" if has_issues else base_class
 
-            return df.to_dict("records"), tab_label
+            return df.to_dict("records"), tab_class
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
@@ -3632,7 +3618,7 @@ class Naeringsspesifikasjon:
             if not cell:
                 raise PreventUpdate
 
-            if cell["colId"] != "feltkommentar_ikon":
+            if cell["colId"] != "har_feltkommentar":
                 raise PreventUpdate
 
             if not rows:

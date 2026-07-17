@@ -1604,6 +1604,14 @@ Dash override for ssb-text-area
     background-color: #f2f0ff;
 }
 
+/* Fjern avrundede hjørner */
+.ag-theme-ssb,
+.ag-theme-ssb .ag-root-wrapper,
+.ag-theme-ssb .ag-header,
+.ag-theme-ssb .ag-center-cols-container {
+    border-radius: 0 !important;
+}
+
 /*
 Theme consistency — normalize dark theme to match light (Lumen) standards
 */
