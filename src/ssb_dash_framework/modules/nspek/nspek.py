@@ -2089,7 +2089,7 @@ class Naeringsspesifikasjon:
                             ],
                         ),
                         dcc.Tab(
-                            id="kontrollutslag-tab",
+                            id="nspek-kontrollutslag-tab",
                             label="Kontrollutslag",
                             value="kontrollutslag",
                             className="nspek-kontrollutslag-tab",
@@ -3496,13 +3496,13 @@ class Naeringsspesifikasjon:
 
         @callback(
             Output("nspek-kontrollutslag-grid", "rowData"),
-            Output("kontrollutslag-tab", "className"),
+            Output("nspek-kontrollutslag-tab", "className"),
             Input("run-controls-btn", "n_clicks"),
             Input("refresh-manager", "data"),
             Input("nspek-versjon-dropdown", "value"),
         )
         def load_or_run_kontrollutslag(n_clicks, refresh_data, sekvensnummer):
-            base_class = "kontrollutslag-tab"
+            base_class = "nspek-kontrollutslag-tab"
 
             if not sekvensnummer:
                 return [], base_class
