@@ -742,6 +742,7 @@ def build_column_defs(sekvens_compare=None):
 
     return column_defs
 
+
 def fetch_data_by_orgnr(
     conn, regnskapstype: str, ident: str, aar: str, sekvensnummer: int
 ) -> pd.DataFrame:
@@ -894,11 +895,9 @@ def has_data(conn, orgnr: str, aar: str) -> bool:
 
 
 def get_default_version(df):
-    """
-    Returnerer sekvensnummer for siste editerte versjon,
+    """Returnerer sekvensnummer for siste editerte versjon,
     ellers siste innkomne.
     """
-
     df = df.copy()
 
     if not df.empty and "antall_endringer" in df.columns:
@@ -906,19 +905,14 @@ def get_default_version(df):
         df_with_changes = df[df["antall_endringer"] > 0]
 
         if not df_with_changes.empty:
-            return (
-                df_with_changes
-                .sort_values("dato_mottatt", ascending=False)
-                .iloc[0]["sekvensnummer"]
-            )
+            return df_with_changes.sort_values("dato_mottatt", ascending=False).iloc[0][
+                "sekvensnummer"
+            ]
 
-    return (
-        df.sort_values(
-            by=["dato_mottatt", "sekvensnummer"],
-            ascending=[False, False],
-        )
-        .iloc[0]["sekvensnummer"]
-    )
+    return df.sort_values(
+        by=["dato_mottatt", "sekvensnummer"],
+        ascending=[False, False],
+    ).iloc[0]["sekvensnummer"]
 
 
 def add_update_counts(conn, df):
@@ -947,10 +941,7 @@ def add_update_counts(conn, df):
         how="left",
     )
 
-    df["antall_endringer"] = (
-        df["antall_endringer"]
-        .fillna(0)
-    )
+    df["antall_endringer"] = df["antall_endringer"].fillna(0)
 
     return df
 
@@ -960,12 +951,7 @@ def get_available_years(conn, ident: str) -> list[int]:
     config = TYPE_REGNSKAP_TABLE["v_registrering_versjon"]
     t = conn.table(config["table"], database=config["database"])
 
-    df = (
-        t.filter(_.orgnr == ident)
-        .select(_.aar)
-        .distinct()
-        .execute()
-    )
+    df = t.filter(_.orgnr == ident).select(_.aar).distinct().execute()
 
     if df.empty:
         return []
@@ -2000,7 +1986,7 @@ class Naeringsspesifikasjon:
                                     type="default",
                                     overlay_style={
                                         "visibility": "visible",
-                                        "filter": "blur(2px)"
+                                        "filter": "blur(2px)",
                                     },
                                     children=[
                                         AgGrid(
@@ -2060,30 +2046,30 @@ class Naeringsspesifikasjon:
                                     type="default",
                                     overlay_style={
                                         "visibility": "visible",
-                                        "filter": "blur(2px)"
+                                        "filter": "blur(2px)",
                                     },
                                     children=[
-                                    AgGrid(
-                                        id="nspek-balansedata-grid",
-                                        className="ag-theme-alpine ag-theme-ssb mb-2",
-                                        # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
-                                        defaultColDef={"resizable": True},
-                                        rowData=[],
-                                        columnDefs=[],
-                                        dashGridOptions={
-                                            "rowSelection": "single",
-                                            "enableCellTextSelection": True,
-                                            "enableBrowserTooltips": True,
-                                            "suppressScrollOnNewData": True,
-                                        },
-                                        # getRowStyle=self.get_row_style_with_comments(),
-                                        getRowStyle=self.get_row_style_ui_sums(),
-                                        style={
-                                            "height": "70vh",
-                                            "width": "100%",
+                                        AgGrid(
+                                            id="nspek-balansedata-grid",
+                                            className="ag-theme-alpine ag-theme-ssb mb-2",
+                                            # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
+                                            defaultColDef={"resizable": True},
+                                            rowData=[],
+                                            columnDefs=[],
+                                            dashGridOptions={
+                                                "rowSelection": "single",
+                                                "enableCellTextSelection": True,
+                                                "enableBrowserTooltips": True,
+                                                "suppressScrollOnNewData": True,
+                                            },
+                                            # getRowStyle=self.get_row_style_with_comments(),
+                                            getRowStyle=self.get_row_style_ui_sums(),
+                                            style={
+                                                "height": "70vh",
+                                                "width": "100%",
                                             },
                                         ),
-                                    ]
+                                    ],
                                 ),
                                 html.Div(style={"height": "24px"}),
                             ],
@@ -2100,13 +2086,12 @@ class Naeringsspesifikasjon:
                                     n_clicks=0,
                                     className="ssb-btn primary-btn mb-2",
                                 ),
-
                                 dcc.Loading(
                                     id="kontrollutslag-loading",
                                     type="default",
                                     overlay_style={
                                         "visibility": "visible",
-                                        "filter": "blur(2px)"
+                                        "filter": "blur(2px)",
                                     },
                                     children=[
                                         AgGrid(
@@ -2117,12 +2102,39 @@ class Naeringsspesifikasjon:
                                                 "sortable": True,
                                             },
                                             columnDefs=[
-                                                {"field": "aar", "headerName": "År", "hide": True},
-                                                {"field": "kontrollid", "headerName": "Kontroll", "flex": 1, "minWidth": 250},
-                                                {"field": "tema", "headerName": "Tema", "flex": 1, "minWidth": 120},
-                                                {"field": "skildring", "headerName": "Beskrivelse", "flex": 4, "minWidth": 200},
-                                                {"field": "ident", "headerName": "Ident", "hide": True},
-                                                {"field": "utslag", "headerName": "Utslag", "hide": True},
+                                                {
+                                                    "field": "aar",
+                                                    "headerName": "År",
+                                                    "hide": True,
+                                                },
+                                                {
+                                                    "field": "kontrollid",
+                                                    "headerName": "Kontroll",
+                                                    "flex": 1,
+                                                    "minWidth": 250,
+                                                },
+                                                {
+                                                    "field": "tema",
+                                                    "headerName": "Tema",
+                                                    "flex": 1,
+                                                    "minWidth": 120,
+                                                },
+                                                {
+                                                    "field": "skildring",
+                                                    "headerName": "Beskrivelse",
+                                                    "flex": 4,
+                                                    "minWidth": 200,
+                                                },
+                                                {
+                                                    "field": "ident",
+                                                    "headerName": "Ident",
+                                                    "hide": True,
+                                                },
+                                                {
+                                                    "field": "utslag",
+                                                    "headerName": "Utslag",
+                                                    "hide": True,
+                                                },
                                                 {
                                                     "field": "verdi",
                                                     "headerName": "Avvik",
@@ -2404,10 +2416,16 @@ class Naeringsspesifikasjon:
 
             with get_nspek_connection() as conn:
                 comments = get_latest_field_comments(conn, orgnr_foretak)
-            valid_comment_row = (df["post"].fillna("").astype(str).ne("") & ~df["is_ui_sum"].fillna(False).astype(bool))
+            valid_comment_row = df["post"].fillna("").astype(str).ne("") & ~df[
+                "is_ui_sum"
+            ].fillna(False).astype(bool)
 
-            df["feltkommentar_ikon"] = valid_comment_row.map(lambda x: "💬" if x else "")
-            df["feltkommentar_tekst"] = df["post"].map(lambda x: comments.get(x, {}).get("kommentar", ""))
+            df["feltkommentar_ikon"] = valid_comment_row.map(
+                lambda x: "💬" if x else ""
+            )
+            df["feltkommentar_tekst"] = df["post"].map(
+                lambda x: comments.get(x, {}).get("kommentar", "")
+            )
             df["har_feltkommentar"] = df["post"].isin(comments)
             df["feltkommentar_tooltip"] = df.apply(
                 lambda r: (
@@ -2501,10 +2519,14 @@ class Naeringsspesifikasjon:
 
             with get_nspek_connection() as conn:
                 comments = get_latest_field_comments(conn, orgnr_foretak)
-            valid_comment_row = (df["post"].fillna("").astype(str).ne("") & ~df["is_ui_sum"].fillna(False).astype(bool))
+            valid_comment_row = df["post"].fillna("").astype(str).ne("") & ~df[
+                "is_ui_sum"
+            ].fillna(False).astype(bool)
 
             df["har_feltkommentar"] = valid_comment_row
-            df["feltkommentar_tekst"] = df["post"].map(lambda x: comments.get(x, {}).get("kommentar", ""))
+            df["feltkommentar_tekst"] = df["post"].map(
+                lambda x: comments.get(x, {}).get("kommentar", "")
+            )
             df["har_feltkommentar"] = df["post"].isin(comments)
             df["feltkommentar_tooltip"] = df.apply(
                 lambda r: (
@@ -2754,7 +2776,7 @@ class Naeringsspesifikasjon:
                     return [], None
 
                 df = add_update_counts(conn, df)
-            
+
             df["label"] = df.apply(
                 lambda row: row["label"]
                 + (" (editert)" if row["antall_endringer"] > 0 else ""),
@@ -2843,13 +2865,8 @@ class Naeringsspesifikasjon:
                     )
 
                     df_current["label"] = df_current.apply(
-                        lambda row:
-                            row["label"]
-                            + (
-                                " (editert)"
-                                if row["antall_endringer"] > 0
-                                else ""
-                            ),
+                        lambda row: row["label"]
+                        + (" (editert)" if row["antall_endringer"] > 0 else ""),
                         axis=1,
                     )
 
@@ -2862,7 +2879,6 @@ class Naeringsspesifikasjon:
                             for _, row in df_current.iterrows()
                         ]
                     )
-
 
                 # 2. Legg til én default-versjon fra andre år
                 available_years = get_available_years(
@@ -3517,7 +3533,9 @@ class Naeringsspesifikasjon:
                 )
 
                 kontroller_df = instance.get_current_kontroller()
-                kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict("index")
+                kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict(
+                    "index"
+                )
 
                 if ctx.triggered_id == "run-controls-btn":
                     run_all_controls_for_sekvensnummer(conn, int(sekvensnummer))
@@ -3626,12 +3644,8 @@ class Naeringsspesifikasjon:
 
             row = rows[cell["rowIndex"]]
 
-            if (
-                not row.get("post")
-                or row.get("is_ui_sum", False)
-            ):
+            if not row.get("post") or row.get("is_ui_sum", False):
                 raise PreventUpdate
-
 
             return {
                 "grid": grid,
@@ -3664,18 +3678,11 @@ class Naeringsspesifikasjon:
             if not store:
                 raise PreventUpdate
 
-            title = (
-                f"{store['beskrivelse']} "
-                f"({store['post']})"
-            )
+            title = f"{store['beskrivelse']} " f"({store['post']})"
 
             existing = store.get("existing_comment", "")
 
-            delete_style = (
-                {}
-                if existing.strip()
-                else {"display": "none"}
-            )
+            delete_style = {} if existing.strip() else {"display": "none"}
 
             return (
                 True,
@@ -3697,11 +3704,7 @@ class Naeringsspesifikasjon:
 
             original = store.get("existing_comment", "")
 
-            return (
-                (text or "").strip()
-                ==
-                (original or "").strip()
-            )
+            return (text or "").strip() == (original or "").strip()
 
         @callback(
             Output("refresh-manager", "data", allow_duplicate=True),
@@ -3774,7 +3777,6 @@ class Naeringsspesifikasjon:
                     conn.raw_sql(query_deactivate)
                     conn.raw_sql(query_insert)
 
-
                 alert_store = [
                     create_alert(
                         "Feltkommentar lagret",
@@ -3788,7 +3790,6 @@ class Naeringsspesifikasjon:
                     refresh_data or {},
                     "comments",
                 )
-
 
             except Exception as e:
 
@@ -3805,7 +3806,6 @@ class Naeringsspesifikasjon:
                     ),
                     *(alert_store or []),
                 ]
-
 
             return refresh_data, alert_store
 

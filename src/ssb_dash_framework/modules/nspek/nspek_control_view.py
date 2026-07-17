@@ -113,7 +113,7 @@ class NspekControlView(ABC):
                             id=f"{self.module_number}-kontroller",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            #columnSize="responsiveSizeToFit",
+                            # columnSize="responsiveSizeToFit",
                             dashGridOptions={
                                 # "pagination": True,
                                 "rowSelection": "single",
@@ -132,7 +132,7 @@ class NspekControlView(ABC):
                             id=f"{self.module_number}-kontrollutslag",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            #columnSize="responsiveSizeToFit",
+                            # columnSize="responsiveSizeToFit",
                             dashGridOptions={
                                 "pagination": True,
                                 "rowSelection": "single",

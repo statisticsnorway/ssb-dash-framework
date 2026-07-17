@@ -1882,7 +1882,7 @@ Aarsregnskap
     display: flex;
     flex-direction: column;
     flex: 1;
-    
+
 }
 
 .aarsregnskap-aar-foretak-row {
@@ -2097,8 +2097,8 @@ Altinn Editor Support Tables
     overflow: hidden;
 }
 
-/* 
-DataEditor 
+/*
+DataEditor
 */
 
 .helper-button-indicator {

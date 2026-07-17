@@ -1,12 +1,12 @@
 from datetime import UTC
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
-import pandas as pd
 import ibis
+import pandas as pd
 from ibis import _
 from ibis.backends import BaseBackend
-from pathlib import Path
 
 from .nspek_control_config import CONTROL_RULES
 from .nspek_control_config import get_controls_for_field
@@ -48,6 +48,7 @@ KONTROLLUTSLAG_COLUMNS = [
     "sektor_2014",
     "undersektor_2014",
 ]
+
 
 def get_active_versions(conn, aar: int) -> pd.DataFrame:
     print("Henter aktive versjoner")
@@ -167,10 +168,9 @@ def make_kontroller_df(aar: int) -> pd.DataFrame:
     print(f"kontroll_df inneholder {len(kontroll_df)} rader")
     return kontroll_df
 
-    
+
 def get_bofinfo_for_idents(idents: list[str], aar: str) -> pd.DataFrame:
-    """
-    Henter BOF-info for flere orgnr samtidig.
+    """Henter BOF-info for flere orgnr samtidig.
 
     Prøver først parquet (VOF årsfil), og bruker SQLite som fallback.
 
@@ -181,14 +181,9 @@ def get_bofinfo_for_idents(idents: list[str], aar: str) -> pd.DataFrame:
     Returns:
         DataFrame med én rad per ident og BOF-variabler
     """
-
     year = str(aar)
 
-    idents = [
-        str(x)
-        for x in idents
-        if pd.notna(x)
-    ]
+    idents = [str(x) for x in idents if pd.notna(x)]
 
     expected_columns = [
         "ident",
@@ -230,10 +225,7 @@ def get_bofinfo_for_idents(idents: list[str], aar: str) -> pd.DataFrame:
 
             t = conn.read_parquet(path)
 
-            df = (
-                t.filter(_.org_nr.isin(idents))
-                .execute()
-            )
+            df = t.filter(_.org_nr.isin(idents)).execute()
 
             if df.empty:
                 continue
@@ -244,30 +236,21 @@ def get_bofinfo_for_idents(idents: list[str], aar: str) -> pd.DataFrame:
                 if col not in df.columns:
                     df[col] = ""
 
-            return (
-                df[expected_columns]
-                .drop_duplicates("ident")
-            )
+            return df[expected_columns].drop_duplicates("ident")
 
         except Exception as e:
             print(f"Feil ved BOF-lesing parquet {path}: {e}")
-
 
     # ---------------------------------------------------------
     # 2. Fallback SQLite
     # ---------------------------------------------------------
 
     try:
-        conn = ibis.sqlite.connect(
-            "/buckets/shared/vof/oracle-hns/ssb_foretak.db"
-        )
+        conn = ibis.sqlite.connect("/buckets/shared/vof/oracle-hns/ssb_foretak.db")
 
         t = conn.table("ssb_foretak")
 
-        df = (
-            t.filter(_.orgnr.isin(idents))
-            .execute()
-        )
+        df = t.filter(_.orgnr.isin(idents)).execute()
 
         if df.empty:
             return pd.DataFrame(columns=expected_columns)
@@ -287,10 +270,7 @@ def get_bofinfo_for_idents(idents: list[str], aar: str) -> pd.DataFrame:
             if col not in df.columns:
                 df[col] = ""
 
-        return (
-            df[expected_columns]
-            .drop_duplicates("ident")
-        )
+        return df[expected_columns].drop_duplicates("ident")
 
     except Exception as e:
         print(f"Feil ved BOF-lesing SQLite fallback: {e}")
@@ -303,7 +283,6 @@ def enrich_with_bof(
     aar: int,
 ) -> pd.DataFrame:
     """Legger BOF-opplysninger på kontrollutslag."""
-
     if df_kontrollutslag.empty:
         return df_kontrollutslag
 
@@ -544,7 +523,7 @@ def run_controls_for_changed_fields(
 
     kontrollids = sorted(kontrollids)
 
-    print(f"Trigget kontroller: " f"{kontrollids}")
+    print(f"Trigget kontroller: {kontrollids}")
 
     all_results = []
 
