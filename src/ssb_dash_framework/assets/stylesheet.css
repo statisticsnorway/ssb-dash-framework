@@ -1462,6 +1462,21 @@ Dash override for ssb-tabs DCC
   max-width: 600px;
 }
 
+.nspek-kontrollutslag-tab.has-issues span::before {
+    content: "";
+    display: inline-block;
+
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    vertical-align: middle;
+
+    background-image: url("https://api.iconify.design/feather/alert-triangle.svg");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+
 /*
 ssb-text-area
 */

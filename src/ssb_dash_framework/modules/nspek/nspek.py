@@ -2092,7 +2092,7 @@ class Naeringsspesifikasjon:
                             id="kontrollutslag-tab",
                             label="Kontrollutslag",
                             value="kontrollutslag",
-                            className="kontrollutslag-tab",
+                            className="nspek-kontrollutslag-tab",
                             children=[
                                 dbc.Button(
                                     "Kjør kontroller",
