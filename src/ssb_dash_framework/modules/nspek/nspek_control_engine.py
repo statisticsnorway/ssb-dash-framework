@@ -35,6 +35,19 @@ TYPE_REGNSKAP_TABLE = {
     },
 }
 
+KONTROLLUTSLAG_COLUMNS = [
+    "aar",
+    "kontrollid",
+    "sekvensnummer",
+    "orgnr",
+    "utslag",
+    "verdi",
+    "org_form",
+    "sn2025_1",
+    "sn07_1",
+    "sektor_2014",
+    "undersektor_2014",
+]
 
 def get_active_versions(conn, aar: int) -> pd.DataFrame:
     print("Henter aktive versjoner")
@@ -154,32 +167,6 @@ def make_kontroller_df(aar: int) -> pd.DataFrame:
     print(f"kontroll_df inneholder {len(kontroll_df)} rader")
     return kontroll_df
 
-
-def get_bofinfo_for_idents(idents: list[str], aar: int) -> pd.DataFrame:
-    """
-    Henter BOF-karaktervariabler for organisasjonsnumre.
-    Returnerer én rad per ident.
-    """
-
-    expected_columns = [
-        "ident",
-        "org_form",
-        "sn2025_1",
-        "sn07_1",
-        "sektor_2014",
-        "undersektor_2014",
-    ]
-
-    idents = [
-        str(x)
-        for x in idents
-        if pd.notna(x)
-    ]
-
-    if not idents:
-        return pd.DataFrame(columns=expected_columns)
-
-    year = str(aar)
     
 def get_bofinfo_for_idents(idents: list[str], aar: str) -> pd.DataFrame:
     """
@@ -311,6 +298,38 @@ def get_bofinfo_for_idents(idents: list[str], aar: str) -> pd.DataFrame:
         return pd.DataFrame(columns=expected_columns)
 
 
+def enrich_with_bof(
+    df_kontrollutslag: pd.DataFrame,
+    aar: int,
+) -> pd.DataFrame:
+    """Legger BOF-opplysninger på kontrollutslag."""
+
+    if df_kontrollutslag.empty:
+        return df_kontrollutslag
+
+    bof_df = get_bofinfo_for_idents(
+        df_kontrollutslag["orgnr"].tolist(),
+        aar,
+    )
+
+    if bof_df.empty:
+        return df_kontrollutslag
+
+    df = df_kontrollutslag.copy()
+
+    df["orgnr"] = df["orgnr"].astype(str)
+    bof_df["ident"] = bof_df["ident"].astype(str)
+
+    df = df.merge(
+        bof_df,
+        left_on="orgnr",
+        right_on="ident",
+        how="left",
+    )
+
+    return df.drop(columns=["ident"])
+
+
 def sql_value(v):
     if pd.isna(v):
         return "NULL"
@@ -395,45 +414,15 @@ def save_full_control_db(
             chunk_size=1000,
         )
 
-        if not df_kontrollutslag.empty:
-
-            bof_df = get_bofinfo_for_idents(
-                df_kontrollutslag["orgnr"].tolist(),
-                aar,
-            )
-
-            df_kontrollutslag["orgnr"] = df_kontrollutslag["orgnr"].astype(str)
-            bof_df["ident"] = bof_df["ident"].astype(str)
-
-            df_kontrollutslag = df_kontrollutslag.merge(
-                bof_df,
-                left_on="orgnr",
-                right_on="ident",
-                how="left",
-            )
-
-            df_kontrollutslag.drop(
-                columns=["ident"],
-                inplace=True,
-            )
-
+        df_kontrollutslag = enrich_with_bof(
+            df_kontrollutslag,
+            aar,
+        )
 
         insert_batches(
             conn,
             "kontrollutslag",
-            [
-                "aar",
-                "kontrollid",
-                "sekvensnummer",
-                "orgnr",
-                "utslag",
-                "verdi",
-                "org_form",
-                "sn2025_1",
-                "sn07_1",
-                "sektor_2014",
-                "undersektor_2014",
-            ],
+            KONTROLLUTSLAG_COLUMNS,
             df_kontrollutslag.to_dict("records"),
             chunk_size=5000,
         )
@@ -465,44 +454,15 @@ def save_incremental_control_db(
             AND kontrollid IN ({kontrollids_sql})
             """)
 
-        if not df_kontrollutslag.empty:
-
-            bof_df = get_bofinfo_for_idents(
-                df_kontrollutslag["orgnr"].tolist(),
-                int(df_kontrollutslag["aar"].iloc[0]),
-            )
-
-            df_kontrollutslag["orgnr"] = df_kontrollutslag["orgnr"].astype(str)
-            bof_df["ident"] = bof_df["ident"].astype(str)
-
-            df_kontrollutslag = df_kontrollutslag.merge(
-                bof_df,
-                left_on="orgnr",
-                right_on="ident",
-                how="left",
-            )
-
-            df_kontrollutslag.drop(
-                columns=["ident"],
-                inplace=True,
-            )
+        df_kontrollutslag = enrich_with_bof(
+            df_kontrollutslag,
+            int(df_kontrollutslag["aar"].iloc[0]),
+        )
 
         insert_batches(
             conn,
             "kontrollutslag",
-            [
-                "aar",
-                "kontrollid",
-                "sekvensnummer",
-                "orgnr",
-                "utslag",
-                "verdi",
-                "org_form",
-                "sn2025_1",
-                "sn07_1",
-                "sektor_2014",
-                "undersektor_2014",
-            ],
+            KONTROLLUTSLAG_COLUMNS,
             df_kontrollutslag.to_dict("records"),
         )
 
