@@ -26,7 +26,7 @@ from pydantic import computed_field
 from sqlalchemy import text
 
 from ssb_dash_framework.setup import VariableSelector
-from ....utils.core_models import UpdateSkjemadata
+from ....utils.core_models import UpdateSkjemadata, UpdateSkjemamottak
 from ....utils.config_tools.connection import _get_connection_object
 from ....utils.alert_handler import create_alert
 from ....utils.config_tools.connection import get_connection
@@ -191,7 +191,7 @@ def default_updater(
     long = False
     if settings.formdata_fieldname_column == "variabel":
         long = True
-    update = UpdateSkjemadata(
+    update_skjemadata = UpdateSkjemadata(
         table=settings.form_data_table,
         skjema=skjema,
         ident=ident,
@@ -207,13 +207,24 @@ def default_updater(
         mapping_match_column=settings.mapping_match_column,
         mapping_result_column=settings.mapping_result_column,
     )
+    update_skjemamottak = UpdateSkjemamottak(
+        refnr=refnr,
+        column="status",
+        value='Under arbeid',
+        on_skjemadata_update=True
+    )
 
     if isinstance(_get_connection_object(), ConnectionPool):
-        result = update.update_ibis(long=long)
+        result_skjemadata = update_skjemadata.update_ibis(long=long)
+        try:
+            mottak_alert = update_skjemamottak.update_ibis()
+            print("status updated")
+        except PreventUpdate:
+            print("status update skipped")
         # get_table now returns a materialized snapshot; evict it so the next read
         # (including the old_value lookup on the very next edit) sees the new value.
         FormGetterCached.evict(refnr, settings.form_data_table)
-        return result
+        return result_skjemadata
     else:
         raise NotImplementedError(
             f"Connection of type '{type(_get_connection_object())}' is not implemented yet."
@@ -296,6 +307,7 @@ class EditableField(BaseModel):
         @callback(
             Output(self._id, "value", allow_duplicate=True),
             Output("alert_store", "data", allow_duplicate=True),
+            Output("skjemamottak-status-signal", "data", allow_duplicate=True),
             Input(settings.form_reference_input_id, component_property="value"),
             variableselector.get_state("ident"),
             variableselector.get_state("altinnskjema"),
@@ -341,7 +353,9 @@ class EditableField(BaseModel):
                 alert_log = list(alert_log or [])
                 if alert:
                     alert_log.append(alert)
-                return no_update, alert_log
+                print(f"alert_log: {alert_log}")
+                print("Returning signal", time.time())
+                return no_update, alert_log, time.time()
             else:
                 result = self.getter_func(
                     refnr,
@@ -354,7 +368,7 @@ class EditableField(BaseModel):
                 logger.info(
                     f"getter returned {result!r} for {self.field_path}, refnr={refnr}"
                 )
-                return result, no_update
+                return result, no_update, no_update
 
         @callback(
             variableselector.get_output_object("variabel"),

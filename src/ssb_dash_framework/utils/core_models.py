@@ -19,9 +19,20 @@ logger = logging.getLogger(__name__)
 
 
 class UpdateSkjemamottak(BaseModel):
+    """
+    Class to update editing status in table 'skjemamottak' for a refnr, runs after user edits 'status'.
+    Also runs after skjemadata edits (if on_skjemadata_update = True) for postgreSQL connections:
+        - If status currently is 'Ubehandlet', it updates the status to 'Under arbeid'. Other statuses are ignored.
+
+    Args:
+        refnr (str): Reference number identifying the row.
+        column (str): Column that will be updated, usually 'status' (str option in new model) or 'editert' (boolean in old model).
+        value (Any): New value to write. For new model it includes: Literal["Ubehandlet", "Under arbeid", "Ferdig"].
+    """
     refnr: str
     column: str
     value: str | bool
+    on_skjemadata_update: bool = False
 
     def __str__(self) -> str:
         return (
@@ -29,6 +40,7 @@ class UpdateSkjemamottak(BaseModel):
             f"  refnr  : {self.refnr}\n"
             f"  value  : {self.value}\n"
             f"  column : {self.column}\n"
+            f"  on_skjemadata_update : {self.on_skjemadata_update}\n"
         )
 
     def to_alert(self, success):
@@ -61,6 +73,27 @@ class UpdateSkjemamottak(BaseModel):
         return alert
 
     def update_ibis(self):
+        if not isinstance(_get_connection_object(), ConnectionPool):
+            logger.debug("The connection object is not a valid postgreSQL object. This insert function was specifically made for NØKU and only works for tables starting with 'skjemadata', 'kildevalg', or 'saldoskjema'.")
+            raise PreventUpdate
+
+        if self.on_skjemadata_update:
+            with get_connection() as conn:
+                df = conn.table("skjemamottak")
+                result = (
+                    df.filter(_.refnr == self.refnr)
+                    .select(self.column)
+                    .limit(1)
+                    .execute()[self.column].item()
+                )
+            print(f"update_ibis result: {result}")
+            print(f"column UpdateSkjemamottakStatus: {self.column}")
+            if result != 'Ubehandlet':
+                print(
+                    f"Skipping status update because current status is {result!r}"
+                )
+                raise PreventUpdate
+
         query = f"""
             UPDATE skjemamottak
             SET {self.column} = '{self.value}'
@@ -69,7 +102,7 @@ class UpdateSkjemamottak(BaseModel):
         try:
             with get_connection() as conn:
                 conn.raw_sql(query)
-            logger.info(f"Successfully updated '{self.column}' to '{self.value}'")
+            logger.info(f"Oppdaterte  '{self.column}' til '{self.value}'")
             return self.to_alert(success=True)
         except Exception as e:
             logger.error(
@@ -77,12 +110,6 @@ class UpdateSkjemamottak(BaseModel):
                 exc_info=True,
             )
             return self.to_alert(success=False)
-
-
-class UpdateSkjemamottakStatus(UpdateSkjemamottak):
-    value: Literal["Ubehandlet", "Under arbeid", "Ferdig"]
-    column: Literal["status"] = "status"
-
 
 class UpdateSkjemamottakAktiv(UpdateSkjemamottak):
     value: bool
@@ -94,7 +121,7 @@ class UpdateSkjemamottakKommentar(UpdateSkjemamottak):
 
 
 class UpdateSkjemadata(BaseModel):
-    f"""Model to centralize logic for updating data.
+    """Model to centralize logic for updating data.
 
     Args:
         table (str): Name of the table being updated.

@@ -18,6 +18,7 @@ from eimerdb import EimerDBInstance
 from ibis import _
 from psycopg_pool import ConnectionPool
 import tzlocal
+import time
 
 from ssb_dash_framework import VariableSelector
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
@@ -28,7 +29,7 @@ from .....utils.config_tools.connection import get_connection
 from .....utils.config_tools.set_variables import get_ident
 from .....utils.config_tools.set_variables import get_time_units
 from .....utils.core_models import UpdateSkjemamottakAktiv
-from .....utils.core_models import UpdateSkjemamottakStatus
+from .....utils.core_models import UpdateSkjemamottak
 from ..core import DataEditorHelperSidebar
 
 logger = logging.getLogger(__name__)
@@ -103,6 +104,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         )
         return html.Div(
             [
+                dcc.Store(id=f"skjemamottak-status-signal"),
                 form_selector,
                 dbc.Row("Editeringsstatus"),
                 dbc.Row(
@@ -162,9 +164,10 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 f"{self.module_name}-{self.module_number}-refnr-text-row", "children"
             ),
             self.variableselector.get_input("refnr"),
+            Input("skjemamottak-status-signal", "data"),
         )
-        def set_initial_status(refnr):
-
+        def set_initial_status(refnr, status_signal):
+            print(f"set_initial_status FIRED: refnr={refnr}, signal={status_signal}")
             if not refnr:
                 raise PreventUpdate
 
@@ -176,6 +179,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 raise PreventUpdate
 
             row = data.iloc[0]
+            print(f"current status fetched from DB: {row}")
 
             return (
                 ["Aktiv"] if row["aktiv"] else [],
@@ -185,6 +189,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
+            Output("skjemamottak-status-signal", "data", allow_duplicate=True),
             Input(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             Input(f"{self.module_name}-{self.module_number}-radioitems", "value"),
             State(self.variableselector.get_input("refnr").component_id, "value"),
@@ -209,8 +214,9 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
 
             elif triggered_id == f"{self.module_name}-{self.module_number}-radioitems":
 
-                update_to_apply = UpdateSkjemamottakStatus(
+                update_to_apply = UpdateSkjemamottak(
                     refnr=refnr,
+                    column="status",
                     value=status_code,
                 )
 
@@ -226,7 +232,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             else:
                 raise NotImplementedError
 
-            return [feedback, *alert_store]
+            return [feedback, *alert_store], time.time()
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-form-table", "rowData"),
