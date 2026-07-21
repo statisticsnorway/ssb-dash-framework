@@ -167,7 +167,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             Input("skjemamottak-status-signal", "data"),
         )
         def set_initial_status(refnr, status_signal):
-            print(f"set_initial_status FIRED: refnr={refnr}, signal={status_signal}")
+            
             if not refnr:
                 raise PreventUpdate
 
@@ -179,7 +179,6 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 raise PreventUpdate
 
             row = data.iloc[0]
-            print(f"current status fetched from DB: {row}")
 
             return (
                 ["Aktiv"] if row["aktiv"] else [],
@@ -298,7 +297,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         def selected_refnr(
             selected_row: list[dict[str, Any]], current_refnr, current_altinnskjema
         ):
-            # print(selected_row)
+
             logger.debug(f"Args:\nselected_row: {selected_row}")
             if not selected_row:
                 logger.debug("Raised PreventUpdate")

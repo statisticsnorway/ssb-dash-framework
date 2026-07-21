@@ -46,7 +46,7 @@ class UpdateSkjemamottak(BaseModel):
     def to_alert(self, success):
         if success:
             return create_alert(
-                f"Oppdaterte {self.column} for {self.refnr} til {self.value}",
+                f"Oppdaterte {self.column} for {self.refnr} til '{self.value}'",
                 "success",
                 ephemeral=True,
             )
@@ -86,10 +86,9 @@ class UpdateSkjemamottak(BaseModel):
                     .limit(1)
                     .execute()[self.column].item()
                 )
-            print(f"update_ibis result: {result}")
-            print(f"column UpdateSkjemamottakStatus: {self.column}")
+
             if result != 'Ubehandlet':
-                print(
+                logger.debug(
                     f"Skipping status update because current status is {result!r}"
                 )
                 raise PreventUpdate
