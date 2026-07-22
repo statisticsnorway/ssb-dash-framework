@@ -53,7 +53,7 @@ class UpdateSkjemamottak(BaseModel):
         else:
             return create_alert(
                 f"Feilet oppdatering av {self.column} for {self.refnr}",
-                "danger",
+                "warning",
                 ephemeral=True,
             )
 
@@ -178,7 +178,7 @@ class UpdateSkjemadata(BaseModel):
         else:
             return create_alert(
                 f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'. Se logg for detaljer.",
-                "danger",
+                "warning",
                 ephemeral=True,
             )
 

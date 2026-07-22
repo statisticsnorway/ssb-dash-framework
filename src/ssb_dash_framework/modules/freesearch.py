@@ -12,6 +12,7 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from dash_iconify import DashIconify
 
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
@@ -45,7 +46,7 @@ class FreeSearch(ABC):
         self.module_number = FreeSearch._id_number
         self.module_name = self.__class__.__name__
         FreeSearch._id_number += 1
-        self.icon = "🔍"
+        self.icon = DashIconify(icon="feather:search", width=24)
         self.label = label
         self.conn = conn
 

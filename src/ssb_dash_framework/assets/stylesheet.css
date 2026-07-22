@@ -659,6 +659,7 @@ ssb-dialog
 .ssb-dialog .dialog-content {
   font-size: 16px;
   padding: 16px;
+  color: black;
 }
 .ssb-dialog .dialog-content .dialog-title {
   font-weight: bold;
@@ -666,6 +667,20 @@ ssb-dialog
 .ssb-dialog .dialog-content .content {
   margin-top: 8px;
 }
+
+.ssb-dialog.alert-toast {
+  min-width: 500px;
+  max-width: 1000px;
+}
+
+.ssb-dialog.alert {
+  padding: 0;
+  border: none;
+  background: #ffffff;
+  border-radius: 4px; /* or 0, whatever fits your ssb-dialog design */
+  box-shadow: none;
+}
+
 .ssb-dialog.warning {
   border: 2px solid #dc3400;
 }
@@ -677,6 +692,12 @@ ssb-dialog
 }
 .ssb-dialog.info .icon-panel {
   background: #3396d2;
+}
+.ssb-dialog.success {
+  border: 2px solid #1A9D49;
+}
+.ssb-dialog.success .icon-panel {
+  background: #1A9D49;
 }
 
 /*
@@ -1665,31 +1686,9 @@ Alert handler
     /* but actual alerts are still clickable/dismissable */
 }
 
-.alert-toast,
-.alert-modal-item {
-    padding: 10px !important;
-    min-width: 500px;
-    max-width: 1000px;
-    border-radius: 8px;
-    border: 1px solid var(--bs-alert-border-color);
-}
-
-.alert-icon {
-    font-size: 1.5rem;
-    filter: brightness(6);
-}
-
-.alert-message {
-    font-size: 1rem;
-    font-weight: 500;
-}
-
-.alert-message p {
-    margin: 0;
-}
-
 .alert-timestamp {
-    font-size: 1rem;
+  color: black;
+  font-family: "Roboto", sans-serif !important;
 }
 
 .alert-container.bottom-left {
@@ -1753,6 +1752,30 @@ Alert handler
     }
 }
 
+@keyframes slideOutLeft {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(-110%);
+        opacity: 0;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(110%);
+        opacity: 0;
+    }
+}
+
 /* Left */
 .alert-container.bottom-left .alert.alert-toast {
     animation: slideInLeft 0.2s ease-out;
@@ -1769,7 +1792,15 @@ Alert handler
 }
 
 /* Exit animation */
-.alert-container .alert.alert-toast.alert-dying {
+.alert-container.bottom-left .alert.alert-toast.alert-dying {
+    animation: slideOutLeft 0.3s ease-in forwards;
+}
+
+.alert-container.top-right .alert.alert-toast.alert-dying {
+    animation: slideOutRight 0.3s ease-in forwards;
+}
+
+.alert-container.center .alert.alert-toast.alert-dying {
     animation: fadeOut 0.4s ease-in forwards;
 }
 

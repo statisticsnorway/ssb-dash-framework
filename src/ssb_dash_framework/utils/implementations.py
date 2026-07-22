@@ -220,8 +220,8 @@ class WindowImplementation:
                     scrollable=self.window_scrollable,
                 ),
                 sidebar_button(
-                    f"{self.icon}",
-                    f"{self.label}",
+                    self.icon,
+                    self.label,
                     f"sidebar-{self._window_n}-{self.module_name}-modal-button",
                 ),
             ]
