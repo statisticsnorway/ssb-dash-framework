@@ -1,6 +1,7 @@
 """VL visualisation module."""
 
 from functools import lru_cache
+from collections.abc import Callable
 from typing import Any
 from typing import ClassVar
 
@@ -12,6 +13,7 @@ from dash import Output
 from dash import callback
 from dash import dcc
 from dash import html
+from dash import no_update
 
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
@@ -43,10 +45,7 @@ class VLModule:
 
     def __init__(
         self,
-        base_path: str = (
-            "gs://ssb-strukt-naering-data-produkt-prod/"
-            "naringer/klargjorte-data/vl-data"
-        ),
+        file_path_resolver: Callable[[str, str], str],
     ) -> None:
         self.module_number = VLModule._id_number
         VLModule._id_number += 1
@@ -55,18 +54,37 @@ class VLModule:
         self.icon = "📊"
         self.label = "VL"
 
-        self.base_path = base_path.rstrip("/")
+        self.file_path_resolver = file_path_resolver
 
         self.data_version_id = f"vl-data-version-{self.module_number}"
         self.visualisation_id = f"vl-visualisation-{self.module_number}"
         self.naring_id = f"vl-naring-{self.module_number}"
         self.variable_id = f"vl-variable-{self.module_number}"
         self.multi_variable_id = f"vl-multi-variable-{self.module_number}"
+        self.multi_naring_id = f"vl-multi-naring-{self.module_number}"
+        self.enterprise_id = f"vl-enterprise-{self.module_number}"
+        self.enterprise_name_search_id = (
+            f"vl-enterprise-name-search-{self.module_number}"
+        )
+        self.change_year_id = f"vl-change-year-{self.module_number}"
+        self.change_top_n_id = f"vl-change-top-n-{self.module_number}"
+        self.change_controls_container_id = (
+            f"vl-change-controls-container-{self.module_number}"
+        )
         self.single_variable_container_id = (
             f"vl-single-variable-container-{self.module_number}"
         )
         self.multi_variable_container_id = (
             f"vl-multi-variable-container-{self.module_number}"
+        )
+        self.enterprise_container_id = (
+            f"vl-enterprise-container-{self.module_number}"
+        )
+        self.single_naring_container_id = (
+            f"vl-single-naring-container-{self.module_number}"
+        )
+        self.multi_naring_container_id = (
+            f"vl-multi-naring-container-{self.module_number}"
         )
         self.graph_title_id = f"vl-graph-title-{self.module_number}"
         self.graph_description_id = f"vl-graph-description-{self.module_number}"
@@ -94,7 +112,9 @@ class VLModule:
                     },
                     children=[
                         html.H1("VL-visualiseringer"),
-                        html.P("Velg datagrunnlag og visualisering."),
+                        html.P(
+                            "Velg datagrunnlag og visualisering."
+                        ),
                         html.Div(
                             children=[
                                 html.Label("Datagrunnlag"),
@@ -126,7 +146,8 @@ class VLModule:
                                             "label": label,
                                             "value": value,
                                         }
-                                        for value, label in VL_VISUALISATIONS.items()
+                                        for value, label
+                                        in VL_VISUALISATIONS.items()
                                     ],
                                     value="trend-single",
                                     clearable=False,
@@ -150,13 +171,17 @@ class VLModule:
                             children=[
                                 html.H2(
                                     id=self.graph_title_id,
-                                    children="Trendanalyse – én variabel",
+                                    children=(
+                                        "Trendanalyse – én variabel"
+                                    ),
                                 ),
                                 html.P(
                                     id=self.graph_description_id,
                                     children=(
-                                        "Viser utviklingen over tid sammen med forventet "
-                                        "variasjonsområde basert på historiske endringer."
+                                        "Viser utviklingen over tid "
+                                        "sammen med forventet "
+                                        "variasjonsområde basert på "
+                                        "historiske endringer."
                                     ),
                                 ),
                                 html.Div(
@@ -172,37 +197,48 @@ class VLModule:
                                     children=[
                                         html.Div(
                                             children=[
-                                                html.Label("Næring"),
-                                                dcc.Dropdown(
-                                                    id=self.naring_id,
-                                                    className="ssb-dropdown",
-                                                    options=[],
-                                                    clearable=False,
-                                                ),
-                                            ]
-                                        ),
-                                        html.Div(
-                                            children=[
                                                 html.Div(
-                                                    id=self.single_variable_container_id,
+                                                    id=(
+                                                        self
+                                                        .single_naring_container_id
+                                                    ),
                                                     children=[
-                                                        html.Label("Variabel"),
+                                                        html.Label(
+                                                            "Næring"
+                                                        ),
                                                         dcc.Dropdown(
-                                                            id=self.variable_id,
-                                                            className="ssb-dropdown",
+                                                            id=(
+                                                                self
+                                                                .naring_id
+                                                            ),
+                                                            className=(
+                                                                "ssb-dropdown"
+                                                            ),
                                                             options=[],
                                                             clearable=False,
                                                         ),
                                                     ],
                                                 ),
                                                 html.Div(
-                                                    id=self.multi_variable_container_id,
-                                                    style={"display": "none"},
+                                                    id=(
+                                                        self
+                                                        .multi_naring_container_id
+                                                    ),
+                                                    style={
+                                                        "display": "none"
+                                                    },
                                                     children=[
-                                                        html.Label("Variabler"),
+                                                        html.Label(
+                                                            "Næringer"
+                                                        ),
                                                         dcc.Dropdown(
-                                                            id=self.multi_variable_id,
-                                                            className="ssb-dropdown",
+                                                            id=(
+                                                                self
+                                                                .multi_naring_id
+                                                            ),
+                                                            className=(
+                                                                "ssb-dropdown"
+                                                            ),
                                                             options=[],
                                                             value=[],
                                                             multi=True,
@@ -210,11 +246,173 @@ class VLModule:
                                                         ),
                                                     ],
                                                 ),
-                                            ]
+                                            ],
+                                        ),
+                                        html.Div(
+                                            children=[
+                                                html.Div(
+                                                    id=(
+                                                        self
+                                                        .single_variable_container_id
+                                                    ),
+                                                    children=[
+                                                        html.Label(
+                                                            "Variabel"
+                                                        ),
+                                                        dcc.Dropdown(
+                                                            id=(
+                                                                self
+                                                                .variable_id
+                                                            ),
+                                                            className=(
+                                                                "ssb-dropdown"
+                                                            ),
+                                                            options=[],
+                                                            clearable=False,
+                                                        ),
+                                                    ],
+                                                ),
+                                                html.Div(
+                                                    id=(
+                                                        self
+                                                        .multi_variable_container_id
+                                                    ),
+                                                    style={
+                                                        "display": "none"
+                                                    },
+                                                    children=[
+                                                        html.Label(
+                                                            "Variabler"
+                                                        ),
+                                                        dcc.Dropdown(
+                                                            id=(
+                                                                self
+                                                                .multi_variable_id
+                                                            ),
+                                                            className=(
+                                                                "ssb-dropdown"
+                                                            ),
+                                                            options=[],
+                                                            value=[],
+                                                            multi=True,
+                                                            clearable=True,
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                        html.Div(
+                                            id=(
+                                                self
+                                                .enterprise_container_id
+                                            ),
+                                            style={
+                                                "display": "none"
+                                            },
+                                            children=[
+                                                html.Label(
+                                                    "Organisasjonsnummer"
+                                                ),
+                                                dcc.Input(
+                                                    id=self.enterprise_id,
+                                                    type="text",
+                                                    value="817209882",
+                                                    placeholder=(
+                                                        "Skriv inn "
+                                                        "orgnr_foretak"
+                                                    ),
+                                                    debounce=True,
+                                                    style={
+                                                        "width": "100%",
+                                                        "marginBottom": (
+                                                            "12px"
+                                                        ),
+                                                    },
+                                                ),
+                                                html.Label(
+                                                    "Eller søk etter navn"
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=(
+                                                        self
+                                                        .enterprise_name_search_id
+                                                    ),
+                                                    className=(
+                                                        "ssb-dropdown"
+                                                    ),
+                                                    options=[],
+                                                    value=None,
+                                                    placeholder=(
+                                                        "Skriv minst to tegn "
+                                                        "i foretaksnavnet"
+                                                    ),
+                                                    clearable=True,
+                                                    searchable=True,
+                                                ),
+                                            ],
+                                        ),
+                                        html.Div(
+                                            id=(
+                                                self
+                                                .change_controls_container_id
+                                            ),
+                                            style={
+                                                "display": "none"
+                                            },
+                                            children=[
+                                                html.Label("År"),
+                                                dcc.Dropdown(
+                                                    id=self.change_year_id,
+                                                    className=(
+                                                        "ssb-dropdown"
+                                                    ),
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    (
+                                                        "Antall største "
+                                                        "foretak"
+                                                    ),
+                                                    style={
+                                                        "marginTop": (
+                                                            "12px"
+                                                        ),
+                                                    },
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.change_top_n_id,
+                                                    className=(
+                                                        "ssb-dropdown"
+                                                    ),
+                                                    options=[
+                                                        {
+                                                            "label": "5",
+                                                            "value": 5,
+                                                        },
+                                                        {
+                                                            "label": "10",
+                                                            "value": 10,
+                                                        },
+                                                        {
+                                                            "label": "15",
+                                                            "value": 15,
+                                                        },
+                                                        {
+                                                            "label": "20",
+                                                            "value": 20,
+                                                        },
+                                                    ],
+                                                    value=10,
+                                                    clearable=False,
+                                                ),
+                                            ],
                                         ),
                                     ],
                                 ),
-                                html.Div(id=self.status_id),
+                                html.Div(
+                                    id=self.status_id
+                                ),
                             ],
                         ),
                         dcc.Loading(
@@ -240,12 +438,19 @@ class VLModule:
                 ),
             ],
         )
+            
 
-    def _parquet_path(self, data_version: str) -> str:
-        return (
-            f"{self.base_path}/{data_version}/"
-            "df_agg_naring4.parquet"
+    def _parquet_path(
+        self,
+        data_version: str,
+        dataset: str = "agg_naring4",
+    ) -> str:
+        """Resolve the physical path for a logical VL dataset."""
+        return self.file_path_resolver(
+            data_version,
+            dataset,
         )
+
 
     @staticmethod
     @lru_cache(maxsize=4)
@@ -264,6 +469,89 @@ class VLModule:
         df = df.copy()
         df["year"] = pd.to_numeric(df["year"], errors="coerce")
         df["naring_4"] = df["naring_4"].astype(str)
+
+        return df
+
+    @staticmethod
+    @lru_cache(maxsize=4)
+    def _read_enterprise_data(
+        parquet_path: str,
+    ) -> pd.DataFrame:
+        """Read and cache the enterprise-level VL dataset."""
+        df = pd.read_parquet(parquet_path)
+
+        required_columns = {
+            "orgnr_foretak",
+            "year",
+        }
+
+        missing_columns = required_columns.difference(df.columns)
+
+        if missing_columns:
+            raise ValueError(
+                "foretak.parquet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        df = df.copy()
+
+        df["year"] = pd.to_numeric(
+            df["year"],
+            errors="coerce",
+        )
+
+        df["orgnr_foretak"] = (
+            df["orgnr_foretak"]
+            .astype(str)
+            .str.replace(r"\.0$", "", regex=True)
+        )
+
+        return df
+
+    @staticmethod
+    @lru_cache(maxsize=4)
+    def _read_business_data(
+        parquet_path: str,
+    ) -> pd.DataFrame:
+        """Read and cache the business-level VL dataset."""
+        df = pd.read_parquet(parquet_path)
+
+        required_columns = {
+            "orgnr_foretak",
+            "orgnr_bedrift",
+            "navn",
+            "year",
+            "naring_4",
+        }
+
+        missing_columns = required_columns.difference(df.columns)
+
+        if missing_columns:
+            raise ValueError(
+                "bedrifter.parquet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        df = df.copy()
+
+        df["year"] = pd.to_numeric(
+            df["year"],
+            errors="coerce",
+        )
+
+        df["naring_4"] = df["naring_4"].astype(str)
+
+        df["orgnr_foretak"] = (
+            df["orgnr_foretak"]
+            .astype(str)
+            .str.replace(r"\.0$", "", regex=True)
+        )
+
+        df["orgnr_bedrift"] = (
+            df["orgnr_bedrift"]
+            .astype(str)
+            .str.replace(r"\.0$", "", regex=True)
+        )
 
         return df
 
@@ -496,28 +784,394 @@ class VLModule:
         fig.update_xaxes(dtick=1)
 
         return fig
+
+    @staticmethod
+    def _create_industry_trend_figure(
+        df: pd.DataFrame,
+        narings: list[str],
+        variable: str,
+    ) -> go.Figure:
+        """Create a time-series figure containing multiple industries."""
+        fig = go.Figure()
+
+        for naring in narings:
+            sub = df.loc[
+                df["naring_4"].astype(str) == str(naring),
+                ["year", variable],
+            ].copy()
+
+            sub = sub.dropna(subset=["year"])
+            sub = sub.sort_values("year").reset_index(drop=True)
+
+            sub[variable] = pd.to_numeric(
+                sub[variable],
+                errors="coerce",
+            )
+
+            fig.add_trace(
+                go.Scatter(
+                    x=sub["year"],
+                    y=sub[variable],
+                    mode="lines+markers",
+                    name=str(naring),
+                    line={"width": 3},
+                    marker={"size": 7},
+                    hovertemplate=(
+                        "År: %{x}<br>"
+                        f"Næring: {naring}<br>"
+                        f"{variable}: "
+                        "%{y:,.0f}"
+                        "<extra></extra>"
+                    ),
+                )
+            )
+
+        fig.update_layout(
+            autosize=True,
+            width=None,
+            height=None,
+            title=f"{variable} – flere næringer",
+            xaxis_title="År",
+            yaxis_title=variable,
+            template="plotly_white",
+            hovermode="x unified",
+            legend={
+                "orientation": "h",
+                "yanchor": "bottom",
+                "y": 1.02,
+                "xanchor": "left",
+                "x": 0,
+            },
+            margin={
+                "l": 70,
+                "r": 40,
+                "t": 100,
+                "b": 70,
+            },
+        )
+
+        fig.update_xaxes(dtick=1)
+
+        return fig
+
+    @staticmethod
+    def _create_enterprise_trend_figure(
+        df: pd.DataFrame,
+        enterprise: str,
+        variable: str,
+    ) -> go.Figure:
+        """Create a trend figure for one enterprise."""
+        sub = df.loc[
+            df["orgnr_foretak"].astype(str) == str(enterprise),
+            ["year", variable],
+        ].copy()
+
+        sub = sub.dropna(subset=["year"])
+        sub = sub.sort_values("year").reset_index(drop=True)
+
+        sub[variable] = pd.to_numeric(
+            sub[variable],
+            errors="coerce",
+        )
+
+        fig = go.Figure()
+
+        fig.add_trace(
+            go.Scatter(
+                x=sub["year"],
+                y=sub[variable],
+                mode="lines+markers",
+                name=variable,
+                line={"width": 3},
+                marker={"size": 8},
+                hovertemplate=(
+                    "År: %{x}<br>"
+                    f"Foretak: {enterprise}<br>"
+                    f"{variable}: "
+                    "%{y:,.0f}"
+                    "<extra></extra>"
+                ),
+            )
+        )
+
+        fig.update_layout(
+            autosize=True,
+            width=None,
+            height=None,
+            title=f"{variable} – foretak {enterprise}",
+            xaxis_title="År",
+            yaxis_title=variable,
+            template="plotly_white",
+            hovermode="x unified",
+            legend={
+                "orientation": "h",
+                "yanchor": "bottom",
+                "y": 1.02,
+                "xanchor": "left",
+                "x": 0,
+            },
+            margin={
+                "l": 70,
+                "r": 40,
+                "t": 100,
+                "b": 70,
+            },
+        )
+
+        fig.update_xaxes(dtick=1)
+
+        return fig
+
+    @staticmethod
+    def _create_change_share_figure(
+        df: pd.DataFrame,
+        naring: str,
+        variable: str,
+        year: int,
+        top_n: int,
+    ) -> go.Figure:
+        """Show which enterprises contribute most to annual change."""
+        previous_year = year - 1
+
+        filtered = df.loc[
+            (df["naring_4"].astype(str) == str(naring))
+            & (df["year"].isin([previous_year, year])),
+            [
+                "orgnr_foretak",
+                "navn",
+                "year",
+                variable,
+            ],
+        ].copy()
+
+        if filtered.empty:
+            return VLModule._empty_figure(
+                (
+                    f"Fant ingen data for næring {naring} "
+                    f"i {previous_year} og {year}."
+                )
+            )
+
+        filtered[variable] = pd.to_numeric(
+            filtered[variable],
+            errors="coerce",
+        ).fillna(0)
+
+        # A foretak can contain several establishments, so values are
+        # aggregated to enterprise level before calculating the change.
+        enterprise_values = (
+            filtered.groupby(
+                [
+                    "orgnr_foretak",
+                    "year",
+                ],
+                as_index=False,
+            )
+            .agg(
+                value=(variable, "sum"),
+                navn=(
+                    "navn",
+                    lambda values: next(
+                        (
+                            str(value)
+                            for value in values
+                            if pd.notna(value)
+                            and str(value).strip()
+                        ),
+                        "",
+                    ),
+                ),
+            )
+        )
+
+        values_by_year = enterprise_values.pivot(
+            index="orgnr_foretak",
+            columns="year",
+            values="value",
+        ).fillna(0)
+
+        for required_year in [previous_year, year]:
+            if required_year not in values_by_year.columns:
+                values_by_year[required_year] = 0
+
+        changes = values_by_year.reset_index()
+
+        changes["change"] = (
+            changes[year]
+            - changes[previous_year]
+        )
+
+        names = (
+            enterprise_values.loc[
+                enterprise_values["navn"].astype(str).str.strip() != ""
+            ]
+            .sort_values("year")
+            .drop_duplicates(
+                subset="orgnr_foretak",
+                keep="last",
+            )
+            .set_index("orgnr_foretak")["navn"]
+        )
+
+        changes["navn"] = (
+            changes["orgnr_foretak"]
+            .map(names)
+            .fillna("")
+        )
+
+        changes["absolute_change"] = changes["change"].abs()
+
+        changes = changes.loc[
+            changes["absolute_change"] > 0
+        ].copy()
+
+        if changes.empty:
+            return VLModule._empty_figure(
+                (
+                    f"Det var ingen registrerte endringer i "
+                    f"{variable} for næring {naring} fra "
+                    f"{previous_year} til {year}."
+                )
+            )
+
+        changes = changes.sort_values(
+            "absolute_change",
+            ascending=False,
+        )
+
+        top_n = max(int(top_n), 1)
+
+        largest = changes.head(top_n).copy()
+        remaining = changes.iloc[top_n:].copy()
+
+        largest["label"] = largest.apply(
+            lambda row: (
+                f"{row['navn']} — {row['orgnr_foretak']}"
+                if str(row["navn"]).strip()
+                else str(row["orgnr_foretak"])
+            ),
+            axis=1,
+        )
+
+        if not remaining.empty:
+            other_row = pd.DataFrame(
+                {
+                    "label": ["Andre foretak"],
+                    "absolute_change": [
+                        remaining["absolute_change"].sum()
+                    ],
+                    "change": [
+                        remaining["change"].sum()
+                    ],
+                }
+            )
+
+            plot_data = pd.concat(
+                [
+                    largest[
+                        [
+                            "label",
+                            "absolute_change",
+                            "change",
+                        ]
+                    ],
+                    other_row,
+                ],
+                ignore_index=True,
+            )
+        else:
+            plot_data = largest[
+                [
+                    "label",
+                    "absolute_change",
+                    "change",
+                ]
+            ].copy()
+
+        total_absolute_change = plot_data[
+            "absolute_change"
+        ].sum()
+
+        plot_data["share"] = (
+            plot_data["absolute_change"]
+            / total_absolute_change
+            * 100
+        )
+
+        net_change = changes["change"].sum()
+
+        figure = go.Figure(
+            data=[
+                go.Pie(
+                    labels=plot_data["label"],
+                    values=plot_data["absolute_change"],
+                    customdata=plot_data[
+                        [
+                            "change",
+                            "share",
+                        ]
+                    ],
+                    hole=0.35,
+                    textinfo="label+percent",
+                    hovertemplate=(
+                        "<b>%{label}</b><br>"
+                        "Andel av absolutt endring: "
+                        "%{customdata[1]:.1f}%<br>"
+                        "Endring: %{customdata[0]:,.0f}"
+                        "<extra></extra>"
+                    ),
+                )
+            ]
+        )
+
+        figure.update_layout(
+            title=(
+                f"{variable} – bidrag til endringen i næring "
+                f"{naring}, {previous_year}–{year}"
+                f"<br><sup>Nettoendring: {net_change:,.0f}</sup>"
+            ),
+            legend_title_text="Foretak",
+            margin={
+                "l": 40,
+                "r": 40,
+                "t": 100,
+                "b": 40,
+            },
+        )
+
+        return figure
+
     def module_callbacks(self) -> None:
         """Register VL callbacks."""
 
         @callback(
             Output(self.naring_id, "options"),
             Output(self.naring_id, "value"),
+            Output(self.multi_naring_id, "options"),
+            Output(self.multi_naring_id, "value"),
             Output(self.variable_id, "options"),
             Output(self.variable_id, "value"),
             Output(self.multi_variable_id, "options"),
             Output(self.multi_variable_id, "value"),
+            Output(self.change_year_id, "options"),
+            Output(self.change_year_id, "value"),
             Output(self.status_id, "children"),
             Input(self.data_version_id, "value"),
         )
+
         def load_dropdown_options(
             data_version: str,
         ) -> tuple[
             list[dict[str, str]],
             str | None,
             list[dict[str, str]],
+            list[str],
+            list[dict[str, str]],
             str | None,
             list[dict[str, str]],
             list[str],
+            list[dict[str, int]],
+            int | None,
             Any,
         ]:
             try:
@@ -560,6 +1214,8 @@ class VLModule:
                     else None
                 )
 
+                multi_naring_value = naring_values[:3]
+
                 variable_value = (
                     variable_values[0]
                     if variable_values
@@ -567,6 +1223,28 @@ class VLModule:
                 )
 
                 multi_variable_value = variable_values[:3]
+
+                year_values = sorted(
+                    df["year"]
+                    .dropna()
+                    .astype(int)
+                    .unique()
+                    .tolist()
+                )
+
+                year_options = [
+                    {
+                        "label": str(year),
+                        "value": year,
+                    }
+                    for year in year_values
+                ]
+
+                change_year_value = (
+                    year_values[-1]
+                    if year_values
+                    else None
+                )
 
                 status = html.P(
                     [
@@ -579,10 +1257,14 @@ class VLModule:
                 return (
                     naring_options,
                     naring_value,
+                    naring_options,
+                    multi_naring_value,
                     variable_options,
                     variable_value,
                     variable_options,
                     multi_variable_value,
+                    year_options,
+                    change_year_value,
                     status,
                 )
 
@@ -591,9 +1273,13 @@ class VLModule:
                     [],
                     None,
                     [],
+                    [],
+                    [],
                     None,
                     [],
                     [],
+                    [],
+                    None,
                     html.Div(
                         f"Kunne ikke lese data: {error}",
                         className="alert alert-danger",
@@ -601,15 +1287,121 @@ class VLModule:
                 )
 
         @callback(
+            Output(self.enterprise_name_search_id, "options"),
+            Input(self.enterprise_name_search_id, "search_value"),
+            Input(self.data_version_id, "value"),
+        )
+        def search_enterprise_names(
+            search_value: str | None,
+            data_version: str,
+        ) -> list[dict[str, str]]:
+            """Return a limited list of enterprises matching name or orgnr."""
+            if not search_value:
+                return []
+
+            search_text = search_value.strip()
+
+            if len(search_text) < 2:
+                return []
+
+            parquet_path = self._parquet_path(
+                data_version,
+                dataset="foretak",
+            )
+            df = self._read_enterprise_data(parquet_path)
+
+            if "navn" not in df.columns:
+                return []
+
+            lookup = df.loc[
+                df["navn"].notna(),
+                [
+                    "orgnr_foretak",
+                    "year",
+                    "navn",
+                ],
+            ].copy()
+
+            lookup["navn"] = lookup["navn"].astype(str)
+            lookup["orgnr_foretak"] = (
+                lookup["orgnr_foretak"].astype(str)
+            )
+
+            # Use the latest available non-missing name for each enterprise.
+            lookup = (
+                lookup.sort_values(
+                    "year",
+                    ascending=False,
+                )
+                .drop_duplicates(
+                    subset="orgnr_foretak",
+                    keep="first",
+                )
+            )
+
+            matches = lookup.loc[
+                lookup["navn"].str.contains(
+                    search_text,
+                    case=False,
+                    na=False,
+                    regex=False,
+                )
+                | lookup["orgnr_foretak"].str.contains(
+                    search_text,
+                    case=False,
+                    na=False,
+                    regex=False,
+                )
+            ].head(25)
+
+            return [
+                {
+                    "label": (
+                        f"{row.navn} — "
+                        f"{row.orgnr_foretak}"
+                    ),
+                    "value": row.orgnr_foretak,
+                }
+                for row in matches.itertuples()
+            ]
+
+        @callback(
+            Output(self.enterprise_id, "value"),
+            Input(self.enterprise_name_search_id, "value"),
+            prevent_initial_call=True,
+        )
+        def select_enterprise_from_name(
+            selected_orgnr: str | None,
+        ) -> str | Any:
+            """Copy the selected organisation number into the input field."""
+            if not selected_orgnr:
+                return no_update
+
+            return str(selected_orgnr)
+
+        @callback(
             Output(self.graph_title_id, "children"),
             Output(self.graph_description_id, "children"),
+            Output(self.single_naring_container_id, "style"),
+            Output(self.multi_naring_container_id, "style"),
+            Output(self.enterprise_container_id, "style"),
+            Output(self.change_controls_container_id, "style"),
             Output(self.single_variable_container_id, "style"),
             Output(self.multi_variable_container_id, "style"),
             Input(self.visualisation_id, "value"),
         )
         def update_visualisation_controls(
             visualisation: str,
-        ) -> tuple[str, str, dict[str, str], dict[str, str]]:
+        ) -> tuple[
+            str,
+            str,
+            dict[str, str],
+            dict[str, str],
+            dict[str, str],
+            dict[str, str],
+            dict[str, str],
+            dict[str, str],
+        ]:
             if visualisation == "trend-multi":
                 return (
                     "Trendanalyse – flere variabler",
@@ -617,8 +1409,57 @@ class VLModule:
                         "Sammenligner utviklingen i flere valgte variabler "
                         "for samme næring over tid."
                     ),
-                    {"display": "none"},
-                    {"display": "block"},
+                    {"display": "block"},  # single næring
+                    {"display": "none"},   # multiple næringer
+                    {"display": "none"},   # enterprise
+                    {"display": "none"},   # change controls
+                    {"display": "none"},   # single variable
+                    {"display": "block"},  # multiple variables
+                )
+
+            if visualisation == "trend-industries":
+                return (
+                    "Trendanalyse – flere næringer",
+                    (
+                        "Sammenligner utviklingen i én valgt variabel "
+                        "for flere næringer over tid."
+                    ),
+                    {"display": "none"},   # single næring
+                    {"display": "block"},  # multiple næringer
+                    {"display": "none"},   # enterprise
+                    {"display": "none"},   # change controls
+                    {"display": "block"},  # single variable
+                    {"display": "none"},   # multiple variables
+                )
+
+            if visualisation == "trend-enterprise":
+                return (
+                    "Trendanalyse – enkeltforetak",
+                    (
+                        "Viser utviklingen i én valgt variabel "
+                        "for ett foretak over tid."
+                    ),
+                    {"display": "none"},   # single næring
+                    {"display": "none"},   # multiple næringer
+                    {"display": "block"},  # enterprise
+                    {"display": "none"},   # change controls
+                    {"display": "block"},  # single variable
+                    {"display": "none"},   # multiple variables
+                )
+
+            if visualisation == "change-share":
+                return (
+                    "Prosentandeler av endringene",
+                    (
+                        "Viser hvilke foretak som bidrar mest til "
+                        "endringen i valgt variabel fra året før."
+                    ),
+                    {"display": "block"},  # single næring
+                    {"display": "none"},   # multiple næringer
+                    {"display": "none"},   # enterprise
+                    {"display": "block"},  # change controls
+                    {"display": "block"},  # single variable
+                    {"display": "none"},   # multiple variables
                 )
 
             return (
@@ -627,8 +1468,12 @@ class VLModule:
                     "Viser utviklingen over tid sammen med forventet "
                     "variasjonsområde basert på historiske endringer."
                 ),
-                {"display": "block"},
-                {"display": "none"},
+                {"display": "block"},  # single næring
+                {"display": "none"},   # multiple næringer
+                {"display": "none"},   # enterprise
+                {"display": "none"},   # change controls
+                {"display": "block"},  # single variable
+                {"display": "none"},   # multiple variables
             )
 
         @callback(
@@ -637,19 +1482,36 @@ class VLModule:
             Input(self.visualisation_id, "value"),
             Input(self.data_version_id, "value"),
             Input(self.naring_id, "value"),
+            Input(self.multi_naring_id, "value"),
+            Input(self.enterprise_id, "value"),
             Input(self.variable_id, "value"),
             Input(self.multi_variable_id, "value"),
+            Input(self.change_year_id, "value"),
+            Input(self.change_top_n_id, "value"),
         )
         def update_graph(
             visualisation: str,
             data_version: str,
             naring: str | None,
+            multi_narings: list[str] | None,
+            enterprise: str | None,
             variable: str | None,
             multi_variables: list[str] | None,
+            change_year: int | None,
+            change_top_n: int | None,
         ) -> tuple[go.Figure, dict[str, str]]:
             supported_visualisations = {
                 "trend-single",
                 "trend-multi",
+                "trend-industries",
+                "trend-enterprise",
+                "change-share",
+            }
+
+            graph_style = {
+                "display": "block",
+                "width": "100%",
+                "maxWidth": "none",
             }
 
             if visualisation not in supported_visualisations:
@@ -662,29 +1524,42 @@ class VLModule:
                     self._empty_figure(
                         f"{label} blir lagt til i neste steg."
                     ),
-                    {
-                        "display": "block",
-                        "width": "100%",
-                        "maxWidth": "none",
-                    },
-                )
-
-            if not naring:
-                return (
-                    self._empty_figure("Velg næring."),
-                    {
-                        "display": "block",
-                        "width": "100%",
-                        "maxWidth": "none",
-                    },
+                    graph_style,
                 )
 
             try:
-                parquet_path = self._parquet_path(data_version)
-                df = self._read_data(parquet_path)
+                if visualisation == "trend-enterprise":
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="foretak",
+                    )
+                    df = self._read_enterprise_data(
+                        parquet_path
+                    )
+
+                elif visualisation == "change-share":
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="bedrifter",
+                    )
+                    df = self._read_business_data(
+                        parquet_path
+                    )
+
+                else:
+                    parquet_path = self._parquet_path(
+                        data_version
+                    )
+                    df = self._read_data(
+                        parquet_path
+                    )
 
                 if visualisation == "trend-multi":
-                    if not multi_variables:
+                    if not naring:
+                        figure = self._empty_figure(
+                            "Velg en næring."
+                        )
+                    elif not multi_variables:
                         figure = self._empty_figure(
                             "Velg minst én variabel."
                         )
@@ -695,8 +1570,57 @@ class VLModule:
                             variables=multi_variables,
                         )
 
+                elif visualisation == "trend-enterprise":
+                    if not enterprise:
+                        figure = self._empty_figure(
+                            "Velg et foretak."
+                        )
+                    elif not variable:
+                        figure = self._empty_figure(
+                            "Velg en variabel."
+                        )
+                    elif variable not in df.columns:
+                        figure = self._empty_figure(
+                            f"Variabelen {variable} finnes ikke i foretaksdataene."
+                        )
+                    else:
+                        figure = self._create_enterprise_trend_figure(
+                            df=df,
+                            enterprise=enterprise,
+                            variable=variable,
+                        )
+
+                elif visualisation == "change-share":
+                    if not naring:
+                        figure = self._empty_figure(
+                            "Velg en næring."
+                        )
+                    elif not variable:
+                        figure = self._empty_figure(
+                            "Velg en variabel."
+                        )
+                    elif change_year is None:
+                        figure = self._empty_figure(
+                            "Velg et år."
+                        )
+                    elif variable not in df.columns:
+                        figure = self._empty_figure(
+                            f"Variabelen {variable} finnes ikke i bedriftsdataene."
+                        )
+                    else:
+                        figure = self._create_change_share_figure(
+                            df=df,
+                            naring=naring,
+                            variable=variable,
+                            year=change_year,
+                            top_n=change_top_n or 10,
+                        )
                 else:
-                    if not variable:
+                    if not naring:
+                        figure = self._empty_figure(
+                            "Velg en næring."
+                        )
+                    elif not variable:
                         figure = self._empty_figure(
                             "Velg en variabel."
                         )
@@ -707,25 +1631,14 @@ class VLModule:
                             variable=variable,
                         )
 
-                return (
-                    figure,
-                    {
-                        "display": "block",
-                        "width": "100%",
-                        "maxWidth": "none",
-                    },
-                )
+                return figure, graph_style
 
             except Exception as error:
                 return (
                     self._empty_figure(
                         f"Kunne ikke lage figur: {error}"
                     ),
-                    {
-                        "display": "block",
-                        "width": "100%",
-                        "maxWidth": "none",
-                    },
+                    graph_style,
                 )
 
 
@@ -734,14 +1647,11 @@ class VLModuleTab(TabImplementation, VLModule):
 
     def __init__(
         self,
-        base_path: str = (
-            "gs://ssb-strukt-naering-data-produkt-prod/"
-            "naringer/klargjorte-data/vl-data"
-        ),
+        file_path_resolver: Callable[[str, str], str],
     ) -> None:
         VLModule.__init__(
             self,
-            base_path=base_path,
+            file_path_resolver=file_path_resolver,
         )
         TabImplementation.__init__(self)
 
@@ -751,13 +1661,10 @@ class VLModuleWindow(WindowImplementation, VLModule):
 
     def __init__(
         self,
-        base_path: str = (
-            "gs://ssb-strukt-naering-data-produkt-prod/"
-            "naringer/klargjorte-data/vl-data"
-        ),
+        file_path_resolver: Callable[[str, str], str],
     ) -> None:
         VLModule.__init__(
             self,
-            base_path=base_path,
+            file_path_resolver=file_path_resolver,
         )
         WindowImplementation.__init__(self)
