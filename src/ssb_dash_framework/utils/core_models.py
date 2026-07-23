@@ -1,21 +1,44 @@
+from collections.abc import Callable
 import logging
 from typing import Any
 from typing import Literal
 
 from dash.exceptions import PreventUpdate
+import ibis
+from ibis import _
+from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
 
 from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.setup.variableselector import VariableSelectorOption
-import ibis
-from ibis import _
 
 from .alert_handler import create_alert
 from .config_tools.connection import _get_connection_object
 from .config_tools.connection import get_connection
-from psycopg_pool import ConnectionPool
 
 logger = logging.getLogger(__name__)
+
+
+def _is_valid_int(v: Any) -> bool | str:
+    """Valid only if the string content is a whole number with no decimal separator."""
+    s = str(v).strip()
+    if "." in s or "," in s:
+        return "float"
+    if s.lstrip("-").isdigit() and s not in ("", "-"):
+        return True
+    return False
+
+def _is_valid_bool(v: Any) -> bool:
+    """Accepts 'true'/'false' (any case), and '1'/'0'."""
+    s = str(v).strip().lower()
+    return s in {"true", "false", "1", "0"}
+
+_VALIDATORS: dict[str, Callable[[Any], str | None]] = {
+    "string": lambda v: True,
+    "integer": _is_valid_int,
+    "number": _is_valid_int,
+    "bool": _is_valid_bool,
+}
 
 
 class UpdateSkjemamottak(BaseModel):
@@ -29,6 +52,7 @@ class UpdateSkjemamottak(BaseModel):
         column (str): Column that will be updated, usually 'status' (str option in new model) or 'editert' (boolean in old model).
         value (Any): New value to write. For new model it includes: Literal["Ubehandlet", "Under arbeid", "Ferdig"].
     """
+
     refnr: str
     column: str
     value: str | bool
@@ -74,7 +98,9 @@ class UpdateSkjemamottak(BaseModel):
 
     def update_ibis(self):
         if not isinstance(_get_connection_object(), ConnectionPool):
-            logger.debug("The connection object is not a valid postgreSQL object. This insert function was specifically made for NØKU and only works for tables starting with 'skjemadata', 'kildevalg', or 'saldoskjema'.")
+            logger.debug(
+                "The connection object is not a valid postgreSQL object. This insert function was specifically made for NØKU and only works for tables starting with 'skjemadata', 'kildevalg', or 'saldoskjema'."
+            )
             raise PreventUpdate
 
         if self.on_skjemadata_update:
@@ -84,10 +110,11 @@ class UpdateSkjemamottak(BaseModel):
                     df.filter(_.refnr == self.refnr)
                     .select(self.column)
                     .limit(1)
-                    .execute()[self.column].item()
+                    .execute()[self.column]
+                    .item()
                 )
 
-            if result != 'Ubehandlet':
+            if result != "Ubehandlet":
                 logger.debug(
                     f"Skipping status update because current status is {result!r}"
                 )
@@ -109,6 +136,7 @@ class UpdateSkjemamottak(BaseModel):
                 exc_info=True,
             )
             return self.to_alert(success=False)
+
 
 class UpdateSkjemamottakAktiv(UpdateSkjemamottak):
     value: bool
@@ -168,18 +196,37 @@ class UpdateSkjemadata(BaseModel):
             f"  Value             : {self.old_value} -> {self.value}"
         )
 
-    def to_alert(self, long, success):
+    def to_alert(self, long, success: bool, datatype: str | None = None):
+
+        if datatype:
+            if datatype == "float":
+                return create_alert(
+                f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}':"
+                f"Heltallsfelt kan ikke inneholde komma eller punktum (fikk '{self.value}').",
+                "warning",
+                ephemeral=True,
+                duration=10,
+            )
+            return create_alert(
+                f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}': Datatypen skal være {datatype}, ikke {type(self.value)}.",
+                "warning",
+                ephemeral=True,
+                duration=10,
+            )
+
         if success:
             return create_alert(
                 f"Ident '{self.ident}' oppdatert på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'",
                 "success",
                 ephemeral=True,
+                duration=8
             )
         else:
             return create_alert(
                 f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'. Se logg for detaljer.",
                 "warning",
                 ephemeral=True,
+                duration=8
             )
 
     def update_eimer(self, long):
@@ -220,7 +267,6 @@ class UpdateSkjemadata(BaseModel):
             )
             return self.to_alert(long, success=False)
 
-
     def _get_feltsti(self, conn) -> str:
         """Looks up the long variable name from the mapping table.
 
@@ -247,6 +293,42 @@ class UpdateSkjemadata(BaseModel):
             return self.variable
         return result[self.mapping_result_column].iloc[0]
 
+    def _check_datatype(self, conn) -> str | None:
+        """
+        Fetches the expected datatype for `self.variable` and checks whether
+        `self.value` could legitimately represent that datatype. Does not modify
+        `self.value`. `None` is always considered valid (treated as "no value").
+
+        Returns:
+            None if the value is valid for the expected datatype (or is None),
+            otherwise the expected datatype string (for use in an error message).
+        """
+        if self.value is None or self.value == "":
+            return None
+
+        t = conn.table("datatyper")
+        datatype = (
+            t.filter(_.aar == (self.time_units or {}).get("aar"))
+            .filter(_.variabel == self.variable)
+            .select(["datatype"])
+            .execute()
+        )
+        datatype = datatype["datatype"].item() if len(datatype) > 0 else None
+        if not datatype:
+            return None
+
+        validator = _VALIDATORS.get(datatype)
+        if validator is None:
+            logger.warning(f"Unknown datatype '{datatype}' for variable '{self.variable}'")
+            return datatype
+
+        result = validator(self.value)
+        if result is True:
+            return None
+        if result == "float":
+            return "float"
+        return datatype
+
     def _insert_ibis(self, conn, long):
         """
         NØKU-specific function to insert data if the row doesn't exist in the postgreSQL database.
@@ -254,13 +336,19 @@ class UpdateSkjemadata(BaseModel):
         """
 
         if not isinstance(_get_connection_object(), ConnectionPool):
-            logger.debug("Insert failed. The connection object is not a valid postgreSQL object. This insert function was specifically made for NØKU and only works for tables starting with 'skjemadata', 'kildevalg', or 'saldoskjema'.")
+            logger.debug(
+                "Insert failed. The connection object is not a valid postgreSQL object. This insert function was specifically made for NØKU and only works for tables starting with 'skjemadata', 'kildevalg', or 'saldoskjema'."
+            )
             raise PreventUpdate
 
         if self.table.startswith("skjemadata"):
             feltsti: str = self._get_feltsti(conn)
             columns = {
-                **{unit: f"'{val}'" for unit, val in (self.time_units or {}).items() if val},
+                **{
+                    unit: f"'{val}'"
+                    for unit, val in (self.time_units or {}).items()
+                    if val
+                },
                 "skjema": f"'{self.skjema}'",
                 "ident": f"'{self.ident}'",
                 "refnr": f"'{self.refnr}'",
@@ -274,7 +362,11 @@ class UpdateSkjemadata(BaseModel):
             """
         elif self.table.startswith("saldoskjema"):
             columns = {
-                **{unit: f"'{val}'" for unit, val in (self.time_units or {}).items() if val},
+                **{
+                    unit: f"'{val}'"
+                    for unit, val in (self.time_units or {}).items()
+                    if val
+                },
                 "orgnr_foretak": f"'{self.ident}'",
                 "variabel": f"'{self.variable}'",
                 "verdi": f"'{self.value}'",
@@ -286,29 +378,39 @@ class UpdateSkjemadata(BaseModel):
 
         try:
             conn.raw_sql(insert_query)
-            logger.info(f"Inserted new row with variabel='{self.variable}' and value='{self.value}' into {self.table}.")
+            logger.info(
+                f"Inserted new row with variabel='{self.variable}' and value='{self.value}' into {self.table}."
+            )
             return self.to_alert(long, success=True)
         except Exception as e:
             logger.error(f"INSERT feilet: {e}", exc_info=True)
             return self.to_alert(long, success=False)
 
     def update_ibis(self, long):
-        update_query  = f"""
+
+        with get_connection() as conn:
+            datatype_check = self._check_datatype(conn)
+            if datatype_check:
+                return self.to_alert(long, success=False, datatype=datatype_check)
+
+        update_query = f"""
             UPDATE {self.table}
             SET {self.column} = '{self.value}'
             WHERE {self.identifier_column} = '{self.refnr}'
         """
         if self.identifier_column != "refnr" and self.time_units:
-            time_filters = " ".join([
-                f"AND {unit} = '{val}'" 
-                for unit, val in self.time_units.items() 
-                if val
-            ])
-            update_query= update_query.strip() + "\n" + time_filters
+            time_filters = " ".join(
+                [
+                    f"AND {unit} = '{val}'"
+                    for unit, val in self.time_units.items()
+                    if val
+                ]
+            )
+            update_query = update_query.strip() + "\n" + time_filters
         if long:
-            update_query= update_query.strip() + f"\nAND variabel = '{self.variable}'"
+            update_query = update_query.strip() + f"\nAND variabel = '{self.variable}'"
         else:
-            update_query= update_query.strip() + f"\nAND ident = '{self.ident}'"
+            update_query = update_query.strip() + f"\nAND ident = '{self.ident}'"
 
         try:
             with get_connection() as conn:

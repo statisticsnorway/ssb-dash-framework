@@ -73,13 +73,20 @@ class TabImplementation:
         Returns:
             The layout containing the module layout.
         """
-        self.label = self.icon + " " + self.label
+        if self.icon:
+            label_content = (
+                [self.icon, " ", self.label]
+                if isinstance(self.icon, str)
+                else [self.icon, html.Span(self.label, className="ms-2")]
+            )
+        else:
+            label_content = self.label
         layout = dbc.Tab(
             html.Div(
                 className="tab-implementation",
                 children=self.get_module_layout(),
             ),
-            label=f"{self.label}",
+            label=label_content,
         )
         logger.debug(f"Generated {self.module_name} - {self.label} tab layout")
         return layout

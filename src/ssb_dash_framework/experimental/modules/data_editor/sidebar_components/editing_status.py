@@ -141,7 +141,9 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                                         children=[
                                             dcc.Checklist(
                                                 id=f"{self.module_name}-{self.module_number}-checkbox",
-                                                options=[{"label": "", "value": "Aktiv"}],
+                                                options=[
+                                                    {"label": "", "value": "Aktiv"}
+                                                ],
                                             ),
                                             html.Label("Ja", className="mb-1 ms-2"),
                                         ],
@@ -165,9 +167,11 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             ),
             self.variableselector.get_input("refnr"),
             Input("skjemamottak-status-signal", "data"),
+            State(f"{self.module_name}-{self.module_number}-checkbox", "value"),
+            State(f"{self.module_name}-{self.module_number}-radioitems", "value"),
         )
-        def set_initial_status(refnr, status_signal):
-            
+        def set_initial_status(refnr, status_signal, current_checkbox, current_radio):
+
             if not refnr:
                 raise PreventUpdate
 
@@ -180,9 +184,17 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
 
             row = data.iloc[0]
 
+            new_checkbox = ["Aktiv"] if row["aktiv"] else []
+            new_radio = row["status"]
+
+            checkbox_out = (
+                new_checkbox if new_checkbox != current_checkbox else no_update
+            )
+            radio_out = new_radio if new_radio != current_radio else no_update
+
             return (
-                ["Aktiv"] if row["aktiv"] else [],
-                row["status"],
+                checkbox_out,
+                radio_out,
                 f'Viser skjema: {row["skjema"]}',
             )
 
@@ -207,8 +219,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             if triggered_id == f"{self.module_name}-{self.module_number}-checkbox":
 
                 update_to_apply = UpdateSkjemamottakAktiv(
-                    refnr=refnr,
-                    value=bool(aktiv_status),
+                    refnr=refnr, value=bool(aktiv_status)
                 )
 
             elif triggered_id == f"{self.module_name}-{self.module_number}-radioitems":
