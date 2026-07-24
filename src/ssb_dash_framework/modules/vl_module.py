@@ -11,6 +11,7 @@ import plotly.graph_objects as go
 from dash import Input
 from dash import Output
 from dash import callback
+from dash import dash_table
 from dash import dcc
 from dash import html
 from dash import no_update
@@ -56,20 +57,206 @@ class VLModule:
 
         self.file_path_resolver = file_path_resolver
 
-        self.data_version_id = f"vl-data-version-{self.module_number}"
-        self.visualisation_id = f"vl-visualisation-{self.module_number}"
-        self.naring_id = f"vl-naring-{self.module_number}"
-        self.variable_id = f"vl-variable-{self.module_number}"
-        self.multi_variable_id = f"vl-multi-variable-{self.module_number}"
-        self.multi_naring_id = f"vl-multi-naring-{self.module_number}"
-        self.enterprise_id = f"vl-enterprise-{self.module_number}"
+        # Main selections
+        self.data_version_id = (
+            f"vl-data-version-{self.module_number}"
+        )
+        self.visualisation_id = (
+            f"vl-visualisation-{self.module_number}"
+        )
+
+        # Existing trend controls
+        self.naring_id = (
+            f"vl-naring-{self.module_number}"
+        )
+        self.variable_id = (
+            f"vl-variable-{self.module_number}"
+        )
+        self.multi_variable_id = (
+            f"vl-multi-variable-{self.module_number}"
+        )
+        self.multi_naring_id = (
+            f"vl-multi-naring-{self.module_number}"
+        )
+
+        # Enterprise trend controls
+        self.enterprise_id = (
+            f"vl-enterprise-{self.module_number}"
+        )
         self.enterprise_name_search_id = (
             f"vl-enterprise-name-search-{self.module_number}"
         )
-        self.change_year_id = f"vl-change-year-{self.module_number}"
-        self.change_top_n_id = f"vl-change-top-n-{self.module_number}"
-        self.change_controls_container_id = (
-            f"vl-change-controls-container-{self.module_number}"
+
+        # Change-share controls
+        self.change_year_id = (
+            f"vl-change-year-{self.module_number}"
+        )
+        self.change_top_n_id = (
+            f"vl-change-top-n-{self.module_number}"
+        )
+
+        # NØKU table controls
+        self.noku_year_id = (
+            f"vl-noku-year-{self.module_number}"
+        )
+        self.noku_rate_id = (
+            f"vl-noku-rate-{self.module_number}"
+        )
+        self.noku_window_id = (
+            f"vl-noku-window-{self.module_number}"
+        )
+        self.noku_standard_deviations_id = (
+            f"vl-noku-standard-deviations-{self.module_number}"
+        )
+
+        # Large-changes controls
+        self.large_changes_year_id = (
+            f"vl-large-changes-year-{self.module_number}"
+        )
+        self.large_changes_group_level_id = (
+            f"vl-large-changes-group-level-{self.module_number}"
+        )
+        self.large_changes_group_value_id = (
+            f"vl-large-changes-group-value-{self.module_number}"
+        )
+        self.large_changes_variables_id = (
+            f"vl-large-changes-variables-{self.module_number}"
+        )
+        self.large_changes_fylke_id = (
+            f"vl-large-changes-fylke-{self.module_number}"
+        )
+        self.large_changes_top_n_id = (
+            f"vl-large-changes-top-n-{self.module_number}"
+        )
+
+        # Negative NO-post controls
+        self.negative_nopost_year_id = (
+            f"vl-negative-nopost-year-{self.module_number}"
+        )
+        self.negative_nopost_group_level_id = (
+            f"vl-negative-nopost-group-level-{self.module_number}"
+        )
+        self.negative_nopost_threshold_id = (
+            f"vl-negative-nopost-threshold-{self.module_number}"
+        )
+        self.negative_nopost_hide_columns_id = (
+            f"vl-negative-nopost-hide-columns-{self.module_number}"
+        )
+        self.negative_nopost_max_rows_id = (
+            f"vl-negative-nopost-max-rows-{self.module_number}"
+        )
+
+        # NR-control controls
+        self.nr_year_id = (
+            f"vl-nr-year-{self.module_number}"
+        )
+        self.nr_group_level_id = (
+            f"vl-nr-group-level-{self.module_number}"
+        )
+        self.nr_view_id = (
+            f"vl-nr-view-{self.module_number}"
+        )
+        self.nr_threshold_id = (
+            f"vl-nr-threshold-{self.module_number}"
+        )
+        self.nr_hide_columns_id = (
+            f"vl-nr-hide-columns-{self.module_number}"
+        )
+        self.nr_max_rows_id = (
+            f"vl-nr-max-rows-{self.module_number}"
+        )
+
+        # Opposite-direction controls
+        self.opposite_year_id = (
+            f"vl-opposite-year-{self.module_number}"
+        )
+        self.opposite_group_level_id = (
+            f"vl-opposite-group-level-{self.module_number}"
+        )
+        self.opposite_view_id = (
+            f"vl-opposite-view-{self.module_number}"
+        )
+        self.opposite_rule_id = (
+            f"vl-opposite-rule-{self.module_number}"
+        )
+        self.opposite_min_count_id = (
+            f"vl-opposite-min-count-{self.module_number}"
+        )
+        self.opposite_gap_threshold_id = (
+            f"vl-opposite-gap-threshold-{self.module_number}"
+        )
+        self.opposite_absolute_threshold_id = (
+            f"vl-opposite-absolute-threshold-{self.module_number}"
+        )
+        self.opposite_max_rows_id = (
+            f"vl-opposite-max-rows-{self.module_number}"
+        )
+
+        # Breakdown controls
+        self.breakdown_year_id = (
+            f"vl-breakdown-year-{self.module_number}"
+        )
+        self.breakdown_group_level_id = (
+            f"vl-breakdown-group-level-{self.module_number}"
+        )
+        self.breakdown_group_value_id = (
+            f"vl-breakdown-group-value-{self.module_number}"
+        )
+        self.breakdown_variable_id = (
+            f"vl-breakdown-variable-{self.module_number}"
+        )
+
+        # MOMS controls
+        self.moms_group_level_id = (
+            f"vl-moms-group-level-{self.module_number}"
+        )
+        self.moms_previous_year_id = (
+            f"vl-moms-previous-year-{self.module_number}"
+        )
+        self.moms_current_year_id = (
+            f"vl-moms-current-year-{self.module_number}"
+        )
+
+        # Movement controls
+        self.movement_direction_id = (
+            f"vl-movement-direction-{self.module_number}"
+        )
+        self.movement_variable_id = (
+            f"vl-movement-variable-{self.module_number}"
+        )
+        self.movement_group_level_id = (
+            f"vl-movement-group-level-{self.module_number}"
+        )
+        self.movement_code_filter_id = (
+            f"vl-movement-code-filter-{self.module_number}"
+        )
+        self.movement_exact_match_id = (
+            f"vl-movement-exact-match-{self.module_number}"
+        )
+        self.movement_top_n_id = (
+            f"vl-movement-top-n-{self.module_number}"
+        )
+
+        # Method-analysis controls
+        self.method_naring_level_id = (
+            f"vl-method-naring-level-{self.module_number}"
+        )
+        self.method_naring_value_id = (
+            f"vl-method-naring-value-{self.module_number}"
+        )
+        self.method_ratios_id = (
+            f"vl-method-ratios-{self.module_number}"
+        )
+        self.method_reg_types_id = (
+            f"vl-method-reg-types-{self.module_number}"
+        )
+
+        # Control containers
+        self.single_naring_container_id = (
+            f"vl-single-naring-container-{self.module_number}"
+        )
+        self.multi_naring_container_id = (
+            f"vl-multi-naring-container-{self.module_number}"
         )
         self.single_variable_container_id = (
             f"vl-single-variable-container-{self.module_number}"
@@ -80,17 +267,62 @@ class VLModule:
         self.enterprise_container_id = (
             f"vl-enterprise-container-{self.module_number}"
         )
-        self.single_naring_container_id = (
-            f"vl-single-naring-container-{self.module_number}"
+        self.change_controls_container_id = (
+            f"vl-change-controls-container-{self.module_number}"
         )
-        self.multi_naring_container_id = (
-            f"vl-multi-naring-container-{self.module_number}"
+        self.noku_controls_container_id = (
+            f"vl-noku-controls-container-{self.module_number}"
         )
-        self.graph_title_id = f"vl-graph-title-{self.module_number}"
-        self.graph_description_id = f"vl-graph-description-{self.module_number}"
-        self.graph_id = f"vl-graph-{self.module_number}"
-        self.status_id = f"vl-status-{self.module_number}"
-        self.graph_section_id = f"vl-graph-section-{self.module_number}"
+        self.large_changes_controls_container_id = (
+            f"vl-large-changes-controls-container-{self.module_number}"
+        )
+        self.negative_nopost_controls_container_id = (
+            f"vl-negative-nopost-controls-container-{self.module_number}"
+        )
+        self.nr_controls_container_id = (
+            f"vl-nr-controls-container-{self.module_number}"
+        )
+        self.opposite_controls_container_id = (
+            f"vl-opposite-controls-container-{self.module_number}"
+        )
+        self.breakdown_controls_container_id = (
+            f"vl-breakdown-controls-container-{self.module_number}"
+        )
+        self.moms_controls_container_id = (
+            f"vl-moms-controls-container-{self.module_number}"
+        )
+        self.movement_controls_container_id = (
+            f"vl-movement-controls-container-{self.module_number}"
+        )
+        self.method_controls_container_id = (
+            f"vl-method-controls-container-{self.module_number}"
+        )
+
+        # Output elements
+        self.graph_title_id = (
+            f"vl-graph-title-{self.module_number}"
+        )
+        self.graph_description_id = (
+            f"vl-graph-description-{self.module_number}"
+        )
+        self.graph_id = (
+            f"vl-graph-{self.module_number}"
+        )
+        self.graph_container_id = (
+            f"vl-graph-container-{self.module_number}"
+        )
+        self.table_id = (
+            f"vl-table-{self.module_number}"
+        )
+        self.table_container_id = (
+            f"vl-table-container-{self.module_number}"
+        )
+        self.status_id = (
+            f"vl-status-{self.module_number}"
+        )
+        self.graph_section_id = (
+            f"vl-graph-section-{self.module_number}"
+        )
 
         self.module_layout = self._create_layout()
 
@@ -188,250 +420,984 @@ class VLModule:
                                     style={
                                         "display": "grid",
                                         "gridTemplateColumns": (
-                                            "minmax(220px, 1fr) "
-                                            "minmax(220px, 1fr)"
+                                            "repeat(auto-fit, minmax(240px, 1fr))"
                                         ),
                                         "gap": "16px",
                                         "marginBottom": "16px",
+                                        "alignItems": "start",
                                     },
                                     children=[
+                                        # -------------------------------------------------
+                                        # Existing trend controls
+                                        # -------------------------------------------------
                                         html.Div(
+                                            id=self.single_naring_container_id,
                                             children=[
-                                                html.Div(
-                                                    id=(
-                                                        self
-                                                        .single_naring_container_id
-                                                    ),
-                                                    children=[
-                                                        html.Label(
-                                                            "Næring"
-                                                        ),
-                                                        dcc.Dropdown(
-                                                            id=(
-                                                                self
-                                                                .naring_id
-                                                            ),
-                                                            className=(
-                                                                "ssb-dropdown"
-                                                            ),
-                                                            options=[],
-                                                            clearable=False,
-                                                        ),
-                                                    ],
-                                                ),
-                                                html.Div(
-                                                    id=(
-                                                        self
-                                                        .multi_naring_container_id
-                                                    ),
-                                                    style={
-                                                        "display": "none"
-                                                    },
-                                                    children=[
-                                                        html.Label(
-                                                            "Næringer"
-                                                        ),
-                                                        dcc.Dropdown(
-                                                            id=(
-                                                                self
-                                                                .multi_naring_id
-                                                            ),
-                                                            className=(
-                                                                "ssb-dropdown"
-                                                            ),
-                                                            options=[],
-                                                            value=[],
-                                                            multi=True,
-                                                            clearable=True,
-                                                        ),
-                                                    ],
+                                                html.Label("Næring"),
+                                                dcc.Dropdown(
+                                                    id=self.naring_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
                                                 ),
                                             ],
                                         ),
                                         html.Div(
+                                            id=self.multi_naring_container_id,
+                                            style={"display": "none"},
                                             children=[
-                                                html.Div(
-                                                    id=(
-                                                        self
-                                                        .single_variable_container_id
-                                                    ),
-                                                    children=[
-                                                        html.Label(
-                                                            "Variabel"
-                                                        ),
-                                                        dcc.Dropdown(
-                                                            id=(
-                                                                self
-                                                                .variable_id
-                                                            ),
-                                                            className=(
-                                                                "ssb-dropdown"
-                                                            ),
-                                                            options=[],
-                                                            clearable=False,
-                                                        ),
-                                                    ],
-                                                ),
-                                                html.Div(
-                                                    id=(
-                                                        self
-                                                        .multi_variable_container_id
-                                                    ),
-                                                    style={
-                                                        "display": "none"
-                                                    },
-                                                    children=[
-                                                        html.Label(
-                                                            "Variabler"
-                                                        ),
-                                                        dcc.Dropdown(
-                                                            id=(
-                                                                self
-                                                                .multi_variable_id
-                                                            ),
-                                                            className=(
-                                                                "ssb-dropdown"
-                                                            ),
-                                                            options=[],
-                                                            value=[],
-                                                            multi=True,
-                                                            clearable=True,
-                                                        ),
-                                                    ],
+                                                html.Label("Næringer"),
+                                                dcc.Dropdown(
+                                                    id=self.multi_naring_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    value=[],
+                                                    multi=True,
+                                                    clearable=True,
                                                 ),
                                             ],
                                         ),
                                         html.Div(
-                                            id=(
-                                                self
-                                                .enterprise_container_id
-                                            ),
-                                            style={
-                                                "display": "none"
-                                            },
+                                            id=self.single_variable_container_id,
                                             children=[
-                                                html.Label(
-                                                    "Organisasjonsnummer"
+                                                html.Label("Variabel"),
+                                                dcc.Dropdown(
+                                                    id=self.variable_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
                                                 ),
+                                            ],
+                                        ),
+                                        html.Div(
+                                            id=self.multi_variable_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.Label("Variabler"),
+                                                dcc.Dropdown(
+                                                    id=self.multi_variable_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    value=[],
+                                                    multi=True,
+                                                    clearable=True,
+                                                ),
+                                            ],
+                                        ),
+
+                                        # -------------------------------------------------
+                                        # Enterprise trend
+                                        # -------------------------------------------------
+                                        html.Div(
+                                            id=self.enterprise_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.Label("Organisasjonsnummer"),
                                                 dcc.Input(
                                                     id=self.enterprise_id,
                                                     type="text",
                                                     value="817209882",
-                                                    placeholder=(
-                                                        "Skriv inn "
-                                                        "orgnr_foretak"
-                                                    ),
+                                                    placeholder="Skriv inn orgnr_foretak",
                                                     debounce=True,
                                                     style={
                                                         "width": "100%",
-                                                        "marginBottom": (
-                                                            "12px"
-                                                        ),
+                                                        "marginBottom": "12px",
                                                     },
                                                 ),
-                                                html.Label(
-                                                    "Eller søk etter navn"
-                                                ),
+                                                html.Label("Eller søk etter navn"),
                                                 dcc.Dropdown(
-                                                    id=(
-                                                        self
-                                                        .enterprise_name_search_id
-                                                    ),
-                                                    className=(
-                                                        "ssb-dropdown"
-                                                    ),
+                                                    id=self.enterprise_name_search_id,
+                                                    className="ssb-dropdown",
                                                     options=[],
                                                     value=None,
                                                     placeholder=(
-                                                        "Skriv minst to tegn "
-                                                        "i foretaksnavnet"
+                                                        "Skriv minst to tegn i foretaksnavnet"
                                                     ),
                                                     clearable=True,
                                                     searchable=True,
                                                 ),
                                             ],
                                         ),
+
+                                        # -------------------------------------------------
+                                        # Change share
+                                        # -------------------------------------------------
                                         html.Div(
-                                            id=(
-                                                self
-                                                .change_controls_container_id
-                                            ),
-                                            style={
-                                                "display": "none"
-                                            },
+                                            id=self.change_controls_container_id,
+                                            style={"display": "none"},
                                             children=[
                                                 html.Label("År"),
                                                 dcc.Dropdown(
                                                     id=self.change_year_id,
-                                                    className=(
-                                                        "ssb-dropdown"
-                                                    ),
+                                                    className="ssb-dropdown",
                                                     options=[],
                                                     clearable=False,
                                                 ),
                                                 html.Label(
-                                                    (
-                                                        "Antall største "
-                                                        "foretak"
-                                                    ),
-                                                    style={
-                                                        "marginTop": (
-                                                            "12px"
-                                                        ),
-                                                    },
+                                                    "Antall største foretak",
+                                                    style={"marginTop": "12px"},
                                                 ),
                                                 dcc.Dropdown(
                                                     id=self.change_top_n_id,
-                                                    className=(
-                                                        "ssb-dropdown"
-                                                    ),
+                                                    className="ssb-dropdown",
                                                     options=[
-                                                        {
-                                                            "label": "5",
-                                                            "value": 5,
-                                                        },
-                                                        {
-                                                            "label": "10",
-                                                            "value": 10,
-                                                        },
-                                                        {
-                                                            "label": "15",
-                                                            "value": 15,
-                                                        },
-                                                        {
-                                                            "label": "20",
-                                                            "value": 20,
-                                                        },
+                                                        {"label": "5", "value": 5},
+                                                        {"label": "10", "value": 10},
+                                                        {"label": "15", "value": 15},
+                                                        {"label": "20", "value": 20},
                                                     ],
                                                     value=10,
                                                     clearable=False,
                                                 ),
                                             ],
                                         ),
+
+                                        # -------------------------------------------------
+                                        # NØKU table
+                                        # -------------------------------------------------
+                                        html.Div(
+                                            id=self.noku_controls_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.Label("År"),
+                                                dcc.Dropdown(
+                                                    id=self.noku_year_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Grense for prosentvis endring",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.noku_rate_id,
+                                                    type="number",
+                                                    value=20,
+                                                    min=0,
+                                                    step=1,
+                                                    style={"width": "100%"},
+                                                ),
+                                                html.Label(
+                                                    "Historisk vindu",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.noku_window_id,
+                                                    type="number",
+                                                    value=5,
+                                                    min=2,
+                                                    step=1,
+                                                    style={"width": "100%"},
+                                                ),
+                                                html.Label(
+                                                    "Antall standardavvik",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.noku_standard_deviations_id,
+                                                    type="number",
+                                                    value=2.5,
+                                                    min=0,
+                                                    step=0.1,
+                                                    style={"width": "100%"},
+                                                ),
+                                            ],
+                                        ),
+
+                                        # -------------------------------------------------
+                                        # Large changes
+                                        # -------------------------------------------------
+                                        html.Div(
+                                            id=self.large_changes_controls_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.Label("År"),
+                                                dcc.Dropdown(
+                                                    id=self.large_changes_year_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Næringsnivå",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.large_changes_group_level_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {"label": "N2", "value": "n2"},
+                                                        {"label": "N3", "value": "n3"},
+                                                        {"label": "N4", "value": "n4"},
+                                                        {"label": "N5", "value": "n5"},
+                                                        {"label": "Næring", "value": "naring"},
+                                                        {
+                                                            "label": "Næring 1",
+                                                            "value": "naring_1",
+                                                        },
+                                                    ],
+                                                    value="n4",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Næringskode",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.large_changes_group_value_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Variabler",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.large_changes_variables_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    value=[],
+                                                    multi=True,
+                                                    clearable=True,
+                                                ),
+                                                html.Label(
+                                                    "Fylke",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.large_changes_fylke_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {
+                                                            "label": "Hele landet",
+                                                            "value": "Land",
+                                                        }
+                                                    ],
+                                                    value="Land",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Antall rader",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.large_changes_top_n_id,
+                                                    type="number",
+                                                    value=50,
+                                                    min=1,
+                                                    step=1,
+                                                    style={"width": "100%"},
+                                                ),
+                                            ],
+                                        ),
+
+                                        # -------------------------------------------------
+                                        # Negative NO posts
+                                        # -------------------------------------------------
+                                        html.Div(
+                                            id=self.negative_nopost_controls_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.Label("År"),
+                                                dcc.Dropdown(
+                                                    id=self.negative_nopost_year_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Næringsnivå",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.negative_nopost_group_level_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {
+                                                            "label": "Næring 2",
+                                                            "value": "naring_2",
+                                                        },
+                                                        {
+                                                            "label": "Næring 3",
+                                                            "value": "naring_3",
+                                                        },
+                                                        {
+                                                            "label": "Næring 4",
+                                                            "value": "naring_4",
+                                                        },
+                                                        {
+                                                            "label": "Detaljert næring",
+                                                            "value": "naring",
+                                                        },
+                                                    ],
+                                                    value="naring",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Negativ grense",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.negative_nopost_threshold_id,
+                                                    type="number",
+                                                    value=1000,
+                                                    min=0,
+                                                    step=100,
+                                                    style={"width": "100%"},
+                                                ),
+                                                dcc.Checklist(
+                                                    id=self.negative_nopost_hide_columns_id,
+                                                    options=[
+                                                        {
+                                                            "label": (
+                                                                "Skjul kolonner uten negative verdier"
+                                                            ),
+                                                            "value": "hide",
+                                                        }
+                                                    ],
+                                                    value=["hide"],
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                html.Label(
+                                                    "Maks antall rader",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.negative_nopost_max_rows_id,
+                                                    type="number",
+                                                    value=300,
+                                                    min=1,
+                                                    step=1,
+                                                    style={"width": "100%"},
+                                                ),
+                                            ],
+                                        ),
+
+                                        # -------------------------------------------------
+                                        # NR controls
+                                        # -------------------------------------------------
+                                        html.Div(
+                                            id=self.nr_controls_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.Label("År"),
+                                                dcc.Dropdown(
+                                                    id=self.nr_year_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Næringsnivå",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.nr_group_level_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {
+                                                            "label": "Næring 2",
+                                                            "value": "naring_2",
+                                                        },
+                                                        {
+                                                            "label": "Næring 3",
+                                                            "value": "naring_3",
+                                                        },
+                                                        {
+                                                            "label": "Næring 4",
+                                                            "value": "naring_4",
+                                                        },
+                                                        {
+                                                            "label": "Detaljert næring",
+                                                            "value": "naring",
+                                                        },
+                                                    ],
+                                                    value="naring",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Visning",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.RadioItems(
+                                                    id=self.nr_view_id,
+                                                    className="ssb-radio-buttons",
+                                                    options=[
+                                                        {"label": "Land", "value": "Land"},
+                                                        {"label": "Fylke", "value": "Fylke"},
+                                                    ],
+                                                    value="Land",
+                                                ),
+                                                html.Label(
+                                                    "Negativ grense",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.nr_threshold_id,
+                                                    type="number",
+                                                    value=1000,
+                                                    min=0,
+                                                    step=100,
+                                                    style={"width": "100%"},
+                                                ),
+                                                dcc.Checklist(
+                                                    id=self.nr_hide_columns_id,
+                                                    options=[
+                                                        {
+                                                            "label": (
+                                                                "Skjul kontroller uten negative verdier"
+                                                            ),
+                                                            "value": "hide",
+                                                        }
+                                                    ],
+                                                    value=["hide"],
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                html.Label(
+                                                    "Maks antall rader",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.nr_max_rows_id,
+                                                    type="number",
+                                                    value=300,
+                                                    min=1,
+                                                    step=1,
+                                                    style={"width": "100%"},
+                                                ),
+                                            ],
+                                        ),
+
+                                        # -------------------------------------------------
+                                        # Opposite direction
+                                        # -------------------------------------------------
+                                        html.Div(
+                                            id=self.opposite_controls_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.Label("År"),
+                                                dcc.Dropdown(
+                                                    id=self.opposite_year_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Næringsnivå",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.opposite_group_level_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {
+                                                            "label": "Næring 2",
+                                                            "value": "naring_2",
+                                                        },
+                                                        {
+                                                            "label": "Næring 3",
+                                                            "value": "naring_3",
+                                                        },
+                                                        {
+                                                            "label": "Næring 4",
+                                                            "value": "naring_4",
+                                                        },
+                                                        {
+                                                            "label": "Detaljert næring",
+                                                            "value": "naring",
+                                                        },
+                                                    ],
+                                                    value="naring_4",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Visning",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.RadioItems(
+                                                    id=self.opposite_view_id,
+                                                    className="ssb-radio-buttons",
+                                                    options=[
+                                                        {"label": "Land", "value": "Land"},
+                                                        {"label": "Fylke", "value": "Fylke"},
+                                                    ],
+                                                    value="Land",
+                                                ),
+                                                html.Label(
+                                                    "Kontrollregel",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.opposite_rule_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {
+                                                            "label": "Begge regler",
+                                                            "value": "both",
+                                                        },
+                                                        {
+                                                            "label": (
+                                                                "Produksjonsverdi mot produktinnsats"
+                                                            ),
+                                                            "value": "production-input",
+                                                        },
+                                                        {
+                                                            "label": (
+                                                                "Forbruk mot varekostnad"
+                                                            ),
+                                                            "value": "consumption-p4005",
+                                                        },
+                                                    ],
+                                                    value="both",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Minimum antall bedrifter",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.opposite_min_count_id,
+                                                    type="number",
+                                                    value=50,
+                                                    min=0,
+                                                    step=1,
+                                                    style={"width": "100%"},
+                                                ),
+                                                html.Label(
+                                                    "Minimum prosentgap",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.opposite_gap_threshold_id,
+                                                    type="number",
+                                                    value=10,
+                                                    min=0,
+                                                    step=1,
+                                                    style={"width": "100%"},
+                                                ),
+                                                html.Label(
+                                                    "Minimum absolutt endring",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.opposite_absolute_threshold_id,
+                                                    type="number",
+                                                    value=0,
+                                                    min=0,
+                                                    step=100,
+                                                    style={"width": "100%"},
+                                                ),
+                                                html.Label(
+                                                    "Maks antall rader",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.opposite_max_rows_id,
+                                                    type="number",
+                                                    value=300,
+                                                    min=1,
+                                                    step=1,
+                                                    style={"width": "100%"},
+                                                ),
+                                            ],
+                                        ),
+
+                                        # -------------------------------------------------
+                                        # Breakdown
+                                        # -------------------------------------------------
+                                        html.Div(
+                                            id=self.breakdown_controls_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.Label("År"),
+                                                dcc.Dropdown(
+                                                    id=self.breakdown_year_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Næringsnivå",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.breakdown_group_level_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {"label": "N2", "value": "n2"},
+                                                        {"label": "N3", "value": "n3"},
+                                                        {"label": "N4", "value": "n4"},
+                                                        {
+                                                            "label": "Detaljert næring",
+                                                            "value": "naring",
+                                                        },
+                                                    ],
+                                                    value="n4",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Næringskode",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.breakdown_group_value_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Sammensatt variabel",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.breakdown_variable_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {
+                                                            "label": "Omsetning",
+                                                            "value": "omsetning",
+                                                        },
+                                                        {
+                                                            "label": "Driftskostnader",
+                                                            "value": "nopost_driftskostnader",
+                                                        },
+                                                        {
+                                                            "label": "Produktinnsats",
+                                                            "value": "produktinnsats",
+                                                        },
+                                                        {
+                                                            "label": "Produksjonsverdi",
+                                                            "value": "produksjonsverdi",
+                                                        },
+                                                        {
+                                                            "label": "Bearbeidingsverdi",
+                                                            "value": "bearbeidingsverdi",
+                                                        },
+                                                    ],
+                                                    value="omsetning",
+                                                    clearable=False,
+                                                ),
+                                            ],
+                                        ),
+
+                                        # -------------------------------------------------
+                                        # MOMS
+                                        # -------------------------------------------------
+                                        html.Div(
+                                            id=self.moms_controls_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.Label("Næringsnivå"),
+                                                dcc.Dropdown(
+                                                    id=self.moms_group_level_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {"label": "N2", "value": "n2"},
+                                                        {"label": "N3", "value": "n3"},
+                                                        {"label": "N4", "value": "n4"},
+                                                        {"label": "N5", "value": "n5"},
+                                                    ],
+                                                    value="n2",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Tidligere år",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.moms_previous_year_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Nåværende år",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.moms_current_year_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                            ],
+                                        ),
+
+                                        # -------------------------------------------------
+                                        # Movement
+                                        # -------------------------------------------------
+                                        html.Div(
+                                            id=self.movement_controls_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.Label("Retning"),
+                                                dcc.RadioItems(
+                                                    id=self.movement_direction_id,
+                                                    className="ssb-radio-buttons",
+                                                    options=[
+                                                        {
+                                                            "label": "Tilgang",
+                                                            "value": "tilgang",
+                                                        },
+                                                        {
+                                                            "label": "Avgang",
+                                                            "value": "avgang",
+                                                        },
+                                                    ],
+                                                    value="tilgang",
+                                                ),
+                                                html.Label(
+                                                    "Variabel",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.movement_variable_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {
+                                                            "label": "Omsetning",
+                                                            "value": "omsetning",
+                                                        },
+                                                        {
+                                                            "label": "Sysselsetting",
+                                                            "value": "sysselsetting_syss",
+                                                        },
+                                                    ],
+                                                    value="omsetning",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Næringsnivå",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.movement_group_level_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {"label": "N2", "value": "n2"},
+                                                        {"label": "N3", "value": "n3"},
+                                                        {"label": "N4", "value": "n4"},
+                                                        {"label": "N5", "value": "n5"},
+                                                    ],
+                                                    value="n2",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Næringsfilter",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.movement_code_filter_id,
+                                                    type="text",
+                                                    value="",
+                                                    placeholder="Eksempel: 47",
+                                                    debounce=True,
+                                                    style={"width": "100%"},
+                                                ),
+                                                dcc.Checklist(
+                                                    id=self.movement_exact_match_id,
+                                                    options=[
+                                                        {
+                                                            "label": "Krev eksakt kode",
+                                                            "value": "exact",
+                                                        }
+                                                    ],
+                                                    value=[],
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                html.Label(
+                                                    "Antall rader",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.movement_top_n_id,
+                                                    type="number",
+                                                    value=100,
+                                                    min=1,
+                                                    step=1,
+                                                    style={"width": "100%"},
+                                                ),
+                                            ],
+                                        ),
+
+                                        # -------------------------------------------------
+                                        # Method analysis
+                                        # -------------------------------------------------
+                                        html.Div(
+                                            id=self.method_controls_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.Label("Næringsnivå"),
+                                                dcc.Dropdown(
+                                                    id=self.method_naring_level_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {
+                                                            "label": "Næring 2",
+                                                            "value": "naring_2",
+                                                        },
+                                                        {
+                                                            "label": "Næring 4",
+                                                            "value": "naring_4",
+                                                        },
+                                                        {
+                                                            "label": "Næring 5",
+                                                            "value": "naring_5",
+                                                        },
+                                                        {
+                                                            "label": "Detaljert næring",
+                                                            "value": "naring",
+                                                        },
+                                                    ],
+                                                    value="naring_4",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Næringskode",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.method_naring_value_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Rater",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.method_ratios_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {
+                                                            "label": (
+                                                                "Salgsinntekt / omsetning"
+                                                            ),
+                                                            "value": "salgsint_rate",
+                                                        },
+                                                        {
+                                                            "label": (
+                                                                "Forbruk / varekostnad"
+                                                            ),
+                                                            "value": "forbruk_rate",
+                                                        },
+                                                        {
+                                                            "label": (
+                                                                "Vikarutgifter / lønnskostnader"
+                                                            ),
+                                                            "value": "vikar_rate",
+                                                        },
+                                                    ],
+                                                    value=[
+                                                        "salgsint_rate",
+                                                        "forbruk_rate",
+                                                    ],
+                                                    multi=True,
+                                                    clearable=True,
+                                                ),
+                                                html.Label(
+                                                    "Registreringstyper",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.method_reg_types_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    value=[],
+                                                    multi=True,
+                                                    clearable=True,
+                                                    placeholder="Alle registreringstyper",
+                                                ),
+                                            ],
+                                        ),
                                     ],
                                 ),
                                 html.Div(
-                                    id=self.status_id
+                                    id=self.status_id                                 
                                 ),
                             ],
                         ),
                         dcc.Loading(
                             type="circle",
                             children=[
-                                dcc.Graph(
-                                    id=self.graph_id,
-                                    figure=go.Figure(),
-                                    config={
-                                        "displaylogo": False,
-                                        "responsive": True,
-                                        "scrollZoom": True,
-                                    },
+                                html.Div(
+                                    id=self.graph_container_id,
                                     style={
+                                        "display": "block",
                                         "width": "100%",
-                                        "height": "75vh",
-                                        "minHeight": "700px",
                                     },
-                                )
+                                    children=[
+                                        dcc.Graph(
+                                            id=self.graph_id,
+                                            figure=go.Figure(),
+                                            config={
+                                                "displaylogo": False,
+                                                "responsive": True,
+                                                "scrollZoom": True,
+                                            },
+                                            style={
+                                                "width": "100%",
+                                                "height": "75vh",
+                                                "minHeight": "700px",
+                                            },
+                                        )
+                                    ],
+                                ),
+                                html.Div(
+                                    id=self.table_container_id,
+                                    style={
+                                        "display": "none",
+                                        "width": "100%",
+                                        "padding": "16px",
+                                    },
+                                    children=[
+                                        dash_table.DataTable(
+                                            id=self.table_id,
+                                            data=[],
+                                            columns=[],
+                                            page_size=25,
+                                            sort_action="native",
+                                            filter_action="native",
+                                            page_action="native",
+                                            export_format="csv",
+                                            export_headers="display",
+                                            merge_duplicate_headers=True,
+                                            style_table={
+                                                "overflowX": "auto",
+                                                "overflowY": "auto",
+                                                "maxHeight": "72vh",
+                                                "border": "1px solid #d9d9d9",
+                                            },
+                                            style_header={
+                                                "fontWeight": "bold",
+                                                "backgroundColor": "#f3f4f6",
+                                                "border": "1px solid #d9d9d9",
+                                                "whiteSpace": "normal",
+                                            },
+                                            style_cell={
+                                                "padding": "8px",
+                                                "textAlign": "left",
+                                                "fontFamily": (
+                                                    "system-ui, -apple-system, "
+                                                    "Segoe UI, Roboto, Arial"
+                                                ),
+                                                "fontSize": "13px",
+                                                "minWidth": "110px",
+                                                "width": "140px",
+                                                "maxWidth": "320px",
+                                                "whiteSpace": "normal",
+                                                "height": "auto",
+                                                "border": "1px solid #e5e7eb",
+                                            },
+                                            style_data_conditional=[],
+                                            tooltip_data=[],
+                                            tooltip_duration=None,
+                                        )
+                                    ],
+                                ),
                             ],
                         ),
                     ],
@@ -554,6 +1520,17 @@ class VLModule:
         )
 
         return df
+
+    @staticmethod
+    @lru_cache(maxsize=12)
+    def _read_generic_data(
+        parquet_path: str,
+    ) -> pd.DataFrame:
+        """Read and cache a VL dataset without dataset-specific validation."""
+        df = pd.read_parquet(parquet_path)
+
+        return df.copy()
+
 
     @staticmethod
     def _empty_figure(message: str) -> go.Figure:
@@ -1141,6 +2118,3370 @@ class VLModule:
 
         return figure
 
+    @staticmethod
+    def _create_noku_table_data(
+        aggregate_df: pd.DataFrame,
+        business_df: pd.DataFrame, 
+        year: int,
+        rate: float = 20.0,
+        window: int = 5,
+        standard_deviations: float = 2.5,
+        naring_col: str = "naring_4",
+    ) -> pd.DataFrame:
+        """Create the underlying control table for NØKU analysis."""
+        variables = [
+            "omsetning",
+            "nopost_driftskostnader",
+            "ts_forbruk",
+            "ts_salgsint",
+            "bearbeidingsverdi",
+            "produksjonsverdi",
+            "produktinnsats",
+        ]
+
+        required_aggregate_columns = {
+            "year",
+            naring_col,
+        }
+
+        required_business_columns = {
+            "year",
+            naring_col,
+            "orgnr_foretak",
+            "orgnr_bedrift",
+        }
+
+        missing_aggregate = required_aggregate_columns.difference(
+            aggregate_df.columns
+        )
+        missing_business = required_business_columns.difference(
+            business_df.columns
+        )
+
+        if missing_aggregate:
+            raise ValueError(
+                "Aggregert datasett mangler kolonnene "
+                f"{sorted(missing_aggregate)}."
+            )
+
+        if missing_business:
+            raise ValueError(
+                "Bedriftsdatasettet mangler kolonnene "
+                f"{sorted(missing_business)}."
+            )
+
+        available_variables = [
+            variable
+            for variable in variables
+            if variable in aggregate_df.columns
+            and variable in business_df.columns
+        ]
+
+        if not available_variables:
+            raise ValueError(
+                "Fant ingen kontrollvariabler som finnes i begge datasettene."
+            )
+
+        aggregate = aggregate_df.copy()
+        businesses = business_df.copy()
+
+        aggregate["year"] = pd.to_numeric(
+            aggregate["year"],
+            errors="coerce",
+        )
+        businesses["year"] = pd.to_numeric(
+            businesses["year"],
+            errors="coerce",
+        )
+
+        aggregate[naring_col] = aggregate[naring_col].astype(str)
+        businesses[naring_col] = businesses[naring_col].astype(str)
+
+        businesses["orgnr_foretak"] = (
+            businesses["orgnr_foretak"]
+            .astype(str)
+            .str.replace(r"\.0$", "", regex=True)
+        )
+        businesses["orgnr_bedrift"] = (
+            businesses["orgnr_bedrift"]
+            .astype(str)
+            .str.replace(r"\.0$", "", regex=True)
+        )
+
+        all_results: list[pd.DataFrame] = []
+
+        for variable in available_variables:
+            analysis = aggregate[
+                [
+                    "year",
+                    naring_col,
+                    variable,
+                ]
+            ].copy()
+
+            analysis[variable] = pd.to_numeric(
+                analysis[variable],
+                errors="coerce",
+            )
+
+            analysis = analysis.sort_values(
+                [
+                    naring_col,
+                    "year",
+                ]
+            ).reset_index(drop=True)
+
+            analysis["previous_value"] = (
+                analysis.groupby(naring_col)[variable]
+                .shift(1)
+            )
+
+            analysis["change"] = (
+                analysis[variable]
+                - analysis["previous_value"]
+            )
+
+            lagged_change = (
+                analysis.groupby(naring_col)["change"]
+                .shift(1)
+            )
+
+            analysis["expected_change"] = (
+                lagged_change.groupby(analysis[naring_col])
+                .rolling(
+                    window=window,
+                    min_periods=2,
+                )
+                .mean()
+                .reset_index(
+                    level=0,
+                    drop=True,
+                )
+            )
+
+            analysis["change_standard_deviation"] = (
+                lagged_change.groupby(analysis[naring_col])
+                .rolling(
+                    window=window,
+                    min_periods=2,
+                )
+                .std()
+                .reset_index(
+                    level=0,
+                    drop=True,
+                )
+                .abs()
+            )
+
+            analysis["expected_value"] = (
+                analysis["previous_value"]
+                + analysis["expected_change"]
+            )
+
+            analysis["percentage_change"] = (
+                analysis["change"]
+                / analysis["previous_value"]
+                * 100
+            )
+
+            analysis["percentage_change"] = (
+                analysis["percentage_change"]
+                .replace(
+                    [
+                        np.inf,
+                        -np.inf,
+                    ],
+                    np.nan,
+                )
+            )
+
+            analysis["z_score"] = (
+                analysis["change"]
+                - analysis["expected_change"]
+            ) / analysis["change_standard_deviation"]
+
+            analysis["z_score"] = analysis["z_score"].replace(
+                [
+                    np.inf,
+                    -np.inf,
+                ],
+                np.nan,
+            )
+
+            analysis["large_change"] = (
+                analysis["percentage_change"].abs()
+                > float(rate)
+            )
+
+            lower_limit = (
+                analysis["expected_value"]
+                - float(standard_deviations)
+                * analysis["change_standard_deviation"]
+            )
+
+            upper_limit = (
+                analysis["expected_value"]
+                + float(standard_deviations)
+                * analysis["change_standard_deviation"]
+            )
+
+            analysis["breach"] = (
+                analysis["change_standard_deviation"].notna()
+                & (
+                    (analysis[variable] < lower_limit)
+                    | (analysis[variable] > upper_limit)
+                )
+            )
+
+            selected = analysis.loc[
+                (analysis["year"] == int(year))
+                & analysis["large_change"],
+            ].copy()
+
+            if selected.empty:
+                continue
+
+            selected["variable"] = variable
+            selected["largest_business"] = ""
+            selected["largest_enterprise"] = ""
+            selected["business_contribution"] = np.nan
+            selected["business_contribution_pct"] = np.nan
+            selected["enterprise_contribution"] = np.nan
+            selected["enterprise_contribution_pct"] = np.nan
+            selected["explanation"] = ""
+
+            for row_index, row in selected.iterrows():
+                industry = str(row[naring_col])
+                total_change = row["change"]
+
+                if not bool(row["breach"]):
+                    z_score = row["z_score"]
+
+                    z_text = (
+                        f"{z_score:.1f}"
+                        if pd.notna(z_score)
+                        else "ukjent"
+                    )
+
+                    selected.at[
+                        row_index,
+                        "explanation",
+                    ] = (
+                        f"Endring på "
+                        f"{row['percentage_change']:.1f} %. "
+                        f"Endringen er {z_text} standardavvik "
+                        "fra historisk forventning, men bryter "
+                        "ikke kontrollgrensen."
+                    )
+
+                    continue
+
+                business_subset = businesses.loc[
+                    (
+                        businesses[naring_col].astype(str)
+                        == industry
+                    )
+                    & businesses["year"].isin(
+                        [
+                            int(year) - 1,
+                            int(year),
+                        ]
+                    ),
+                    [
+                        column
+                        for column in [
+                            "year",
+                            "orgnr_foretak",
+                            "orgnr_bedrift",
+                            "navn",
+                            variable,
+                        ]
+                        if column in businesses.columns
+                    ],
+                ].copy()
+
+                if business_subset.empty:
+                    selected.at[
+                        row_index,
+                        "explanation",
+                    ] = (
+                        "Avvik, men ingen bedriftsdata ble funnet "
+                        "for de to aktuelle årene."
+                    )
+                    continue
+
+                business_subset[variable] = pd.to_numeric(
+                    business_subset[variable],
+                    errors="coerce",
+                )
+
+                business_values = (
+                    business_subset.groupby(
+                        [
+                            "orgnr_foretak",
+                            "orgnr_bedrift",
+                            "year",
+                        ],
+                        as_index=False,
+                        dropna=False,
+                    )[variable]
+                    .sum(min_count=1)
+                )
+
+                business_wide = business_values.pivot_table(
+                    index=[
+                        "orgnr_foretak",
+                        "orgnr_bedrift",
+                    ],
+                    columns="year",
+                    values=variable,
+                    aggfunc="sum",
+                ).reset_index()
+
+                previous_year = int(year) - 1
+                current_year = int(year)
+
+                if previous_year not in business_wide.columns:
+                    business_wide[previous_year] = 0
+
+                if current_year not in business_wide.columns:
+                    business_wide[current_year] = 0
+
+                business_wide["contribution"] = (
+                    business_wide[current_year].fillna(0)
+                    - business_wide[previous_year].fillna(0)
+                )
+
+                if business_wide["contribution"].dropna().empty:
+                    selected.at[
+                        row_index,
+                        "explanation",
+                    ] = (
+                        "Avvik, men det var ikke mulig å beregne "
+                        "bidrag fra bedriftene."
+                    )
+                    continue
+
+                if pd.notna(total_change) and total_change < 0:
+                    largest_business_row = business_wide.loc[
+                        business_wide["contribution"].idxmin()
+                    ]
+                else:
+                    largest_business_row = business_wide.loc[
+                        business_wide["contribution"].idxmax()
+                    ]
+
+                enterprise_values = (
+                    business_wide.groupby(
+                        "orgnr_foretak",
+                        as_index=False,
+                        dropna=False,
+                    )["contribution"]
+                    .sum(min_count=1)
+                )
+
+                if pd.notna(total_change) and total_change < 0:
+                    largest_enterprise_row = enterprise_values.loc[
+                        enterprise_values["contribution"].idxmin()
+                    ]
+                else:
+                    largest_enterprise_row = enterprise_values.loc[
+                        enterprise_values["contribution"].idxmax()
+                    ]
+
+                business_contribution = largest_business_row[
+                    "contribution"
+                ]
+                enterprise_contribution = largest_enterprise_row[
+                    "contribution"
+                ]
+
+                if pd.notna(total_change) and total_change != 0:
+                    business_percentage = (
+                        business_contribution
+                        / total_change
+                        * 100
+                    )
+                    enterprise_percentage = (
+                        enterprise_contribution
+                        / total_change
+                        * 100
+                    )
+                else:
+                    business_percentage = np.nan
+                    enterprise_percentage = np.nan
+
+                largest_business = (
+                    f"{largest_business_row['orgnr_bedrift']} "
+                    f"(foretak "
+                    f"{largest_business_row['orgnr_foretak']})"
+                )
+
+                largest_enterprise = str(
+                    largest_enterprise_row["orgnr_foretak"]
+                )
+
+                selected.at[
+                    row_index,
+                    "largest_business",
+                ] = largest_business
+
+                selected.at[
+                    row_index,
+                    "largest_enterprise",
+                ] = largest_enterprise
+
+                selected.at[
+                    row_index,
+                    "business_contribution",
+                ] = business_contribution
+
+                selected.at[
+                    row_index,
+                    "business_contribution_pct",
+                ] = business_percentage
+
+                selected.at[
+                    row_index,
+                    "enterprise_contribution",
+                ] = enterprise_contribution
+
+                selected.at[
+                    row_index,
+                    "enterprise_contribution_pct",
+                ] = enterprise_percentage
+
+                selected.at[
+                    row_index,
+                    "explanation",
+                ] = (
+                    f"Avvik. Total endring: {total_change:,.0f}. "
+                    f"Største bedrift bidrar med "
+                    f"{business_contribution:,.0f} "
+                    f"({business_percentage:.1f} %). "
+                    f"Største foretak bidrar med "
+                    f"{enterprise_contribution:,.0f} "
+                    f"({enterprise_percentage:.1f} %)."
+                )
+
+            all_results.append(selected)
+
+        output_columns = [
+            naring_col,
+            "variable",
+            "percentage_change",
+            "z_score",
+            "breach",
+            "largest_business",
+            "largest_enterprise",
+            "explanation",
+            "business_contribution",
+            "business_contribution_pct",
+            "enterprise_contribution",
+            "enterprise_contribution_pct",
+        ]
+
+        if not all_results:
+            return pd.DataFrame(
+                columns=output_columns
+            )
+
+        result = pd.concat(
+            all_results,
+            ignore_index=True,
+        )
+
+        result = result.sort_values(
+            [
+                naring_col,
+                "variable",
+            ]
+        ).reset_index(drop=True)
+
+        return result[output_columns]
+
+    @staticmethod
+    def _create_large_changes_data(
+        df: pd.DataFrame,
+        year: int,
+        group_level: str,
+        group_value: str,
+        variables: list[str],
+        *,
+        fylke: str | None = None,
+        top_n: int = 50,
+        drop_missing: bool = True,
+    ) -> pd.DataFrame:
+        """Create a table of the largest year-to-year business changes."""
+        required_columns = {
+            "year",
+            "naring",
+            "orgnr_foretak",
+            "orgnr_bedrift",
+        }
+
+        missing_columns = required_columns.difference(df.columns)
+
+        if missing_columns:
+            raise ValueError(
+                "Bedriftsdatasettet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        if not variables:
+            return pd.DataFrame()
+
+        missing_variables = [
+            variable
+            for variable in variables
+            if variable not in df.columns
+        ]
+
+        if missing_variables:
+            raise ValueError(
+                "Bedriftsdatasettet mangler variablene "
+                f"{sorted(missing_variables)}."
+            )
+
+        valid_group_levels = {
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "naring",
+            "naring_1",
+        }
+
+        if group_level not in valid_group_levels:
+            raise ValueError(
+                f"Ugyldig næringsnivå: {group_level}."
+            )
+
+        data = df.copy()
+
+        if "antall" in data.columns:
+            data = data.drop(columns=["antall"])
+
+        data["year"] = pd.to_numeric(
+            data["year"],
+            errors="coerce",
+        )
+
+        data = data.loc[
+            data["year"].isin(
+                [
+                    int(year) - 1,
+                    int(year),
+                ]
+            )
+        ].copy()
+
+        if data.empty:
+            return pd.DataFrame()
+
+        data["year"] = data["year"].astype(int)
+        data["naring"] = data["naring"].astype("string")
+
+        for column in [
+            "orgnr_foretak",
+            "orgnr_bedrift",
+        ]:
+            data[column] = (
+                data[column]
+                .astype("string")
+                .str.replace(r"\.0$", "", regex=True)
+            )
+
+        if fylke is not None and fylke != "Land":
+            if "fylke" not in data.columns:
+                raise ValueError(
+                    "Fylkesfilter er valgt, men datasettet "
+                    "mangler kolonnen 'fylke'."
+                )
+
+            data["fylke"] = data["fylke"].astype("string")
+
+            data = data.loc[
+                data["fylke"] == str(fylke)
+            ].copy()
+
+        if group_level == "naring_1":
+            if "naring_1" not in data.columns:
+                raise ValueError(
+                    "Datasettet mangler kolonnen 'naring_1'."
+                )
+
+            data["group_value"] = (
+                data["naring_1"]
+                .astype("string")
+            )
+
+        elif group_level == "naring":
+            data["group_value"] = data["naring"]
+
+        else:
+            slice_lengths = {
+                "n2": 2,
+                "n3": 4,
+                "n4": 5,
+                "n5": 6,
+            }
+
+            data["group_value"] = (
+                data["naring"]
+                .str.slice(
+                    0,
+                    slice_lengths[group_level],
+                )
+            )
+
+        data = data.loc[
+            data["group_value"].astype(str)
+            == str(group_value)
+        ].copy()
+
+        if data.empty:
+            return pd.DataFrame()
+
+        for variable in variables:
+            data[variable] = pd.to_numeric(
+                data[variable],
+                errors="coerce",
+            )
+
+        key_columns = [
+            "orgnr_foretak",
+            "orgnr_bedrift",
+        ]
+
+        information_columns = [
+            column
+            for column in [
+                "sfnr",
+                "orgnr_foretak",
+                "orgnr_bedrift",
+                "navn",
+                "type",
+                "reg_type",
+                "fylke",
+                "naring",
+                "naring_f",
+            ]
+            if column in data.columns
+        ]
+
+        current_year = int(year)
+        previous_year = current_year - 1
+
+        current = data.loc[
+            data["year"] == current_year
+        ].copy()
+
+        previous = data.loc[
+            data["year"] == previous_year
+        ].copy()
+
+        if current.empty or previous.empty:
+            return pd.DataFrame()
+
+        id_columns = list(
+            dict.fromkeys(
+                information_columns
+                + key_columns
+            )
+        )
+
+        keep_columns = list(
+            dict.fromkeys(
+                id_columns
+                + ["year"]
+                + variables
+            )
+        )
+
+        current = current[keep_columns].copy()
+        previous = previous[keep_columns].copy()
+
+        current = current.rename(
+            columns={
+                variable: f"{variable}_current"
+                for variable in variables
+            }
+        )
+
+        previous = previous.rename(
+            columns={
+                variable: f"{variable}_previous"
+                for variable in variables
+            }
+        )
+
+        previous_values = (
+            previous[
+                key_columns
+                + [
+                    f"{variable}_previous"
+                    for variable in variables
+                ]
+            ]
+            .drop_duplicates(
+                subset=key_columns,
+                keep="last",
+            )
+        )
+
+        merged = current.merge(
+            previous_values,
+            on=key_columns,
+            how="left",
+            validate="m:1",
+        )
+
+        if "naring" in data.columns:
+            previous_naring = (
+                previous[
+                    key_columns
+                    + ["naring"]
+                ]
+                .drop_duplicates(
+                    subset=key_columns,
+                    keep="last",
+                )
+                .rename(
+                    columns={
+                        "naring": "naring_previous"
+                    }
+                )
+            )
+
+            merged = merged.merge(
+                previous_naring,
+                on=key_columns,
+                how="left",
+                validate="m:1",
+            )
+
+        if "naring_f" in data.columns:
+            previous_naring_f = (
+                previous[
+                    key_columns
+                    + ["naring_f"]
+                ]
+                .drop_duplicates(
+                    subset=key_columns,
+                    keep="last",
+                )
+                .rename(
+                    columns={
+                        "naring_f": "naring_f_previous"
+                    }
+                )
+            )
+
+            merged = merged.merge(
+                previous_naring_f,
+                on=key_columns,
+                how="left",
+                validate="m:1",
+            )
+
+        result_rows: list[pd.DataFrame] = []
+
+        for variable in variables:
+            current_column = f"{variable}_current"
+            previous_column = f"{variable}_previous"
+
+            columns = list(id_columns)
+
+            for extra_column in [
+                "naring_previous",
+                "naring_f_previous",
+            ]:
+                if (
+                    extra_column in merged.columns
+                    and extra_column not in columns
+                ):
+                    columns.append(extra_column)
+
+            columns.extend(
+                [
+                    previous_column,
+                    current_column,
+                ]
+            )
+
+            variable_result = merged[columns].copy()
+
+            variable_result = variable_result.rename(
+                columns={
+                    previous_column: "value_previous",
+                    current_column: "value_current",
+                }
+            )
+
+            variable_result["variable"] = variable
+
+            variable_result["value_previous"] = pd.to_numeric(
+                variable_result["value_previous"],
+                errors="coerce",
+            )
+
+            variable_result["value_current"] = pd.to_numeric(
+                variable_result["value_current"],
+                errors="coerce",
+            )
+
+            variable_result["change"] = (
+                variable_result["value_current"]
+                - variable_result["value_previous"]
+            )
+
+            variable_result["absolute_change"] = (
+                variable_result["change"].abs()
+            )
+
+            variable_result["percentage_change"] = np.where(
+                variable_result["value_previous"].notna()
+                & variable_result["value_previous"].ne(0),
+                (
+                    variable_result["change"]
+                    / variable_result["value_previous"]
+                    * 100
+                ),
+                np.nan,
+            )
+
+            change_values = (
+                variable_result["change"]
+                .to_numpy()
+            )
+
+            variable_result["direction"] = np.select(
+                [
+                    np.isfinite(change_values)
+                    & (change_values > 0),
+                    np.isfinite(change_values)
+                    & (change_values < 0),
+                ],
+                [
+                    "⬆️",
+                    "⬇️",
+                ],
+                default="→",
+            )
+
+            result_rows.append(variable_result)
+
+        if not result_rows:
+            return pd.DataFrame()
+
+        result = pd.concat(
+            result_rows,
+            ignore_index=True,
+        )
+
+        if drop_missing:
+            result = result.dropna(
+                subset=[
+                    "value_previous",
+                    "value_current",
+                ]
+            )
+
+        result = (
+            result.sort_values(
+                "absolute_change",
+                ascending=False,
+                na_position="last",
+            )
+            .head(max(int(top_n), 1))
+            .reset_index(drop=True)
+        )
+
+        ordered_columns: list[str] = []
+
+        for column in information_columns:
+            if column == "naring":
+                ordered_columns.append("naring")
+
+                if "naring_previous" in result.columns:
+                    ordered_columns.append(
+                        "naring_previous"
+                    )
+
+            elif column == "naring_f":
+                ordered_columns.append("naring_f")
+
+                if "naring_f_previous" in result.columns:
+                    ordered_columns.append(
+                        "naring_f_previous"
+                    )
+
+            else:
+                ordered_columns.append(column)
+
+        ordered_columns.extend(
+            [
+                "variable",
+                "value_previous",
+                "value_current",
+                "change",
+                "absolute_change",
+                "percentage_change",
+                "direction",
+            ]
+        )
+
+        ordered_columns = [
+            column
+            for column in dict.fromkeys(
+                ordered_columns
+            )
+            if column in result.columns
+        ]
+
+        return result[ordered_columns]
+
+    @staticmethod
+    def _create_negative_nopost_data(
+        df: pd.DataFrame,
+        year: int,
+        group_level: str = "naring",
+        *,
+        negative_threshold: float = 1000,
+        hide_nonnegative_columns: bool = True,
+        max_rows: int = 300,
+    ) -> pd.DataFrame:
+        """Create aggregated negative NO-post controls by industry."""
+        required_columns = {
+            "year",
+            "naring",
+            "orgnr_foretak",
+        }
+
+        missing_columns = required_columns.difference(df.columns)
+
+        if missing_columns:
+            raise ValueError(
+                "Bedriftsdatasettet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        valid_group_levels = {
+            "naring_2",
+            "naring_3",
+            "naring_4",
+            "naring",
+        }
+
+        if group_level not in valid_group_levels:
+            raise ValueError(
+                f"Ugyldig næringsnivå: {group_level}."
+            )
+
+        data = df.copy()
+
+        data["year"] = pd.to_numeric(
+            data["year"],
+            errors="coerce",
+        )
+
+        data = data.loc[
+            data["year"] == int(year)
+        ].copy()
+
+        if data.empty:
+            return pd.DataFrame()
+
+        data["naring"] = data["naring"].astype("string")
+
+        if "naring_2" not in data.columns:
+            data["naring_2"] = (
+                data["naring"].str.slice(0, 2)
+            )
+
+        if "naring_3" not in data.columns:
+            data["naring_3"] = (
+                data["naring"].str.slice(0, 4)
+            )
+
+        if "naring_4" not in data.columns:
+            data["naring_4"] = (
+                data["naring"].str.slice(0, 5)
+            )
+
+        nopost_prefixes = (
+            "nopost_p3000",
+            "nopost_p3100",
+            "nopost_p3200",
+            "nopost_p3700",
+            "nopost_p3900",
+            "nopost_p4005",
+            "nopost_p5000",
+            "nopost_p6300",
+            "nopost_p6400",
+            "nopost_p6500",
+            "nopost_p6700",
+            "nopost_p6995",
+            "nopost_p7700",
+        )
+
+        excluded_columns = {
+            "nopost_p3300",
+            "nopost_p3400",
+            "nopost_p3880",
+            "nopost_p4295",
+            "nopost_p4995",
+        }
+
+        nopost_columns = [
+            column
+            for column in data.columns
+            if any(
+                column.startswith(prefix)
+                for prefix in nopost_prefixes
+            )
+            and column not in excluded_columns
+        ]
+
+        if not nopost_columns:
+            raise ValueError(
+                "Fant ingen NO-postkolonner som skal kontrolleres."
+            )
+
+        for column in nopost_columns:
+            data[column] = pd.to_numeric(
+                data[column],
+                errors="coerce",
+            )
+
+        threshold = abs(float(negative_threshold))
+
+        aggregated = (
+            data.groupby(
+                group_level,
+                dropna=False,
+            )[nopost_columns]
+            .sum(min_count=1)
+            .reset_index()
+        )
+
+        if aggregated.empty:
+            return pd.DataFrame()
+
+        negative_mask = (
+            aggregated[nopost_columns]
+            < -threshold
+        ).any(axis=1)
+
+        aggregated = aggregated.loc[
+            negative_mask
+        ].copy()
+
+        if aggregated.empty:
+            return pd.DataFrame()
+
+        if hide_nonnegative_columns:
+            displayed_nopost_columns = [
+                column
+                for column in nopost_columns
+                if (
+                    aggregated[column]
+                    < -threshold
+                ).any()
+            ]
+        else:
+            displayed_nopost_columns = nopost_columns
+
+        aggregated["most_negative_value"] = (
+            aggregated[displayed_nopost_columns]
+            .min(axis=1)
+        )
+
+        aggregated["negative_column_count"] = (
+            aggregated[displayed_nopost_columns]
+            .lt(-threshold)
+            .sum(axis=1)
+        )
+
+        aggregated = (
+            aggregated.sort_values(
+                "most_negative_value",
+                ascending=True,
+            )
+            .head(max(int(max_rows), 1))
+            .reset_index(drop=True)
+        )
+
+        ordered_columns = [
+            group_level,
+            "negative_column_count",
+            "most_negative_value",
+            *displayed_nopost_columns,
+        ]
+
+        return aggregated[ordered_columns]
+
+    @staticmethod
+    def _create_nr_controls_data(
+        df: pd.DataFrame,
+        year: int,
+        group_level: str = "naring",
+        *,
+        view: str = "Land",
+        negative_threshold: float = 1000,
+        hide_nonnegative_columns: bool = True,
+        max_rows: int = 300,
+    ) -> pd.DataFrame:
+        """Create aggregated NR logical-control residuals."""
+        required_columns = {
+            "year",
+            "orgnr_foretak",
+            "naring",
+            "nopost_p4005",
+            "ts_forbruk",
+            "nopost_driftskostnader",
+            "nopost_lonnskostnader",
+            "produktinnsats",
+            "omsetning",
+            "ts_salgsint",
+            "nopost_p3000",
+            "nopost_p3100",
+            "nopost_p3200",
+            "nopost_p3300",
+        }
+
+        if view == "Fylke":
+            required_columns.add("fylke")
+
+        missing_columns = required_columns.difference(
+            df.columns
+        )
+
+        if missing_columns:
+            raise ValueError(
+                "Bedriftsdatasettet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        valid_group_levels = {
+            "naring_2",
+            "naring_3",
+            "naring_4",
+            "naring",
+        }
+
+        if group_level not in valid_group_levels:
+            raise ValueError(
+                f"Ugyldig næringsnivå: {group_level}."
+            )
+
+        if view not in {"Land", "Fylke"}:
+            raise ValueError(
+                "View må være enten 'Land' eller 'Fylke'."
+            )
+
+        data = df.copy()
+
+        data["year"] = pd.to_numeric(
+            data["year"],
+            errors="coerce",
+        )
+
+        data = data.loc[
+            data["year"] == int(year)
+        ].copy()
+
+        if data.empty:
+            return pd.DataFrame()
+
+        data["naring"] = data["naring"].astype(
+            "string"
+        )
+
+        if "naring_2" not in data.columns:
+            data["naring_2"] = (
+                data["naring"].str.slice(0, 2)
+            )
+
+        if "naring_3" not in data.columns:
+            data["naring_3"] = (
+                data["naring"].str.slice(0, 4)
+            )
+
+        if "naring_4" not in data.columns:
+            data["naring_4"] = (
+                data["naring"].str.slice(0, 5)
+            )
+
+        if view == "Fylke":
+            data["fylke"] = data["fylke"].astype(
+                "string"
+            )
+
+        numeric_inputs = [
+            "nopost_p4005",
+            "ts_forbruk",
+            "nopost_driftskostnader",
+            "nopost_lonnskostnader",
+            "produktinnsats",
+            "omsetning",
+            "ts_salgsint",
+            "nopost_p3000",
+            "nopost_p3100",
+            "nopost_p3200",
+            "nopost_p3300",
+        ]
+
+        for column in numeric_inputs:
+            data[column] = pd.to_numeric(
+                data[column],
+                errors="coerce",
+            )
+
+        data["p4005_forb"] = (
+            data["nopost_p4005"]
+            - data["ts_forbruk"]
+        )
+
+        data["dr_vk_lo"] = (
+            data["nopost_driftskostnader"]
+            - data["nopost_p4005"]
+            - data["nopost_lonnskostnader"]
+        )
+
+        data["dr_forb_lo"] = (
+            data["nopost_driftskostnader"]
+            - data["ts_forbruk"]
+            - data["nopost_lonnskostnader"]
+        )
+
+        data["prins_vk_forb"] = (
+            data["produktinnsats"]
+            - data["nopost_p4005"]
+            - data["ts_forbruk"]
+        )
+
+        data["oms_salgsint"] = (
+            data["omsetning"]
+            - data["ts_salgsint"]
+        )
+
+        data["nosalg_tssalg"] = (
+            data["nopost_p3000"]
+            + data["nopost_p3100"]
+            + data["nopost_p3200"]
+            - data["nopost_p3300"]
+            - data["ts_salgsint"]
+        )
+
+        check_columns = [
+            "p4005_forb",
+            "dr_vk_lo",
+            "dr_forb_lo",
+            "prins_vk_forb",
+            "oms_salgsint",
+            "nosalg_tssalg",
+        ]
+
+        if (
+            view == "Land"
+            and "bearbeidingsverdi" in data.columns
+        ):
+            data["bearbeidingsverdi"] = pd.to_numeric(
+                data["bearbeidingsverdi"],
+                errors="coerce",
+            )
+            check_columns.append(
+                "bearbeidingsverdi"
+            )
+
+        group_columns = [group_level]
+
+        if view == "Fylke":
+            group_columns.append("fylke")
+
+        aggregated = (
+            data.groupby(
+                group_columns,
+                dropna=False,
+            )[check_columns]
+            .sum(min_count=1)
+            .reset_index()
+        )
+
+        if aggregated.empty:
+            return pd.DataFrame()
+
+        threshold = abs(float(negative_threshold))
+
+        negative_mask = (
+            aggregated[check_columns]
+            < -threshold
+        ).any(axis=1)
+
+        aggregated = aggregated.loc[
+            negative_mask
+        ].copy()
+
+        if aggregated.empty:
+            return pd.DataFrame()
+
+        if hide_nonnegative_columns:
+            displayed_check_columns = [
+                column
+                for column in check_columns
+                if (
+                    aggregated[column]
+                    < -threshold
+                ).any()
+            ]
+        else:
+            displayed_check_columns = check_columns
+
+        aggregated["negative_check_count"] = (
+            aggregated[displayed_check_columns]
+            .lt(-threshold)
+            .sum(axis=1)
+        )
+
+        aggregated["most_negative_value"] = (
+            aggregated[displayed_check_columns]
+            .min(axis=1)
+        )
+
+        aggregated = (
+            aggregated.sort_values(
+                "most_negative_value",
+                ascending=True,
+            )
+            .head(max(int(max_rows), 1))
+            .reset_index(drop=True)
+        )
+
+        ordered_columns = [
+            *group_columns,
+            "negative_check_count",
+            "most_negative_value",
+            *displayed_check_columns,
+        ]
+
+        return aggregated[ordered_columns]
+
+    @staticmethod
+    def _create_opposite_direction_data(
+        df: pd.DataFrame,
+        year: int,
+        group_level: str = "naring_4",
+        *,
+        view: str = "Land",
+        rule: str = "both",
+        min_count: int = 50,
+        gap_threshold_pct: float = 10.0,
+        absolute_change_threshold: float = 0.0,
+        max_rows: int = 300,
+    ) -> pd.DataFrame:
+        """Create YoY controls for variables moving in opposite directions."""
+        required_columns = {
+            "year",
+            "naring",
+            "produksjonsverdi",
+            "produktinnsats",
+            "ts_forbruk",
+            "nopost_p4005",
+        }
+
+        if view == "Fylke":
+            required_columns.add("fylke")
+
+        missing_columns = required_columns.difference(
+            df.columns
+        )
+
+        if missing_columns:
+            raise ValueError(
+                "Bedriftsdatasettet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        valid_group_levels = {
+            "naring_2",
+            "naring_3",
+            "naring_4",
+            "naring",
+        }
+
+        if group_level not in valid_group_levels:
+            raise ValueError(
+                f"Ugyldig næringsnivå: {group_level}."
+            )
+
+        if view not in {"Land", "Fylke"}:
+            raise ValueError(
+                "View må være enten 'Land' eller 'Fylke'."
+            )
+
+        if rule not in {
+            "both",
+            "production-input",
+            "consumption-p4005",
+        }:
+            raise ValueError(
+                f"Ugyldig regelvalg: {rule}."
+            )
+
+        data = df.copy()
+
+        data["year"] = pd.to_numeric(
+            data["year"],
+            errors="coerce",
+        )
+
+        previous_year = int(year) - 1
+        current_year = int(year)
+
+        data = data.loc[
+            data["year"].isin(
+                [
+                    previous_year,
+                    current_year,
+                ]
+            )
+        ].copy()
+
+        if data.empty:
+            return pd.DataFrame()
+
+        data["naring"] = data["naring"].astype(
+            "string"
+        )
+
+        if "naring_2" not in data.columns:
+            data["naring_2"] = (
+                data["naring"].str.slice(0, 2)
+            )
+
+        if "naring_3" not in data.columns:
+            data["naring_3"] = (
+                data["naring"].str.slice(0, 4)
+            )
+
+        if "naring_4" not in data.columns:
+            data["naring_4"] = (
+                data["naring"].str.slice(0, 5)
+            )
+
+        if view == "Fylke":
+            data["fylke"] = data["fylke"].astype(
+                "string"
+            )
+
+        variables = [
+            "produksjonsverdi",
+            "produktinnsats",
+            "ts_forbruk",
+            "nopost_p4005",
+        ]
+
+        for variable in variables:
+            data[variable] = pd.to_numeric(
+                data[variable],
+                errors="coerce",
+            )
+
+        group_columns = [group_level]
+
+        if view == "Fylke":
+            group_columns.append("fylke")
+
+        if "orgnr_bedrift" in data.columns:
+            counts = (
+                data.groupby(
+                    group_columns + ["year"],
+                    dropna=False,
+                )["orgnr_bedrift"]
+                .nunique(dropna=True)
+                .reset_index(name="count")
+            )
+        else:
+            counts = (
+                data.groupby(
+                    group_columns + ["year"],
+                    dropna=False,
+                )
+                .size()
+                .reset_index(name="count")
+            )
+
+        aggregated_values = (
+            data.groupby(
+                group_columns + ["year"],
+                dropna=False,
+            )[variables]
+            .sum(min_count=1)
+            .reset_index()
+        )
+
+        aggregated = aggregated_values.merge(
+            counts,
+            on=group_columns + ["year"],
+            how="left",
+        )
+
+        wide = aggregated.pivot_table(
+            index=group_columns,
+            columns="year",
+            values=variables + ["count"],
+            aggfunc="sum",
+        )
+
+        if wide.empty:
+            return pd.DataFrame()
+
+        wide.columns = [
+            f"{variable}_{int(column_year)}"
+            for variable, column_year in wide.columns
+        ]
+
+        wide = wide.reset_index()
+
+        for variable in variables + ["count"]:
+            for required_year in [
+                previous_year,
+                current_year,
+            ]:
+                column = f"{variable}_{required_year}"
+
+                if column not in wide.columns:
+                    wide[column] = np.nan
+
+        wide["count"] = (
+            wide[f"count_{current_year}"]
+            .fillna(wide[f"count_{previous_year}"])
+        )
+
+        wide = wide.loc[
+            wide["count"].fillna(0)
+            >= max(int(min_count), 0)
+        ].copy()
+
+        if wide.empty:
+            return pd.DataFrame()
+
+        for variable in variables:
+            previous_column = (
+                f"{variable}_{previous_year}"
+            )
+            current_column = (
+                f"{variable}_{current_year}"
+            )
+
+            delta_column = f"{variable}_change"
+            pct_column = f"{variable}_percentage_change"
+            direction_column = f"{variable}_direction"
+
+            wide[delta_column] = (
+                wide[current_column]
+                - wide[previous_column]
+            )
+
+            wide[pct_column] = np.where(
+                wide[previous_column].notna()
+                & wide[previous_column].ne(0),
+                (
+                    wide[delta_column]
+                    / wide[previous_column]
+                    * 100
+                ),
+                np.nan,
+            )
+
+            wide[direction_column] = np.select(
+                [
+                    wide[delta_column] > 0,
+                    wide[delta_column] < 0,
+                ],
+                [
+                    "⬆️",
+                    "⬇️",
+                ],
+                default="→",
+            )
+
+        production_sign = np.sign(
+            wide["produksjonsverdi_change"]
+        )
+
+        input_sign = np.sign(
+            wide["produktinnsats_change"]
+        )
+
+        consumption_sign = np.sign(
+            wide["ts_forbruk_change"]
+        )
+
+        p4005_sign = np.sign(
+            wide["nopost_p4005_change"]
+        )
+
+        wide["production_input_opposite"] = (
+            production_sign * input_sign
+            == -1
+        )
+
+        wide["consumption_p4005_opposite"] = (
+            consumption_sign * p4005_sign
+            == -1
+        )
+
+        absolute_threshold = abs(
+            float(absolute_change_threshold)
+        )
+
+        if absolute_threshold > 0:
+            wide["production_input_opposite"] = (
+                wide["production_input_opposite"]
+                & (
+                    wide["produksjonsverdi_change"]
+                    .abs()
+                    > absolute_threshold
+                )
+                & (
+                    wide["produktinnsats_change"]
+                    .abs()
+                    > absolute_threshold
+                )
+            )
+
+            wide["consumption_p4005_opposite"] = (
+                wide["consumption_p4005_opposite"]
+                & (
+                    wide["ts_forbruk_change"]
+                    .abs()
+                    > absolute_threshold
+                )
+                & (
+                    wide["nopost_p4005_change"]
+                    .abs()
+                    > absolute_threshold
+                )
+            )
+
+        wide["production_input_gap_pct"] = (
+            wide[
+                "produksjonsverdi_percentage_change"
+            ].abs()
+            + wide[
+                "produktinnsats_percentage_change"
+            ].abs()
+        )
+
+        wide["consumption_p4005_gap_pct"] = (
+            wide[
+                "ts_forbruk_percentage_change"
+            ].abs()
+            + wide[
+                "nopost_p4005_percentage_change"
+            ].abs()
+        )
+
+        gap_threshold = max(
+            float(gap_threshold_pct),
+            0.0,
+        )
+
+        if gap_threshold > 0:
+            wide["production_input_opposite"] = (
+                wide["production_input_opposite"]
+                & (
+                    wide["production_input_gap_pct"]
+                    >= gap_threshold
+                )
+            )
+
+            wide["consumption_p4005_opposite"] = (
+                wide["consumption_p4005_opposite"]
+                & (
+                    wide["consumption_p4005_gap_pct"]
+                    >= gap_threshold
+                )
+            )
+
+        if rule == "production-input":
+            wide = wide.loc[
+                wide["production_input_opposite"]
+            ].copy()
+
+        elif rule == "consumption-p4005":
+            wide = wide.loc[
+                wide["consumption_p4005_opposite"]
+            ].copy()
+
+        else:
+            wide = wide.loc[
+                wide["production_input_opposite"]
+                | wide["consumption_p4005_opposite"]
+            ].copy()
+
+        if wide.empty:
+            return pd.DataFrame()
+
+        change_columns = [
+            f"{variable}_change"
+            for variable in variables
+        ]
+
+        wide["largest_absolute_change"] = (
+            wide[change_columns]
+            .abs()
+            .max(axis=1)
+        )
+
+        wide = (
+            wide.sort_values(
+                "largest_absolute_change",
+                ascending=False,
+            )
+            .head(max(int(max_rows), 1))
+            .reset_index(drop=True)
+        )
+
+        ordered_columns = [
+            *group_columns,
+            "count",
+            "production_input_opposite",
+            "production_input_gap_pct",
+            "consumption_p4005_opposite",
+            "consumption_p4005_gap_pct",
+        ]
+
+        for variable in variables:
+            ordered_columns.extend(
+                [
+                    f"{variable}_{previous_year}",
+                    f"{variable}_{current_year}",
+                    f"{variable}_change",
+                    f"{variable}_percentage_change",
+                    f"{variable}_direction",
+                ]
+            )
+
+        return wide[
+            [
+                column
+                for column in ordered_columns
+                if column in wide.columns
+            ]
+        ]
+
+    @staticmethod
+    def _create_breakdown_data(
+        df: pd.DataFrame,
+        year: int,
+        group_level: str,
+        group_value: str,
+        variable: str,
+    ) -> pd.DataFrame:
+        """Create a year-over-year breakdown of a composed variable."""
+        if "year" not in df.columns:
+            raise ValueError(
+                "Datasettet mangler kolonnen 'year'."
+            )
+
+        if "naring" not in df.columns:
+            raise ValueError(
+                "Datasettet mangler kolonnen 'naring'."
+            )
+
+        valid_group_levels = {
+            "n2",
+            "n3",
+            "n4",
+            "naring",
+        }
+
+        if group_level not in valid_group_levels:
+            raise ValueError(
+                f"Ugyldig næringsnivå: {group_level}."
+            )
+
+        breakdown_definitions: dict[
+            str,
+            tuple[
+                list[str],
+                list[str],
+                str,
+            ],
+        ] = {
+            "omsetning": (
+                [
+                    "nopost_p3000",
+                    "nopost_p3100",
+                    "nopost_p3200",
+                    "nopost_p3500",
+                    "nopost_p3600",
+                    "nopost_p3650",
+                    "nopost_p3695",
+                    "nopost_p3700",
+                    "nopost_p3900",
+                    "nopost_p3605",
+                    "nopost_p3710",
+                ],
+                [
+                    "nopost_p3300",
+                ],
+                "Omsetning",
+            ),
+            "nopost_driftskostnader": (
+                [
+                    "nopost_p4005",
+                    "nopost_p4295",
+                    "nopost_p4500",
+                    "nopost_p5000",
+                    "nopost_p5300",
+                    "nopost_p5400",
+                    "nopost_p5420",
+                    "nopost_p5600",
+                    "nopost_p5900",
+                    "nopost_p5950",
+                    "nopost_p5999",
+                    "nopost_p6000",
+                    "nopost_p6050",
+                    "nopost_p6100",
+                    "nopost_p6200",
+                    "nopost_p6300",
+                    "nopost_p6340",
+                    "nopost_p6395",
+                    "nopost_p6400",
+                    "nopost_p6440",
+                    "nopost_p6500",
+                    "nopost_p6600",
+                    "nopost_p6695",
+                    "nopost_p6700",
+                    "nopost_p6995",
+                    "nopost_p7000",
+                    "nopost_p7020",
+                    "nopost_p7040",
+                    "nopost_p7080",
+                    "nopost_p7155",
+                    "nopost_p7165",
+                    "nopost_p7295",
+                    "nopost_p7330",
+                    "nopost_p7370",
+                    "nopost_p7490",
+                    "nopost_p7500",
+                    "nopost_p7565",
+                    "nopost_p7600",
+                    "nopost_p7700",
+                    "nopost_p7830",
+                    "nopost_p7880",
+                    "nopost_p7885",
+                    "nopost_p4999",
+                    "nopost_p5959",
+                    "nopost_p7897",
+                    "nopost_p7910",
+                    "nopost_p7999",
+                    "nopost_p7400",
+                    "nopost_p7420",
+                    "nopost_p7440",
+                    "nopost_p7860",
+                    "nopost_p7890",
+                    "nopost_p7911",
+                ],
+                [
+                    "nopost_p4995",
+                    "nopost_p6998",
+                    "nopost_p7099",
+                    "nopost_p7098",
+                ],
+                "Driftskostnader",
+            ),
+            "produktinnsats": (
+                [
+                    "nopost_p4005",
+                    "nopost_p4500",
+                    "nopost_p5300",
+                    "nopost_p5600",
+                    "nopost_p6100",
+                    "nopost_p6200",
+                    "nopost_p6300",
+                    "nopost_p6340",
+                    "nopost_p6395",
+                    "nopost_p6400",
+                    "nopost_p6440",
+                    "nopost_p6500",
+                    "nopost_p6600",
+                    "nopost_p6695",
+                    "nopost_p6700",
+                    "nopost_p6995",
+                    "nopost_p7000",
+                    "nopost_p7020",
+                    "nopost_p7040",
+                    "nopost_p7080",
+                    "nopost_p7155",
+                    "nopost_p7165",
+                    "nopost_p7295",
+                    "nopost_p7330",
+                    "nopost_p7370",
+                    "nopost_p7400",
+                    "nopost_p7420",
+                    "nopost_p7440",
+                    "nopost_p7490",
+                    "nopost_p7500",
+                    "nopost_p7565",
+                    "nopost_p7600",
+                    "nopost_p7700",
+                    "nopost_p6310",
+                    "nopost_p7350",
+                    "nopost_p7495",
+                ],
+                [
+                    "nopost_p6998",
+                    "nopost_p7099",
+                    "nopost_p7098",
+                    "ts_forbruk",
+                ],
+                "Produktinnsats",
+            ),
+            "produksjonsverdi": (
+                [
+                    "nopost_p3000",
+                    "nopost_p3100",
+                    "nopost_p3200",
+                    "nopost_p3500",
+                    "nopost_p3600",
+                    "nopost_p3650",
+                    "nopost_p3695",
+                    "nopost_p3700",
+                    "nopost_p3710",
+                    "nopost_p3900",
+                    "nopost_p3605",
+                ],
+                [
+                    "ts_forbruk",
+                    "nopost_p4295",
+                    "nopost_p4995",
+                    "nopost_p3300",
+                ],
+                "Produksjonsverdi",
+            ),
+            "bearbeidingsverdi": (
+                [
+                    "nopost_p3000",
+                    "nopost_p3100",
+                    "nopost_p3200",
+                    "nopost_p3400",
+                    "nopost_p3500",
+                    "nopost_p3600",
+                    "nopost_p3605",
+                    "nopost_p3650",
+                    "nopost_p3695",
+                    "nopost_p3700",
+                    "nopost_p3710",
+                    "nopost_p3900",
+                    "nopost_p6998",
+                ],
+                [
+                    "nopost_p3300",
+                    "nopost_p4295",
+                    "nopost_p4995",
+                    "nopost_p4005",
+                    "nopost_p4500",
+                    "nopost_p5300",
+                    "nopost_p5600",
+                    "nopost_p6100",
+                    "nopost_p6200",
+                    "nopost_p6300",
+                    "nopost_p6310",
+                    "nopost_p6340",
+                    "nopost_p6395",
+                    "nopost_p6400",
+                    "nopost_p6440",
+                    "nopost_p6500",
+                    "nopost_p6600",
+                    "nopost_p6695",
+                    "nopost_p6700",
+                    "nopost_p6995",
+                    "nopost_p7000",
+                    "nopost_p7020",
+                    "nopost_p7040",
+                    "nopost_p7080",
+                    "nopost_p7155",
+                    "nopost_p7165",
+                    "nopost_p7295",
+                    "nopost_p7330",
+                    "nopost_p7350",
+                    "nopost_p7370",
+                    "nopost_p7400",
+                    "nopost_p7420",
+                    "nopost_p7440",
+                    "nopost_p7490",
+                    "nopost_p7495",
+                    "nopost_p7500",
+                    "nopost_p7565",
+                    "nopost_p7600",
+                    "nopost_p7700",
+                ],
+                "Bearbeidingsverdi",
+            ),
+        }
+
+        if variable not in breakdown_definitions:
+            raise ValueError(
+                f"Variabelen {variable} støttes ikke "
+                "i sammensatt analyse."
+            )
+
+        positive_columns, negative_columns, total_label = (
+            breakdown_definitions[variable]
+        )
+
+        data = df.copy()
+
+        data["year"] = pd.to_numeric(
+            data["year"],
+            errors="coerce",
+        )
+
+        data["naring"] = data["naring"].astype(
+            "string"
+        )
+
+        data["n2"] = data["naring"].str.slice(0, 2)
+        data["n3"] = data["naring"].str.slice(0, 4)
+        data["n4"] = data["naring"].str.slice(0, 5)
+
+        current_year = int(year)
+        previous_year = current_year - 1
+
+        data = data.loc[
+            data["year"].isin(
+                [
+                    previous_year,
+                    current_year,
+                ]
+            )
+        ].copy()
+
+        data = data.loc[
+            data[group_level].astype(str)
+            == str(group_value)
+        ].copy()
+
+        if data.empty:
+            return pd.DataFrame(
+                columns=[
+                    "post",
+                    str(current_year),
+                    str(previous_year),
+                    "change",
+                ]
+            )
+
+        needed_columns = list(
+            dict.fromkeys(
+                positive_columns
+                + negative_columns
+            )
+        )
+
+        for column in needed_columns:
+            if column not in data.columns:
+                data[column] = 0.0
+
+            data[column] = pd.to_numeric(
+                data[column],
+                errors="coerce",
+            ).fillna(0)
+
+        aggregated = (
+            data.groupby(
+                "year",
+                as_index=False,
+            )[needed_columns]
+            .sum()
+        )
+
+        values_by_year = (
+            aggregated.set_index("year")
+        )
+
+        rows: list[dict[str, object]] = []
+
+        total_current = 0.0
+        total_previous = 0.0
+
+        for column in positive_columns:
+            current_value = (
+                float(
+                    values_by_year.at[
+                        current_year,
+                        column,
+                    ]
+                )
+                if current_year in values_by_year.index
+                else 0.0
+            )
+
+            previous_value = (
+                float(
+                    values_by_year.at[
+                        previous_year,
+                        column,
+                    ]
+                )
+                if previous_year in values_by_year.index
+                else 0.0
+            )
+
+            rows.append(
+                {
+                    "post": f"+ {column.replace('nopost_', '')}",
+                    str(current_year): current_value,
+                    str(previous_year): previous_value,
+                    "change": (
+                        current_value
+                        - previous_value
+                    ),
+                }
+            )
+
+            total_current += current_value
+            total_previous += previous_value
+
+        for column in negative_columns:
+            current_value = (
+                float(
+                    values_by_year.at[
+                        current_year,
+                        column,
+                    ]
+                )
+                if current_year in values_by_year.index
+                else 0.0
+            )
+
+            previous_value = (
+                float(
+                    values_by_year.at[
+                        previous_year,
+                        column,
+                    ]
+                )
+                if previous_year in values_by_year.index
+                else 0.0
+            )
+
+            signed_current = -current_value
+            signed_previous = -previous_value
+
+            rows.append(
+                {
+                    "post": f"- {column.replace('nopost_', '')}",
+                    str(current_year): signed_current,
+                    str(previous_year): signed_previous,
+                    "change": (
+                        signed_current
+                        - signed_previous
+                    ),
+                }
+            )
+
+            total_current += signed_current
+            total_previous += signed_previous
+
+        rows.append(
+            {
+                "post": f"= {total_label}",
+                str(current_year): total_current,
+                str(previous_year): total_previous,
+                "change": (
+                    total_current
+                    - total_previous
+                ),
+            }
+        )
+
+        return pd.DataFrame(rows)
+
+    @staticmethod
+    def _create_moms_data(
+        df: pd.DataFrame,
+        group_level: str = "n2",
+        *,
+        previous_year: int = 2023,
+        current_year: int = 2024,
+    ) -> pd.DataFrame:
+        """Create the year-over-year comparison against MOMS data."""
+        required_columns = {
+            "aar",
+            "naring",
+            "antall",
+            "sysselsetting_syss",
+            "omsetning",
+            "moms",
+        }
+
+        missing_columns = required_columns.difference(
+            df.columns
+        )
+
+        if missing_columns:
+            raise ValueError(
+                "MOMS-datasettet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        valid_group_levels = {
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+        }
+
+        if group_level not in valid_group_levels:
+            raise ValueError(
+                f"Ugyldig næringsnivå: {group_level}."
+            )
+
+        data = df.copy()
+
+        data["aar"] = pd.to_numeric(
+            data["aar"],
+            errors="coerce",
+        )
+
+        data = data.loc[
+            data["aar"].isin(
+                [
+                    int(previous_year),
+                    int(current_year),
+                ]
+            )
+        ].copy()
+
+        if data.empty:
+            return pd.DataFrame()
+
+        data["naring"] = data["naring"].astype(
+            "string"
+        )
+
+        slice_lengths = {
+            "n2": 2,
+            "n3": 4,
+            "n4": 5,
+            "n5": 6,
+        }
+
+        exact_length = slice_lengths[group_level]
+
+        data = data.loc[
+            data["naring"].str.len()
+            == exact_length
+        ].copy()
+
+        if data.empty:
+            return pd.DataFrame()
+
+        data["group_value"] = data["naring"]
+
+        metrics = [
+            "antall",
+            "sysselsetting_syss",
+            "omsetning",
+            "moms",
+        ]
+
+        movement_columns = [
+            "tilganger",
+            "avganger",
+            "tilganger_omsetning",
+            "avganger_omsetning",
+            "tilganger_sysselsetting_syss",
+            "avganger_sysselsetting_syss",
+        ]
+
+        for column in metrics + movement_columns:
+            if column not in data.columns:
+                data[column] = 0.0
+
+            data[column] = pd.to_numeric(
+                data[column],
+                errors="coerce",
+            )
+
+        aggregated_metrics = (
+            data.groupby(
+                [
+                    "aar",
+                    "group_value",
+                ],
+                as_index=False,
+            )[metrics]
+            .sum(min_count=1)
+        )
+
+        wide = aggregated_metrics.pivot(
+            index="group_value",
+            columns="aar",
+            values=metrics,
+        )
+
+        if wide.empty:
+            return pd.DataFrame()
+
+        wide.columns = [
+            f"{metric}_{int(year)}"
+            for metric, year in wide.columns
+        ]
+
+        wide = (
+            wide.reset_index()
+            .rename(
+                columns={
+                    "group_value": "naring"
+                }
+            )
+        )
+
+        for metric in metrics:
+            for required_year in [
+                int(previous_year),
+                int(current_year),
+            ]:
+                column = f"{metric}_{required_year}"
+
+                if column not in wide.columns:
+                    wide[column] = np.nan
+
+        for metric in metrics:
+            previous_column = (
+                f"{metric}_{int(previous_year)}"
+            )
+            current_column = (
+                f"{metric}_{int(current_year)}"
+            )
+
+            wide[f"{metric}_change"] = (
+                wide[current_column]
+                - wide[previous_column]
+            )
+
+            wide[f"{metric}_percentage_change"] = (
+                np.where(
+                    wide[previous_column].notna()
+                    & wide[previous_column].ne(0),
+                    (
+                        wide[f"{metric}_change"]
+                        / wide[previous_column]
+                        * 100
+                    ),
+                    np.nan,
+                )
+            )
+
+        movement = (
+            data.loc[
+                data["aar"]
+                == int(current_year)
+            ]
+            .groupby(
+                "group_value",
+                as_index=False,
+            )[movement_columns]
+            .sum(min_count=1)
+            .rename(
+                columns={
+                    "group_value": "naring"
+                }
+            )
+        )
+
+        wide = wide.merge(
+            movement,
+            on="naring",
+            how="left",
+        )
+
+        for column in movement_columns:
+            if column not in wide.columns:
+                wide[column] = 0.0
+
+            wide[column] = pd.to_numeric(
+                wide[column],
+                errors="coerce",
+            ).fillna(0)
+
+        wide["_sorting_value"] = pd.to_numeric(
+            wide["naring"]
+            .astype(str)
+            .str.replace(
+                ".",
+                "",
+                regex=False,
+            ),
+            errors="coerce",
+        )
+
+        wide = (
+            wide.sort_values(
+                [
+                    "_sorting_value",
+                    "naring",
+                ]
+            )
+            .drop(columns="_sorting_value")
+            .reset_index(drop=True)
+        )
+
+        ordered_columns = [
+            "naring",
+            f"antall_{int(previous_year)}",
+            f"antall_{int(current_year)}",
+            "tilganger",
+            "avganger",
+            f"sysselsetting_syss_{int(previous_year)}",
+            f"sysselsetting_syss_{int(current_year)}",
+            "tilganger_sysselsetting_syss",
+            "avganger_sysselsetting_syss",
+            f"omsetning_{int(previous_year)}",
+            f"omsetning_{int(current_year)}",
+            "tilganger_omsetning",
+            "avganger_omsetning",
+            f"moms_{int(previous_year)}",
+            f"moms_{int(current_year)}",
+            "antall_change",
+            "antall_percentage_change",
+            "sysselsetting_syss_change",
+            "sysselsetting_syss_percentage_change",
+            "omsetning_change",
+            "omsetning_percentage_change",
+            "moms_change",
+            "moms_percentage_change",
+        ]
+
+        return wide[
+            [
+                column
+                for column in ordered_columns
+                if column in wide.columns
+            ]
+        ]
+
+    @staticmethod
+    def _create_movement_data(
+        df: pd.DataFrame,
+        direction: str = "tilgang",
+        variable: str = "omsetning",
+        group_level: str = "n2",
+        *,
+        code_filter: str = "",
+        exact_match: bool = False,
+        top_n: int = 100,
+    ) -> pd.DataFrame:
+        """Create access and exit drilldown data."""
+        required_columns = {
+            "orgnr_bedrift",
+            "orgnr_foretak_prev",
+            "orgnr_foretak_curr",
+            "naring_prev",
+            "naring_curr",
+            "omsetning_prev",
+            "omsetning_curr",
+            "sysselsetting_syss_prev",
+            "sysselsetting_syss_curr",
+        }
+
+        missing_columns = required_columns.difference(
+            df.columns
+        )
+
+        if missing_columns:
+            raise ValueError(
+                "Bevegelsesdatasettet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        if direction not in {
+            "tilgang",
+            "avgang",
+        }:
+            raise ValueError(
+                "direction må være 'tilgang' eller 'avgang'."
+            )
+
+        if variable not in {
+            "omsetning",
+            "sysselsetting_syss",
+        }:
+            raise ValueError(
+                "variable må være 'omsetning' eller "
+                "'sysselsetting_syss'."
+            )
+
+        valid_group_levels = {
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+        }
+
+        if group_level not in valid_group_levels:
+            raise ValueError(
+                f"Ugyldig næringsnivå: {group_level}."
+            )
+
+        data = df.copy()
+
+        string_columns = [
+            "orgnr_bedrift",
+            "orgnr_foretak_prev",
+            "orgnr_foretak_curr",
+            "naring_prev",
+            "naring_curr",
+            "naring_2_prev",
+            "naring_2_curr",
+            "naring_3_prev",
+            "naring_3_curr",
+            "naring_4_prev",
+            "naring_4_curr",
+            "naring_5_prev",
+            "naring_5_curr",
+        ]
+
+        for column in string_columns:
+            if column in data.columns:
+                data[column] = data[column].astype(
+                    "string"
+                )
+
+        numeric_columns = [
+            "omsetning_prev",
+            "omsetning_curr",
+            "sysselsetting_syss_prev",
+            "sysselsetting_syss_curr",
+        ]
+
+        for column in numeric_columns:
+            data[column] = pd.to_numeric(
+                data[column],
+                errors="coerce",
+            )
+
+        level_columns = {
+            "n2": (
+                "naring_2_prev",
+                "naring_2_curr",
+            ),
+            "n3": (
+                "naring_3_prev",
+                "naring_3_curr",
+            ),
+            "n4": (
+                "naring_4_prev",
+                "naring_4_curr",
+            ),
+            "n5": (
+                "naring_prev",
+                "naring_curr",
+            ),
+        }
+
+        previous_group_column, current_group_column = (
+            level_columns[group_level]
+        )
+
+        for column in [
+            previous_group_column,
+            current_group_column,
+        ]:
+            if column not in data.columns:
+                raise ValueError(
+                    f"Bevegelsesdatasettet mangler kolonnen "
+                    f"'{column}'."
+                )
+
+        data["group_previous"] = (
+            data[previous_group_column]
+        )
+        data["group_current"] = (
+            data[current_group_column]
+        )
+
+        previous_exists = data[
+            "group_previous"
+        ].notna()
+
+        current_exists = data[
+            "group_current"
+        ].notna()
+
+        changed_code = (
+            previous_exists
+            & current_exists
+            & (
+                data["group_previous"]
+                != data["group_current"]
+            )
+        )
+
+        disappeared = (
+            previous_exists
+            & ~current_exists
+        )
+
+        appeared = (
+            ~previous_exists
+            & current_exists
+        )
+
+        movement_mask = (
+            changed_code
+            | disappeared
+            | appeared
+        )
+
+        if direction == "tilgang":
+            data = data.loc[
+                movement_mask
+                & current_exists
+            ].copy()
+
+            if variable == "omsetning":
+                data["sort_value"] = (
+                    data["omsetning_curr"]
+                )
+            else:
+                data["sort_value"] = (
+                    data["sysselsetting_syss_curr"]
+                )
+
+            target_group_column = "group_current"
+
+        else:
+            data = data.loc[
+                movement_mask
+                & previous_exists
+            ].copy()
+
+            if variable == "omsetning":
+                data["sort_value"] = (
+                    data["omsetning_prev"]
+                )
+            else:
+                data["sort_value"] = (
+                    data["sysselsetting_syss_prev"]
+                )
+
+            target_group_column = "group_previous"
+
+        cleaned_filter = str(code_filter).strip()
+
+        if cleaned_filter:
+            if exact_match:
+                data = data.loc[
+                    data[target_group_column]
+                    .astype("string")
+                    == cleaned_filter
+                ].copy()
+            else:
+                data = data.loc[
+                    data[target_group_column]
+                    .astype("string")
+                    .str.startswith(
+                        cleaned_filter,
+                        na=False,
+                    )
+                ].copy()
+
+        if data.empty:
+            return pd.DataFrame()
+
+        data["status"] = ""
+
+        data.loc[
+            changed_code.reindex(
+                data.index,
+                fill_value=False,
+            ),
+            "status",
+        ] = "endret kode"
+
+        data.loc[
+            appeared.reindex(
+                data.index,
+                fill_value=False,
+            ),
+            "status",
+        ] = "ny i år"
+
+        data.loc[
+            disappeared.reindex(
+                data.index,
+                fill_value=False,
+            ),
+            "status",
+        ] = "borte i år"
+
+        output_columns = [
+            "orgnr_bedrift",
+            "orgnr_foretak_prev",
+            "orgnr_foretak_curr",
+            "group_previous",
+            "group_current",
+            "naring_prev",
+            "naring_curr",
+            "omsetning_prev",
+            "omsetning_curr",
+            "sysselsetting_syss_prev",
+            "sysselsetting_syss_curr",
+            "status",
+            "sort_value",
+        ]
+
+        output_columns = [
+            column
+            for column in output_columns
+            if column in data.columns
+        ]
+
+        result = (
+            data[output_columns]
+            .sort_values(
+                "sort_value",
+                ascending=False,
+                na_position="last",
+            )
+            .head(max(int(top_n), 1))
+            .reset_index(drop=True)
+        )
+
+        return result
+
+    @staticmethod
+    def _create_method_analysis_figure(
+        df: pd.DataFrame,
+        naring_level: str,
+        naring_value: str,
+        ratios: list[str],
+        *,
+        reg_types: list[str] | None = None,
+    ) -> go.Figure:
+        """Create method-analysis ratios through time."""
+        required_columns = {
+            "year",
+            "type",
+            "naring",
+        }
+
+        missing_columns = required_columns.difference(
+            df.columns
+        )
+
+        if missing_columns:
+            raise ValueError(
+                "Bedriftsdatasettet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        valid_naring_levels = {
+            "naring_2",
+            "naring_4",
+            "naring_5",
+            "naring",
+        }
+
+        if naring_level not in valid_naring_levels:
+            raise ValueError(
+                f"Ugyldig næringsnivå: {naring_level}."
+            )
+
+        if not ratios:
+            return VLModule._empty_figure(
+                "Velg minst én rate."
+            )
+
+        data = df.copy()
+
+        data["year"] = pd.to_numeric(
+            data["year"],
+            errors="coerce",
+        )
+
+        data = data.dropna(
+            subset=["year"]
+        ).copy()
+
+        data["year"] = data["year"].astype(int)
+        data["type"] = data["type"].astype("string")
+        data["naring"] = data["naring"].astype("string")
+
+        if "reg_type" in data.columns:
+            data["reg_type"] = data["reg_type"].astype(
+                "string"
+            )
+        else:
+            data["reg_type"] = pd.NA
+
+        if "naring_2" not in data.columns:
+            data["naring_2"] = (
+                data["naring"].str.slice(0, 2)
+            )
+
+        if "naring_4" not in data.columns:
+            data["naring_4"] = (
+                data["naring"].str.slice(0, 4)
+            )
+
+        if "naring_5" not in data.columns:
+            data["naring_5"] = (
+                data["naring"].str.slice(0, 5)
+            )
+
+        data = data.loc[
+            data[naring_level].astype(str)
+            == str(naring_value)
+        ].copy()
+
+        if reg_types:
+            selected_reg_types = {
+                str(value)
+                for value in reg_types
+            }
+
+            data = data.loc[
+                data["reg_type"].astype(str)
+                .isin(selected_reg_types)
+            ].copy()
+
+        if data.empty:
+            return VLModule._empty_figure(
+                "Fant ingen data for det valgte filteret."
+            )
+
+        ratio_definitions: dict[
+            str,
+            tuple[str, str],
+        ] = {}
+
+        def add_ratio(
+            name: str,
+            numerator: str,
+            denominator: str,
+        ) -> None:
+            if (
+                numerator in data.columns
+                and denominator in data.columns
+            ):
+                ratio_definitions[name] = (
+                    numerator,
+                    denominator,
+                )
+
+        add_ratio(
+            "salgsint_rate",
+            "ts_salgsint",
+            "omsetning",
+        )
+
+        add_ratio(
+            "forbruk_rate",
+            "ts_forbruk",
+            "nopost_p4005",
+        )
+
+        add_ratio(
+            "vikar_rate",
+            "ts_vikarutgifter",
+            "nopost_lonnskostnader",
+        )
+
+        activated_columns = sorted(
+            column
+            for column in data.columns
+            if column.endswith("_akt")
+        )
+
+        expense_columns = sorted(
+            column
+            for column in data.columns
+            if column.endswith("_utg")
+        )
+
+        for column in activated_columns:
+            add_ratio(
+                f"{column}_rate",
+                column,
+                "basisx",
+            )
+
+        for column in expense_columns:
+            add_ratio(
+                f"{column}_rate",
+                column,
+                "nopost_driftskostnader",
+            )
+
+        missing_ratios = [
+            ratio
+            for ratio in ratios
+            if ratio not in ratio_definitions
+        ]
+
+        if missing_ratios:
+            raise ValueError(
+                "Kan ikke beregne ratene "
+                f"{sorted(missing_ratios)} fordi teller "
+                "eller nevner mangler."
+            )
+
+        needed_numeric_columns = set()
+
+        for ratio in ratios:
+            numerator, denominator = (
+                ratio_definitions[ratio]
+            )
+
+            needed_numeric_columns.add(numerator)
+            needed_numeric_columns.add(denominator)
+
+        for column in needed_numeric_columns:
+            data[column] = pd.to_numeric(
+                data[column],
+                errors="coerce",
+            )
+
+        data["type_group"] = np.where(
+            data["type"].astype(str) == "S",
+            "type = S",
+            "type ≠ S",
+        )
+
+        grouping_columns = [
+            "year",
+            "type_group",
+        ]
+
+        if reg_types:
+            grouping_columns.append("reg_type")
+
+        aggregated_rows: list[pd.DataFrame] = []
+
+        for ratio in ratios:
+            numerator, denominator = (
+                ratio_definitions[ratio]
+            )
+
+            grouped = (
+                data.groupby(
+                    grouping_columns,
+                    dropna=False,
+                )
+                .agg(
+                    numerator_sum=(
+                        numerator,
+                        lambda values: pd.to_numeric(
+                            values,
+                            errors="coerce",
+                        ).sum(min_count=1),
+                    ),
+                    denominator_sum=(
+                        denominator,
+                        lambda values: pd.to_numeric(
+                            values,
+                            errors="coerce",
+                        ).sum(min_count=1),
+                    ),
+                )
+                .reset_index()
+            )
+
+            grouped["ratio"] = np.where(
+                grouped["denominator_sum"].notna()
+                & grouped["denominator_sum"].ne(0),
+                (
+                    grouped["numerator_sum"]
+                    / grouped["denominator_sum"]
+                ),
+                np.nan,
+            )
+
+            grouped["ratio_name"] = ratio
+
+            aggregated_rows.append(grouped)
+
+        if not aggregated_rows:
+            return VLModule._empty_figure(
+                "Ingen rater kunne beregnes."
+            )
+
+        result = pd.concat(
+            aggregated_rows,
+            ignore_index=True,
+        )
+
+        result = result.replace(
+            [np.inf, -np.inf],
+            np.nan,
+        )
+
+        result = result.dropna(
+            subset=["ratio"]
+        ).copy()
+
+        if result.empty:
+            return VLModule._empty_figure(
+                "Ingen gyldige rater kunne beregnes."
+            )
+
+        result = result.sort_values(
+            [
+                "ratio_name",
+                "type_group",
+                "year",
+            ]
+        )
+
+        figure = go.Figure()
+
+        trace_group_columns = [
+            "ratio_name",
+            "type_group",
+        ]
+
+        if reg_types:
+            trace_group_columns.append("reg_type")
+
+        for group_values, group in result.groupby(
+            trace_group_columns,
+            dropna=False,
+        ):
+            if not isinstance(group_values, tuple):
+                group_values = (group_values,)
+
+            ratio_name = str(group_values[0])
+            type_group = str(group_values[1])
+
+            if reg_types:
+                reg_type = str(group_values[2])
+
+                trace_name = (
+                    f"{ratio_name} – {type_group} – "
+                    f"reg_type {reg_type}"
+                )
+            else:
+                trace_name = (
+                    f"{ratio_name} – {type_group}"
+                )
+
+            group = group.sort_values("year")
+
+            figure.add_trace(
+                go.Scatter(
+                    x=group["year"],
+                    y=group["ratio"],
+                    mode="lines+markers",
+                    name=trace_name,
+                    line={"width": 3},
+                    marker={"size": 7},
+                    customdata=np.column_stack(
+                        [
+                            group["numerator_sum"],
+                            group["denominator_sum"],
+                        ]
+                    ),
+                    hovertemplate=(
+                        "År: %{x}<br>"
+                        "Rate: %{y:.4f}<br>"
+                        "Sum teller: %{customdata[0]:,.0f}<br>"
+                        "Sum nevner: %{customdata[1]:,.0f}"
+                        "<extra>%{fullData.name}</extra>"
+                    ),
+                )
+            )
+
+        figure.update_layout(
+            autosize=True,
+            width=None,
+            height=None,
+            title=(
+                "Metodeanalyse – "
+                f"{naring_level} {naring_value}"
+            ),
+            xaxis_title="År",
+            yaxis_title="Rate",
+            template="plotly_white",
+            hovermode="x unified",
+            legend={
+                "orientation": "h",
+                "yanchor": "bottom",
+                "y": 1.02,
+                "xanchor": "left",
+                "x": 0,
+            },
+            margin={
+                "l": 70,
+                "r": 40,
+                "t": 120,
+                "b": 70,
+            },
+        )
+
+        figure.update_xaxes(dtick=1)
+
+        return figure
+
+    @staticmethod
+    def _prepare_table_output(
+        df: pd.DataFrame,
+    ) -> tuple[
+        list[dict[str, Any]],
+        list[dict[str, Any]],
+        list[dict[str, Any]],
+        list[dict[str, Any]],
+    ]:
+        """Convert a DataFrame into Dash DataTable properties."""
+        if df.empty:
+            return (
+                [],
+                [],
+                [],
+                [],
+            )
+
+        display_df = df.copy()
+
+        column_labels = {
+            "naring": "Næring",
+            "naring_1": "Næring 1",
+            "naring_2": "Næring 2",
+            "naring_3": "Næring 3",
+            "naring_4": "Næring 4",
+            "naring_5": "Næring 5",
+            "naring_previous": "Næring året før",
+            "naring_f": "Foretaksnæring",
+            "naring_f_previous": "Foretaksnæring året før",
+            "fylke": "Fylke",
+            "year": "År",
+            "aar": "År",
+            "variable": "Variabel",
+            "post": "Post",
+            "orgnr_foretak": "Foretaksnummer",
+            "orgnr_bedrift": "Bedriftsnummer",
+            "orgnr_foretak_prev": "Foretak året før",
+            "orgnr_foretak_curr": "Foretak valgt år",
+            "navn": "Navn",
+            "type": "Type",
+            "reg_type": "Registreringstype",
+            "value_previous": "Verdi året før",
+            "value_current": "Verdi valgt år",
+            "change": "Endring",
+            "absolute_change": "Absolutt endring",
+            "percentage_change": "Endring (%)",
+            "direction": "Retning",
+            "breach": "Kontrollbrudd",
+            "z_score": "Z-verdi",
+            "largest_business": "Største bedrift",
+            "largest_enterprise": "Største foretak",
+            "business_contribution": "Bidrag fra bedrift",
+            "business_contribution_pct": "Bidrag fra bedrift (%)",
+            "enterprise_contribution": "Bidrag fra foretak",
+            "enterprise_contribution_pct": "Bidrag fra foretak (%)",
+            "explanation": "Forklaring",
+            "negative_column_count": "Antall negative poster",
+            "negative_check_count": "Antall negative kontroller",
+            "most_negative_value": "Mest negative verdi",
+            "count": "Antall bedrifter",
+            "group_previous": "Næring året før",
+            "group_current": "Næring valgt år",
+            "status": "Status",
+            "sort_value": "Sorteringsverdi",
+            "production_input_opposite": (
+                "Produksjonsverdi og produktinnsats motsatt"
+            ),
+            "production_input_gap_pct": (
+                "Gap produksjonsverdi/produktinnsats (%)"
+            ),
+            "consumption_p4005_opposite": (
+                "Forbruk og varekostnad motsatt"
+            ),
+            "consumption_p4005_gap_pct": (
+                "Gap forbruk/varekostnad (%)"
+            ),
+        }
+
+        percentage_columns = {
+            column
+            for column in display_df.columns
+            if (
+                column.endswith("_percentage_change")
+                or column.endswith("_contribution_pct")
+                or column.endswith("_gap_pct")
+                or column == "percentage_change"
+            )
+        }
+
+        numeric_columns = display_df.select_dtypes(
+            include=[np.number]
+        ).columns.tolist()
+
+        for column in numeric_columns:
+            display_df[column] = pd.to_numeric(
+                display_df[column],
+                errors="coerce",
+            ).round(2)
+
+        boolean_columns = display_df.select_dtypes(
+            include=["bool"]
+        ).columns.tolist()
+
+        for column in boolean_columns:
+            display_df[column] = display_df[column].map(
+                {
+                    True: "Ja",
+                    False: "Nei",
+                }
+            )
+
+        if "breach" in display_df.columns:
+            display_df["breach"] = display_df["breach"].replace(
+                {
+                    True: "Ja",
+                    False: "Nei",
+                }
+            )
+
+        display_df = display_df.replace(
+            {
+                np.nan: None,
+                np.inf: None,
+                -np.inf: None,
+            }
+        )
+
+        columns: list[dict[str, Any]] = []
+
+        for column in display_df.columns:
+            column_definition: dict[str, Any] = {
+                "name": column_labels.get(
+                    column,
+                    column.replace("_", " ").capitalize(),
+                ),
+                "id": column,
+            }
+
+            if column in numeric_columns:
+                column_definition["type"] = "numeric"
+
+                if column in percentage_columns:
+                    column_definition["format"] = {
+                        "specifier": ",.2f",
+                    }
+                else:
+                    column_definition["format"] = {
+                        "specifier": ",.2f",
+                    }
+
+            else:
+                column_definition["type"] = "text"
+
+            columns.append(column_definition)
+
+        style_data_conditional: list[
+            dict[str, Any]
+        ] = [
+            {
+                "if": {
+                    "filter_query": (
+                        "{breach} = 'Ja'"
+                    ),
+                },
+                "backgroundColor": "#fff1f0",
+                "fontWeight": "bold",
+            },
+            {
+                "if": {
+                    "filter_query": (
+                        "{direction} = '⬆️'"
+                    ),
+                },
+                "backgroundColor": "#f0fdf4",
+            },
+            {
+                "if": {
+                    "filter_query": (
+                        "{direction} = '⬇️'"
+                    ),
+                },
+                "backgroundColor": "#fff1f0",
+            },
+        ]
+
+        right_aligned_columns = [
+            column
+            for column in numeric_columns
+            if column in display_df.columns
+        ]
+
+        for column in right_aligned_columns:
+            style_data_conditional.append(
+                {
+                    "if": {
+                        "column_id": column,
+                    },
+                    "textAlign": "right",
+                }
+            )
+
+        wide_text_columns = {
+            "navn",
+            "explanation",
+            "largest_business",
+            "largest_enterprise",
+        }
+
+        for column in wide_text_columns:
+            if column in display_df.columns:
+                style_data_conditional.append(
+                    {
+                        "if": {
+                            "column_id": column,
+                        },
+                        "minWidth": "220px",
+                        "width": "280px",
+                        "maxWidth": "450px",
+                    }
+                )
+
+        tooltip_data = []
+
+        for row in display_df.to_dict("records"):
+            tooltip_row: dict[str, Any] = {}
+
+            for column, value in row.items():
+                if value is None:
+                    continue
+
+                text = str(value)
+
+                if len(text) > 30:
+                    tooltip_row[column] = {
+                        "value": text,
+                        "type": "text",
+                    }
+
+            tooltip_data.append(tooltip_row)
+
+        data = display_df.to_dict("records")
+
+        return (
+            data,
+            columns,
+            style_data_conditional,
+            tooltip_data,
+        )
+
     def module_callbacks(self) -> None:
         """Register VL callbacks."""
 
@@ -1153,59 +5494,88 @@ class VLModule:
             Output(self.variable_id, "value"),
             Output(self.multi_variable_id, "options"),
             Output(self.multi_variable_id, "value"),
+
             Output(self.change_year_id, "options"),
             Output(self.change_year_id, "value"),
+
+            Output(self.noku_year_id, "options"),
+            Output(self.noku_year_id, "value"),
+
+            Output(self.large_changes_year_id, "options"),
+            Output(self.large_changes_year_id, "value"),
+            Output(self.large_changes_variables_id, "options"),
+            Output(self.large_changes_variables_id, "value"),
+            Output(self.large_changes_fylke_id, "options"),
+            Output(self.large_changes_fylke_id, "value"),
+
+            Output(self.negative_nopost_year_id, "options"),
+            Output(self.negative_nopost_year_id, "value"),
+
+            Output(self.nr_year_id, "options"),
+            Output(self.nr_year_id, "value"),
+
+            Output(self.opposite_year_id, "options"),
+            Output(self.opposite_year_id, "value"),
+
+            Output(self.breakdown_year_id, "options"),
+            Output(self.breakdown_year_id, "value"),
+
+            Output(self.moms_previous_year_id, "options"),
+            Output(self.moms_previous_year_id, "value"),
+            Output(self.moms_current_year_id, "options"),
+            Output(self.moms_current_year_id, "value"),
+
+            Output(self.method_reg_types_id, "options"),
+            Output(self.method_reg_types_id, "value"),
+
             Output(self.status_id, "children"),
             Input(self.data_version_id, "value"),
         )
-
         def load_dropdown_options(
             data_version: str,
-        ) -> tuple[
-            list[dict[str, str]],
-            str | None,
-            list[dict[str, str]],
-            list[str],
-            list[dict[str, str]],
-            str | None,
-            list[dict[str, str]],
-            list[str],
-            list[dict[str, int]],
-            int | None,
-            Any,
-        ]:
+        ) -> tuple[Any, ...]:
             try:
-                parquet_path = self._parquet_path(data_version)
-                df = self._read_data(parquet_path)
+                aggregate_path = self._parquet_path(
+                    data_version,
+                    dataset="agg_naring4",
+                )
+                aggregate_df = self._read_data(
+                    aggregate_path
+                )
 
+                business_path = self._parquet_path(
+                    data_version,
+                    dataset="bedrifter",
+                )
+                business_df = self._read_business_data(
+                    business_path
+                )
+
+                enterprise_path = self._parquet_path(
+                    data_version,
+                    dataset="foretak",
+                )
+                enterprise_df = self._read_enterprise_data(
+                    enterprise_path
+                )
+
+                # -------------------------------------------------
+                # Næring options
+                # -------------------------------------------------
                 naring_values = sorted(
-                    df["naring_4"]
+                    aggregate_df["naring_4"]
                     .dropna()
                     .astype(str)
                     .unique()
                     .tolist()
                 )
 
-                numeric_columns = (
-                    df.select_dtypes(include=[np.number])
-                    .columns
-                    .tolist()
-                )
-
-                variable_values = sorted(
-                    column
-                    for column in numeric_columns
-                    if column != "year"
-                )
-
                 naring_options = [
-                    {"label": value, "value": value}
+                    {
+                        "label": value,
+                        "value": value,
+                    }
                     for value in naring_values
-                ]
-
-                variable_options = [
-                    {"label": value, "value": value}
-                    for value in variable_values
                 ]
 
                 naring_value = (
@@ -1216,16 +5586,63 @@ class VLModule:
 
                 multi_naring_value = naring_values[:3]
 
-                variable_value = (
-                    variable_values[0]
-                    if variable_values
-                    else None
+                # -------------------------------------------------
+                # Aggregate variable options
+                # -------------------------------------------------
+                numeric_columns = (
+                    aggregate_df.select_dtypes(
+                        include=[np.number]
+                    )
+                    .columns
+                    .tolist()
                 )
 
-                multi_variable_value = variable_values[:3]
+                variable_values = sorted(
+                    column
+                    for column in numeric_columns
+                    if column != "year"
+                )
 
+                variable_options = [
+                    {
+                        "label": value,
+                        "value": value,
+                    }
+                    for value in variable_values
+                ]
+
+                preferred_variable = "omsetning"
+
+                variable_value = (
+                    preferred_variable
+                    if preferred_variable in variable_values
+                    else (
+                        variable_values[0]
+                        if variable_values
+                        else None
+                    )
+                )
+
+                preferred_multi_variables = [
+                    "omsetning",
+                    "nopost_driftskostnader",
+                    "sysselsetting_syss",
+                ]
+
+                multi_variable_value = [
+                    variable
+                    for variable in preferred_multi_variables
+                    if variable in variable_values
+                ]
+
+                if not multi_variable_value:
+                    multi_variable_value = variable_values[:3]
+
+                # -------------------------------------------------
+                # General year options
+                # -------------------------------------------------
                 year_values = sorted(
-                    df["year"]
+                    aggregate_df["year"]
                     .dropna()
                     .astype(int)
                     .unique()
@@ -1240,16 +5657,193 @@ class VLModule:
                     for year in year_values
                 ]
 
-                change_year_value = (
+                latest_year = (
                     year_values[-1]
                     if year_values
                     else None
                 )
 
+                # -------------------------------------------------
+                # Business variable options
+                # -------------------------------------------------
+                business_numeric_columns = (
+                    business_df.select_dtypes(
+                        include=[np.number]
+                    )
+                    .columns
+                    .tolist()
+                )
+
+                excluded_business_variables = {
+                    "year",
+                }
+
+                business_variable_values = sorted(
+                    column
+                    for column in business_numeric_columns
+                    if column not in excluded_business_variables
+                )
+
+                business_variable_options = [
+                    {
+                        "label": value,
+                        "value": value,
+                    }
+                    for value in business_variable_values
+                ]
+
+                preferred_large_change_variables = [
+                    "omsetning",
+                    "nopost_driftskostnader",
+                    "ts_forbruk",
+                    "ts_salgsint",
+                    "bearbeidingsverdi",
+                    "produksjonsverdi",
+                    "produktinnsats",
+                ]
+
+                large_change_variable_value = [
+                    variable
+                    for variable in preferred_large_change_variables
+                    if variable in business_variable_values
+                ]
+
+                if not large_change_variable_value:
+                    large_change_variable_value = (
+                        business_variable_values[:3]
+                    )
+
+                # -------------------------------------------------
+                # County options
+                # -------------------------------------------------
+                if "fylke" in business_df.columns:
+                    fylke_values = sorted(
+                        business_df["fylke"]
+                        .dropna()
+                        .astype(str)
+                        .unique()
+                        .tolist()
+                    )
+                else:
+                    fylke_values = []
+
+                fylke_options = [
+                    {
+                        "label": "Hele landet",
+                        "value": "Land",
+                    },
+                    *[
+                        {
+                            "label": fylke,
+                            "value": fylke,
+                        }
+                        for fylke in fylke_values
+                    ],
+                ]
+
+                # -------------------------------------------------
+                # MOMS years
+                # -------------------------------------------------
+                moms_year_options: list[dict[str, int]] = []
+                moms_previous_year: int | None = None
+                moms_current_year: int | None = None
+
+                try:
+                    moms_path = self._parquet_path(
+                        data_version,
+                        dataset="moms",
+                    )
+                    moms_df = pd.read_parquet(
+                        moms_path
+                    )
+
+                    if "aar" in moms_df.columns:
+                        moms_year_values = sorted(
+                            pd.to_numeric(
+                                moms_df["aar"],
+                                errors="coerce",
+                            )
+                            .dropna()
+                            .astype(int)
+                            .unique()
+                            .tolist()
+                        )
+
+                        moms_year_options = [
+                            {
+                                "label": str(year),
+                                "value": year,
+                            }
+                            for year in moms_year_values
+                        ]
+
+                        if len(moms_year_values) >= 2:
+                            moms_previous_year = (
+                                moms_year_values[-2]
+                            )
+                            moms_current_year = (
+                                moms_year_values[-1]
+                            )
+
+                        elif len(moms_year_values) == 1:
+                            moms_previous_year = (
+                                moms_year_values[0]
+                            )
+                            moms_current_year = (
+                                moms_year_values[0]
+                            )
+
+                except Exception:
+                    moms_year_options = year_options
+
+                    if len(year_values) >= 2:
+                        moms_previous_year = year_values[-2]
+                        moms_current_year = year_values[-1]
+
+                    elif len(year_values) == 1:
+                        moms_previous_year = year_values[0]
+                        moms_current_year = year_values[0]
+
+                # -------------------------------------------------
+                # Registration types
+                # -------------------------------------------------
+                if "reg_type" in enterprise_df.columns:
+                    reg_type_values = sorted(
+                        enterprise_df["reg_type"]
+                        .dropna()
+                        .astype(str)
+                        .unique()
+                        .tolist()
+                    )
+                elif "reg_type" in business_df.columns:
+                    reg_type_values = sorted(
+                        business_df["reg_type"]
+                        .dropna()
+                        .astype(str)
+                        .unique()
+                        .tolist()
+                    )
+                else:
+                    reg_type_values = []
+
+                reg_type_options = [
+                    {
+                        "label": value,
+                        "value": value,
+                    }
+                    for value in reg_type_values
+                ]
+
                 status = html.P(
                     [
-                        "Lest fra ",
-                        html.Code(parquet_path),
+                        "Aggregert: ",
+                        html.Code(aggregate_path),
+                        html.Br(),
+                        "Bedrifter: ",
+                        html.Code(business_path),
+                        html.Br(),
+                        "Foretak: ",
+                        html.Code(enterprise_path),
                     ],
                     style={"fontSize": "12px"},
                 )
@@ -1263,23 +5857,94 @@ class VLModule:
                     variable_value,
                     variable_options,
                     multi_variable_value,
+
                     year_options,
-                    change_year_value,
+                    latest_year,
+
+                    year_options,
+                    latest_year,
+
+                    year_options,
+                    latest_year,
+                    business_variable_options,
+                    large_change_variable_value,
+                    fylke_options,
+                    "Land",
+
+                    year_options,
+                    latest_year,
+
+                    year_options,
+                    latest_year,
+
+                    year_options,
+                    latest_year,
+
+                    year_options,
+                    latest_year,
+
+                    moms_year_options,
+                    moms_previous_year,
+                    moms_year_options,
+                    moms_current_year,
+
+                    reg_type_options,
+                    [],
+
                     status,
                 )
 
             except Exception as error:
+                empty_options: list[dict[str, Any]] = []
+
                 return (
-                    [],
+                    empty_options,
                     None,
+                    empty_options,
                     [],
-                    [],
-                    [],
+                    empty_options,
                     None,
+                    empty_options,
                     [],
-                    [],
-                    [],
+
+                    empty_options,
                     None,
+
+                    empty_options,
+                    None,
+
+                    empty_options,
+                    None,
+                    empty_options,
+                    [],
+                    [
+                        {
+                            "label": "Hele landet",
+                            "value": "Land",
+                        }
+                    ],
+                    "Land",
+
+                    empty_options,
+                    None,
+
+                    empty_options,
+                    None,
+
+                    empty_options,
+                    None,
+
+                    empty_options,
+                    None,
+
+                    empty_options,
+                    None,
+                    empty_options,
+                    None,
+
+                    empty_options,
+                    [],
+
                     html.Div(
                         f"Kunne ikke lese data: {error}",
                         className="alert alert-danger",
@@ -1370,14 +6035,330 @@ class VLModule:
             Input(self.enterprise_name_search_id, "value"),
             prevent_initial_call=True,
         )
-        def select_enterprise_from_name(
-            selected_orgnr: str | None,
-        ) -> str | Any:
-            """Copy the selected organisation number into the input field."""
-            if not selected_orgnr:
-                return no_update
 
-            return str(selected_orgnr)
+        @callback(
+            Output(
+                self.large_changes_group_value_id,
+                "options",
+            ),
+            Output(
+                self.large_changes_group_value_id,
+                "value",
+            ),
+            Input(
+                self.large_changes_group_level_id,
+                "value",
+            ),
+            Input(
+                self.data_version_id,
+                "value",
+            ),
+        )
+        def update_large_changes_group_values(
+            group_level: str,
+            data_version: str,
+        ) -> tuple[
+            list[dict[str, str]],
+            str | None,
+        ]:
+            """Populate industry values for the large-changes table."""
+            try:
+                parquet_path = self._parquet_path(
+                    data_version,
+                    dataset="bedrifter",
+                )
+
+                df = self._read_business_data(
+                    parquet_path
+                )
+
+                if "naring" not in df.columns:
+                    return [], None
+
+                data = df.copy()
+
+                data["naring"] = (
+                    data["naring"]
+                    .astype("string")
+                )
+
+                if group_level == "naring_1":
+                    if "naring_1" not in data.columns:
+                        return [], None
+
+                    group_values = (
+                        data["naring_1"]
+                        .dropna()
+                        .astype(str)
+                        .unique()
+                        .tolist()
+                    )
+
+                elif group_level == "naring":
+                    group_values = (
+                        data["naring"]
+                        .dropna()
+                        .astype(str)
+                        .unique()
+                        .tolist()
+                    )
+
+                else:
+                    slice_lengths = {
+                        "n2": 2,
+                        "n3": 4,
+                        "n4": 5,
+                        "n5": 6,
+                    }
+
+                    if group_level not in slice_lengths:
+                        return [], None
+
+                    group_values = (
+                        data["naring"]
+                        .str.slice(
+                            0,
+                            slice_lengths[group_level],
+                        )
+                        .dropna()
+                        .astype(str)
+                        .unique()
+                        .tolist()
+                    )
+
+                group_values = sorted(
+                    value
+                    for value in group_values
+                    if value
+                    and value.lower() != "nan"
+                )
+
+                options = [
+                    {
+                        "label": value,
+                        "value": value,
+                    }
+                    for value in group_values
+                ]
+
+                selected_value = (
+                    group_values[0]
+                    if group_values
+                    else None
+                )
+
+                return options, selected_value
+
+            except Exception:
+                return [], None
+
+
+        @callback(
+            Output(
+                self.breakdown_group_value_id,
+                "options",
+            ),
+            Output(
+                self.breakdown_group_value_id,
+                "value",
+            ),
+            Input(
+                self.breakdown_group_level_id,
+                "value",
+            ),
+            Input(
+                self.data_version_id,
+                "value",
+            ),
+        )
+        def update_breakdown_group_values(
+            group_level: str,
+            data_version: str,
+        ) -> tuple[
+            list[dict[str, str]],
+            str | None,
+        ]:
+            """Populate industry values for the breakdown table."""
+            try:
+                parquet_path = self._parquet_path(
+                    data_version,
+                    dataset="bedrifter",
+                )
+
+                df = self._read_business_data(
+                    parquet_path
+                )
+
+                if "naring" not in df.columns:
+                    return [], None
+
+                data = df.copy()
+
+                data["naring"] = (
+                    data["naring"]
+                    .astype("string")
+                )
+
+                if group_level == "naring":
+                    group_values = (
+                        data["naring"]
+                        .dropna()
+                        .astype(str)
+                        .unique()
+                        .tolist()
+                    )
+
+                else:
+                    slice_lengths = {
+                        "n2": 2,
+                        "n3": 4,
+                        "n4": 5,
+                    }
+
+                    if group_level not in slice_lengths:
+                        return [], None
+
+                    group_values = (
+                        data["naring"]
+                        .str.slice(
+                            0,
+                            slice_lengths[group_level],
+                        )
+                        .dropna()
+                        .astype(str)
+                        .unique()
+                        .tolist()
+                    )
+
+                group_values = sorted(
+                    value
+                    for value in group_values
+                    if value
+                    and value.lower() != "nan"
+                )
+
+                options = [
+                    {
+                        "label": value,
+                        "value": value,
+                    }
+                    for value in group_values
+                ]
+
+                selected_value = (
+                    group_values[0]
+                    if group_values
+                    else None
+                )
+
+                return options, selected_value
+
+            except Exception:
+                return [], None
+
+
+        @callback(
+            Output(
+                self.method_naring_value_id,
+                "options",
+            ),
+            Output(
+                self.method_naring_value_id,
+                "value",
+            ),
+            Input(
+                self.method_naring_level_id,
+                "value",
+            ),
+            Input(
+                self.data_version_id,
+                "value",
+            ),
+        )
+        def update_method_naring_values(
+            naring_level: str,
+            data_version: str,
+        ) -> tuple[
+            list[dict[str, str]],
+            str | None,
+        ]:
+            """Populate industry values for method analysis."""
+            try:
+                parquet_path = self._parquet_path(
+                    data_version,
+                    dataset="bedrifter",
+                )
+
+                df = self._read_business_data(
+                    parquet_path
+                )
+
+                if "naring" not in df.columns:
+                    return [], None
+
+                data = df.copy()
+
+                data["naring"] = (
+                    data["naring"]
+                    .astype("string")
+                )
+
+                if naring_level == "naring":
+                    group_values = (
+                        data["naring"]
+                        .dropna()
+                        .astype(str)
+                        .unique()
+                        .tolist()
+                    )
+
+                else:
+                    slice_lengths = {
+                        "naring_2": 2,
+                        "naring_4": 4,
+                        "naring_5": 5,
+                    }
+
+                    if naring_level not in slice_lengths:
+                        return [], None
+
+                    group_values = (
+                        data["naring"]
+                        .str.slice(
+                            0,
+                            slice_lengths[naring_level],
+                        )
+                        .dropna()
+                        .astype(str)
+                        .unique()
+                        .tolist()
+                    )
+
+                group_values = sorted(
+                    value
+                    for value in group_values
+                    if value
+                    and value.lower() != "nan"
+                )
+
+                options = [
+                    {
+                        "label": value,
+                        "value": value,
+                    }
+                    for value in group_values
+                ]
+
+                selected_value = (
+                    group_values[0]
+                    if group_values
+                    else None
+                )
+
+                return options, selected_value
+
+            except Exception:
+                return [], None
 
         @callback(
             Output(self.graph_title_id, "children"),
@@ -1388,6 +6369,21 @@ class VLModule:
             Output(self.change_controls_container_id, "style"),
             Output(self.single_variable_container_id, "style"),
             Output(self.multi_variable_container_id, "style"),
+            Output(self.noku_controls_container_id, "style"),
+            Output(
+                self.large_changes_controls_container_id,
+                "style",
+            ),
+            Output(
+                self.negative_nopost_controls_container_id,
+                "style",
+            ),
+            Output(self.nr_controls_container_id, "style"),
+            Output(self.opposite_controls_container_id, "style"),
+            Output(self.breakdown_controls_container_id, "style"),
+            Output(self.moms_controls_container_id, "style"),
+            Output(self.movement_controls_container_id, "style"),
+            Output(self.method_controls_container_id, "style"),
             Input(self.visualisation_id, "value"),
         )
         def update_visualisation_controls(
@@ -1401,247 +6397,1372 @@ class VLModule:
             dict[str, str],
             dict[str, str],
             dict[str, str],
+            dict[str, str],
+            dict[str, str],
+            dict[str, str],
+            dict[str, str],
+            dict[str, str],
+            dict[str, str],
+            dict[str, str],
+            dict[str, str],
+            dict[str, str],
         ]:
-            if visualisation == "trend-multi":
-                return (
+            hidden = {"display": "none"}
+            visible = {"display": "block"}
+
+            visualisation_text = {
+                "trend-single": (
+                    "Trendanalyse – én variabel",
+                    (
+                        "Viser utviklingen over tid sammen med forventet "
+                        "variasjonsområde basert på historiske endringer."
+                    ),
+                ),
+                "trend-multi": (
                     "Trendanalyse – flere variabler",
                     (
                         "Sammenligner utviklingen i flere valgte variabler "
                         "for samme næring over tid."
                     ),
-                    {"display": "block"},  # single næring
-                    {"display": "none"},   # multiple næringer
-                    {"display": "none"},   # enterprise
-                    {"display": "none"},   # change controls
-                    {"display": "none"},   # single variable
-                    {"display": "block"},  # multiple variables
-                )
-
-            if visualisation == "trend-industries":
-                return (
+                ),
+                "trend-industries": (
                     "Trendanalyse – flere næringer",
                     (
                         "Sammenligner utviklingen i én valgt variabel "
                         "for flere næringer over tid."
                     ),
-                    {"display": "none"},   # single næring
-                    {"display": "block"},  # multiple næringer
-                    {"display": "none"},   # enterprise
-                    {"display": "none"},   # change controls
-                    {"display": "block"},  # single variable
-                    {"display": "none"},   # multiple variables
-                )
-
-            if visualisation == "trend-enterprise":
-                return (
+                ),
+                "trend-enterprise": (
                     "Trendanalyse – enkeltforetak",
                     (
                         "Viser utviklingen i én valgt variabel "
                         "for ett foretak over tid."
                     ),
-                    {"display": "none"},   # single næring
-                    {"display": "none"},   # multiple næringer
-                    {"display": "block"},  # enterprise
-                    {"display": "none"},   # change controls
-                    {"display": "block"},  # single variable
-                    {"display": "none"},   # multiple variables
-                )
-
-            if visualisation == "change-share":
-                return (
+                ),
+                "change-share": (
                     "Prosentandeler av endringene",
                     (
                         "Viser hvilke foretak som bidrar mest til "
                         "endringen i valgt variabel fra året før."
                     ),
-                    {"display": "block"},  # single næring
-                    {"display": "none"},   # multiple næringer
-                    {"display": "none"},   # enterprise
-                    {"display": "block"},  # change controls
-                    {"display": "block"},  # single variable
-                    {"display": "none"},   # multiple variables
-                )
-
-            return (
-                "Trendanalyse – én variabel",
-                (
-                    "Viser utviklingen over tid sammen med forventet "
-                    "variasjonsområde basert på historiske endringer."
                 ),
-                {"display": "block"},  # single næring
-                {"display": "none"},   # multiple næringer
-                {"display": "none"},   # enterprise
-                {"display": "none"},   # change controls
-                {"display": "block"},  # single variable
-                {"display": "none"},   # multiple variables
+                "noku-table": (
+                    "NØKU-tabell",
+                    (
+                        "Viser store næringsendringer og vurderer dem mot "
+                        "historisk variasjon. Ved avvik vises de største "
+                        "bidragene fra bedrift og foretak."
+                    ),
+                ),
+                "large-changes": (
+                    "Store endringer",
+                    (
+                        "Viser bedrifter med de største endringene fra "
+                        "året før for valgte variabler."
+                    ),
+                ),
+                "negative-nopost": (
+                    "Negative NO-poster",
+                    (
+                        "Viser næringsgrupper der en eller flere "
+                        "NO-poster har en vesentlig negativ verdi."
+                    ),
+                ),
+                "nr-controls": (
+                    "NR-kontroller",
+                    (
+                        "Viser negative restverdier fra logiske "
+                        "NR-kontroller aggregert etter næring."
+                    ),
+                ),
+                "opposite-direction": (
+                    "Motsatte bevegelser",
+                    (
+                        "Finner næringsgrupper der relaterte variabler "
+                        "beveger seg i motsatt retning fra året før."
+                    ),
+                ),
+                "breakdown": (
+                    "Sammensatte variabler",
+                    (
+                        "Bryter en sammensatt variabel ned i postene som "
+                        "inngår, og sammenligner valgt år med året før."
+                    ),
+                ),
+                "moms": (
+                    "Mot MOMS",
+                    (
+                        "Sammenligner antall, sysselsetting, omsetning og "
+                        "MOMS mellom to år."
+                    ),
+                ),
+                "movement": (
+                    "Tilgang og avgang",
+                    (
+                        "Viser bedrifter som har kommet inn, gått ut eller "
+                        "endret næringskode mellom to år."
+                    ),
+                ),
+                "method-analysis": (
+                    "Metodeanalyse",
+                    (
+                        "Sammenligner valgte rater over tid mellom "
+                        "type S og øvrige typer."
+                    ),
+                ),
+            }
+
+            title, description = visualisation_text.get(
+                visualisation,
+                (
+                    VL_VISUALISATIONS.get(
+                        visualisation,
+                        "VL-visualisering",
+                    ),
+                    "Velg kontroller for visualiseringen.",
+                ),
             )
 
+            styles = {
+                "single_naring": hidden,
+                "multi_naring": hidden,
+                "enterprise": hidden,
+                "change": hidden,
+                "single_variable": hidden,
+                "multi_variable": hidden,
+                "noku": hidden,
+                "large_changes": hidden,
+                "negative_nopost": hidden,
+                "nr": hidden,
+                "opposite": hidden,
+                "breakdown": hidden,
+                "moms": hidden,
+                "movement": hidden,
+                "method": hidden,
+            }
+
+            if visualisation == "trend-single":
+                styles["single_naring"] = visible
+                styles["single_variable"] = visible
+
+            elif visualisation == "trend-multi":
+                styles["single_naring"] = visible
+                styles["multi_variable"] = visible
+
+            elif visualisation == "trend-industries":
+                styles["multi_naring"] = visible
+                styles["single_variable"] = visible
+
+            elif visualisation == "trend-enterprise":
+                styles["enterprise"] = visible
+                styles["single_variable"] = visible
+
+            elif visualisation == "change-share":
+                styles["single_naring"] = visible
+                styles["single_variable"] = visible
+                styles["change"] = visible
+
+            elif visualisation == "noku-table":
+                styles["noku"] = visible
+
+            elif visualisation == "large-changes":
+                styles["large_changes"] = visible
+
+            elif visualisation == "negative-nopost":
+                styles["negative_nopost"] = visible
+
+            elif visualisation == "nr-controls":
+                styles["nr"] = visible
+
+            elif visualisation == "opposite-direction":
+                styles["opposite"] = visible
+
+            elif visualisation == "breakdown":
+                styles["breakdown"] = visible
+
+            elif visualisation == "moms":
+                styles["moms"] = visible
+
+            elif visualisation == "movement":
+                styles["movement"] = visible
+
+            elif visualisation == "method-analysis":
+                styles["method"] = visible
+
+            return (
+                title,
+                description,
+                styles["single_naring"],
+                styles["multi_naring"],
+                styles["enterprise"],
+                styles["change"],
+                styles["single_variable"],
+                styles["multi_variable"],
+                styles["noku"],
+                styles["large_changes"],
+                styles["negative_nopost"],
+                styles["nr"],
+                styles["opposite"],
+                styles["breakdown"],
+                styles["moms"],
+                styles["movement"],
+                styles["method"],
+            )
+
+################################################################################            
+########
         @callback(
             Output(self.graph_id, "figure"),
+            Output(self.graph_container_id, "style"),
+            Output(self.table_id, "data"),
+            Output(self.table_id, "columns"),
+            Output(
+                self.table_id,
+                "style_data_conditional",
+            ),
+            Output(self.table_id, "tooltip_data"),
+            Output(self.table_container_id, "style"),
             Output(self.graph_section_id, "style"),
+
             Input(self.visualisation_id, "value"),
             Input(self.data_version_id, "value"),
+
             Input(self.naring_id, "value"),
             Input(self.multi_naring_id, "value"),
             Input(self.enterprise_id, "value"),
             Input(self.variable_id, "value"),
             Input(self.multi_variable_id, "value"),
+
             Input(self.change_year_id, "value"),
             Input(self.change_top_n_id, "value"),
+
+            Input(self.noku_year_id, "value"),
+            Input(self.noku_rate_id, "value"),
+            Input(self.noku_window_id, "value"),
+            Input(
+                self.noku_standard_deviations_id,
+                "value",
+            ),
+
+            Input(
+                self.large_changes_year_id,
+                "value",
+            ),
+            Input(
+                self.large_changes_group_level_id,
+                "value",
+            ),
+            Input(
+                self.large_changes_group_value_id,
+                "value",
+            ),
+            Input(
+                self.large_changes_variables_id,
+                "value",
+            ),
+            Input(
+                self.large_changes_fylke_id,
+                "value",
+            ),
+            Input(
+                self.large_changes_top_n_id,
+                "value",
+            ),
+
+            Input(
+                self.negative_nopost_year_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_group_level_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_threshold_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_hide_columns_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_max_rows_id,
+                "value",
+            ),
+
+            Input(self.nr_year_id, "value"),
+            Input(self.nr_group_level_id, "value"),
+            Input(self.nr_view_id, "value"),
+            Input(self.nr_threshold_id, "value"),
+            Input(self.nr_hide_columns_id, "value"),
+            Input(self.nr_max_rows_id, "value"),
+
+            Input(self.opposite_year_id, "value"),
+            Input(
+                self.opposite_group_level_id,
+                "value",
+            ),
+            Input(self.opposite_view_id, "value"),
+            Input(self.opposite_rule_id, "value"),
+            Input(
+                self.opposite_min_count_id,
+                "value",
+            ),
+            Input(
+                self.opposite_gap_threshold_id,
+                "value",
+            ),
+            Input(
+                self.opposite_absolute_threshold_id,
+                "value",
+            ),
+            Input(
+                self.opposite_max_rows_id,
+                "value",
+            ),
+
+            Input(self.breakdown_year_id, "value"),
+            Input(
+                self.breakdown_group_level_id,
+                "value",
+            ),
+            Input(
+                self.breakdown_group_value_id,
+                "value",
+            ),
+            Input(
+                self.breakdown_variable_id,
+                "value",
+            ),
+
+            Input(self.moms_group_level_id, "value"),
+            Input(
+                self.moms_previous_year_id,
+                "value",
+            ),
+            Input(
+                self.moms_current_year_id,
+                "value",
+            ),
+
+            Input(
+                self.movement_direction_id,
+                "value",
+            ),
+            Input(
+                self.movement_variable_id,
+                "value",
+            ),
+            Input(
+                self.movement_group_level_id,
+                "value",
+            ),
+            Input(
+                self.movement_code_filter_id,
+                "value",
+            ),
+            Input(
+                self.movement_exact_match_id,
+                "value",
+            ),
+            Input(
+                self.movement_top_n_id,
+                "value",
+            ),
+
+            Input(
+                self.method_naring_level_id,
+                "value",
+            ),
+            Input(
+                self.method_naring_value_id,
+                "value",
+            ),
+            Input(self.method_ratios_id, "value"),
+            Input(
+                self.method_reg_types_id,
+                "value",
+            ),
         )
         def update_graph(
             visualisation: str,
             data_version: str,
+
             naring: str | None,
             multi_narings: list[str] | None,
             enterprise: str | None,
             variable: str | None,
             multi_variables: list[str] | None,
+
             change_year: int | None,
             change_top_n: int | None,
-        ) -> tuple[go.Figure, dict[str, str]]:
-            supported_visualisations = {
-                "trend-single",
-                "trend-multi",
-                "trend-industries",
-                "trend-enterprise",
-                "change-share",
+
+            noku_year: int | None,
+            noku_rate: float | None,
+            noku_window: int | None,
+            noku_standard_deviations: float | None,
+
+            large_changes_year: int | None,
+            large_changes_group_level: str | None,
+            large_changes_group_value: str | None,
+            large_changes_variables: list[str] | None,
+            large_changes_fylke: str | None,
+            large_changes_top_n: int | None,
+
+            negative_nopost_year: int | None,
+            negative_nopost_group_level: str | None,
+            negative_nopost_threshold: float | None,
+            negative_nopost_hide_columns: list[str] | None,
+            negative_nopost_max_rows: int | None,
+
+            nr_year: int | None,
+            nr_group_level: str | None,
+            nr_view: str | None,
+            nr_threshold: float | None,
+            nr_hide_columns: list[str] | None,
+            nr_max_rows: int | None,
+
+            opposite_year: int | None,
+            opposite_group_level: str | None,
+            opposite_view: str | None,
+            opposite_rule: str | None,
+            opposite_min_count: int | None,
+            opposite_gap_threshold: float | None,
+            opposite_absolute_threshold: float | None,
+            opposite_max_rows: int | None,
+
+            breakdown_year: int | None,
+            breakdown_group_level: str | None,
+            breakdown_group_value: str | None,
+            breakdown_variable: str | None,
+
+            moms_group_level: str | None,
+            moms_previous_year: int | None,
+            moms_current_year: int | None,
+
+            movement_direction: str | None,
+            movement_variable: str | None,
+            movement_group_level: str | None,
+            movement_code_filter: str | None,
+            movement_exact_match: list[str] | None,
+            movement_top_n: int | None,
+
+            method_naring_level: str | None,
+            method_naring_value: str | None,
+            method_ratios: list[str] | None,
+            method_reg_types: list[str] | None,
+        ) -> tuple[Any, ...]:
+            graph_visible_style = {
+                "display": "block",
+                "width": "100%",
             }
 
-            graph_style = {
+            graph_hidden_style = {
+                "display": "none",
+                "width": "100%",
+            }
+
+            table_visible_style = {
+                "display": "block",
+                "width": "100%",
+                "padding": "16px",
+            }
+
+            table_hidden_style = {
+                "display": "none",
+                "width": "100%",
+                "padding": "16px",
+            }
+
+            section_style = {
                 "display": "block",
                 "width": "100%",
                 "maxWidth": "none",
             }
 
-            if visualisation not in supported_visualisations:
+            def figure_result(
+                figure: go.Figure,
+            ) -> tuple[Any, ...]:
+                return (
+                    figure,
+                    graph_visible_style,
+                    [],
+                    [],
+                    [],
+                    [],
+                    table_hidden_style,
+                    section_style,
+                )
+
+            def table_result(
+                table_df: pd.DataFrame,
+                empty_message: str,
+            ) -> tuple[Any, ...]:
+                if table_df.empty:
+                    figure = self._empty_figure(
+                        empty_message
+                    )
+
+                    return figure_result(figure)
+
+                (
+                    table_data,
+                    table_columns,
+                    table_styles,
+                    table_tooltips,
+                ) = self._prepare_table_output(
+                    table_df
+                )
+
+                return (
+                    go.Figure(),
+                    graph_hidden_style,
+                    table_data,
+                    table_columns,
+                    table_styles,
+                    table_tooltips,
+                    table_visible_style,
+                    section_style,
+                )
+
+            try:
+                # -----------------------------------------
+                # Trend: one variable
+                # -----------------------------------------
+                if visualisation == "trend-single":
+                    if not naring:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg en næring."
+                            )
+                        )
+
+                    if not variable:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg en variabel."
+                            )
+                        )
+
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="agg_naring4",
+                    )
+
+                    df = self._read_data(
+                        parquet_path
+                    )
+
+                    if variable not in df.columns:
+                        return figure_result(
+                            self._empty_figure(
+                                (
+                                    f"Variabelen {variable} "
+                                    "finnes ikke i datasettet."
+                                )
+                            )
+                        )
+
+                    figure = self._create_trend_figure(
+                        df=df,
+                        naring=naring,
+                        variable=variable,
+                    )
+
+                    return figure_result(figure)
+
+                # -----------------------------------------
+                # Trend: multiple variables
+                # -----------------------------------------
+                if visualisation == "trend-multi":
+                    if not naring:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg en næring."
+                            )
+                        )
+
+                    if not multi_variables:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg minst én variabel."
+                            )
+                        )
+
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="agg_naring4",
+                    )
+
+                    df = self._read_data(
+                        parquet_path
+                    )
+
+                    missing_variables = [
+                        selected_variable
+                        for selected_variable
+                        in multi_variables
+                        if selected_variable
+                        not in df.columns
+                    ]
+
+                    if missing_variables:
+                        return figure_result(
+                            self._empty_figure(
+                                (
+                                    "Disse variablene finnes "
+                                    "ikke i datasettet: "
+                                    f"{missing_variables}"
+                                )
+                            )
+                        )
+
+                    figure = (
+                        self._create_multi_trend_figure(
+                            df=df,
+                            naring=naring,
+                            variables=multi_variables,
+                        )
+                    )
+
+                    return figure_result(figure)
+
+                # -----------------------------------------
+                # Trend: multiple industries
+                # -----------------------------------------
+                if visualisation == "trend-industries":
+                    if not multi_narings:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg minst én næring."
+                            )
+                        )
+
+                    if not variable:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg en variabel."
+                            )
+                        )
+
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="agg_naring4",
+                    )
+
+                    df = self._read_data(
+                        parquet_path
+                    )
+
+                    if variable not in df.columns:
+                        return figure_result(
+                            self._empty_figure(
+                                (
+                                    f"Variabelen {variable} "
+                                    "finnes ikke i datasettet."
+                                )
+                            )
+                        )
+
+                    figure = (
+                        self._create_industry_trend_figure(
+                            df=df,
+                            narings=multi_narings,
+                            variable=variable,
+                        )
+                    )
+
+                    return figure_result(figure)
+
+                # -----------------------------------------
+                # Trend: enterprise
+                # -----------------------------------------
+                if visualisation == "trend-enterprise":
+                    if not enterprise:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg et foretak."
+                            )
+                        )
+
+                    if not variable:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg en variabel."
+                            )
+                        )
+
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="foretak",
+                    )
+
+                    df = self._read_enterprise_data(
+                        parquet_path
+                    )
+
+                    if variable not in df.columns:
+                        return figure_result(
+                            self._empty_figure(
+                                (
+                                    f"Variabelen {variable} "
+                                    "finnes ikke i foretaksdataene."
+                                )
+                            )
+                        )
+
+                    figure = (
+                        self._create_enterprise_trend_figure(
+                            df=df,
+                            enterprise=str(enterprise),
+                            variable=variable,
+                        )
+                    )
+
+                    return figure_result(figure)
+
+                # -----------------------------------------
+                # Change share
+                # -----------------------------------------
+                if visualisation == "change-share":
+                    if not naring:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg en næring."
+                            )
+                        )
+
+                    if not variable:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg en variabel."
+                            )
+                        )
+
+                    if change_year is None:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg et år."
+                            )
+                        )
+
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="bedrifter",
+                    )
+
+                    df = self._read_business_data(
+                        parquet_path
+                    )
+
+                    if variable not in df.columns:
+                        return figure_result(
+                            self._empty_figure(
+                                (
+                                    f"Variabelen {variable} "
+                                    "finnes ikke i bedriftsdataene."
+                                )
+                            )
+                        )
+
+                    figure = (
+                        self._create_change_share_figure(
+                            df=df,
+                            naring=naring,
+                            variable=variable,
+                            year=int(change_year),
+                            top_n=int(
+                                change_top_n or 10
+                            ),
+                        )
+                    )
+
+                    return figure_result(figure)
+
+                # -----------------------------------------
+                # NØKU table
+                # -----------------------------------------
+                if visualisation == "noku-table":
+                    if noku_year is None:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg et år."
+                            )
+                        )
+
+                    aggregate_path = self._parquet_path(
+                        data_version,
+                        dataset="agg_naring4",
+                    )
+
+                    business_path = self._parquet_path(
+                        data_version,
+                        dataset="bedrifter",
+                    )
+
+                    aggregate_df = self._read_data(
+                        aggregate_path
+                    )
+
+                    business_df = (
+                        self._read_business_data(
+                            business_path
+                        )
+                    )
+
+                    table_df = (
+                        self._create_noku_table_data(
+                            aggregate_df=aggregate_df,
+                            business_df=business_df,
+                            year=int(noku_year),
+                            rate=float(
+                                noku_rate
+                                if noku_rate is not None
+                                else 20
+                            ),
+                            window=int(
+                                noku_window
+                                if noku_window is not None
+                                else 5
+                            ),
+                            standard_deviations=float(
+                                noku_standard_deviations
+                                if (
+                                    noku_standard_deviations
+                                    is not None
+                                )
+                                else 2.5
+                            ),
+                            naring_col="naring_4",
+                        )
+                    )
+
+                    return table_result(
+                        table_df,
+                        (
+                            "Fant ingen store endringer "
+                            "for de valgte grensene."
+                        ),
+                    )
+
+                # -----------------------------------------
+                # Large changes
+                # -----------------------------------------
+                if visualisation == "large-changes":
+                    if large_changes_year is None:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg et år."
+                            )
+                        )
+
+                    if not large_changes_group_level:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg et næringsnivå."
+                            )
+                        )
+
+                    if not large_changes_group_value:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg en næringskode."
+                            )
+                        )
+
+                    if not large_changes_variables:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg minst én variabel."
+                            )
+                        )
+
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="bedrifter",
+                    )
+
+                    df = self._read_business_data(
+                        parquet_path
+                    )
+
+                    table_df = (
+                        self._create_large_changes_data(
+                            df=df,
+                            year=int(
+                                large_changes_year
+                            ),
+                            group_level=(
+                                large_changes_group_level
+                            ),
+                            group_value=(
+                                large_changes_group_value
+                            ),
+                            variables=(
+                                large_changes_variables
+                            ),
+                            fylke=(
+                                large_changes_fylke
+                                or "Land"
+                            ),
+                            top_n=int(
+                                large_changes_top_n
+                                or 50
+                            ),
+                        )
+                    )
+
+                    return table_result(
+                        table_df,
+                        (
+                            "Fant ingen bedrifter med "
+                            "beregnbare endringer."
+                        ),
+                    )
+
+                # -----------------------------------------
+                # Negative NO posts
+                # -----------------------------------------
+                if visualisation == "negative-nopost":
+                    if negative_nopost_year is None:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg et år."
+                            )
+                        )
+
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset=(
+                            "bedrifter_recent_med_nopost"
+                        ),
+                    )
+
+                    df = self._read_generic_data(
+                        parquet_path
+                    )
+
+                    table_df = (
+                        self._create_negative_nopost_data(
+                            df=df,
+                            year=int(
+                                negative_nopost_year
+                            ),
+                            group_level=(
+                                negative_nopost_group_level
+                                or "naring"
+                            ),
+                            negative_threshold=float(
+                                negative_nopost_threshold
+                                if (
+                                    negative_nopost_threshold
+                                    is not None
+                                )
+                                else 1000
+                            ),
+                            hide_nonnegative_columns=(
+                                "hide"
+                                in (
+                                    negative_nopost_hide_columns
+                                    or []
+                                )
+                            ),
+                            max_rows=int(
+                                negative_nopost_max_rows
+                                or 300
+                            ),
+                        )
+                    )
+
+                    return table_result(
+                        table_df,
+                        (
+                            "Fant ingen næringsgrupper "
+                            "med negative NO-poster."
+                        ),
+                    )
+
+                # -----------------------------------------
+                # NR controls
+                # -----------------------------------------
+                if visualisation == "nr-controls":
+                    if nr_year is None:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg et år."
+                            )
+                        )
+
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="bedrifter",
+                    )
+
+                    df = self._read_business_data(
+                        parquet_path
+                    )
+
+                    table_df = (
+                        self._create_nr_controls_data(
+                            df=df,
+                            year=int(nr_year),
+                            group_level=(
+                                nr_group_level
+                                or "naring"
+                            ),
+                            view=nr_view or "Land",
+                            negative_threshold=float(
+                                nr_threshold
+                                if nr_threshold is not None
+                                else 1000
+                            ),
+                            hide_nonnegative_columns=(
+                                "hide"
+                                in (
+                                    nr_hide_columns
+                                    or []
+                                )
+                            ),
+                            max_rows=int(
+                                nr_max_rows or 300
+                            ),
+                        )
+                    )
+
+                    return table_result(
+                        table_df,
+                        (
+                            "Fant ingen negative "
+                            "NR-kontroller."
+                        ),
+                    )
+
+                # -----------------------------------------
+                # Opposite direction
+                # -----------------------------------------
+                if visualisation == "opposite-direction":
+                    if opposite_year is None:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg et år."
+                            )
+                        )
+
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="bedrifter",
+                    )
+
+                    df = self._read_business_data(
+                        parquet_path
+                    )
+
+                    table_df = (
+                        self._create_opposite_direction_data(
+                            df=df,
+                            year=int(opposite_year),
+                            group_level=(
+                                opposite_group_level
+                                or "naring_4"
+                            ),
+                            view=(
+                                opposite_view
+                                or "Land"
+                            ),
+                            rule=(
+                                opposite_rule
+                                or "both"
+                            ),
+                            min_count=int(
+                                opposite_min_count
+                                if (
+                                    opposite_min_count
+                                    is not None
+                                )
+                                else 50
+                            ),
+                            gap_threshold_pct=float(
+                                opposite_gap_threshold
+                                if (
+                                    opposite_gap_threshold
+                                    is not None
+                                )
+                                else 10
+                            ),
+                            absolute_change_threshold=(
+                                float(
+                                    opposite_absolute_threshold
+                                    if (
+                                        opposite_absolute_threshold
+                                        is not None
+                                    )
+                                    else 0
+                                )
+                            ),
+                            max_rows=int(
+                                opposite_max_rows
+                                or 300
+                            ),
+                        )
+                    )
+
+                    return table_result(
+                        table_df,
+                        (
+                            "Fant ingen grupper med "
+                            "motsatte bevegelser."
+                        ),
+                    )
+
+                # -----------------------------------------
+                # Breakdown
+                # -----------------------------------------
+                if visualisation == "breakdown":
+                    if breakdown_year is None:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg et år."
+                            )
+                        )
+
+                    if not breakdown_group_level:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg et næringsnivå."
+                            )
+                        )
+
+                    if not breakdown_group_value:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg en næringskode."
+                            )
+                        )
+
+                    if not breakdown_variable:
+                        return figure_result(
+                            self._empty_figure(
+                                (
+                                    "Velg en sammensatt "
+                                    "variabel."
+                                )
+                            )
+                        )
+
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="bedrifter",
+                    )
+
+                    df = self._read_business_data(
+                        parquet_path
+                    )
+
+                    table_df = (
+                        self._create_breakdown_data(
+                            df=df,
+                            year=int(
+                                breakdown_year
+                            ),
+                            group_level=(
+                                breakdown_group_level
+                            ),
+                            group_value=(
+                                breakdown_group_value
+                            ),
+                            variable=(
+                                breakdown_variable
+                            ),
+                        )
+                    )
+
+                    return table_result(
+                        table_df,
+                        (
+                            "Fant ingen data for "
+                            "den valgte nedbrytningen."
+                        ),
+                    )
+
+                # -----------------------------------------
+                # MOMS
+                # -----------------------------------------
+                if visualisation == "moms":
+                    if moms_previous_year is None:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg tidligere år."
+                            )
+                        )
+
+                    if moms_current_year is None:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg nåværende år."
+                            )
+                        )
+
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="moms",
+                    )
+
+                    df = self._read_generic_data(
+                        parquet_path
+                    )
+
+                    table_df = self._create_moms_data(
+                        df=df,
+                        group_level=(
+                            moms_group_level or "n2"
+                        ),
+                        previous_year=int(
+                            moms_previous_year
+                        ),
+                        current_year=int(
+                            moms_current_year
+                        ),
+                    )
+
+                    return table_result(
+                        table_df,
+                        (
+                            "Fant ingen MOMS-data for "
+                            "de valgte årene."
+                        ),
+                    )
+
+                # -----------------------------------------
+                # Movement
+                # -----------------------------------------
+                if visualisation == "movement":
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="movement_base",
+                    )
+
+                    df = self._read_generic_data(
+                        parquet_path
+                    )
+
+                    table_df = (
+                        self._create_movement_data(
+                            df=df,
+                            direction=(
+                                movement_direction
+                                or "tilgang"
+                            ),
+                            variable=(
+                                movement_variable
+                                or "omsetning"
+                            ),
+                            group_level=(
+                                movement_group_level
+                                or "n2"
+                            ),
+                            code_filter=(
+                                movement_code_filter
+                                or ""
+                            ),
+                            exact_match=(
+                                "exact"
+                                in (
+                                    movement_exact_match
+                                    or []
+                                )
+                            ),
+                            top_n=int(
+                                movement_top_n
+                                or 100
+                            ),
+                        )
+                    )
+
+                    return table_result(
+                        table_df,
+                        (
+                            "Fant ingen tilganger eller "
+                            "avganger for filteret."
+                        ),
+                    )
+
+                # -----------------------------------------
+                # Method analysis
+                # -----------------------------------------
+                if visualisation == "method-analysis":
+                    if not method_naring_level:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg et næringsnivå."
+                            )
+                        )
+
+                    if not method_naring_value:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg en næringskode."
+                            )
+                        )
+
+                    if not method_ratios:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg minst én rate."
+                            )
+                        )
+
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="bedrifter",
+                    )
+
+                    df = self._read_business_data(
+                        parquet_path
+                    )
+
+                    figure = (
+                        self._create_method_analysis_figure(
+                            df=df,
+                            naring_level=(
+                                method_naring_level
+                            ),
+                            naring_value=(
+                                method_naring_value
+                            ),
+                            ratios=method_ratios,
+                            reg_types=(
+                                method_reg_types
+                                or None
+                            ),
+                        )
+                    )
+
+                    return figure_result(figure)
+
                 label = VL_VISUALISATIONS.get(
                     visualisation,
                     visualisation,
                 )
 
-                return (
+                return figure_result(
                     self._empty_figure(
-                        f"{label} blir lagt til i neste steg."
-                    ),
-                    graph_style,
+                        (
+                            "Visualiseringen "
+                            f"{label} er ikke konfigurert."
+                        )
+                    )
                 )
-
-            try:
-                if visualisation == "trend-enterprise":
-                    parquet_path = self._parquet_path(
-                        data_version,
-                        dataset="foretak",
-                    )
-                    df = self._read_enterprise_data(
-                        parquet_path
-                    )
-
-                elif visualisation == "change-share":
-                    parquet_path = self._parquet_path(
-                        data_version,
-                        dataset="bedrifter",
-                    )
-                    df = self._read_business_data(
-                        parquet_path
-                    )
-
-                else:
-                    parquet_path = self._parquet_path(
-                        data_version
-                    )
-                    df = self._read_data(
-                        parquet_path
-                    )
-
-                if visualisation == "trend-multi":
-                    if not naring:
-                        figure = self._empty_figure(
-                            "Velg en næring."
-                        )
-                    elif not multi_variables:
-                        figure = self._empty_figure(
-                            "Velg minst én variabel."
-                        )
-                    else:
-                        figure = self._create_multi_trend_figure(
-                            df=df,
-                            naring=naring,
-                            variables=multi_variables,
-                        )
-
-                elif visualisation == "trend-enterprise":
-                    if not enterprise:
-                        figure = self._empty_figure(
-                            "Velg et foretak."
-                        )
-                    elif not variable:
-                        figure = self._empty_figure(
-                            "Velg en variabel."
-                        )
-                    elif variable not in df.columns:
-                        figure = self._empty_figure(
-                            f"Variabelen {variable} finnes ikke i foretaksdataene."
-                        )
-                    else:
-                        figure = self._create_enterprise_trend_figure(
-                            df=df,
-                            enterprise=enterprise,
-                            variable=variable,
-                        )
-
-                elif visualisation == "change-share":
-                    if not naring:
-                        figure = self._empty_figure(
-                            "Velg en næring."
-                        )
-                    elif not variable:
-                        figure = self._empty_figure(
-                            "Velg en variabel."
-                        )
-                    elif change_year is None:
-                        figure = self._empty_figure(
-                            "Velg et år."
-                        )
-                    elif variable not in df.columns:
-                        figure = self._empty_figure(
-                            f"Variabelen {variable} finnes ikke i bedriftsdataene."
-                        )
-                    else:
-                        figure = self._create_change_share_figure(
-                            df=df,
-                            naring=naring,
-                            variable=variable,
-                            year=change_year,
-                            top_n=change_top_n or 10,
-                        )
-                else:
-                    if not naring:
-                        figure = self._empty_figure(
-                            "Velg en næring."
-                        )
-                    elif not variable:
-                        figure = self._empty_figure(
-                            "Velg en variabel."
-                        )
-                    else:
-                        figure = self._create_trend_figure(
-                            df=df,
-                            naring=naring,
-                            variable=variable,
-                        )
-
-                return figure, graph_style
 
             except Exception as error:
-                return (
+                return figure_result(
                     self._empty_figure(
-                        f"Kunne ikke lage figur: {error}"
-                    ),
-                    graph_style,
+                        (
+                            "Kunne ikke lage "
+                            f"visualiseringen: {error}"
+                        )
+                    )
                 )
-
-
+############################################################################
 class VLModuleTab(TabImplementation, VLModule):
     """VL module displayed as an application tab."""
 
