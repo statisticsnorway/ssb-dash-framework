@@ -159,6 +159,7 @@ def default_getter(
         )
     return res.iloc[0, 0]
 
+_NO_REVERT = object()
 
 def default_updater(
     value: Any,
@@ -169,7 +170,7 @@ def default_updater(
     field_path: str,
     time_units: dict,
     *args: list[Any],
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], Any]:
     """
     Args:
         value (Any): New value to write.
@@ -186,12 +187,12 @@ def default_updater(
     )
     logger.debug(f"Old value from DB: {old_value!r}, type: {type(old_value)}")
 
+    value = value.strip()
+
     if value == old_value or (value == "" and not old_value):
         raise PreventUpdate
 
-    long = False
-    if settings.formdata_fieldname_column == "variabel":
-        long = True
+    long = settings.formdata_fieldname_column == "variabel"
     update_skjemadata = UpdateSkjemadata(
         table=settings.form_data_table,
         skjema=skjema,
@@ -215,25 +216,29 @@ def default_updater(
         on_skjemadata_update=True
     )
 
-    if isinstance(_get_connection_object(), ConnectionPool):
-        skjemadata_alert = update_skjemadata.update_ibis(long=long)
-        alerts: list[dict[str, Any]] = [skjemadata_alert] if skjemadata_alert else []
-        try:
-            if "skjemadata" in settings.form_data_table:
-                skjemamottak_alert = update_skjemamottak.update_ibis()
-                if skjemamottak_alert:
-                    alerts.append(skjemamottak_alert)
-        except PreventUpdate:
-            logger.debug("skjemamottak status update skipped (not 'Ubehandlet')")
-        # get_table now returns a materialized snapshot; evict it so the next read
-        # (including the old_value lookup on the very next edit) sees the new value.
-        FormGetterCached.evict(refnr, settings.form_data_table)
-
-        return alerts
-    else:
+    if not isinstance(_get_connection_object(), ConnectionPool):
         raise NotImplementedError(
             f"Connection of type '{type(_get_connection_object())}' is not implemented yet."
         )
+
+    skjemadata_alert = update_skjemadata.update_ibis(long=long)
+    alerts: list[dict[str, Any]] = [skjemadata_alert] if skjemadata_alert else []
+
+    if not skjemadata_alert or skjemadata_alert.get("color") != "success":
+        # update failed (e.g. datatype mismatch)
+        return alerts, old_value
+
+    try:
+        if "skjemadata" in settings.form_data_table:
+            skjemamottak_alert = update_skjemamottak.update_ibis()
+            if skjemamottak_alert:
+                alerts.append(skjemamottak_alert)
+    except PreventUpdate:
+        logger.debug("skjemamottak status update skipped (not 'Ubehandlet')")
+
+    FormGetterCached.evict(refnr, settings.form_data_table)
+    return alerts, _NO_REVERT
+
 
 def _extend_alert_log(alert_log: list[Any] | None, alert: Any) -> list[Any]:
     """Returns a flat list of alert dicts."""
@@ -261,7 +266,7 @@ def _run_field(
 ) -> Any:
     """Run one field's updater (if edited) or getter (if not).
 
-    Returns the updater's alert(s) when ``edited`` is True, or the getter's
+    Returns the updater's alert(s) when ``edited`` is True (and potential 'revert_value'), or the getter's
     value to display when ``edited`` is False.
     """
     if edited:
@@ -455,14 +460,16 @@ def _register_group_callback(
  
         triggered_id = ctx.triggered_id
  
+        # update
         if triggered_id in field_ids:
             idx = field_ids.index(triggered_id)
             f = fields[idx]
+            print(f"edited field, f: {f}")
             if not f._check_guard(settings, *guard_values):
                 logger.debug("Preventing update")
                 raise PreventUpdate
  
-            alert = _run_field(
+            alerts, revert_value = _run_field(
                 f,
                 edited=True,
                 value=field_values[idx],
@@ -473,12 +480,16 @@ def _register_group_callback(
                 time_units=time_units,
                 extra_args=extra_args,
             )
-            alert_log = _extend_alert_log(alert_log, alert)
-            return (*([no_update] * n), alert_log, time.time())
- 
-        # Populate path: refnr / time-unit change / initial load -> fetch
-        # every field whose own guard currently passes; leave the rest
-        # (no_update) untouched.
+            print(f"revert_value: {revert_value}")
+            alert_log = _extend_alert_log(alert_log, alerts)
+
+            field_outputs = [no_update] * n
+            if revert_value is not _NO_REVERT:
+                field_outputs[idx] = revert_value
+
+            return (*field_outputs, alert_log, time.time())
+
+        # fetch/getter
         results: list[Any] = []
         for f in fields:
             if not f._check_guard(settings, *guard_values):

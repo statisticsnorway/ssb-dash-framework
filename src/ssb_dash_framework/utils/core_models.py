@@ -201,7 +201,7 @@ class UpdateSkjemadata(BaseModel):
         if datatype:
             if datatype == "float":
                 return create_alert(
-                f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}':"
+                f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}': "
                 f"Heltallsfelt kan ikke inneholde komma eller punktum (fikk '{self.value}').",
                 "warning",
                 ephemeral=True,
