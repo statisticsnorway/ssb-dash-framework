@@ -100,6 +100,7 @@ class ControlView(ABC):
                             dbc.Button(
                                 "🔄 Oppdater visning",
                                 id=f"{self.module_number}-kontroll-refresh",
+                                className="ssb-btn primary-btn",
                             ),
                             width="auto",
                         ),
@@ -107,6 +108,7 @@ class ControlView(ABC):
                             dbc.Button(
                                 "Kjør kontroller (kan ta tid)",
                                 id=f"{self.module_number}-kontroll-run-button",
+                                className="ssb-btn primary-btn",
                             ),
                             width="auto",
                         ),
@@ -118,7 +120,7 @@ class ControlView(ABC):
                     dag.AgGrid(
                         id=f"{self.module_number}-kontroller",
                         defaultColDef=default_col_def,
-                        className="ag-theme-alpine header-style-on-filter",
+                        className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
                         columnSize="responsiveSizeToFit",
                         dashGridOptions={
                             "pagination": True,
@@ -134,7 +136,7 @@ class ControlView(ABC):
                         dag.AgGrid(
                             id=f"{self.module_number}-kontrollutslag",
                             defaultColDef=default_col_def,
-                            className="ag-theme-alpine header-style-on-filter",
+                            className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
                             columnSize="responsiveSizeToFit",
                             dashGridOptions={
                                 "pagination": True,
@@ -189,6 +191,7 @@ class ControlView(ABC):
                     "Kjører kontroller, dette kan ta litt tid, du får beskjed når den er ferdig. Ikke klikk på knappen igjen.",
                     "info",
                     ephemeral=True,
+                    duration=10,
                 ),
                 *alert_store,
             ]
@@ -211,13 +214,15 @@ class ControlView(ABC):
             alert_store: list[dict[str, Any]],
             *args: Any,
         ):
-            logger.debug(
+            print(
                 f"Args:\n"
                 f"skjema: {skjema}\n"
                 f"refresh: {refresh}\n"
                 f"rerun: {rerun}\n"
                 f"args: {args}"
             )
+
+            print(f"get_kontroller_overview triggered by: {ctx.triggered_id}")
 
             if isinstance(_get_connection_object(), EimerDBInstance):
                 args = [int(arg) for arg in args]
@@ -258,6 +263,15 @@ class ControlView(ABC):
             ) as conn:
 
                 skjemamottak = conn.table("skjemamottak")
+                if "status" in skjemamottak.columns:
+                    status_column, status_value = "status", "Ubehandlet"
+                    status_filter = (
+                        skjemamottak[status_column].cast("string") == status_value
+                    )
+                else:
+                    status_column, status_value = "editert", False
+                    status_filter = skjemamottak[status_column] == status_value
+
                 kontroller = conn.table("kontroller")
                 kontrollutslag = conn.table("kontrollutslag")
 
@@ -269,7 +283,7 @@ class ControlView(ABC):
 
                 subq = (
                     skjemamottak.filter(skjemamottak.aktiv == True)
-                    .filter(skjemamottak.editert == False)
+                    .filter(status_filter)
                     .select("ident", "refnr")
                 )
 
@@ -358,14 +372,19 @@ class ControlView(ABC):
                 if sorting_order is None:
                     sorting_order = "DESC"
                 skjemamottak = conn.table("skjemamottak")
-                kontrollutslag = conn.table("kontrollutslag")
+                if "status" in skjemamottak.columns:
+                    status_column = "status"
+                else:
+                    status_column = "editert"
+
                 # Subquery: filter active rows in skjemamottak
                 s = skjemamottak.filter(skjemamottak.aktiv == True).select(
                     skjemamottak.refnr,
-                    skjemamottak.editert,
+                    skjemamottak[status_column],
                     skjemamottak.ident,
                 )
 
+                kontrollutslag = conn.table("kontrollutslag")
                 # Main query
                 result = (
                     kontrollutslag.join(
@@ -382,10 +401,10 @@ class ControlView(ABC):
                         kontrollutslag.refnr,
                         kontrollutslag.kontrollid,
                         kontrollutslag.utslag,
-                        s.editert,
+                        s[status_column],
                         kontrollutslag.verdi,
                     )
-                    .order_by(s.editert, kontrollutslag.verdi)
+                    .order_by(s[status_column], kontrollutslag.verdi)
                 )
                 result = result.to_pandas()
             columns = [{"headerName": col, "field": col} for col in result.columns]
@@ -480,9 +499,7 @@ class AltinnControlViewWindow(WindowImplementation, ControlView):
     """ControlView implemented as a window."""
 
     def __init__(
-        self,
-        time_units: list[str],
-        control_dict: dict[str, Any], **kwargs: Any
+        self, time_units: list[str], control_dict: dict[str, Any], **kwargs: Any
     ) -> None:
         """Initializes the ControlViewWindow module."""
         warnings.warn(
