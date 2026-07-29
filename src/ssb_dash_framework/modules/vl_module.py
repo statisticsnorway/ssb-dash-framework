@@ -75,6 +75,11 @@ class VLModule:
         self.multi_variable_id = (
             f"vl-multi-variable-{self.module_number}"
         )
+
+        self.multi_naring_group_id = (
+            f"vl-multi-naring-group-{self.module_number}"
+        )
+
         self.multi_naring_id = (
             f"vl-multi-naring-{self.module_number}"
         )
@@ -96,6 +101,9 @@ class VLModule:
         )
 
         # NØKU table controls
+        self.noku_group_id = (
+            f"vl-noku-group-{self.module_number}"
+        )
         self.noku_year_id = (
             f"vl-noku-year-{self.module_number}"
         )
@@ -446,7 +454,20 @@ class VLModule:
                                             id=self.multi_naring_container_id,
                                             style={"display": "none"},
                                             children=[
-                                                html.Label("Næringer"),
+                                                html.Label("N2-gruppe"),
+                                                dcc.Dropdown(
+                                                    id=self.multi_naring_group_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    value="45",
+                                                    clearable=True,
+                                                    searchable=True,
+                                                    placeholder="Velg en N2-gruppe",
+                                                ),
+                                                html.Label(
+                                                    "Næringer",
+                                                    style={"marginTop": "12px"},
+                                                ),
                                                 dcc.Dropdown(
                                                     id=self.multi_naring_id,
                                                     className="ssb-dropdown",
@@ -454,6 +475,8 @@ class VLModule:
                                                     value=[],
                                                     multi=True,
                                                     clearable=True,
+                                                    searchable=True,
+                                                    placeholder="Velg eller søk etter næringer",
                                                 ),
                                             ],
                                         ),
@@ -555,11 +578,44 @@ class VLModule:
                                         # -------------------------------------------------
                                         # NØKU table
                                         # -------------------------------------------------
+
                                         html.Div(
                                             id=self.noku_controls_container_id,
                                             style={"display": "none"},
                                             children=[
-                                                html.Label("År"),
+                                                html.Label("Gruppe"),
+                                                dcc.Dropdown(
+                                                    id=self.noku_group_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {
+                                                            "label": "Alle grupper",
+                                                            "value": "Alle",
+                                                        },
+                                                        {
+                                                            "label": "Industri",
+                                                            "value": "Industri",
+                                                        },
+                                                        {
+                                                            "label": "Varehandel",
+                                                            "value": "Varehandel",
+                                                        },
+                                                        {
+                                                            "label": "Bygg",
+                                                            "value": "Bygg",
+                                                        },
+                                                        {
+                                                            "label": "Tjenesteyting",
+                                                            "value": "Tjenesteyting",
+                                                        },
+                                                    ],
+                                                    value="Alle",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "År",
+                                                    style={"marginTop": "12px"},
+                                                ),
                                                 dcc.Dropdown(
                                                     id=self.noku_year_id,
                                                     className="ssb-dropdown",
@@ -651,16 +707,16 @@ class VLModule:
                                                     clearable=False,
                                                 ),
                                                 html.Label(
-                                                    "Variabler",
+                                                    "Variabel",
                                                     style={"marginTop": "12px"},
                                                 ),
                                                 dcc.Dropdown(
                                                     id=self.large_changes_variables_id,
                                                     className="ssb-dropdown",
                                                     options=[],
-                                                    value=[],
-                                                    multi=True,
-                                                    clearable=True,
+                                                    value=None,
+                                                    multi=False,
+                                                    clearable=False,
                                                 ),
                                                 html.Label(
                                                     "Fylke",
@@ -1474,6 +1530,80 @@ class VLModule:
 
         return df
 
+    @staticmethod
+    @lru_cache(maxsize=4)
+    def _read_enterprise_lookup(
+        parquet_path: str,
+    ) -> pd.DataFrame:
+        """
+        Create and cache one searchable row per enterprise.
+
+        The latest available non-missing name is retained for
+        each organisation number.
+        """
+        df = VLModule._read_enterprise_data(
+            parquet_path
+        )
+
+        if "navn" not in df.columns:
+            return pd.DataFrame(
+                columns=[
+                    "orgnr_foretak",
+                    "navn",
+                    "search_text",
+                ]
+            )
+
+        lookup = df.loc[
+            df["navn"].notna(),
+            [
+                "orgnr_foretak",
+                "year",
+                "navn",
+            ],
+        ].copy()
+
+        lookup["navn"] = (
+            lookup["navn"]
+            .astype(str)
+            .str.strip()
+        )
+
+        lookup["orgnr_foretak"] = (
+            lookup["orgnr_foretak"]
+            .astype(str)
+            .str.strip()
+        )
+
+        lookup = lookup.loc[
+            lookup["navn"].ne("")
+        ].copy()
+
+        lookup = (
+            lookup.sort_values(
+                "year",
+                ascending=False,
+            )
+            .drop_duplicates(
+                subset="orgnr_foretak",
+                keep="first",
+            )
+            .reset_index(drop=True)
+        )
+
+        lookup["search_text"] = (
+            lookup["navn"].str.casefold()
+            + " "
+            + lookup["orgnr_foretak"].str.casefold()
+        )
+
+        return lookup[
+            [
+                "orgnr_foretak",
+                "navn",
+                "search_text",
+            ]
+        ]
     @staticmethod
     @lru_cache(maxsize=4)
     def _read_business_data(
@@ -2599,6 +2729,175 @@ class VLModule:
         ).reset_index(drop=True)
 
         return result[output_columns]
+
+    @staticmethod
+    def _classify_noku_group(
+        naring_value: Any,
+    ) -> str:
+        """Map an SN2025 industry code to its NØKU group."""
+        if pd.isna(naring_value):
+            return "Ikke klassifisert"
+
+        code = str(naring_value).strip()
+
+        if not code or code.lower() == "nan":
+            return "Ikke klassifisert"
+
+        # Specific rules must be checked before the general
+        # two-digit rules.
+        if code.startswith("09.1"):
+            return "Varehandel"
+
+        if code.startswith("09.9"):
+            return "Industri"
+
+        if code.startswith(
+            (
+                "50.101",
+                "50.102",
+                "50.109",
+                "50.201",
+                "50.202",
+                "50.203",
+                "50.204",
+                "50.230",
+            )
+        ):
+            return "Industri"
+
+        # The NØKU table is currently aggregated at the
+        # three-digit level, so the detailed 50-codes above
+        # normally appear as 50.1 or 50.2.
+        if code.startswith(
+            (
+                "50.1",
+                "50.2",
+            )
+        ):
+            return "Industri"
+
+        # All 52-codes are assigned to Industri.
+        if code.startswith("52"):
+            return "Industri"
+
+        # Explicit additional rules.
+        if code.startswith("10"):
+            return "Industri"
+
+        if code.startswith("46"):
+            return "Varehandel"
+
+        if code.startswith("47"):
+            return "Varehandel"
+
+        if code.startswith("53"):
+            return "Industri"
+
+        # At the current aggregation level, 88.911 cannot be
+        # separated from the rest of 88.9.
+        if code.startswith(
+            (
+                "86",
+                "87",
+                "88",
+            )
+        ):
+            return "Varehandel"
+
+        two_digit_code = code[:2]
+
+        industry_codes = {
+            "05",
+            "07",
+            "08",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "22",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33",
+            "35",
+            "49",
+            "51",
+        }
+
+        retail_codes = {
+            "06",
+            "45",
+        }
+
+        construction_codes = {
+            "41",
+            "42",
+            "43",
+            "55",
+            "56",
+            "68",
+            "85",
+        }
+
+        service_codes = {
+            "36",
+            "37",
+            "38",
+            "39",
+            "58",
+            "59",
+            "60",
+            "61",
+            "62",
+            "63",
+            "69",
+            "70",
+            "71",
+            "72",
+            "73",
+            "74",
+            "75",
+            "77",
+            "78",
+            "79",
+            "80",
+            "81",
+            "82",
+            "90",
+            "91",
+            "92",
+            "93",
+            "95",
+            "96",
+        }
+
+        if two_digit_code in industry_codes:
+            return "Industri"
+
+        if two_digit_code in retail_codes:
+            return "Varehandel"
+
+        if two_digit_code in construction_codes:
+            return "Bygg"
+
+        if two_digit_code in service_codes:
+            return "Tjenesteyting"
+
+        return "Ikke klassifisert"
 
     @staticmethod
     def _create_large_changes_data(
@@ -5257,7 +5556,8 @@ class VLModule:
             "naring_1": "Næring 1",
             "naring_2": "Næring 2",
             "naring_3": "Næring 3",
-            "naring_4": "Næring 4",
+            "naring_4": "Næring – 3 siffer",
+            "gruppe": "Gruppe",
             "naring_5": "Næring 5",
             "naring_previous": "Næring året før",
             "naring_f": "Foretaksnæring",
@@ -5488,8 +5788,9 @@ class VLModule:
         @callback(
             Output(self.naring_id, "options"),
             Output(self.naring_id, "value"),
+            Output(self.multi_naring_group_id, "options"),
+            Output(self.multi_naring_group_id, "value"),
             Output(self.multi_naring_id, "options"),
-            Output(self.multi_naring_id, "value"),
             Output(self.variable_id, "options"),
             Output(self.variable_id, "value"),
             Output(self.multi_variable_id, "options"),
@@ -5584,7 +5885,31 @@ class VLModule:
                     else None
                 )
 
-                multi_naring_value = naring_values[:3]
+                n2_values = sorted(
+                    {
+                        value[:2]
+                        for value in naring_values
+                        if len(value) >= 2
+                    }
+                )
+
+                n2_options = [
+                    {
+                        "label": value,
+                        "value": value,
+                    }
+                    for value in n2_values
+                ]
+
+                default_n2_value = (
+                    "45"
+                    if "45" in n2_values
+                    else (
+                        n2_values[0]
+                        if n2_values
+                        else None
+                    )
+                )
 
                 # -------------------------------------------------
                 # Aggregate variable options
@@ -5626,7 +5951,6 @@ class VLModule:
                 preferred_multi_variables = [
                     "omsetning",
                     "nopost_driftskostnader",
-                    "sysselsetting_syss",
                 ]
 
                 multi_variable_value = [
@@ -5692,26 +6016,18 @@ class VLModule:
                     for value in business_variable_values
                 ]
 
-                preferred_large_change_variables = [
-                    "omsetning",
-                    "nopost_driftskostnader",
-                    "ts_forbruk",
-                    "ts_salgsint",
-                    "bearbeidingsverdi",
-                    "produksjonsverdi",
-                    "produktinnsats",
-                ]
+                preferred_large_change_variable = "omsetning"
 
-                large_change_variable_value = [
-                    variable
-                    for variable in preferred_large_change_variables
-                    if variable in business_variable_values
-                ]
-
-                if not large_change_variable_value:
+                if preferred_large_change_variable in business_variable_values:
                     large_change_variable_value = (
-                        business_variable_values[:3]
+                        preferred_large_change_variable
                     )
+                elif business_variable_values:
+                    large_change_variable_value = (
+                        business_variable_values[0]
+                    )
+                else:
+                    large_change_variable_value = None
 
                 # -------------------------------------------------
                 # County options
@@ -5851,8 +6167,9 @@ class VLModule:
                 return (
                     naring_options,
                     naring_value,
+                    n2_options,
+                    default_n2_value,
                     naring_options,
-                    multi_naring_value,
                     variable_options,
                     variable_value,
                     variable_options,
@@ -5901,7 +6218,8 @@ class VLModule:
                     empty_options,
                     None,
                     empty_options,
-                    [],
+                    None,
+                    empty_options,
                     empty_options,
                     None,
                     empty_options,
@@ -5916,7 +6234,7 @@ class VLModule:
                     empty_options,
                     None,
                     empty_options,
-                    [],
+                    None,
                     [
                         {
                             "label": "Hele landet",
@@ -5952,6 +6270,54 @@ class VLModule:
                 )
 
         @callback(
+            Output(self.multi_naring_id, "value"),
+            Input(self.multi_naring_group_id, "value"),
+            Input(self.data_version_id, "value"),
+        )
+        def update_multi_naring_from_n2(
+            selected_n2: str | None,
+            data_version: str,
+        ) -> list[str] | Any:
+            """
+            Select every available N3 industry belonging to the
+            chosen N2 group.
+
+            Clearing the N2 selector leaves the user's manual
+            industry selection unchanged.
+            """
+            if not selected_n2:
+                return no_update
+
+            try:
+                parquet_path = self._parquet_path(
+                    data_version,
+                    dataset="agg_naring4",
+                )
+
+                df = self._read_data(parquet_path)
+
+                selected_narings = sorted(
+                    df.loc[
+                        df["naring_4"]
+                        .astype(str)
+                        .str.startswith(
+                            str(selected_n2),
+                            na=False,
+                        ),
+                        "naring_4",
+                    ]
+                    .dropna()
+                    .astype(str)
+                    .unique()
+                    .tolist()
+                )
+
+                return selected_narings
+
+            except Exception:
+                return no_update
+
+        @callback(
             Output(self.enterprise_name_search_id, "options"),
             Input(self.enterprise_name_search_id, "search_value"),
             Input(self.data_version_id, "value"),
@@ -5964,7 +6330,7 @@ class VLModule:
             if not search_value:
                 return []
 
-            search_text = search_value.strip()
+            search_text = search_value.strip().casefold()
 
             if len(search_text) < 2:
                 return []
@@ -5973,47 +6339,17 @@ class VLModule:
                 data_version,
                 dataset="foretak",
             )
-            df = self._read_enterprise_data(parquet_path)
 
-            if "navn" not in df.columns:
+            lookup = self._read_enterprise_lookup(
+                parquet_path
+            )
+
+            if lookup.empty:
                 return []
 
-            lookup = df.loc[
-                df["navn"].notna(),
-                [
-                    "orgnr_foretak",
-                    "year",
-                    "navn",
-                ],
-            ].copy()
-
-            lookup["navn"] = lookup["navn"].astype(str)
-            lookup["orgnr_foretak"] = (
-                lookup["orgnr_foretak"].astype(str)
-            )
-
-            # Use the latest available non-missing name for each enterprise.
-            lookup = (
-                lookup.sort_values(
-                    "year",
-                    ascending=False,
-                )
-                .drop_duplicates(
-                    subset="orgnr_foretak",
-                    keep="first",
-                )
-            )
-
             matches = lookup.loc[
-                lookup["navn"].str.contains(
+                lookup["search_text"].str.contains(
                     search_text,
-                    case=False,
-                    na=False,
-                    regex=False,
-                )
-                | lookup["orgnr_foretak"].str.contains(
-                    search_text,
-                    case=False,
                     na=False,
                     regex=False,
                 )
@@ -6022,10 +6358,10 @@ class VLModule:
             return [
                 {
                     "label": (
-                        f"{row.navn} — "
-                        f"{row.orgnr_foretak}"
+                        f"{str(row.navn)} — "
+                        f"{str(row.orgnr_foretak)}"
                     ),
-                    "value": row.orgnr_foretak,
+                    "value": str(row.orgnr_foretak),
                 }
                 for row in matches.itertuples()
             ]
@@ -6035,6 +6371,14 @@ class VLModule:
             Input(self.enterprise_name_search_id, "value"),
             prevent_initial_call=True,
         )
+        def select_enterprise_from_name(
+            selected_enterprise: str | None,
+        ) -> str | Any:
+            """Copy the selected enterprise into the organisation-number input."""
+            if not selected_enterprise:
+                return no_update
+
+            return str(selected_enterprise)
 
         @callback(
             Output(
@@ -6636,6 +6980,7 @@ class VLModule:
             Input(self.change_year_id, "value"),
             Input(self.change_top_n_id, "value"),
 
+            Input(self.noku_group_id, "value"),
             Input(self.noku_year_id, "value"),
             Input(self.noku_rate_id, "value"),
             Input(self.noku_window_id, "value"),
@@ -6797,6 +7142,7 @@ class VLModule:
             change_year: int | None,
             change_top_n: int | None,
 
+            noku_group: str | None,
             noku_year: int | None,
             noku_rate: float | None,
             noku_window: int | None,
@@ -6805,7 +7151,7 @@ class VLModule:
             large_changes_year: int | None,
             large_changes_group_level: str | None,
             large_changes_group_value: str | None,
-            large_changes_variables: list[str] | None,
+            large_changes_variable: str | None,
             large_changes_fylke: str | None,
             large_changes_top_n: int | None,
 
@@ -7237,6 +7583,29 @@ class VLModule:
                         )
                     )
 
+                    if not table_df.empty:
+                        table_df = table_df.copy()
+
+                        table_df.insert(
+                            1,
+                            "gruppe",
+                            table_df["naring_4"].map(
+                                self._classify_noku_group
+                            ),
+                        )
+
+                        if (
+                            noku_group
+                            and noku_group != "Alle"
+                        ):
+                            table_df = (
+                                table_df.loc[
+                                    table_df["gruppe"]
+                                    == noku_group
+                                ]
+                                .reset_index(drop=True)
+                            )
+
                     return table_result(
                         table_df,
                         (
@@ -7270,10 +7639,10 @@ class VLModule:
                             )
                         )
 
-                    if not large_changes_variables:
+                    if not large_changes_variable:
                         return figure_result(
                             self._empty_figure(
-                                "Velg minst én variabel."
+                                "Velg en variabel."
                             )
                         )
 
@@ -7298,9 +7667,9 @@ class VLModule:
                             group_value=(
                                 large_changes_group_value
                             ),
-                            variables=(
-                                large_changes_variables
-                            ),
+                            variables=[
+                                large_changes_variable
+                            ],
                             fylke=(
                                 large_changes_fylke
                                 or "Land"
