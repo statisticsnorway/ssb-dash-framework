@@ -877,7 +877,7 @@ def handle_regnskap_edit(
 
     if not ok:
         alert_store = [
-            create_alert(error, "danger", ephemeral=True),
+            create_alert(error, "warning", ephemeral=True),
             *alert_store,
         ]
         return alert_store, refresh_data, False, None, no_update
@@ -932,7 +932,7 @@ def handle_regnskap_edit(
         alert_store = [
             create_alert(
                 f"Feil: {str(e)[:80]}",
-                "danger",
+                "warning",
                 ephemeral=True,
             ),
             *alert_store,
@@ -2256,7 +2256,7 @@ class Naeringsspesifikasjon:
                 alert_store = [
                     create_alert(
                         f"Feil: {str(e)[:80]}",
-                        "danger",
+                        "warning",
                         ephemeral=True,
                     ),
                     *alert_store,
@@ -2323,7 +2323,7 @@ class Naeringsspesifikasjon:
                     no_update,
                     refresh_data,
                     [
-                        create_alert(msg_org, "danger", ephemeral=True),
+                        create_alert(msg_org, "warning", ephemeral=True),
                         *alert_store,
                     ],
                 )
@@ -2337,7 +2337,7 @@ class Naeringsspesifikasjon:
                     no_update,
                     refresh_data,
                     [
-                        create_alert(msg_aar, "danger", ephemeral=True),
+                        create_alert(msg_aar, "warning", ephemeral=True),
                         *alert_store,
                     ],
                 )
@@ -2664,7 +2664,7 @@ class Naeringsspesifikasjon:
                 alert_store = [
                     create_alert(
                         f"Feil ved lagring: {str(e)[:100]}",
-                        "danger",
+                        "warning",
                         ephemeral=True,
                     ),
                     *alert_store,
@@ -2695,7 +2695,7 @@ class Naeringsspesifikasjon:
             if felt is None:
                 return (
                     [
-                        create_alert("Felt må fylles ut", "danger", ephemeral=True),
+                        create_alert("Felt må fylles ut", "warning", ephemeral=True),
                         *alert_store,
                     ],
                     None,
@@ -2707,7 +2707,7 @@ class Naeringsspesifikasjon:
             except ValueError:
                 return (
                     [
-                        create_alert("Felt må være tall", "danger", ephemeral=True),
+                        create_alert("Felt må være tall", "warning", ephemeral=True),
                         *alert_store,
                     ],
                     None,
@@ -2764,7 +2764,7 @@ class Naeringsspesifikasjon:
 
             except Exception as e:
                 alert_store = [
-                    create_alert(f"Feil: {str(e)[:100]}", "danger", ephemeral=True),
+                    create_alert(f"Feil: {str(e)[:100]}", "warning", ephemeral=True),
                     *alert_store,
                 ]
 
@@ -2899,7 +2899,7 @@ class Naeringsspesifikasjon:
                 alert_store = [
                     create_alert(
                         f"Oppdatering feilet: {str(e)[:80]}",
-                        "danger",
+                        "warning",
                         ephemeral=True,
                     ),
                     *(alert_store or []),
@@ -3070,7 +3070,7 @@ class Naeringsspesifikasjon:
                 alert_store = [
                     create_alert(
                         f"Oppdatering feilet: {str(e)[:80]}",
-                        "danger",
+                        "warning",
                         ephemeral=True,
                     ),
                     *(alert_store or []),
@@ -3151,7 +3151,7 @@ class Naeringsspesifikasjon:
                             f"Ingen data funnet for "
                             f"orgnr {orgnr} og år {aar} i NSPEK"
                         ),
-                        "danger",
+                        "warning",
                         ephemeral=True,
                     ),
                     *alert_store,

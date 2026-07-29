@@ -12,6 +12,7 @@ from dash import callback_context as ctx
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
+from dash_iconify import DashIconify
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
@@ -63,7 +64,7 @@ class ControlView(ABC):
         self.module_name = self.__class__.__name__
         ControlView._id_number += 1
 
-        self.icon = "⚠️"
+        self.icon = DashIconify(icon="feather:alert-triangle", width=24)
         self.label = "Kontroll"
 
         self.control_dict = control_dict
@@ -242,7 +243,7 @@ class ControlView(ABC):
                         alert_store = [
                             create_alert(
                                 f"Ingen kontroller funnet i {control_class_instance.__class__.__name__}",
-                                "danger",
+                                "warning",
                                 ephemeral=True,
                             ),
                             *alert_store,

@@ -135,7 +135,6 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                     .limit(1)
                     .to_pandas()["kommentar"]
                 )
-                print(f"comment: {comment}")
             if len(comment) == 0:
                 return ""
 
