@@ -677,7 +677,7 @@ ssb-dialog
   padding: 0;
   border: none;
   background: #ffffff;
-  border-radius: 4px; /* or 0, whatever fits your ssb-dialog design */
+  border-radius: 4px;
   box-shadow: none;
 }
 
