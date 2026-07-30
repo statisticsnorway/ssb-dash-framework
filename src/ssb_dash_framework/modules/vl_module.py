@@ -325,6 +325,11 @@ class VLModule:
         self.table_container_id = (
             f"vl-table-container-{self.module_number}"
         )
+
+        self.large_changes_summary_id = (
+            f"vl-large-changes-summary-{self.module_number}"
+        )
+
         self.status_id = (
             f"vl-status-{self.module_number}"
         )
@@ -693,7 +698,7 @@ class VLModule:
                                                             "value": "naring_1",
                                                         },
                                                     ],
-                                                    value="n4",
+                                                    value="n3",
                                                     clearable=False,
                                                 ),
                                                 html.Label(
@@ -1410,6 +1415,13 @@ class VLModule:
                                         "padding": "16px",
                                     },
                                     children=[
+                                        html.Div(
+                                            id=self.large_changes_summary_id,
+                                            style={
+                                                "display": "none",
+                                                "marginBottom": "16px",
+                                            },
+                                        ),
                                         dash_table.DataTable(
                                             id=self.table_id,
                                             data=[],
@@ -3340,6 +3352,913 @@ class VLModule:
         ]
 
         return result[ordered_columns]
+
+    @staticmethod
+    def _create_large_changes_summary_data(
+        df: pd.DataFrame,
+        year: int,
+        group_level: str,
+        group_value: str,
+        variable: str,
+        *,
+        fylke: str | None = None,
+    ) -> tuple[
+        dict[str, Any],
+        pd.DataFrame,
+    ]:
+        """
+        Create YoY totals and any special ratio analysis for
+        the Store endringer summary card.
+        """
+        required_columns = {
+            "year",
+            "naring",
+            variable,
+        }
+
+        missing_columns = required_columns.difference(
+            df.columns
+        )
+
+        if missing_columns:
+            raise ValueError(
+                "Bedriftsdatasettet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        valid_group_levels = {
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "naring",
+            "naring_1",
+        }
+
+        if group_level not in valid_group_levels:
+            raise ValueError(
+                f"Ugyldig næringsnivå: {group_level}."
+            )
+
+        data = df.copy()
+
+        data["year"] = pd.to_numeric(
+            data["year"],
+            errors="coerce",
+        )
+
+        current_year = int(year)
+        previous_year = current_year - 1
+
+        data = data.loc[
+            data["year"].isin(
+                [
+                    previous_year,
+                    current_year,
+                ]
+            )
+        ].copy()
+
+        if data.empty:
+            return {}, pd.DataFrame()
+
+        data["naring"] = data["naring"].astype(
+            "string"
+        )
+
+        if fylke is not None and fylke != "Land":
+            if "fylke" not in data.columns:
+                raise ValueError(
+                    "Fylkesfilter er valgt, men datasettet "
+                    "mangler kolonnen 'fylke'."
+                )
+
+            data["fylke"] = data["fylke"].astype(
+                "string"
+            )
+
+            data = data.loc[
+                data["fylke"] == str(fylke)
+            ].copy()
+
+        if group_level == "naring_1":
+            if "naring_1" not in data.columns:
+                raise ValueError(
+                    "Datasettet mangler kolonnen "
+                    "'naring_1'."
+                )
+
+            data["group_value"] = (
+                data["naring_1"].astype("string")
+            )
+
+        elif group_level == "naring":
+            data["group_value"] = data["naring"]
+
+        else:
+            slice_lengths = {
+                "n2": 2,
+                "n3": 4,
+                "n4": 5,
+                "n5": 6,
+            }
+
+            data["group_value"] = (
+                data["naring"]
+                .str.slice(
+                    0,
+                    slice_lengths[group_level],
+                )
+            )
+
+        data = data.loc[
+            data["group_value"].astype(str)
+            == str(group_value)
+        ].copy()
+
+        if data.empty:
+            return {}, pd.DataFrame()
+
+        data[variable] = pd.to_numeric(
+            data[variable],
+            errors="coerce",
+        )
+
+        previous = data.loc[
+            data["year"] == previous_year
+        ].copy()
+
+        current = data.loc[
+            data["year"] == current_year
+        ].copy()
+
+        previous_total = previous[variable].sum(
+            min_count=1
+        )
+
+        current_total = current[variable].sum(
+            min_count=1
+        )
+
+        if (
+            pd.notna(previous_total)
+            and pd.notna(current_total)
+        ):
+            absolute_change = (
+                current_total
+                - previous_total
+            )
+        else:
+            absolute_change = np.nan
+
+        if (
+            pd.notna(previous_total)
+            and previous_total != 0
+            and pd.notna(absolute_change)
+        ):
+            percentage_change = (
+                absolute_change
+                / previous_total
+                * 100
+            )
+
+        elif (
+            pd.notna(previous_total)
+            and previous_total == 0
+            and pd.notna(current_total)
+            and current_total != 0
+        ):
+            percentage_change = np.inf
+
+        else:
+            percentage_change = np.nan
+
+        summary = {
+            "variable": variable,
+            "previous_year": previous_year,
+            "current_year": current_year,
+            "previous_total": previous_total,
+            "current_total": current_total,
+            "absolute_change": absolute_change,
+            "percentage_change": percentage_change,
+            "group_level": group_level,
+            "group_value": str(group_value),
+            "fylke": fylke or "Land",
+        }
+
+        ratio_definition: tuple[
+            str,
+            str,
+            str,
+        ] | None = None
+
+        if variable == "ts_salgsint":
+            ratio_definition = (
+                "ts_salgsint",
+                "omsetning",
+                "ts_salgsint / omsetning",
+            )
+
+        elif variable == "ts_forbruk":
+            ratio_definition = (
+                "ts_forbruk",
+                "nopost_p4005",
+                "ts_forbruk / nopost_p4005",
+            )
+
+        elif variable == "ts_vikarutgifter":
+            ratio_definition = (
+                "ts_vikarutgifter",
+                "nopost_lonnskostnader",
+                (
+                    "ts_vikarutgifter / "
+                    "nopost_lonnskostnader"
+                ),
+            )
+
+        elif variable.endswith("_akt"):
+            ratio_definition = (
+                variable,
+                "basisx",
+                f"{variable} / basisx",
+            )
+
+        elif variable.endswith("_utg"):
+            ratio_definition = (
+                variable,
+                "nopost_driftskostnader",
+                (
+                    f"{variable} / "
+                    "nopost_driftskostnader"
+                ),
+            )
+
+        if ratio_definition is None:
+            return summary, pd.DataFrame()
+
+        numerator, denominator, ratio_label = (
+            ratio_definition
+        )
+
+        if denominator not in data.columns:
+            summary["ratio_error"] = (
+                f"Kan ikke beregne {ratio_label}: "
+                f"kolonnen {denominator} mangler."
+            )
+
+            return summary, pd.DataFrame()
+
+        for column in [
+            numerator,
+            denominator,
+        ]:
+            data[column] = pd.to_numeric(
+                data[column],
+                errors="coerce",
+            )
+
+        has_type = "type" in data.columns
+        has_reg_type = "reg_type" in data.columns
+
+        if has_type:
+            data["type"] = data["type"].astype(
+                "string"
+            )
+
+        if has_reg_type:
+            data["reg_type"] = data[
+                "reg_type"
+            ].astype("string")
+
+        def calculate_ratio_row(
+            label: str,
+            previous_subset: pd.DataFrame,
+            current_subset: pd.DataFrame,
+        ) -> dict[str, Any]:
+            previous_numerator = (
+                previous_subset[numerator].sum(
+                    min_count=1
+                )
+            )
+
+            previous_denominator = (
+                previous_subset[denominator].sum(
+                    min_count=1
+                )
+            )
+
+            current_numerator = (
+                current_subset[numerator].sum(
+                    min_count=1
+                )
+            )
+
+            current_denominator = (
+                current_subset[denominator].sum(
+                    min_count=1
+                )
+            )
+
+            if (
+                pd.notna(previous_denominator)
+                and previous_denominator != 0
+            ):
+                previous_ratio = (
+                    previous_numerator
+                    / previous_denominator
+                )
+            else:
+                previous_ratio = np.nan
+
+            if (
+                pd.notna(current_denominator)
+                and current_denominator != 0
+            ):
+                current_ratio = (
+                    current_numerator
+                    / current_denominator
+                )
+            else:
+                current_ratio = np.nan
+
+            if (
+                pd.notna(previous_ratio)
+                and pd.notna(current_ratio)
+            ):
+                percentage_point_change = (
+                    current_ratio
+                    - previous_ratio
+                ) * 100
+            else:
+                percentage_point_change = np.nan
+
+            return {
+                "group": label,
+                "previous_numerator": (
+                    previous_numerator
+                ),
+                "previous_denominator": (
+                    previous_denominator
+                ),
+                "previous_ratio": previous_ratio,
+                "current_numerator": (
+                    current_numerator
+                ),
+                "current_denominator": (
+                    current_denominator
+                ),
+                "current_ratio": current_ratio,
+                "percentage_point_change": (
+                    percentage_point_change
+                ),
+                "ratio_label": ratio_label,
+            }
+
+        ratio_rows: list[dict[str, Any]] = []
+
+        if has_type and has_reg_type:
+            previous_type_s = (
+                previous["type"] == "S"
+            )
+
+            current_type_s = (
+                current["type"] == "S"
+            )
+
+            previous_reg_02 = (
+                previous["reg_type"] == "02"
+            )
+
+            current_reg_02 = (
+                current["reg_type"] == "02"
+            )
+
+            ratio_groups = [
+                (
+                    "type = S og reg_type = 02",
+                    previous.loc[
+                        previous_type_s
+                        & previous_reg_02
+                    ],
+                    current.loc[
+                        current_type_s
+                        & current_reg_02
+                    ],
+                ),
+                (
+                    "type ≠ S og reg_type = 02",
+                    previous.loc[
+                        ~previous_type_s
+                        & previous_reg_02
+                    ],
+                    current.loc[
+                        ~current_type_s
+                        & current_reg_02
+                    ],
+                ),
+                (
+                    "type = S og reg_type ≠ 02",
+                    previous.loc[
+                        previous_type_s
+                        & ~previous_reg_02
+                    ],
+                    current.loc[
+                        current_type_s
+                        & ~current_reg_02
+                    ],
+                ),
+                (
+                    "type ≠ S og reg_type ≠ 02",
+                    previous.loc[
+                        ~previous_type_s
+                        & ~previous_reg_02
+                    ],
+                    current.loc[
+                        ~current_type_s
+                        & ~current_reg_02
+                    ],
+                ),
+                (
+                    "Totalt",
+                    previous,
+                    current,
+                ),
+            ]
+
+        elif has_type:
+            ratio_groups = [
+                (
+                    "type = S",
+                    previous.loc[
+                        previous["type"] == "S"
+                    ],
+                    current.loc[
+                        current["type"] == "S"
+                    ],
+                ),
+                (
+                    "type ≠ S",
+                    previous.loc[
+                        previous["type"] != "S"
+                    ],
+                    current.loc[
+                        current["type"] != "S"
+                    ],
+                ),
+                (
+                    "Totalt",
+                    previous,
+                    current,
+                ),
+            ]
+
+        else:
+            ratio_groups = [
+                (
+                    "Totalt",
+                    previous,
+                    current,
+                ),
+            ]
+
+        for (
+            label,
+            previous_subset,
+            current_subset,
+        ) in ratio_groups:
+            ratio_rows.append(
+                calculate_ratio_row(
+                    label=label,
+                    previous_subset=previous_subset,
+                    current_subset=current_subset,
+                )
+            )
+
+        ratio_df = pd.DataFrame(
+            ratio_rows
+        )
+
+        return summary, ratio_df
+
+    @staticmethod
+    def _create_large_changes_summary_card(
+        summary: dict[str, Any],
+        ratio_df: pd.DataFrame,
+    ) -> html.Div:
+        """Create the visible summary card for Store endringer."""
+
+        if not summary:
+            return html.Div()
+
+        def format_number(
+            value: Any,
+        ) -> str:
+            if pd.isna(value):
+                return "NA"
+
+            try:
+                return f"{float(value):,.0f}".replace(
+                    ",",
+                    " ",
+                )
+            except (
+                TypeError,
+                ValueError,
+            ):
+                return str(value)
+
+        def format_percentage(
+            value: Any,
+        ) -> str:
+            if pd.isna(value):
+                return "NA"
+
+            if value == np.inf:
+                return "+∞"
+
+            if value == -np.inf:
+                return "-∞"
+
+            return f"{float(value):+.2f} %"
+
+        def format_ratio(
+            value: Any,
+        ) -> str:
+            if pd.isna(value):
+                return "NA"
+
+            return f"{float(value):.4f}"
+
+        def format_percentage_points(
+            value: Any,
+        ) -> str:
+            if pd.isna(value):
+                return "NA"
+
+            return f"{float(value):+.2f} pp"
+
+        percentage_change = summary.get(
+            "percentage_change"
+        )
+
+        if (
+            pd.notna(percentage_change)
+            and percentage_change > 0
+        ):
+            direction_symbol = "⬆️"
+            direction_colour = "#166534"
+
+        elif (
+            pd.notna(percentage_change)
+            and percentage_change < 0
+        ):
+            direction_symbol = "⬇️"
+            direction_colour = "#991b1b"
+
+        else:
+            direction_symbol = "→"
+            direction_colour = "#525252"
+
+        previous_year = summary.get(
+            "previous_year"
+        )
+
+        current_year = summary.get(
+            "current_year"
+        )
+
+        variable = summary.get(
+            "variable",
+            "",
+        )
+
+        group_level = summary.get(
+            "group_level",
+            "",
+        )
+
+        group_value = summary.get(
+            "group_value",
+            "",
+        )
+
+        fylke = summary.get(
+            "fylke",
+            "Land",
+        )
+
+        summary_line = html.Div(
+            style={
+                "display": "grid",
+                "gridTemplateColumns": (
+                    "minmax(180px, 1.5fr) "
+                    "repeat(4, minmax(120px, 1fr))"
+                ),
+                "gap": "12px",
+                "alignItems": "center",
+                "padding": "10px 0",
+                "borderTop": "1px solid #e5e7eb",
+            },
+            children=[
+                html.Div(
+                    variable,
+                    style={
+                        "fontWeight": "600",
+                    },
+                ),
+                html.Div(
+                    [
+                        html.Div(
+                            str(previous_year),
+                            style={
+                                "fontSize": "12px",
+                                "color": "#666",
+                            },
+                        ),
+                        html.Strong(
+                            format_number(
+                                summary.get(
+                                    "previous_total"
+                                )
+                            )
+                        ),
+                    ]
+                ),
+                html.Div(
+                    [
+                        html.Div(
+                            str(current_year),
+                            style={
+                                "fontSize": "12px",
+                                "color": "#666",
+                            },
+                        ),
+                        html.Strong(
+                            format_number(
+                                summary.get(
+                                    "current_total"
+                                )
+                            )
+                        ),
+                    ]
+                ),
+                html.Div(
+                    [
+                        html.Div(
+                            "Endring",
+                            style={
+                                "fontSize": "12px",
+                                "color": "#666",
+                            },
+                        ),
+                        html.Strong(
+                            format_number(
+                                summary.get(
+                                    "absolute_change"
+                                )
+                            )
+                        ),
+                    ]
+                ),
+                html.Div(
+                    [
+                        html.Span(
+                            direction_symbol,
+                            style={
+                                "marginRight": "6px",
+                            },
+                        ),
+                        html.Strong(
+                            format_percentage(
+                                percentage_change
+                            )
+                        ),
+                    ],
+                    style={
+                        "textAlign": "right",
+                        "color": direction_colour,
+                        "fontSize": "17px",
+                    },
+                ),
+            ],
+        )
+
+        card_children: list[Any] = [
+            html.Div(
+                style={
+                    "display": "flex",
+                    "justifyContent": "space-between",
+                    "gap": "16px",
+                    "flexWrap": "wrap",
+                    "alignItems": "baseline",
+                },
+                children=[
+                    html.Div(
+                        (
+                            "Oppsummering av endring – "
+                            f"{group_level} {group_value}"
+                        ),
+                        style={
+                            "fontSize": "16px",
+                            "fontWeight": "700",
+                        },
+                    ),
+                    html.Div(
+                        (
+                            f"Fylke: {fylke} · "
+                            f"{previous_year}–{current_year}"
+                        ),
+                        style={
+                            "fontSize": "13px",
+                            "color": "#666",
+                        },
+                    ),
+                ],
+            ),
+            summary_line,
+        ]
+
+        ratio_error = summary.get(
+            "ratio_error"
+        )
+
+        if ratio_error:
+            card_children.append(
+                html.Div(
+                    ratio_error,
+                    style={
+                        "marginTop": "12px",
+                        "padding": "10px 12px",
+                        "border": "1px solid #fecaca",
+                        "borderRadius": "8px",
+                        "backgroundColor": "#fef2f2",
+                        "color": "#991b1b",
+                    },
+                )
+            )
+
+        elif not ratio_df.empty:
+            ratio_label = str(
+                ratio_df["ratio_label"].iloc[0]
+            )
+
+            ratio_rows: list[Any] = [
+                html.Div(
+                    style={
+                        "display": "grid",
+                        "gridTemplateColumns": (
+                            "minmax(210px, 1.5fr) "
+                            "repeat(3, minmax(150px, 1fr))"
+                        ),
+                        "gap": "10px",
+                        "padding": "8px 0",
+                        "fontWeight": "600",
+                        "color": "#555",
+                        "borderBottom": "1px solid #e5e7eb",
+                    },
+                    children=[
+                        html.Div("Gruppe"),
+                        html.Div(str(previous_year)),
+                        html.Div(str(current_year)),
+                        html.Div("Endring"),
+                    ],
+                )
+            ]
+
+            for row in ratio_df.itertuples(
+                index=False
+            ):
+                ratio_rows.append(
+                    html.Div(
+                        style={
+                            "display": "grid",
+                            "gridTemplateColumns": (
+                                "minmax(210px, 1.5fr) "
+                                "repeat(3, minmax(150px, 1fr))"
+                            ),
+                            "gap": "10px",
+                            "padding": "9px 0",
+                            "borderBottom": (
+                                "1px solid #f0f0f0"
+                            ),
+                            "alignItems": "start",
+                        },
+                        children=[
+                            html.Div(
+                                str(row.group),
+                                style={
+                                    "fontWeight": "600",
+                                },
+                            ),
+                            html.Div(
+                                [
+                                    html.Div(
+                                        (
+                                            "Rate: "
+                                            f"{format_ratio(row.previous_ratio)}"
+                                        ),
+                                        style={
+                                            "fontWeight": "600",
+                                        },
+                                    ),
+                                    html.Div(
+                                        (
+                                            "Teller "
+                                            f"{format_number(row.previous_numerator)} "
+                                            "/ nevner "
+                                            f"{format_number(row.previous_denominator)}"
+                                        ),
+                                        style={
+                                            "fontSize": "12px",
+                                            "color": "#666",
+                                        },
+                                    ),
+                                ]
+                            ),
+                            html.Div(
+                                [
+                                    html.Div(
+                                        (
+                                            "Rate: "
+                                            f"{format_ratio(row.current_ratio)}"
+                                        ),
+                                        style={
+                                            "fontWeight": "600",
+                                        },
+                                    ),
+                                    html.Div(
+                                        (
+                                            "Teller "
+                                            f"{format_number(row.current_numerator)} "
+                                            "/ nevner "
+                                            f"{format_number(row.current_denominator)}"
+                                        ),
+                                        style={
+                                            "fontSize": "12px",
+                                            "color": "#666",
+                                        },
+                                    ),
+                                ]
+                            ),
+                            html.Div(
+                                format_percentage_points(
+                                    row.percentage_point_change
+                                ),
+                                style={
+                                    "fontWeight": "600",
+                                },
+                            ),
+                        ],
+                    )
+                )
+
+            card_children.append(
+                html.Div(
+                    style={
+                        "marginTop": "14px",
+                        "padding": "12px",
+                        "backgroundColor": "#ffffff",
+                        "border": "1px solid #e5e7eb",
+                        "borderRadius": "10px",
+                        "overflowX": "auto",
+                    },
+                    children=[
+                        html.Div(
+                            f"Rateanalyse: {ratio_label}",
+                            style={
+                                "fontWeight": "700",
+                                "marginBottom": "6px",
+                            },
+                        ),
+                        *ratio_rows,
+                        html.Div(
+                            (
+                                "Raten beregnes som summen av "
+                                "telleren delt på summen av nevneren "
+                                "innenfor hver gruppe."
+                            ),
+                            style={
+                                "marginTop": "8px",
+                                "fontSize": "12px",
+                                "color": "#666",
+                            },
+                        ),
+                    ],
+                )
+            )
+
+        return html.Div(
+            style={
+                "border": "1px solid #d9d9d9",
+                "borderRadius": "12px",
+                "padding": "14px 16px",
+                "backgroundColor": "#fafafa",
+                "boxShadow": (
+                    "0 1px 2px rgba(0, 0, 0, 0.06)"
+                ),
+            },
+            children=card_children,
+        )
 
     @staticmethod
     def _create_negative_nopost_data(
@@ -6966,6 +7885,14 @@ class VLModule:
             ),
             Output(self.table_id, "tooltip_data"),
             Output(self.table_container_id, "style"),
+            Output(
+                self.large_changes_summary_id,
+                "children",
+            ),
+            Output(
+                self.large_changes_summary_id,
+                "style",
+            ),
             Output(self.graph_section_id, "style"),
 
             Input(self.visualisation_id, "value"),
@@ -7237,12 +8164,17 @@ class VLModule:
                     [],
                     [],
                     table_hidden_style,
+                    [],
+                    {
+                        "display": "none",
+                        "marginBottom": "16px",
+                    },
                     section_style,
                 )
-
             def table_result(
                 table_df: pd.DataFrame,
                 empty_message: str,
+                summary_card: Any | None = None,
             ) -> tuple[Any, ...]:
                 if table_df.empty:
                     figure = self._empty_figure(
@@ -7260,6 +8192,22 @@ class VLModule:
                     table_df
                 )
 
+                if summary_card is None:
+                    summary_children: Any = []
+
+                    summary_style = {
+                        "display": "none",
+                        "marginBottom": "16px",
+                    }
+
+                else:
+                    summary_children = summary_card
+
+                    summary_style = {
+                        "display": "block",
+                        "marginBottom": "16px",
+                    }
+
                 return (
                     go.Figure(),
                     graph_hidden_style,
@@ -7268,6 +8216,8 @@ class VLModule:
                     table_styles,
                     table_tooltips,
                     table_visible_style,
+                    summary_children,
+                    summary_style,
                     section_style,
                 )
 
@@ -7681,12 +8631,42 @@ class VLModule:
                         )
                     )
 
+                    summary_data, ratio_df = (
+                        self._create_large_changes_summary_data(
+                            df=df,
+                            year=int(
+                                large_changes_year
+                            ),
+                            group_level=(
+                                large_changes_group_level
+                            ),
+                            group_value=(
+                                large_changes_group_value
+                            ),
+                            variable=(
+                                large_changes_variable
+                            ),
+                            fylke=(
+                                large_changes_fylke
+                                or "Land"
+                            ),
+                        )
+                    )
+
+                    summary_card = (
+                        self._create_large_changes_summary_card(
+                            summary=summary_data,
+                            ratio_df=ratio_df,
+                        )
+                    )
+
                     return table_result(
                         table_df,
                         (
                             "Fant ingen bedrifter med "
                             "beregnbare endringer."
                         ),
+                        summary_card=summary_card,
                     )
 
                 # -----------------------------------------
