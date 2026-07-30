@@ -149,6 +149,7 @@ class AggDistPlotter(ABC):
                                                 if self.time_units
                                                 else None
                                             ),
+                                            searchable=False,
                                             clearable=False,
                                             className="dbc aggdistplotter-dropdown",
                                         ),

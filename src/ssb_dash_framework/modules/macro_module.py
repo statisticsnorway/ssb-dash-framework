@@ -397,6 +397,7 @@ class MacroModule:
                                         {"label": k, "value": k}
                                         for k in self.macro_filter_options.keys()
                                     ],
+                                    searchable=False,
                                     value="sammensatte variabler",
                                     id="macromodule-filter-velger",
                                 ),

@@ -214,15 +214,13 @@ class ControlView(ABC):
             alert_store: list[dict[str, Any]],
             *args: Any,
         ):
-            print(
+            logger.debug(
                 f"Args:\n"
                 f"skjema: {skjema}\n"
                 f"refresh: {refresh}\n"
                 f"rerun: {rerun}\n"
                 f"args: {args}"
             )
-
-            print(f"get_kontroller_overview triggered by: {ctx.triggered_id}")
 
             if isinstance(_get_connection_object(), EimerDBInstance):
                 args = [int(arg) for arg in args]

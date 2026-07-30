@@ -715,7 +715,7 @@ Dash override for ssb-radio buttons
     font-family: "Roboto", sans-serif;
     font-stretch: normal;
     font-weight: normal;
-    color: #162327;
+    color: #162327 !important;
 }
 
 .ssb-radio-buttons input[type="radio"] {
@@ -737,9 +737,9 @@ Dash override for ssb-radio buttons
 }
 
 .ssb-radio-buttons input[type="radio"]:checked {
-    border-color: #1d3c34;
+    border-color: #1d3c34 !important;
     border-width: 2px;
-    background: radial-gradient(circle, #1d3c34 45%, white 46%);
+    background: radial-gradient(circle, #274247 45%, white 46%) !important;
 }
 
 .ssb-radio-buttons input[type="radio"]:disabled {
@@ -788,245 +788,158 @@ ssb-dropdown
   font-family: "Roboto", sans-serif !important;
   font-stretch: normal;
   font-weight: normal;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.25s ease-in-out;
+  background: #fff;
+  border: 1px solid #162327;
+  border-radius: 0;
+  min-height: 44px;
   max-width: 350px;
   min-width: 230px;
-  position: relative;
-}
-.ssb-dropdown label,
-.ssb-dropdown .dropdown-label {
-  font-size: 14px;
-  line-height: normal;
-  margin-bottom: 5px;
-}
-.ssb-dropdown .dropdown-interactive-area {
-  cursor: pointer;
-  position: relative;
-}
-.ssb-dropdown .dropdown-interactive-area button {
-  background-color: transparent;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  padding: 0;
-  text-align: left;
-  width: 100%;
-  background-color: #fff;
-  border: 1px solid #162327;
-  box-sizing: border-box;
-  cursor: pointer;
   font-size: 16px;
-  min-height: 44px;
-  padding: 4px 44px 4px 12px;
-  text-overflow: ellipsis;
 }
-.ssb-dropdown .dropdown-interactive-area button:hover, .ssb-dropdown .dropdown-interactive-area button:focus {
+
+.ssb-dropdown:hover,
+.ssb-dropdown:focus {
   border: 1px solid #00824d;
   outline: 1px solid #00824d;
 }
-.ssb-dropdown .dropdown-interactive-area .dd-icon {
-  color: #00824d;
-  font-size: 24px;
-  position: absolute;
-  right: 12px;
-  top: 10px;
-  pointer-events: none;
-}
-.ssb-dropdown .dropdown-interactive-area input {
-  background-color: #fff;
-  border: 1px solid #162327;
-  box-sizing: border-box;
-  cursor: pointer;
-  font-size: 16px;
-  height: 44px;
-  padding: 4px 44px 4px 12px;
-  text-overflow: ellipsis;
-  width: 100%;
-}
-.ssb-dropdown .dropdown-interactive-area input::placeholder {
-  color: #2d6975;
-}
-.ssb-dropdown .dropdown-interactive-area input:hover, .ssb-dropdown .dropdown-interactive-area input:focus {
-  border: 1px solid #00824d;
-  outline: 1px solid #00824d;
-}
-.ssb-dropdown.error input,
-.ssb-dropdown.error button.opener {
+
+.ssb-dropdown.error {
   border: 1px solid #dc3400;
   outline: 1px solid #dc3400;
 }
-.ssb-dropdown .list-of-options {
-  font-family: "Roboto", sans-serif !important;
-  font-stretch: normal;
-  font-weight: normal;
-  background: #fff;
-  border: 1px solid #162327;
-  left: 0;
-  list-style: none;
-  margin: 0;
-  max-height: 290px;
-  min-width: 150px;
-  overflow-y: auto;
-  padding-left: 0;
-  position: absolute;
-  scrollbar-color: #b0b0b0 #fff;
-  scrollbar-width: thin;
-  top: 44px;
-  z-index: 9999;
-  width: 100%;
-}
-.ssb-dropdown .list-of-options .option-list-element {
-  font-family: "Roboto", sans-serif !important;
-  font-stretch: normal;
-  font-weight: normal;
-  background: #fff;
-  cursor: pointer;
-  display: block;
-  font-size: 16px;
-  font-weight: normal;
-  line-height: 1.25;
-  overflow: hidden;
-  padding: 12px;
-  text-overflow: ellipsis;
-  transition: all 0.18s;
-  box-sizing: border-box;
-  width: 100%;
-}
-.ssb-dropdown .list-of-options .option-list-element:hover, .ssb-dropdown .list-of-options .option-list-element:focus, .ssb-dropdown .list-of-options .option-list-element.active {
-  background: #274247;
-  color: #fff;
-  z-index: 2;
-}
-.ssb-dropdown .list-of-options .option-list-element.disabled {
-  background: #fff;
-  color: #c3dcdc;
-  cursor: not-allowed;
-  font-weight: normal;
-  pointer-events: none;
-}
-.ssb-dropdown .list-of-options .option-list-element.disabled:hover, .ssb-dropdown .list-of-options .option-list-element.disabled:focus {
-  text-decoration: none;
-  background: none;
-}
-.ssb-dropdown .list-of-options .option-list-element.selected {
-  background: #00824d;
-  color: #fff;
-  font-weight: bold;
-}
-.ssb-dropdown ::-webkit-scrollbar {
-  width: 6px;
-}
-.ssb-dropdown ::-webkit-scrollbar-track {
-  background: #fff;
-  border-bottom: 1px solid #162327;
-}
-.ssb-dropdown ::-webkit-scrollbar-thumb {
-  background: #b0b0b0;
-  border-radius: 3px;
-}
-.ssb-dropdown.large {
-  max-width: 100%;
-  width: 100%;
-}
-.ssb-dropdown.large .dropdown-interactive-area button {
-  max-width: 100%;
-  padding: 29px 40px;
-  font-size: 20px;
-}
-.ssb-dropdown.large .list-of-options {
-  max-width: 100%;
-  width: 100%;
-  top: auto;
-}
-.ssb-dropdown.large .list-of-options .option-list-element {
-  max-width: 100%;
-  width: 100%;
-}
-.ssb-dropdown.large .dd-icon {
-  box-sizing: initial;
-  top: 1px;
-  padding: 15px;
-}
-.ssb-dropdown.large input {
-  padding: 40px;
-  font-size: 20px;
-}
 
-/*
-Dash override for ssb-droppdown
-*/
-.ssb-dropdown .Select-value {
-    display: flex !important;
-    align-items: center !important;
-    height: 100%;
-}
-
-.ssb-dropdown .Select-value-label {
-    display: flex;
-    align-items: center;
-}
-
-.ssb-dropdown .Select-placeholder {
-    display: flex;
-    align-items: center;
-}
-
-.ssb-dropdown .Select-control {
-    border: 1px solid #162327 !important;
-    border-radius: 0 !important;
-    min-height: 44px;
-    height: 44px;
-    box-shadow: none !important;
-    font-size: 16px;
-}
-
-/* hover/focus */
-.ssb-dropdown .Select-control:hover {
-    outline: 1px solid #00824d !important;
-    border: 1px solid #00824d !important;
-}
-
-/* selected value */
-.ssb-dropdown .Select-value-label {
-    color: #162327 !important;
-    font-weight: 400;
+/* selected value area (inside the closed button) */
+.ssb-dropdown .dash-dropdown-value {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  color: #162327;
+  font-weight: 400;
 }
 
 /* dropdown arrow */
-.ssb-dropdown .Select-arrow {
-    color: #00824d !important;
+.ssb-dropdown .dash-dropdown-trigger-icon {
+  color: #00824d;
 }
 
-/* menu (dropdown list) */
-.ssb-dropdown .Select-menu-outer {
-    border: 1px solid #162327 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
+/*
+Popup menu, search box, and options list.
+NOTE: these render in a Radix popper portal, as a SIBLING of .ssb-dropdown
+in the DOM -- not a descendant. They must stay unscoped/global.
+*/
+
+.dash-dropdown-content {
+  background: #fff;
+  border: 1px solid #162327;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-/* option */
-.ssb-dropdown .VirtualizedSelectOption {
-    font-size: 16px;
-    padding: 12px;
+.dash-dropdown-search {
+  background: #fff;
+  border: none;
+  border-bottom: 1px solid #162327;
+  font-size: 16px;
+  padding: 8px 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* hover option */
-.ssb-dropdown .VirtualizedSelectFocusedOption {
-    background-color: #274247 !important;
-    color: #fff !important;
+.dash-dropdown-search-icon {
+  color: #00824d;
 }
 
-/* selected option */
-.ssb-dropdown .VirtualizedSelectSelectedOption {
-    background-color: #00824d !important;
-    color: #fff !important;
-    font-weight: bold;
+.dash-options-list-option.dash-dropdown-option {
+  background: #fff;
+  color: #162327;
+  cursor: pointer;
+  display: block;
+  font-family: "Roboto", sans-serif !important;
+  font-size: 16px;
+  line-height: 1.25;
+  padding: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0;      /* your old CSS had padding: 0 -- match that intent */
+  height: 43px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
+
+.dash-options-list-option.dash-dropdown-option:hover {
+  background: #274247;
+  color: #fff;
+}
+
+
+
+.dash-options-list-option.dash-dropdown-option:hover,
+.dash-options-list-option.dash-dropdown-option:hover * {
+  color: #fff !important;
+}
+
+.dash-options-list-option.dash-dropdown-option.selected,
+.dash-options-list-option.dash-dropdown-option[aria-selected="true"] {
+  background: #00824d;
+  color: #fff !important;
+  font-weight: bold;
+}
+
+/* scrollbar for the options list (also unscoped, same reason as above) */
+.dash-options-list::-webkit-scrollbar {
+  width: 6px;
+}
+.dash-options-list::-webkit-scrollbar-track {
+  background: #fff;
+  border-bottom: 1px solid #162327;
+}
+.dash-options-list::-webkit-scrollbar-thumb {
+  background: #b0b0b0;
+  border-radius: 3px;
+}
+
+.dash-dropdown-options .dash-options-list-option-wrapper {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.dash-dropdown-options .dash-options-list-option-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid #162327;
+  border-radius: 2px;
+  background: #fff;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dash-dropdown-options .dash-options-list-option[aria-selected="true"] .dash-options-list-option-checkbox {
+  background: #00824d;
+  border-color: #00824d;
+}
+
+.dash-dropdown-options .dash-options-list-option[aria-selected="true"] .dash-options-list-option-checkbox::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.dash-dropdown-options .dash-options-list-option:hover .dash-options-list-option-checkbox {
+  border-color: #fff;
+}
+
 
 /*
 ssb-input
