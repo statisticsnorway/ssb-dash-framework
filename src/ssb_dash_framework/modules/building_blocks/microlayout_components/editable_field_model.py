@@ -464,7 +464,6 @@ def _register_group_callback(
         if triggered_id in field_ids:
             idx = field_ids.index(triggered_id)
             f = fields[idx]
-            print(f"edited field, f: {f}")
             if not f._check_guard(settings, *guard_values):
                 logger.debug("Preventing update")
                 raise PreventUpdate
@@ -480,7 +479,7 @@ def _register_group_callback(
                 time_units=time_units,
                 extra_args=extra_args,
             )
-            print(f"revert_value: {revert_value}")
+
             alert_log = _extend_alert_log(alert_log, alerts)
 
             field_outputs = [no_update] * n

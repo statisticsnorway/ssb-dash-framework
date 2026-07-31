@@ -1005,13 +1005,14 @@ class Naeringsspesifikasjon:
 
     def create_dropdown_card(self, title: str, component_id: str):
         dropdown_card = html.Div(
-            className="ssb-dropdown",
             children=[
                 html.Span(title, className="dropdown-label"),
                 dcc.Dropdown(
                     id=component_id,
+                    className="ssb-dropdown",
                     placeholder="-- Velg --",
                     clearable=True,
+                    searchable=False,
                 ),
             ],
         )
