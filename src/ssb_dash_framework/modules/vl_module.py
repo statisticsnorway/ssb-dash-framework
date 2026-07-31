@@ -244,15 +244,46 @@ class VLModule:
         )
 
         # Breakdown controls
+        self.breakdown_analysis_level_id = (
+            f"vl-breakdown-analysis-level-{self.module_number}"
+        )
+
         self.breakdown_year_id = (
             f"vl-breakdown-year-{self.module_number}"
         )
+
+        self.breakdown_industry_controls_id = (
+            f"vl-breakdown-industry-controls-{self.module_number}"
+        )
+
         self.breakdown_group_level_id = (
             f"vl-breakdown-group-level-{self.module_number}"
         )
+
         self.breakdown_group_value_id = (
             f"vl-breakdown-group-value-{self.module_number}"
         )
+
+        self.breakdown_enterprise_controls_id = (
+            f"vl-breakdown-enterprise-controls-{self.module_number}"
+        )
+
+        self.breakdown_enterprise_search_id = (
+            f"vl-breakdown-enterprise-search-{self.module_number}"
+        )
+
+        self.breakdown_enterprise_id = (
+            f"vl-breakdown-enterprise-{self.module_number}"
+        )
+
+        self.breakdown_unit_level_id = (
+            f"vl-breakdown-unit-level-{self.module_number}"
+        )
+
+        self.breakdown_business_id = (
+            f"vl-breakdown-business-{self.module_number}"
+        )
+
         self.breakdown_variable_id = (
             f"vl-breakdown-variable-{self.module_number}"
         )
@@ -1099,7 +1130,6 @@ class VLModule:
                                                 ),
                                             ],
                                         ),
-
                                         # -------------------------------------------------
                                         # Breakdown
                                         # -------------------------------------------------
@@ -1107,42 +1137,156 @@ class VLModule:
                                             id=self.breakdown_controls_container_id,
                                             style={"display": "none"},
                                             children=[
-                                                html.Label("År"),
+                                                html.Label("Analysenivå"),
+                                                dcc.RadioItems(
+                                                    id=self.breakdown_analysis_level_id,
+                                                    className="ssb-radio-buttons",
+                                                    options=[
+                                                        {
+                                                            "label": "Næring",
+                                                            "value": "industry",
+                                                        },
+                                                        {
+                                                            "label": "Enkeltforetak",
+                                                            "value": "enterprise",
+                                                        },
+                                                    ],
+                                                    value="industry",
+                                                    inline=True,
+                                                ),
+
+                                                html.Label(
+                                                    "År",
+                                                    style={"marginTop": "12px"},
+                                                ),
                                                 dcc.Dropdown(
                                                     id=self.breakdown_year_id,
                                                     className="ssb-dropdown",
                                                     options=[],
                                                     clearable=False,
                                                 ),
-                                                html.Label(
-                                                    "Næringsnivå",
-                                                    style={"marginTop": "12px"},
-                                                ),
-                                                dcc.Dropdown(
-                                                    id=self.breakdown_group_level_id,
-                                                    className="ssb-dropdown",
-                                                    options=[
-                                                        {"label": "N2", "value": "n2"},
-                                                        {"label": "N3", "value": "n3"},
-                                                        {"label": "N4", "value": "n4"},
-                                                        {
-                                                            "label": "Detaljert næring",
-                                                            "value": "naring",
-                                                        },
+
+                                                # Existing industry-level controls
+                                                html.Div(
+                                                    id=self.breakdown_industry_controls_id,
+                                                    style={
+                                                        "display": "block",
+                                                        "marginTop": "12px",
+                                                    },
+                                                    children=[
+                                                        html.Label("Næringsnivå"),
+                                                        dcc.Dropdown(
+                                                            id=self.breakdown_group_level_id,
+                                                            className="ssb-dropdown",
+                                                            options=[
+                                                                {
+                                                                    "label": "N2",
+                                                                    "value": "n2",
+                                                                },
+                                                                {
+                                                                    "label": "N3",
+                                                                    "value": "n3",
+                                                                },
+                                                                {
+                                                                    "label": "N4",
+                                                                    "value": "n4",
+                                                                },
+                                                                {
+                                                                    "label": "Detaljert næring",
+                                                                    "value": "naring",
+                                                                },
+                                                            ],
+                                                            value="n4",
+                                                            clearable=False,
+                                                        ),
+
+                                                        html.Label(
+                                                            "Næringskode",
+                                                            style={"marginTop": "12px"},
+                                                        ),
+                                                        dcc.Dropdown(
+                                                            id=self.breakdown_group_value_id,
+                                                            className="ssb-dropdown",
+                                                            options=[],
+                                                            clearable=False,
+                                                        ),
                                                     ],
-                                                    value="n4",
-                                                    clearable=False,
                                                 ),
-                                                html.Label(
-                                                    "Næringskode",
-                                                    style={"marginTop": "12px"},
+
+                                                # New enterprise-level controls
+                                                html.Div(
+                                                    id=self.breakdown_enterprise_controls_id,
+                                                    style={
+                                                        "display": "none",
+                                                        "marginTop": "12px",
+                                                    },
+                                                    children=[
+                                                        html.Label("Søk etter foretaksnavn"),
+                                                        dcc.Dropdown(
+                                                            id=self.breakdown_enterprise_search_id,
+                                                            className="ssb-dropdown",
+                                                            options=[],
+                                                            value=None,
+                                                            placeholder=(
+                                                                "Skriv minst to tegn i foretaksnavnet"
+                                                            ),
+                                                            clearable=True,
+                                                            searchable=True,
+                                                        ),
+
+                                                        html.Label(
+                                                            "Organisasjonsnummer",
+                                                            style={"marginTop": "12px"},
+                                                        ),
+                                                        dcc.Input(
+                                                            id=self.breakdown_enterprise_id,
+                                                            type="text",
+                                                            value="",
+                                                            placeholder="Skriv inn orgnr_foretak",
+                                                            debounce=True,
+                                                            style={"width": "100%"},
+                                                        ),
+
+                                                        html.Label(
+                                                            "Vis nivå",
+                                                            style={"marginTop": "12px"},
+                                                        ),
+                                                        dcc.RadioItems(
+                                                            id=self.breakdown_unit_level_id,
+                                                            className="ssb-radio-buttons",
+                                                            options=[
+                                                                {
+                                                                    "label": "Begge",
+                                                                    "value": "both",
+                                                                },
+                                                                {
+                                                                    "label": "Kun foretak",
+                                                                    "value": "enterprise",
+                                                                },
+                                                                {
+                                                                    "label": "Kun bedrift",
+                                                                    "value": "business",
+                                                                },
+                                                            ],
+                                                            value="both",
+                                                        ),
+
+                                                        html.Label(
+                                                            "Bedrift",
+                                                            style={"marginTop": "12px"},
+                                                        ),
+                                                        dcc.Dropdown(
+                                                            id=self.breakdown_business_id,
+                                                            className="ssb-dropdown",
+                                                            options=[],
+                                                            value=None,
+                                                            clearable=False,
+                                                            searchable=True,
+                                                            placeholder="Velg bedrift",
+                                                        ),
+                                                    ],
                                                 ),
-                                                dcc.Dropdown(
-                                                    id=self.breakdown_group_value_id,
-                                                    className="ssb-dropdown",
-                                                    options=[],
-                                                    clearable=False,
-                                                ),
+
                                                 html.Label(
                                                     "Sammensatt variabel",
                                                     style={"marginTop": "12px"},
@@ -5876,9 +6020,12 @@ class VLModule:
     def _create_breakdown_data(
         df: pd.DataFrame,
         year: int,
-        group_level: str,
-        group_value: str,
+        group_level: str | None,
+        group_value: str | None,
         variable: str,
+        *,
+        orgnr_foretak: str | None = None,
+        orgnr_bedrift: str | None = None,
     ) -> pd.DataFrame:
         """Create a year-over-year breakdown of a composed variable."""
         if "year" not in df.columns:
@@ -5886,21 +6033,44 @@ class VLModule:
                 "Datasettet mangler kolonnen 'year'."
             )
 
-        if "naring" not in df.columns:
+        unit_analysis = bool(
+            orgnr_foretak
+            or orgnr_bedrift
+        )
+
+        if not unit_analysis:
+            if "naring" not in df.columns:
+                raise ValueError(
+                    "Datasettet mangler kolonnen 'naring'."
+                )
+
+            valid_group_levels = {
+                "n2",
+                "n3",
+                "n4",
+                "naring",
+            }
+
+            if group_level not in valid_group_levels:
+                raise ValueError(
+                    f"Ugyldig næringsnivå: {group_level}."
+                )
+
+            if not group_value:
+                raise ValueError(
+                    "Næringskode mangler."
+                )
+
+        if orgnr_foretak and "orgnr_foretak" not in df.columns:
             raise ValueError(
-                "Datasettet mangler kolonnen 'naring'."
+                "Datasettet mangler kolonnen "
+                "'orgnr_foretak'."
             )
 
-        valid_group_levels = {
-            "n2",
-            "n3",
-            "n4",
-            "naring",
-        }
-
-        if group_level not in valid_group_levels:
+        if orgnr_bedrift and "orgnr_bedrift" not in df.columns:
             raise ValueError(
-                f"Ugyldig næringsnivå: {group_level}."
+                "Datasettet mangler kolonnen "
+                "'orgnr_bedrift'."
             )
 
         breakdown_definitions: dict[
@@ -6141,13 +6311,30 @@ class VLModule:
             errors="coerce",
         )
 
-        data["naring"] = data["naring"].astype(
-            "string"
-        )
+        if "orgnr_foretak" in data.columns:
+            data["orgnr_foretak"] = (
+                data["orgnr_foretak"]
+                .astype("string")
+                .str.replace(r"\.0$", "", regex=True)
+                .str.strip()
+            )
 
-        data["n2"] = data["naring"].str.slice(0, 2)
-        data["n3"] = data["naring"].str.slice(0, 4)
-        data["n4"] = data["naring"].str.slice(0, 5)
+        if "orgnr_bedrift" in data.columns:
+            data["orgnr_bedrift"] = (
+                data["orgnr_bedrift"]
+                .astype("string")
+                .str.replace(r"\.0$", "", regex=True)
+                .str.strip()
+            )
+
+        if not unit_analysis:
+            data["naring"] = data["naring"].astype(
+                "string"
+            )
+
+            data["n2"] = data["naring"].str.slice(0, 2)
+            data["n3"] = data["naring"].str.slice(0, 4)
+            data["n4"] = data["naring"].str.slice(0, 5)
 
         current_year = int(year)
         previous_year = current_year - 1
@@ -6161,10 +6348,35 @@ class VLModule:
             )
         ].copy()
 
-        data = data.loc[
-            data[group_level].astype(str)
-            == str(group_value)
-        ].copy()
+        if orgnr_foretak:
+            cleaned_enterprise = (
+                str(orgnr_foretak)
+                .strip()
+                .removesuffix(".0")
+            )
+
+            data = data.loc[
+                data["orgnr_foretak"].astype(str)
+                == cleaned_enterprise
+            ].copy()
+
+        if orgnr_bedrift:
+            cleaned_business = (
+                str(orgnr_bedrift)
+                .strip()
+                .removesuffix(".0")
+            )
+
+            data = data.loc[
+                data["orgnr_bedrift"].astype(str)
+                == cleaned_business
+            ].copy()
+
+        if not unit_analysis:
+            data = data.loc[
+                data[str(group_level)].astype(str)
+                == str(group_value)
+            ].copy()
 
         if data.empty:
             return pd.DataFrame(
@@ -7257,6 +7469,7 @@ class VLModule:
             "naring_3": "3-siffer næring",
             "naring_4": "3-siffer næring",
             "naring_5": "4-siffer næring",
+            "nivå": "Nivå",
             "gruppe": "Gruppe",
             "naring_previous": "Næring året før",
             "naring_f": "Foretaksnæring",
@@ -8187,6 +8400,236 @@ class VLModule:
                 "value",
             ),
         )
+
+
+        @callback(
+            Output(
+                self.breakdown_enterprise_search_id,
+                "options",
+            ),
+            Input(
+                self.breakdown_enterprise_search_id,
+                "search_value",
+            ),
+            Input(
+                self.data_version_id,
+                "value",
+            ),
+        )
+        def search_breakdown_enterprise_names(
+            search_value: str | None,
+            data_version: str,
+        ) -> list[dict[str, str]]:
+            """Search enterprises by name or organisation number."""
+            if not search_value:
+                return []
+
+            search_text = search_value.strip().casefold()
+
+            if len(search_text) < 2:
+                return []
+
+            parquet_path = self._parquet_path(
+                data_version,
+                dataset="foretak",
+            )
+
+            lookup = self._read_enterprise_lookup(
+                parquet_path
+            )
+
+            if lookup.empty:
+                return []
+
+            matches = lookup.loc[
+                lookup["search_text"].str.contains(
+                    search_text,
+                    na=False,
+                    regex=False,
+                )
+            ].head(25)
+
+            return [
+                {
+                    "label": (
+                        f"{str(row.navn)} — "
+                        f"{str(row.orgnr_foretak)}"
+                    ),
+                    "value": str(row.orgnr_foretak),
+                }
+                for row in matches.itertuples()
+            ]
+
+
+        @callback(
+            Output(
+                self.breakdown_business_id,
+                "options",
+            ),
+            Output(
+                self.breakdown_business_id,
+                "value",
+            ),
+            Input(
+                self.breakdown_enterprise_id,
+                "value",
+            ),
+            Input(
+                self.breakdown_year_id,
+                "value",
+            ),
+            Input(
+                self.data_version_id,
+                "value",
+            ),
+        )
+        def update_breakdown_business_options(
+            enterprise: str | None,
+            year: int | None,
+            data_version: str,
+        ) -> tuple[
+            list[dict[str, str]],
+            str | None,
+        ]:
+            """Populate businesses belonging to the selected enterprise."""
+            if not enterprise:
+                return [], None
+
+            enterprise_number = (
+                str(enterprise)
+                .strip()
+                .replace(".0", "")
+            )
+
+            if not enterprise_number:
+                return [], None
+
+            try:
+                parquet_path = self._parquet_path(
+                    data_version,
+                    dataset="bedrifter",
+                )
+
+                business_df = self._read_business_data(
+                    parquet_path
+                )
+
+                subset = business_df.loc[
+                    business_df["orgnr_foretak"].astype(str)
+                    == enterprise_number
+                ].copy()
+
+                if subset.empty:
+                    return [], None
+
+                # Prefer businesses present in the selected year or
+                # the year before, since those are the years used in
+                # the breakdown comparison.
+                if year is not None:
+                    relevant_years = {
+                        int(year),
+                        int(year) - 1,
+                    }
+
+                    relevant_subset = subset.loc[
+                        subset["year"].isin(relevant_years)
+                    ].copy()
+
+                    if not relevant_subset.empty:
+                        subset = relevant_subset
+
+                subset["orgnr_bedrift"] = (
+                    subset["orgnr_bedrift"]
+                    .astype(str)
+                    .str.replace(r"\.0$", "", regex=True)
+                    .str.strip()
+                )
+
+                subset = subset.loc[
+                    subset["orgnr_bedrift"].ne("")
+                    & subset["orgnr_bedrift"].ne("nan")
+                ].copy()
+
+                if subset.empty:
+                    return [], None
+
+                # Keep the latest available row for each business.
+                subset = (
+                    subset.sort_values(
+                        "year",
+                        ascending=False,
+                    )
+                    .drop_duplicates(
+                        subset="orgnr_bedrift",
+                        keep="first",
+                    )
+                )
+
+                options: list[dict[str, str]] = []
+
+                for row in subset.itertuples():
+                    business_number = str(
+                        row.orgnr_bedrift
+                    )
+
+                    business_name = str(
+                        getattr(row, "navn", "")
+                    ).strip()
+
+                    if (
+                        business_name
+                        and business_name.lower() != "nan"
+                    ):
+                        label = (
+                            f"{business_name} — "
+                            f"{business_number}"
+                        )
+                    else:
+                        label = business_number
+
+                    options.append(
+                        {
+                            "label": label,
+                            "value": business_number,
+                        }
+                    )
+
+                options = sorted(
+                    options,
+                    key=lambda option: option["label"].casefold(),
+                )
+
+                selected_value = (
+                    options[0]["value"]
+                    if options
+                    else None
+                )
+
+                return options, selected_value
+
+            except Exception:
+                return [], None
+
+        @callback(
+            Output(
+                self.breakdown_enterprise_id,
+                "value",
+            ),
+            Input(
+                self.breakdown_enterprise_search_id,
+                "value",
+            ),
+            prevent_initial_call=True,
+        )
+        def select_breakdown_enterprise_from_name(
+            selected_enterprise: str | None,
+        ) -> str | Any:
+            """Copy the selected enterprise into the organisation-number field."""
+            if not selected_enterprise:
+                return no_update
+
+            return str(selected_enterprise)
+
         def update_large_changes_group_values(
             group_level: str,
             data_version: str,
@@ -8744,6 +9187,43 @@ class VLModule:
 
 ###############################################################################
 
+        @callback(
+            Output(
+                self.breakdown_industry_controls_id,
+                "style",
+            ),
+            Output(
+                self.breakdown_enterprise_controls_id,
+                "style",
+            ),
+            Input(
+                self.breakdown_analysis_level_id,
+                "value",
+            ),
+        )
+        def toggle_breakdown_analysis_level(
+            analysis_level: str,
+        ) -> tuple[
+            dict[str, str],
+            dict[str, str],
+        ]:
+            """Switch between industry and enterprise breakdown controls."""
+            visible = {
+                "display": "block",
+                "marginTop": "12px",
+            }
+
+            hidden = {
+                "display": "none",
+                "marginTop": "12px",
+            }
+
+            if analysis_level == "enterprise":
+                return hidden, visible
+
+            return visible, hidden
+
+################################################################################
         @callback(
             Output(
                 self.negative_nopost_drilldown_container_id,
@@ -9878,6 +10358,10 @@ class VLModule:
                 "value",
             ),
 
+            Input(
+                self.breakdown_analysis_level_id,
+                "value",
+            ),
             Input(self.breakdown_year_id, "value"),
             Input(
                 self.breakdown_group_level_id,
@@ -9885,6 +10369,18 @@ class VLModule:
             ),
             Input(
                 self.breakdown_group_value_id,
+                "value",
+            ),
+            Input(
+                self.breakdown_enterprise_id,
+                "value",
+            ),
+            Input(
+                self.breakdown_unit_level_id,
+                "value",
+            ),
+            Input(
+                self.breakdown_business_id,
                 "value",
             ),
             Input(
@@ -9993,9 +10489,13 @@ class VLModule:
             opposite_absolute_threshold: float | None,
             opposite_max_rows: int | None,
 
+            breakdown_analysis_level: str | None,
             breakdown_year: int | None,
             breakdown_group_level: str | None,
             breakdown_group_value: str | None,
+            breakdown_enterprise: str | None,
+            breakdown_unit_level: str | None,
+            breakdown_business: str | None,
             breakdown_variable: str | None,
 
             moms_group_level: str | None,
@@ -10776,7 +11276,6 @@ class VLModule:
                             "motsatte bevegelser."
                         ),
                     )
-
                 # -----------------------------------------
                 # Breakdown
                 # -----------------------------------------
@@ -10788,62 +11287,193 @@ class VLModule:
                             )
                         )
 
-                    if not breakdown_group_level:
-                        return figure_result(
-                            self._empty_figure(
-                                "Velg et næringsnivå."
-                            )
-                        )
-
-                    if not breakdown_group_value:
-                        return figure_result(
-                            self._empty_figure(
-                                "Velg en næringskode."
-                            )
-                        )
-
                     if not breakdown_variable:
                         return figure_result(
                             self._empty_figure(
-                                (
-                                    "Velg en sammensatt "
-                                    "variabel."
-                                )
+                                "Velg en sammensatt variabel."
                             )
                         )
 
-                    parquet_path = self._parquet_path(
-                        data_version,
-                        dataset="bedrifter",
+                    analysis_level = (
+                        breakdown_analysis_level
+                        or "industry"
                     )
 
-                    df = self._read_business_data(
-                        parquet_path
-                    )
+                    # -------------------------------------
+                    # Industry-level breakdown
+                    # -------------------------------------
+                    if analysis_level == "industry":
+                        if not breakdown_group_level:
+                            return figure_result(
+                                self._empty_figure(
+                                    "Velg et næringsnivå."
+                                )
+                            )
 
-                    table_df = (
-                        self._create_breakdown_data(
-                            df=df,
-                            year=int(
-                                breakdown_year
-                            ),
-                            group_level=(
-                                breakdown_group_level
-                            ),
-                            group_value=(
-                                breakdown_group_value
-                            ),
-                            variable=(
-                                breakdown_variable
+                        if not breakdown_group_value:
+                            return figure_result(
+                                self._empty_figure(
+                                    "Velg en næringskode."
+                                )
+                            )
+
+                        business_path = self._parquet_path(
+                            data_version,
+                            dataset="bedrifter",
+                        )
+
+                        business_df = self._read_business_data(
+                            business_path
+                        )
+
+                        table_df = self._create_breakdown_data(
+                            df=business_df,
+                            year=int(breakdown_year),
+                            group_level=breakdown_group_level,
+                            group_value=breakdown_group_value,
+                            variable=breakdown_variable,
+                        )
+
+                        return table_result(
+                            table_df,
+                            (
+                                "Fant ingen data for "
+                                "den valgte nedbrytningen."
                             ),
                         )
+
+                    # -------------------------------------
+                    # Enterprise/business breakdown
+                    # -------------------------------------
+                    if not breakdown_enterprise:
+                        return figure_result(
+                            self._empty_figure(
+                                "Velg eller skriv inn et foretak."
+                            )
+                        )
+
+                    enterprise_number = (
+                        str(breakdown_enterprise)
+                        .strip()
+                        .removesuffix(".0")
+                    )
+
+                    unit_level = (
+                        breakdown_unit_level
+                        or "both"
+                    )
+
+                    result_frames: list[pd.DataFrame] = []
+
+                    if unit_level in {
+                        "both",
+                        "enterprise",
+                    }:
+                        enterprise_path = self._parquet_path(
+                            data_version,
+                            dataset="foretak",
+                        )
+
+                        enterprise_df = (
+                            self._read_enterprise_data(
+                                enterprise_path
+                            )
+                        )
+
+                        enterprise_result = (
+                            self._create_breakdown_data(
+                                df=enterprise_df,
+                                year=int(breakdown_year),
+                                group_level=None,
+                                group_value=None,
+                                variable=breakdown_variable,
+                                orgnr_foretak=enterprise_number,
+                            )
+                        )
+
+                        if not enterprise_result.empty:
+                            enterprise_result.insert(
+                                0,
+                                "nivå",
+                                "Foretak",
+                            )
+
+                            result_frames.append(
+                                enterprise_result
+                            )
+
+                    if unit_level in {
+                        "both",
+                        "business",
+                    }:
+                        if not breakdown_business:
+                            if unit_level == "business":
+                                return figure_result(
+                                    self._empty_figure(
+                                        "Velg en bedrift."
+                                    )
+                                )
+
+                        else:
+                            business_number = (
+                                str(breakdown_business)
+                                .strip()
+                                .removesuffix(".0")
+                            )
+
+                            business_path = self._parquet_path(
+                                data_version,
+                                dataset="bedrifter",
+                            )
+
+                            business_df = (
+                                self._read_business_data(
+                                    business_path
+                                )
+                            )
+
+                            business_result = (
+                                self._create_breakdown_data(
+                                    df=business_df,
+                                    year=int(breakdown_year),
+                                    group_level=None,
+                                    group_value=None,
+                                    variable=breakdown_variable,
+                                    orgnr_foretak=enterprise_number,
+                                    orgnr_bedrift=business_number,
+                                )
+                            )
+
+                            if not business_result.empty:
+                                business_result.insert(
+                                    0,
+                                    "nivå",
+                                    "Bedrift",
+                                )
+
+                                result_frames.append(
+                                    business_result
+                                )
+
+                    if not result_frames:
+                        return table_result(
+                            pd.DataFrame(),
+                            (
+                                "Fant ingen data for det valgte "
+                                "foretaket eller bedriften."
+                            ),
+                        )
+
+                    table_df = pd.concat(
+                        result_frames,
+                        ignore_index=True,
                     )
 
                     return table_result(
                         table_df,
                         (
-                            "Fant ingen data for "
-                            "den valgte nedbrytningen."
+                            "Fant ingen data for det valgte "
+                            "foretaket eller bedriften."
                         ),
                     )
 
