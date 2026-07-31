@@ -989,16 +989,16 @@ class VLModule:
                                                     className="ssb-dropdown",
                                                     options=[
                                                         {
-                                                            "label": "Næring 2",
+                                                            "label": "2-siffer næring",
                                                             "value": "naring_2",
                                                         },
                                                         {
-                                                            "label": "Næring 3",
-                                                            "value": "naring_3",
+                                                            "label": "3-siffer næring",
+                                                            "value": "naring_4",
                                                         },
                                                         {
-                                                            "label": "Næring 4",
-                                                            "value": "naring_4",
+                                                            "label": "4-siffer næring",
+                                                            "value": "naring_5",
                                                         },
                                                         {
                                                             "label": "Detaljert næring",
@@ -5500,6 +5500,7 @@ class VLModule:
             "naring_2",
             "naring_3",
             "naring_4",
+            "naring_5",
             "naring",
         }
 
@@ -5560,6 +5561,11 @@ class VLModule:
 
         if "naring_4" not in data.columns:
             data["naring_4"] = (
+                data["naring"].str.slice(0, 5)
+            )
+
+        if "naring_5" not in data.columns:
+            data["naring_5"] = (
                 data["naring"].str.slice(0, 5)
             )
 
@@ -7245,13 +7251,13 @@ class VLModule:
         display_df = df.copy()
 
         column_labels = {
-            "naring": "Næring",
-            "naring_1": "Næring 1",
-            "naring_2": "Næring 2",
-            "naring_3": "Næring 3",
-            "naring_4": "Næring – 3 siffer",
+            "naring": "Detaljert næring",
+            "naring_1": "Næringshovedområde",
+            "naring_2": "2-siffer næring",
+            "naring_3": "3-siffer næring",
+            "naring_4": "3-siffer næring",
+            "naring_5": "4-siffer næring",
             "gruppe": "Gruppe",
-            "naring_5": "Næring 5",
             "naring_previous": "Næring året før",
             "naring_f": "Foretaksnæring",
             "naring_f_previous": "Foretaksnæring året før",
@@ -7292,6 +7298,7 @@ class VLModule:
             "group_current": "Næring valgt år",
             "status": "Status",
             "sort_value": "Sorteringsverdi",
+
             "production_input_opposite": (
                 "Produksjonsverdi og produktinnsats motsatt"
             ),
@@ -7304,6 +7311,38 @@ class VLModule:
             "consumption_p4005_gap_pct": (
                 "Gap forbruk/varekostnad (%)"
             ),
+
+            "produksjonsverdi_2023": "Produksjonsverdi 2023",
+            "produksjonsverdi_2024": "Produksjonsverdi 2024",
+            "produksjonsverdi_change": "Endring i produksjonsverdi",
+            "produksjonsverdi_percentage_change": (
+                "Endring i produksjonsverdi (%)"
+            ),
+            "produksjonsverdi_direction": "Retning produksjonsverdi",
+
+            "produktinnsats_2023": "Produktinnsats 2023",
+            "produktinnsats_2024": "Produktinnsats 2024",
+            "produktinnsats_change": "Endring i produktinnsats",
+            "produktinnsats_percentage_change": (
+                "Endring i produktinnsats (%)"
+            ),
+            "produktinnsats_direction": "Retning produktinnsats",
+
+            "ts_forbruk_2023": "Forbruk 2023",
+            "ts_forbruk_2024": "Forbruk 2024",
+            "ts_forbruk_change": "Endring i forbruk",
+            "ts_forbruk_percentage_change": (
+                "Endring i forbruk (%)"
+            ),
+            "ts_forbruk_direction": "Retning forbruk",
+
+            "nopost_p4005_2023": "Varekostnad 2023",
+            "nopost_p4005_2024": "Varekostnad 2024",
+            "nopost_p4005_change": "Endring i varekostnad",
+            "nopost_p4005_percentage_change": (
+                "Endring i varekostnad (%)"
+            ),
+            "nopost_p4005_direction": "Retning varekostnad",
         }
 
         percentage_columns = {
@@ -7317,9 +7356,13 @@ class VLModule:
             )
         }
 
-        numeric_columns = display_df.select_dtypes(
-            include=[np.number]
-        ).columns.tolist()
+        numeric_columns = (
+            display_df.select_dtypes(
+                include=[np.number]
+            )
+            .columns
+            .tolist()
+        )
 
         for column in numeric_columns:
             display_df[column] = pd.to_numeric(
@@ -7327,24 +7370,34 @@ class VLModule:
                 errors="coerce",
             ).round(2)
 
-        boolean_columns = display_df.select_dtypes(
-            include=["bool"]
-        ).columns.tolist()
+        boolean_columns = (
+            display_df.select_dtypes(
+                include=["bool"]
+            )
+            .columns
+            .tolist()
+        )
 
         for column in boolean_columns:
-            display_df[column] = display_df[column].map(
-                {
-                    True: "Ja",
-                    False: "Nei",
-                }
+            display_df[column] = (
+                display_df[column]
+                .map(
+                    {
+                        True: "Ja",
+                        False: "Nei",
+                    }
+                )
             )
 
         if "breach" in display_df.columns:
-            display_df["breach"] = display_df["breach"].replace(
-                {
-                    True: "Ja",
-                    False: "Nei",
-                }
+            display_df["breach"] = (
+                display_df["breach"]
+                .replace(
+                    {
+                        True: "Ja",
+                        False: "Nei",
+                    }
+                )
             )
 
         display_df = display_df.replace(
@@ -7361,7 +7414,10 @@ class VLModule:
             column_definition: dict[str, Any] = {
                 "name": column_labels.get(
                     column,
-                    column.replace("_", " ").capitalize(),
+                    column.replace(
+                        "_",
+                        " ",
+                    ).capitalize(),
                 ),
                 "id": column,
             }
@@ -7369,49 +7425,79 @@ class VLModule:
             if column in numeric_columns:
                 column_definition["type"] = "numeric"
 
-                if column in percentage_columns:
-                    column_definition["format"] = {
-                        "specifier": ",.2f",
-                    }
-                else:
-                    column_definition["format"] = {
-                        "specifier": ",.2f",
-                    }
+                column_definition["format"] = {
+                    "specifier": ",.2f",
+                }
 
             else:
                 column_definition["type"] = "text"
 
-            columns.append(column_definition)
+            columns.append(
+                column_definition
+            )
 
         style_data_conditional: list[
             dict[str, Any]
-        ] = [
-            {
-                "if": {
-                    "filter_query": (
-                        "{breach} = 'Ja'"
-                    ),
-                },
-                "backgroundColor": "#fff1f0",
-                "fontWeight": "bold",
-            },
-            {
-                "if": {
-                    "filter_query": (
-                        "{direction} = '⬆️'"
-                    ),
-                },
-                "backgroundColor": "#f0fdf4",
-            },
-            {
-                "if": {
-                    "filter_query": (
-                        "{direction} = '⬇️'"
-                    ),
-                },
-                "backgroundColor": "#fff1f0",
-            },
+        ] = []
+
+        if "breach" in display_df.columns:
+            style_data_conditional.append(
+                {
+                    "if": {
+                        "filter_query": (
+                            "{breach} = 'Ja'"
+                        ),
+                    },
+                    "backgroundColor": "#fff1f0",
+                    "fontWeight": "bold",
+                }
+            )
+
+        direction_columns = [
+            column
+            for column in display_df.columns
+            if (
+                column == "direction"
+                or column.endswith("_direction")
+            )
         ]
+
+        for direction_column in direction_columns:
+            if direction_column == "direction":
+                percentage_column = "percentage_change"
+            else:
+                percentage_column = direction_column.replace(
+                    "_direction",
+                    "_percentage_change",
+                )
+
+            if percentage_column not in display_df.columns:
+                continue
+
+            style_data_conditional.extend(
+                [
+                    {
+                        "if": {
+                            "column_id": percentage_column,
+                            "filter_query": (
+                                f"{{{direction_column}}} = '⬇️'"
+                            ),
+                        },
+                        "color": "#b91c1c",
+                        "fontWeight": "bold",
+                    },
+                    {
+                        "if": {
+                            "column_id": percentage_column,
+                            "filter_query": (
+                                f"{{{direction_column}}} = '⬆️'"
+                            ),
+                        },
+                        "color": "#166534",
+                        "fontWeight": "bold",
+                    },
+                ]
+            )
 
         right_aligned_columns = [
             column
@@ -7449,9 +7535,13 @@ class VLModule:
                     }
                 )
 
-        tooltip_data = []
+        tooltip_data: list[
+            dict[str, Any]
+        ] = []
 
-        for row in display_df.to_dict("records"):
+        for row in display_df.to_dict(
+            "records"
+        ):
             tooltip_row: dict[str, Any] = {}
 
             for column, value in row.items():
@@ -7466,9 +7556,13 @@ class VLModule:
                         "type": "text",
                     }
 
-            tooltip_data.append(tooltip_row)
+            tooltip_data.append(
+                tooltip_row
+            )
 
-        data = display_df.to_dict("records")
+        data = display_df.to_dict(
+            "records"
+        )
 
         return (
             data,
