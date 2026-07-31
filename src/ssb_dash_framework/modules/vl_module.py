@@ -154,6 +154,25 @@ class VLModule:
             f"vl-negative-nopost-max-rows-{self.module_number}"
         )
 
+        self.negative_nopost_selected_group_id = (
+            f"vl-negative-nopost-selected-group-{self.module_number}"
+        )
+        self.negative_nopost_variable_id = (
+            f"vl-negative-nopost-variable-{self.module_number}"
+        )
+        self.negative_nopost_top_enterprises_id = (
+            f"vl-negative-nopost-top-enterprises-{self.module_number}"
+        )
+        self.negative_nopost_drilldown_container_id = (
+            f"vl-negative-nopost-drilldown-container-{self.module_number}"
+        )
+        self.negative_nopost_drilldown_table_id = (
+            f"vl-negative-nopost-drilldown-table-{self.module_number}"
+        )
+        self.negative_nopost_drilldown_message_id = (
+            f"vl-negative-nopost-drilldown-message-{self.module_number}"
+        )
+
         # NR-control controls
         self.nr_year_id = (
             f"vl-nr-year-{self.module_number}"
@@ -769,32 +788,24 @@ class VLModule:
                                                     clearable=False,
                                                 ),
                                                 html.Label(
-                                                    "Næringsnivå",
+                                                    "Grupper",
                                                     style={"marginTop": "12px"},
                                                 ),
-                                                dcc.Dropdown(
+                                                dcc.RadioItems(
                                                     id=self.negative_nopost_group_level_id,
-                                                    className="ssb-dropdown",
+                                                    className="ssb-radio-buttons",
                                                     options=[
                                                         {
-                                                            "label": "Næring 2",
-                                                            "value": "naring_2",
-                                                        },
-                                                        {
-                                                            "label": "Næring 3",
-                                                            "value": "naring_3",
-                                                        },
-                                                        {
-                                                            "label": "Næring 4",
-                                                            "value": "naring_4",
-                                                        },
-                                                        {
-                                                            "label": "Detaljert næring",
+                                                            "label": "5-siffer",
                                                             "value": "naring",
+                                                        },
+                                                        {
+                                                            "label": "2-siffer",
+                                                            "value": "naring_2",
                                                         },
                                                     ],
                                                     value="naring",
-                                                    clearable=False,
+                                                    inline=True,
                                                 ),
                                                 html.Label(
                                                     "Negativ grense",
@@ -1463,7 +1474,125 @@ class VLModule:
                                             style_data_conditional=[],
                                             tooltip_data=[],
                                             tooltip_duration=None,
-                                        )
+                                        ),
+                                        html.Div(
+                                            id=self.negative_nopost_drilldown_container_id,
+                                            style={
+                                                "display": "none",
+                                                "marginTop": "24px",
+                                                "paddingTop": "20px",
+                                                "borderTop": "1px solid #d9d9d9",
+                                            },
+                                            children=[
+                                                html.H3(
+                                                    "Undersøk en negativ celle",
+                                                    style={"marginBottom": "16px"},
+                                                ),
+                                                html.Div(
+                                                    style={
+                                                        "display": "grid",
+                                                        "gridTemplateColumns": (
+                                                            "minmax(260px, 2fr) "
+                                                            "minmax(220px, 1fr) "
+                                                            "minmax(160px, 1fr)"
+                                                        ),
+                                                        "gap": "16px",
+                                                        "alignItems": "end",
+                                                        "marginBottom": "16px",
+                                                    },
+                                                    children=[
+                                                        html.Div(
+                                                            children=[
+                                                                html.Label("Rad"),
+                                                                dcc.Dropdown(
+                                                                    id=self.negative_nopost_selected_group_id,
+                                                                    className="ssb-dropdown",
+                                                                    options=[],
+                                                                    value=None,
+                                                                    clearable=False,
+                                                                    placeholder="Velg næringsgruppe",
+                                                                ),
+                                                            ],
+                                                        ),
+                                                        html.Div(
+                                                            children=[
+                                                                html.Label("Variabel"),
+                                                                dcc.Dropdown(
+                                                                    id=self.negative_nopost_variable_id,
+                                                                    className="ssb-dropdown",
+                                                                    options=[],
+                                                                    value=None,
+                                                                    clearable=False,
+                                                                    placeholder="Velg negativ NO-post",
+                                                                ),
+                                                            ],
+                                                        ),
+                                                        html.Div(
+                                                            children=[
+                                                                html.Label("Antall foretak"),
+                                                                dcc.Input(
+                                                                    id=self.negative_nopost_top_enterprises_id,
+                                                                    type="number",
+                                                                    value=50,
+                                                                    min=1,
+                                                                    max=500,
+                                                                    step=10,
+                                                                    style={"width": "100%"},
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                ),
+                                                html.Div(
+                                                    id=self.negative_nopost_drilldown_message_id,
+                                                    style={
+                                                        "marginBottom": "12px",
+                                                        "fontSize": "13px",
+                                                    },
+                                                ),
+                                                dash_table.DataTable(
+                                                    id=self.negative_nopost_drilldown_table_id,
+                                                    data=[],
+                                                    columns=[],
+                                                    page_size=25,
+                                                    sort_action="native",
+                                                    filter_action="native",
+                                                    page_action="native",
+                                                    export_format="csv",
+                                                    export_headers="display",
+                                                    style_table={
+                                                        "overflowX": "auto",
+                                                        "overflowY": "auto",
+                                                        "maxHeight": "55vh",
+                                                        "border": "1px solid #d9d9d9",
+                                                    },
+                                                    style_header={
+                                                        "fontWeight": "bold",
+                                                        "backgroundColor": "#f3f4f6",
+                                                        "border": "1px solid #d9d9d9",
+                                                        "whiteSpace": "normal",
+                                                    },
+                                                    style_cell={
+                                                        "padding": "8px",
+                                                        "textAlign": "left",
+                                                        "fontFamily": (
+                                                            "system-ui, -apple-system, "
+                                                            "Segoe UI, Roboto, Arial"
+                                                        ),
+                                                        "fontSize": "13px",
+                                                        "minWidth": "110px",
+                                                        "width": "140px",
+                                                        "maxWidth": "320px",
+                                                        "whiteSpace": "normal",
+                                                        "height": "auto",
+                                                        "border": "1px solid #e5e7eb",
+                                                    },
+                                                    style_data_conditional=[],
+                                                    tooltip_data=[],
+                                                    tooltip_duration=None,
+                                                ),
+                                            ],
+                                        ),
                                     ],
                                 ),
                             ],
@@ -4287,8 +4416,6 @@ class VLModule:
 
         valid_group_levels = {
             "naring_2",
-            "naring_3",
-            "naring_4",
             "naring",
         }
 
@@ -4411,34 +4538,227 @@ class VLModule:
         else:
             displayed_nopost_columns = nopost_columns
 
-        aggregated["most_negative_value"] = (
+        aggregated["_sort_value"] = (
             aggregated[displayed_nopost_columns]
             .min(axis=1)
         )
 
-        aggregated["negative_column_count"] = (
-            aggregated[displayed_nopost_columns]
-            .lt(-threshold)
-            .sum(axis=1)
-        )
-
         aggregated = (
             aggregated.sort_values(
-                "most_negative_value",
+                "_sort_value",
                 ascending=True,
             )
             .head(max(int(max_rows), 1))
+            .drop(columns="_sort_value")
             .reset_index(drop=True)
         )
 
         ordered_columns = [
             group_level,
-            "negative_column_count",
-            "most_negative_value",
             *displayed_nopost_columns,
         ]
 
         return aggregated[ordered_columns]
+
+    @staticmethod
+    def _create_negative_nopost_drilldown_data(
+        df: pd.DataFrame,
+        year: int,
+        group_level: str,
+        group_value: str,
+        variable: str,
+        *,
+        negative_threshold: float = 1000,
+        top_enterprises: int = 50,
+    ) -> pd.DataFrame:
+        """Create enterprise-level drilldown for one negative NO-post."""
+
+        required_columns = {
+            "year",
+            "naring",
+            "orgnr_foretak",
+            variable,
+        }
+
+        missing_columns = required_columns.difference(
+            df.columns
+        )
+
+        if missing_columns:
+            raise ValueError(
+                "Bedriftsdatasettet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        valid_group_levels = {
+            "naring_2",
+            "naring",
+        }
+
+        if group_level not in valid_group_levels:
+            raise ValueError(
+                f"Ugyldig næringsnivå: {group_level}."
+            )
+
+        data = df.copy()
+
+        data["year"] = pd.to_numeric(
+            data["year"],
+            errors="coerce",
+        )
+
+        data = data.loc[
+            data["year"] == int(year)
+        ].copy()
+
+        if data.empty:
+            return pd.DataFrame()
+
+        data["naring"] = data["naring"].astype(
+            "string"
+        )
+
+        if "naring_2" not in data.columns:
+            data["naring_2"] = (
+                data["naring"].str.slice(0, 2)
+            )
+
+        data = data.loc[
+            data[group_level].astype(str)
+            == str(group_value)
+        ].copy()
+
+        if data.empty:
+            return pd.DataFrame()
+
+        data["orgnr_foretak"] = (
+            data["orgnr_foretak"]
+            .astype("string")
+            .str.replace(r"\.0$", "", regex=True)
+        )
+
+        if "orgnr_bedrift" in data.columns:
+            data["orgnr_bedrift"] = (
+                data["orgnr_bedrift"]
+                .astype("string")
+                .str.replace(r"\.0$", "", regex=True)
+            )
+
+        data[variable] = pd.to_numeric(
+            data[variable],
+            errors="coerce",
+        )
+
+        contributions = (
+            data.groupby(
+                "orgnr_foretak",
+                dropna=False,
+            )[variable]
+            .sum(min_count=1)
+            .reset_index()
+        )
+
+        contributions[variable] = pd.to_numeric(
+            contributions[variable],
+            errors="coerce",
+        )
+
+        if "type" in data.columns:
+            type_mapping = (
+                data.dropna(subset=["type"])
+                .groupby("orgnr_foretak")["type"]
+                .agg(
+                    lambda values: (
+                        values.value_counts().index[0]
+                        if len(values)
+                        else pd.NA
+                    )
+                )
+                .reset_index()
+            )
+
+            contributions = contributions.merge(
+                type_mapping,
+                on="orgnr_foretak",
+                how="left",
+            )
+
+        else:
+            contributions["type"] = pd.NA
+
+        if "orgnr_bedrift" in data.columns:
+            counts = (
+                data.groupby(
+                    "orgnr_foretak"
+                )["orgnr_bedrift"]
+                .nunique()
+                .reset_index(
+                    name="n_bedrifter"
+                )
+            )
+
+        else:
+            counts = (
+                data.groupby(
+                    "orgnr_foretak"
+                )
+                .size()
+                .reset_index(
+                    name="n_rows"
+                )
+            )
+
+        contributions = contributions.merge(
+            counts,
+            on="orgnr_foretak",
+            how="left",
+        )
+
+        threshold = abs(
+            float(negative_threshold)
+        )
+
+        contributions = contributions.loc[
+            contributions[variable] < -threshold
+        ].copy()
+
+        if contributions.empty:
+            return pd.DataFrame()
+
+        contributions = (
+            contributions.sort_values(
+                variable,
+                ascending=True,
+            )
+            .head(
+                max(
+                    int(top_enterprises),
+                    1,
+                )
+            )
+            .reset_index(drop=True)
+        )
+
+        ordered_columns = [
+            "orgnr_foretak",
+            "type",
+        ]
+
+        if "n_bedrifter" in contributions.columns:
+            ordered_columns.append(
+                "n_bedrifter"
+            )
+
+        elif "n_rows" in contributions.columns:
+            ordered_columns.append(
+                "n_rows"
+            )
+
+        ordered_columns.append(variable)
+
+        return contributions[
+            ordered_columns
+        ]
 
     @staticmethod
     def _create_nr_controls_data(
@@ -6488,6 +6808,8 @@ class VLModule:
             "post": "Post",
             "orgnr_foretak": "Foretaksnummer",
             "orgnr_bedrift": "Bedriftsnummer",
+            "n_bedrifter": "Antall bedrifter",
+            "n_rows": "Antall rader",
             "orgnr_foretak_prev": "Foretak året før",
             "orgnr_foretak_curr": "Foretak valgt år",
             "navn": "Navn",
@@ -7872,6 +8194,450 @@ class VLModule:
                 styles["method"],
             )
 
+###############################################################################
+
+        @callback(
+            Output(
+                self.negative_nopost_drilldown_container_id,
+                "style",
+            ),
+            Input(
+                self.visualisation_id,
+                "value",
+            ),
+        )
+        def toggle_negative_nopost_drilldown(
+            visualisation: str,
+        ) -> dict[str, str]:
+            """Show the drilldown only for Negative NO-poster."""
+            if visualisation == "negative-nopost":
+                return {
+                    "display": "block",
+                    "marginTop": "24px",
+                    "paddingTop": "20px",
+                    "borderTop": "1px solid #d9d9d9",
+                }
+
+            return {
+                "display": "none",
+                "marginTop": "24px",
+                "paddingTop": "20px",
+                "borderTop": "1px solid #d9d9d9",
+            }
+        @callback(
+            Output(
+                self.negative_nopost_selected_group_id,
+                "options",
+            ),
+            Output(
+                self.negative_nopost_selected_group_id,
+                "value",
+            ),
+            Input(
+                self.visualisation_id,
+                "value",
+            ),
+            Input(
+                self.table_id,
+                "data",
+            ),
+            Input(
+                self.negative_nopost_group_level_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_threshold_id,
+                "value",
+            ),
+        )
+        def update_negative_nopost_group_options(
+            visualisation: str,
+            table_data: list[dict[str, Any]] | None,
+            group_level: str | None,
+            negative_threshold: float | None,
+        ) -> tuple[
+            list[dict[str, str]],
+            str | None,
+        ]:
+            """Populate drilldown groups from the visible summary table."""
+            if (
+                visualisation != "negative-nopost"
+                or not table_data
+            ):
+                return [], None
+
+            selected_group_level = (
+                group_level or "naring"
+            )
+
+            threshold = abs(
+                float(
+                    negative_threshold
+                    if negative_threshold is not None
+                    else 1000
+                )
+            )
+
+            options: list[dict[str, str]] = []
+
+            for row in table_data:
+                group_value = row.get(
+                    selected_group_level
+                )
+
+                if group_value is None:
+                    continue
+
+                negative_columns = [
+                    column
+                    for column, value in row.items()
+                    if (
+                        column.startswith("nopost_")
+                        and value is not None
+                        and pd.to_numeric(
+                            value,
+                            errors="coerce",
+                        )
+                        < -threshold
+                    )
+                ]
+
+                label = (
+                    f"{group_value} "
+                    f"(negative poster: "
+                    f"{len(negative_columns)})"
+                )
+
+                options.append(
+                    {
+                        "label": label,
+                        "value": str(group_value),
+                    }
+                )
+
+            selected_value = (
+                options[0]["value"]
+                if options
+                else None
+            )
+
+            return options, selected_value
+
+        @callback(
+            Output(
+                self.negative_nopost_variable_id,
+                "options",
+            ),
+            Output(
+                self.negative_nopost_variable_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_selected_group_id,
+                "value",
+            ),
+            Input(
+                self.table_id,
+                "data",
+            ),
+            Input(
+                self.negative_nopost_group_level_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_threshold_id,
+                "value",
+            ),
+            Input(
+                self.visualisation_id,
+                "value",
+            ),
+        )
+        def update_negative_nopost_variable_options(
+            selected_group: str | None,
+            table_data: list[dict[str, Any]] | None,
+            group_level: str | None,
+            negative_threshold: float | None,
+            visualisation: str,
+        ) -> tuple[
+            list[dict[str, str]],
+            str | None,
+        ]:
+            """Show only negative NO-posts for the selected group."""
+            if (
+                visualisation != "negative-nopost"
+                or not selected_group
+                or not table_data
+            ):
+                return [], None
+
+            selected_group_level = (
+                group_level or "naring"
+            )
+
+            threshold = abs(
+                float(
+                    negative_threshold
+                    if negative_threshold is not None
+                    else 1000
+                )
+            )
+
+            selected_row = next(
+                (
+                    row
+                    for row in table_data
+                    if str(
+                        row.get(
+                            selected_group_level
+                        )
+                    )
+                    == str(selected_group)
+                ),
+                None,
+            )
+
+            if selected_row is None:
+                return [], None
+
+            negative_variables = [
+                column
+                for column, value in selected_row.items()
+                if (
+                    column.startswith("nopost_")
+                    and value is not None
+                    and pd.to_numeric(
+                        value,
+                        errors="coerce",
+                    )
+                    < -threshold
+                )
+            ]
+
+            options = [
+                {
+                    "label": variable,
+                    "value": variable,
+                }
+                for variable in negative_variables
+            ]
+
+            selected_value = (
+                negative_variables[0]
+                if negative_variables
+                else None
+            )
+
+            return options, selected_value
+
+        @callback(
+            Output(
+                self.negative_nopost_drilldown_table_id,
+                "data",
+            ),
+            Output(
+                self.negative_nopost_drilldown_table_id,
+                "columns",
+            ),
+            Output(
+                self.negative_nopost_drilldown_table_id,
+                "style_data_conditional",
+            ),
+            Output(
+                self.negative_nopost_drilldown_table_id,
+                "tooltip_data",
+            ),
+            Output(
+                self.negative_nopost_drilldown_message_id,
+                "children",
+            ),
+            Input(
+                self.visualisation_id,
+                "value",
+            ),
+            Input(
+                self.data_version_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_year_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_group_level_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_selected_group_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_variable_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_threshold_id,
+                "value",
+            ),
+            Input(
+                self.negative_nopost_top_enterprises_id,
+                "value",
+            ),
+        )
+        def update_negative_nopost_drilldown(
+            visualisation: str,
+            data_version: str,
+            year: int | None,
+            group_level: str | None,
+            selected_group: str | None,
+            variable: str | None,
+            negative_threshold: float | None,
+            top_enterprises: int | None,
+        ) -> tuple[
+            list[dict[str, Any]],
+            list[dict[str, Any]],
+            list[dict[str, Any]],
+            list[dict[str, Any]],
+            Any,
+        ]:
+            """Build the enterprise drilldown for a negative NO-post."""
+            empty_result = (
+                [],
+                [],
+                [],
+                [],
+                "",
+            )
+
+            if visualisation != "negative-nopost":
+                return empty_result
+
+            if year is None:
+                return (
+                    [],
+                    [],
+                    [],
+                    [],
+                    "Velg et år.",
+                )
+
+            if not selected_group:
+                return (
+                    [],
+                    [],
+                    [],
+                    [],
+                    "Velg en næringsgruppe.",
+                )
+
+            if not variable:
+                return (
+                    [],
+                    [],
+                    [],
+                    [],
+                    "Velg en negativ NO-post.",
+                )
+
+            try:
+                parquet_path = self._parquet_path(
+                    data_version,
+                    dataset="bedrifter_recent_med_nopost",
+                )
+
+                df = self._read_generic_data(
+                    parquet_path
+                )
+
+                threshold = float(
+                    negative_threshold
+                    if negative_threshold is not None
+                    else 1000
+                )
+
+                table_df = (
+                    self._create_negative_nopost_drilldown_data(
+                        df=df,
+                        year=int(year),
+                        group_level=(
+                            group_level or "naring"
+                        ),
+                        group_value=str(selected_group),
+                        variable=variable,
+                        negative_threshold=threshold,
+                        top_enterprises=int(
+                            top_enterprises or 50
+                        ),
+                    )
+                )
+
+                if table_df.empty:
+                    return (
+                        [],
+                        [],
+                        [],
+                        [],
+                        (
+                            "Fant ingen foretak med verdier "
+                            f"under -{abs(threshold):,.0f} "
+                            f"for {variable} i næringsgruppe "
+                            f"{selected_group}."
+                        ).replace(",", " "),
+                    )
+
+                (
+                    table_data,
+                    table_columns,
+                    table_styles,
+                    table_tooltips,
+                ) = self._prepare_table_output(
+                    table_df
+                )
+
+                message = html.Div(
+                    [
+                        html.Strong(
+                            f"Næringsgruppe: {selected_group}"
+                        ),
+                        html.Span(" · "),
+                        html.Strong(
+                            f"Variabel: {variable}"
+                        ),
+                        html.Span(" · "),
+                        html.Span(
+                            (
+                                f"Viser {len(table_df)} foretak "
+                                f"med verdi under "
+                                f"-{abs(threshold):,.0f}"
+                            ).replace(",", " ")
+                        ),
+                    ]
+                )
+
+                return (
+                    table_data,
+                    table_columns,
+                    table_styles,
+                    table_tooltips,
+                    message,
+                )
+
+            except Exception as error:
+                return (
+                    [],
+                    [],
+                    [],
+                    [],
+                    html.Div(
+                        (
+                            "Kunne ikke lage drilldown: "
+                            f"{error}"
+                        ),
+                        className="alert alert-danger",
+                    ),
+                )
+
+
 ################################################################################            
 ########
         @callback(
@@ -8056,6 +8822,10 @@ class VLModule:
                 "value",
             ),
         )
+
+
+
+
         def update_graph(
             visualisation: str,
             data_version: str,
