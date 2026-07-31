@@ -193,6 +193,30 @@ class VLModule:
             f"vl-nr-max-rows-{self.module_number}"
         )
 
+        self.nr_selected_group_id = (
+            f"vl-nr-selected-group-{self.module_number}"
+        )
+
+        self.nr_variable_id = (
+            f"vl-nr-variable-{self.module_number}"
+        )
+
+        self.nr_top_enterprises_id = (
+            f"vl-nr-top-enterprises-{self.module_number}"
+        )
+
+        self.nr_drilldown_container_id = (
+            f"vl-nr-drilldown-container-{self.module_number}"
+        )
+
+        self.nr_drilldown_table_id = (
+            f"vl-nr-drilldown-table-{self.module_number}"
+        )
+
+        self.nr_drilldown_message_id = (
+            f"vl-nr-drilldown-message-{self.module_number}"
+        )
+
         # Opposite-direction controls
         self.opposite_year_id = (
             f"vl-opposite-year-{self.module_number}"
@@ -1552,6 +1576,124 @@ class VLModule:
                                                 ),
                                                 dash_table.DataTable(
                                                     id=self.negative_nopost_drilldown_table_id,
+                                                    data=[],
+                                                    columns=[],
+                                                    page_size=25,
+                                                    sort_action="native",
+                                                    filter_action="native",
+                                                    page_action="native",
+                                                    export_format="csv",
+                                                    export_headers="display",
+                                                    style_table={
+                                                        "overflowX": "auto",
+                                                        "overflowY": "auto",
+                                                        "maxHeight": "55vh",
+                                                        "border": "1px solid #d9d9d9",
+                                                    },
+                                                    style_header={
+                                                        "fontWeight": "bold",
+                                                        "backgroundColor": "#f3f4f6",
+                                                        "border": "1px solid #d9d9d9",
+                                                        "whiteSpace": "normal",
+                                                    },
+                                                    style_cell={
+                                                        "padding": "8px",
+                                                        "textAlign": "left",
+                                                        "fontFamily": (
+                                                            "system-ui, -apple-system, "
+                                                            "Segoe UI, Roboto, Arial"
+                                                        ),
+                                                        "fontSize": "13px",
+                                                        "minWidth": "110px",
+                                                        "width": "140px",
+                                                        "maxWidth": "320px",
+                                                        "whiteSpace": "normal",
+                                                        "height": "auto",
+                                                        "border": "1px solid #e5e7eb",
+                                                    },
+                                                    style_data_conditional=[],
+                                                    tooltip_data=[],
+                                                    tooltip_duration=None,
+                                                ),
+                                            ],
+                                        ),
+                                        html.Div(
+                                            id=self.nr_drilldown_container_id,
+                                            style={
+                                                "display": "none",
+                                                "marginTop": "24px",
+                                                "paddingTop": "20px",
+                                                "borderTop": "1px solid #d9d9d9",
+                                            },
+                                            children=[
+                                                html.H3(
+                                                    "Undersøk en negativ NR-kontroll",
+                                                    style={"marginBottom": "16px"},
+                                                ),
+                                                html.Div(
+                                                    style={
+                                                        "display": "grid",
+                                                        "gridTemplateColumns": (
+                                                            "minmax(260px, 2fr) "
+                                                            "minmax(220px, 1fr) "
+                                                            "minmax(160px, 1fr)"
+                                                        ),
+                                                        "gap": "16px",
+                                                        "alignItems": "end",
+                                                        "marginBottom": "16px",
+                                                    },
+                                                    children=[
+                                                        html.Div(
+                                                            children=[
+                                                                html.Label("Rad"),
+                                                                dcc.Dropdown(
+                                                                    id=self.nr_selected_group_id,
+                                                                    className="ssb-dropdown",
+                                                                    options=[],
+                                                                    value=None,
+                                                                    clearable=False,
+                                                                    placeholder="Velg næring",
+                                                                ),
+                                                            ],
+                                                        ),
+                                                        html.Div(
+                                                            children=[
+                                                                html.Label("Kontroll"),
+                                                                dcc.Dropdown(
+                                                                    id=self.nr_variable_id,
+                                                                    className="ssb-dropdown",
+                                                                    options=[],
+                                                                    value=None,
+                                                                    clearable=False,
+                                                                    placeholder="Velg negativ kontroll",
+                                                                ),
+                                                            ],
+                                                        ),
+                                                        html.Div(
+                                                            children=[
+                                                                html.Label("Antall foretak"),
+                                                                dcc.Input(
+                                                                    id=self.nr_top_enterprises_id,
+                                                                    type="number",
+                                                                    value=50,
+                                                                    min=1,
+                                                                    max=500,
+                                                                    step=10,
+                                                                    style={"width": "100%"},
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                ),
+                                                html.Div(
+                                                    id=self.nr_drilldown_message_id,
+                                                    style={
+                                                        "marginBottom": "12px",
+                                                        "fontSize": "13px",
+                                                    },
+                                                ),
+                                                dash_table.DataTable(
+                                                    id=self.nr_drilldown_table_id,
                                                     data=[],
                                                     columns=[],
                                                     page_size=25,
@@ -4896,8 +5038,7 @@ class VLModule:
 
         data["prins_vk_forb"] = (
             data["produktinnsats"]
-            - data["nopost_p4005"]
-            - data["ts_forbruk"]
+            - data["p4005_forb"]
         )
 
         data["oms_salgsint"] = (
@@ -4999,12 +5140,325 @@ class VLModule:
 
         ordered_columns = [
             *group_columns,
-            "negative_check_count",
-            "most_negative_value",
             *displayed_check_columns,
         ]
 
         return aggregated[ordered_columns]
+
+    @staticmethod
+    def _create_nr_drilldown_data(
+        df: pd.DataFrame,
+        year: int,
+        group_level: str,
+        group_value: str,
+        check: str,
+        *,
+        view: str = "Land",
+        fylke: str | None = None,
+        negative_threshold: float = 1000,
+        top_enterprises: int = 50,
+    ) -> pd.DataFrame:
+        """Create enterprise-level drilldown for one negative NR control."""
+
+        required_columns = {
+            "year",
+            "orgnr_foretak",
+            "naring",
+            "nopost_p4005",
+            "ts_forbruk",
+            "nopost_driftskostnader",
+            "nopost_lonnskostnader",
+            "produktinnsats",
+            "omsetning",
+            "ts_salgsint",
+            "nopost_p3000",
+            "nopost_p3100",
+            "nopost_p3200",
+            "nopost_p3300",
+        }
+
+        if view == "Fylke":
+            required_columns.add("fylke")
+
+        missing_columns = required_columns.difference(
+            df.columns
+        )
+
+        if missing_columns:
+            raise ValueError(
+                "Bedriftsdatasettet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        valid_group_levels = {
+            "naring_2",
+            "naring_3",
+            "naring_4",
+            "naring",
+        }
+
+        if group_level not in valid_group_levels:
+            raise ValueError(
+                f"Ugyldig næringsnivå: {group_level}."
+            )
+
+        valid_checks = {
+            "p4005_forb",
+            "dr_vk_lo",
+            "dr_forb_lo",
+            "prins_vk_forb",
+            "oms_salgsint",
+            "nosalg_tssalg",
+            "bearbeidingsverdi",
+        }
+
+        if check not in valid_checks:
+            raise ValueError(
+                f"Ugyldig NR-kontroll: {check}."
+            )
+
+        data = df.copy()
+
+        data["year"] = pd.to_numeric(
+            data["year"],
+            errors="coerce",
+        )
+
+        data = data.loc[
+            data["year"] == int(year)
+        ].copy()
+
+        if data.empty:
+            return pd.DataFrame()
+
+        data["naring"] = data["naring"].astype(
+            "string"
+        )
+
+        if "naring_2" not in data.columns:
+            data["naring_2"] = (
+                data["naring"].str.slice(0, 2)
+            )
+
+        if "naring_3" not in data.columns:
+            data["naring_3"] = (
+                data["naring"].str.slice(0, 4)
+            )
+
+        if "naring_4" not in data.columns:
+            data["naring_4"] = (
+                data["naring"].str.slice(0, 5)
+            )
+
+        data = data.loc[
+            data[group_level].astype(str)
+            == str(group_value)
+        ].copy()
+
+        if view == "Fylke":
+            data["fylke"] = data["fylke"].astype(
+                "string"
+            )
+
+            data = data.loc[
+                data["fylke"].astype(str)
+                == str(fylke)
+            ].copy()
+
+        if data.empty:
+            return pd.DataFrame()
+
+        data["orgnr_foretak"] = (
+            data["orgnr_foretak"]
+            .astype("string")
+            .str.replace(r"\.0$", "", regex=True)
+        )
+
+        if "orgnr_bedrift" in data.columns:
+            data["orgnr_bedrift"] = (
+                data["orgnr_bedrift"]
+                .astype("string")
+                .str.replace(r"\.0$", "", regex=True)
+            )
+
+        numeric_inputs = [
+            "nopost_p4005",
+            "ts_forbruk",
+            "nopost_driftskostnader",
+            "nopost_lonnskostnader",
+            "produktinnsats",
+            "omsetning",
+            "ts_salgsint",
+            "nopost_p3000",
+            "nopost_p3100",
+            "nopost_p3200",
+            "nopost_p3300",
+        ]
+
+        if "bearbeidingsverdi" in data.columns:
+            numeric_inputs.append(
+                "bearbeidingsverdi"
+            )
+
+        for column in numeric_inputs:
+            data[column] = pd.to_numeric(
+                data[column],
+                errors="coerce",
+            )
+
+        # Same residual formulas as the main NR table.
+        data["p4005_forb"] = (
+            data["nopost_p4005"]
+            - data["ts_forbruk"]
+        )
+
+        data["dr_vk_lo"] = (
+            data["nopost_driftskostnader"]
+            - data["nopost_p4005"]
+            - data["nopost_lonnskostnader"]
+        )
+
+        data["dr_forb_lo"] = (
+            data["nopost_driftskostnader"]
+            - data["ts_forbruk"]
+            - data["nopost_lonnskostnader"]
+        )
+
+        data["prins_vk_forb"] = (
+            data["produktinnsats"]
+            - data["p4005_forb"]
+        )
+
+        data["oms_salgsint"] = (
+            data["omsetning"]
+            - data["ts_salgsint"]
+        )
+
+        data["nosalg_tssalg"] = (
+            data["nopost_p3000"]
+            + data["nopost_p3100"]
+            + data["nopost_p3200"]
+            - data["nopost_p3300"]
+            - data["ts_salgsint"]
+        )
+
+        if check == "bearbeidingsverdi":
+            if "bearbeidingsverdi" not in data.columns:
+                raise ValueError(
+                    "Datasettet mangler kolonnen "
+                    "'bearbeidingsverdi'."
+                )
+
+        contributions = (
+            data.groupby(
+                "orgnr_foretak",
+                dropna=False,
+            )[check]
+            .sum(min_count=1)
+            .reset_index()
+        )
+
+        contributions[check] = pd.to_numeric(
+            contributions[check],
+            errors="coerce",
+        )
+
+        if "type" in data.columns:
+            type_mapping = (
+                data.dropna(subset=["type"])
+                .groupby("orgnr_foretak")["type"]
+                .agg(
+                    lambda values: (
+                        values.value_counts().index[0]
+                        if len(values)
+                        else pd.NA
+                    )
+                )
+                .reset_index()
+            )
+
+            contributions = contributions.merge(
+                type_mapping,
+                on="orgnr_foretak",
+                how="left",
+            )
+
+        else:
+            contributions["type"] = pd.NA
+
+        if "orgnr_bedrift" in data.columns:
+            counts = (
+                data.groupby(
+                    "orgnr_foretak"
+                )["orgnr_bedrift"]
+                .nunique()
+                .reset_index(
+                    name="n_bedrifter"
+                )
+            )
+
+        else:
+            counts = (
+                data.groupby(
+                    "orgnr_foretak"
+                )
+                .size()
+                .reset_index(
+                    name="n_rows"
+                )
+            )
+
+        contributions = contributions.merge(
+            counts,
+            on="orgnr_foretak",
+            how="left",
+        )
+
+        threshold = abs(
+            float(negative_threshold)
+        )
+
+        contributions = contributions.loc[
+            contributions[check] < -threshold
+        ].copy()
+
+        if contributions.empty:
+            return pd.DataFrame()
+
+        contributions = (
+            contributions.sort_values(
+                check,
+                ascending=True,
+            )
+            .head(
+                max(
+                    int(top_enterprises),
+                    1,
+                )
+            )
+            .reset_index(drop=True)
+        )
+
+        ordered_columns = [
+            "orgnr_foretak",
+            "type",
+        ]
+
+        if "n_bedrifter" in contributions.columns:
+            ordered_columns.append(
+                "n_bedrifter"
+            )
+
+        elif "n_rows" in contributions.columns:
+            ordered_columns.append(
+                "n_rows"
+            )
+
+        ordered_columns.append(check)
+
+        return contributions[
+            ordered_columns
+        ]
 
     @staticmethod
     def _create_opposite_direction_data(
@@ -8224,6 +8678,577 @@ class VLModule:
                 "paddingTop": "20px",
                 "borderTop": "1px solid #d9d9d9",
             }
+
+        @callback(
+            Output(
+                self.nr_drilldown_container_id,
+                "style",
+            ),
+            Input(
+                self.visualisation_id,
+                "value",
+            ),
+        )
+        def toggle_nr_drilldown(
+            visualisation: str,
+        ) -> dict[str, str]:
+            """Show the drilldown only for NR controls."""
+            if visualisation == "nr-controls":
+                return {
+                    "display": "block",
+                    "marginTop": "24px",
+                    "paddingTop": "20px",
+                    "borderTop": "1px solid #d9d9d9",
+                }
+
+            return {
+                "display": "none",
+                "marginTop": "24px",
+                "paddingTop": "20px",
+                "borderTop": "1px solid #d9d9d9",
+            }
+
+        @callback(
+            Output(
+                self.nr_selected_group_id,
+                "options",
+            ),
+            Output(
+                self.nr_selected_group_id,
+                "value",
+            ),
+            Input(
+                self.visualisation_id,
+                "value",
+            ),
+            Input(
+                self.table_id,
+                "data",
+            ),
+            Input(
+                self.nr_group_level_id,
+                "value",
+            ),
+            Input(
+                self.nr_view_id,
+                "value",
+            ),
+            Input(
+                self.nr_threshold_id,
+                "value",
+            ),
+        )
+        def update_nr_group_options(
+            visualisation: str,
+            table_data: list[dict[str, Any]] | None,
+            group_level: str | None,
+            view: str | None,
+            negative_threshold: float | None,
+        ) -> tuple[
+            list[dict[str, str]],
+            str | None,
+        ]:
+            """Populate NR drilldown rows from the visible table."""
+            if (
+                visualisation != "nr-controls"
+                or not table_data
+            ):
+                return [], None
+
+            selected_group_level = (
+                group_level or "naring"
+            )
+
+            selected_view = view or "Land"
+
+            threshold = abs(
+                float(
+                    negative_threshold
+                    if negative_threshold is not None
+                    else 1000
+                )
+            )
+
+            check_columns = [
+                "p4005_forb",
+                "dr_vk_lo",
+                "dr_forb_lo",
+                "prins_vk_forb",
+                "oms_salgsint",
+                "nosalg_tssalg",
+                "bearbeidingsverdi",
+            ]
+
+            options: list[dict[str, str]] = []
+
+            for row in table_data:
+                group_value = row.get(
+                    selected_group_level
+                )
+
+                if group_value is None:
+                    continue
+
+                negative_checks = [
+                    column
+                    for column in check_columns
+                    if (
+                        row.get(column) is not None
+                        and pd.to_numeric(
+                            row.get(column),
+                            errors="coerce",
+                        )
+                        < -threshold
+                    )
+                ]
+
+                if not negative_checks:
+                    continue
+
+                if selected_view == "Fylke":
+                    fylke_value = row.get("fylke")
+
+                    if fylke_value is None:
+                        continue
+
+                    option_value = (
+                        f"{group_value}||{fylke_value}"
+                    )
+
+                    label = (
+                        f"{group_value} | fylke={fylke_value} "
+                        f"({len(negative_checks)} negative kontroller)"
+                    )
+
+                else:
+                    option_value = str(group_value)
+
+                    label = (
+                        f"{group_value} "
+                        f"({len(negative_checks)} negative kontroller)"
+                    )
+
+                options.append(
+                    {
+                        "label": label,
+                        "value": option_value,
+                    }
+                )
+
+            selected_value = (
+                options[0]["value"]
+                if options
+                else None
+            )
+
+            return options, selected_value
+
+        @callback(
+            Output(
+                self.nr_variable_id,
+                "options",
+            ),
+            Output(
+                self.nr_variable_id,
+                "value",
+            ),
+            Input(
+                self.nr_selected_group_id,
+                "value",
+            ),
+            Input(
+                self.table_id,
+                "data",
+            ),
+            Input(
+                self.nr_group_level_id,
+                "value",
+            ),
+            Input(
+                self.nr_view_id,
+                "value",
+            ),
+            Input(
+                self.nr_threshold_id,
+                "value",
+            ),
+            Input(
+                self.visualisation_id,
+                "value",
+            ),
+        )
+        def update_nr_variable_options(
+            selected_group: str | None,
+            table_data: list[dict[str, Any]] | None,
+            group_level: str | None,
+            view: str | None,
+            negative_threshold: float | None,
+            visualisation: str,
+        ) -> tuple[
+            list[dict[str, str]],
+            str | None,
+        ]:
+            """Show only negative checks for the selected NR row."""
+            if (
+                visualisation != "nr-controls"
+                or not selected_group
+                or not table_data
+            ):
+                return [], None
+
+            selected_group_level = (
+                group_level or "naring"
+            )
+
+            selected_view = view or "Land"
+
+            threshold = abs(
+                float(
+                    negative_threshold
+                    if negative_threshold is not None
+                    else 1000
+                )
+            )
+
+            if selected_view == "Fylke":
+                try:
+                    selected_group_value, selected_fylke = (
+                        str(selected_group).split("||", 1)
+                    )
+                except ValueError:
+                    return [], None
+
+                selected_row = next(
+                    (
+                        row
+                        for row in table_data
+                        if (
+                            str(
+                                row.get(
+                                    selected_group_level
+                                )
+                            )
+                            == selected_group_value
+                            and str(
+                                row.get("fylke")
+                            )
+                            == selected_fylke
+                        )
+                    ),
+                    None,
+                )
+
+            else:
+                selected_row = next(
+                    (
+                        row
+                        for row in table_data
+                        if str(
+                            row.get(
+                                selected_group_level
+                            )
+                        )
+                        == str(selected_group)
+                    ),
+                    None,
+                )
+
+            if selected_row is None:
+                return [], None
+
+            check_columns = [
+                "p4005_forb",
+                "dr_vk_lo",
+                "dr_forb_lo",
+                "prins_vk_forb",
+                "oms_salgsint",
+                "nosalg_tssalg",
+                "bearbeidingsverdi",
+            ]
+
+            negative_checks = [
+                check
+                for check in check_columns
+                if (
+                    selected_row.get(check) is not None
+                    and pd.to_numeric(
+                        selected_row.get(check),
+                        errors="coerce",
+                    )
+                    < -threshold
+                )
+            ]
+
+            options = [
+                {
+                    "label": check,
+                    "value": check,
+                }
+                for check in negative_checks
+            ]
+
+            selected_value = (
+                negative_checks[0]
+                if negative_checks
+                else None
+            )
+
+            return options, selected_value
+
+        @callback(
+            Output(
+                self.nr_drilldown_table_id,
+                "data",
+            ),
+            Output(
+                self.nr_drilldown_table_id,
+                "columns",
+            ),
+            Output(
+                self.nr_drilldown_table_id,
+                "style_data_conditional",
+            ),
+            Output(
+                self.nr_drilldown_table_id,
+                "tooltip_data",
+            ),
+            Output(
+                self.nr_drilldown_message_id,
+                "children",
+            ),
+            Input(
+                self.visualisation_id,
+                "value",
+            ),
+            Input(
+                self.data_version_id,
+                "value",
+            ),
+            Input(
+                self.nr_year_id,
+                "value",
+            ),
+            Input(
+                self.nr_group_level_id,
+                "value",
+            ),
+            Input(
+                self.nr_view_id,
+                "value",
+            ),
+            Input(
+                self.nr_selected_group_id,
+                "value",
+            ),
+            Input(
+                self.nr_variable_id,
+                "value",
+            ),
+            Input(
+                self.nr_threshold_id,
+                "value",
+            ),
+            Input(
+                self.nr_top_enterprises_id,
+                "value",
+            ),
+        )
+        def update_nr_drilldown(
+            visualisation: str,
+            data_version: str,
+            year: int | None,
+            group_level: str | None,
+            view: str | None,
+            selected_group: str | None,
+            check: str | None,
+            negative_threshold: float | None,
+            top_enterprises: int | None,
+        ) -> tuple[
+            list[dict[str, Any]],
+            list[dict[str, Any]],
+            list[dict[str, Any]],
+            list[dict[str, Any]],
+            Any,
+        ]:
+            """Build the enterprise drilldown for a negative NR control."""
+
+            empty_result = (
+                [],
+                [],
+                [],
+                [],
+                "",
+            )
+
+            if visualisation != "nr-controls":
+                return empty_result
+
+            if year is None:
+                return (
+                    [],
+                    [],
+                    [],
+                    [],
+                    "Velg et år.",
+                )
+
+            if not selected_group:
+                return (
+                    [],
+                    [],
+                    [],
+                    [],
+                    "Velg en rad.",
+                )
+
+            if not check:
+                return (
+                    [],
+                    [],
+                    [],
+                    [],
+                    "Velg en negativ kontroll.",
+                )
+
+            selected_view = view or "Land"
+            selected_group_level = group_level or "naring"
+
+            group_value = str(selected_group)
+            fylke_value: str | None = None
+
+            if selected_view == "Fylke":
+                try:
+                    group_value, fylke_value = (
+                        str(selected_group).split("||", 1)
+                    )
+                except ValueError:
+                    return (
+                        [],
+                        [],
+                        [],
+                        [],
+                        "Kunne ikke tolke valgt næring og fylke.",
+                    )
+
+            try:
+                parquet_path = self._parquet_path(
+                    data_version,
+                    dataset="bedrifter_recent_med_nopost",
+                )
+
+                df = self._read_generic_data(
+                    parquet_path
+                )
+
+                threshold = float(
+                    negative_threshold
+                    if negative_threshold is not None
+                    else 1000
+                )
+
+                table_df = self._create_nr_drilldown_data(
+                    df=df,
+                    year=int(year),
+                    group_level=selected_group_level,
+                    group_value=group_value,
+                    check=check,
+                    view=selected_view,
+                    fylke=fylke_value,
+                    negative_threshold=threshold,
+                    top_enterprises=int(
+                        top_enterprises or 50
+                    ),
+                )
+
+                if table_df.empty:
+                    location_text = (
+                        f" og fylke {fylke_value}"
+                        if fylke_value is not None
+                        else ""
+                    )
+
+                    return (
+                        [],
+                        [],
+                        [],
+                        [],
+                        (
+                            "Fant ingen foretak med kontrollverdi "
+                            f"under -{abs(threshold):,.0f} for "
+                            f"{check} i næring {group_value}"
+                            f"{location_text}."
+                        ).replace(",", " "),
+                    )
+
+                (
+                    table_data,
+                    table_columns,
+                    table_styles,
+                    table_tooltips,
+                ) = self._prepare_table_output(
+                    table_df
+                )
+
+                message_parts: list[Any] = [
+                    html.Strong(
+                        f"Næring: {group_value}"
+                    ),
+                ]
+
+                if fylke_value is not None:
+                    message_parts.extend(
+                        [
+                            html.Span(" · "),
+                            html.Strong(
+                                f"Fylke: {fylke_value}"
+                            ),
+                        ]
+                    )
+
+                message_parts.extend(
+                    [
+                        html.Span(" · "),
+                        html.Strong(
+                            f"Kontroll: {check}"
+                        ),
+                        html.Span(" · "),
+                        html.Span(
+                            (
+                                f"Viser {len(table_df)} foretak "
+                                f"med verdi under "
+                                f"-{abs(threshold):,.0f}"
+                            ).replace(",", " ")
+                        ),
+                    ]
+                )
+
+                message = html.Div(
+                    message_parts
+                )
+
+                return (
+                    table_data,
+                    table_columns,
+                    table_styles,
+                    table_tooltips,
+                    message,
+                )
+
+            except Exception as error:
+                return (
+                    [],
+                    [],
+                    [],
+                    [],
+                    html.Div(
+                        (
+                            "Kunne ikke lage NR-drilldown: "
+                            f"{error}"
+                        ),
+                        className="alert alert-danger",
+                    ),
+                )
+
         @callback(
             Output(
                 self.negative_nopost_selected_group_id,
@@ -9514,10 +10539,10 @@ class VLModule:
 
                     parquet_path = self._parquet_path(
                         data_version,
-                        dataset="bedrifter",
+                        dataset="bedrifter_recent_med_nopost",
                     )
 
-                    df = self._read_business_data(
+                    df = self._read_generic_data(
                         parquet_path
                     )
 
@@ -9548,12 +10573,37 @@ class VLModule:
                         )
                     )
 
+                    nr_note = None
+
+                    if (nr_view or "Land") == "Fylke":
+                        nr_note = html.Div(
+                            children=[
+                                html.Strong("Merk: "),
+                                (
+                                    "Negative verdier for bearbeidingsverdi på "
+                                    "fylkesnivå er normalt. Foretakets "
+                                    "bearbeidingsverdi kan fordeles mellom bedrifter "
+                                    "i ulike fylker, og enkelte fylkesbidrag kan "
+                                    "derfor være negative uten at dette innebærer "
+                                    "en feil."
+                                ),
+                            ],
+                            style={
+                                "padding": "12px 16px",
+                                "border": "1px solid #b8d4e8",
+                                "borderRadius": "8px",
+                                "backgroundColor": "#f0f7fc",
+                                "fontSize": "14px",
+                            },
+                        )
+
                     return table_result(
                         table_df,
                         (
                             "Fant ingen negative "
                             "NR-kontroller."
                         ),
+                        summary_card=nr_note,
                     )
 
                 # -----------------------------------------
