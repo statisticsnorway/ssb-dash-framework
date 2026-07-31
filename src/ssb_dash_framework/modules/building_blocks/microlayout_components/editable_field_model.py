@@ -186,8 +186,8 @@ def default_updater(
         refnr, settings, field_path, time_units, *args
     )
     logger.debug(f"Old value from DB: {old_value!r}, type: {type(old_value)}")
-
-    value = value.strip()
+    
+    value = value.strip() if type(value) == str else value
 
     if value == old_value or (value == "" and not old_value):
         raise PreventUpdate

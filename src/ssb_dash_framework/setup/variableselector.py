@@ -313,7 +313,7 @@ class VariableSelector:
                     *error_log,
                 ]
                 # avoid triggering identical alerts
-                if error_log[0].get("message") == error_log[1].get("message"):
+                if len(error_log) >= 2 and error_log[0].get("message") == error_log[1].get("message"):
                     raise PreventUpdate
                 return error_log
             else:

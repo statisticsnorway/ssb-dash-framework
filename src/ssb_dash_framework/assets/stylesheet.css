@@ -992,6 +992,7 @@ ssb-dropdown
   display: inline-flex;
   align-items: center;
   margin-right: 10px;
+  padding: 10px;
 }
 
 .dash-dropdown-options .dash-options-list-option-checkbox {
@@ -1002,6 +1003,7 @@ ssb-dropdown
   margin: 0;
   border: 1px solid #162327;
   border-radius: 2px;
+  border: 2px solid #274247;
   background: #fff;
   cursor: pointer;
   position: relative;
@@ -1009,8 +1011,7 @@ ssb-dropdown
 }
 
 .dash-dropdown-options .dash-options-list-option[aria-selected="true"] .dash-options-list-option-checkbox {
-  background: #00824d;
-  border-color: #00824d;
+  background: #274247;
 }
 
 .dash-dropdown-options .dash-options-list-option[aria-selected="true"] .dash-options-list-option-checkbox::after {
@@ -1025,10 +1026,39 @@ ssb-dropdown
   transform: rotate(45deg);
 }
 
-.dash-dropdown-options .dash-options-list-option:hover .dash-options-list-option-checkbox {
-  border-color: #fff;
+.dash-dropdown-search-container {
+  display: flex;
+  align-items: center;
+  border: 1px solid #162327;
+  background: #fff;
+  padding: 0 12px;
+  margin: 8px;
+  box-sizing: border-box;
 }
 
+.dash-dropdown-search-container:focus-within {
+  border: 1px solid #00824d;
+  outline: 1px solid #00824d;
+}
+
+.dash-dropdown-search-icon {
+  display: none; /* SSB reference has no icon in the search box */
+}
+
+.dash-dropdown-search {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: "Roboto", sans-serif !important;
+  font-size: 16px;
+  padding: 10px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dash-dropdown-search::placeholder {
+  color: #2d6975;
+}
 
 /*
 ssb-input
