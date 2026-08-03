@@ -177,6 +177,18 @@ class VLModule:
             f"vl-change-top-n-{self.module_number}"
         )
 
+        self.change_share_drilldown_container_id = (
+            f"vl-change-share-drilldown-container-{self.module_number}"
+        )
+
+        self.change_share_drilldown_table_id = (
+            f"vl-change-share-drilldown-table-{self.module_number}"
+        )
+
+        self.change_share_copy_box_id = (
+            f"vl-change-share-copy-box-{self.module_number}"
+        )
+
         # NØKU table controls
         self.noku_group_id = (
             f"vl-noku-group-{self.module_number}"
@@ -1695,6 +1707,114 @@ class VLModule:
                                     ],
                                 ),
                                 html.Div(
+                                    id=self.change_share_drilldown_container_id,
+                                    style={
+                                        "display": "none",
+                                        "width": "100%",
+                                        "padding": "16px",
+                                        "marginTop": "8px",
+                                    },
+                                    children=[
+                                        html.H3(
+                                            "Foretak som bidrar til endringen",
+                                            style={
+                                                "marginBottom": "8px",
+                                            },
+                                        ),
+                                        html.P(
+                                            (
+                                                "Tabellen viser de samme foretakene som er "
+                                                "fremhevet i figuren. Andre foretak er ikke "
+                                                "inkludert som en samlet rad i denne tabellen."
+                                            ),
+                                            style={
+                                                "fontSize": "13px",
+                                                "color": "#666",
+                                                "marginBottom": "16px",
+                                            },
+                                        ),
+                                        dash_table.DataTable(
+                                            id=self.change_share_drilldown_table_id,
+                                            data=[],
+                                            columns=[],
+                                            page_size=25,
+                                            sort_action="native",
+                                            filter_action="native",
+                                            page_action="native",
+                                            export_format="csv",
+                                            export_headers="display",
+                                            style_table={
+                                                "overflowX": "auto",
+                                                "overflowY": "auto",
+                                                "maxHeight": "50vh",
+                                                "border": "1px solid #d9d9d9",
+                                            },
+                                            style_header={
+                                                "fontWeight": "bold",
+                                                "backgroundColor": "#f3f4f6",
+                                                "border": "1px solid #d9d9d9",
+                                                "whiteSpace": "normal",
+                                            },
+                                            style_cell={
+                                                "padding": "8px",
+                                                "textAlign": "left",
+                                                "fontFamily": (
+                                                    "system-ui, -apple-system, "
+                                                    "Segoe UI, Roboto, Arial"
+                                                ),
+                                                "fontSize": "13px",
+                                                "minWidth": "110px",
+                                                "width": "140px",
+                                                "maxWidth": "320px",
+                                                "whiteSpace": "normal",
+                                                "height": "auto",
+                                                "border": "1px solid #e5e7eb",
+                                            },
+                                            style_data_conditional=[],
+                                            tooltip_data=[],
+                                            tooltip_duration=None,
+                                        ),
+                                        html.Div(
+                                            style={
+                                                "marginTop": "20px",
+                                                "maxWidth": "720px",
+                                            },
+                                            children=[
+                                                dcc.Textarea(
+                                                    id=self.change_share_copy_box_id,
+                                                    value="",
+                                                    readOnly=True,
+                                                    placeholder="Ingen foretaksnumre å vise.",
+                                                    style={
+                                                        "width": "100%",
+                                                        "height": "150px",
+                                                        "padding": "10px",
+                                                        "fontFamily": "monospace",
+                                                        "fontSize": "13px",
+                                                        "resize": "vertical",
+                                                    },
+                                                ),
+                                                html.P(
+                                                    "Klikk i boksen, bruk Ctrl+A og deretter Ctrl+C.",
+                                                    style={
+                                                        "fontSize": "12px",
+                                                        "color": "#666",
+                                                        "marginTop": "6px",
+                                                    },
+                                                ),
+                                                html.P(
+                                                    "Marker innholdet og bruk Ctrl+C.",
+                                                    style={
+                                                        "fontSize": "12px",
+                                                        "color": "#666",
+                                                        "marginTop": "6px",
+                                                    },
+                                                ),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                                html.Div(
                                     id=self.table_container_id,
                                     style={
                                         "display": "none",
@@ -2620,6 +2740,265 @@ class VLModule:
         return fig
 
     @staticmethod
+    def _create_change_share_data(
+        df: pd.DataFrame,
+        naring: str,
+        variable: str,
+        year: int,
+        top_n: int,
+    ) -> pd.DataFrame:
+        """
+        Create enterprise-level contributions to an annual industry change.
+
+        Business rows are aggregated to enterprise and year level before the
+        current year is compared with the previous year. The returned table
+        contains the same top enterprises that are displayed individually in
+        the change-share pie chart.
+        """
+        previous_year = int(year) - 1
+        current_year = int(year)
+
+        required_columns = {
+            "orgnr_foretak",
+            "naring_4",
+            "year",
+            variable,
+        }
+
+        missing_columns = required_columns.difference(
+            df.columns
+        )
+
+        if missing_columns:
+            raise ValueError(
+                "Bedriftsdatasettet mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        selected_columns = [
+            "orgnr_foretak",
+            "year",
+            variable,
+        ]
+
+        for optional_column in [
+            "navn",
+            "type",
+        ]:
+            if optional_column in df.columns:
+                selected_columns.append(
+                    optional_column
+                )
+
+        filtered = df.loc[
+            (
+                df["naring_4"].astype(str)
+                == str(naring)
+            )
+            & (
+                df["year"].isin(
+                    [
+                        previous_year,
+                        current_year,
+                    ]
+                )
+            ),
+            selected_columns,
+        ].copy()
+
+        if filtered.empty:
+            return pd.DataFrame()
+
+        filtered["orgnr_foretak"] = (
+            filtered["orgnr_foretak"]
+            .astype("string")
+            .str.replace(
+                r"\.0$",
+                "",
+                regex=True,
+            )
+            .str.strip()
+        )
+
+        filtered[variable] = pd.to_numeric(
+            filtered[variable],
+            errors="coerce",
+        ).fillna(0)
+
+        aggregation: dict[str, Any] = {
+            "value": (
+                variable,
+                "sum",
+            ),
+        }
+
+        if "navn" in filtered.columns:
+            aggregation["navn"] = (
+                "navn",
+                lambda values: next(
+                    (
+                        str(value).strip()
+                        for value in reversed(
+                            values.tolist()
+                        )
+                        if (
+                            pd.notna(value)
+                            and str(value).strip()
+                            and str(value).strip().lower()
+                            != "nan"
+                        )
+                    ),
+                    "",
+                ),
+            )
+
+        if "type" in filtered.columns:
+            aggregation["type"] = (
+                "type",
+                lambda values: next(
+                    (
+                        str(value).strip()
+                        for value in reversed(
+                            values.tolist()
+                        )
+                        if (
+                            pd.notna(value)
+                            and str(value).strip()
+                            and str(value).strip().lower()
+                            != "nan"
+                        )
+                    ),
+                    "",
+                ),
+            )
+
+        enterprise_values = (
+            filtered.groupby(
+                [
+                    "orgnr_foretak",
+                    "year",
+                ],
+                as_index=False,
+                dropna=False,
+            )
+            .agg(**aggregation)
+        )
+
+        values_by_year = enterprise_values.pivot(
+            index="orgnr_foretak",
+            columns="year",
+            values="value",
+        ).fillna(0)
+
+        for required_year in [
+            previous_year,
+            current_year,
+        ]:
+            if required_year not in values_by_year.columns:
+                values_by_year[required_year] = 0.0
+
+        changes = (
+            values_by_year.reset_index()
+            .rename(
+                columns={
+                    previous_year: "value_previous",
+                    current_year: "value_current",
+                }
+            )
+        )
+
+        changes["change"] = (
+            changes["value_current"]
+            - changes["value_previous"]
+        )
+
+        changes["absolute_change"] = (
+            changes["change"].abs()
+        )
+
+        metadata_columns = [
+            column
+            for column in [
+                "orgnr_foretak",
+                "navn",
+                "type",
+            ]
+            if column in enterprise_values.columns
+        ]
+
+        if len(metadata_columns) > 1:
+            metadata = (
+                enterprise_values.sort_values(
+                    "year"
+                )
+                .drop_duplicates(
+                    subset="orgnr_foretak",
+                    keep="last",
+                )[metadata_columns]
+            )
+
+            changes = changes.merge(
+                metadata,
+                on="orgnr_foretak",
+                how="left",
+                validate="1:1",
+            )
+
+        if "navn" not in changes.columns:
+            changes["navn"] = ""
+
+        if "type" not in changes.columns:
+            changes["type"] = ""
+
+        changes = changes.loc[
+            changes["absolute_change"] > 0
+        ].copy()
+
+        if changes.empty:
+            return pd.DataFrame()
+
+        total_absolute_change = (
+            changes["absolute_change"].sum()
+        )
+
+        changes["share_pct"] = np.where(
+            total_absolute_change != 0,
+            (
+                changes["absolute_change"]
+                / total_absolute_change
+                * 100
+            ),
+            np.nan,
+        )
+
+        changes = (
+            changes.sort_values(
+                "absolute_change",
+                ascending=False,
+            )
+            .head(
+                max(
+                    int(top_n),
+                    1,
+                )
+            )
+            .reset_index(drop=True)
+        )
+
+        return changes[
+            [
+                "orgnr_foretak",
+                "navn",
+                "type",
+                "value_previous",
+                "value_current",
+                "change",
+                "absolute_change",
+                "share_pct",
+            ]
+        ]
+
+    @staticmethod
     def _create_change_share_figure(
         df: pd.DataFrame,
         naring: str,
@@ -2630,185 +3009,118 @@ class VLModule:
         """
         Show which enterprises contribute most to an annual industry change.
 
-        Business rows are first aggregated to enterprise level. The chart uses
-        absolute changes to calculate slice sizes while retaining signed change
-        values in the hover information. Enterprises outside ``top_n`` are
-        combined into a single ``Andre foretak`` category.
+        The enterprise-level calculations are produced by
+        ``_create_change_share_data`` so the figure and drilldown table use
+        identical values. Enterprises outside ``top_n`` are combined into
+        ``Andre foretak``.
         """
-        previous_year = year - 1
+        previous_year = int(year) - 1
+        current_year = int(year)
 
-        filtered = df.loc[
-            (df["naring_4"].astype(str) == str(naring))
-            & (df["year"].isin([previous_year, year])),
-            [
-                "orgnr_foretak",
-                "navn",
-                "year",
-                variable,
-            ],
-        ].copy()
+        # Request all enterprise contributions first. The top enterprises are
+        # displayed individually, while the remainder is combined in the chart.
+        all_changes = VLModule._create_change_share_data(
+            df=df,
+            naring=naring,
+            variable=variable,
+            year=current_year,
+            top_n=max(len(df), 1),
+        )
 
-        if filtered.empty:
+        if all_changes.empty:
             return VLModule._empty_figure(
                 (
-                    f"Fant ingen data for næring {naring} "
-                    f"i {previous_year} og {year}."
-                )
-            )
-
-        filtered[variable] = pd.to_numeric(
-            filtered[variable],
-            errors="coerce",
-        ).fillna(0)
-
-        # A foretak can contain several establishments, so values are
-        # aggregated to enterprise level before calculating the change.
-        enterprise_values = (
-            filtered.groupby(
-                [
-                    "orgnr_foretak",
-                    "year",
-                ],
-                as_index=False,
-            )
-            .agg(
-                value=(variable, "sum"),
-                navn=(
-                    "navn",
-                    lambda values: next(
-                        (
-                            str(value)
-                            for value in values
-                            if pd.notna(value)
-                            and str(value).strip()
-                        ),
-                        "",
-                    ),
-                ),
-            )
-        )
-
-        values_by_year = enterprise_values.pivot(
-            index="orgnr_foretak",
-            columns="year",
-            values="value",
-        ).fillna(0)
-
-        for required_year in [previous_year, year]:
-            if required_year not in values_by_year.columns:
-                values_by_year[required_year] = 0
-
-        changes = values_by_year.reset_index()
-
-        changes["change"] = (
-            changes[year]
-            - changes[previous_year]
-        )
-
-        names = (
-            enterprise_values.loc[
-                enterprise_values["navn"].astype(str).str.strip() != ""
-            ]
-            .sort_values("year")
-            .drop_duplicates(
-                subset="orgnr_foretak",
-                keep="last",
-            )
-            .set_index("orgnr_foretak")["navn"]
-        )
-
-        changes["navn"] = (
-            changes["orgnr_foretak"]
-            .map(names)
-            .fillna("")
-        )
-
-        changes["absolute_change"] = changes["change"].abs()
-
-        changes = changes.loc[
-            changes["absolute_change"] > 0
-        ].copy()
-
-        if changes.empty:
-            return VLModule._empty_figure(
-                (
-                    f"Det var ingen registrerte endringer i "
+                    f"Fant ingen registrerte endringer i "
                     f"{variable} for næring {naring} fra "
-                    f"{previous_year} til {year}."
+                    f"{previous_year} til {current_year}."
                 )
             )
 
-        changes = changes.sort_values(
-            "absolute_change",
-            ascending=False,
+        selected_top_n = max(
+            int(top_n),
+            1,
         )
 
-        top_n = max(int(top_n), 1)
+        largest = (
+            all_changes.head(selected_top_n)
+            .copy()
+        )
 
-        largest = changes.head(top_n).copy()
-        remaining = changes.iloc[top_n:].copy()
+        remaining = (
+            all_changes.iloc[selected_top_n:]
+            .copy()
+        )
 
         largest["label"] = largest.apply(
             lambda row: (
                 f"{row['navn']} — {row['orgnr_foretak']}"
                 if str(row["navn"]).strip()
+                and str(row["navn"]).strip().lower() != "nan"
                 else str(row["orgnr_foretak"])
             ),
             axis=1,
         )
 
+        plot_data = largest[
+            [
+                "label",
+                "absolute_change",
+                "change",
+            ]
+        ].copy()
+
         if not remaining.empty:
             other_row = pd.DataFrame(
                 {
-                    "label": ["Andre foretak"],
+                    "label": [
+                        "Andre foretak"
+                    ],
                     "absolute_change": [
-                        remaining["absolute_change"].sum()
+                        remaining[
+                            "absolute_change"
+                        ].sum()
                     ],
                     "change": [
-                        remaining["change"].sum()
+                        remaining[
+                            "change"
+                        ].sum()
                     ],
                 }
             )
 
             plot_data = pd.concat(
                 [
-                    largest[
-                        [
-                            "label",
-                            "absolute_change",
-                            "change",
-                        ]
-                    ],
+                    plot_data,
                     other_row,
                 ],
                 ignore_index=True,
             )
-        else:
-            plot_data = largest[
-                [
-                    "label",
-                    "absolute_change",
-                    "change",
-                ]
-            ].copy()
 
-        total_absolute_change = plot_data[
-            "absolute_change"
-        ].sum()
-
-        plot_data["share"] = (
-            plot_data["absolute_change"]
-            / total_absolute_change
-            * 100
+        total_absolute_change = (
+            plot_data["absolute_change"].sum()
         )
 
-        net_change = changes["change"].sum()
+        plot_data["share"] = np.where(
+            total_absolute_change != 0,
+            (
+                plot_data["absolute_change"]
+                / total_absolute_change
+                * 100
+            ),
+            np.nan,
+        )
+
+        net_change = (
+            all_changes["change"].sum()
+        )
 
         figure = go.Figure(
             data=[
                 go.Pie(
                     labels=plot_data["label"],
-                    values=plot_data["absolute_change"],
+                    values=plot_data[
+                        "absolute_change"
+                    ],
                     customdata=plot_data[
                         [
                             "change",
@@ -2831,7 +3143,7 @@ class VLModule:
         figure.update_layout(
             title=(
                 f"{variable} – bidrag til endringen i næring "
-                f"{naring}, {previous_year}–{year}"
+                f"{naring}, {previous_year}–{current_year}"
                 f"<br><sup>Nettoendring: {net_change:,.0f}</sup>"
             ),
             legend_title_text="Foretak",
@@ -2844,12 +3156,11 @@ class VLModule:
         )
 
         return figure
-
-    @staticmethod
     # ========================================================================
     # Analysis and table-data builders
     # ========================================================================
 
+    @staticmethod
     def _create_noku_table_data(
         aggregate_df: pd.DataFrame,
         business_df: pd.DataFrame, 
@@ -7825,6 +8136,7 @@ class VLModule:
             "value_current": "Verdi valgt år",
             "change": "Endring",
             "absolute_change": "Absolutt endring",
+            "share_pct": "Andel av absolutt endring (%)",
             "percentage_change": "Endring (%)",
             "direction": "Retning",
             "breach": "Kontrollbrudd",
@@ -7898,7 +8210,10 @@ class VLModule:
                 column.endswith("_percentage_change")
                 or column.endswith("_contribution_pct")
                 or column.endswith("_gap_pct")
-                or column == "percentage_change"
+                or column in {
+                    "percentage_change",
+                    "share_pct",
+                }
             )
         }
 
@@ -9646,6 +9961,193 @@ class VLModule:
             return visible, hidden
 
 ################################################################################
+
+        @callback(
+            Output(
+                self.change_share_drilldown_container_id,
+                "style",
+            ),
+            Output(
+                self.change_share_drilldown_table_id,
+                "data",
+            ),
+            Output(
+                self.change_share_drilldown_table_id,
+                "columns",
+            ),
+            Output(
+                self.change_share_drilldown_table_id,
+                "style_data_conditional",
+            ),
+            Output(
+                self.change_share_drilldown_table_id,
+                "tooltip_data",
+            ),
+            Output(
+                self.change_share_copy_box_id,
+                "value",
+            ),
+            Input(
+                self.visualisation_id,
+                "value",
+            ),
+            Input(
+                self.data_version_id,
+                "value",
+            ),
+            Input(
+                self.naring_id,
+                "value",
+            ),
+            Input(
+                self.variable_id,
+                "value",
+            ),
+            Input(
+                self.change_year_id,
+                "value",
+            ),
+            Input(
+                self.change_top_n_id,
+                "value",
+            ),
+        )
+        def update_change_share_drilldown(
+            visualisation: str,
+            data_version: str,
+            naring: str | None,
+            variable: str | None,
+            year: int | None,
+            top_n: int | None,
+        ) -> tuple[
+            dict[str, Any],
+            list[dict[str, Any]],
+            list[dict[str, Any]],
+            list[dict[str, Any]],
+            list[dict[str, Any]],
+            str,
+        ]:
+            """Populate the enterprise table shown below the change-share chart."""
+            hidden_style = {
+                "display": "none",
+                "width": "100%",
+                "padding": "16px",
+                "marginTop": "8px",
+            }
+
+            visible_style = {
+                "display": "block",
+                "width": "100%",
+                "padding": "16px",
+                "marginTop": "8px",
+            }
+
+            if visualisation != "change-share":
+                return (
+                    hidden_style,
+                    [],
+                    [],
+                    [],
+                    [],
+                    "",
+                )
+
+            if (
+                not naring
+                or not variable
+                or year is None
+            ):
+                return (
+                    visible_style,
+                    [],
+                    [],
+                    [],
+                    [],
+                    "",
+                )
+
+            try:
+                parquet_path = self._parquet_path(
+                    data_version,
+                    dataset="bedrifter",
+                )
+
+                business_df = self._read_business_data(
+                    parquet_path
+                )
+
+                table_df = self._create_change_share_data(
+                    df=business_df,
+                    naring=str(naring),
+                    variable=str(variable),
+                    year=int(year),
+                    top_n=int(top_n or 10),
+                )
+
+                if table_df.empty:
+                    return (
+                        visible_style,
+                        [],
+                        [],
+                        [],
+                        [],
+                        "",
+                    )
+
+                (
+                    table_data,
+                    table_columns,
+                    table_styles,
+                    table_tooltips,
+                ) = self._prepare_table_output(
+                    table_df
+                )
+
+                copy_text = "\n".join(
+                    table_df["orgnr_foretak"]
+                    .dropna()
+                    .astype(str)
+                    .tolist()
+                )
+
+                return (
+                    visible_style,
+                    table_data,
+                    table_columns,
+                    table_styles,
+                    table_tooltips,
+                    copy_text,
+                )
+
+            except Exception as error:
+                error_df = pd.DataFrame(
+                    {
+                        "message": [
+                            (
+                                "Kunne ikke lage foretaksoversikten: "
+                                f"{error}"
+                            )
+                        ]
+                    }
+                )
+
+                (
+                    table_data,
+                    table_columns,
+                    table_styles,
+                    table_tooltips,
+                ) = self._prepare_table_output(
+                    error_df
+                )
+
+                return (
+                    visible_style,
+                    table_data,
+                    table_columns,
+                    table_styles,
+                    table_tooltips,
+                )
+
         @callback(
             Output(
                 self.negative_nopost_drilldown_container_id,
