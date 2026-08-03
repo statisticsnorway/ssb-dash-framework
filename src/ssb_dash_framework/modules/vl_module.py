@@ -1,4 +1,51 @@
-"""VL visualisation module."""
+"""
+Reusable Dash module for VL analysis and quality control.
+
+The module provides interactive figures and control tables for analysing
+industry-level, enterprise-level and business-level VL data. It supports
+both consolidated and unconsolidated datasets through an application-
+provided file-path resolver.
+
+Module structure
+----------------
+1. Visualisation registry and shared conventions
+2. Component identifiers and layout construction
+3. Dataset resolution and cached readers
+4. Figure builders
+5. Analysis and table-data builders
+6. Shared table formatting
+7. Dash callback registration
+8. Framework tab and window adapters
+
+Available analyses
+------------------
+- single-variable, multi-variable and multi-industry trends
+- enterprise-level trend analysis
+- contribution to year-over-year changes
+- NØKU control tables and contributor drilldowns
+- large business-level changes and rate summaries
+- negative NO-post controls and enterprise drilldowns
+- NR logical controls and enterprise drilldowns
+- checks for related variables moving in opposite directions
+- composite-variable breakdowns by industry, enterprise or business
+- comparisons with MOMS data
+- business entry, exit and industry-code movement
+- method and accounting-ratio analysis
+
+Industry-code convention
+------------------------
+Detailed industry codes include a decimal point. Character lengths are
+therefore 2 for N2 (``47``), 4 for N3 (``47.3``), 5 for N4 (``47.31``)
+and 6 for N5 (``47.310``). Where possible, this module derives levels
+directly from the detailed ``naring`` code instead of relying on legacy
+helper columns whose names do not always correspond to the displayed level.
+
+Design notes
+------------
+The class owns its Dash component IDs, layout, cached readers, transformation
+helpers and callbacks. Physical dataset locations remain application-specific
+and are supplied through ``file_path_resolver``.
+"""
 
 from functools import lru_cache
 from collections.abc import Callable
@@ -21,6 +68,10 @@ from ..utils import WindowImplementation
 from ..utils.module_validation import module_validator
 
 
+# ============================================================================
+# Visualisation registry
+# ============================================================================
+
 VL_VISUALISATIONS = {
     "trend-single": "Trendanalyse – én variabel",
     "trend-multi": "Trendanalyse – flere variabler",
@@ -39,8 +90,29 @@ VL_VISUALISATIONS = {
 }
 
 
+# ============================================================================
+# Core VL module
+# ============================================================================
+
 class VLModule:
-    """Container for VL visualisations."""
+    """
+    Build and manage the interactive VL analysis interface.
+
+    Each instance creates unique Dash component identifiers, constructs the
+    complete layout and registers every callback required by the module.
+
+    Parameters
+    ----------
+    file_path_resolver:
+        Callable receiving ``data_version`` and ``dataset`` and returning the
+        physical path to the requested parquet dataset.
+
+    Notes
+    -----
+    Multiple instances may be mounted in the same Dash application. The
+    monotonically increasing ``module_number`` is included in every component
+    identifier to prevent layout and callback ID collisions.
+    """
 
     _id_number: ClassVar[int] = 0
 
@@ -65,7 +137,7 @@ class VLModule:
             f"vl-visualisation-{self.module_number}"
         )
 
-        # Existing trend controls
+        # Trend-analysis controls
         self.naring_id = (
             f"vl-naring-{self.module_number}"
         )
@@ -421,8 +493,18 @@ class VLModule:
         self.module_callbacks()
         module_validator(self)
 
+    # ========================================================================
+    # Layout construction
+    # ========================================================================
+
     def _create_layout(self) -> html.Div:
-        """Create the main VL layout."""
+        """
+        Build the complete Dash layout for all VL visualisations.
+
+        Controls for every visualisation are created once and placed in
+        dedicated containers. Callbacks toggle those containers instead of
+        rebuilding the layout when the selected visualisation changes.
+        """
         return html.Div(
             className="vl-module",
             style={
@@ -520,7 +602,7 @@ class VLModule:
                                     },
                                     children=[
                                         # -------------------------------------------------
-                                        # Existing trend controls
+                                        # Trend-analysis controls
                                         # -------------------------------------------------
                                         html.Div(
                                             id=self.single_naring_container_id,
@@ -1218,7 +1300,7 @@ class VLModule:
                                                     ],
                                                 ),
 
-                                                # New enterprise-level controls
+                                                # Enterprise-level breakdown controls
                                                 html.Div(
                                                     id=self.breakdown_enterprise_controls_id,
                                                     style={
@@ -1910,12 +1992,21 @@ class VLModule:
         )
             
 
+    # ========================================================================
+    # Dataset resolution and cached readers
+    # ========================================================================
+
     def _parquet_path(
         self,
         data_version: str,
         dataset: str = "agg_naring4",
     ) -> str:
-        """Resolve the physical path for a logical VL dataset."""
+        """
+        Resolve a logical VL dataset to its physical parquet path.
+
+        Keeping path resolution outside the framework allows the same module
+        to run against different storage layouts and environments.
+        """
         return self.file_path_resolver(
             data_version,
             dataset,
@@ -1925,7 +2016,12 @@ class VLModule:
     @staticmethod
     @lru_cache(maxsize=4)
     def _read_data(parquet_path: str) -> pd.DataFrame:
-        """Read and cache the aggregated VL dataset."""
+        """
+        Read, validate and cache the aggregated industry dataset.
+
+        The cache key is the resolved parquet path, so consolidated and
+        unconsolidated files are cached independently.
+        """
         df = pd.read_parquet(parquet_path)
 
         if "year" not in df.columns:
@@ -1947,7 +2043,12 @@ class VLModule:
     def _read_enterprise_data(
         parquet_path: str,
     ) -> pd.DataFrame:
-        """Read and cache the enterprise-level VL dataset."""
+        """
+        Read, validate and cache the enterprise-level VL dataset.
+
+        Organisation numbers are normalised to strings because parquet readers
+        may otherwise expose identifier columns as floating-point values.
+        """
         df = pd.read_parquet(parquet_path)
 
         required_columns = {
@@ -2027,6 +2128,8 @@ class VLModule:
             lookup["navn"].ne("")
         ].copy()
 
+        # Keep one searchable row per enterprise. The most recent available name
+        # is preferred because enterprise names can change over time.
         lookup = (
             lookup.sort_values(
                 "year",
@@ -2039,6 +2142,8 @@ class VLModule:
             .reset_index(drop=True)
         )
 
+        # Precompute a case-folded search field once per parquet path. Dropdown
+        # callbacks can then perform cheap substring matching on every keypress.
         lookup["search_text"] = (
             lookup["navn"].str.casefold()
             + " "
@@ -2057,7 +2162,12 @@ class VLModule:
     def _read_business_data(
         parquet_path: str,
     ) -> pd.DataFrame:
-        """Read and cache the business-level VL dataset."""
+        """
+        Read, validate and cache the business-level VL dataset.
+
+        Enterprise and business organisation numbers are normalised to stable
+        string identifiers before the data is reused by callbacks.
+        """
         df = pd.read_parquet(parquet_path)
 
         required_columns = {
@@ -2104,14 +2214,25 @@ class VLModule:
     def _read_generic_data(
         parquet_path: str,
     ) -> pd.DataFrame:
-        """Read and cache a VL dataset without dataset-specific validation."""
+        """
+        Read and cache a VL dataset without applying a fixed schema contract.
+
+        This reader is used for specialised datasets such as MOMS and movement
+        data, which have schemas that differ from the core aggregate, business
+        and enterprise files.
+        """
         df = pd.read_parquet(parquet_path)
 
         return df.copy()
 
 
     @staticmethod
+    # ========================================================================
+    # Figure builders
+    # ========================================================================
+
     def _empty_figure(message: str) -> go.Figure:
+        """Return a blank Plotly figure containing a user-facing message."""
         fig = go.Figure()
 
         fig.add_annotation(
@@ -2153,8 +2274,9 @@ class VLModule:
 
         values = sub[variable]
 
-        # Same principle as the notebook function:
-        # bounds for year t are centred on the previous year's actual value.
+        # Centre the interval for year t on the observed value from year t - 1.
+        # Lagging annual changes prevents the current observation from affecting
+        # the control limits against which that observation is evaluated.
         annual_change = values.diff()
         lagged_change = annual_change.shift(1)
         rolling_std = lagged_change.rolling(
@@ -2276,7 +2398,12 @@ class VLModule:
         naring: str,
         variables: list[str],
     ) -> go.Figure:
-        """Create a time-series figure containing multiple variables."""
+        """
+        Plot several variables through time for one selected industry.
+
+        Values are displayed on a shared axis and are not rebased or indexed;
+        users should therefore compare variables with compatible magnitudes.
+        """
         selected_columns = ["year", *variables]
 
         sub = df.loc[
@@ -2346,7 +2473,12 @@ class VLModule:
         narings: list[str],
         variable: str,
     ) -> go.Figure:
-        """Create a time-series figure containing multiple industries."""
+        """
+        Plot one variable through time for several selected industries.
+
+        Each industry is rendered as a separate trace using the same variable
+        definition and year axis.
+        """
         fig = go.Figure()
 
         for naring in narings:
@@ -2415,7 +2547,12 @@ class VLModule:
         enterprise: str,
         variable: str,
     ) -> go.Figure:
-        """Create a trend figure for one enterprise."""
+        """
+        Plot one variable through time for a selected enterprise.
+
+        Enterprise rows are expected to have been normalised by
+        ``_read_enterprise_data`` before this function is called.
+        """
         sub = df.loc[
             df["orgnr_foretak"].astype(str) == str(enterprise),
             ["year", variable],
@@ -2485,7 +2622,14 @@ class VLModule:
         year: int,
         top_n: int,
     ) -> go.Figure:
-        """Show which enterprises contribute most to annual change."""
+        """
+        Show which enterprises contribute most to an annual industry change.
+
+        Business rows are first aggregated to enterprise level. The chart uses
+        absolute changes to calculate slice sizes while retaining signed change
+        values in the hover information. Enterprises outside ``top_n`` are
+        combined into a single ``Andre foretak`` category.
+        """
         previous_year = year - 1
 
         filtered = df.loc[
@@ -2697,6 +2841,10 @@ class VLModule:
         return figure
 
     @staticmethod
+    # ========================================================================
+    # Analysis and table-data builders
+    # ========================================================================
+
     def _create_noku_table_data(
         aggregate_df: pd.DataFrame,
         business_df: pd.DataFrame, 
@@ -2706,7 +2854,18 @@ class VLModule:
         standard_deviations: float = 2.5,
         naring_col: str = "naring_4",
     ) -> pd.DataFrame:
-        """Create the underlying control table for NØKU analysis."""
+        """
+        Identify large industry changes and explain their main contributors.
+
+        For each supported variable, the selected year is compared with the
+        previous year and evaluated against historical variation. Changes above
+        ``rate`` are retained. When the historical control interval is breached,
+        the largest contributing business and enterprise are identified from
+        the underlying business dataset.
+
+        The rolling expectation uses lagged changes, ensuring that the change
+        being evaluated does not influence its own reference interval.
+        """
         variables = [
             "omsetning",
             "nopost_driftskostnader",
@@ -2819,6 +2978,8 @@ class VLModule:
                 - analysis["previous_value"]
             )
 
+            # Use only changes known before the evaluated year. This avoids
+            # allowing a potential outlier to widen its own historical limits.
             lagged_change = (
                 analysis.groupby(naring_col)["change"]
                 .shift(1)
@@ -3182,7 +3343,12 @@ class VLModule:
     def _classify_noku_group(
         naring_value: Any,
     ) -> str:
-        """Map an SN2025 industry code to its NØKU group."""
+        """
+        Map an SN2025 industry code to the operational NØKU grouping.
+
+        Specific code-prefix exceptions are evaluated before the broader
+        two-digit mappings. This ordering is significant and must be preserved.
+        """
         if pd.isna(naring_value):
             return "Ikke klassifisert"
 
@@ -3359,7 +3525,17 @@ class VLModule:
         top_n: int = 50,
         drop_missing: bool = True,
     ) -> pd.DataFrame:
-        """Create a table of the largest year-to-year business changes."""
+        """
+        Create a ranked table of the largest year-over-year business changes.
+
+        The selected industry group is derived from the detailed industry code.
+        Current-year business rows are matched to previous-year values using the
+        enterprise and business organisation numbers together as the unit key.
+        One output row is produced per selected variable.
+
+        Parameters such as county, row limit and missing-value handling are
+        applied before the result is formatted for the shared Dash table.
+        """
         required_columns = {
             "year",
             "naring",
@@ -3563,6 +3739,8 @@ class VLModule:
             }
         )
 
+        # Match each current business to one previous-year record. The combined
+        # enterprise/business key identifies the statistical business unit.
         previous_values = (
             previous[
                 key_columns
@@ -4066,6 +4244,8 @@ class VLModule:
                 "reg_type"
             ].astype("string")
 
+        # Compute each ratio as sum(numerator) / sum(denominator). Averaging
+        # unit-level ratios would overweight observations with small denominators.
         def calculate_ratio_row(
             label: str,
             previous_subset: pd.DataFrame,
@@ -4281,7 +4461,14 @@ class VLModule:
         summary: dict[str, Any],
         ratio_df: pd.DataFrame,
     ) -> html.Div:
-        """Create the visible summary card for Store endringer."""
+        """
+        Build the summary card shown above the ``Store endringer`` table.
+
+        The card displays previous and current totals, absolute and percentage
+        change, and—where applicable—ratio analysis by unit and registration
+        type. Ratios are based on aggregated numerators and denominators rather
+        than averages of row-level ratios.
+        """
 
         if not summary:
             return html.Div()
@@ -4706,7 +4893,13 @@ class VLModule:
         hide_nonnegative_columns: bool = True,
         max_rows: int = 300,
     ) -> pd.DataFrame:
-        """Create aggregated negative NO-post controls by industry."""
+        """
+        Aggregate NO-posts by industry and retain materially negative results.
+
+        A row is included when at least one eligible NO-post is below the
+        negative threshold. Columns with no negative observations can be hidden
+        to keep the control table focused.
+        """
         required_columns = {
             "year",
             "naring",
@@ -4878,7 +5071,12 @@ class VLModule:
         negative_threshold: float = 1000,
         top_enterprises: int = 50,
     ) -> pd.DataFrame:
-        """Create enterprise-level drilldown for one negative NO-post."""
+        """
+        Create an enterprise drilldown for one negative NO-post cell.
+
+        Business rows are aggregated to enterprise level, filtered by the same
+        threshold as the summary table and ranked from most negative upward.
+        """
 
         required_columns = {
             "year",
@@ -5078,7 +5276,13 @@ class VLModule:
         hide_nonnegative_columns: bool = True,
         max_rows: int = 300,
     ) -> pd.DataFrame:
-        """Create aggregated NR logical-control residuals."""
+        """
+        Calculate and aggregate NR logical-control residuals by industry.
+
+        Residuals are derived from the underlying accounting variables before
+        aggregation. Only groups with at least one value below the selected
+        negative threshold are returned.
+        """
         required_columns = {
             "year",
             "orgnr_foretak",
@@ -5323,7 +5527,12 @@ class VLModule:
         negative_threshold: float = 1000,
         top_enterprises: int = 50,
     ) -> pd.DataFrame:
-        """Create enterprise-level drilldown for one negative NR control."""
+        """
+        Create an enterprise-level drilldown for one negative NR control.
+
+        The residual is recalculated from source variables using the same formula
+        as the summary table, then aggregated and ranked by enterprise.
+        """
 
         required_columns = {
             "year",
@@ -5638,7 +5847,13 @@ class VLModule:
         absolute_change_threshold: float = 0.0,
         max_rows: int = 300,
     ) -> pd.DataFrame:
-        """Create YoY controls for variables moving in opposite directions."""
+        """
+        Find industry groups where related variables move in opposite directions.
+
+        The function compares production value with intermediate consumption and
+        reported consumption with merchandise cost. Optional thresholds limit the
+        result by business count, percentage gap and absolute change.
+        """
         required_columns = {
             "year",
             "naring",
@@ -6048,7 +6263,14 @@ class VLModule:
         orgnr_foretak: str | None = None,
         orgnr_bedrift: str | None = None,
     ) -> pd.DataFrame:
-        """Create a year-over-year breakdown of a composed variable."""
+        """
+        Break a composite VL variable into its accounting components.
+
+        The analysis can be performed for an industry group, an enterprise or an
+        individual business. Positive and negative components are aggregated for
+        the selected and previous years, and the final row reconstructs the
+        chosen composite variable.
+        """
         if "year" not in df.columns:
             raise ValueError(
                 "Datasettet mangler kolonnen 'year'."
@@ -6544,7 +6766,13 @@ class VLModule:
         current_year: int = 2024,
         selected_naringer: list[str] | None = None,
     ) -> pd.DataFrame:
-        """Create the year-over-year comparison against MOMS data."""
+        """
+        Create a year-over-year comparison between VL and MOMS measures.
+
+        Results are restricted to industry codes stored at the exact selected
+        level, then reshaped to one row per industry. Entry and exit measures for
+        the current year are joined to the stock and value comparisons.
+        """
         required_columns = {
             "aar",
             "naring",
@@ -6845,7 +7073,18 @@ class VLModule:
         exact_match: bool = False,
         top_n: int = 100,
     ) -> pd.DataFrame:
-        """Create access and exit drilldown data."""
+        """
+        Create business-level entry, exit and industry-movement data.
+
+        A business is treated as movement when it appears, disappears or changes
+        industry group between the previous and current records. Industry levels
+        are derived directly from the detailed codes using the decimal-aware
+        character lengths documented at module level.
+
+        ``tilgang`` ranks and filters on the current group and value, while
+        ``avgang`` uses the previous group and value. The optional code filter can
+        use either exact matching or prefix matching.
+        """
         required_columns = {
             "orgnr_bedrift",
             "orgnr_foretak_prev",
@@ -6924,6 +7163,8 @@ class VLModule:
                 data[column],
                 errors="coerce",
             )
+        # The decimal point is part of the stored code, so displayed digit levels
+        # do not equal Python string lengths for N3, N4 and N5.
         slice_lengths = {
             "n2": 2,
             "n3": 4,
@@ -7052,6 +7293,8 @@ class VLModule:
 
         data["status"] = ""
 
+        # Movement masks were calculated before direction and code filtering.
+        # Reindex them to the surviving rows before assigning status labels.
         data.loc[
             changed_code.reindex(
                 data.index,
@@ -7120,7 +7363,13 @@ class VLModule:
         *,
         reg_types: list[str] | None = None,
     ) -> go.Figure:
-        """Create method-analysis ratios through time."""
+        """
+        Create time-series plots for selected accounting ratios.
+
+        Ratios are calculated from aggregated numerators and denominators rather
+        than by averaging row-level ratios. Results are separated by unit type
+        and, when requested, registration type.
+        """
         required_columns = {
             "year",
             "type",
@@ -7485,6 +7734,10 @@ class VLModule:
         return figure
 
     @staticmethod
+    # ========================================================================
+    # Shared table formatting
+    # ========================================================================
+
     def _prepare_table_output(
         df: pd.DataFrame,
     ) -> tuple[
@@ -7493,7 +7746,13 @@ class VLModule:
         list[dict[str, Any]],
         list[dict[str, Any]],
     ]:
-        """Convert a DataFrame into Dash DataTable properties."""
+        """
+        Convert an analysis DataFrame into shared Dash DataTable properties.
+
+        The function applies Norwegian display labels, numeric formatting,
+        conditional styling, alignment and tooltips while preserving the source
+        column IDs used by callbacks and filters.
+        """
         if df.empty:
             return (
                 [],
@@ -7826,8 +8085,18 @@ class VLModule:
             tooltip_data,
         )
 
+    # ========================================================================
+    # Dash callback registration
+    # ========================================================================
+
     def module_callbacks(self) -> None:
-        """Register VL callbacks."""
+        """
+        Register all callbacks used by the VL module.
+
+        Callback groups populate selectors, coordinate dependent controls,
+        manage drilldowns and route the selected visualisation to the relevant
+        figure or table builder. Registration happens once during construction.
+        """
 
         @callback(
             Output(self.naring_id, "options"),
@@ -11830,9 +12099,13 @@ class VLModule:
                         )
                     )
                 )
-############################################################################
+
+# ============================================================================
+# Framework adapters
+# ============================================================================
+
 class VLModuleTab(TabImplementation, VLModule):
-    """VL module displayed as an application tab."""
+    """Expose ``VLModule`` through the framework's tab implementation."""
 
     def __init__(
         self,
@@ -11846,7 +12119,7 @@ class VLModuleTab(TabImplementation, VLModule):
 
 
 class VLModuleWindow(WindowImplementation, VLModule):
-    """VL module displayed as a sidebar window."""
+    """Expose ``VLModule`` through the framework's sidebar window implementation."""
 
     def __init__(
         self,
