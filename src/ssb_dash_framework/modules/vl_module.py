@@ -55,6 +55,7 @@ from typing import ClassVar
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from klass import KlassClassification
 from dash import Input
 from dash import Output
 from dash import callback
@@ -3344,14 +3345,93 @@ class VLModule:
         return result[output_columns]
 
     @staticmethod
+    @lru_cache(maxsize=8)
+    def _get_nace_section_mapping(
+        year: int,
+    ) -> dict[str, str]:
+        """
+        Return the official two-digit industry-code-to-section mapping.
+
+        Klass classification 6 is the Standard Industrial Classification.
+        The lookup is date-specific, allowing Klass to resolve the
+        classification version that applies to the selected year.
+
+        Results are cached by year so callbacks do not repeatedly request and
+        transform the same Klass data.
+        """
+        klass_data = KlassClassification(6).get_codes(
+            f"{int(year)}-12-31"
+        ).data
+
+        required_columns = {
+            "level",
+            "code",
+            "parentCode",
+        }
+
+        missing_columns = required_columns.difference(
+            klass_data.columns
+        )
+
+        if missing_columns:
+            raise ValueError(
+                "Klass-data mangler kolonnene "
+                f"{sorted(missing_columns)}."
+            )
+
+        level_two = klass_data.loc[
+            klass_data["level"].astype(str) == "2",
+            [
+                "code",
+                "parentCode",
+            ],
+        ].copy()
+
+        level_two["code"] = (
+            level_two["code"]
+            .astype(str)
+            .str.strip()
+            .str.zfill(2)
+        )
+
+        level_two["parentCode"] = (
+            level_two["parentCode"]
+            .astype(str)
+            .str.strip()
+        )
+
+        level_two = level_two.loc[
+            level_two["code"].ne("")
+            & level_two["parentCode"].ne("")
+        ].drop_duplicates(
+            subset="code",
+            keep="last",
+        )
+
+        return dict(
+            zip(
+                level_two["code"],
+                level_two["parentCode"],
+                strict=True,
+            )
+        )
+
+    @staticmethod
     def _classify_noku_group(
         naring_value: Any,
+        year: int,
     ) -> str:
         """
-        Map an SN2025 industry code to the operational NØKU grouping.
+        Map an industry code to the operational NØKU grouping.
+
+        Klass supplies the official relationship between two-digit industry
+        codes and classification sections. NØKU-specific exceptions are kept
+        locally because the operational groups do not correspond exactly to
+        the official sections.
 
         Specific code-prefix exceptions are evaluated before the broader
-        two-digit mappings. This ordering is significant and must be preserved.
+        Klass-based section mapping. This ordering is significant and must be
+        preserved.
         """
         if pd.isna(naring_value):
             return "Ikke klassifisert"
@@ -3361,8 +3441,11 @@ class VLModule:
         if not code or code.lower() == "nan":
             return "Ikke klassifisert"
 
-        # Specific rules must be checked before the general
-        # two-digit rules.
+        # -------------------------------------------------------------
+        # NØKU-specific exceptions
+        # -------------------------------------------------------------
+        # These rules do not follow directly from the official section
+        # hierarchy and must therefore remain explicit.
         if code.startswith("09.1"):
             return "Varehandel"
 
@@ -3383,9 +3466,8 @@ class VLModule:
         ):
             return "Industri"
 
-        # The NØKU table is currently aggregated at the
-        # three-digit level, so the detailed 50-codes above
-        # normally appear as 50.1 or 50.2.
+        # The NØKU table is currently aggregated at the three-digit level,
+        # so the detailed 50-codes above normally appear as 50.1 or 50.2.
         if code.startswith(
             (
                 "50.1",
@@ -3394,25 +3476,23 @@ class VLModule:
         ):
             return "Industri"
 
-        # All 52-codes are assigned to Industri.
+        # Other 50-codes were not included in the previous NØKU mapping.
+        if code.startswith("50"):
+            return "Ikke klassifisert"
+
+        # Code 09 is split by the detailed exceptions above. Any remaining
+        # 09-code stays unclassified, matching the previous implementation.
+        if code.startswith("09"):
+            return "Ikke klassifisert"
+
+        # Explicit operational assignments that differ from a simple
+        # section-to-group relationship.
         if code.startswith("52"):
             return "Industri"
-
-        # Explicit additional rules.
-        if code.startswith("10"):
-            return "Industri"
-
-        if code.startswith("46"):
-            return "Varehandel"
-
-        if code.startswith("47"):
-            return "Varehandel"
 
         if code.startswith("53"):
             return "Industri"
 
-        # At the current aggregation level, 88.911 cannot be
-        # separated from the rest of 88.9.
         if code.startswith(
             (
                 "86",
@@ -3424,98 +3504,46 @@ class VLModule:
 
         two_digit_code = code[:2]
 
-        industry_codes = {
-            "05",
-            "07",
-            "08",
-            "11",
-            "12",
-            "13",
-            "14",
-            "15",
-            "16",
-            "17",
-            "18",
-            "19",
-            "20",
-            "21",
-            "22",
-            "23",
-            "24",
-            "25",
-            "26",
-            "27",
-            "28",
-            "29",
-            "30",
-            "31",
-            "32",
-            "33",
-            "35",
-            "49",
-            "51",
+        section_mapping = (
+            VLModule._get_nace_section_mapping(
+                int(year)
+            )
+        )
+
+        section = section_mapping.get(
+            two_digit_code
+        )
+
+        # The broad section mapping reproduces the previous NØKU grouping.
+        # Exceptions that split a section are handled above.
+        section_to_noku_group = {
+            "B": "Industri",
+            "C": "Industri",
+            "D": "Industri",
+            "E": "Tjenesteyting",
+            "F": "Bygg",
+            "G": "Varehandel",
+            "H": "Industri",
+            "I": "Bygg",
+            "J": "Tjenesteyting",
+            "L": "Bygg",
+            "M": "Tjenesteyting",
+            "N": "Tjenesteyting",
+            "P": "Bygg",
+            "Q": "Varehandel",
+            "R": "Tjenesteyting",
+            "S": "Tjenesteyting",
         }
 
-        retail_codes = {
-            "06",
-            "45",
-        }
-
-        construction_codes = {
-            "41",
-            "42",
-            "43",
-            "55",
-            "56",
-            "68",
-            "85",
-        }
-
-        service_codes = {
-            "36",
-            "37",
-            "38",
-            "39",
-            "58",
-            "59",
-            "60",
-            "61",
-            "62",
-            "63",
-            "69",
-            "70",
-            "71",
-            "72",
-            "73",
-            "74",
-            "75",
-            "77",
-            "78",
-            "79",
-            "80",
-            "81",
-            "82",
-            "90",
-            "91",
-            "92",
-            "93",
-            "95",
-            "96",
-        }
-
-        if two_digit_code in industry_codes:
-            return "Industri"
-
-        if two_digit_code in retail_codes:
+        # Section B contains code 06, which belongs to Varehandel in the
+        # operational NØKU grouping rather than Industri.
+        if two_digit_code == "06":
             return "Varehandel"
 
-        if two_digit_code in construction_codes:
-            return "Bygg"
-
-        if two_digit_code in service_codes:
-            return "Tjenesteyting"
-
-        return "Ikke klassifisert"
+        return section_to_noku_group.get(
+            section,
+            "Ikke klassifisert",
+        )
 
     @staticmethod
     def _create_large_changes_data(
@@ -11331,7 +11359,12 @@ class VLModule:
                             1,
                             "gruppe",
                             table_df["naring_4"].map(
-                                self._classify_noku_group
+                                lambda naring_value: (
+                                    self._classify_noku_group(
+                                        naring_value,
+                                        int(noku_year),
+                                    )
+                                )
                             ),
                         )
 
