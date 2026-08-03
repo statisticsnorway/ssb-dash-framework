@@ -72,10 +72,14 @@ from ..utils.module_validation import module_validator
 # Visualisation registry
 # ============================================================================
 
+TREND_SINGLE_LABEL = "Trendanalyse – én variabel"
+TREND_MULTI_LABEL = "Trendanalyse – flere variabler"
+TREND_INDUSTRIES_LABEL = "Trendanalyse – flere næringer"
+
 VL_VISUALISATIONS = {
-    "trend-single": "Trendanalyse – én variabel",
-    "trend-multi": "Trendanalyse – flere variabler",
-    "trend-industries": "Trendanalyse – flere næringer",
+    "trend-single": TREND_SINGLE_LABEL,
+    "trend-multi": TREND_MULTI_LABEL,
+    "trend-industries": TREND_INDUSTRIES_LABEL,
     "trend-enterprise": "Trendanalyse – enkeltforetak",
     "change-share": "Prosentandeler av endringene",
     "noku-table": "NØKU-tabell",
@@ -578,7 +582,7 @@ class VLModule:
                                 html.H2(
                                     id=self.graph_title_id,
                                     children=(
-                                        "Trendanalyse – én variabel"
+                                        TREND_SINGLE_LABEL,
                                     ),
                                 ),
                                 html.P(
@@ -9378,21 +9382,21 @@ class VLModule:
 
             visualisation_text = {
                 "trend-single": (
-                    "Trendanalyse – én variabel",
+                    TREND_SINGLE_LABEL,
                     (
                         "Viser utviklingen over tid sammen med forventet "
                         "variasjonsområde basert på historiske endringer."
                     ),
                 ),
                 "trend-multi": (
-                    "Trendanalyse – flere variabler",
+                    TREND_MULTI_LABEL,
                     (
                         "Sammenligner utviklingen i flere valgte variabler "
                         "for samme næring over tid."
                     ),
                 ),
                 "trend-industries": (
-                    "Trendanalyse – flere næringer",
+                    TREND_INDUSTRIES_LABEL,
                     (
                         "Sammenligner utviklingen i én valgt variabel "
                         "for flere næringer over tid."
