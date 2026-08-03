@@ -292,6 +292,11 @@ class VLModule:
         self.moms_group_level_id = (
             f"vl-moms-group-level-{self.module_number}"
         )
+
+        self.moms_naring_filter_id = (
+            f"vl-moms-naring-filter-{self.module_number}"
+        )
+
         self.moms_previous_year_id = (
             f"vl-moms-previous-year-{self.module_number}"
         )
@@ -1341,6 +1346,22 @@ class VLModule:
                                                     ],
                                                     value="n2",
                                                     clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Næringer",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.moms_naring_filter_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    value=[],
+                                                    multi=True,
+                                                    clearable=True,
+                                                    searchable=True,
+                                                    placeholder=(
+                                                        "Søk, for eksempel 47, og velg næringer"
+                                                    ),
                                                 ),
                                                 html.Label(
                                                     "Tidligere år",
@@ -6521,6 +6542,7 @@ class VLModule:
         *,
         previous_year: int = 2023,
         current_year: int = 2024,
+        selected_naringer: list[str] | None = None,
     ) -> pd.DataFrame:
         """Create the year-over-year comparison against MOMS data."""
         required_columns = {
@@ -6595,6 +6617,21 @@ class VLModule:
             return pd.DataFrame()
 
         data["group_value"] = data["naring"]
+
+        if selected_naringer:
+            selected_values = {
+                str(value)
+                for value in selected_naringer
+            }
+
+            data = data.loc[
+                data["group_value"]
+                .astype(str)
+                .isin(selected_values)
+            ].copy()
+
+            if data.empty:
+                return pd.DataFrame()
 
         metrics = [
             "antall",
@@ -6673,22 +6710,39 @@ class VLModule:
                 f"{metric}_{int(current_year)}"
             )
 
-            wide[f"{metric}_change"] = (
-                wide[current_column]
-                - wide[previous_column]
+            previous_values = pd.to_numeric(
+                wide[previous_column],
+                errors="coerce",
             )
 
-            wide[f"{metric}_percentage_change"] = (
-                np.where(
-                    wide[previous_column].notna()
-                    & wide[previous_column].ne(0),
-                    (
-                        wide[f"{metric}_change"]
-                        / wide[previous_column]
-                        * 100
-                    ),
-                    np.nan,
+            current_values = pd.to_numeric(
+                wide[current_column],
+                errors="coerce",
+            )
+
+            change_column = f"{metric}_change"
+            percentage_column = (
+                f"{metric}_percentage_change"
+            )
+
+            wide[previous_column] = previous_values
+            wide[current_column] = current_values
+
+            wide[change_column] = (
+                current_values
+                - previous_values
+            )
+
+            wide[percentage_column] = np.where(
+                previous_values.isna()
+                | previous_values.eq(0),
+                np.nan,
+                (
+                    current_values
+                    - previous_values
                 )
+                / previous_values
+                * 100.0,
             )
 
         movement = (
@@ -6747,27 +6801,28 @@ class VLModule:
 
         ordered_columns = [
             "naring",
+
             f"antall_{int(previous_year)}",
             f"antall_{int(current_year)}",
             "tilganger",
             "avganger",
+
             f"sysselsetting_syss_{int(previous_year)}",
             f"sysselsetting_syss_{int(current_year)}",
             "tilganger_sysselsetting_syss",
             "avganger_sysselsetting_syss",
+
             f"omsetning_{int(previous_year)}",
             f"omsetning_{int(current_year)}",
             "tilganger_omsetning",
             "avganger_omsetning",
+
             f"moms_{int(previous_year)}",
             f"moms_{int(current_year)}",
-            "antall_change",
+
             "antall_percentage_change",
-            "sysselsetting_syss_change",
             "sysselsetting_syss_percentage_change",
-            "omsetning_change",
             "omsetning_percentage_change",
-            "moms_change",
             "moms_percentage_change",
         ]
 
@@ -6850,16 +6905,7 @@ class VLModule:
             "orgnr_foretak_curr",
             "naring_prev",
             "naring_curr",
-            "naring_2_prev",
-            "naring_2_curr",
-            "naring_3_prev",
-            "naring_3_curr",
-            "naring_4_prev",
-            "naring_4_curr",
-            "naring_5_prev",
-            "naring_5_curr",
         ]
-
         for column in string_columns:
             if column in data.columns:
                 data[column] = data[column].astype(
@@ -6878,45 +6924,41 @@ class VLModule:
                 data[column],
                 errors="coerce",
             )
-
-        level_columns = {
-            "n2": (
-                "naring_2_prev",
-                "naring_2_curr",
-            ),
-            "n3": (
-                "naring_3_prev",
-                "naring_3_curr",
-            ),
-            "n4": (
-                "naring_4_prev",
-                "naring_4_curr",
-            ),
-            "n5": (
-                "naring_prev",
-                "naring_curr",
-            ),
+        slice_lengths = {
+            "n2": 2,
+            "n3": 4,
+            "n4": 5,
+            "n5": 6,
         }
 
-        previous_group_column, current_group_column = (
-            level_columns[group_level]
+        slice_length = slice_lengths[group_level]
+
+        data["naring_prev"] = (
+            data["naring_prev"]
+            .astype("string")
+            .str.strip()
         )
 
-        for column in [
-            previous_group_column,
-            current_group_column,
-        ]:
-            if column not in data.columns:
-                raise ValueError(
-                    f"Bevegelsesdatasettet mangler kolonnen "
-                    f"'{column}'."
-                )
+        data["naring_curr"] = (
+            data["naring_curr"]
+            .astype("string")
+            .str.strip()
+        )
 
         data["group_previous"] = (
-            data[previous_group_column]
+            data["naring_prev"]
+            .str.slice(
+                0,
+                slice_length,
+            )
         )
+
         data["group_current"] = (
-            data[current_group_column]
+            data["naring_curr"]
+            .str.slice(
+                0,
+                slice_length,
+            )
         )
 
         previous_exists = data[
@@ -8384,26 +8426,6 @@ class VLModule:
 
         @callback(
             Output(
-                self.large_changes_group_value_id,
-                "options",
-            ),
-            Output(
-                self.large_changes_group_value_id,
-                "value",
-            ),
-            Input(
-                self.large_changes_group_level_id,
-                "value",
-            ),
-            Input(
-                self.data_version_id,
-                "value",
-            ),
-        )
-
-
-        @callback(
-            Output(
                 self.breakdown_enterprise_search_id,
                 "options",
             ),
@@ -8630,6 +8652,25 @@ class VLModule:
 
             return str(selected_enterprise)
 
+        @callback(
+            Output(
+                self.large_changes_group_value_id,
+                "options",
+            ),
+            Output(
+                self.large_changes_group_value_id,
+                "value",
+            ),
+            Input(
+                self.large_changes_group_level_id,
+                "value",
+            ),
+            Input(
+                self.data_version_id,
+                "value",
+            ),
+        )
+
         def update_large_changes_group_values(
             group_level: str,
             data_version: str,
@@ -8831,6 +8872,86 @@ class VLModule:
 
             except Exception:
                 return [], None
+
+
+        @callback(
+            Output(
+                self.moms_naring_filter_id,
+                "options",
+            ),
+            Output(
+                self.moms_naring_filter_id,
+                "value",
+            ),
+            Input(
+                self.moms_group_level_id,
+                "value",
+            ),
+            Input(
+                self.data_version_id,
+                "value",
+            ),
+        )
+        def update_moms_naring_options(
+            group_level: str,
+            data_version: str,
+        ) -> tuple[
+            list[dict[str, str]],
+            list[str],
+        ]:
+            """Populate available MOMS industries at the selected level."""
+            try:
+                parquet_path = self._parquet_path(
+                    data_version,
+                    dataset="moms",
+                )
+
+                df = self._read_generic_data(
+                    parquet_path
+                )
+
+                if "naring" not in df.columns:
+                    return [], []
+
+                valid_lengths = {
+                    "n2": 2,
+                    "n3": 4,
+                    "n4": 5,
+                    "n5": 6,
+                }
+
+                if group_level not in valid_lengths:
+                    return [], []
+
+                exact_length = valid_lengths[group_level]
+
+                naring_values = sorted(
+                    df.loc[
+                        df["naring"]
+                        .astype("string")
+                        .str.len()
+                        .eq(exact_length),
+                        "naring",
+                    ]
+                    .dropna()
+                    .astype(str)
+                    .unique()
+                    .tolist()
+                )
+
+                options = [
+                    {
+                        "label": value,
+                        "value": value,
+                    }
+                    for value in naring_values
+                ]
+
+                # Empty selection means show all.
+                return options, []
+
+            except Exception:
+                return [], []
 
 
         @callback(
@@ -10389,6 +10510,9 @@ class VLModule:
             ),
 
             Input(self.moms_group_level_id, "value"),
+
+            Input(self.moms_naring_filter_id, "value"),
+
             Input(
                 self.moms_previous_year_id,
                 "value",
@@ -10499,6 +10623,7 @@ class VLModule:
             breakdown_variable: str | None,
 
             moms_group_level: str | None,
+            moms_naring_filter: list[str] | None,
             moms_previous_year: int | None,
             moms_current_year: int | None,
 
@@ -10564,6 +10689,7 @@ class VLModule:
                 table_df: pd.DataFrame,
                 empty_message: str,
                 summary_card: Any | None = None,
+                extra_styles: list[dict[str, Any]] | None = None,
             ) -> tuple[Any, ...]:
                 if table_df.empty:
                     figure = self._empty_figure(
@@ -10580,6 +10706,9 @@ class VLModule:
                 ) = self._prepare_table_output(
                     table_df
                 )
+
+                if extra_styles:
+                    table_styles.extend(extra_styles)
 
                 if summary_card is None:
                     summary_children: Any = []
@@ -11515,6 +11644,51 @@ class VLModule:
                         current_year=int(
                             moms_current_year
                         ),
+                        selected_naringer=(
+                            moms_naring_filter or None
+                        ),
+                    )
+
+                    yellow_columns = [
+                        f"omsetning_{int(moms_previous_year)}",
+                        f"omsetning_{int(moms_current_year)}",
+                        "omsetning_percentage_change",
+                        f"moms_{int(moms_previous_year)}",
+                        f"moms_{int(moms_current_year)}",
+                        "moms_percentage_change",
+                    ]
+
+                    blue_columns = [
+                        "tilganger",
+                        "avganger",
+                        "tilganger_omsetning",
+                        "avganger_omsetning",
+                        "tilganger_sysselsetting_syss",
+                        "avganger_sysselsetting_syss",
+                    ]
+
+                    moms_styles = [
+                        {
+                            "if": {
+                                "column_id": column,
+                            },
+                            "backgroundColor": "#fff6d6",
+                        }
+                        for column in yellow_columns
+                        if column in table_df.columns
+                    ]
+
+                    moms_styles.extend(
+                        [
+                            {
+                                "if": {
+                                    "column_id": column,
+                                },
+                                "backgroundColor": "#e8f1ff",
+                            }
+                            for column in blue_columns
+                            if column in table_df.columns
+                        ]
                     )
 
                     return table_result(
@@ -11523,6 +11697,7 @@ class VLModule:
                             "Fant ingen MOMS-data for "
                             "de valgte årene."
                         ),
+                        extra_styles=moms_styles,
                     )
 
                 # -----------------------------------------
