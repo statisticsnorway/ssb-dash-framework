@@ -155,6 +155,7 @@ class AltinnDataCapture(ABC):
                                         dcc.Dropdown(
                                             id="datafangst-dd1",
                                             className="dbc",
+                                            searchable=False,
                                         )
                                     ),
                                 ]

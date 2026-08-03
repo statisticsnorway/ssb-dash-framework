@@ -1,6 +1,7 @@
 import logging
 
 import dash_bootstrap_components as dbc
+from dash.development.base_component import Component
 from dash import html
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ def get_config_path(module_name: str, ssb_template: bool = True):
 
 
 def sidebar_button(
-    icon: str,
+    icon: str | Component,
     text: str,
     component_id: str,
     additional_styling: dict[str, str] | None = None,
@@ -21,7 +22,7 @@ def sidebar_button(
     """Generate a sidebar button with an icon and label.
 
     Args:
-        icon: The icon displayed at the top of the button.
+        icon: The icon displayed at the top of the button. Can be a string (e.g. an emoji) or a Dash component (e.g. DashIconify).
         text: The label text displayed below the icon.
         component_id: The ID assigned to the button component.
         additional_styling: Additional styling applied to the button. Defaults to an empty dictionary.

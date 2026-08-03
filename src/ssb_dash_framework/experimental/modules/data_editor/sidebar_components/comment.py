@@ -56,6 +56,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                             dcc.Dropdown(
                                 id=f"{self.module_name}-{self.module_number}-dropdown-refnr",
                                 className="ssb-dropdown",
+                                searchable=False,
                                 
                             )
                         ),
@@ -135,7 +136,6 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                     .limit(1)
                     .to_pandas()["kommentar"]
                 )
-                print(f"comment: {comment}")
             if len(comment) == 0:
                 return ""
 

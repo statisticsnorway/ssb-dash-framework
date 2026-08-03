@@ -6,7 +6,7 @@ from dash import Input
 from dash import State
 from dash import html
 
-from .microlayout_components.editable_field_model import CallbackSettings
+from .microlayout_components.editable_field_model import CallbackSettings, batch_editable_fields
 from .microlayout_components.models import Layout
 
 logger = logging.getLogger(__name__)
@@ -84,12 +84,15 @@ class MicroLayoutAIO(html.Div):
             table_selector_id=table_selector_id,
             form_selector_id=form_selector_id,
         )
-        html_layout = model.build(
-            settings=common_settings,
-            inputs=inputs,
-            states=states,
-            getter_args=extra_args,
-        )
+        
+        with batch_editable_fields():
+            html_layout = model.build(
+                settings=common_settings,
+                inputs=inputs,
+                states=states,
+                getter_args=extra_args,
+            )
+
         styles = {}
 
         if horizontal:

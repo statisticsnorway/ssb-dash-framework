@@ -8,6 +8,7 @@ from dash import Output
 from dash import State
 from dash import callback
 from dash import html
+from dash.exceptions import PreventUpdate
 
 from ..utils.alert_handler import create_alert
 
@@ -311,6 +312,9 @@ class VariableSelector:
                     ),
                     *error_log,
                 ]
+                # avoid triggering identical alerts
+                if len(error_log) >= 2 and error_log[0].get("message") == error_log[1].get("message"):
+                    raise PreventUpdate
                 return error_log
             else:
                 error_log = [

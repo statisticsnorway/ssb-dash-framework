@@ -361,9 +361,11 @@ class DataEditorTableSelector:
                 dbc.Label("Tabellvelger"),
                 dcc.Dropdown(
                     id="dataeditortableselector",
+                    searchable=False,
                     options=self.table_options,
                     value=self.starting_table,
                     className="ssb-dropdown",
+                    placeholder="-- Velg tabell --"
                 ),
             ]
         )
@@ -485,6 +487,8 @@ class DataEditorInfoRow:
             ident: str, altinnskjema: str, *args: Any
         ) -> list[str | int | float | bool | None]:
             logger.debug(f"ident: {ident}\nargs: {args}")
+            if not ident:
+                raise PreventUpdate
             info_values = []
             time_unit_list = [x for x in get_time_units().keys()]
             time_units = args[: len(time_unit_list)]
@@ -504,7 +508,9 @@ class DataEditorInfoRow:
                         )
                         data = t.filter(
                             _.variabel == info_var.source_variable_name
-                        ).to_pandas()
+                        ).limit(1).execute()
+                        if data.empty:
+                            raise PreventUpdate
                         logger.debug(data)
                         value = data["verdi"].item()
                     info_values.append(value)

@@ -81,6 +81,7 @@ class MultiModule:
                         {"label": module.label, "value": i}
                         for i, module in enumerate(self.module_list)
                     ],
+                    searchable=False,
                     value=0,
                     clearable=False,
                 ),

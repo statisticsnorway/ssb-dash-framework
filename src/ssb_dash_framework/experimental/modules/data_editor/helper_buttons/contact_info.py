@@ -276,7 +276,6 @@ class DataEditorContactInfo(DataEditorHelperButton):
                 indicator_style = (
                     {"display": "block"} if comment_count > 0 else {"display": "none"}
                 )
-                print(f"comment_count: {comment_count}")
 
                 return (
                     orgnr,
