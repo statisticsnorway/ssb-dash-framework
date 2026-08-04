@@ -56,9 +56,12 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from klass import KlassClassification
+
 from dash import Input
 from dash import Output
+from dash import State
 from dash import callback
+from dash import ctx
 from dash import dash_table
 from dash import dcc
 from dash import html
@@ -474,6 +477,27 @@ class VLModule:
             f"vl-method-controls-container-{self.module_number}"
         )
 
+        # Shared foretak/bedrift selection
+        self.selected_unit_store_id = (
+            f"vl-selected-unit-store-{self.module_number}"
+        )
+
+        self.selected_unit_panel_id = (
+            f"vl-selected-unit-panel-{self.module_number}"
+        )
+
+        self.selected_unit_label_id = (
+            f"vl-selected-unit-label-{self.module_number}"
+        )
+
+        self.use_selected_unit_button_id = (
+            f"vl-use-selected-unit-button-{self.module_number}"
+        )
+
+        self.clear_selected_unit_button_id = (
+            f"vl-clear-selected-unit-button-{self.module_number}"
+        )
+
         # Output elements
         self.graph_title_id = (
             f"vl-graph-title-{self.module_number}"
@@ -569,11 +593,11 @@ class VLModule:
                                             "label": label,
                                             "value": value,
                                         }
-                                        for value, label
-                                        in VL_VISUALISATIONS.items()
+                                        for value, label in VL_VISUALISATIONS.items()
                                     ],
                                     value="trend-single",
                                     clearable=False,
+                                    searchable=False,
                                 ),
                             ],
                         ),
@@ -2104,10 +2128,64 @@ class VLModule:
                                                     style_data_conditional=[],
                                                     tooltip_data=[],
                                                     tooltip_duration=None,
-                                                ),
+                                                ),    
                                             ],
                                         ),
                                     ],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+
+                # ============================================================
+                # Shared foretak/bedrift selection
+                # ============================================================
+
+                dcc.Store(
+                    id=self.selected_unit_store_id,
+                ),
+
+                html.Div(
+                    id=self.selected_unit_panel_id,
+                    style={
+                        "display": "none",
+                        "position": "sticky",
+                        "bottom": "16px",
+                        "zIndex": 1000,
+                        "margin": "16px",
+                        "padding": "14px 16px",
+                        "border": "1px solid #b8b8b8",
+                        "borderRadius": "10px",
+                        "backgroundColor": "#ffffff",
+                        "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.15)",
+                    },
+                    children=[
+                        html.Div(
+                            id=self.selected_unit_label_id,
+                            style={
+                                "fontWeight": "600",
+                                "marginBottom": "12px",
+                            },
+                        ),
+                        html.Div(
+                            style={
+                                "display": "flex",
+                                "gap": "10px",
+                                "flexWrap": "wrap",
+                            },
+                            children=[
+                                html.Button(
+                                    "Velg",
+                                    id=self.use_selected_unit_button_id,
+                                    className="ssb-btn primary-btn",
+                                    n_clicks=0,
+                                ),
+                                html.Button(
+                                    "Avbryt",
+                                    id=self.clear_selected_unit_button_id,
+                                    className="ssb-btn secondary-btn",
+                                    n_clicks=0,
                                 ),
                             ],
                         ),
@@ -8432,6 +8510,87 @@ class VLModule:
             tooltip_data,
         )
 
+    @staticmethod
+    def _selected_unit_from_table_click(
+        active_cell: dict[str, Any] | None,
+        visible_rows: list[dict[str, Any]] | None,
+        table_rows: list[dict[str, Any]] | None,
+        *,
+        source: str,
+    ) -> dict[str, str] | None:
+        """
+        Convert a clicked DataTable cell into a pending foretak/bedrift selection.
+
+        Clicking a business-number column selects the business. Clicking an
+        enterprise number or enterprise name selects the parent enterprise.
+        """
+        if not active_cell:
+            return None
+
+        clicked_column = str(
+            active_cell.get("column_id", "")
+            or ""
+        )
+
+        enterprise_columns = {
+            "orgnr_foretak",
+            "orgnr_f",
+            "navn",
+        }
+
+        business_columns = {
+            "orgnr_bedrift",
+            "orgnr_b",
+        }
+
+        if clicked_column not in enterprise_columns | business_columns:
+            return None
+
+        rows = visible_rows or table_rows or []
+
+        row_index = active_cell.get("row")
+
+        if (
+            not isinstance(row_index, int)
+            or row_index < 0
+            or row_index >= len(rows)
+        ):
+            return None
+
+        clicked_row = rows[row_index]
+
+        orgnr_foretak = str(
+            clicked_row.get("orgnr_foretak")
+            or clicked_row.get("orgnr_f")
+            or ""
+        ).strip()
+
+        orgnr_bedrift = str(
+            clicked_row.get("orgnr_bedrift")
+            or clicked_row.get("orgnr_b")
+            or ""
+        ).strip()
+
+        navn = str(
+            clicked_row.get("navn")
+            or ""
+        ).strip()
+
+        if not orgnr_foretak:
+            return None
+
+        return {
+            "orgnr_foretak": orgnr_foretak,
+            "orgnr_bedrift": orgnr_bedrift,
+            "navn": navn,
+            "selected_level": (
+                "business"
+                if clicked_column in business_columns
+                else "enterprise"
+            ),
+            "source": source,
+        }
+
     # ========================================================================
     # Dash callback registration
     # ========================================================================
@@ -8444,6 +8603,420 @@ class VLModule:
         manage drilldowns and route the selected visualisation to the relevant
         figure or table builder. Registration happens once during construction.
         """
+
+
+
+        @callback(
+            Output(
+                self.selected_unit_panel_id,
+                "style",
+            ),
+            Output(
+                self.selected_unit_label_id,
+                "children",
+            ),
+            Input(
+                self.selected_unit_store_id,
+                "data",
+            ),
+        )
+        def display_selected_unit_panel(
+            selection: dict[str, Any] | None,
+        ) -> tuple[
+            dict[str, Any],
+            Any,
+        ]:
+            """
+            Show the shared unit-selection panel after a foretak or bedrift
+            has been selected from a VL table or drilldown.
+            """
+            hidden_panel_style = {
+                "display": "none",
+                "position": "sticky",
+                "bottom": "16px",
+                "zIndex": 1000,
+                "margin": "16px",
+                "padding": "14px 16px",
+                "border": "1px solid #b8b8b8",
+                "borderRadius": "10px",
+                "backgroundColor": "#ffffff",
+                "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.15)",
+            }
+
+            if not selection:
+                return (
+                    hidden_panel_style,
+                    "",
+                )
+            orgnr_foretak = str(
+                selection.get(
+                    "orgnr_foretak",
+                    "",
+                )
+                or ""
+            ).strip()
+
+            orgnr_bedrift = str(
+                selection.get(
+                    "orgnr_bedrift",
+                    "",
+                )
+                or ""
+            ).strip()
+
+            navn = str(
+                selection.get(
+                    "navn",
+                    "",
+                )
+                or ""
+            ).strip()
+
+            source = str(
+                selection.get(
+                    "source",
+                    "",
+                )
+                or ""
+            ).strip()
+
+            if not orgnr_foretak:
+                return (
+                    hidden_panel_style,
+                    "",
+                )
+
+            shown_panel_style = {
+                **hidden_panel_style,
+                "display": "block",
+            }
+
+            label_parts: list[Any] = []
+
+            if navn:
+                label_parts.extend(
+                    [
+                        html.Strong(navn),
+                        html.Span(
+                            f" — foretak {orgnr_foretak}"
+                        ),
+                    ]
+                )
+
+            else:
+                label_parts.append(
+                    html.Strong(
+                        f"Foretak {orgnr_foretak}"
+                    )
+                )
+
+            if orgnr_bedrift:
+                label_parts.extend(
+                    [
+                        html.Br(),
+                        html.Span(
+                            f"Bedrift: {orgnr_bedrift}"
+                        ),
+                    ]
+                )
+
+            if source:
+                label_parts.extend(
+                    [
+                        html.Br(),
+                        html.Span(
+                            f"Valgt fra: {source}",
+                            style={
+                                "fontSize": "12px",
+                                "fontWeight": "normal",
+                                "color": "#666",
+                            },
+                        ),
+                    ]
+                )
+
+
+            return (
+                shown_panel_style,
+                label_parts,
+            )
+
+        @callback(
+            Output(
+                self.selected_unit_store_id,
+                "data",
+                allow_duplicate=True,
+            ),
+            Input(
+                self.table_id,
+                "active_cell",
+            ),
+            State(
+                self.table_id,
+                "derived_virtual_data",
+            ),
+            State(
+                self.table_id,
+                "data",
+            ),
+            State(
+                self.visualisation_id,
+                "value",
+            ),
+            prevent_initial_call=True,
+        )
+        def select_unit_from_main_table(
+            active_cell: dict[str, Any] | None,
+            visible_rows: list[dict[str, Any]] | None,
+            table_rows: list[dict[str, Any]] | None,
+            visualisation: str | None,
+        ) -> dict[str, str] | Any:
+            """Store a unit selected from the Store endringer table."""
+            supported_visualisations = {
+                "large-changes": "Store endringer",
+            }
+
+            if visualisation not in supported_visualisations:
+                return no_update
+
+            selection = self._selected_unit_from_table_click(
+                active_cell=active_cell,
+                visible_rows=visible_rows,
+                table_rows=table_rows,
+                source=supported_visualisations[visualisation],
+            )
+
+            return selection if selection else no_update
+
+        @callback(
+            Output(
+                self.selected_unit_store_id,
+                "data",
+                allow_duplicate=True,
+            ),
+            Input(
+                self.change_share_drilldown_table_id,
+                "active_cell",
+            ),
+            State(
+                self.change_share_drilldown_table_id,
+                "derived_virtual_data",
+            ),
+            State(
+                self.change_share_drilldown_table_id,
+                "data",
+            ),
+            prevent_initial_call=True,
+        )
+        def select_unit_from_change_share_drilldown(
+            active_cell: dict[str, Any] | None,
+            visible_rows: list[dict[str, Any]] | None,
+            table_rows: list[dict[str, Any]] | None,
+        ) -> dict[str, str] | Any:
+            """Store a foretak selected from the change-share drilldown."""
+            selection = self._selected_unit_from_table_click(
+                active_cell=active_cell,
+                visible_rows=visible_rows,
+                table_rows=table_rows,
+                source="Prosentandeler av endringene",
+            )
+
+            return selection if selection else no_update
+
+        @callback(
+            Output(
+                self.selected_unit_store_id,
+                "data",
+                allow_duplicate=True,
+            ),
+            Input(
+                self.negative_nopost_drilldown_table_id,
+                "active_cell",
+            ),
+            State(
+                self.negative_nopost_drilldown_table_id,
+                "derived_virtual_data",
+            ),
+            State(
+                self.negative_nopost_drilldown_table_id,
+                "data",
+            ),
+            prevent_initial_call=True,
+        )
+        def select_unit_from_negative_nopost_drilldown(
+            active_cell: dict[str, Any] | None,
+            visible_rows: list[dict[str, Any]] | None,
+            table_rows: list[dict[str, Any]] | None,
+        ) -> dict[str, str] | Any:
+            """Store a foretak selected from the negative NO-post drilldown."""
+            selection = self._selected_unit_from_table_click(
+                active_cell=active_cell,
+                visible_rows=visible_rows,
+                table_rows=table_rows,
+                source="Negative NO-poster",
+            )
+
+            return selection if selection else no_update
+
+        @callback(
+            Output(
+                self.selected_unit_store_id,
+                "data",
+                allow_duplicate=True,
+            ),
+            Input(
+                self.nr_drilldown_table_id,
+                "active_cell",
+            ),
+            State(
+                self.nr_drilldown_table_id,
+                "derived_virtual_data",
+            ),
+            State(
+                self.nr_drilldown_table_id,
+                "data",
+            ),
+            prevent_initial_call=True,
+        )
+        def select_unit_from_nr_drilldown(
+            active_cell: dict[str, Any] | None,
+            visible_rows: list[dict[str, Any]] | None,
+            table_rows: list[dict[str, Any]] | None,
+        ) -> dict[str, str] | Any:
+            """Store a foretak selected from the NR-control drilldown."""
+            selection = self._selected_unit_from_table_click(
+                active_cell=active_cell,
+                visible_rows=visible_rows,
+                table_rows=table_rows,
+                source="NR-kontroller",
+            )
+
+            return selection if selection else no_update
+
+        @callback(
+            Output(
+                "var-ident",
+                "value",
+                allow_duplicate=True,
+            ),
+            Output(
+                "var-bedrift",
+                "value",
+                allow_duplicate=True,
+            ),
+            Output(
+                "dataeditortableselector",
+                "value",
+                allow_duplicate=True,
+            ),
+            Output(
+                self.selected_unit_store_id,
+                "data",
+                allow_duplicate=True,
+            ),
+            Input(
+                self.use_selected_unit_button_id,
+                "n_clicks",
+            ),
+            Input(
+                self.clear_selected_unit_button_id,
+                "n_clicks",
+            ),
+            State(
+                self.selected_unit_store_id,
+                "data",
+            ),
+            prevent_initial_call=True,
+        )
+        def apply_or_clear_selected_unit(
+            select_clicks: int | None,
+            clear_clicks: int | None,
+            selection: dict[str, Any] | None,
+        ) -> tuple[Any, Any, Any, Any]:
+            """
+            Apply the selected VL unit to the application's shared selectors,
+            or clear the temporary selection when the user cancels.
+            """
+            triggered_id = ctx.triggered_id
+
+            if triggered_id == self.clear_selected_unit_button_id:
+                return (
+                    no_update,
+                    no_update,
+                    no_update,
+                    None,
+                )
+
+            if not selection:
+                return (
+                    no_update,
+                    no_update,
+                    no_update,
+                    no_update,
+                )
+
+            orgnr_foretak = str(
+                selection.get(
+                    "orgnr_foretak",
+                    "",
+                )
+                or ""
+            ).strip()
+
+            orgnr_bedrift = str(
+                selection.get(
+                    "orgnr_bedrift",
+                    "",
+                )
+                or ""
+            ).strip()
+
+            selected_level = str(
+                selection.get(
+                    "selected_level",
+                    "enterprise",
+                )
+                or "enterprise"
+            ).strip()
+
+            if not orgnr_foretak:
+                return (
+                    no_update,
+                    no_update,
+                    no_update,
+                    no_update,
+                )
+
+            if triggered_id == self.use_selected_unit_button_id:
+                if selected_level == "business":
+                    if not orgnr_bedrift:
+                        return (
+                            no_update,
+                            no_update,
+                            no_update,
+                            no_update,
+                        )
+
+                    return (
+                        orgnr_foretak,
+                        orgnr_bedrift,
+                        "skjemadata_bedriftstabell",
+                        None,
+                    )
+
+                return (
+                    orgnr_foretak,
+                    "",
+                    "skjemadata_foretak",
+                    None,
+                )
+
+            return (
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+            )
 
         @callback(
             Output(self.naring_id, "options"),
