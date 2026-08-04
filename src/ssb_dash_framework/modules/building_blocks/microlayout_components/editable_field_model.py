@@ -86,7 +86,7 @@ class FormGetterCached:
                 )
             df = t.filter(
                 t[settings.form_reference_number_column] == refnr,
-            ).to_pandas()
+            ).execute()
         # memtable preserves column names + dtypes; downstream filter/select run
         # in DuckDB, so they never touch the database again.
         return ibis.memtable(df)
@@ -122,7 +122,9 @@ class FormGetterCached:
             )
             cls.clean_cache()
             return cls.data[cache_key].entry
+        entry.last_cache_hit = time.perf_counter()
         cls.clean_cache()
+
         return entry.entry
 
 
@@ -463,6 +465,14 @@ def _register_group_callback(
         # update
         if triggered_id in field_ids:
             idx = field_ids.index(triggered_id)
+
+            if field_values[idx] is None: # avoid writing during app start-up, check for None
+                print(
+                    f"Ignoring update trigger for '{triggered_id}': value is None "
+                    "(likely initial mount, not a real edit)."
+                )
+                raise PreventUpdate
+                
             f = fields[idx]
             if not f._check_guard(settings, *guard_values):
                 logger.debug("Preventing update")

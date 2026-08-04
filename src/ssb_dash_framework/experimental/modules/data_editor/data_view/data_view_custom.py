@@ -11,12 +11,15 @@ from dash import callback
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
+from pathlib import Path
+from typing import Any
 
 from ssb_dash_framework.setup import VariableSelector
 from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
 from .....config.models import register_module
+from .....config.yaml_parser import config_parser_yaml
 from .....modules.building_blocks.microlayout import MicroLayoutAIO
 from .....modules.building_blocks.microlayout_components.editable_field_model import (
     default_getter,
@@ -310,13 +313,16 @@ class DataViewCustom(DataEditorDataView):
         """Registers the module callbacks."""
         pass
 
+    @staticmethod
+    def _unwrap_config(config_dict: dict | list) -> dict:
+        return config_dict[0] if isinstance(config_dict, list) else config_dict
+
     @classmethod
     def from_dict(cls, config_dict):
         logger.info(f"Initializing class '{cls.__name__}' from dict object")
         logger.debug(config_dict)
 
-        if isinstance(config_dict, list):
-            config_dict = config_dict[0]
+        config_dict = cls._unwrap_config(config_dict)
 
         return cls(
             applies_to_tables=config_dict["applies_to_tables"],
@@ -363,6 +369,104 @@ class DataViewCustom(DataEditorDataView):
             lines.extend(self._str_component(children, indent=indent + 1))
 
         return lines
+
+
+class DataViewCustomRegistry:
+    """Lazily builds DataViewCustom instances from a directory of YAML configs.
+
+    Parses (without building) every YAML config file at startup,
+    and defers building any individual DataViewCustom until the matching
+    table/form combination is first requested with get_or_build().
+
+    Requires `app.config.suppress_callback_exceptions = True`, since
+    lazily-built views' component IDs are not present in the initial
+    `app.layout`.
+
+    Example use in app.py:
+        skjemavisninger_dir = Path("/home/onyxia/work/stat-naringer-dash/src/egentilpassing/skjemavisninger")
+        ra_default = "RA-0255"
+
+        skjemavisning_registry  = DataViewCustomRegistry(skjemavisninger_dir, app=app)
+        skjemavisning_registry.load_configs()
+        skjemavisning_registry.preload(table="skjemadata_foretak", form=ra_default)
+    """
+
+    def __init__(self, config_dir: str | Path, pattern: str = "*.yaml", app: Any = None,) -> None:
+        self.config_dir = Path(config_dir)
+        self.pattern = pattern
+        self._configs: list[dict | list] = []
+        self._built: dict[tuple[Any, Any], DataViewCustom | None] = {}
+        self._loaded = False
+        self._lazy = False
+        self.variableselector = VariableSelector([], [])
+
+        if app is not None:
+            app.config.suppress_callback_exceptions = True
+
+    def load_configs(self) -> None:
+        """Parse every matching YAML file in config_dir. No DataViewCustom is built and no callbacks are registered."""
+        self._configs.clear()
+        for yaml_file in sorted(self.config_dir.glob(self.pattern)):
+            try:
+                config = config_parser_yaml(str(yaml_file))
+            except Exception:
+                logger.exception(f"Failed to parse view config: {yaml_file}")
+                continue
+            self._configs.append(config)
+        self._loaded = True
+
+        logger.info(
+            f"DataViewCustomRegistry: indexed {len(self._configs)} config(s) "
+            f"from {self.config_dir}"
+        )
+
+    def _find_config(self, table: Any, form: Any) -> dict | list | None:
+        for config in self._configs:
+            entry = DataViewCustom._unwrap_config(config)
+            tables = entry.get("applies_to_tables") or []
+            forms = entry.get("applies_to_forms") or []
+            table_ok = (not tables) or (table in tables)
+            form_ok = (not forms) or (form in forms) or (form is None and None in forms)
+            if table_ok and form_ok:
+                return config
+        return None
+
+    def get_or_build(self, table: Any = None, form: Any = None) -> DataViewCustom | None:
+        """Return the cached DataViewCustom for (table, form), actually building it on first request."""
+        if not self._loaded:
+            raise RuntimeError("Call load_configs() before get_or_build().")
+
+        key = (table, form)
+        if key in self._built:
+            print(f"View for {form} has already been built. Loading ...")
+            return self._built[key]
+
+        config = self._find_config(table, form)
+        if config is None:
+            logger.warning(
+                f"DataViewCustomRegistry: no config matches table={table!r} form={form!r}"
+            )
+            self._built[key] = None
+            return None
+
+        view = DataViewCustom.from_dict(config)
+        view._lazy = True
+        self._built[key] = view
+        print(f"Building view for {form}. Loading ...")
+        
+        @callback(
+            Output(view.divname, "style"),
+            Input("dataeditortableselector", "value"),
+            self.variableselector.get_input("altinnskjema"),
+        )
+        def toggle_lazy_view_visibility(selected_table, selected_form, _tables=table, _forms=form):
+            if selected_table == _tables and selected_form == _forms:
+                return {"display": "block"}
+            return {"display": "none"}
+
+    def preload(self, *, table: Any = None, form: Any = None) -> None:
+        """Convenience wrapper for building a default view eagerly at startup."""
+        self.get_or_build(table=table, form=form)
 
 
 def convert_node_build_field_settings(node, attribute, value):

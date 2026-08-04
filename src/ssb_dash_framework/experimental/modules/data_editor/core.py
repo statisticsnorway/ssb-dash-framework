@@ -54,6 +54,7 @@ class DataEditor:
         enable_table_selector: bool = True,
         starting_table: str = "skjemadata_hoved",
         table_list: list[str] | None = None,
+        lazy_registry: "DataViewCustomRegistry | None" = None,
     ) -> None:
         """Initializes the DataEditor module.
 
@@ -91,6 +92,7 @@ class DataEditor:
         self.icon = "🗊"
         self.label = "Data editor"
 
+        self.lazy_registry = lazy_registry
         self.gather_components()
         self.module_callbacks()
 
@@ -118,9 +120,10 @@ class DataEditor:
         self.make_default_view()
 
         for divname, info in DataEditorRegistry.main_views.items():
-            logger.debug(
-                f"Adding '{divname}' to main_views. Applies to:\ntables: '{info['tables']}'\nforms: {info['forms']}"
-            )
+            if info["instance"]._lazy:
+                logger.debug(f"Skipping '{divname}' from static main_views; managed by lazy_registry.")
+                continue
+
             try:
                 if divname not in _existing_views:
                     main_views.append(info["instance"].layout())
@@ -136,6 +139,10 @@ class DataEditor:
                     exc_info=True,
                 )
                 raise e
+
+        if self.lazy_registry is not None:
+            main_views.append(html.Div(id=f"{self.module_name}-{self.module_number}-lazy-mount"))
+
         self.main_view = html.Div(
             id=f"{self.module_name}-{self.module_number}-div",
             children=[view for view in main_views],
@@ -237,7 +244,7 @@ class DataEditor:
                 for key, value in time_units.items():
                     expr &= getattr(_, key) == value
 
-                result = t.filter(expr).limit(1).to_pandas()
+                result = t.filter(expr).limit(1).execute()
 
             if len(result) == 1:
                 row = result.iloc[0]
@@ -308,6 +315,24 @@ class DataEditor:
         def update_header(selected_table: str, selected_form: str) -> str:
             """Show an info message telling the user which form and table are currently selected."""
             return f"Viser data for {selected_form} fra tabell {selected_table}"
+
+        if self.lazy_registry is not None:
+            mount_id = f"{self.module_name}-{self.module_number}-lazy-mount"
+
+            @callback(
+                Output(mount_id, "children"),
+                Input("dataeditortableselector", "value"),
+                VariableSelector([], []).get_input("altinnskjema"),
+                State(mount_id, "children"),
+            )
+            def mount_lazy_view(selected_table, selected_form, current_children):
+                view = self.lazy_registry.get_or_build(table=selected_table, form=selected_form)
+                if view is None:
+                    raise PreventUpdate
+                current_children = current_children or []
+                if any(c.get("props", {}).get("id") == view.divname for c in current_children if isinstance(c, dict)):
+                    raise PreventUpdate  # already mounted, visibility callback handles the rest
+                return [*current_children, view.layout()]
 
 
 class DataEditorTableSelector:
@@ -612,6 +637,8 @@ class DataEditorHelperSidebar(ABC):
 class DataEditorDataView(ABC):
     """Base class for defining a data view."""
 
+    _lazy: bool = False # DataViewCustomRegistry sets it to True if a YAML file has been loaded
+
     def __init__(
         self, applies_to_tables: str | list[str], applies_to_forms: str | list[str]
     ) -> None:
@@ -650,7 +677,7 @@ class DataEditorDataView(ABC):
             for form in self.applies_to_forms:
                 if form is not None:
                     DataEditorRegistry._table_form_covered.append(tuple((table, form)))
-
+        
     @abstractmethod
     def _create_layout(self) -> None:
         """Abstract method for creating the module layout."""
