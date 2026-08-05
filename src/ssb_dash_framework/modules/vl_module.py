@@ -97,6 +97,29 @@ VL_VISUALISATIONS = {
     "method-analysis": "Metodeanalyse",
 }
 
+TREND_LEVEL_CONFIG = {
+    "n2": {
+        "label": "2-siffer",
+        "dataset": "agg_naring2",
+        "column": "naring_2",
+    },
+    "n3": {
+        "label": "3-siffer",
+        "dataset": "agg_naring4",
+        "column": "naring_4",
+    },
+    "n4": {
+        "label": "4-siffer",
+        "dataset": "agg_naring5",
+        "column": "naring_5",
+    },
+    "n5": {
+        "label": "5-siffer",
+        "dataset": "agg_naring6",
+        "column": "naring",
+    },
+}
+
 
 # ============================================================================
 # Core VL module
@@ -146,6 +169,15 @@ class VLModule:
         )
 
         # Trend-analysis controls
+
+        self.trend_naring_level_id = (
+            f"vl-trend-naring-level-{self.module_number}"
+        )
+
+        self.naring_id = (
+            f"vl-naring-{self.module_number}"
+        )
+
         self.naring_id = (
             f"vl-naring-{self.module_number}"
         )
@@ -434,6 +466,9 @@ class VLModule:
         self.single_naring_container_id = (
             f"vl-single-naring-container-{self.module_number}"
         )
+        self.trend_naring_level_container_id = (
+            f"vl-trend-naring-level-container-{self.module_number}"
+        )
         self.multi_naring_container_id = (
             f"vl-multi-naring-container-{self.module_number}"
         )
@@ -648,7 +683,42 @@ class VLModule:
                                         html.Div(
                                             id=self.single_naring_container_id,
                                             children=[
-                                                html.Label("Næring"),
+                                                html.Div(
+                                                    id=self.trend_naring_level_container_id,
+                                                    children=[
+                                                        html.Label("Næringsnivå"),
+                                                        dcc.Dropdown(
+                                                            id=self.trend_naring_level_id,
+                                                            className="ssb-dropdown",
+                                                            options=[
+                                                                {
+                                                                    "label": "2-siffer",
+                                                                    "value": "n2",
+                                                                },
+                                                                {
+                                                                    "label": "3-siffer",
+                                                                    "value": "n3",
+                                                                },
+                                                                {
+                                                                    "label": "4-siffer",
+                                                                    "value": "n4",
+                                                                },
+                                                                {
+                                                                    "label": "5-siffer",
+                                                                    "value": "n5",
+                                                                },
+                                                            ],
+                                                            value="n3",
+                                                            clearable=False,
+                                                            searchable=False,
+                                                        ),
+                                                    ],
+                                                ),
+
+                                                html.Label(
+                                                    "Næring",
+                                                    style={"marginTop": "12px"},
+                                                ),
                                                 dcc.Dropdown(
                                                     id=self.naring_id,
                                                     className="ssb-dropdown",
@@ -2217,27 +2287,43 @@ class VLModule:
 
 
     @staticmethod
-    @lru_cache(maxsize=4)
-    def _read_data(parquet_path: str) -> pd.DataFrame:
+    @lru_cache(maxsize=16)
+    def _read_data(
+        parquet_path: str,
+        naring_column: str = "naring_4",
+    ) -> pd.DataFrame:
         """
-        Read, validate and cache the aggregated industry dataset.
+        Read, validate and cache an aggregated industry dataset.
 
-        The cache key is the resolved parquet path, so consolidated and
-        unconsolidated files are cached independently.
+        The required industry column depends on the selected aggregation
+        level. The default remains ``naring_4`` so existing callers continue
+        to use the three-digit aggregate dataset without modification.
         """
         df = pd.read_parquet(parquet_path)
 
         if "year" not in df.columns:
-            raise ValueError("df_agg_naring4 mangler kolonnen 'year'.")
-
-        if "naring_4" not in df.columns:
             raise ValueError(
-                "df_agg_naring4 mangler kolonnen 'naring_4'."
+                "Det aggregerte datasettet mangler kolonnen 'year'."
+            )
+
+        if naring_column not in df.columns:
+            raise ValueError(
+                "Det aggregerte datasettet mangler kolonnen "
+                f"'{naring_column}'."
             )
 
         df = df.copy()
-        df["year"] = pd.to_numeric(df["year"], errors="coerce")
-        df["naring_4"] = df["naring_4"].astype(str)
+
+        df["year"] = pd.to_numeric(
+            df["year"],
+            errors="coerce",
+        )
+
+        df[naring_column] = (
+            df[naring_column]
+            .astype("string")
+            .str.strip()
+        )
 
         return df
 
@@ -2461,9 +2547,11 @@ class VLModule:
         df: pd.DataFrame,
         naring: str,
         variable: str,
+        naring_column: str = "naring_4",
     ) -> go.Figure:
+    
         sub = df.loc[
-            df["naring_4"].astype(str) == str(naring),
+            df[naring_column].astype(str) == str(naring),
             ["year", variable],
         ].copy()
 
@@ -2600,6 +2688,7 @@ class VLModule:
         df: pd.DataFrame,
         naring: str,
         variables: list[str],
+        naring_column: str = "naring_4",
     ) -> go.Figure:
         """
         Plot several variables through time for one selected industry.
@@ -2610,7 +2699,7 @@ class VLModule:
         selected_columns = ["year", *variables]
 
         sub = df.loc[
-            df["naring_4"].astype(str) == str(naring),
+            df[naring_column].astype(str) == str(naring),
             selected_columns,
         ].copy()
 
@@ -9064,9 +9153,13 @@ class VLModule:
 
             Output(self.status_id, "children"),
             Input(self.data_version_id, "value"),
-        )
+            Input(self.trend_naring_level_id, "value"),
+            Input(self.visualisation_id, "value"),
+            )
         def load_dropdown_options(
             data_version: str,
+            trend_naring_level: str,
+            visualisation: str,
         ) -> tuple[Any, ...]:
             try:
                 aggregate_path = self._parquet_path(
@@ -9075,6 +9168,29 @@ class VLModule:
                 )
                 aggregate_df = self._read_data(
                     aggregate_path
+                )
+
+                trend_config = TREND_LEVEL_CONFIG.get(
+                    trend_naring_level,
+                    TREND_LEVEL_CONFIG["n3"],
+                )
+
+                trend_dataset = str(
+                    trend_config["dataset"]
+                )
+
+                trend_naring_column = str(
+                    trend_config["column"]
+                )
+
+                trend_path = self._parquet_path(
+                    data_version,
+                    dataset=trend_dataset,
+                )
+
+                trend_df = self._read_data(
+                    trend_path,
+                    naring_column=trend_naring_column,
                 )
 
                 business_path = self._parquet_path(
@@ -9096,8 +9212,9 @@ class VLModule:
                 # -------------------------------------------------
                 # Næring options
                 # -------------------------------------------------
+
                 naring_values = sorted(
-                    aggregate_df["naring_4"]
+                    trend_df[trend_naring_column]
                     .dropna()
                     .astype(str)
                     .unique()
@@ -9148,7 +9265,7 @@ class VLModule:
                 # Aggregate variable options
                 # -------------------------------------------------
                 numeric_columns = (
-                    aggregate_df.select_dtypes(
+                    trend_df.select_dtypes(
                         include=[np.number]
                     )
                     .columns
@@ -10250,6 +10367,10 @@ class VLModule:
             Output(self.graph_title_id, "children"),
             Output(self.graph_description_id, "children"),
             Output(self.single_naring_container_id, "style"),
+            Output(
+                self.trend_naring_level_container_id,
+                "style",
+            ),
             Output(self.multi_naring_container_id, "style"),
             Output(self.enterprise_container_id, "style"),
             Output(self.change_controls_container_id, "style"),
@@ -10412,6 +10533,7 @@ class VLModule:
             styles = {
                 "single_naring": hidden,
                 "multi_naring": hidden,
+                "trend_naring_level": hidden,
                 "enterprise": hidden,
                 "change": hidden,
                 "single_variable": hidden,
@@ -10429,10 +10551,12 @@ class VLModule:
 
             if visualisation == "trend-single":
                 styles["single_naring"] = visible
+                styles["trend_naring_level"] = visible
                 styles["single_variable"] = visible
 
             elif visualisation == "trend-multi":
                 styles["single_naring"] = visible
+                styles["trend_naring_level"] = visible
                 styles["multi_variable"] = visible
 
             elif visualisation == "trend-industries":
@@ -10479,6 +10603,7 @@ class VLModule:
                 title,
                 description,
                 styles["single_naring"],
+                styles["trend_naring_level"],
                 styles["multi_naring"],
                 styles["enterprise"],
                 styles["change"],
@@ -11759,6 +11884,10 @@ class VLModule:
 
             Input(self.visualisation_id, "value"),
             Input(self.data_version_id, "value"),
+            Input(
+                self.trend_naring_level_id,
+                "value",
+            ),
 
             Input(self.naring_id, "value"),
             Input(self.multi_naring_id, "value"),
@@ -11944,6 +12073,7 @@ class VLModule:
         def update_graph(
             visualisation: str,
             data_version: str,
+            trend_naring_level: str,
 
             naring: str | None,
             multi_narings: list[str] | None,
@@ -12119,6 +12249,20 @@ class VLModule:
                 # -----------------------------------------
                 # Trend: one variable
                 # -----------------------------------------
+
+                trend_config = TREND_LEVEL_CONFIG.get(
+                    trend_naring_level,
+                    TREND_LEVEL_CONFIG["n3"],
+                )
+
+                trend_dataset = str(
+                    trend_config["dataset"]
+                )
+
+                trend_naring_column = str(
+                    trend_config["column"]
+                )
+
                 if visualisation == "trend-single":
                     if not naring:
                         return figure_result(
@@ -12136,11 +12280,12 @@ class VLModule:
 
                     parquet_path = self._parquet_path(
                         data_version,
-                        dataset="agg_naring4",
+                        dataset=trend_dataset,
                     )
 
                     df = self._read_data(
-                        parquet_path
+                        parquet_path,
+                        naring_column=trend_naring_column,
                     )
 
                     if variable not in df.columns:
@@ -12157,6 +12302,7 @@ class VLModule:
                         df=df,
                         naring=naring,
                         variable=variable,
+                        naring_column=trend_naring_column,
                     )
 
                     return figure_result(figure)
@@ -12181,11 +12327,12 @@ class VLModule:
 
                     parquet_path = self._parquet_path(
                         data_version,
-                        dataset="agg_naring4",
+                        dataset=trend_dataset,
                     )
 
                     df = self._read_data(
-                        parquet_path
+                        parquet_path,
+                        naring_column=trend_naring_column,
                     )
 
                     missing_variables = [
@@ -12212,6 +12359,7 @@ class VLModule:
                             df=df,
                             naring=naring,
                             variables=multi_variables,
+                            naring_column=trend_naring_column,
                         )
                     )
 
