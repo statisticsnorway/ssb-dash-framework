@@ -15,6 +15,8 @@ from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ssb_dash_framework import ControlFrameworkBase
+
 # from eimerdb import EimerDBInstance
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
@@ -35,7 +37,7 @@ default_col_def = {
 
 class NspekControlView(ABC):
     """Nspek variant av ControlView - tett på original implementasjon,
-    men med control_dict og uten hard dependency på altinnskjema.
+    men med control_class og uten hard dependency på altinnskjema.
     """
 
     _id_number: int = 0
@@ -43,7 +45,7 @@ class NspekControlView(ABC):
     def __init__(
         self,
         time_units: list[str],
-        control_dict: dict[str, Any],
+        control_class: type[ControlFrameworkBase],
         outputs: list[str] | None = None,
     ) -> None:
 
@@ -60,7 +62,7 @@ class NspekControlView(ABC):
         self.icon = "⚖️"
         self.label = "NSPEK Kontroll"
 
-        self.control_dict = control_dict
+        self.control_class = control_class
         self.outputs = outputs
         # self._is_valid()
         self.module_layout = self.create_layout()
@@ -113,7 +115,7 @@ class NspekControlView(ABC):
                             id=f"{self.module_number}-kontroller",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            # columnSize="responsiveSizeToFit",
+                            #columnSize="responsiveSizeToFit",
                             dashGridOptions={
                                 # "pagination": True,
                                 "rowSelection": "single",
@@ -132,7 +134,7 @@ class NspekControlView(ABC):
                             id=f"{self.module_number}-kontrollutslag",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            # columnSize="responsiveSizeToFit",
+                            #columnSize="responsiveSizeToFit",
                             dashGridOptions={
                                 "pagination": True,
                                 "rowSelection": "single",
@@ -267,11 +269,11 @@ class NspekControlView(ABC):
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
             State("alert_store", "data"),
             *self.variableselector.get_all_inputs(),
-            prevent_initial_call=True,
+            prevent_initial_call="initial_duplicate",
         )
         def get_kontroller_overview(refresh, run, store, *args):
 
-            control_class = self.control_dict
+            control_class = self.control_class
 
             subset = dict(zip(self.time_units, args, strict=False))
             subset["aar"] = int(subset["aar"])
@@ -309,7 +311,7 @@ class NspekControlView(ABC):
             if not selected:
                 raise PreventUpdate
 
-            control_class = self.control_dict
+            control_class = self.control_class
 
             instance = control_class(
                 time_units=self.time_units,
@@ -360,23 +362,23 @@ class NspekControlView(ABC):
 
 
 class NspekControlViewTab(TabImplementation, NspekControlView):
-    def __init__(self, time_units: list[str], control_dict: dict[str, Any]):
+    def __init__(self, time_units: list[str], control_class: type[ControlFrameworkBase]):
         NspekControlView.__init__(
             self,
             time_units=time_units,
-            control_dict=control_dict,
+            control_class=control_class,
         )
         TabImplementation.__init__(self)
 
 
 class NspekControlViewWindow(WindowImplementation, NspekControlView):
     def __init__(
-        self, time_units: list[str], control_dict: dict[str, Any], **kwargs: Any
+        self, time_units: list[str], control_class: type[ControlFrameworkBase], **kwargs: Any
     ):
 
         NspekControlView.__init__(
             self,
             time_units=time_units,
-            control_dict=control_dict,
+            control_class=control_class,
         )
         WindowImplementation.__init__(self, **kwargs)

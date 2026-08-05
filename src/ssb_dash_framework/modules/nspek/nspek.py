@@ -724,8 +724,12 @@ def build_column_defs(sekvens_compare=None):
                         "style": {"fontWeight": "bold"},
                     },
                     {
-                        "condition": f"params.data && {subheader_rows}.includes(params.data.beskrivelse)",
+                        "condition": f"params.data && {subheader_rows}.includes(params.data.beskrivelse) && params.colDef.field === 'beskrivelse'",
                         "style": {"fontWeight": "bold", "paddingLeft": "30px"},
+                    },
+                    {
+                        "condition": f"params.data && {subheader_rows}.includes(params.data.beskrivelse) && params.colDef.field === 'post'",
+                        "style": {"fontWeight": "bold"},
                     },
                     {
                         "condition": "params.colDef.field === 'beskrivelse'",
