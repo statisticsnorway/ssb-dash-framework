@@ -121,6 +121,27 @@ TREND_LEVEL_CONFIG = {
 }
 
 
+VL_TABLE_HEADER_STYLE: dict[str, Any] = {
+    "fontWeight": "bold",
+    "backgroundColor": "#f3f4f6",
+    "border": "1px solid #d9d9d9",
+    "whiteSpace": "normal",
+}
+
+VL_TABLE_CELL_STYLE: dict[str, Any] = {
+    "padding": "8px",
+    "textAlign": "left",
+    "fontFamily": "system-ui, -apple-system, Segoe UI, Roboto, Arial",
+    "fontSize": "13px",
+    "minWidth": "110px",
+    "width": "140px",
+    "maxWidth": "320px",
+    "whiteSpace": "normal",
+    "height": "auto",
+    "border": "1px solid #e5e7eb",
+}
+
+
 # ============================================================================
 # Core VL module
 # ============================================================================
@@ -147,6 +168,10 @@ class VLModule:
 
     _id_number: ClassVar[int] = 0
 
+    def _id(self, name: str) -> str:
+        """Return a component ID namespaced to this module instance."""
+        return f"vl-{name}-{self.module_number}"
+
     def __init__(
         self,
         file_path_resolver: Callable[[str, str], str],
@@ -161,413 +186,217 @@ class VLModule:
         self.file_path_resolver = file_path_resolver
 
         # Main selections
-        self.data_version_id = (
-            f"vl-data-version-{self.module_number}"
-        )
-        self.visualisation_id = (
-            f"vl-visualisation-{self.module_number}"
-        )
+        self.data_version_id = self._id("data-version")
+        self.visualisation_id = self._id("visualisation")
 
         # Trend-analysis controls
 
-        self.trend_naring_level_id = (
-            f"vl-trend-naring-level-{self.module_number}"
-        )
+        self.trend_naring_level_id = self._id("trend-naring-level")
 
-        self.naring_id = (
-            f"vl-naring-{self.module_number}"
-        )
+        self.naring_id = self._id("naring")
+        self.variable_id = self._id("variable")
+        self.multi_variable_id = self._id("multi-variable")
 
-        self.naring_id = (
-            f"vl-naring-{self.module_number}"
-        )
-        self.variable_id = (
-            f"vl-variable-{self.module_number}"
-        )
-        self.multi_variable_id = (
-            f"vl-multi-variable-{self.module_number}"
-        )
+        self.multi_naring_group_id = self._id("multi-naring-group")
 
-        self.multi_naring_group_id = (
-            f"vl-multi-naring-group-{self.module_number}"
-        )
-
-        self.multi_naring_id = (
-            f"vl-multi-naring-{self.module_number}"
-        )
+        self.multi_naring_id = self._id("multi-naring")
 
         # Enterprise trend controls
-        self.enterprise_id = (
-            f"vl-enterprise-{self.module_number}"
-        )
-        self.enterprise_name_search_id = (
-            f"vl-enterprise-name-search-{self.module_number}"
-        )
+        self.enterprise_id = self._id("enterprise")
+        self.enterprise_name_search_id = self._id("enterprise-name-search")
 
         # Change-share controls
-        self.change_year_id = (
-            f"vl-change-year-{self.module_number}"
-        )
-        self.change_top_n_id = (
-            f"vl-change-top-n-{self.module_number}"
-        )
+        self.change_year_id = self._id("change-year")
+        self.change_top_n_id = self._id("change-top-n")
 
-        self.change_share_drilldown_container_id = (
-            f"vl-change-share-drilldown-container-{self.module_number}"
-        )
+        self.change_share_drilldown_container_id = self._id("change-share-drilldown-container")
 
-        self.change_share_drilldown_table_id = (
-            f"vl-change-share-drilldown-table-{self.module_number}"
-        )
+        self.change_share_drilldown_table_id = self._id("change-share-drilldown-table")
 
-        self.change_share_copy_box_id = (
-            f"vl-change-share-copy-box-{self.module_number}"
-        )
+        self.change_share_copy_box_id = self._id("change-share-copy-box")
 
         # NØKU table controls
-        self.noku_group_id = (
-            f"vl-noku-group-{self.module_number}"
-        )
-        self.noku_year_id = (
-            f"vl-noku-year-{self.module_number}"
-        )
-        self.noku_rate_id = (
-            f"vl-noku-rate-{self.module_number}"
-        )
-        self.noku_window_id = (
-            f"vl-noku-window-{self.module_number}"
-        )
-        self.noku_standard_deviations_id = (
-            f"vl-noku-standard-deviations-{self.module_number}"
-        )
+        self.noku_group_id = self._id("noku-group")
+        self.noku_year_id = self._id("noku-year")
+        self.noku_rate_id = self._id("noku-rate")
+        self.noku_window_id = self._id("noku-window")
+        self.noku_standard_deviations_id = self._id("noku-standard-deviations")
 
         # Large-changes controls
-        self.large_changes_year_id = (
-            f"vl-large-changes-year-{self.module_number}"
-        )
-        self.large_changes_group_level_id = (
-            f"vl-large-changes-group-level-{self.module_number}"
-        )
-        self.large_changes_group_value_id = (
-            f"vl-large-changes-group-value-{self.module_number}"
-        )
-        self.large_changes_variables_id = (
-            f"vl-large-changes-variables-{self.module_number}"
-        )
-        self.large_changes_fylke_id = (
-            f"vl-large-changes-fylke-{self.module_number}"
-        )
-        self.large_changes_top_n_id = (
-            f"vl-large-changes-top-n-{self.module_number}"
-        )
+        self.large_changes_year_id = self._id("large-changes-year")
+        self.large_changes_group_level_id = self._id("large-changes-group-level")
+        self.large_changes_group_value_id = self._id("large-changes-group-value")
+        self.large_changes_variables_id = self._id("large-changes-variables")
+        self.large_changes_fylke_id = self._id("large-changes-fylke")
+        self.large_changes_top_n_id = self._id("large-changes-top-n")
 
         # Negative NO-post controls
-        self.negative_nopost_year_id = (
-            f"vl-negative-nopost-year-{self.module_number}"
-        )
-        self.negative_nopost_group_level_id = (
-            f"vl-negative-nopost-group-level-{self.module_number}"
-        )
-        self.negative_nopost_threshold_id = (
-            f"vl-negative-nopost-threshold-{self.module_number}"
-        )
-        self.negative_nopost_hide_columns_id = (
-            f"vl-negative-nopost-hide-columns-{self.module_number}"
-        )
-        self.negative_nopost_max_rows_id = (
-            f"vl-negative-nopost-max-rows-{self.module_number}"
-        )
+        self.negative_nopost_year_id = self._id("negative-nopost-year")
+        self.negative_nopost_group_level_id = self._id("negative-nopost-group-level")
+        self.negative_nopost_threshold_id = self._id("negative-nopost-threshold")
+        self.negative_nopost_hide_columns_id = self._id("negative-nopost-hide-columns")
+        self.negative_nopost_max_rows_id = self._id("negative-nopost-max-rows")
 
-        self.negative_nopost_selected_group_id = (
-            f"vl-negative-nopost-selected-group-{self.module_number}"
-        )
-        self.negative_nopost_variable_id = (
-            f"vl-negative-nopost-variable-{self.module_number}"
-        )
-        self.negative_nopost_top_enterprises_id = (
-            f"vl-negative-nopost-top-enterprises-{self.module_number}"
-        )
-        self.negative_nopost_drilldown_container_id = (
-            f"vl-negative-nopost-drilldown-container-{self.module_number}"
-        )
-        self.negative_nopost_drilldown_table_id = (
-            f"vl-negative-nopost-drilldown-table-{self.module_number}"
-        )
-        self.negative_nopost_drilldown_message_id = (
-            f"vl-negative-nopost-drilldown-message-{self.module_number}"
-        )
+        self.negative_nopost_selected_group_id = self._id("negative-nopost-selected-group")
+        self.negative_nopost_variable_id = self._id("negative-nopost-variable")
+        self.negative_nopost_top_enterprises_id = self._id("negative-nopost-top-enterprises")
+        self.negative_nopost_drilldown_container_id = self._id("negative-nopost-drilldown-container")
+        self.negative_nopost_drilldown_table_id = self._id("negative-nopost-drilldown-table")
+        self.negative_nopost_drilldown_message_id = self._id("negative-nopost-drilldown-message")
 
         # NR-control controls
-        self.nr_year_id = (
-            f"vl-nr-year-{self.module_number}"
-        )
-        self.nr_group_level_id = (
-            f"vl-nr-group-level-{self.module_number}"
-        )
-        self.nr_view_id = (
-            f"vl-nr-view-{self.module_number}"
-        )
-        self.nr_threshold_id = (
-            f"vl-nr-threshold-{self.module_number}"
-        )
-        self.nr_hide_columns_id = (
-            f"vl-nr-hide-columns-{self.module_number}"
-        )
-        self.nr_max_rows_id = (
-            f"vl-nr-max-rows-{self.module_number}"
-        )
+        self.nr_year_id = self._id("nr-year")
+        self.nr_group_level_id = self._id("nr-group-level")
+        self.nr_view_id = self._id("nr-view")
+        self.nr_threshold_id = self._id("nr-threshold")
+        self.nr_hide_columns_id = self._id("nr-hide-columns")
+        self.nr_max_rows_id = self._id("nr-max-rows")
 
-        self.nr_selected_group_id = (
-            f"vl-nr-selected-group-{self.module_number}"
-        )
+        self.nr_selected_group_id = self._id("nr-selected-group")
 
-        self.nr_variable_id = (
-            f"vl-nr-variable-{self.module_number}"
-        )
+        self.nr_variable_id = self._id("nr-variable")
 
-        self.nr_top_enterprises_id = (
-            f"vl-nr-top-enterprises-{self.module_number}"
-        )
+        self.nr_top_enterprises_id = self._id("nr-top-enterprises")
 
-        self.nr_drilldown_container_id = (
-            f"vl-nr-drilldown-container-{self.module_number}"
-        )
+        self.nr_drilldown_container_id = self._id("nr-drilldown-container")
 
-        self.nr_drilldown_table_id = (
-            f"vl-nr-drilldown-table-{self.module_number}"
-        )
+        self.nr_drilldown_table_id = self._id("nr-drilldown-table")
 
-        self.nr_drilldown_message_id = (
-            f"vl-nr-drilldown-message-{self.module_number}"
-        )
+        self.nr_drilldown_message_id = self._id("nr-drilldown-message")
 
         # Opposite-direction controls
-        self.opposite_year_id = (
-            f"vl-opposite-year-{self.module_number}"
-        )
-        self.opposite_group_level_id = (
-            f"vl-opposite-group-level-{self.module_number}"
-        )
-        self.opposite_view_id = (
-            f"vl-opposite-view-{self.module_number}"
-        )
-        self.opposite_rule_id = (
-            f"vl-opposite-rule-{self.module_number}"
-        )
-        self.opposite_min_count_id = (
-            f"vl-opposite-min-count-{self.module_number}"
-        )
-        self.opposite_gap_threshold_id = (
-            f"vl-opposite-gap-threshold-{self.module_number}"
-        )
-        self.opposite_absolute_threshold_id = (
-            f"vl-opposite-absolute-threshold-{self.module_number}"
-        )
-        self.opposite_max_rows_id = (
-            f"vl-opposite-max-rows-{self.module_number}"
-        )
+        self.opposite_year_id = self._id("opposite-year")
+        self.opposite_group_level_id = self._id("opposite-group-level")
+        self.opposite_view_id = self._id("opposite-view")
+        self.opposite_rule_id = self._id("opposite-rule")
+        self.opposite_min_count_id = self._id("opposite-min-count")
+        self.opposite_gap_threshold_id = self._id("opposite-gap-threshold")
+        self.opposite_absolute_threshold_id = self._id("opposite-absolute-threshold")
+        self.opposite_max_rows_id = self._id("opposite-max-rows")
 
         # Breakdown controls
-        self.breakdown_analysis_level_id = (
-            f"vl-breakdown-analysis-level-{self.module_number}"
-        )
+        self.breakdown_analysis_level_id = self._id("breakdown-analysis-level")
 
-        self.breakdown_year_id = (
-            f"vl-breakdown-year-{self.module_number}"
-        )
+        self.breakdown_year_id = self._id("breakdown-year")
 
-        self.breakdown_industry_controls_id = (
-            f"vl-breakdown-industry-controls-{self.module_number}"
-        )
+        self.breakdown_industry_controls_id = self._id("breakdown-industry-controls")
 
-        self.breakdown_group_level_id = (
-            f"vl-breakdown-group-level-{self.module_number}"
-        )
+        self.breakdown_group_level_id = self._id("breakdown-group-level")
 
-        self.breakdown_group_value_id = (
-            f"vl-breakdown-group-value-{self.module_number}"
-        )
+        self.breakdown_group_value_id = self._id("breakdown-group-value")
 
-        self.breakdown_enterprise_controls_id = (
-            f"vl-breakdown-enterprise-controls-{self.module_number}"
-        )
+        self.breakdown_enterprise_controls_id = self._id("breakdown-enterprise-controls")
 
-        self.breakdown_enterprise_search_id = (
-            f"vl-breakdown-enterprise-search-{self.module_number}"
-        )
+        self.breakdown_enterprise_search_id = self._id("breakdown-enterprise-search")
 
-        self.breakdown_enterprise_id = (
-            f"vl-breakdown-enterprise-{self.module_number}"
-        )
+        self.breakdown_enterprise_id = self._id("breakdown-enterprise")
 
-        self.breakdown_unit_level_id = (
-            f"vl-breakdown-unit-level-{self.module_number}"
-        )
+        self.breakdown_unit_level_id = self._id("breakdown-unit-level")
 
-        self.breakdown_business_id = (
-            f"vl-breakdown-business-{self.module_number}"
-        )
+        self.breakdown_business_id = self._id("breakdown-business")
 
-        self.breakdown_variable_id = (
-            f"vl-breakdown-variable-{self.module_number}"
-        )
+        self.breakdown_variable_id = self._id("breakdown-variable")
 
         # MOMS controls
-        self.moms_group_level_id = (
-            f"vl-moms-group-level-{self.module_number}"
-        )
+        self.moms_group_level_id = self._id("moms-group-level")
 
-        self.moms_naring_filter_id = (
-            f"vl-moms-naring-filter-{self.module_number}"
-        )
+        self.moms_naring_filter_id = self._id("moms-naring-filter")
 
-        self.moms_previous_year_id = (
-            f"vl-moms-previous-year-{self.module_number}"
-        )
-        self.moms_current_year_id = (
-            f"vl-moms-current-year-{self.module_number}"
-        )
+        self.moms_previous_year_id = self._id("moms-previous-year")
+        self.moms_current_year_id = self._id("moms-current-year")
 
         # Movement controls
-        self.movement_direction_id = (
-            f"vl-movement-direction-{self.module_number}"
-        )
-        self.movement_variable_id = (
-            f"vl-movement-variable-{self.module_number}"
-        )
-        self.movement_group_level_id = (
-            f"vl-movement-group-level-{self.module_number}"
-        )
-        self.movement_code_filter_id = (
-            f"vl-movement-code-filter-{self.module_number}"
-        )
-        self.movement_exact_match_id = (
-            f"vl-movement-exact-match-{self.module_number}"
-        )
-        self.movement_top_n_id = (
-            f"vl-movement-top-n-{self.module_number}"
-        )
+        self.movement_direction_id = self._id("movement-direction")
+        self.movement_variable_id = self._id("movement-variable")
+        self.movement_group_level_id = self._id("movement-group-level")
+        self.movement_code_filter_id = self._id("movement-code-filter")
+        self.movement_exact_match_id = self._id("movement-exact-match")
+        self.movement_top_n_id = self._id("movement-top-n")
 
         # Method-analysis controls
-        self.method_naring_level_id = (
-            f"vl-method-naring-level-{self.module_number}"
-        )
-        self.method_naring_value_id = (
-            f"vl-method-naring-value-{self.module_number}"
-        )
-        self.method_ratios_id = (
-            f"vl-method-ratios-{self.module_number}"
-        )
-        self.method_reg_types_id = (
-            f"vl-method-reg-types-{self.module_number}"
-        )
+        self.method_naring_level_id = self._id("method-naring-level")
+        self.method_naring_value_id = self._id("method-naring-value")
+        self.method_ratios_id = self._id("method-ratios")
+        self.method_reg_types_id = self._id("method-reg-types")
 
         # Control containers
-        self.single_naring_container_id = (
-            f"vl-single-naring-container-{self.module_number}"
-        )
-        self.trend_naring_level_container_id = (
-            f"vl-trend-naring-level-container-{self.module_number}"
-        )
-        self.multi_naring_container_id = (
-            f"vl-multi-naring-container-{self.module_number}"
-        )
-        self.single_variable_container_id = (
-            f"vl-single-variable-container-{self.module_number}"
-        )
-        self.multi_variable_container_id = (
-            f"vl-multi-variable-container-{self.module_number}"
-        )
-        self.enterprise_container_id = (
-            f"vl-enterprise-container-{self.module_number}"
-        )
-        self.change_controls_container_id = (
-            f"vl-change-controls-container-{self.module_number}"
-        )
-        self.noku_controls_container_id = (
-            f"vl-noku-controls-container-{self.module_number}"
-        )
-        self.large_changes_controls_container_id = (
-            f"vl-large-changes-controls-container-{self.module_number}"
-        )
-        self.negative_nopost_controls_container_id = (
-            f"vl-negative-nopost-controls-container-{self.module_number}"
-        )
-        self.nr_controls_container_id = (
-            f"vl-nr-controls-container-{self.module_number}"
-        )
-        self.opposite_controls_container_id = (
-            f"vl-opposite-controls-container-{self.module_number}"
-        )
-        self.breakdown_controls_container_id = (
-            f"vl-breakdown-controls-container-{self.module_number}"
-        )
-        self.moms_controls_container_id = (
-            f"vl-moms-controls-container-{self.module_number}"
-        )
-        self.movement_controls_container_id = (
-            f"vl-movement-controls-container-{self.module_number}"
-        )
-        self.method_controls_container_id = (
-            f"vl-method-controls-container-{self.module_number}"
-        )
+        self.single_naring_container_id = self._id("single-naring-container")
+        self.trend_naring_level_container_id = self._id("trend-naring-level-container")
+        self.multi_naring_container_id = self._id("multi-naring-container")
+        self.single_variable_container_id = self._id("single-variable-container")
+        self.multi_variable_container_id = self._id("multi-variable-container")
+        self.enterprise_container_id = self._id("enterprise-container")
+        self.change_controls_container_id = self._id("change-controls-container")
+        self.noku_controls_container_id = self._id("noku-controls-container")
+        self.large_changes_controls_container_id = self._id("large-changes-controls-container")
+        self.negative_nopost_controls_container_id = self._id("negative-nopost-controls-container")
+        self.nr_controls_container_id = self._id("nr-controls-container")
+        self.opposite_controls_container_id = self._id("opposite-controls-container")
+        self.breakdown_controls_container_id = self._id("breakdown-controls-container")
+        self.moms_controls_container_id = self._id("moms-controls-container")
+        self.movement_controls_container_id = self._id("movement-controls-container")
+        self.method_controls_container_id = self._id("method-controls-container")
 
         # Shared foretak/bedrift selection
-        self.selected_unit_store_id = (
-            f"vl-selected-unit-store-{self.module_number}"
-        )
+        self.selected_unit_store_id = self._id("selected-unit-store")
 
-        self.selected_unit_panel_id = (
-            f"vl-selected-unit-panel-{self.module_number}"
-        )
+        self.selected_unit_panel_id = self._id("selected-unit-panel")
 
-        self.selected_unit_label_id = (
-            f"vl-selected-unit-label-{self.module_number}"
-        )
+        self.selected_unit_label_id = self._id("selected-unit-label")
 
-        self.use_selected_unit_button_id = (
-            f"vl-use-selected-unit-button-{self.module_number}"
-        )
+        self.use_selected_unit_button_id = self._id("use-selected-unit-button")
 
-        self.clear_selected_unit_button_id = (
-            f"vl-clear-selected-unit-button-{self.module_number}"
-        )
+        self.clear_selected_unit_button_id = self._id("clear-selected-unit-button")
 
         # Output elements
-        self.graph_title_id = (
-            f"vl-graph-title-{self.module_number}"
-        )
-        self.graph_description_id = (
-            f"vl-graph-description-{self.module_number}"
-        )
-        self.graph_id = (
-            f"vl-graph-{self.module_number}"
-        )
-        self.graph_container_id = (
-            f"vl-graph-container-{self.module_number}"
-        )
-        self.table_id = (
-            f"vl-table-{self.module_number}"
-        )
-        self.table_container_id = (
-            f"vl-table-container-{self.module_number}"
-        )
+        self.graph_title_id = self._id("graph-title")
+        self.graph_description_id = self._id("graph-description")
+        self.graph_id = self._id("graph")
+        self.graph_container_id = self._id("graph-container")
+        self.table_id = self._id("table")
+        self.table_container_id = self._id("table-container")
 
-        self.large_changes_summary_id = (
-            f"vl-large-changes-summary-{self.module_number}"
-        )
+        self.large_changes_summary_id = self._id("large-changes-summary")
 
-        self.status_id = (
-            f"vl-status-{self.module_number}"
-        )
-        self.graph_section_id = (
-            f"vl-graph-section-{self.module_number}"
-        )
+        self.status_id = self._id("status")
+        self.graph_section_id = self._id("graph-section")
 
         self.module_layout = self._create_layout()
 
         self.module_callbacks()
         module_validator(self)
+
+    @staticmethod
+    def _data_table(
+        component_id: str,
+        *,
+        max_height: str,
+        merge_duplicate_headers: bool = False,
+    ) -> dash_table.DataTable:
+        """Create a VL DataTable with the module's shared configuration."""
+        return dash_table.DataTable(
+            id=component_id,
+            data=[],
+            columns=[],
+            page_size=25,
+            sort_action="native",
+            filter_action="native",
+            page_action="native",
+            export_format="csv",
+            export_headers="display",
+            merge_duplicate_headers=merge_duplicate_headers,
+            style_table={
+                "overflowX": "auto",
+                "overflowY": "auto",
+                "maxHeight": max_height,
+                "border": "1px solid #d9d9d9",
+            },
+            style_header=VL_TABLE_HEADER_STYLE,
+            style_cell=VL_TABLE_CELL_STYLE,
+            style_data_conditional=[],
+            tooltip_data=[],
+            tooltip_duration=None,
+        )
 
     # ========================================================================
     # Layout construction
@@ -583,15 +412,9 @@ class VLModule:
         """
         return html.Div(
             className="vl-module",
-            style={
-                "width": "100%",
-                "maxWidth": "none",
-            },
             children=[
                 html.Div(
-                    style={
-                        "maxWidth": "900px",
-                    },
+                    className="vl-content-width",
                     children=[
                         html.H1("VL-visualiseringer"),
                         html.P(
@@ -641,15 +464,10 @@ class VLModule:
                 ),
                 html.Div(
                     id=self.graph_section_id,
-                    style={
-                        "width": "100%",
-                        "maxWidth": "none",
-                    },
+                    className="vl-graph-section",
                     children=[
                         html.Div(
-                            style={
-                                "maxWidth": "900px",
-                            },
+                            className="vl-content-width",
                             children=[
                                 html.H2(
                                     id=self.graph_title_id,
@@ -667,15 +485,7 @@ class VLModule:
                                     ),
                                 ),
                                 html.Div(
-                                    style={
-                                        "display": "grid",
-                                        "gridTemplateColumns": (
-                                            "repeat(auto-fit, minmax(240px, 1fr))"
-                                        ),
-                                        "gap": "16px",
-                                        "marginBottom": "16px",
-                                        "alignItems": "start",
-                                    },
+                                    className="vl-control-grid",
                                     children=[
                                         # -------------------------------------------------
                                         # Trend-analysis controls
@@ -1779,10 +1589,8 @@ class VLModule:
                             children=[
                                 html.Div(
                                     id=self.graph_container_id,
-                                    style={
-                                        "display": "block",
-                                        "width": "100%",
-                                    },
+                                    className="vl-graph-container",
+                                    style={"display": "block"},
                                     children=[
                                         dcc.Graph(
                                             id=self.graph_id,
@@ -1802,12 +1610,8 @@ class VLModule:
                                 ),
                                 html.Div(
                                     id=self.change_share_drilldown_container_id,
-                                    style={
-                                        "display": "none",
-                                        "width": "100%",
-                                        "padding": "16px",
-                                        "marginTop": "8px",
-                                    },
+                                    className="vl-change-share-drilldown",
+                                    style={"display": "none"},
                                     children=[
                                         html.H3(
                                             "Foretak som bidrar til endringen",
@@ -1827,46 +1631,9 @@ class VLModule:
                                                 "marginBottom": "16px",
                                             },
                                         ),
-                                        dash_table.DataTable(
-                                            id=self.change_share_drilldown_table_id,
-                                            data=[],
-                                            columns=[],
-                                            page_size=25,
-                                            sort_action="native",
-                                            filter_action="native",
-                                            page_action="native",
-                                            export_format="csv",
-                                            export_headers="display",
-                                            style_table={
-                                                "overflowX": "auto",
-                                                "overflowY": "auto",
-                                                "maxHeight": "50vh",
-                                                "border": "1px solid #d9d9d9",
-                                            },
-                                            style_header={
-                                                "fontWeight": "bold",
-                                                "backgroundColor": "#f3f4f6",
-                                                "border": "1px solid #d9d9d9",
-                                                "whiteSpace": "normal",
-                                            },
-                                            style_cell={
-                                                "padding": "8px",
-                                                "textAlign": "left",
-                                                "fontFamily": (
-                                                    "system-ui, -apple-system, "
-                                                    "Segoe UI, Roboto, Arial"
-                                                ),
-                                                "fontSize": "13px",
-                                                "minWidth": "110px",
-                                                "width": "140px",
-                                                "maxWidth": "320px",
-                                                "whiteSpace": "normal",
-                                                "height": "auto",
-                                                "border": "1px solid #e5e7eb",
-                                            },
-                                            style_data_conditional=[],
-                                            tooltip_data=[],
-                                            tooltip_duration=None,
+                                        self._data_table(
+                                            self.change_share_drilldown_table_id,
+                                            max_height="50vh",
                                         ),
                                         html.Div(
                                             style={
@@ -1910,11 +1677,8 @@ class VLModule:
                                 ),
                                 html.Div(
                                     id=self.table_container_id,
-                                    style={
-                                        "display": "none",
-                                        "width": "100%",
-                                        "padding": "16px",
-                                    },
+                                    className="vl-table-container",
+                                    style={"display": "none"},
                                     children=[
                                         html.Div(
                                             id=self.large_changes_summary_id,
@@ -1923,47 +1687,10 @@ class VLModule:
                                                 "marginBottom": "16px",
                                             },
                                         ),
-                                        dash_table.DataTable(
-                                            id=self.table_id,
-                                            data=[],
-                                            columns=[],
-                                            page_size=25,
-                                            sort_action="native",
-                                            filter_action="native",
-                                            page_action="native",
-                                            export_format="csv",
-                                            export_headers="display",
+                                        self._data_table(
+                                            self.table_id,
+                                            max_height="72vh",
                                             merge_duplicate_headers=True,
-                                            style_table={
-                                                "overflowX": "auto",
-                                                "overflowY": "auto",
-                                                "maxHeight": "72vh",
-                                                "border": "1px solid #d9d9d9",
-                                            },
-                                            style_header={
-                                                "fontWeight": "bold",
-                                                "backgroundColor": "#f3f4f6",
-                                                "border": "1px solid #d9d9d9",
-                                                "whiteSpace": "normal",
-                                            },
-                                            style_cell={
-                                                "padding": "8px",
-                                                "textAlign": "left",
-                                                "fontFamily": (
-                                                    "system-ui, -apple-system, "
-                                                    "Segoe UI, Roboto, Arial"
-                                                ),
-                                                "fontSize": "13px",
-                                                "minWidth": "110px",
-                                                "width": "140px",
-                                                "maxWidth": "320px",
-                                                "whiteSpace": "normal",
-                                                "height": "auto",
-                                                "border": "1px solid #e5e7eb",
-                                            },
-                                            style_data_conditional=[],
-                                            tooltip_data=[],
-                                            tooltip_duration=None,
                                         ),
                                         html.Div(
                                             id=self.negative_nopost_drilldown_container_id,
@@ -2040,46 +1767,9 @@ class VLModule:
                                                         "fontSize": "13px",
                                                     },
                                                 ),
-                                                dash_table.DataTable(
-                                                    id=self.negative_nopost_drilldown_table_id,
-                                                    data=[],
-                                                    columns=[],
-                                                    page_size=25,
-                                                    sort_action="native",
-                                                    filter_action="native",
-                                                    page_action="native",
-                                                    export_format="csv",
-                                                    export_headers="display",
-                                                    style_table={
-                                                        "overflowX": "auto",
-                                                        "overflowY": "auto",
-                                                        "maxHeight": "55vh",
-                                                        "border": "1px solid #d9d9d9",
-                                                    },
-                                                    style_header={
-                                                        "fontWeight": "bold",
-                                                        "backgroundColor": "#f3f4f6",
-                                                        "border": "1px solid #d9d9d9",
-                                                        "whiteSpace": "normal",
-                                                    },
-                                                    style_cell={
-                                                        "padding": "8px",
-                                                        "textAlign": "left",
-                                                        "fontFamily": (
-                                                            "system-ui, -apple-system, "
-                                                            "Segoe UI, Roboto, Arial"
-                                                        ),
-                                                        "fontSize": "13px",
-                                                        "minWidth": "110px",
-                                                        "width": "140px",
-                                                        "maxWidth": "320px",
-                                                        "whiteSpace": "normal",
-                                                        "height": "auto",
-                                                        "border": "1px solid #e5e7eb",
-                                                    },
-                                                    style_data_conditional=[],
-                                                    tooltip_data=[],
-                                                    tooltip_duration=None,
+                                                self._data_table(
+                                                    self.negative_nopost_drilldown_table_id,
+                                                    max_height="55vh",
                                                 ),
                                             ],
                                         ),
@@ -2158,46 +1848,9 @@ class VLModule:
                                                         "fontSize": "13px",
                                                     },
                                                 ),
-                                                dash_table.DataTable(
-                                                    id=self.nr_drilldown_table_id,
-                                                    data=[],
-                                                    columns=[],
-                                                    page_size=25,
-                                                    sort_action="native",
-                                                    filter_action="native",
-                                                    page_action="native",
-                                                    export_format="csv",
-                                                    export_headers="display",
-                                                    style_table={
-                                                        "overflowX": "auto",
-                                                        "overflowY": "auto",
-                                                        "maxHeight": "55vh",
-                                                        "border": "1px solid #d9d9d9",
-                                                    },
-                                                    style_header={
-                                                        "fontWeight": "bold",
-                                                        "backgroundColor": "#f3f4f6",
-                                                        "border": "1px solid #d9d9d9",
-                                                        "whiteSpace": "normal",
-                                                    },
-                                                    style_cell={
-                                                        "padding": "8px",
-                                                        "textAlign": "left",
-                                                        "fontFamily": (
-                                                            "system-ui, -apple-system, "
-                                                            "Segoe UI, Roboto, Arial"
-                                                        ),
-                                                        "fontSize": "13px",
-                                                        "minWidth": "110px",
-                                                        "width": "140px",
-                                                        "maxWidth": "320px",
-                                                        "whiteSpace": "normal",
-                                                        "height": "auto",
-                                                        "border": "1px solid #e5e7eb",
-                                                    },
-                                                    style_data_conditional=[],
-                                                    tooltip_data=[],
-                                                    tooltip_duration=None,
+                                                self._data_table(
+                                                    self.nr_drilldown_table_id,
+                                                    max_height="55vh",
                                                 ),    
                                             ],
                                         ),
@@ -2218,18 +1871,8 @@ class VLModule:
 
                 html.Div(
                     id=self.selected_unit_panel_id,
-                    style={
-                        "display": "none",
-                        "position": "sticky",
-                        "bottom": "16px",
-                        "zIndex": 1000,
-                        "margin": "16px",
-                        "padding": "14px 16px",
-                        "border": "1px solid #b8b8b8",
-                        "borderRadius": "10px",
-                        "backgroundColor": "#ffffff",
-                        "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.15)",
-                    },
+                    className="vl-selected-unit-panel",
+                    style={"display": "none"},
                     children=[
                         html.Div(
                             id=self.selected_unit_label_id,
@@ -8719,18 +8362,7 @@ class VLModule:
             Show the shared unit-selection panel after a foretak or bedrift
             has been selected from a VL table or drilldown.
             """
-            hidden_panel_style = {
-                "display": "none",
-                "position": "sticky",
-                "bottom": "16px",
-                "zIndex": 1000,
-                "margin": "16px",
-                "padding": "14px 16px",
-                "border": "1px solid #b8b8b8",
-                "borderRadius": "10px",
-                "backgroundColor": "#ffffff",
-                "boxShadow": "0 4px 12px rgba(0, 0, 0, 0.15)",
-            }
+            hidden_panel_style = {"display": "none"}
 
             if not selection:
                 return (
@@ -9169,11 +8801,17 @@ class VLModule:
                 aggregate_df = self._read_data(
                     aggregate_path
                 )
-
-                trend_config = TREND_LEVEL_CONFIG.get(
-                    trend_naring_level,
-                    TREND_LEVEL_CONFIG["n3"],
-                )
+                
+                if visualisation in {
+                    "trend-single",
+                    "trend-multi",
+                }:
+                    trend_config = TREND_LEVEL_CONFIG.get(
+                        trend_naring_level,
+                        TREND_LEVEL_CONFIG["n3"],
+                    )
+                else:
+                    trend_config = TREND_LEVEL_CONFIG["n3"]
 
                 trend_dataset = str(
                     trend_config["dataset"]
