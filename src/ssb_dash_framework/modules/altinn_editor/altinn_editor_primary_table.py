@@ -351,7 +351,7 @@ class AltinnEditorPrimaryTable:
                             alert_store = [
                                 create_alert(
                                     f"Kolonnen {edited_column} kan ikke editeres!",
-                                    "danger",
+                                    "warning",
                                     ephemeral=True,
                                 ),
                                 *alert_store,
@@ -369,7 +369,7 @@ class AltinnEditorPrimaryTable:
                                 alert_store = [
                                     create_alert(
                                         f"Oppdateringa gikk ikke gjennom (ingen rader påvirket).",
-                                        "danger",
+                                        "warning",
                                         ephemeral=True,
                                     ),
                                     *alert_store,
@@ -387,7 +387,7 @@ class AltinnEditorPrimaryTable:
                             alert_store = [
                                 create_alert(
                                     f"Oppdateringa feilet: {str(e)[:120]}",
-                                    "danger",
+                                    "warning",
                                     ephemeral=True,
                                 ),
                                 *alert_store,
@@ -398,7 +398,7 @@ class AltinnEditorPrimaryTable:
                             alert_store = [
                                 create_alert(
                                     f"Kolonnen {edited_column} kan ikke editeres!",
-                                    "danger",
+                                    "warning",
                                     ephemeral=True,
                                 ),
                                 *alert_store,
@@ -415,7 +415,7 @@ class AltinnEditorPrimaryTable:
                                 alert_store = [
                                     create_alert(
                                         f"Oppdateringa gikk ikke gjennom (ingen rader påvirket).",
-                                        "danger",
+                                        "warning",
                                         ephemeral=True,
                                     ),
                                     *alert_store,
@@ -433,7 +433,7 @@ class AltinnEditorPrimaryTable:
                             alert_store = [
                                 create_alert(
                                     f"Oppdateringa feilet. {str(e)[:120]}",
-                                    "danger",
+                                    "warning",
                                     ephemeral=True,
                                 ),
                                 *alert_store,
@@ -504,7 +504,7 @@ class AltinnEditorPrimaryTable:
                         alert_store = [
                             create_alert(
                                 f"Oppdateringa feilet. {str(e)[:60]}",
-                                "danger",
+                                "warning",
                                 ephemeral=True,
                             ),
                             *alert_store,
@@ -514,7 +514,7 @@ class AltinnEditorPrimaryTable:
                     alert_store = [
                         create_alert(
                             f"Kolonnen {edited_column} kan ikke editeres!",
-                            "danger",
+                            "warning",
                             ephemeral=True,
                         ),
                         *alert_store,

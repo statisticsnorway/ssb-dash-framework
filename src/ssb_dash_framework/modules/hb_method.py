@@ -245,6 +245,7 @@ class HBMethod:
                                 id=f"{self.module_number}-hb-dropdown",
                                 options=self.time_units,
                                 value=self.time_units[0],
+                                searchable=False,
                             )
                         ),
                         dbc.Col(

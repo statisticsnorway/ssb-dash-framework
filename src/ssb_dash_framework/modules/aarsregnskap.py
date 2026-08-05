@@ -1,25 +1,27 @@
-import base64
-import logging
 from abc import ABC
 from abc import abstractmethod
+import base64
+import io
+import logging
 from typing import ClassVar
 from typing import Any
-from PIL import Image
-import io
 
-import gcsfs
-import dash_bootstrap_components as dbc
+from PIL import Image
 from dash import callback, clientside_callback, dcc, html
+from dash import ClientsideFunction
 from dash.dependencies import Input, State
 from dash.dependencies import Output
+from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
-from dash import ClientsideFunction
+import dash_bootstrap_components as dbc
+from dash_iconify import DashIconify
+import gcsfs
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
-from ..utils.module_validation import module_validator
 from ..utils.alert_handler import create_alert
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +41,7 @@ class Aarsregnskap(ABC):
     module_number: int
     module_name: str
     label: str
-    icon: str
+    icon: str | Component
     module_layout: html.Div
 
     def __init__(
@@ -54,7 +56,7 @@ class Aarsregnskap(ABC):
         self.module_name = self.__class__.__name__
         Aarsregnskap._id_number += 1
         self.label = "Årsregnskap"
-        self.icon = "🧾"
+        self.icon = DashIconify(icon="feather:file-text", width=24)
         self._is_valid()
         self.module_layout = self._create_layout()
         self.module_callbacks()
