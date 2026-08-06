@@ -115,7 +115,7 @@ class NspekControlView(ABC):
                             id=f"{self.module_number}-kontroller",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            #columnSize="responsiveSizeToFit",
+                            # columnSize="responsiveSizeToFit",
                             dashGridOptions={
                                 # "pagination": True,
                                 "rowSelection": "single",
@@ -134,7 +134,7 @@ class NspekControlView(ABC):
                             id=f"{self.module_number}-kontrollutslag",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            #columnSize="responsiveSizeToFit",
+                            # columnSize="responsiveSizeToFit",
                             dashGridOptions={
                                 "pagination": True,
                                 "rowSelection": "single",
@@ -362,7 +362,9 @@ class NspekControlView(ABC):
 
 
 class NspekControlViewTab(TabImplementation, NspekControlView):
-    def __init__(self, time_units: list[str], control_class: type[ControlFrameworkBase]):
+    def __init__(
+        self, time_units: list[str], control_class: type[ControlFrameworkBase]
+    ):
         NspekControlView.__init__(
             self,
             time_units=time_units,
@@ -373,7 +375,10 @@ class NspekControlViewTab(TabImplementation, NspekControlView):
 
 class NspekControlViewWindow(WindowImplementation, NspekControlView):
     def __init__(
-        self, time_units: list[str], control_class: type[ControlFrameworkBase], **kwargs: Any
+        self,
+        time_units: list[str],
+        control_class: type[ControlFrameworkBase],
+        **kwargs: Any,
     ):
 
         NspekControlView.__init__(

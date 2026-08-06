@@ -374,7 +374,7 @@ def apply_blank_filter(df: pd.DataFrame, toggle_blank: list[str]) -> pd.DataFram
     return df.loc[keep_rows].copy()
 
 
-TYPE_REGNSKAP_TABLE = {  # type: {database: exampleregnskap, table: tema_example}
+TYPE_REGNSKAP_TABLE = {
     "registrering": {
         "database": "nspek_core",
         "table": "registrering",
@@ -2421,7 +2421,9 @@ class Naeringsspesifikasjon:
 
             with get_nspek_connection() as conn:
                 comments = get_latest_field_comments(conn, orgnr_foretak)
-            valid_comment_row = (df["post"].fillna("").astype(str).ne("") & ~df["is_ui_sum"].astype("boolean").fillna(False))
+            valid_comment_row = df["post"].fillna("").astype(str).ne("") & ~df[
+                "is_ui_sum"
+            ].astype("boolean").fillna(False)
             df["feltkommentar_ikon"] = valid_comment_row.map(
                 lambda x: "💬" if x else ""
             )
@@ -2521,7 +2523,9 @@ class Naeringsspesifikasjon:
 
             with get_nspek_connection() as conn:
                 comments = get_latest_field_comments(conn, orgnr_foretak)
-            valid_comment_row = (df["post"].fillna("").astype(str).ne("") & ~df["is_ui_sum"].astype("boolean").fillna(False))
+            valid_comment_row = df["post"].fillna("").astype(str).ne("") & ~df[
+                "is_ui_sum"
+            ].astype("boolean").fillna(False)
 
             df["har_feltkommentar"] = valid_comment_row
             df["feltkommentar_tekst"] = df["post"].map(
@@ -3678,7 +3682,7 @@ class Naeringsspesifikasjon:
             if not store:
                 raise PreventUpdate
 
-            title = f"{store['beskrivelse']} " f"({store['post']})"
+            title = f"{store['beskrivelse']} ({store['post']})"
 
             existing = store.get("existing_comment", "")
 
