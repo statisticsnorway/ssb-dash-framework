@@ -51,7 +51,9 @@ from functools import lru_cache
 from collections.abc import Callable
 from typing import Any
 from typing import ClassVar
+import threading
 
+import duckdb
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -95,6 +97,8 @@ VL_VISUALISATIONS = {
     "moms": "Mot MOMS",
     "movement": "Tilgang og avgang",
     "method-analysis": "Metodeanalyse",
+    "enterprise-rate-viewer": "Rate brukt – enkeltforetak",
+    "rate-drilldown": "Rateberegning – drilldown",
 }
 
 TREND_LEVEL_CONFIG = {
@@ -167,6 +171,7 @@ class VLModule:
     """
 
     _id_number: ClassVar[int] = 0
+    _duckdb_local: ClassVar[threading.local] = threading.local()
 
     def _id(self, name: str) -> str:
         """Return a component ID namespaced to this module instance."""
@@ -206,7 +211,6 @@ class VLModule:
         self.enterprise_name_search_id = self._id("enterprise-name-search")
 
         # Change-share controls
-        self.change_year_id = self._id("change-year")
         self.change_top_n_id = self._id("change-top-n")
 
         self.change_share_drilldown_container_id = self._id("change-share-drilldown-container")
@@ -217,13 +221,11 @@ class VLModule:
 
         # NØKU table controls
         self.noku_group_id = self._id("noku-group")
-        self.noku_year_id = self._id("noku-year")
         self.noku_rate_id = self._id("noku-rate")
         self.noku_window_id = self._id("noku-window")
         self.noku_standard_deviations_id = self._id("noku-standard-deviations")
 
         # Large-changes controls
-        self.large_changes_year_id = self._id("large-changes-year")
         self.large_changes_group_level_id = self._id("large-changes-group-level")
         self.large_changes_group_value_id = self._id("large-changes-group-value")
         self.large_changes_variables_id = self._id("large-changes-variables")
@@ -231,7 +233,6 @@ class VLModule:
         self.large_changes_top_n_id = self._id("large-changes-top-n")
 
         # Negative NO-post controls
-        self.negative_nopost_year_id = self._id("negative-nopost-year")
         self.negative_nopost_group_level_id = self._id("negative-nopost-group-level")
         self.negative_nopost_threshold_id = self._id("negative-nopost-threshold")
         self.negative_nopost_hide_columns_id = self._id("negative-nopost-hide-columns")
@@ -245,7 +246,6 @@ class VLModule:
         self.negative_nopost_drilldown_message_id = self._id("negative-nopost-drilldown-message")
 
         # NR-control controls
-        self.nr_year_id = self._id("nr-year")
         self.nr_group_level_id = self._id("nr-group-level")
         self.nr_view_id = self._id("nr-view")
         self.nr_threshold_id = self._id("nr-threshold")
@@ -265,7 +265,6 @@ class VLModule:
         self.nr_drilldown_message_id = self._id("nr-drilldown-message")
 
         # Opposite-direction controls
-        self.opposite_year_id = self._id("opposite-year")
         self.opposite_group_level_id = self._id("opposite-group-level")
         self.opposite_view_id = self._id("opposite-view")
         self.opposite_rule_id = self._id("opposite-rule")
@@ -277,7 +276,6 @@ class VLModule:
         # Breakdown controls
         self.breakdown_analysis_level_id = self._id("breakdown-analysis-level")
 
-        self.breakdown_year_id = self._id("breakdown-year")
 
         self.breakdown_industry_controls_id = self._id("breakdown-industry-controls")
 
@@ -302,8 +300,6 @@ class VLModule:
 
         self.moms_naring_filter_id = self._id("moms-naring-filter")
 
-        self.moms_previous_year_id = self._id("moms-previous-year")
-        self.moms_current_year_id = self._id("moms-current-year")
 
         # Movement controls
         self.movement_direction_id = self._id("movement-direction")
@@ -318,6 +314,15 @@ class VLModule:
         self.method_naring_value_id = self._id("method-naring-value")
         self.method_ratios_id = self._id("method-ratios")
         self.method_reg_types_id = self._id("method-reg-types")
+
+        # Rate-viewer controls
+        self.rate_enterprise_id = self._id("rate-enterprise")
+        self.rate_enterprise_search_id = self._id("rate-enterprise-search")
+        self.rate_show_all_id = self._id("rate-show-all")
+        self.rate_drilldown_naring_id = self._id("rate-drilldown-naring")
+        self.rate_drilldown_variable_id = self._id("rate-drilldown-variable")
+        self.rate_drilldown_reg_type_id = self._id("rate-drilldown-reg-type")
+        self.rate_drilldown_show_invalid_id = self._id("rate-drilldown-show-invalid")
 
         # Control containers
         self.single_naring_container_id = self._id("single-naring-container")
@@ -336,6 +341,12 @@ class VLModule:
         self.moms_controls_container_id = self._id("moms-controls-container")
         self.movement_controls_container_id = self._id("movement-controls-container")
         self.method_controls_container_id = self._id("method-controls-container")
+        self.enterprise_rate_controls_container_id = self._id(
+            "enterprise-rate-controls-container"
+        )
+        self.rate_drilldown_controls_container_id = self._id(
+            "rate-drilldown-controls-container"
+        )
 
         # Shared foretak/bedrift selection
         self.selected_unit_store_id = self._id("selected-unit-store")
@@ -351,6 +362,7 @@ class VLModule:
         # Output elements
         self.graph_title_id = self._id("graph-title")
         self.graph_description_id = self._id("graph-description")
+        self.analysis_period_id = self._id("analysis-period")
         self.graph_id = self._id("graph")
         self.graph_container_id = self._id("graph-container")
         self.table_id = self._id("table")
@@ -483,6 +495,15 @@ class VLModule:
                                         "variasjonsområde basert på "
                                         "historiske endringer."
                                     ),
+                                ),
+                                html.Div(
+                                    id=self.analysis_period_id,
+                                    style={
+                                        "fontSize": "13px",
+                                        "fontWeight": "600",
+                                        "color": "#525252",
+                                        "marginBottom": "12px",
+                                    },
                                 ),
                                 html.Div(
                                     className="vl-control-grid",
@@ -636,13 +657,6 @@ class VLModule:
                                             id=self.change_controls_container_id,
                                             style={"display": "none"},
                                             children=[
-                                                html.Label("År"),
-                                                dcc.Dropdown(
-                                                    id=self.change_year_id,
-                                                    className="ssb-dropdown",
-                                                    options=[],
-                                                    clearable=False,
-                                                ),
                                                 html.Label(
                                                     "Antall største foretak",
                                                     style={"marginTop": "12px"},
@@ -700,16 +714,6 @@ class VLModule:
                                                     clearable=False,
                                                 ),
                                                 html.Label(
-                                                    "År",
-                                                    style={"marginTop": "12px"},
-                                                ),
-                                                dcc.Dropdown(
-                                                    id=self.noku_year_id,
-                                                    className="ssb-dropdown",
-                                                    options=[],
-                                                    clearable=False,
-                                                ),
-                                                html.Label(
                                                     "Grense for prosentvis endring",
                                                     style={"marginTop": "12px"},
                                                 ),
@@ -755,13 +759,6 @@ class VLModule:
                                             id=self.large_changes_controls_container_id,
                                             style={"display": "none"},
                                             children=[
-                                                html.Label("År"),
-                                                dcc.Dropdown(
-                                                    id=self.large_changes_year_id,
-                                                    className="ssb-dropdown",
-                                                    options=[],
-                                                    clearable=False,
-                                                ),
                                                 html.Label(
                                                     "Næringsnivå",
                                                     style={"marginTop": "12px"},
@@ -774,7 +771,6 @@ class VLModule:
                                                         {"label": "N3", "value": "n3"},
                                                         {"label": "N4", "value": "n4"},
                                                         {"label": "N5", "value": "n5"},
-                                                        {"label": "Næring", "value": "naring"},
                                                         {
                                                             "label": "Næring 1",
                                                             "value": "naring_1",
@@ -843,13 +839,6 @@ class VLModule:
                                             id=self.negative_nopost_controls_container_id,
                                             style={"display": "none"},
                                             children=[
-                                                html.Label("År"),
-                                                dcc.Dropdown(
-                                                    id=self.negative_nopost_year_id,
-                                                    className="ssb-dropdown",
-                                                    options=[],
-                                                    clearable=False,
-                                                ),
                                                 html.Label(
                                                     "Grupper",
                                                     style={"marginTop": "12px"},
@@ -917,13 +906,6 @@ class VLModule:
                                             id=self.nr_controls_container_id,
                                             style={"display": "none"},
                                             children=[
-                                                html.Label("År"),
-                                                dcc.Dropdown(
-                                                    id=self.nr_year_id,
-                                                    className="ssb-dropdown",
-                                                    options=[],
-                                                    clearable=False,
-                                                ),
                                                 html.Label(
                                                     "Næringsnivå",
                                                     style={"marginTop": "12px"},
@@ -1012,13 +994,6 @@ class VLModule:
                                             id=self.opposite_controls_container_id,
                                             style={"display": "none"},
                                             children=[
-                                                html.Label("År"),
-                                                dcc.Dropdown(
-                                                    id=self.opposite_year_id,
-                                                    className="ssb-dropdown",
-                                                    options=[],
-                                                    clearable=False,
-                                                ),
                                                 html.Label(
                                                     "Næringsnivå",
                                                     style={"marginTop": "12px"},
@@ -1163,16 +1138,6 @@ class VLModule:
                                                     inline=True,
                                                 ),
 
-                                                html.Label(
-                                                    "År",
-                                                    style={"marginTop": "12px"},
-                                                ),
-                                                dcc.Dropdown(
-                                                    id=self.breakdown_year_id,
-                                                    className="ssb-dropdown",
-                                                    options=[],
-                                                    clearable=False,
-                                                ),
 
                                                 # Existing industry-level controls
                                                 html.Div(
@@ -1366,26 +1331,6 @@ class VLModule:
                                                         "Søk, for eksempel 47, og velg næringer"
                                                     ),
                                                 ),
-                                                html.Label(
-                                                    "Tidligere år",
-                                                    style={"marginTop": "12px"},
-                                                ),
-                                                dcc.Dropdown(
-                                                    id=self.moms_previous_year_id,
-                                                    className="ssb-dropdown",
-                                                    options=[],
-                                                    clearable=False,
-                                                ),
-                                                html.Label(
-                                                    "Nåværende år",
-                                                    style={"marginTop": "12px"},
-                                                ),
-                                                dcc.Dropdown(
-                                                    id=self.moms_current_year_id,
-                                                    className="ssb-dropdown",
-                                                    options=[],
-                                                    clearable=False,
-                                                ),
                                             ],
                                         ),
 
@@ -1574,6 +1519,133 @@ class VLModule:
                                                     multi=True,
                                                     clearable=True,
                                                     placeholder="Alle registreringstyper",
+                                                ),
+                                            ],
+                                        ),
+
+
+                                        # -------------------------------------------------
+                                        # Rate used – enterprise
+                                        # -------------------------------------------------
+                                        html.Div(
+                                            id=self.enterprise_rate_controls_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.P(
+                                                    (
+                                                        "Denne visningen er beregnet for analyse av foretak "
+                                                        "som ikke er med i utvalget, og viser hvilke rater "
+                                                        "som er brukt ved beregning av verdiene."
+                                                        "For sysselsetting_arsverk brukes rate bare dersom årsverk manglet."
+                                                    ),
+                                                    style={
+                                                        "fontSize": "13px",
+                                                        "color": "#666",
+                                                        "marginBottom": "12px",
+                                                    },
+                                                ),
+                                                html.Label("Søk etter foretaksnavn"),
+                                                dcc.Dropdown(
+                                                    id=self.rate_enterprise_search_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    value=None,
+                                                    placeholder=(
+                                                        "Skriv minst to tegn i foretaksnavnet"
+                                                    ),
+                                                    clearable=True,
+                                                    searchable=True,
+                                                ),
+                                                html.Label(
+                                                    "Organisasjonsnummer",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Input(
+                                                    id=self.rate_enterprise_id,
+                                                    type="text",
+                                                    value="",
+                                                    placeholder="Skriv inn orgnr_foretak",
+                                                    debounce=True,
+                                                    style={"width": "100%"},
+                                                ),
+                                                dcc.Checklist(
+                                                    id=self.rate_show_all_id,
+                                                    options=[
+                                                        {
+                                                            "label": "Vis også variabler uten rate",
+                                                            "value": "show-all",
+                                                        }
+                                                    ],
+                                                    value=[],
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                            ],
+                                        ),
+
+                                        # -------------------------------------------------
+                                        # Rate calculation drilldown
+                                        # -------------------------------------------------
+                                        html.Div(
+                                            id=self.rate_drilldown_controls_container_id,
+                                            style={"display": "none"},
+                                            children=[
+                                                html.Label("Næring"),
+                                                dcc.Dropdown(
+                                                    id=self.rate_drilldown_naring_id,
+                                                    className="ssb-dropdown",
+                                                    options=[],
+                                                    value=None,
+                                                    clearable=False,
+                                                    searchable=True,
+                                                    placeholder="Velg eller søk etter næring",
+                                                ),
+                                                html.Label(
+                                                    "Variabel",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.rate_drilldown_variable_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {"label": "ts_forbrukselektronikk_akt", "value": "ts_forbrukselektronikk_akt"},
+                                                        {"label": "ts_prog_akt", "value": "ts_prog_akt"},
+                                                        {"label": "ts_egenprog_akt", "value": "ts_egenprog_akt"},
+                                                        {"label": "ts_eksternkonsulent_akt", "value": "ts_eksternkonsulent_akt"},
+                                                        {"label": "ts_forbrukselektronikk_utg", "value": "ts_forbrukselektronikk_utg"},
+                                                        {"label": "ts_prog_utg", "value": "ts_prog_utg"},
+                                                        {"label": "ts_egenprog_utg", "value": "ts_egenprog_utg"},
+                                                        {"label": "ts_eksternkonsulent_utg", "value": "ts_eksternkonsulent_utg"},
+                                                        {"label": "ts_vikarutgifter", "value": "ts_vikarutgifter"},
+                                                        {"label": "sysselsetting_arsverk", "value": "sysselsetting_arsverk"},
+                                                    ],
+                                                    value="ts_prog_akt",
+                                                    clearable=False,
+                                                ),
+                                                html.Label(
+                                                    "Registreringstype",
+                                                    style={"marginTop": "12px"},
+                                                ),
+                                                dcc.Dropdown(
+                                                    id=self.rate_drilldown_reg_type_id,
+                                                    className="ssb-dropdown",
+                                                    options=[
+                                                        {"label": "Begge", "value": "both"},
+                                                        {"label": "Kun 02", "value": "02"},
+                                                        {"label": "Ikke 02", "value": "not_02"},
+                                                    ],
+                                                    value="both",
+                                                    clearable=False,
+                                                ),
+                                                dcc.Checklist(
+                                                    id=self.rate_drilldown_show_invalid_id,
+                                                    options=[
+                                                        {
+                                                            "label": "Vis også ugyldige donor-rader",
+                                                            "value": "show-invalid",
+                                                        }
+                                                    ],
+                                                    value=[],
+                                                    style={"marginTop": "12px"},
                                                 ),
                                             ],
                                         ),
@@ -1929,6 +2001,417 @@ class VLModule:
         )
 
 
+
+    @classmethod
+    def _duckdb_connection(cls) -> duckdb.DuckDBPyConnection:
+        """
+        Return one persistent in-memory DuckDB connection per callback thread.
+
+        Dash may execute callbacks concurrently. A thread-local connection keeps
+        DuckDB reuse fast without sharing one mutable connection across threads.
+        """
+        connection = getattr(cls._duckdb_local, "connection", None)
+
+        if connection is None:
+            connection = duckdb.connect(database=":memory:")
+            cls._duckdb_local.connection = connection
+
+        return connection
+
+    @staticmethod
+    def _sql_literal(value: Any) -> str:
+        """Return a safely escaped DuckDB SQL literal for selector values."""
+        if value is None:
+            return "NULL"
+
+        if isinstance(value, bool):
+            return "TRUE" if value else "FALSE"
+
+        if isinstance(value, (int, np.integer)):
+            return str(int(value))
+
+        if isinstance(value, (float, np.floating)):
+            if not np.isfinite(value):
+                raise ValueError("Ikke-endelige tall kan ikke brukes i et filter.")
+            return repr(float(value))
+
+        escaped = str(value).replace("'", "''")
+        return f"'{escaped}'"
+
+    @staticmethod
+    def _quote_identifier(identifier: str) -> str:
+        """Quote a Parquet column name for DuckDB SQL."""
+        return '"' + str(identifier).replace('"', '""') + '"'
+
+    @staticmethod
+    def _parquet_relation(parquet_path: str) -> str:
+        """Return a DuckDB read_parquet expression for a mounted bucket path."""
+        escaped_path = str(parquet_path).replace("'", "''")
+        return f"read_parquet('{escaped_path}')"
+
+    @classmethod
+    @lru_cache(maxsize=32)
+    def _parquet_schema(
+        cls,
+        parquet_path: str,
+    ) -> tuple[tuple[str, str], ...]:
+        """Read and cache Parquet column names and DuckDB data types."""
+        connection = cls._duckdb_connection()
+        relation = cls._parquet_relation(parquet_path)
+        schema_df = connection.execute(
+            f"DESCRIBE SELECT * FROM {relation}"
+        ).fetchdf()
+
+        return tuple(
+            (str(row.column_name), str(row.column_type))
+            for row in schema_df.itertuples(index=False)
+        )
+
+    @classmethod
+    def _parquet_columns(
+        cls,
+        parquet_path: str,
+    ) -> tuple[str, ...]:
+        """Return cached Parquet column names without materialising the file."""
+        return tuple(
+            column
+            for column, _data_type in cls._parquet_schema(parquet_path)
+        )
+
+    @classmethod
+    def _numeric_parquet_columns(
+        cls,
+        parquet_path: str,
+    ) -> tuple[str, ...]:
+        """Return numeric Parquet columns using the cached DuckDB schema."""
+        numeric_tokens = (
+            "TINYINT",
+            "SMALLINT",
+            "INTEGER",
+            "BIGINT",
+            "HUGEINT",
+            "UTINYINT",
+            "USMALLINT",
+            "UINTEGER",
+            "UBIGINT",
+            "FLOAT",
+            "DOUBLE",
+            "DECIMAL",
+            "REAL",
+        )
+
+        return tuple(
+            column
+            for column, data_type in cls._parquet_schema(parquet_path)
+            if data_type.upper().startswith(numeric_tokens)
+        )
+
+    @classmethod
+    def _query_parquet(
+        cls,
+        parquet_path: str,
+        *,
+        columns: list[str] | tuple[str, ...] | None = None,
+        where: list[str] | tuple[str, ...] | None = None,
+        order_by: list[str] | tuple[str, ...] | None = None,
+        limit: int | None = None,
+        distinct: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Query a Parquet file lazily and return only the requested subset.
+
+        Row filters and column projection are executed by DuckDB before the
+        result is converted to pandas. This is the central memory-safety rule
+        for the large business and enterprise datasets.
+        """
+        available_columns = set(cls._parquet_columns(parquet_path))
+
+        if columns is None:
+            selected_columns = list(available_columns)
+        else:
+            selected_columns = [
+                column
+                for column in columns
+                if column in available_columns
+            ]
+
+        if not selected_columns:
+            raise ValueError(
+                "Ingen av de etterspurte kolonnene finnes i Parquet-filen."
+            )
+
+        select_sql = ", ".join(
+            cls._quote_identifier(column)
+            for column in selected_columns
+        )
+        distinct_sql = "DISTINCT " if distinct else ""
+        relation = cls._parquet_relation(parquet_path)
+
+        query_parts = [
+            f"SELECT {distinct_sql}{select_sql}",
+            f"FROM {relation}",
+        ]
+
+        active_filters = [
+            expression
+            for expression in (where or [])
+            if expression
+        ]
+
+        if active_filters:
+            query_parts.append(
+                "WHERE " + " AND ".join(
+                    f"({expression})"
+                    for expression in active_filters
+                )
+            )
+
+        if order_by:
+            query_parts.append(
+                "ORDER BY " + ", ".join(order_by)
+            )
+
+        if limit is not None:
+            query_parts.append(
+                f"LIMIT {max(int(limit), 0)}"
+            )
+
+        connection = cls._duckdb_connection()
+        return connection.execute(
+            "\n".join(query_parts)
+        ).fetchdf()
+
+    @classmethod
+    @lru_cache(maxsize=64)
+    def _query_distinct_values(
+        cls,
+        parquet_path: str,
+        column: str,
+    ) -> tuple[str, ...]:
+        """Return small cached selector metadata without loading source rows."""
+        if column not in cls._parquet_columns(parquet_path):
+            return ()
+
+        quoted = cls._quote_identifier(column)
+        result = cls._query_parquet(
+            parquet_path,
+            columns=[column],
+            where=[f"{quoted} IS NOT NULL"],
+            order_by=[quoted],
+            distinct=True,
+        )
+
+        return tuple(
+            result[column]
+            .dropna()
+            .astype(str)
+            .str.replace(r"\.0$", "", regex=True)
+            .str.strip()
+            .loc[lambda values: values.ne("")]
+            .tolist()
+        )
+
+    @classmethod
+    def _query_enterprise_rows(
+        cls,
+        parquet_path: str,
+        *,
+        columns: list[str],
+        orgnr_foretak: str | None = None,
+        years: list[int] | None = None,
+    ) -> pd.DataFrame:
+        """Query a narrow enterprise subset from foretak.parquet."""
+        filters: list[str] = []
+
+        if orgnr_foretak:
+            cleaned = str(orgnr_foretak).strip().removesuffix(".0")
+            filters.append(
+                "regexp_replace(CAST(\"orgnr_foretak\" AS VARCHAR), "
+                "'\\.0$', '') = "
+                + cls._sql_literal(cleaned)
+            )
+
+        if years:
+            year_values = ", ".join(str(int(year)) for year in years)
+            filters.append(
+                f'TRY_CAST("year" AS BIGINT) IN ({year_values})'
+            )
+
+        result = cls._query_parquet(
+            parquet_path,
+            columns=columns,
+            where=filters,
+        )
+
+        if "year" in result.columns:
+            result["year"] = pd.to_numeric(result["year"], errors="coerce")
+
+        if "orgnr_foretak" in result.columns:
+            result["orgnr_foretak"] = (
+                result["orgnr_foretak"]
+                .astype("string")
+                .str.replace(r"\.0$", "", regex=True)
+            )
+
+        return result
+
+    @classmethod
+    def _query_business_rows(
+        cls,
+        parquet_path: str,
+        *,
+        columns: list[str],
+        years: list[int] | None = None,
+        naring_level: str | None = None,
+        naring_value: str | None = None,
+        fylke: str | None = None,
+        orgnr_foretak: str | None = None,
+        orgnr_bedrift: str | None = None,
+    ) -> pd.DataFrame:
+        """Query a filtered, projected subset from bedrifter.parquet."""
+        available_columns = set(cls._parquet_columns(parquet_path))
+        filters: list[str] = []
+
+        if years:
+            year_values = ", ".join(str(int(year)) for year in years)
+            filters.append(
+                f'TRY_CAST("year" AS BIGINT) IN ({year_values})'
+            )
+
+        if naring_value:
+            naring_literal = cls._sql_literal(str(naring_value))
+
+            if (
+                naring_level
+                and naring_level in available_columns
+            ):
+                filters.append(
+                    f"CAST({cls._quote_identifier(naring_level)} AS VARCHAR) "
+                    f"= {naring_literal}"
+                )
+            else:
+                slice_lengths = {
+                    "n2": 2,
+                    "n3": 4,
+                    "n4": 5,
+                    "n5": 6,
+                    "naring_2": 2,
+                    "naring_3": 4,
+                    "naring_4": 5,
+                    "naring_5": 6,
+                }
+
+                if naring_level in {None, "naring"}:
+                    filters.append(
+                        f'CAST("naring" AS VARCHAR) = {naring_literal}'
+                    )
+                elif naring_level == "naring_1":
+                    if "naring_1" not in available_columns:
+                        raise ValueError(
+                            "Datasettet mangler kolonnen 'naring_1'."
+                        )
+                    filters.append(
+                        f'CAST("naring_1" AS VARCHAR) = {naring_literal}'
+                    )
+                else:
+                    slice_length = slice_lengths.get(str(naring_level))
+                    if slice_length is None:
+                        raise ValueError(
+                            f"Ugyldig næringsnivå: {naring_level}."
+                        )
+                    filters.append(
+                        f"substr(CAST(\"naring\" AS VARCHAR), 1, "
+                        f"{slice_length}) = {naring_literal}"
+                    )
+
+        if fylke and fylke != "Land":
+            filters.append(
+                f'CAST("fylke" AS VARCHAR) = {cls._sql_literal(str(fylke))}'
+            )
+
+        if orgnr_foretak:
+            cleaned = str(orgnr_foretak).strip().removesuffix(".0")
+            filters.append(
+                "regexp_replace(CAST(\"orgnr_foretak\" AS VARCHAR), "
+                "'\\.0$', '') = "
+                + cls._sql_literal(cleaned)
+            )
+
+        if orgnr_bedrift:
+            cleaned = str(orgnr_bedrift).strip().removesuffix(".0")
+            filters.append(
+                "regexp_replace(CAST(\"orgnr_bedrift\" AS VARCHAR), "
+                "'\\.0$', '') = "
+                + cls._sql_literal(cleaned)
+            )
+
+        result = cls._query_parquet(
+            parquet_path,
+            columns=columns,
+            where=filters,
+        )
+
+        if "year" in result.columns:
+            result["year"] = pd.to_numeric(result["year"], errors="coerce")
+
+        for identifier in ["orgnr_foretak", "orgnr_bedrift"]:
+            if identifier in result.columns:
+                result[identifier] = (
+                    result[identifier]
+                    .astype("string")
+                    .str.replace(r"\.0$", "", regex=True)
+                )
+
+        return result
+
+
+    @classmethod
+    @lru_cache(maxsize=64)
+    def _query_industry_values(
+        cls,
+        parquet_path: str,
+        group_level: str,
+    ) -> tuple[str, ...]:
+        """Return distinct industry values using DuckDB string projection."""
+        available = set(cls._parquet_columns(parquet_path))
+        relation = cls._parquet_relation(parquet_path)
+
+        if group_level == "naring_1":
+            if "naring_1" not in available:
+                return ()
+            expression = 'trim(CAST("naring_1" AS VARCHAR))'
+        elif group_level == "naring":
+            if "naring" not in available:
+                return ()
+            expression = 'trim(CAST("naring" AS VARCHAR))'
+        else:
+            slice_lengths = {
+                "n2": 2,
+                "n3": 4,
+                "n4": 5,
+                "n5": 6,
+                "naring_2": 2,
+                "naring_3": 4,
+                "naring_4": 4,
+                "naring_5": 5,
+            }
+            length = slice_lengths.get(group_level)
+            if length is None or "naring" not in available:
+                return ()
+            expression = (
+                f'substr(trim(CAST("naring" AS VARCHAR)), 1, {length})'
+            )
+
+        query = f"""
+            SELECT DISTINCT {expression} AS group_value
+            FROM {relation}
+            WHERE {expression} IS NOT NULL
+              AND {expression} <> ''
+            ORDER BY group_value
+        """
+        result = cls._duckdb_connection().execute(query).fetchdf()
+        return tuple(result["group_value"].astype(str).tolist())
+
     @staticmethod
     @lru_cache(maxsize=16)
     def _read_data(
@@ -2011,71 +2494,57 @@ class VLModule:
 
         return df
 
-    @staticmethod
+    @classmethod
     @lru_cache(maxsize=4)
     def _read_enterprise_lookup(
+        cls,
         parquet_path: str,
     ) -> pd.DataFrame:
         """
-        Create and cache one searchable row per enterprise.
+        Create one searchable row per enterprise without loading foretak.parquet.
 
-        The latest available non-missing name is retained for
-        each organisation number.
+        DuckDB reads only organisation number, year and name, then keeps the
+        latest named row for each enterprise before converting the compact
+        lookup result to pandas.
         """
-        df = VLModule._read_enterprise_data(
-            parquet_path
-        )
+        required = {"orgnr_foretak", "year", "navn"}
+        missing = required.difference(cls._parquet_columns(parquet_path))
 
-        if "navn" not in df.columns:
+        if missing:
             return pd.DataFrame(
-                columns=[
-                    "orgnr_foretak",
-                    "navn",
-                    "search_text",
-                ]
+                columns=["orgnr_foretak", "navn", "search_text"]
             )
 
-        lookup = df.loc[
-            df["navn"].notna(),
-            [
-                "orgnr_foretak",
-                "year",
-                "navn",
-            ],
-        ].copy()
+        relation = cls._parquet_relation(parquet_path)
+        query = f"""
+            SELECT
+                regexp_replace(
+                    CAST("orgnr_foretak" AS VARCHAR),
+                    '\\.0$',
+                    ''
+                ) AS orgnr_foretak,
+                arg_max(
+                    trim(CAST("navn" AS VARCHAR)),
+                    TRY_CAST("year" AS BIGINT)
+                ) AS navn
+            FROM {relation}
+            WHERE "orgnr_foretak" IS NOT NULL
+              AND "navn" IS NOT NULL
+              AND trim(CAST("navn" AS VARCHAR)) <> ''
+            GROUP BY 1
+        """
 
-        lookup["navn"] = (
-            lookup["navn"]
-            .astype(str)
-            .str.strip()
-        )
+        lookup = cls._duckdb_connection().execute(query).fetchdf()
+
+        if lookup.empty:
+            return pd.DataFrame(
+                columns=["orgnr_foretak", "navn", "search_text"]
+            )
 
         lookup["orgnr_foretak"] = (
-            lookup["orgnr_foretak"]
-            .astype(str)
-            .str.strip()
+            lookup["orgnr_foretak"].astype("string").str.strip()
         )
-
-        lookup = lookup.loc[
-            lookup["navn"].ne("")
-        ].copy()
-
-        # Keep one searchable row per enterprise. The most recent available name
-        # is preferred because enterprise names can change over time.
-        lookup = (
-            lookup.sort_values(
-                "year",
-                ascending=False,
-            )
-            .drop_duplicates(
-                subset="orgnr_foretak",
-                keep="first",
-            )
-            .reset_index(drop=True)
-        )
-
-        # Precompute a case-folded search field once per parquet path. Dropdown
-        # callbacks can then perform cheap substring matching on every keypress.
+        lookup["navn"] = lookup["navn"].astype("string").str.strip()
         lookup["search_text"] = (
             lookup["navn"].str.casefold()
             + " "
@@ -2083,12 +2552,9 @@ class VLModule:
         )
 
         return lookup[
-            [
-                "orgnr_foretak",
-                "navn",
-                "search_text",
-            ]
-        ]
+            ["orgnr_foretak", "navn", "search_text"]
+        ].reset_index(drop=True)
+
     @staticmethod
     @lru_cache(maxsize=4)
     def _read_business_data(
@@ -2157,6 +2623,99 @@ class VLModule:
 
         return df.copy()
 
+
+    @staticmethod
+    @lru_cache(maxsize=32)
+    def _get_available_years(
+        parquet_path: str,
+        year_column: str = "year",
+    ) -> tuple[int, ...]:
+        """Return sorted distinct years while reading only the year column."""
+        year_data = pd.read_parquet(
+            parquet_path,
+            columns=[year_column],
+        )
+
+        if year_column not in year_data.columns:
+            raise ValueError(
+                f"Datasettet mangler årskolonnen '{year_column}'."
+            )
+
+        years = (
+            pd.to_numeric(
+                year_data[year_column],
+                errors="coerce",
+            )
+            .dropna()
+            .astype(int)
+            .unique()
+            .tolist()
+        )
+
+        return tuple(sorted(years))
+
+    @staticmethod
+    def _get_current_year(
+        parquet_path: str,
+        year_column: str = "year",
+    ) -> int:
+        """Return the newest available data year."""
+        years = VLModule._get_available_years(
+            parquet_path,
+            year_column,
+        )
+
+        if not years:
+            raise ValueError(
+                "Datasettet inneholder ingen gyldige år."
+            )
+
+        return years[-1]
+
+    @staticmethod
+    def _get_current_and_previous_year(
+        parquet_path: str,
+        year_column: str = "year",
+    ) -> tuple[int, int]:
+        """Return newest year and the immediately preceding calendar year."""
+        years = VLModule._get_available_years(
+            parquet_path,
+            year_column,
+        )
+
+        if not years:
+            raise ValueError(
+                "Datasettet inneholder ingen gyldige år."
+            )
+
+        current_year = years[-1]
+        previous_year = current_year - 1
+
+        if previous_year not in years:
+            raise ValueError(
+                f"Datasettet inneholder {current_year}, "
+                f"men mangler året før ({previous_year})."
+            )
+
+        return current_year, previous_year
+
+    @staticmethod
+    def _get_two_latest_years(
+        parquet_path: str,
+        year_column: str = "year",
+    ) -> tuple[int, int]:
+        """Return the two newest available years, used for MOMS."""
+        years = VLModule._get_available_years(
+            parquet_path,
+            year_column,
+        )
+
+        if len(years) < 2:
+            raise ValueError(
+                "Datasettet må inneholde minst to år."
+            )
+
+        return years[-1], years[-2]
 
     @staticmethod
     # ========================================================================
@@ -6099,7 +6658,7 @@ class VLModule:
 
         if "naring_5" not in data.columns:
             data["naring_5"] = (
-                data["naring"].str.slice(0, 5)
+                data["naring"].str.slice(0, 6)
             )
 
         if view == "Fylke":
@@ -6227,10 +6786,23 @@ class VLModule:
                 np.nan,
             )
 
+            positive_change = (
+                wide[delta_column]
+                .gt(0)
+                .fillna(False)
+                .to_numpy(dtype=bool)
+            )
+            negative_change = (
+                wide[delta_column]
+                .lt(0)
+                .fillna(False)
+                .to_numpy(dtype=bool)
+            )
+
             wide[direction_column] = np.select(
                 [
-                    wide[delta_column] > 0,
-                    wide[delta_column] < 0,
+                    positive_change,
+                    negative_change,
                 ],
                 [
                     "⬆️",
@@ -7887,6 +8459,332 @@ class VLModule:
         return figure
 
     @staticmethod
+    def _rate_variable_specs() -> list[tuple[str, str, str, str]]:
+        """Return variable, rate column, base column and display group."""
+        return [
+            ("ts_forbrukselektronikk_akt", "ts_forbrukselektronikk_akt_rate", "basisx", "Aktivert"),
+            ("ts_prog_akt", "ts_prog_akt_rate", "basisx", "Aktivert"),
+            ("ts_egenprog_akt", "ts_egenprog_akt_rate", "basisx", "Aktivert"),
+            ("ts_eksternkonsulent_akt", "ts_eksternkonsulent_akt_rate", "basisx", "Aktivert"),
+            ("ts_forbrukselektronikk_utg", "ts_forbrukselektronikk_utg_rate", "nopost_driftskostnader", "Utgift"),
+            ("ts_prog_utg", "ts_prog_utg_rate", "nopost_driftskostnader", "Utgift"),
+            ("ts_egenprog_utg", "ts_egenprog_utg_rate", "nopost_driftskostnader", "Utgift"),
+            ("ts_eksternkonsulent_utg", "ts_eksternkonsulent_utg_rate", "nopost_driftskostnader", "Utgift"),
+            ("ts_vikarutgifter", "ts_vikarutgifter_rate", "nopost_lonnskostnader", "Lønn"),
+            ("sysselsetting_arsverk", "arsverk_rate", "sysselsetting_syss", "Årsverk"),
+        ]
+
+    @staticmethod
+    def _create_enterprise_rate_data(
+        df: pd.DataFrame,
+        *,
+        show_all: bool = False,
+    ) -> tuple[pd.DataFrame, dict[str, Any]]:
+        """Reshape one enterprise's stored rates into a readable long table."""
+        if df.empty:
+            return pd.DataFrame(), {}
+
+        row = df.iloc[0]
+        metadata_columns = [
+            "orgnr_foretak", "orgnr_bedrift", "naring", "reg_type", "type"
+        ]
+        base_columns = [
+            "basisx", "nopost_driftskostnader", "nopost_lonnskostnader",
+            "sysselsetting_syss", "sysselsetting_arsverk",
+        ]
+        metadata = {
+            column: row.get(column)
+            for column in metadata_columns + base_columns
+            if column in row.index
+        }
+
+        rows: list[dict[str, Any]] = []
+        for variable, rate_column, base_column, group in VLModule._rate_variable_specs():
+            value = row.get(variable, np.nan)
+            rate = row.get(rate_column, np.nan)
+            base_value = row.get(base_column, np.nan)
+            if not show_all and pd.isna(rate):
+                continue
+            rows.append(
+                {
+                    "gruppe": group,
+                    "variable": variable,
+                    "value_current": value,
+                    "rate_brukt": rate,
+                    "base": base_column,
+                    "baseverdi": base_value,
+                    "formel": f"{variable} = {base_column} × {rate_column}",
+                }
+            )
+        return pd.DataFrame(rows), metadata
+
+    @staticmethod
+    def _create_enterprise_rate_summary_card(
+        metadata: dict[str, Any],
+    ) -> html.Div:
+        """Create metadata and basis-variable cards for the rate viewer."""
+        if not metadata:
+            return html.Div()
+
+        def fmt(value: Any) -> str:
+            if value is None or pd.isna(value):
+                return "–"
+            if isinstance(value, (int, float, np.integer, np.floating)):
+                return f"{float(value):,.0f}".replace(",", " ")
+            return str(value).removesuffix(".0")
+
+        metadata_keys = ["orgnr_foretak", "orgnr_bedrift", "naring", "reg_type", "type"]
+        base_keys = ["basisx", "nopost_driftskostnader", "nopost_lonnskostnader", "sysselsetting_syss", "sysselsetting_arsverk"]
+
+        def cards(keys: list[str], background: str) -> html.Div:
+            return html.Div(
+                style={"display": "flex", "gap": "10px", "flexWrap": "wrap"},
+                children=[
+                    html.Div(
+                        style={
+                            "padding": "10px 14px", "backgroundColor": background,
+                            "border": "1px solid #e5e7eb", "borderRadius": "10px",
+                            "minWidth": "150px",
+                        },
+                        children=[
+                            html.Div(key, style={"fontSize": "12px", "color": "#6b7280"}),
+                            html.Div(fmt(metadata.get(key)), style={"fontSize": "15px", "fontWeight": "700", "marginTop": "3px"}),
+                        ],
+                    )
+                    for key in keys if key in metadata
+                ],
+            )
+
+        return html.Div(
+            style={"border": "1px solid #d1d5db", "borderRadius": "12px", "padding": "16px", "backgroundColor": "#fff"},
+            children=[
+                html.Div("Enkeltforetak · rate brukt", style={"fontSize": "18px", "fontWeight": "800"}),
+                html.Div("Match", style={"fontSize": "12px", "color": "#6b7280", "marginBottom": "8px"}),
+                cards(metadata_keys, "#ffffff"),
+                html.Div("Basisvariabler", style={"fontWeight": "700", "marginTop": "16px", "marginBottom": "8px"}),
+                cards(base_keys, "#f9fafb"),
+            ],
+        )
+
+    @staticmethod
+    def _rate_variable_definition(variable: str) -> tuple[str, str, bool, str]:
+        activated = {
+            "ts_forbrukselektronikk_akt", "ts_prog_akt",
+            "ts_egenprog_akt", "ts_eksternkonsulent_akt",
+        }
+        expenses = {
+            "ts_forbrukselektronikk_utg", "ts_prog_utg",
+            "ts_egenprog_utg", "ts_eksternkonsulent_utg",
+        }
+        if variable in activated:
+            return variable, "basisx", True, f"{variable} / basisx"
+        if variable in expenses:
+            return variable, "nopost_driftskostnader", False, f"{variable} / nopost_driftskostnader"
+        if variable == "ts_vikarutgifter":
+            return variable, "nopost_lonnskostnader", False, "ts_vikarutgifter / nopost_lonnskostnader"
+        if variable == "sysselsetting_arsverk":
+            return variable, "sysselsetting_syss", False, "sysselsetting_arsverk / sysselsetting_syss"
+        raise ValueError(f"Ukjent ratevariabel: {variable}.")
+
+    @staticmethod
+    def _create_rate_drilldown_data(
+        df: pd.DataFrame,
+        *,
+        chosen_naring: str,
+        variable: str,
+        reg_type_filter: str = "both",
+        show_invalid: bool = False,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+        """Reproduce donor normalization, aggregation and hierarchy fallback."""
+        if df.empty:
+            return pd.DataFrame(), pd.DataFrame(), {}
+
+        data = df.copy()
+        if "type" in data.columns:
+            data = data.loc[data["type"].astype(str) == "S"].copy()
+        if reg_type_filter == "02":
+            data = data.loc[data["reg_type"].astype(str) == "02"].copy()
+        elif reg_type_filter == "not_02":
+            data = data.loc[data["reg_type"].astype(str) != "02"].copy()
+        if data.empty:
+            return pd.DataFrame(), pd.DataFrame(), {}
+
+        data["naring"] = data["naring"].astype("string").str.strip()
+        data["_nace4"] = data["naring"].str.slice(0, 4)
+        data["_nace2"] = data["naring"].str.slice(0, 2)
+        numerator, denominator, normalize_activated, formula = VLModule._rate_variable_definition(variable)
+
+        activated_columns = [
+            "ts_forbrukselektronikk_akt", "ts_prog_akt",
+            "ts_egenprog_akt", "ts_eksternkonsulent_akt",
+        ]
+        numeric_columns = list(dict.fromkeys([numerator, denominator, *activated_columns]))
+        for column in numeric_columns:
+            if column not in data.columns:
+                data[column] = 0.0
+            data[column] = pd.to_numeric(data[column], errors="coerce")
+
+        if normalize_activated:
+            data["basisx"] = data["basisx"].fillna(0.0)
+            data[activated_columns] = data[activated_columns].fillna(0.0).clip(lower=0.0)
+            activated_sum = data[activated_columns].sum(axis=1)
+            scale = np.where(
+                (data["basisx"] > 0) & (activated_sum > data["basisx"]) & (activated_sum > 0),
+                data["basisx"].to_numpy() / activated_sum.to_numpy(),
+                1.0,
+            )
+            data[activated_columns] = data[activated_columns].mul(scale, axis=0)
+
+        numerator_values = pd.to_numeric(data[numerator], errors="coerce")
+        denominator_values = pd.to_numeric(data[denominator], errors="coerce")
+        data["teller"] = numerator_values
+        data["nevner"] = denominator_values
+        data["row_ratio"] = numerator_values / denominator_values.where(denominator_values > 0)
+        data["row_ratio"] = data["row_ratio"].replace([np.inf, -np.inf], np.nan)
+        data["valid_row"] = data["row_ratio"].notna() & data["row_ratio"].ge(0)
+
+        def group_rates(group_column: str) -> pd.DataFrame:
+            rows: list[dict[str, Any]] = []
+            for key, group in data.groupby(group_column, dropna=False):
+                valid = group.loc[group["valid_row"]]
+                numerator_sum = valid["teller"].sum(min_count=1)
+                denominator_sum = valid["nevner"].sum(min_count=1)
+                rate = numerator_sum / denominator_sum if pd.notna(denominator_sum) and denominator_sum != 0 else np.nan
+                rows.append({
+                    group_column: key,
+                    "numerator_sum": numerator_sum,
+                    "denominator_sum": denominator_sum,
+                    "valid_rows": int(group["valid_row"].sum()),
+                    "total_rows": int(len(group)),
+                    "excluded_rows": int(len(group) - group["valid_row"].sum()),
+                    "rate": rate,
+                })
+            return pd.DataFrame(rows)
+
+        data["_global"] = "global"
+        level_specs = [
+            ("naring", chosen_naring),
+            ("_nace4", chosen_naring[:4]),
+            ("_nace2", chosen_naring[:2]),
+            ("_global", "global"),
+        ]
+        overview_rows: list[dict[str, Any]] = []
+        chosen_summary: dict[str, Any] | None = None
+        used_level = "global"
+        used_key = "global"
+        for column, key in level_specs:
+            grouped = group_rates(column)
+            hit = grouped.loc[grouped[column].astype(str) == str(key)]
+            rate = hit["rate"].iloc[0] if not hit.empty else np.nan
+            display_level = {"_nace4": "nace4", "_nace2": "nace2", "_global": "global"}.get(column, column)
+            overview_rows.append({"nivå": display_level, "match": key, "rate": rate})
+            if chosen_summary is None and not hit.empty and pd.notna(rate):
+                chosen_summary = hit.iloc[0].to_dict()
+                used_level = display_level
+                used_key = str(key)
+
+        if chosen_summary is None:
+            return pd.DataFrame(), pd.DataFrame(overview_rows), {}
+
+        if used_level == "naring":
+            donor_rows = data.loc[data["naring"].astype(str) == chosen_naring].copy()
+        elif used_level == "nace4":
+            donor_rows = data.loc[data["_nace4"].astype(str) == chosen_naring[:4]].copy()
+        elif used_level == "nace2":
+            donor_rows = data.loc[data["_nace2"].astype(str) == chosen_naring[:2]].copy()
+        else:
+            donor_rows = data.copy()
+        if not show_invalid:
+            donor_rows = donor_rows.loc[donor_rows["valid_row"]].copy()
+
+        columns = [
+            column for column in [
+                "orgnr_foretak", "orgnr_bedrift", "naring", "reg_type",
+                "teller", "nevner", "row_ratio", "valid_row",
+            ] if column in donor_rows.columns
+        ]
+        donor_rows = donor_rows[columns]
+        sort_columns = [
+            column
+            for column in ["orgnr_foretak", "orgnr_bedrift"]
+            if column in columns
+        ]
+        if sort_columns:
+            donor_rows = donor_rows.sort_values(sort_columns)
+        donor_rows = donor_rows.reset_index(drop=True)
+        summary = {
+            "chosen_naring": chosen_naring,
+            "variable": variable,
+            "formula": formula,
+            "used_level": used_level,
+            "used_key": used_key,
+            **chosen_summary,
+        }
+        return donor_rows, pd.DataFrame(overview_rows), summary
+
+    @staticmethod
+    def _create_rate_drilldown_summary_card(
+        summary: dict[str, Any],
+        overview: pd.DataFrame,
+    ) -> html.Div:
+        if not summary:
+            return html.Div()
+
+        def number(value: Any, decimals: int = 4) -> str:
+            if value is None or pd.isna(value):
+                return "–"
+            return f"{float(value):,.{decimals}f}".replace(",", " ")
+
+        stats = [
+            ("Sum teller", summary.get("numerator_sum"), 4),
+            ("Sum nevner", summary.get("denominator_sum"), 4),
+            ("Endelig rate", summary.get("rate"), 6),
+            ("Gyldige donor-rader", summary.get("valid_rows"), 0),
+            ("Ekskluderte rader", summary.get("excluded_rows"), 0),
+        ]
+        overview_rows = [
+            html.Tr([html.Td(str(row["nivå"])), html.Td(str(row["match"])), html.Td(number(row["rate"], 6))])
+            for _, row in overview.iterrows()
+        ]
+        return html.Div(
+            children=[
+                html.Div(
+                    style={"backgroundColor": "#f8f9fa", "borderLeft": "6px solid #2f6fed", "padding": "14px 18px", "borderRadius": "8px"},
+                    children=[
+                        html.H3("Drilldown for rateberegning", style={"margin": "0 0 6px 0"}),
+                        html.Div([html.Strong("Valgt næring: "), str(summary.get("chosen_naring"))]),
+                        html.Div([html.Strong("Valgt variabel: "), str(summary.get("variable"))]),
+                        html.Div([html.Strong("Formel: "), str(summary.get("formula"))]),
+                        html.Div([html.Strong("Nivå brukt i hierarkiet: "), f"{summary.get('used_level')} ({summary.get('used_key')})"]),
+                    ],
+                ),
+                html.Div(
+                    style={"display": "flex", "gap": "12px", "flexWrap": "wrap", "marginTop": "14px"},
+                    children=[
+                        html.Div(
+                            style={"backgroundColor": "white", "border": "1px solid #ddd", "padding": "12px 16px", "borderRadius": "10px", "minWidth": "180px"},
+                            children=[html.Div(label, style={"fontSize": "12px", "color": "#666"}), html.Div(number(value, decimals), style={"fontSize": "22px", "fontWeight": "700"})],
+                        )
+                        for label, value, decimals in stats
+                    ],
+                ),
+                html.Div(
+                    style={"marginTop": "16px"},
+                    children=[
+                        html.Strong("Hierarkioversikt"),
+                        html.Table(
+                            style={"borderCollapse": "collapse", "marginTop": "8px"},
+                            children=[
+                                html.Thead(html.Tr([html.Th("Nivå"), html.Th("Match"), html.Th("Rate")])),
+                                html.Tbody(overview_rows),
+                            ],
+                        ),
+                    ],
+                ),
+            ]
+        )
+
+    @staticmethod
     # ========================================================================
     # Shared table formatting
     # ========================================================================
@@ -7966,6 +8864,17 @@ class VLModule:
             "group_current": "Næring valgt år",
             "status": "Status",
             "sort_value": "Sorteringsverdi",
+            "gruppe": "Gruppe",
+            "rate_brukt": "Rate brukt",
+            "base": "Base",
+            "baseverdi": "Baseverdi",
+            "formel": "Formel",
+            "teller": "Teller",
+            "nevner": "Nevner",
+            "row_ratio": "Radrate",
+            "valid_row": "Gyldig rad",
+            "match": "Match",
+            "rate": "Rate",
 
             "production_input_opposite": (
                 "Produksjonsverdi og produktinnsats motsatt"
@@ -8036,10 +8945,12 @@ class VLModule:
         )
 
         for column in numeric_columns:
+            decimals = 6 if column in {"rate_used", "rate"} else 2
+
             display_df[column] = pd.to_numeric(
                 display_df[column],
                 errors="coerce",
-            ).round(2)
+            ).round(decimals)
 
         boolean_columns = (
             display_df.select_dtypes(
@@ -8749,63 +9660,18 @@ class VLModule:
             Output(self.variable_id, "value"),
             Output(self.multi_variable_id, "options"),
             Output(self.multi_variable_id, "value"),
-
-            Output(self.change_year_id, "options"),
-            Output(self.change_year_id, "value"),
-
-            Output(self.noku_year_id, "options"),
-            Output(self.noku_year_id, "value"),
-
-            Output(self.large_changes_year_id, "options"),
-            Output(self.large_changes_year_id, "value"),
-            Output(self.large_changes_variables_id, "options"),
-            Output(self.large_changes_variables_id, "value"),
-            Output(self.large_changes_fylke_id, "options"),
-            Output(self.large_changes_fylke_id, "value"),
-
-            Output(self.negative_nopost_year_id, "options"),
-            Output(self.negative_nopost_year_id, "value"),
-
-            Output(self.nr_year_id, "options"),
-            Output(self.nr_year_id, "value"),
-
-            Output(self.opposite_year_id, "options"),
-            Output(self.opposite_year_id, "value"),
-
-            Output(self.breakdown_year_id, "options"),
-            Output(self.breakdown_year_id, "value"),
-
-            Output(self.moms_previous_year_id, "options"),
-            Output(self.moms_previous_year_id, "value"),
-            Output(self.moms_current_year_id, "options"),
-            Output(self.moms_current_year_id, "value"),
-
-            Output(self.method_reg_types_id, "options"),
-            Output(self.method_reg_types_id, "value"),
-
-            Output(self.status_id, "children"),
             Input(self.data_version_id, "value"),
             Input(self.trend_naring_level_id, "value"),
             Input(self.visualisation_id, "value"),
-            )
-        def load_dropdown_options(
+        )
+        def load_trend_dropdown_options(
             data_version: str,
             trend_naring_level: str,
             visualisation: str,
         ) -> tuple[Any, ...]:
+            """Populate only the selectors used by trend visualisations."""
             try:
-                aggregate_path = self._parquet_path(
-                    data_version,
-                    dataset="agg_naring4",
-                )
-                aggregate_df = self._read_data(
-                    aggregate_path
-                )
-                
-                if visualisation in {
-                    "trend-single",
-                    "trend-multi",
-                }:
+                if visualisation in {"trend-single", "trend-multi"}:
                     trend_config = TREND_LEVEL_CONFIG.get(
                         trend_naring_level,
                         TREND_LEVEL_CONFIG["n3"],
@@ -8813,449 +9679,221 @@ class VLModule:
                 else:
                     trend_config = TREND_LEVEL_CONFIG["n3"]
 
-                trend_dataset = str(
-                    trend_config["dataset"]
-                )
-
-                trend_naring_column = str(
-                    trend_config["column"]
-                )
-
                 trend_path = self._parquet_path(
                     data_version,
-                    dataset=trend_dataset,
+                    dataset=str(trend_config["dataset"]),
                 )
-
+                trend_naring_column = str(trend_config["column"])
                 trend_df = self._read_data(
                     trend_path,
                     naring_column=trend_naring_column,
                 )
 
-                business_path = self._parquet_path(
-                    data_version,
-                    dataset="bedrifter",
-                )
-                business_df = self._read_business_data(
-                    business_path
-                )
-
-                enterprise_path = self._parquet_path(
-                    data_version,
-                    dataset="foretak",
-                )
-                enterprise_df = self._read_enterprise_data(
-                    enterprise_path
-                )
-
-                # -------------------------------------------------
-                # Næring options
-                # -------------------------------------------------
-
                 naring_values = sorted(
                     trend_df[trend_naring_column]
-                    .dropna()
-                    .astype(str)
-                    .unique()
-                    .tolist()
+                    .dropna().astype(str).unique().tolist()
                 )
-
                 naring_options = [
-                    {
-                        "label": value,
-                        "value": value,
-                    }
+                    {"label": value, "value": value}
                     for value in naring_values
                 ]
+                naring_value = naring_values[0] if naring_values else None
 
-                naring_value = (
-                    naring_values[0]
-                    if naring_values
-                    else None
-                )
-
-                n2_values = sorted(
-                    {
-                        value[:2]
-                        for value in naring_values
-                        if len(value) >= 2
-                    }
-                )
-
+                n2_values = sorted({
+                    value[:2] for value in naring_values if len(value) >= 2
+                })
                 n2_options = [
-                    {
-                        "label": value,
-                        "value": value,
-                    }
+                    {"label": value, "value": value}
                     for value in n2_values
                 ]
-
                 default_n2_value = (
-                    "45"
-                    if "45" in n2_values
-                    else (
-                        n2_values[0]
-                        if n2_values
-                        else None
-                    )
+                    "45" if "45" in n2_values
+                    else (n2_values[0] if n2_values else None)
                 )
 
-                # -------------------------------------------------
-                # Aggregate variable options
-                # -------------------------------------------------
-                numeric_columns = (
-                    trend_df.select_dtypes(
-                        include=[np.number]
-                    )
-                    .columns
-                    .tolist()
-                )
-
+                numeric_columns = trend_df.select_dtypes(
+                    include=[np.number]
+                ).columns.tolist()
                 variable_values = sorted(
-                    column
-                    for column in numeric_columns
-                    if column != "year"
+                    column for column in numeric_columns if column != "year"
                 )
-
                 variable_options = [
-                    {
-                        "label": value,
-                        "value": value,
-                    }
+                    {"label": value, "value": value}
                     for value in variable_values
                 ]
-
-                preferred_variable = "omsetning"
-
                 variable_value = (
-                    preferred_variable
-                    if preferred_variable in variable_values
-                    else (
-                        variable_values[0]
-                        if variable_values
-                        else None
-                    )
+                    "omsetning" if "omsetning" in variable_values
+                    else (variable_values[0] if variable_values else None)
                 )
-
-                preferred_multi_variables = [
-                    "omsetning",
-                    "nopost_driftskostnader",
-                ]
-
+                preferred = ["omsetning", "nopost_driftskostnader"]
                 multi_variable_value = [
-                    variable
-                    for variable in preferred_multi_variables
-                    if variable in variable_values
-                ]
+                    value for value in preferred if value in variable_values
+                ] or variable_values[:3]
 
-                if not multi_variable_value:
-                    multi_variable_value = variable_values[:3]
-
-                # -------------------------------------------------
-                # General year options
-                # -------------------------------------------------
-                year_values = sorted(
-                    aggregate_df["year"]
-                    .dropna()
-                    .astype(int)
-                    .unique()
-                    .tolist()
+                return (
+                    naring_options, naring_value,
+                    n2_options, default_n2_value,
+                    naring_options,
+                    variable_options, variable_value,
+                    variable_options, multi_variable_value,
                 )
+            except Exception:
+                return [], None, [], None, [], [], None, [], []
 
-                year_options = [
-                    {
-                        "label": str(year),
-                        "value": year,
-                    }
-                    for year in year_values
-                ]
-
-                latest_year = (
-                    year_values[-1]
-                    if year_values
-                    else None
+        @callback(
+            Output(self.large_changes_variables_id, "options"),
+            Output(self.large_changes_variables_id, "value"),
+            Output(self.large_changes_fylke_id, "options"),
+            Output(self.large_changes_fylke_id, "value"),
+            Output(self.method_reg_types_id, "options"),
+            Output(self.method_reg_types_id, "value"),
+            Output(self.status_id, "children"),
+            Input(self.data_version_id, "value"),
+        )
+        def load_business_metadata_options(
+            data_version: str,
+        ) -> tuple[Any, ...]:
+            """Populate business metadata without rebuilding trend selectors."""
+            try:
+                business_path = self._parquet_path(
+                    data_version, dataset="bedrifter"
                 )
-
-                # -------------------------------------------------
-                # Business variable options
-                # -------------------------------------------------
-                business_numeric_columns = (
-                    business_df.select_dtypes(
-                        include=[np.number]
-                    )
-                    .columns
-                    .tolist()
+                enterprise_path = self._parquet_path(
+                    data_version, dataset="foretak"
                 )
-
-                excluded_business_variables = {
-                    "year",
-                }
+                aggregate_path = self._parquet_path(
+                    data_version, dataset="agg_naring4"
+                )
 
                 business_variable_values = sorted(
                     column
-                    for column in business_numeric_columns
-                    if column not in excluded_business_variables
+                    for column in self._numeric_parquet_columns(
+                        business_path
+                    )
+                    if column != "year"
                 )
-
                 business_variable_options = [
-                    {
-                        "label": value,
-                        "value": value,
-                    }
+                    {"label": value, "value": value}
                     for value in business_variable_values
                 ]
-
-                preferred_large_change_variable = "omsetning"
-
-                if preferred_large_change_variable in business_variable_values:
-                    large_change_variable_value = (
-                        preferred_large_change_variable
-                    )
-                elif business_variable_values:
-                    large_change_variable_value = (
+                large_change_variable_value = (
+                    "omsetning"
+                    if "omsetning" in business_variable_values
+                    else (
                         business_variable_values[0]
+                        if business_variable_values else None
                     )
-                else:
-                    large_change_variable_value = None
+                )
 
-                # -------------------------------------------------
-                # County options
-                # -------------------------------------------------
-                if "fylke" in business_df.columns:
-                    fylke_values = sorted(
-                        business_df["fylke"]
-                        .dropna()
-                        .astype(str)
-                        .unique()
-                        .tolist()
+                fylke_values = list(
+                    self._query_distinct_values(
+                        business_path,
+                        "fylke",
                     )
-                else:
-                    fylke_values = []
-
+                )
                 fylke_options = [
-                    {
-                        "label": "Hele landet",
-                        "value": "Land",
-                    },
+                    {"label": "Hele landet", "value": "Land"},
                     *[
-                        {
-                            "label": fylke,
-                            "value": fylke,
-                        }
-                        for fylke in fylke_values
+                        {"label": value, "value": value}
+                        for value in fylke_values
                     ],
                 ]
 
-                # -------------------------------------------------
-                # MOMS years
-                # -------------------------------------------------
-                moms_year_options: list[dict[str, int]] = []
-                moms_previous_year: int | None = None
-                moms_current_year: int | None = None
-
-                try:
-                    moms_path = self._parquet_path(
-                        data_version,
-                        dataset="moms",
+                reg_type_source_path = (
+                    enterprise_path
+                    if "reg_type" in self._parquet_columns(enterprise_path)
+                    else business_path
+                )
+                reg_type_values = list(
+                    self._query_distinct_values(
+                        reg_type_source_path,
+                        "reg_type",
                     )
-                    moms_df = pd.read_parquet(
-                        moms_path
-                    )
-
-                    if "aar" in moms_df.columns:
-                        moms_year_values = sorted(
-                            pd.to_numeric(
-                                moms_df["aar"],
-                                errors="coerce",
-                            )
-                            .dropna()
-                            .astype(int)
-                            .unique()
-                            .tolist()
-                        )
-
-                        moms_year_options = [
-                            {
-                                "label": str(year),
-                                "value": year,
-                            }
-                            for year in moms_year_values
-                        ]
-
-                        if len(moms_year_values) >= 2:
-                            moms_previous_year = (
-                                moms_year_values[-2]
-                            )
-                            moms_current_year = (
-                                moms_year_values[-1]
-                            )
-
-                        elif len(moms_year_values) == 1:
-                            moms_previous_year = (
-                                moms_year_values[0]
-                            )
-                            moms_current_year = (
-                                moms_year_values[0]
-                            )
-
-                except Exception:
-                    moms_year_options = year_options
-
-                    if len(year_values) >= 2:
-                        moms_previous_year = year_values[-2]
-                        moms_current_year = year_values[-1]
-
-                    elif len(year_values) == 1:
-                        moms_previous_year = year_values[0]
-                        moms_current_year = year_values[0]
-
-                # -------------------------------------------------
-                # Registration types
-                # -------------------------------------------------
-                if "reg_type" in enterprise_df.columns:
-                    reg_type_values = sorted(
-                        enterprise_df["reg_type"]
-                        .dropna()
-                        .astype(str)
-                        .unique()
-                        .tolist()
-                    )
-                elif "reg_type" in business_df.columns:
-                    reg_type_values = sorted(
-                        business_df["reg_type"]
-                        .dropna()
-                        .astype(str)
-                        .unique()
-                        .tolist()
-                    )
-                else:
-                    reg_type_values = []
-
+                )
                 reg_type_options = [
-                    {
-                        "label": value,
-                        "value": value,
-                    }
+                    {"label": value, "value": value}
                     for value in reg_type_values
                 ]
 
                 status = html.P(
                     [
-                        "Aggregert: ",
-                        html.Code(aggregate_path),
-                        html.Br(),
-                        "Bedrifter: ",
-                        html.Code(business_path),
-                        html.Br(),
-                        "Foretak: ",
-                        html.Code(enterprise_path),
+                        "Aggregert: ", html.Code(aggregate_path), html.Br(),
+                        "Bedrifter: ", html.Code(business_path), html.Br(),
+                        "Foretak: ", html.Code(enterprise_path),
                     ],
                     style={"fontSize": "12px"},
                 )
 
                 return (
-                    naring_options,
-                    naring_value,
-                    n2_options,
-                    default_n2_value,
-                    naring_options,
-                    variable_options,
-                    variable_value,
-                    variable_options,
-                    multi_variable_value,
-
-                    year_options,
-                    latest_year,
-
-                    year_options,
-                    latest_year,
-
-                    year_options,
-                    latest_year,
                     business_variable_options,
                     large_change_variable_value,
                     fylke_options,
                     "Land",
-
-                    year_options,
-                    latest_year,
-
-                    year_options,
-                    latest_year,
-
-                    year_options,
-                    latest_year,
-
-                    year_options,
-                    latest_year,
-
-                    moms_year_options,
-                    moms_previous_year,
-                    moms_year_options,
-                    moms_current_year,
-
                     reg_type_options,
                     [],
-
                     status,
                 )
-
             except Exception as error:
-                empty_options: list[dict[str, Any]] = []
-
                 return (
-                    empty_options,
-                    None,
-                    empty_options,
-                    None,
-                    empty_options,
-                    empty_options,
-                    None,
-                    empty_options,
-                    [],
-
-                    empty_options,
-                    None,
-
-                    empty_options,
-                    None,
-
-                    empty_options,
-                    None,
-                    empty_options,
-                    None,
-                    [
-                        {
-                            "label": "Hele landet",
-                            "value": "Land",
-                        }
-                    ],
+                    [], None,
+                    [{"label": "Hele landet", "value": "Land"}],
                     "Land",
-
-                    empty_options,
-                    None,
-
-                    empty_options,
-                    None,
-
-                    empty_options,
-                    None,
-
-                    empty_options,
-                    None,
-
-                    empty_options,
-                    None,
-                    empty_options,
-                    None,
-
-                    empty_options,
-                    [],
-
+                    [], [],
                     html.Div(
                         f"Kunne ikke lese data: {error}",
                         className="alert alert-danger",
                     ),
                 )
+
+        @callback(
+            Output(self.analysis_period_id, "children"),
+            Input(self.visualisation_id, "value"),
+            Input(self.data_version_id, "value"),
+        )
+        def display_analysis_period(
+            visualisation: str,
+            data_version: str,
+        ) -> str:
+            """Display the automatically selected analysis period."""
+            try:
+                if visualisation in {
+                    "trend-single", "trend-multi", "trend-industries",
+                    "trend-enterprise", "method-analysis",
+                }:
+                    return "Viser alle tilgjengelige år."
+
+                if visualisation in {
+                    "enterprise-rate-viewer", "rate-drilldown",
+                }:
+                    return "Viser rategrunnlaget i valgt dataversjon."
+
+                if visualisation == "movement":
+                    return "Viser perioden som er lagret i bevegelsesdatasettet."
+
+                if visualisation == "moms":
+                    path = self._parquet_path(data_version, dataset="moms")
+                    current_year, previous_year = self._get_two_latest_years(
+                        path, "aar"
+                    )
+                    return f"Viser {current_year} sammenlignet med {previous_year}."
+
+                dataset = (
+                    "bedrifter_recent_med_nopost"
+                    if visualisation in {"negative-nopost", "nr-controls"}
+                    else "bedrifter"
+                )
+                path = self._parquet_path(data_version, dataset=dataset)
+                current_year = self._get_current_year(path)
+
+                if visualisation in {"negative-nopost", "nr-controls"}:
+                    return f"Viser kontrollår {current_year}."
+
+                return (
+                    f"Viser {current_year} sammenlignet med "
+                    f"{current_year - 1}."
+                )
+            except Exception as error:
+                return f"Kunne ikke fastsette analyseperiode: {error}"
 
         @callback(
             Output(self.multi_naring_id, "value"),
@@ -9369,6 +10007,69 @@ class VLModule:
             return str(selected_enterprise)
 
         @callback(
+            Output(self.rate_enterprise_search_id, "options"),
+            Input(self.rate_enterprise_search_id, "search_value"),
+            Input(self.data_version_id, "value"),
+        )
+        def search_rate_enterprise_names(
+            search_value: str | None,
+            data_version: str,
+        ) -> list[dict[str, str]]:
+            """Return enterprises matching a name or organisation-number search."""
+            if not search_value:
+                return []
+
+            search_text = search_value.strip().casefold()
+
+            if len(search_text) < 2:
+                return []
+
+            parquet_path = self._parquet_path(
+                data_version,
+                dataset="foretak",
+            )
+
+            lookup = self._read_enterprise_lookup(
+                parquet_path
+            )
+
+            if lookup.empty:
+                return []
+
+            matches = lookup.loc[
+                lookup["search_text"].str.contains(
+                    search_text,
+                    na=False,
+                    regex=False,
+                )
+            ].head(25)
+
+            return [
+                {
+                    "label": (
+                        f"{str(row.navn)} — "
+                        f"{str(row.orgnr_foretak)}"
+                    ),
+                    "value": str(row.orgnr_foretak),
+                }
+                for row in matches.itertuples()
+            ]
+
+        @callback(
+            Output(self.rate_enterprise_id, "value"),
+            Input(self.rate_enterprise_search_id, "value"),
+            prevent_initial_call=True,
+        )
+        def select_rate_enterprise_from_name(
+            selected_enterprise: str | None,
+        ) -> str | Any:
+            """Populate the rate viewer's organisation number from name search."""
+            if not selected_enterprise:
+                return no_update
+
+            return str(selected_enterprise)
+
+        @callback(
             Output(
                 self.breakdown_enterprise_search_id,
                 "options",
@@ -9441,17 +10142,12 @@ class VLModule:
                 "value",
             ),
             Input(
-                self.breakdown_year_id,
-                "value",
-            ),
-            Input(
                 self.data_version_id,
                 "value",
             ),
         )
         def update_breakdown_business_options(
             enterprise: str | None,
-            year: int | None,
             data_version: str,
         ) -> tuple[
             list[dict[str, str]],
@@ -9476,14 +10172,19 @@ class VLModule:
                     dataset="bedrifter",
                 )
 
-                business_df = self._read_business_data(
-                    parquet_path
+                year = self._get_current_year(parquet_path)
+                subset = self._query_business_rows(
+                    parquet_path,
+                    columns=[
+                        "year",
+                        "orgnr_foretak",
+                        "orgnr_bedrift",
+                        "navn",
+                        "naring",
+                    ],
+                    years=[int(year) - 1, int(year)],
+                    orgnr_foretak=enterprise_number,
                 )
-
-                subset = business_df.loc[
-                    business_df["orgnr_foretak"].astype(str)
-                    == enterprise_number
-                ].copy()
 
                 if subset.empty:
                     return [], None
@@ -9618,102 +10319,29 @@ class VLModule:
         def update_large_changes_group_values(
             group_level: str,
             data_version: str,
-        ) -> tuple[
-            list[dict[str, str]],
-            str | None,
-        ]:
-            """Populate industry values for the large-changes table."""
+        ) -> tuple[list[dict[str, str]], str | None]:
+            """Populate industry values without loading bedrifter.parquet."""
             try:
                 parquet_path = self._parquet_path(
                     data_version,
                     dataset="bedrifter",
                 )
-
-                df = self._read_business_data(
-                    parquet_path
-                )
-
-                if "naring" not in df.columns:
-                    return [], None
-
-                data = df.copy()
-
-                data["naring"] = (
-                    data["naring"]
-                    .astype("string")
-                )
-
-                if group_level == "naring_1":
-                    if "naring_1" not in data.columns:
-                        return [], None
-
-                    group_values = (
-                        data["naring_1"]
-                        .dropna()
-                        .astype(str)
-                        .unique()
-                        .tolist()
+                group_values = list(
+                    self._query_industry_values(
+                        parquet_path,
+                        group_level,
                     )
-
-                elif group_level == "naring":
-                    group_values = (
-                        data["naring"]
-                        .dropna()
-                        .astype(str)
-                        .unique()
-                        .tolist()
-                    )
-
-                else:
-                    slice_lengths = {
-                        "n2": 2,
-                        "n3": 4,
-                        "n4": 5,
-                        "n5": 6,
-                    }
-
-                    if group_level not in slice_lengths:
-                        return [], None
-
-                    group_values = (
-                        data["naring"]
-                        .str.slice(
-                            0,
-                            slice_lengths[group_level],
-                        )
-                        .dropna()
-                        .astype(str)
-                        .unique()
-                        .tolist()
-                    )
-
-                group_values = sorted(
-                    value
-                    for value in group_values
-                    if value
-                    and value.lower() != "nan"
                 )
-
                 options = [
-                    {
-                        "label": value,
-                        "value": value,
-                    }
+                    {"label": value, "value": value}
                     for value in group_values
                 ]
-
-                selected_value = (
-                    group_values[0]
-                    if group_values
-                    else None
+                return (
+                    options,
+                    group_values[0] if group_values else None,
                 )
-
-                return options, selected_value
-
             except Exception:
                 return [], None
-
-
         @callback(
             Output(
                 self.breakdown_group_value_id,
@@ -9735,89 +10363,29 @@ class VLModule:
         def update_breakdown_group_values(
             group_level: str,
             data_version: str,
-        ) -> tuple[
-            list[dict[str, str]],
-            str | None,
-        ]:
-            """Populate industry values for the breakdown table."""
+        ) -> tuple[list[dict[str, str]], str | None]:
+            """Populate industry values without loading bedrifter.parquet."""
             try:
                 parquet_path = self._parquet_path(
                     data_version,
                     dataset="bedrifter",
                 )
-
-                df = self._read_business_data(
-                    parquet_path
-                )
-
-                if "naring" not in df.columns:
-                    return [], None
-
-                data = df.copy()
-
-                data["naring"] = (
-                    data["naring"]
-                    .astype("string")
-                )
-
-                if group_level == "naring":
-                    group_values = (
-                        data["naring"]
-                        .dropna()
-                        .astype(str)
-                        .unique()
-                        .tolist()
+                group_values = list(
+                    self._query_industry_values(
+                        parquet_path,
+                        group_level,
                     )
-
-                else:
-                    slice_lengths = {
-                        "n2": 2,
-                        "n3": 4,
-                        "n4": 5,
-                    }
-
-                    if group_level not in slice_lengths:
-                        return [], None
-
-                    group_values = (
-                        data["naring"]
-                        .str.slice(
-                            0,
-                            slice_lengths[group_level],
-                        )
-                        .dropna()
-                        .astype(str)
-                        .unique()
-                        .tolist()
-                    )
-
-                group_values = sorted(
-                    value
-                    for value in group_values
-                    if value
-                    and value.lower() != "nan"
                 )
-
                 options = [
-                    {
-                        "label": value,
-                        "value": value,
-                    }
+                    {"label": value, "value": value}
                     for value in group_values
                 ]
-
-                selected_value = (
-                    group_values[0]
-                    if group_values
-                    else None
+                return (
+                    options,
+                    group_values[0] if group_values else None,
                 )
-
-                return options, selected_value
-
             except Exception:
                 return [], None
-
-
         @callback(
             Output(
                 self.moms_naring_filter_id,
@@ -9919,85 +10487,46 @@ class VLModule:
         def update_method_naring_values(
             naring_level: str,
             data_version: str,
-        ) -> tuple[
-            list[dict[str, str]],
-            str | None,
-        ]:
-            """Populate industry values for method analysis."""
+        ) -> tuple[list[dict[str, str]], str | None]:
+            """Populate industry values without loading bedrifter.parquet."""
             try:
                 parquet_path = self._parquet_path(
                     data_version,
                     dataset="bedrifter",
                 )
-
-                df = self._read_business_data(
-                    parquet_path
-                )
-
-                if "naring" not in df.columns:
-                    return [], None
-
-                data = df.copy()
-
-                data["naring"] = (
-                    data["naring"]
-                    .astype("string")
-                )
-
-                if naring_level == "naring":
-                    group_values = (
-                        data["naring"]
-                        .dropna()
-                        .astype(str)
-                        .unique()
-                        .tolist()
+                group_values = list(
+                    self._query_industry_values(
+                        parquet_path,
+                        naring_level,
                     )
-
-                else:
-                    slice_lengths = {
-                        "naring_2": 2,
-                        "naring_4": 4,
-                        "naring_5": 5,
-                    }
-
-                    if naring_level not in slice_lengths:
-                        return [], None
-
-                    group_values = (
-                        data["naring"]
-                        .str.slice(
-                            0,
-                            slice_lengths[naring_level],
-                        )
-                        .dropna()
-                        .astype(str)
-                        .unique()
-                        .tolist()
-                    )
-
-                group_values = sorted(
-                    value
-                    for value in group_values
-                    if value
-                    and value.lower() != "nan"
                 )
-
                 options = [
-                    {
-                        "label": value,
-                        "value": value,
-                    }
+                    {"label": value, "value": value}
                     for value in group_values
                 ]
-
-                selected_value = (
-                    group_values[0]
-                    if group_values
-                    else None
+                return (
+                    options,
+                    group_values[0] if group_values else None,
                 )
-
-                return options, selected_value
-
+            except Exception:
+                return [], None
+        @callback(
+            Output(self.rate_drilldown_naring_id, "options"),
+            Output(self.rate_drilldown_naring_id, "value"),
+            Input(self.data_version_id, "value"),
+        )
+        def update_rate_drilldown_naring_options(
+            data_version: str,
+        ) -> tuple[list[dict[str, str]], str | None]:
+            """Populate detailed industries from rates_drilldown.parquet."""
+            try:
+                parquet_path = self._parquet_path(
+                    data_version,
+                    dataset="rates_drilldown",
+                )
+                values = list(self._query_distinct_values(parquet_path, "naring"))
+                options = [{"label": value, "value": value} for value in values]
+                return options, (values[0] if values else None)
             except Exception:
                 return [], None
 
@@ -10029,6 +10558,8 @@ class VLModule:
             Output(self.moms_controls_container_id, "style"),
             Output(self.movement_controls_container_id, "style"),
             Output(self.method_controls_container_id, "style"),
+            Output(self.enterprise_rate_controls_container_id, "style"),
+            Output(self.rate_drilldown_controls_container_id, "style"),
             Input(self.visualisation_id, "value"),
         )
         def update_visualisation_controls(
@@ -10155,6 +10686,14 @@ class VLModule:
                         "type S og øvrige typer."
                     ),
                 ),
+                "enterprise-rate-viewer": (
+                    "Rate brukt – enkeltforetak",
+                    "Viser hvilke rater og basisvariabler som er brukt for ett foretak.",
+                ),
+                "rate-drilldown": (
+                    "Rateberegning – drilldown",
+                    "Viser donor-rader, beregnet rate og hvilket nivå i hierarkiet som ble brukt.",
+                ),
             }
 
             title, description = visualisation_text.get(
@@ -10185,6 +10724,8 @@ class VLModule:
                 "moms": hidden,
                 "movement": hidden,
                 "method": hidden,
+                "enterprise_rate": hidden,
+                "rate_drilldown": hidden,
             }
 
             if visualisation == "trend-single":
@@ -10237,6 +10778,12 @@ class VLModule:
             elif visualisation == "method-analysis":
                 styles["method"] = visible
 
+            elif visualisation == "enterprise-rate-viewer":
+                styles["enterprise_rate"] = visible
+
+            elif visualisation == "rate-drilldown":
+                styles["rate_drilldown"] = visible
+
             return (
                 title,
                 description,
@@ -10256,6 +10803,8 @@ class VLModule:
                 styles["moms"],
                 styles["movement"],
                 styles["method"],
+                styles["enterprise_rate"],
+                styles["rate_drilldown"],
             )
 
 ###############################################################################
@@ -10340,10 +10889,6 @@ class VLModule:
                 "value",
             ),
             Input(
-                self.change_year_id,
-                "value",
-            ),
-            Input(
                 self.change_top_n_id,
                 "value",
             ),
@@ -10353,7 +10898,6 @@ class VLModule:
             data_version: str,
             naring: str | None,
             variable: str | None,
-            year: int | None,
             top_n: int | None,
         ) -> tuple[
             dict[str, Any],
@@ -10391,7 +10935,6 @@ class VLModule:
             if (
                 not naring
                 or not variable
-                or year is None
             ):
                 return (
                     visible_style,
@@ -10407,9 +10950,21 @@ class VLModule:
                     data_version,
                     dataset="bedrifter",
                 )
+                year = self._get_current_year(parquet_path)
 
-                business_df = self._read_business_data(
-                    parquet_path
+                business_df = self._query_business_rows(
+                    parquet_path,
+                    columns=[
+                        "orgnr_foretak",
+                        "year",
+                        "naring_4",
+                        "navn",
+                        "type",
+                        str(variable),
+                    ],
+                    years=[int(year) - 1, int(year)],
+                    naring_level="naring_4",
+                    naring_value=str(naring),
                 )
 
                 table_df = self._create_change_share_data(
@@ -10859,10 +11414,6 @@ class VLModule:
                 "value",
             ),
             Input(
-                self.nr_year_id,
-                "value",
-            ),
-            Input(
                 self.nr_group_level_id,
                 "value",
             ),
@@ -10890,7 +11441,6 @@ class VLModule:
         def update_nr_drilldown(
             visualisation: str,
             data_version: str,
-            year: int | None,
             group_level: str | None,
             view: str | None,
             selected_group: str | None,
@@ -10916,15 +11466,6 @@ class VLModule:
 
             if visualisation != "nr-controls":
                 return empty_result
-
-            if year is None:
-                return (
-                    [],
-                    [],
-                    [],
-                    [],
-                    "Velg et år.",
-                )
 
             if not selected_group:
                 return (
@@ -10969,9 +11510,24 @@ class VLModule:
                     data_version,
                     dataset="bedrifter_recent_med_nopost",
                 )
+                year = self._get_current_year(parquet_path)
 
-                df = self._read_generic_data(
-                    parquet_path
+                nr_drilldown_columns = [
+                    "year", "orgnr_foretak", "orgnr_bedrift", "type",
+                    "naring", "naring_2", "naring_3", "naring_4", "fylke",
+                    "nopost_p4005", "ts_forbruk",
+                    "nopost_driftskostnader", "nopost_lonnskostnader",
+                    "produktinnsats", "omsetning", "ts_salgsint",
+                    "nopost_p3000", "nopost_p3100", "nopost_p3200",
+                    "nopost_p3300", "bearbeidingsverdi",
+                ]
+                df = self._query_business_rows(
+                    parquet_path,
+                    columns=nr_drilldown_columns,
+                    years=[int(year)],
+                    naring_level=selected_group_level,
+                    naring_value=group_value,
+                    fylke=fylke_value,
                 )
 
                 threshold = float(
@@ -11319,10 +11875,6 @@ class VLModule:
                 "value",
             ),
             Input(
-                self.negative_nopost_year_id,
-                "value",
-            ),
-            Input(
                 self.negative_nopost_group_level_id,
                 "value",
             ),
@@ -11346,7 +11898,6 @@ class VLModule:
         def update_negative_nopost_drilldown(
             visualisation: str,
             data_version: str,
-            year: int | None,
             group_level: str | None,
             selected_group: str | None,
             variable: str | None,
@@ -11371,15 +11922,6 @@ class VLModule:
             if visualisation != "negative-nopost":
                 return empty_result
 
-            if year is None:
-                return (
-                    [],
-                    [],
-                    [],
-                    [],
-                    "Velg et år.",
-                )
-
             if not selected_group:
                 return (
                     [],
@@ -11403,9 +11945,19 @@ class VLModule:
                     data_version,
                     dataset="bedrifter_recent_med_nopost",
                 )
+                year = self._get_current_year(parquet_path)
 
-                df = self._read_generic_data(
-                    parquet_path
+                selected_group_level = group_level or "naring"
+                df = self._query_business_rows(
+                    parquet_path,
+                    columns=[
+                        "year", "naring", "naring_2",
+                        "orgnr_foretak", "orgnr_bedrift", "type",
+                        str(variable),
+                    ],
+                    years=[int(year)],
+                    naring_level=selected_group_level,
+                    naring_value=str(selected_group),
                 )
 
                 threshold = float(
@@ -11533,11 +12085,9 @@ class VLModule:
             Input(self.variable_id, "value"),
             Input(self.multi_variable_id, "value"),
 
-            Input(self.change_year_id, "value"),
             Input(self.change_top_n_id, "value"),
 
             Input(self.noku_group_id, "value"),
-            Input(self.noku_year_id, "value"),
             Input(self.noku_rate_id, "value"),
             Input(self.noku_window_id, "value"),
             Input(
@@ -11545,10 +12095,6 @@ class VLModule:
                 "value",
             ),
 
-            Input(
-                self.large_changes_year_id,
-                "value",
-            ),
             Input(
                 self.large_changes_group_level_id,
                 "value",
@@ -11571,10 +12117,6 @@ class VLModule:
             ),
 
             Input(
-                self.negative_nopost_year_id,
-                "value",
-            ),
-            Input(
                 self.negative_nopost_group_level_id,
                 "value",
             ),
@@ -11591,14 +12133,12 @@ class VLModule:
                 "value",
             ),
 
-            Input(self.nr_year_id, "value"),
             Input(self.nr_group_level_id, "value"),
             Input(self.nr_view_id, "value"),
             Input(self.nr_threshold_id, "value"),
             Input(self.nr_hide_columns_id, "value"),
             Input(self.nr_max_rows_id, "value"),
 
-            Input(self.opposite_year_id, "value"),
             Input(
                 self.opposite_group_level_id,
                 "value",
@@ -11626,7 +12166,6 @@ class VLModule:
                 self.breakdown_analysis_level_id,
                 "value",
             ),
-            Input(self.breakdown_year_id, "value"),
             Input(
                 self.breakdown_group_level_id,
                 "value",
@@ -11656,14 +12195,6 @@ class VLModule:
 
             Input(self.moms_naring_filter_id, "value"),
 
-            Input(
-                self.moms_previous_year_id,
-                "value",
-            ),
-            Input(
-                self.moms_current_year_id,
-                "value",
-            ),
 
             Input(
                 self.movement_direction_id,
@@ -11703,6 +12234,13 @@ class VLModule:
                 self.method_reg_types_id,
                 "value",
             ),
+
+            Input(self.rate_enterprise_id, "value"),
+            Input(self.rate_show_all_id, "value"),
+            Input(self.rate_drilldown_naring_id, "value"),
+            Input(self.rate_drilldown_variable_id, "value"),
+            Input(self.rate_drilldown_reg_type_id, "value"),
+            Input(self.rate_drilldown_show_invalid_id, "value"),
         )
 
 
@@ -11719,36 +12257,30 @@ class VLModule:
             variable: str | None,
             multi_variables: list[str] | None,
 
-            change_year: int | None,
             change_top_n: int | None,
 
             noku_group: str | None,
-            noku_year: int | None,
             noku_rate: float | None,
             noku_window: int | None,
             noku_standard_deviations: float | None,
 
-            large_changes_year: int | None,
             large_changes_group_level: str | None,
             large_changes_group_value: str | None,
             large_changes_variable: str | None,
             large_changes_fylke: str | None,
             large_changes_top_n: int | None,
 
-            negative_nopost_year: int | None,
             negative_nopost_group_level: str | None,
             negative_nopost_threshold: float | None,
             negative_nopost_hide_columns: list[str] | None,
             negative_nopost_max_rows: int | None,
 
-            nr_year: int | None,
             nr_group_level: str | None,
             nr_view: str | None,
             nr_threshold: float | None,
             nr_hide_columns: list[str] | None,
             nr_max_rows: int | None,
 
-            opposite_year: int | None,
             opposite_group_level: str | None,
             opposite_view: str | None,
             opposite_rule: str | None,
@@ -11758,7 +12290,6 @@ class VLModule:
             opposite_max_rows: int | None,
 
             breakdown_analysis_level: str | None,
-            breakdown_year: int | None,
             breakdown_group_level: str | None,
             breakdown_group_value: str | None,
             breakdown_enterprise: str | None,
@@ -11768,8 +12299,6 @@ class VLModule:
 
             moms_group_level: str | None,
             moms_naring_filter: list[str] | None,
-            moms_previous_year: int | None,
-            moms_current_year: int | None,
 
             movement_direction: str | None,
             movement_variable: str | None,
@@ -11782,6 +12311,13 @@ class VLModule:
             method_naring_value: str | None,
             method_ratios: list[str] | None,
             method_reg_types: list[str] | None,
+
+            rate_enterprise: str | None,
+            rate_show_all: list[str] | None,
+            rate_drilldown_naring: str | None,
+            rate_drilldown_variable: str | None,
+            rate_drilldown_reg_type: str | None,
+            rate_drilldown_show_invalid: list[str] | None,
         ) -> tuple[Any, ...]:
             graph_visible_style = {
                 "display": "block",
@@ -12073,8 +12609,14 @@ class VLModule:
                         dataset="foretak",
                     )
 
-                    df = self._read_enterprise_data(
-                        parquet_path
+                    df = self._query_enterprise_rows(
+                        parquet_path,
+                        columns=[
+                            "year",
+                            "orgnr_foretak",
+                            variable,
+                        ],
+                        orgnr_foretak=str(enterprise),
                     )
 
                     if variable not in df.columns:
@@ -12115,20 +12657,25 @@ class VLModule:
                             )
                         )
 
-                    if change_year is None:
-                        return figure_result(
-                            self._empty_figure(
-                                "Velg et år."
-                            )
-                        )
-
                     parquet_path = self._parquet_path(
                         data_version,
                         dataset="bedrifter",
                     )
+                    current_year = self._get_current_year(parquet_path)
 
-                    df = self._read_business_data(
-                        parquet_path
+                    df = self._query_business_rows(
+                        parquet_path,
+                        columns=[
+                            "orgnr_foretak",
+                            "year",
+                            "naring_4",
+                            "navn",
+                            "type",
+                            variable,
+                        ],
+                        years=[current_year - 1, current_year],
+                        naring_level="naring_4",
+                        naring_value=str(naring),
                     )
 
                     if variable not in df.columns:
@@ -12146,7 +12693,7 @@ class VLModule:
                             df=df,
                             naring=naring,
                             variable=variable,
-                            year=int(change_year),
+                            year=current_year,
                             top_n=int(
                                 change_top_n or 10
                             ),
@@ -12159,13 +12706,6 @@ class VLModule:
                 # NØKU table
                 # -----------------------------------------
                 if visualisation == "noku-table":
-                    if noku_year is None:
-                        return figure_result(
-                            self._empty_figure(
-                                "Velg et år."
-                            )
-                        )
-
                     aggregate_path = self._parquet_path(
                         data_version,
                         dataset="agg_naring4",
@@ -12175,22 +12715,37 @@ class VLModule:
                         data_version,
                         dataset="bedrifter",
                     )
+                    current_year = self._get_current_year(business_path)
 
                     aggregate_df = self._read_data(
                         aggregate_path
                     )
 
-                    business_df = (
-                        self._read_business_data(
-                            business_path
-                        )
+                    noku_columns = [
+                        "year",
+                        "naring_4",
+                        "orgnr_foretak",
+                        "orgnr_bedrift",
+                        "navn",
+                        "omsetning",
+                        "nopost_driftskostnader",
+                        "ts_forbruk",
+                        "ts_salgsint",
+                        "bearbeidingsverdi",
+                        "produksjonsverdi",
+                        "produktinnsats",
+                    ]
+                    business_df = self._query_business_rows(
+                        business_path,
+                        columns=noku_columns,
+                        years=[current_year - 1, current_year],
                     )
 
                     table_df = (
                         self._create_noku_table_data(
                             aggregate_df=aggregate_df,
                             business_df=business_df,
-                            year=int(noku_year),
+                            year=current_year,
                             rate=float(
                                 noku_rate
                                 if noku_rate is not None
@@ -12223,7 +12778,7 @@ class VLModule:
                                 lambda naring_value: (
                                     self._classify_noku_group(
                                         naring_value,
-                                        int(noku_year),
+                                        current_year,
                                     )
                                 )
                             ),
@@ -12253,13 +12808,6 @@ class VLModule:
                 # Large changes
                 # -----------------------------------------
                 if visualisation == "large-changes":
-                    if large_changes_year is None:
-                        return figure_result(
-                            self._empty_figure(
-                                "Velg et år."
-                            )
-                        )
-
                     if not large_changes_group_level:
                         return figure_result(
                             self._empty_figure(
@@ -12285,17 +12833,40 @@ class VLModule:
                         data_version,
                         dataset="bedrifter",
                     )
+                    current_year = self._get_current_year(parquet_path)
 
-                    df = self._read_business_data(
-                        parquet_path
+                    large_change_columns = [
+                        "year",
+                        "naring",
+                        "naring_1",
+                        "sfnr",
+                        "orgnr_foretak",
+                        "orgnr_bedrift",
+                        "navn",
+                        "type",
+                        "reg_type",
+                        "fylke",
+                        "naring_f",
+                        large_changes_variable,
+                        "omsetning",
+                        "nopost_p4005",
+                        "nopost_lonnskostnader",
+                        "nopost_driftskostnader",
+                        "basisx",
+                    ]
+                    df = self._query_business_rows(
+                        parquet_path,
+                        columns=large_change_columns,
+                        years=[current_year - 1, current_year],
+                        naring_level=large_changes_group_level,
+                        naring_value=large_changes_group_value,
+                        fylke=large_changes_fylke or "Land",
                     )
 
                     table_df = (
                         self._create_large_changes_data(
                             df=df,
-                            year=int(
-                                large_changes_year
-                            ),
+                            year=current_year,
                             group_level=(
                                 large_changes_group_level
                             ),
@@ -12319,9 +12890,7 @@ class VLModule:
                     summary_data, ratio_df = (
                         self._create_large_changes_summary_data(
                             df=df,
-                            year=int(
-                                large_changes_year
-                            ),
+                            year=current_year,
                             group_level=(
                                 large_changes_group_level
                             ),
@@ -12358,30 +12927,46 @@ class VLModule:
                 # Negative NO posts
                 # -----------------------------------------
                 if visualisation == "negative-nopost":
-                    if negative_nopost_year is None:
-                        return figure_result(
-                            self._empty_figure(
-                                "Velg et år."
-                            )
-                        )
-
                     parquet_path = self._parquet_path(
                         data_version,
                         dataset=(
                             "bedrifter_recent_med_nopost"
                         ),
                     )
+                    current_year = self._get_current_year(parquet_path)
 
-                    df = self._read_generic_data(
-                        parquet_path
+                    nopost_prefixes = (
+                        "nopost_p3000", "nopost_p3100", "nopost_p3200",
+                        "nopost_p3700", "nopost_p3900", "nopost_p4005",
+                        "nopost_p5000", "nopost_p6300", "nopost_p6400",
+                        "nopost_p6500", "nopost_p6700", "nopost_p6995",
+                        "nopost_p7700",
+                    )
+                    excluded_nopost = {
+                        "nopost_p3300", "nopost_p3400", "nopost_p3880",
+                        "nopost_p4295", "nopost_p4995",
+                    }
+                    recent_columns = self._parquet_columns(parquet_path)
+                    nopost_columns = [
+                        column
+                        for column in recent_columns
+                        if any(column.startswith(prefix) for prefix in nopost_prefixes)
+                        and column not in excluded_nopost
+                    ]
+                    df = self._query_parquet(
+                        parquet_path,
+                        columns=[
+                            "year", "naring", "naring_2",
+                            "orgnr_foretak", "orgnr_bedrift", "type",
+                            *nopost_columns,
+                        ],
+                        where=[f'TRY_CAST("year" AS BIGINT) = {current_year}'],
                     )
 
                     table_df = (
                         self._create_negative_nopost_data(
                             df=df,
-                            year=int(
-                                negative_nopost_year
-                            ),
+                            year=current_year,
                             group_level=(
                                 negative_nopost_group_level
                                 or "naring"
@@ -12420,26 +13005,31 @@ class VLModule:
                 # NR controls
                 # -----------------------------------------
                 if visualisation == "nr-controls":
-                    if nr_year is None:
-                        return figure_result(
-                            self._empty_figure(
-                                "Velg et år."
-                            )
-                        )
-
                     parquet_path = self._parquet_path(
                         data_version,
                         dataset="bedrifter_recent_med_nopost",
                     )
+                    current_year = self._get_current_year(parquet_path)
 
-                    df = self._read_generic_data(
-                        parquet_path
+                    nr_columns = [
+                        "year", "orgnr_foretak", "orgnr_bedrift", "type",
+                        "naring", "naring_2", "naring_3", "naring_4",
+                        "fylke", "nopost_p4005", "ts_forbruk",
+                        "nopost_driftskostnader", "nopost_lonnskostnader",
+                        "produktinnsats", "omsetning", "ts_salgsint",
+                        "nopost_p3000", "nopost_p3100", "nopost_p3200",
+                        "nopost_p3300", "bearbeidingsverdi",
+                    ]
+                    df = self._query_parquet(
+                        parquet_path,
+                        columns=nr_columns,
+                        where=[f'TRY_CAST("year" AS BIGINT) = {current_year}'],
                     )
 
                     table_df = (
                         self._create_nr_controls_data(
                             df=df,
-                            year=int(nr_year),
+                            year=current_year,
                             group_level=(
                                 nr_group_level
                                 or "naring"
@@ -12500,26 +13090,27 @@ class VLModule:
                 # Opposite direction
                 # -----------------------------------------
                 if visualisation == "opposite-direction":
-                    if opposite_year is None:
-                        return figure_result(
-                            self._empty_figure(
-                                "Velg et år."
-                            )
-                        )
-
                     parquet_path = self._parquet_path(
                         data_version,
                         dataset="bedrifter",
                     )
+                    current_year = self._get_current_year(parquet_path)
 
-                    df = self._read_business_data(
-                        parquet_path
+                    df = self._query_business_rows(
+                        parquet_path,
+                        columns=[
+                            "year", "naring", "naring_2", "naring_3",
+                            "naring_4", "naring_5", "fylke",
+                            "orgnr_bedrift", "produksjonsverdi",
+                            "produktinnsats", "ts_forbruk", "nopost_p4005",
+                        ],
+                        years=[current_year - 1, current_year],
                     )
 
                     table_df = (
                         self._create_opposite_direction_data(
                             df=df,
-                            year=int(opposite_year),
+                            year=current_year,
                             group_level=(
                                 opposite_group_level
                                 or "naring_4"
@@ -12576,12 +13167,13 @@ class VLModule:
                 # Breakdown
                 # -----------------------------------------
                 if visualisation == "breakdown":
-                    if breakdown_year is None:
-                        return figure_result(
-                            self._empty_figure(
-                                "Velg et år."
-                            )
-                        )
+                    business_year_path = self._parquet_path(
+                        data_version,
+                        dataset="bedrifter",
+                    )
+                    current_year = self._get_current_year(
+                        business_year_path
+                    )
 
                     if not breakdown_variable:
                         return figure_result(
@@ -12618,13 +13210,17 @@ class VLModule:
                             dataset="bedrifter",
                         )
 
-                        business_df = self._read_business_data(
-                            business_path
+                        business_df = self._query_business_rows(
+                            business_path,
+                            columns=list(self._parquet_columns(business_path)),
+                            years=[current_year - 1, current_year],
+                            naring_level=breakdown_group_level,
+                            naring_value=breakdown_group_value,
                         )
 
                         table_df = self._create_breakdown_data(
                             df=business_df,
-                            year=int(breakdown_year),
+                            year=current_year,
                             group_level=breakdown_group_level,
                             group_value=breakdown_group_value,
                             variable=breakdown_variable,
@@ -12670,16 +13266,17 @@ class VLModule:
                             dataset="foretak",
                         )
 
-                        enterprise_df = (
-                            self._read_enterprise_data(
-                                enterprise_path
-                            )
+                        enterprise_df = self._query_enterprise_rows(
+                            enterprise_path,
+                            columns=list(self._parquet_columns(enterprise_path)),
+                            orgnr_foretak=enterprise_number,
+                            years=[current_year - 1, current_year],
                         )
 
                         enterprise_result = (
                             self._create_breakdown_data(
                                 df=enterprise_df,
-                                year=int(breakdown_year),
+                                year=current_year,
                                 group_level=None,
                                 group_value=None,
                                 variable=breakdown_variable,
@@ -12722,16 +13319,18 @@ class VLModule:
                                 dataset="bedrifter",
                             )
 
-                            business_df = (
-                                self._read_business_data(
-                                    business_path
-                                )
+                            business_df = self._query_business_rows(
+                                business_path,
+                                columns=list(self._parquet_columns(business_path)),
+                                years=[current_year - 1, current_year],
+                                orgnr_foretak=enterprise_number,
+                                orgnr_bedrift=business_number,
                             )
 
                             business_result = (
                                 self._create_breakdown_data(
                                     df=business_df,
-                                    year=int(breakdown_year),
+                                    year=current_year,
                                     group_level=None,
                                     group_value=None,
                                     variable=breakdown_variable,
@@ -12777,25 +13376,15 @@ class VLModule:
                 # MOMS
                 # -----------------------------------------
                 if visualisation == "moms":
-                    if moms_previous_year is None:
-                        return figure_result(
-                            self._empty_figure(
-                                "Velg tidligere år."
-                            )
-                        )
-
-                    if moms_current_year is None:
-                        return figure_result(
-                            self._empty_figure(
-                                "Velg nåværende år."
-                            )
-                        )
-
                     parquet_path = self._parquet_path(
                         data_version,
                         dataset="moms",
                     )
 
+                    current_year, previous_year = self._get_two_latest_years(
+                        parquet_path,
+                        "aar",
+                    )
                     df = self._read_generic_data(
                         parquet_path
                     )
@@ -12806,10 +13395,10 @@ class VLModule:
                             moms_group_level or "n2"
                         ),
                         previous_year=int(
-                            moms_previous_year
+                            previous_year
                         ),
                         current_year=int(
-                            moms_current_year
+                            current_year
                         ),
                         selected_naringer=(
                             moms_naring_filter or None
@@ -12817,11 +13406,11 @@ class VLModule:
                     )
 
                     yellow_columns = [
-                        f"omsetning_{int(moms_previous_year)}",
-                        f"omsetning_{int(moms_current_year)}",
+                        f"omsetning_{int(previous_year)}",
+                        f"omsetning_{int(current_year)}",
                         "omsetning_percentage_change",
-                        f"moms_{int(moms_previous_year)}",
-                        f"moms_{int(moms_current_year)}",
+                        f"moms_{int(previous_year)}",
+                        f"moms_{int(current_year)}",
                         "moms_percentage_change",
                     ]
 
@@ -12950,9 +13539,29 @@ class VLModule:
                         data_version,
                         dataset="bedrifter",
                     )
+                    current_year = self._get_current_year(parquet_path)
 
-                    df = self._read_business_data(
-                        parquet_path
+                    schema_columns = list(
+                        self._parquet_columns(parquet_path)
+                    )
+                    method_columns = [
+                        "year", "type", "reg_type", "naring",
+                        "naring_2", "naring_4", "naring_5",
+                        "ts_salgsint", "omsetning", "ts_forbruk",
+                        "nopost_p4005", "ts_vikarutgifter",
+                        "nopost_lonnskostnader", "basisx",
+                        "nopost_driftskostnader",
+                        *[
+                            column
+                            for column in schema_columns
+                            if column.endswith("_akt") or column.endswith("_utg")
+                        ],
+                    ]
+                    df = self._query_business_rows(
+                        parquet_path,
+                        columns=method_columns,
+                        naring_level=method_naring_level,
+                        naring_value=method_naring_value,
                     )
 
                     figure = (
@@ -12973,6 +13582,103 @@ class VLModule:
                     )
 
                     return figure_result(figure)
+
+                # -----------------------------------------
+                # Rate used – enterprise
+                # -----------------------------------------
+                if visualisation == "enterprise-rate-viewer":
+                    if not rate_enterprise:
+                        return figure_result(
+                            self._empty_figure("Skriv inn et organisasjonsnummer.")
+                        )
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="rates",
+                    )
+                    schema = set(self._parquet_columns(parquet_path))
+                    requested_columns = [
+                        "orgnr_foretak", "orgnr_bedrift", "naring", "reg_type", "type",
+                        "basisx", "nopost_driftskostnader", "nopost_lonnskostnader",
+                        "sysselsetting_syss", "sysselsetting_arsverk",
+                    ]
+                    for variable_name, rate_column, base_column, _group in self._rate_variable_specs():
+                        requested_columns.extend([variable_name, rate_column, base_column])
+                    requested_columns = [
+                        column for column in dict.fromkeys(requested_columns)
+                        if column in schema
+                    ]
+                    rate_df = self._query_enterprise_rows(
+                        parquet_path,
+                        columns=requested_columns,
+                        orgnr_foretak=str(rate_enterprise),
+                    )
+                    table_df, metadata = self._create_enterprise_rate_data(
+                        rate_df,
+                        show_all="show-all" in (rate_show_all or []),
+                    )
+                    group_styles = []
+                    group_colours = {
+                        "Aktivert": "#e8f4fd", "Utgift": "#eef7ea",
+                        "Lønn": "#fff3e6", "Årsverk": "#f3e8ff",
+                    }
+                    for group, colour in group_colours.items():
+                        group_styles.append({
+                            "if": {"filter_query": f"{{gruppe}} = '{group}'"},
+                            "backgroundColor": colour,
+                        })
+                    return table_result(
+                        table_df,
+                        f"Fant ingen rateopplysninger for foretak {rate_enterprise}.",
+                        summary_card=self._create_enterprise_rate_summary_card(metadata),
+                        extra_styles=group_styles,
+                    )
+
+                # -----------------------------------------
+                # Rate calculation drilldown
+                # -----------------------------------------
+                if visualisation == "rate-drilldown":
+                    if not rate_drilldown_naring:
+                        return figure_result(self._empty_figure("Velg en næring."))
+                    if not rate_drilldown_variable:
+                        return figure_result(self._empty_figure("Velg en variabel."))
+                    parquet_path = self._parquet_path(
+                        data_version,
+                        dataset="rates_drilldown",
+                    )
+                    numerator, denominator, normalize_activated, _formula = self._rate_variable_definition(
+                        rate_drilldown_variable
+                    )
+                    columns = [
+                        "orgnr_foretak", "orgnr_bedrift", "naring", "reg_type", "type",
+                        numerator, denominator,
+                    ]
+                    if normalize_activated:
+                        columns.extend([
+                            "basisx", "ts_forbrukselektronikk_akt", "ts_prog_akt",
+                            "ts_egenprog_akt", "ts_eksternkonsulent_akt",
+                        ])
+                    donor_df = self._query_parquet(
+                        parquet_path,
+                        columns=list(dict.fromkeys(columns)),
+                        where=["CAST(\"type\" AS VARCHAR) = 'S'"],
+                    )
+                    table_df, overview, summary = self._create_rate_drilldown_data(
+                        donor_df,
+                        chosen_naring=str(rate_drilldown_naring),
+                        variable=str(rate_drilldown_variable),
+                        reg_type_filter=rate_drilldown_reg_type or "both",
+                        show_invalid="show-invalid" in (rate_drilldown_show_invalid or []),
+                    )
+                    validity_styles = [
+                        {"if": {"filter_query": "{valid_row} = 'Ja'"}, "backgroundColor": "#d1e7dd", "color": "#0f5132"},
+                        {"if": {"filter_query": "{valid_row} = 'Nei'"}, "backgroundColor": "#f8d7da", "color": "#842029"},
+                    ]
+                    return table_result(
+                        table_df,
+                        "Ingen donor-rader etter valgt filter.",
+                        summary_card=self._create_rate_drilldown_summary_card(summary, overview),
+                        extra_styles=validity_styles,
+                    )
 
                 label = VL_VISUALISATIONS.get(
                     visualisation,
