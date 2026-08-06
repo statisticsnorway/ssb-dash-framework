@@ -10809,6 +10809,7 @@ class VLModule:
                     table_columns,
                     table_styles,
                     table_tooltips,
+                    "",
                 )
 
         @callback(
@@ -13326,7 +13327,7 @@ class VLModule:
                         *[
                             column
                             for column in schema_columns
-                            if column.endswith("_akt") or column.endswith("_utg")
+                            if column.endswith(("_akt", "_utg"))
                         ],
                     ]
                     df = self._query_business_rows(
