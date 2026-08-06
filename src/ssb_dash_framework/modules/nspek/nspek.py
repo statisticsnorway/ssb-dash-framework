@@ -1142,7 +1142,7 @@ class Naeringsspesifikasjon:
             self.variableselector.get_option(x).id.removeprefix("var-")
             for x in time_units
         ]
-        logger.debug("TIME UNITS ", self.time_units)
+        logger.debug("TIME UNITS %s", self.time_units)
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -2420,10 +2420,7 @@ class Naeringsspesifikasjon:
 
             with get_nspek_connection() as conn:
                 comments = get_latest_field_comments(conn, orgnr_foretak)
-            valid_comment_row = df["post"].fillna("").astype(str).ne("") & ~df[
-                "is_ui_sum"
-            ].fillna(False).astype(bool)
-
+            valid_comment_row = (df["post"].fillna("").astype(str).ne("") & ~df["is_ui_sum"].astype("boolean").fillna(False))
             df["feltkommentar_ikon"] = valid_comment_row.map(
                 lambda x: "💬" if x else ""
             )
@@ -2523,9 +2520,7 @@ class Naeringsspesifikasjon:
 
             with get_nspek_connection() as conn:
                 comments = get_latest_field_comments(conn, orgnr_foretak)
-            valid_comment_row = df["post"].fillna("").astype(str).ne("") & ~df[
-                "is_ui_sum"
-            ].fillna(False).astype(bool)
+            valid_comment_row = (df["post"].fillna("").astype(str).ne("") & ~df["is_ui_sum"].astype("boolean").fillna(False))
 
             df["har_feltkommentar"] = valid_comment_row
             df["feltkommentar_tekst"] = df["post"].map(
