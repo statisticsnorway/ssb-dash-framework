@@ -220,7 +220,7 @@ class AltinnEditorComment:
                         alert_store = [
                             create_alert(
                                 f"Oppdatering av kommentarfeltet feilet. {str(e)[:60]}",
-                                "danger",
+                                "warning",
                                 ephemeral=True,
                             ),
                             *alert_store,

@@ -15,6 +15,7 @@ from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
 from dash_ag_grid import AgGrid
+from dash_iconify import DashIconify
 from ibis.backends import BaseBackend
 from ibis.expr.types.relations import Table
 from pandas.core.frame import DataFrame
@@ -180,7 +181,7 @@ class MacroNspekPostControl:
         self.module_name = self.__class__.__name__
         MacroNspekPostControl._id_number += 1
 
-        self.icon = "🗹"
+        self.icon = DashIconify(icon="feather:minus-circle", width=24)
         self.label = "Negative NO-poster"
         self.consolidated = consolidated
         self.variableselector = VariableSelector(

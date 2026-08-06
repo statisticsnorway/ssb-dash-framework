@@ -1,18 +1,20 @@
-import logging
-import sqlite3
 from abc import ABC
 from abc import abstractmethod
+import logging
+import sqlite3
 from typing import Any
 
-import dash_ag_grid as dag
-import dash_bootstrap_components as dbc
-import pandas as pd
 from dash import callback
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
+import dash_ag_grid as dag
+import dash_bootstrap_components as dbc
+from dash_iconify import DashIconify
+import pandas as pd
 from sqlalchemy.util.typing import NoneType
 
 from ..setup.variableselector import VariableSelector
@@ -121,7 +123,7 @@ class BofInformation(ABC):
         self.module_number = BofInformation._id_number
         self.module_name = self.__class__.__name__
         BofInformation._id_number += 1
-        self.icon = "🗃️"
+        self.icon = DashIconify(icon="feather:archive", width=24)
 
         if label is None:
             label = "BoF Foretak"
@@ -142,7 +144,7 @@ class BofInformation(ABC):
             raise TypeError(
                 f"label must be a string, got {type(self.label).__name__} instead."
             )
-        if not isinstance(self.icon, str):
+        if not isinstance(self.icon, (str, Component)):
             raise TypeError(
                 f"icon must be a string, got {type(self.icon).__name__} instead."
             )

@@ -16,6 +16,7 @@ from dash import State
 from dash import callback
 from dash import clientside_callback
 from dash import dcc
+from dash_iconify import DashIconify
 from dash import html
 from dash.exceptions import PreventUpdate
 from dash_ag_grid import AgGrid
@@ -280,7 +281,7 @@ class MacroModule:
         self.module_name = self.__class__.__name__
         MacroModule._id_number += 1
 
-        self.icon = "🌍"
+        self.icon = DashIconify(icon="feather:globe", width=24)
         self.consolidated = consolidated
         self.label = "Makromodul konsolidert" if consolidated else "Makromodul"
         self.variableselector = VariableSelector(
@@ -396,6 +397,7 @@ class MacroModule:
                                         {"label": k, "value": k}
                                         for k in self.macro_filter_options.keys()
                                     ],
+                                    searchable=False,
                                     value="sammensatte variabler",
                                     id="macromodule-filter-velger",
                                 ),
