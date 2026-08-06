@@ -31,6 +31,7 @@ Available analyses
 - comparisons with MOMS data
 - business entry, exit and industry-code movement
 - method and accounting-ratio analysis
+- enterprise rate inspection and donor-rate drilldown
 
 Industry-code convention
 ------------------------
@@ -101,24 +102,46 @@ VL_VISUALISATIONS = {
     "rate-drilldown": "Rateberegning – drilldown",
 }
 
+NARING_LEVEL_LABELS: dict[str, str] = {
+    "bokstav": "Næringshovedområde",
+    "n2": "2-siffer",
+    "n3": "3-siffer",
+    "n4": "4-siffer",
+    "n5": "5-siffer",
+}
+
+NARING_LEVEL_LENGTHS: dict[str, int] = {
+    "n2": 2,
+    "n3": 4,
+    "n4": 5,
+    "n5": 6,
+}
+
+NARING_LEVELS: frozenset[str] = frozenset(NARING_LEVEL_LABELS)
+
+NARING_LEVEL_OPTIONS: list[dict[str, str]] = [
+    {"label": label, "value": value}
+    for value, label in NARING_LEVEL_LABELS.items()
+]
+
 TREND_LEVEL_CONFIG = {
     "n2": {
-        "label": "2-siffer",
+        "label": NARING_LEVEL_LABELS["n2"],
         "dataset": "agg_naring2",
         "column": "naring_2",
     },
     "n3": {
-        "label": "3-siffer",
+        "label": NARING_LEVEL_LABELS["n3"],
         "dataset": "agg_naring4",
         "column": "naring_4",
     },
     "n4": {
-        "label": "4-siffer",
+        "label": NARING_LEVEL_LABELS["n4"],
         "dataset": "agg_naring5",
         "column": "naring_5",
     },
     "n5": {
-        "label": "5-siffer",
+        "label": NARING_LEVEL_LABELS["n5"],
         "dataset": "agg_naring6",
         "column": "naring",
     },
@@ -766,16 +789,7 @@ class VLModule:
                                                 dcc.Dropdown(
                                                     id=self.large_changes_group_level_id,
                                                     className="ssb-dropdown",
-                                                    options=[
-                                                        {"label": "N2", "value": "n2"},
-                                                        {"label": "N3", "value": "n3"},
-                                                        {"label": "N4", "value": "n4"},
-                                                        {"label": "N5", "value": "n5"},
-                                                        {
-                                                            "label": "Næring 1",
-                                                            "value": "naring_1",
-                                                        },
-                                                    ],
+                                                    options=NARING_LEVEL_OPTIONS,
                                                     value="n3",
                                                     clearable=False,
                                                 ),
@@ -846,17 +860,8 @@ class VLModule:
                                                 dcc.RadioItems(
                                                     id=self.negative_nopost_group_level_id,
                                                     className="ssb-radio-buttons",
-                                                    options=[
-                                                        {
-                                                            "label": "5-siffer",
-                                                            "value": "naring",
-                                                        },
-                                                        {
-                                                            "label": "2-siffer",
-                                                            "value": "naring_2",
-                                                        },
-                                                    ],
-                                                    value="naring",
+                                                    options=NARING_LEVEL_OPTIONS,
+                                                    value="n5",
                                                     inline=True,
                                                 ),
                                                 html.Label(
@@ -913,25 +918,8 @@ class VLModule:
                                                 dcc.Dropdown(
                                                     id=self.nr_group_level_id,
                                                     className="ssb-dropdown",
-                                                    options=[
-                                                        {
-                                                            "label": "Næring 2",
-                                                            "value": "naring_2",
-                                                        },
-                                                        {
-                                                            "label": "Næring 3",
-                                                            "value": "naring_3",
-                                                        },
-                                                        {
-                                                            "label": "Næring 4",
-                                                            "value": "naring_4",
-                                                        },
-                                                        {
-                                                            "label": "Detaljert næring",
-                                                            "value": "naring",
-                                                        },
-                                                    ],
-                                                    value="naring",
+                                                    options=NARING_LEVEL_OPTIONS,
+                                                    value="n5",
                                                     clearable=False,
                                                 ),
                                                 html.Label(
@@ -1001,25 +989,8 @@ class VLModule:
                                                 dcc.Dropdown(
                                                     id=self.opposite_group_level_id,
                                                     className="ssb-dropdown",
-                                                    options=[
-                                                        {
-                                                            "label": "2-siffer næring",
-                                                            "value": "naring_2",
-                                                        },
-                                                        {
-                                                            "label": "3-siffer næring",
-                                                            "value": "naring_4",
-                                                        },
-                                                        {
-                                                            "label": "4-siffer næring",
-                                                            "value": "naring_5",
-                                                        },
-                                                        {
-                                                            "label": "Detaljert næring",
-                                                            "value": "naring",
-                                                        },
-                                                    ],
-                                                    value="naring_4",
+                                                    options=NARING_LEVEL_OPTIONS,
+                                                    value="n3",
                                                     clearable=False,
                                                 ),
                                                 html.Label(
@@ -1151,24 +1122,7 @@ class VLModule:
                                                         dcc.Dropdown(
                                                             id=self.breakdown_group_level_id,
                                                             className="ssb-dropdown",
-                                                            options=[
-                                                                {
-                                                                    "label": "N2",
-                                                                    "value": "n2",
-                                                                },
-                                                                {
-                                                                    "label": "N3",
-                                                                    "value": "n3",
-                                                                },
-                                                                {
-                                                                    "label": "N4",
-                                                                    "value": "n4",
-                                                                },
-                                                                {
-                                                                    "label": "Detaljert næring",
-                                                                    "value": "naring",
-                                                                },
-                                                            ],
+                                                            options=NARING_LEVEL_OPTIONS,
                                                             value="n4",
                                                             clearable=False,
                                                         ),
@@ -1306,12 +1260,7 @@ class VLModule:
                                                 dcc.Dropdown(
                                                     id=self.moms_group_level_id,
                                                     className="ssb-dropdown",
-                                                    options=[
-                                                        {"label": "N2", "value": "n2"},
-                                                        {"label": "N3", "value": "n3"},
-                                                        {"label": "N4", "value": "n4"},
-                                                        {"label": "N5", "value": "n5"},
-                                                    ],
+                                                    options=NARING_LEVEL_OPTIONS,
                                                     value="n2",
                                                     clearable=False,
                                                 ),
@@ -1384,12 +1333,7 @@ class VLModule:
                                                 dcc.Dropdown(
                                                     id=self.movement_group_level_id,
                                                     className="ssb-dropdown",
-                                                    options=[
-                                                        {"label": "N2", "value": "n2"},
-                                                        {"label": "N3", "value": "n3"},
-                                                        {"label": "N4", "value": "n4"},
-                                                        {"label": "N5", "value": "n5"},
-                                                    ],
+                                                    options=NARING_LEVEL_OPTIONS,
                                                     value="n2",
                                                     clearable=False,
                                                 ),
@@ -1442,25 +1386,8 @@ class VLModule:
                                                 dcc.Dropdown(
                                                     id=self.method_naring_level_id,
                                                     className="ssb-dropdown",
-                                                    options=[
-                                                        {
-                                                            "label": "Næring 2",
-                                                            "value": "naring_2",
-                                                        },
-                                                        {
-                                                            "label": "Næring 4",
-                                                            "value": "naring_4",
-                                                        },
-                                                        {
-                                                            "label": "Næring 5",
-                                                            "value": "naring_5",
-                                                        },
-                                                        {
-                                                            "label": "Detaljert næring",
-                                                            "value": "naring",
-                                                        },
-                                                    ],
-                                                    value="naring_4",
+                                                    options=NARING_LEVEL_OPTIONS,
+                                                    value="n3",
                                                     clearable=False,
                                                 ),
                                                 html.Label(
@@ -1535,8 +1462,9 @@ class VLModule:
                                                     (
                                                         "Denne visningen er beregnet for analyse av foretak "
                                                         "som ikke er med i utvalget, og viser hvilke rater "
-                                                        "som er brukt ved beregning av verdiene."
-                                                        "For sysselsetting_arsverk brukes rate bare dersom årsverk manglet."
+                                                        "som er brukt ved beregning av verdiene. "
+                                                        "For variabelen årsverk brukes rate bare dersom "
+                                                        "den opprinnelige verdien manglet."
                                                     ),
                                                     style={
                                                         "fontSize": "13px",
@@ -2000,7 +1928,39 @@ class VLModule:
             dataset,
         )
 
+    @staticmethod
+    def _naring_group_series(
+        df: pd.DataFrame,
+        group_level: str,
+        *,
+        naring_column: str = "naring",
+    ) -> pd.Series:
+        """Return a standard bokstav/N2/N3/N4/N5 grouping series."""
+        if group_level not in NARING_LEVELS:
+            raise ValueError(f"Ugyldig næringsnivå: {group_level}.")
 
+        if group_level == "bokstav":
+            source_column = (
+                "bokstav" if "bokstav" in df.columns else "naring_1"
+            )
+            if source_column not in df.columns:
+                raise ValueError(
+                    "Datasettet mangler næringshovedområde "
+                    "('bokstav' eller 'naring_1')."
+                )
+            return df[source_column].astype("string").str.strip()
+
+        if naring_column not in df.columns:
+            raise ValueError(
+                f"Datasettet mangler kolonnen '{naring_column}'."
+            )
+
+        return (
+            df[naring_column]
+            .astype("string")
+            .str.strip()
+            .str.slice(0, NARING_LEVEL_LENGTHS[group_level])
+        )
 
     @classmethod
     def _duckdb_connection(cls) -> duckdb.DuckDBPyConnection:
@@ -2290,35 +2250,27 @@ class VLModule:
                     f"= {naring_literal}"
                 )
             else:
-                slice_lengths = {
-                    "n2": 2,
-                    "n3": 4,
-                    "n4": 5,
-                    "n5": 6,
-                    "naring_2": 2,
-                    "naring_3": 4,
-                    "naring_4": 5,
-                    "naring_5": 6,
-                }
-
-                if naring_level in {None, "naring"}:
-                    filters.append(
-                        f'CAST("naring" AS VARCHAR) = {naring_literal}'
+                if naring_level not in NARING_LEVELS:
+                    raise ValueError(
+                        f"Ugyldig næringsnivå: {naring_level}."
                     )
-                elif naring_level == "naring_1":
-                    if "naring_1" not in available_columns:
+
+                if naring_level == "bokstav":
+                    source_column = (
+                        "bokstav"
+                        if "bokstav" in available_columns
+                        else "naring_1"
+                    )
+                    if source_column not in available_columns:
                         raise ValueError(
-                            "Datasettet mangler kolonnen 'naring_1'."
+                            "Datasettet mangler næringshovedområde."
                         )
                     filters.append(
-                        f'CAST("naring_1" AS VARCHAR) = {naring_literal}'
+                        f"CAST({cls._quote_identifier(source_column)} "
+                        f"AS VARCHAR) = {naring_literal}"
                     )
                 else:
-                    slice_length = slice_lengths.get(str(naring_level))
-                    if slice_length is None:
-                        raise ValueError(
-                            f"Ugyldig næringsnivå: {naring_level}."
-                        )
+                    slice_length = NARING_LEVEL_LENGTHS[naring_level]
                     filters.append(
                         f"substr(CAST(\"naring\" AS VARCHAR), 1, "
                         f"{slice_length}) = {naring_literal}"
@@ -2376,28 +2328,22 @@ class VLModule:
         available = set(cls._parquet_columns(parquet_path))
         relation = cls._parquet_relation(parquet_path)
 
-        if group_level == "naring_1":
-            if "naring_1" not in available:
+        if group_level not in NARING_LEVELS:
+            return ()
+
+        if group_level == "bokstav":
+            source_column = (
+                "bokstav" if "bokstav" in available else "naring_1"
+            )
+            if source_column not in available:
                 return ()
-            expression = 'trim(CAST("naring_1" AS VARCHAR))'
-        elif group_level == "naring":
+            expression = (
+                f"trim(CAST({cls._quote_identifier(source_column)} AS VARCHAR))"
+            )
+        else:
             if "naring" not in available:
                 return ()
-            expression = 'trim(CAST("naring" AS VARCHAR))'
-        else:
-            slice_lengths = {
-                "n2": 2,
-                "n3": 4,
-                "n4": 5,
-                "n5": 6,
-                "naring_2": 2,
-                "naring_3": 4,
-                "naring_4": 4,
-                "naring_5": 5,
-            }
-            length = slice_lengths.get(group_level)
-            if length is None or "naring" not in available:
-                return ()
+            length = NARING_LEVEL_LENGTHS[group_level]
             expression = (
                 f'substr(trim(CAST("naring" AS VARCHAR)), 1, {length})'
             )
@@ -4278,16 +4224,7 @@ class VLModule:
                 f"{sorted(missing_variables)}."
             )
 
-        valid_group_levels = {
-            "n2",
-            "n3",
-            "n4",
-            "n5",
-            "naring",
-            "naring_1",
-        }
-
-        if group_level not in valid_group_levels:
+        if group_level not in NARING_LEVELS:
             raise ValueError(
                 f"Ugyldig næringsnivå: {group_level}."
             )
@@ -4340,35 +4277,10 @@ class VLModule:
                 data["fylke"] == str(fylke)
             ].copy()
 
-        if group_level == "naring_1":
-            if "naring_1" not in data.columns:
-                raise ValueError(
-                    "Datasettet mangler kolonnen 'naring_1'."
-                )
-
-            data["group_value"] = (
-                data["naring_1"]
-                .astype("string")
-            )
-
-        elif group_level == "naring":
-            data["group_value"] = data["naring"]
-
-        else:
-            slice_lengths = {
-                "n2": 2,
-                "n3": 4,
-                "n4": 5,
-                "n5": 6,
-            }
-
-            data["group_value"] = (
-                data["naring"]
-                .str.slice(
-                    0,
-                    slice_lengths[group_level],
-                )
-            )
+        data["group_value"] = VLModule._naring_group_series(
+            data,
+            group_level,
+        )
 
         data = data.loc[
             data["group_value"].astype(str)
@@ -4712,16 +4624,7 @@ class VLModule:
                 f"{sorted(missing_columns)}."
             )
 
-        valid_group_levels = {
-            "n2",
-            "n3",
-            "n4",
-            "n5",
-            "naring",
-            "naring_1",
-        }
-
-        if group_level not in valid_group_levels:
+        if group_level not in NARING_LEVELS:
             raise ValueError(
                 f"Ugyldig næringsnivå: {group_level}."
             )
@@ -4767,35 +4670,10 @@ class VLModule:
                 data["fylke"] == str(fylke)
             ].copy()
 
-        if group_level == "naring_1":
-            if "naring_1" not in data.columns:
-                raise ValueError(
-                    "Datasettet mangler kolonnen "
-                    "'naring_1'."
-                )
-
-            data["group_value"] = (
-                data["naring_1"].astype("string")
-            )
-
-        elif group_level == "naring":
-            data["group_value"] = data["naring"]
-
-        else:
-            slice_lengths = {
-                "n2": 2,
-                "n3": 4,
-                "n4": 5,
-                "n5": 6,
-            }
-
-            data["group_value"] = (
-                data["naring"]
-                .str.slice(
-                    0,
-                    slice_lengths[group_level],
-                )
-            )
+        data["group_value"] = VLModule._naring_group_series(
+            data,
+            group_level,
+        )
 
         data = data.loc[
             data["group_value"].astype(str)
@@ -5626,12 +5504,7 @@ class VLModule:
                 f"{sorted(missing_columns)}."
             )
 
-        valid_group_levels = {
-            "naring_2",
-            "naring",
-        }
-
-        if group_level not in valid_group_levels:
+        if group_level not in NARING_LEVELS:
             raise ValueError(
                 f"Ugyldig næringsnivå: {group_level}."
             )
@@ -5652,20 +5525,10 @@ class VLModule:
 
         data["naring"] = data["naring"].astype("string")
 
-        if "naring_2" not in data.columns:
-            data["naring_2"] = (
-                data["naring"].str.slice(0, 2)
-            )
-
-        if "naring_3" not in data.columns:
-            data["naring_3"] = (
-                data["naring"].str.slice(0, 4)
-            )
-
-        if "naring_4" not in data.columns:
-            data["naring_4"] = (
-                data["naring"].str.slice(0, 5)
-            )
+        data[group_level] = VLModule._naring_group_series(
+            data,
+            group_level,
+        )
 
         nopost_prefixes = (
             "nopost_p3000",
@@ -5807,12 +5670,7 @@ class VLModule:
                 f"{sorted(missing_columns)}."
             )
 
-        valid_group_levels = {
-            "naring_2",
-            "naring",
-        }
-
-        if group_level not in valid_group_levels:
+        if group_level not in NARING_LEVELS:
             raise ValueError(
                 f"Ugyldig næringsnivå: {group_level}."
             )
@@ -5835,10 +5693,10 @@ class VLModule:
             "string"
         )
 
-        if "naring_2" not in data.columns:
-            data["naring_2"] = (
-                data["naring"].str.slice(0, 2)
-            )
+        data[group_level] = VLModule._naring_group_series(
+            data,
+            group_level,
+        )
 
         data = data.loc[
             data[group_level].astype(str)
@@ -6025,14 +5883,7 @@ class VLModule:
                 f"{sorted(missing_columns)}."
             )
 
-        valid_group_levels = {
-            "naring_2",
-            "naring_3",
-            "naring_4",
-            "naring",
-        }
-
-        if group_level not in valid_group_levels:
+        if group_level not in NARING_LEVELS:
             raise ValueError(
                 f"Ugyldig næringsnivå: {group_level}."
             )
@@ -6060,20 +5911,10 @@ class VLModule:
             "string"
         )
 
-        if "naring_2" not in data.columns:
-            data["naring_2"] = (
-                data["naring"].str.slice(0, 2)
-            )
-
-        if "naring_3" not in data.columns:
-            data["naring_3"] = (
-                data["naring"].str.slice(0, 4)
-            )
-
-        if "naring_4" not in data.columns:
-            data["naring_4"] = (
-                data["naring"].str.slice(0, 5)
-            )
+        data[group_level] = VLModule._naring_group_series(
+            data,
+            group_level,
+        )
 
         if view == "Fylke":
             data["fylke"] = data["fylke"].astype(
@@ -6276,14 +6117,7 @@ class VLModule:
                 f"{sorted(missing_columns)}."
             )
 
-        valid_group_levels = {
-            "naring_2",
-            "naring_3",
-            "naring_4",
-            "naring",
-        }
-
-        if group_level not in valid_group_levels:
+        if group_level not in NARING_LEVELS:
             raise ValueError(
                 f"Ugyldig næringsnivå: {group_level}."
             )
@@ -6321,20 +6155,10 @@ class VLModule:
             "string"
         )
 
-        if "naring_2" not in data.columns:
-            data["naring_2"] = (
-                data["naring"].str.slice(0, 2)
-            )
-
-        if "naring_3" not in data.columns:
-            data["naring_3"] = (
-                data["naring"].str.slice(0, 4)
-            )
-
-        if "naring_4" not in data.columns:
-            data["naring_4"] = (
-                data["naring"].str.slice(0, 5)
-            )
+        data[group_level] = VLModule._naring_group_series(
+            data,
+            group_level,
+        )
 
         data = data.loc[
             data[group_level].astype(str)
@@ -6588,15 +6412,7 @@ class VLModule:
                 f"{sorted(missing_columns)}."
             )
 
-        valid_group_levels = {
-            "naring_2",
-            "naring_3",
-            "naring_4",
-            "naring_5",
-            "naring",
-        }
-
-        if group_level not in valid_group_levels:
+        if group_level not in NARING_LEVELS:
             raise ValueError(
                 f"Ugyldig næringsnivå: {group_level}."
             )
@@ -6641,25 +6457,11 @@ class VLModule:
             "string"
         )
 
-        if "naring_2" not in data.columns:
-            data["naring_2"] = (
-                data["naring"].str.slice(0, 2)
-            )
+        data[group_level] = VLModule._naring_group_series(
+            data,
+            group_level,
+        )
 
-        if "naring_3" not in data.columns:
-            data["naring_3"] = (
-                data["naring"].str.slice(0, 4)
-            )
-
-        if "naring_4" not in data.columns:
-            data["naring_4"] = (
-                data["naring"].str.slice(0, 5)
-            )
-
-        if "naring_5" not in data.columns:
-            data["naring_5"] = (
-                data["naring"].str.slice(0, 6)
-            )
 
         if view == "Fylke":
             data["fylke"] = data["fylke"].astype(
@@ -7012,14 +6814,7 @@ class VLModule:
                     "Datasettet mangler kolonnen 'naring'."
                 )
 
-            valid_group_levels = {
-                "n2",
-                "n3",
-                "n4",
-                "naring",
-            }
-
-            if group_level not in valid_group_levels:
+            if group_level not in NARING_LEVELS:
                 raise ValueError(
                     f"Ugyldig næringsnivå: {group_level}."
                 )
@@ -7300,9 +7095,10 @@ class VLModule:
                 "string"
             )
 
-            data["n2"] = data["naring"].str.slice(0, 2)
-            data["n3"] = data["naring"].str.slice(0, 4)
-            data["n4"] = data["naring"].str.slice(0, 5)
+            data[str(group_level)] = VLModule._naring_group_series(
+                data,
+                str(group_level),
+            )
 
         current_year = int(year)
         previous_year = current_year - 1
@@ -7517,14 +7313,7 @@ class VLModule:
                 f"{sorted(missing_columns)}."
             )
 
-        valid_group_levels = {
-            "n2",
-            "n3",
-            "n4",
-            "n5",
-        }
-
-        if group_level not in valid_group_levels:
+        if group_level not in NARING_LEVELS:
             raise ValueError(
                 f"Ugyldig næringsnivå: {group_level}."
             )
@@ -7552,24 +7341,21 @@ class VLModule:
             "string"
         )
 
-        slice_lengths = {
-            "n2": 2,
-            "n3": 4,
-            "n4": 5,
-            "n5": 6,
-        }
-
-        exact_length = slice_lengths[group_level]
-
-        data = data.loc[
-            data["naring"].str.len()
-            == exact_length
-        ].copy()
+        if group_level == "bokstav":
+            data["group_value"] = VLModule._naring_group_series(
+                data,
+                group_level,
+            )
+        else:
+            exact_length = NARING_LEVEL_LENGTHS[group_level]
+            data = data.loc[
+                data["naring"].str.len()
+                == exact_length
+            ].copy()
+            data["group_value"] = data["naring"]
 
         if data.empty:
             return pd.DataFrame()
-
-        data["group_value"] = data["naring"]
 
         if selected_naringer:
             selected_values = {
@@ -7849,14 +7635,7 @@ class VLModule:
                 "'sysselsetting_syss'."
             )
 
-        valid_group_levels = {
-            "n2",
-            "n3",
-            "n4",
-            "n5",
-        }
-
-        if group_level not in valid_group_levels:
+        if group_level not in NARING_LEVELS:
             raise ValueError(
                 f"Ugyldig næringsnivå: {group_level}."
             )
@@ -7890,14 +7669,11 @@ class VLModule:
             )
         # The decimal point is part of the stored code, so displayed digit levels
         # do not equal Python string lengths for N3, N4 and N5.
-        slice_lengths = {
-            "n2": 2,
-            "n3": 4,
-            "n4": 5,
-            "n5": 6,
-        }
-
-        slice_length = slice_lengths[group_level]
+        slice_length = (
+            NARING_LEVEL_LENGTHS[group_level]
+            if group_level != "bokstav"
+            else None
+        )
 
         data["naring_prev"] = (
             data["naring_prev"]
@@ -7911,21 +7687,33 @@ class VLModule:
             .str.strip()
         )
 
-        data["group_previous"] = (
-            data["naring_prev"]
-            .str.slice(
-                0,
-                slice_length,
+        if group_level == "bokstav":
+            previous_column = (
+                "bokstav_prev"
+                if "bokstav_prev" in data.columns
+                else "naring_1_prev"
             )
-        )
-
-        data["group_current"] = (
-            data["naring_curr"]
-            .str.slice(
-                0,
-                slice_length,
+            current_column = (
+                "bokstav_curr"
+                if "bokstav_curr" in data.columns
+                else "naring_1_curr"
             )
-        )
+            if (
+                previous_column not in data.columns
+                or current_column not in data.columns
+            ):
+                raise ValueError(
+                    "Bevegelsesdatasettet mangler næringshovedområde."
+                )
+            data["group_previous"] = data[previous_column].astype("string")
+            data["group_current"] = data[current_column].astype("string")
+        else:
+            data["group_previous"] = (
+                data["naring_prev"].str.slice(0, slice_length)
+            )
+            data["group_current"] = (
+                data["naring_curr"].str.slice(0, slice_length)
+            )
 
         previous_exists = data[
             "group_previous"
@@ -8111,14 +7899,7 @@ class VLModule:
                 f"{sorted(missing_columns)}."
             )
 
-        valid_naring_levels = {
-            "naring_2",
-            "naring_4",
-            "naring_5",
-            "naring",
-        }
-
-        if naring_level not in valid_naring_levels:
+        if naring_level not in NARING_LEVELS:
             raise ValueError(
                 f"Ugyldig næringsnivå: {naring_level}."
             )
@@ -8150,20 +7931,10 @@ class VLModule:
         else:
             data["reg_type"] = pd.NA
 
-        if "naring_2" not in data.columns:
-            data["naring_2"] = (
-                data["naring"].str.slice(0, 2)
-            )
-
-        if "naring_4" not in data.columns:
-            data["naring_4"] = (
-                data["naring"].str.slice(0, 4)
-            )
-
-        if "naring_5" not in data.columns:
-            data["naring_5"] = (
-                data["naring"].str.slice(0, 5)
-            )
+        data[naring_level] = VLModule._naring_group_series(
+            data,
+            naring_level,
+        )
 
         data = data.loc[
             data[naring_level].astype(str)
@@ -8816,6 +8587,11 @@ class VLModule:
 
         column_labels = {
             "naring": "Detaljert næring",
+            "bokstav": "Næringshovedområde",
+            "n2": "N2",
+            "n3": "N3",
+            "n4": "N4",
+            "n5": "N5",
             "naring_1": "Næringshovedområde",
             "naring_2": "2-siffer næring",
             "naring_3": "3-siffer næring",
@@ -8944,9 +8720,10 @@ class VLModule:
             .tolist()
         )
 
-        for column in numeric_columns:
-            decimals = 6 if column in {"rate_used", "rate"} else 2
+        rate_columns = {"rate", "rate_used", "rate_brukt"}
 
+        for column in numeric_columns:
+            decimals = 6 if column in rate_columns else 2
             display_df[column] = pd.to_numeric(
                 display_df[column],
                 errors="coerce",
@@ -9008,7 +8785,9 @@ class VLModule:
                 column_definition["type"] = "numeric"
 
                 column_definition["format"] = {
-                    "specifier": ",.2f",
+                    "specifier": (
+                        ",.6f" if column in rate_columns else ",.2f"
+                    ),
                 }
 
             else:
@@ -10425,30 +10204,23 @@ class VLModule:
                 if "naring" not in df.columns:
                     return [], []
 
-                valid_lengths = {
-                    "n2": 2,
-                    "n3": 4,
-                    "n4": 5,
-                    "n5": 6,
-                }
-
-                if group_level not in valid_lengths:
+                if group_level not in NARING_LEVELS:
                     return [], []
 
-                exact_length = valid_lengths[group_level]
-
-                naring_values = sorted(
-                    df.loc[
+                if group_level == "bokstav":
+                    values = self._naring_group_series(df, group_level)
+                else:
+                    exact_length = NARING_LEVEL_LENGTHS[group_level]
+                    values = df.loc[
                         df["naring"]
                         .astype("string")
                         .str.len()
                         .eq(exact_length),
                         "naring",
                     ]
-                    .dropna()
-                    .astype(str)
-                    .unique()
-                    .tolist()
+
+                naring_values = sorted(
+                    values.dropna().astype(str).unique().tolist()
                 )
 
                 options = [
