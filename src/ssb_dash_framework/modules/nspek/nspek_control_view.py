@@ -5,6 +5,7 @@ from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+from dash_iconify import DashIconify
 
 # import ibis
 from dash import callback
@@ -14,6 +15,8 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+
+from ssb_dash_framework import ControlFrameworkBase
 
 # from eimerdb import EimerDBInstance
 from ...setup.variableselector import VariableSelector
@@ -25,7 +28,7 @@ from ...utils.module_validation import module_validator
 logger = logging.getLogger(__name__)
 
 default_col_def = {
-    # "filter": True,
+    "filter": True,
     "resizable": True,
     "sortable": True,
     # "floatingFilter": True,
@@ -35,7 +38,7 @@ default_col_def = {
 
 class NspekControlView(ABC):
     """Nspek variant av ControlView - tett på original implementasjon,
-    men med control_dict og uten hard dependency på altinnskjema.
+    men med control_class og uten hard dependency på altinnskjema.
     """
 
     _id_number: int = 0
@@ -43,7 +46,7 @@ class NspekControlView(ABC):
     def __init__(
         self,
         time_units: list[str],
-        control_dict: dict[str, Any],
+        control_class: type[ControlFrameworkBase],
         outputs: list[str] | None = None,
     ) -> None:
 
@@ -57,10 +60,10 @@ class NspekControlView(ABC):
         self.module_name = self.__class__.__name__
         NspekControlView._id_number += 1
 
-        self.icon = "⚖️"
-        self.label = "Kontroll"
+        self.icon = DashIconify(icon="feather:activity", width=24)
+        self.label = "NSPEK Kontroll"
 
-        self.control_dict = control_dict
+        self.control_class = control_class
         self.outputs = outputs
         # self._is_valid()
         self.module_layout = self.create_layout()
@@ -113,9 +116,7 @@ class NspekControlView(ABC):
                             id=f"{self.module_number}-kontroller",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            columnSize="responsiveSizeToFit",
                             dashGridOptions={
-                                # "pagination": True,
                                 "rowSelection": "single",
                                 "rowHeight": 30,
                             },
@@ -132,7 +133,6 @@ class NspekControlView(ABC):
                             id=f"{self.module_number}-kontrollutslag",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            columnSize="responsiveSizeToFit",
                             dashGridOptions={
                                 "pagination": True,
                                 "rowSelection": "single",
@@ -145,6 +145,81 @@ class NspekControlView(ABC):
                 ),
             ],
         )
+
+    def _create_column_defs(self, df):
+        wide = {
+            "skildring": 4,
+        }
+
+        fixed = {
+            "aar": 100,
+            "tema": 100,
+            "sist_kjoert": 140,
+            "utslag": 80,
+            "verdi": 160,
+            "kontrollid": 220,
+        }
+
+        centered = {
+            "utslag",
+        }
+
+        hidden = {
+            "foretak",
+            "utslag",
+        }
+
+        headers = {
+            "aar": "År",
+            "tema": "Tema",
+            "kontrollid": "Kontroll",
+            "skildring": "Beskrivelse",
+            "sist_kjoert": "Sist kjørt",
+            "sekvensnummer": "Sekvens",
+            "ident": "Orgnr",
+            "utslag": "Utslag",
+            "verdi": "Avvik",
+            "org_form": "Orgform",
+            "sn2025_1": "SN2025",
+            "sn07_1": "SN2007",
+            "sektor_2014": "Sektor",
+            "undersektor_2014": "Undersektor",
+        }
+
+        columns = []
+
+        for col in df.columns:
+
+            col_def = {
+                "headerName": headers.get(col, col),
+                "field": col,
+                "hide": col in hidden,
+            }
+
+            if col in fixed:
+                col_def["width"] = fixed[col]
+            else:
+                col_def["flex"] = wide.get(col, 1)
+                col_def["minWidth"] = 100
+
+            if col in centered:
+                col_def["cellStyle"] = {"textAlign": "center"}
+                col_def["headerClass"] = "ag-center-header"
+
+            if col == "verdi":
+                col_def["type"] = "numericColumn"
+                col_def["cellStyle"] = {"textAlign": "right"}
+                col_def["valueFormatter"] = {
+                    "function": "params.value == null ? '' : d3.format(',.0f')(params.value).replace(/,/g, ' ')"
+                }
+
+            columns.append(col_def)
+
+        if columns:
+            columns[0]["checkboxSelection"] = True
+            columns[0]["headerCheckboxSelection"] = True
+
+        return columns
 
     @abstractmethod
     def layout(self) -> html.Div:
@@ -192,11 +267,11 @@ class NspekControlView(ABC):
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
             State("alert_store", "data"),
             *self.variableselector.get_all_inputs(),
-            prevent_initial_call=True,
+            prevent_initial_call="initial_duplicate",
         )
         def get_kontroller_overview(refresh, run, store, *args):
 
-            control_class = self.control_dict
+            control_class = self.control_class
 
             subset = dict(zip(self.time_units, args, strict=False))
             subset["aar"] = int(subset["aar"])
@@ -215,11 +290,7 @@ class NspekControlView(ABC):
             if df is None or df.empty:
                 return [], [], store
 
-            columns = [{"headerName": c, "field": c} for c in df.columns]
-
-            if len(columns) > 0:
-                columns[0]["checkboxSelection"] = True
-                columns[0]["headerCheckboxSelection"] = True
+            columns = self._create_column_defs(df)
 
             return (
                 df.to_dict("records"),
@@ -238,7 +309,7 @@ class NspekControlView(ABC):
             if not selected:
                 raise PreventUpdate
 
-            control_class = self.control_dict
+            control_class = self.control_class
 
             instance = control_class(
                 time_units=self.time_units,
@@ -251,18 +322,10 @@ class NspekControlView(ABC):
 
             if df is None or df.empty:
                 return [], []
-            
+
             df["foretak"] = df["ident"]
 
-            columns = [{"headerName": c, "field": c} for c in df.columns]
-
-            if len(columns) > 0:
-                columns[0]["checkboxSelection"] = True
-                columns[0]["headerCheckboxSelection"] = True
-            
-            for col in columns:
-                if col["field"] == "foretak":
-                    col["hide"] = True
+            columns = self._create_column_defs(df)
 
             return df.to_dict("records"), columns
 
@@ -297,21 +360,28 @@ class NspekControlView(ABC):
 
 
 class NspekControlViewTab(TabImplementation, NspekControlView):
-    def __init__(self, time_units: list[str], control_dict: dict[str, Any]):
+    def __init__(
+        self, time_units: list[str], control_class: type[ControlFrameworkBase]
+    ):
         NspekControlView.__init__(
             self,
             time_units=time_units,
-            control_dict=control_dict,
+            control_class=control_class,
         )
         TabImplementation.__init__(self)
 
 
 class NspekControlViewWindow(WindowImplementation, NspekControlView):
-    def __init__(self, time_units: list[str], control_dict: dict[str, Any], **kwargs: Any):
+    def __init__(
+        self,
+        time_units: list[str],
+        control_class: type[ControlFrameworkBase],
+        **kwargs: Any,
+    ):
 
         NspekControlView.__init__(
             self,
             time_units=time_units,
-            control_dict=control_dict,
+            control_class=control_class,
         )
         WindowImplementation.__init__(self, **kwargs)
