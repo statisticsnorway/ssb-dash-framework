@@ -447,10 +447,10 @@ def get_virksomhetsinfo(
     return df
 
 
-def get_skjoennslignet(conn, ident: str, aar: str, sekvensnummer: int) -> pd.DataFrame:
+def get_skjoennslignet(conn, sekvensnummer: int) -> pd.DataFrame:
     """Fetch and return pandas dataframe containing virksomhetsinfo from nspek files for specified variables for a unit.
 
-    Example use: get_skjoennslignet(self.conn, virksomhetsinfo_variabler, "979443137", "2024", 2291859)
+    Example use: get_skjoennslignet(self.conn, 2291859)
     """
     config = TYPE_REGNSKAP_TABLE["enhet_opplysninger"]
 
@@ -1132,7 +1132,7 @@ class Naeringsspesifikasjon:
         )
         self.module_number = Naeringsspesifikasjon._id_number
         self.module_name = self.__class__.__name__
-        self.icon = "📒"
+        self.icon = DashIconify(icon="feather:book", width=24)
         self.label = "NSPEK"
 
         self.variableselector = VariableSelector(
@@ -2331,8 +2331,6 @@ class Naeringsspesifikasjon:
 
                 df = get_skjoennslignet(
                     conn=conn,
-                    ident=orgnr_foretak,
-                    aar=aar,
                     sekvensnummer=sekvensnummer,
                 )
 

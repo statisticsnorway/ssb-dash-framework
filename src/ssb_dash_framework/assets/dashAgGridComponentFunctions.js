@@ -1,4 +1,4 @@
-var dagcomponentfuncs = window.dashAgGridComponentFunctions = window.dashAgGridComponentFunctions || {};
+const dagcomponentfuncs = window.dashAgGridComponentFunctions = window.dashAgGridComponentFunctions || {};
 
 dagcomponentfuncs.feltkommentarIcon = function (props) {
 

@@ -5,6 +5,7 @@ from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+from dash_iconify import DashIconify
 
 # import ibis
 from dash import callback
@@ -59,7 +60,7 @@ class NspekControlView(ABC):
         self.module_name = self.__class__.__name__
         NspekControlView._id_number += 1
 
-        self.icon = "⚖️"
+        self.icon = DashIconify(icon="feather:activity", width=24)
         self.label = "NSPEK Kontroll"
 
         self.control_class = control_class
@@ -115,9 +116,7 @@ class NspekControlView(ABC):
                             id=f"{self.module_number}-kontroller",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            # columnSize="responsiveSizeToFit",
                             dashGridOptions={
-                                # "pagination": True,
                                 "rowSelection": "single",
                                 "rowHeight": 30,
                             },
@@ -134,7 +133,6 @@ class NspekControlView(ABC):
                             id=f"{self.module_number}-kontrollutslag",
                             defaultColDef=default_col_def,
                             className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            # columnSize="responsiveSizeToFit",
                             dashGridOptions={
                                 "pagination": True,
                                 "rowSelection": "single",
