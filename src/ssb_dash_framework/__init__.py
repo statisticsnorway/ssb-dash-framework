@@ -116,6 +116,9 @@ from .utils import set_connection
 from .utils import set_eimerdb_connection
 from .utils import set_postgres_connection
 from .utils import sidebar_button
+from .modules import VLModule
+from .modules import VLModuleTab
+from .modules import VLModuleWindow
 
 # from .utils import th_error
 
@@ -238,6 +241,9 @@ __all__ = [
     "set_postgres_connection",
     "set_variables",
     "sidebar_button",
+    "VLModule",
+    "VLModuleTab",
+    "VLModuleWindow",
     #    "hb_method",
     #    "_get_kostra_r",
     #    "th_error",

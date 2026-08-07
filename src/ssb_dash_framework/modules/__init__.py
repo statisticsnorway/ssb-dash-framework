@@ -67,6 +67,9 @@ from .skjemapdfviewer import SkjemapdfViewerTab
 from .skjemapdfviewer import SkjemapdfViewerWindow
 from .visualizationbuilder import VisualizationBuilder
 from .visualizationbuilder import VisualizationBuilderWindow
+from .vl_module import VLModule
+from .vl_module import VLModuleTab
+from .vl_module import VLModuleWindow
 
 __all__ = [
     "Aarsregnskap",
@@ -136,4 +139,7 @@ __all__ = [
     "export_from_parqueteditor",
     "get_export_log_path",
     "get_log_path",
+    "VLModule",
+    "VLModuleTab",
+    "VLModuleWindow",
 ]

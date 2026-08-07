@@ -2612,6 +2612,59 @@ ParquetEditor
   height: 100% !important;
 }
 
+
+/* ==========================================================================
+   VLModule
+   ========================================================================== */
+
+.vl-module {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.vl-content-width {
+  width: 100%;
+  max-width: 900px;
+}
+
+.vl-graph-section,
+.vl-graph-container {
+  width: 100%;
+  max-width: none;
+}
+
+.vl-control-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+
+.vl-change-share-drilldown,
+.vl-table-container {
+  width: 100%;
+  padding: 16px;
+}
+
+.vl-change-share-drilldown {
+  margin-top: 8px;
+}
+
+.vl-selected-unit-panel {
+  position: sticky;
+  bottom: 16px;
+  z-index: 1000;
+  margin: 16px;
+  padding: 14px 16px;
+  border: 1px solid #b8b8b8;
+  border-radius: 10px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+
 /*
 Dark mode — ag-grid table overrides
 All tables use ag-theme-alpine which is light-only by default.
