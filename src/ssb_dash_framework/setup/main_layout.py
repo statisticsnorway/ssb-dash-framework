@@ -4,6 +4,7 @@ from typing import Any
 import dash_bootstrap_components as dbc
 from dash import dcc
 from dash import html
+from dash_iconify import DashIconify
 
 from ..utils.alert_handler import AlertHandler
 from ..utils.functions import sidebar_button
@@ -63,7 +64,7 @@ def main_layout(
     window_modules_list = [alerthandler.layout(), *window_modules]
 
     varvelger_toggle = [
-        html.Div([sidebar_button("🛆", "Vis variabler", "sidebar-varvelger-button")])
+        html.Div([sidebar_button(DashIconify(icon="feather:triangle", width=24), "Vis variabler", "sidebar-varvelger-button")])
     ]
     theme_toggle = html.Div(
         [

@@ -47,7 +47,6 @@ class NspekControls(ControlFrameworkBase):
                     sortering,*/
                     sist_kjoert
                 FROM nspek_core.kontroller
-                WHERE aar = 2024
             """)
 
             rows = cursor.fetchall()
@@ -79,14 +78,18 @@ class NspekControls(ControlFrameworkBase):
                     sekvensnummer,
                     orgnr as ident,
                     utslag,
-                    verdi
+                    verdi,
+                    org_form,
+                    sn2025_1,
+                    sn07_1,
+                    sektor_2014,
+                    undersektor_2014
                 FROM nspek_core.kontrollutslag
-                WHERE aar = 2024
             """
 
             if specific_control:
                 query += (
-                    f" AND kontrollid = '{specific_control}' ORDER by abs(verdi) DESC"
+                    f" WHERE kontrollid = '{specific_control}' ORDER by abs(verdi) DESC"
                 )
 
             cursor = conn.raw_sql(query)
