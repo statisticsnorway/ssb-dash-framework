@@ -147,7 +147,7 @@ def default_getter(
             if value and unit in t.columns:
                 filters.append(t[unit] == value)
     res: Series | Any = (
-        t.filter(filters).select(settings.formdata_field_value_column_name).to_pandas()
+        t.filter(filters).select(settings.formdata_field_value_column_name).execute()
     )
     logger.debug(f"Returning:\n{res}")
 

@@ -481,13 +481,14 @@ class DropdownComponent(BaseNode):
         return html.Div(
             [
                 html.Label(self.label, title=self.field_settings._id.split("[")[0]),
-                dbc.Select(
+                dcc.Dropdown(
                     options=self.options,
                     id=self.field_settings._id,
-                    style={"width": "100%"},
+                    searchable=False,
+                    className="ssb-dropdown",
                 ),  # pyright: ignore
             ],
-            className="microlayout-dropdown",
+            className="ssb-input"
         )
 
 
