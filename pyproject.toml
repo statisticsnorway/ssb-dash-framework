@@ -25,7 +25,7 @@ dependencies = [
     "ssb-klass-python (>=1.0.6,<2.0.0)",
     "psycopg[pool] (>=3.3.3,<4.0.0)",
     "rpy2 (==3.6.5)",
-    "rpy2-rinterface (==3.6.5)",
+    "rpy2-rinterface (==3.6.6)",
     "rpy2-robjects (==3.6.4)",
     "ssb-poc-statlog-model (>=2.0.0,<3.0.0)",
     "ssb-eimerdb (>=0.2.7,<0.3.0)",
