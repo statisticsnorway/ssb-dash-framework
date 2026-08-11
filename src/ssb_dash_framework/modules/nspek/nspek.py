@@ -3542,9 +3542,9 @@ class Naeringsspesifikasjon:
                 if ctx.triggered_id == "run-controls-btn":
                     run_all_controls_for_sekvensnummer(conn, int(sekvensnummer))
 
-                df = instance.get_current_kontrollutslag()
-
-            df = df[df["sekvensnummer"] == int(sekvensnummer)]
+                df = instance.get_current_kontrollutslag(
+                    sekvensnummer=int(sekvensnummer),
+                )
 
             if df.empty:
                 return [], base_class
