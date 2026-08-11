@@ -302,33 +302,26 @@ class NspekControlView(ABC):
             Output(f"{self.module_number}-kontrollutslag", "rowData"),
             Output(f"{self.module_number}-kontrollutslag", "columnDefs"),
             Input(f"{self.module_number}-kontroller", "selectedRows"),
-            *self.variableselector.get_all_inputs(),
             prevent_initial_call=True,
         )
-        def get_kontrollutslag(selected, *args):
+        def get_kontrollutslag(selected):
 
             if not selected:
                 raise PreventUpdate
 
-            subset = dict(zip(self.time_units, args, strict=False))
-
-            aar = subset["aar"]
-            if isinstance(aar, list):
-                aar = aar[0]
-
-            aar = int(aar)
-            subset["aar"] = aar
-
             control_class = self.control_class
+
+            aar = int(selected[0]["aar"])
+            kontrollid = selected[0]["kontrollid"]
 
             instance = control_class(
                 time_units=self.time_units,
-                applies_to_subset=subset,
+                applies_to_subset={"aar": aar},
             )
 
             df = instance.get_current_kontrollutslag(
                 aar=aar,
-                specific_control=selected[0]["kontrollid"],
+                specific_control=kontrollid,
             )
 
             if df is None or df.empty:
