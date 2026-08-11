@@ -573,6 +573,7 @@ class DemoDataCreator:
         df["skjema"] = "RA-7357"
         df["refnr"] = df.index.astype(str)
         df["refnr"] = df["aar"].astype(str) + df["refnr"]
+        df["aar"] = df["aar"].astype(str)
         self.data = df
 
     def get_enheter(self) -> None:

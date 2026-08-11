@@ -2,7 +2,7 @@ import os
 
 import plotly.express as px
 from ibis import _
-
+from ssb_dash_framework.config.yaml_parser import config_parser_yaml
 from ssb_dash_framework.experimental.modules.data_editor.helper_buttons.supporting_table import (
     DataEditorSupportTable,
 )
@@ -20,7 +20,7 @@ if os.getenv("DAPLA_ENVIRONMENT", None) == "PROD":
     from ssb_dash_framework import set_sqlite_connection
     from ssb_dash_framework import get_connection
 
-    set_sqlite_connection(f"/home/onyxia/work/ssb-dash-framework/mydb.sqlite")
+    set_sqlite_connection(f"/home/onyxia/work/ssb-dash-framework/demo/demo.sqlite")
     try:
         with get_connection() as conn:
             t = conn.table("enheter")
@@ -123,67 +123,24 @@ def make_table(tabell, skjema, refnr, *time_units):
         return t.filter(_.refnr == refnr).filter(_.skjema == skjema).to_pandas()
 
 
-layout = [
-    {
-        "row": [
-            {"col": {"table": {"label": "Oversiktstabell", "table_func": make_table}}},
-            {"col": {"figure": {"label": "Barplot", "figure_func": make_fig_bar}}},
-        ]
-    },
-    {
-        "row": [
-            {
-                "col": {
-                    "microlayout": {
-                        "label": "Test mikrolayout",
-                        "form_data_table": "skjemadata_hoved",
-                        "form_data_field_name_column": "variabel",
-                        "layout": [
-                            {
-                                "type": "input",
-                                "label": "Totalareal",
-                                "field_settings": {"field_path": "totalareal"},
-                            },
-                            {
-                                "type": "input",
-                                "label": "Fulldyrket",
-                                "field_settings": {"field_path": "fulldyrket"},
-                            },
-                            {
-                                "type": "input",
-                                "label": "Innmarksbeite",
-                                "field_settings": {"field_path": "innmarksbeite"},
-                            },
-                        ],
-                    },
-                    "kwargs": {"width": 1},
-                }
-            },
-            {
-                "col": {
-                    "figure": {
-                        "label": "Scatterplot fulldyrket - totalareal",
-                        "figure_func": make_fig_scatter,
-                    },
-                }
-            },
-        ]
-    },
-]
+config = config_parser_yaml(str("demo/demo.yaml"))
+check: DataViewCustom = DataViewCustom.from_dict(config)
 
 DataEditorInfoRow(
     variables={"Navn": {"source": "enhetsinfo", "variable_name": "orgnavn"}}
 )
 
-DataViewCustom(
-    applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"], layout=layout
-)
+# DataViewCustom(
+#     applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"], layout=layout
+# )
 
 
 def support_table_get_data(aar, skjema):
-    return _get_connection_object().query(
-        f"SELECT * FROM skjemadata_hoved WHERE aar = {aar} and skjema ='{skjema}'"
-    )
+    with get_connection() as conn:
+        t = conn.table("skjemadata_hoved")
+        t = t.filter(t.aar == aar).filter(t.skjema == skjema)
+        return t.to_pandas()
+
 
 
 DataEditorSupportTable(
