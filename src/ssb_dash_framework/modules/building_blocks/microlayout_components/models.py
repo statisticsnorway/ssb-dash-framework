@@ -3,8 +3,10 @@ from __future__ import annotations
 import uuid
 from typing import Annotated
 from typing import Literal
+from typing import Sequence
 
 import dash_bootstrap_components as dbc
+from dash import dcc
 from dash import Input
 from dash import State
 from dash import Output
@@ -16,6 +18,7 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import TypeAdapter
 from pydantic import computed_field
+from pydantic import field_validator
 
 from .editable_field_model import CallbackSettings
 from .editable_field_model import EditableField
@@ -140,6 +143,57 @@ class Col(ContainerNode):
         )
 
 
+class Tab(ContainerNode):
+    type: Literal["tab"]
+    label: str
+
+    def create(
+        self,
+        settings: CallbackSettings,
+        inputs: list[Input] | None = None,
+        states: list[State] | None = None,
+        getter_args: None | list = None,
+    ) -> dbc.Tab:
+        """A method for creating the layout."""
+        return dbc.Tab(
+            [
+                child.create(
+                    settings,
+                    inputs,
+                    states,
+                    getter_args,
+                )
+                for child in self.children
+            ],
+            label=self.label,
+        )
+
+
+class Tabs(ContainerNode):
+    type: Literal["tabs"]
+    tabs: list[Tab]
+
+    def create(
+        self,
+        settings: CallbackSettings,
+        inputs: list[Input] | None = None,
+        states: list[State] | None = None,
+        getter_args: None | list = None,
+    ) -> dbc.Tabs:
+        """A method for creating the layout."""
+        return dbc.Tabs(
+            [
+                child.create(
+                    settings,
+                    inputs,
+                    states,
+                    getter_args,
+                )
+                for child in self.tabs
+            ]
+        )
+
+
 class Header(BaseNode):
     type: Literal["header"]
     label: str
@@ -165,7 +219,7 @@ class Header(BaseNode):
 
 class Label(BaseNode):
     type: Literal["label"]
-    label: str
+    label: str = "" # acts as a placeholder if not specified
     bold: bool = False
 
     def create(
@@ -177,7 +231,7 @@ class Label(BaseNode):
     ) -> html.Div:
         return html.Div(
             html.Label(
-                self.label, style={"fontWeight": "bold" if self.bold else "normal"}
+                self.label if self.label else "\u00A0", style={"fontWeight": "bold" if self.bold else "normal"}
             ),
             className="microlayout-label",
         )
@@ -223,7 +277,7 @@ class InputField(BaseNode):
                     + (" microlayout-input-readonly" if self.readonly else ""),
                 ),
             ],
-            className="microlayout-input",
+            className="ssb-input",
         )
 
 
@@ -231,13 +285,14 @@ class CalculatedField(BaseNode):
     type: Literal["calculated-field"]
     label: str
     hidelabel: bool = False
+    decimals: int = 1
     applies_to_tables: list[str] = Field(default_factory=list)
     applies_to_forms: list[str] = Field(default_factory=list)
-    exponents: list[str | InputField] = Field(default_factory=list)
-    multiplication: list[str | InputField] = Field(default_factory=list)
-    division: list[str | InputField] = Field(default_factory=list)
-    addition: list[str | InputField] = Field(default_factory=list)
-    subtraction: list[str | InputField] = Field(default_factory=list)
+    exponents: list[str | InputField | int | float] = Field(default_factory=list)
+    multiplication: list[str | InputField | int | float] = Field(default_factory=list)
+    division: list[str | InputField | int | float] = Field(default_factory=list)
+    addition: list[str | InputField | int | float] = Field(default_factory=list)
+    subtraction: list[str | InputField | int | float] = Field(default_factory=list)
 
     @computed_field
     @property
@@ -245,10 +300,10 @@ class CalculatedField(BaseNode):
         return self.label + str(self.applies_to_tables) + str(self.applies_to_forms)
 
     def _get_all_ids(self) -> list[tuple[str, str]]:
-        """Returns (operation, _id) pairs for all entries, resolving InputField to its _id."""
-        print("TEST TEST")
-        print(self.applies_to_tables)
-        print(self.applies_to_forms)
+        """
+        Returns (operation, _id) pairs for all entries, resolving InputField to its _id.
+        Numeric entries are returned as-is (float), others as string IDs.
+        """
         result = []
         for op, fields in [
             ("exponent", self.exponents),
@@ -258,16 +313,23 @@ class CalculatedField(BaseNode):
             ("subtraction", self.subtraction),
         ]:
             for f in fields:
-                _id = (
-                    f.field_settings._id
-                    if isinstance(f, InputField)
-                    else f + str(self.applies_to_tables) + str(self.applies_to_forms)
-                )
-                result.append((op, _id))
+                if isinstance(f, (int, float)):
+                    result.append((op, float(f)))  # literal number
+                elif isinstance(f, InputField):
+                    result.append((op, f.field_settings._id))
+                else:
+                    result.append(
+                        (
+                            op,
+                            f
+                            + str(self.applies_to_tables)
+                            + str(self.applies_to_forms),
+                        )
+                    )
         return result
 
     def _calculate(
-        self, op_id_pairs: list[tuple[str, str]], values: list[float | int | None]
+        self, op_id_pairs: Sequence[tuple[str, str]], values: list[float | int | None]
     ) -> float:
         """Applies operations in order: exponents → multiply → divide → add → subtract."""
         op_values: dict[str, list[float]] = {
@@ -277,25 +339,38 @@ class CalculatedField(BaseNode):
             "addition": [],
             "subtraction": [],
         }
+        incomplete_multiplicative = False # handles missing -> 0 for multiplication & division
 
         for (op, _), value in zip(op_id_pairs, values):
             if value is not None and str(value).strip() != "":
-                op_values[op].append(float(value))
+                fval = float(value)
+                if op == "division" and fval == 0:
+                    incomplete_multiplicative = True
+                else:
+                    op_values[op].append(fval)
+            elif op in ("multiplication", "division", "exponent"):
+                incomplete_multiplicative = True
 
-        result = 0
-        for base in op_values["exponent"]:  # Kept for future implementation
-            result **= base
-            raise NotImplementedError(
-                "Currently formulas involving 'exponent' is not implemented."
-            )
-        for val in op_values["multiplication"]:
-            result *= val
-        for val in op_values["division"]:
-            result /= val if val != 0 else 1
-        for val in op_values["addition"]:
-            result += val
-        for val in op_values["subtraction"]:
-            result -= val
+        if incomplete_multiplicative:
+            return 0.0
+
+        if op_values["multiplication"] or op_values["division"]:
+            result = 1.0
+            for val in op_values["multiplication"]:
+                result *= val
+            for val in op_values["division"]:
+                result /= val
+            # apply addition/subtraction on top
+            for val in op_values["addition"]:
+                result += val
+            for val in op_values["subtraction"]:
+                result -= val
+        else:
+            result = 0.0
+            for val in op_values["addition"]:
+                result += val
+            for val in op_values["subtraction"]:
+                result -= val
 
         return result
 
@@ -304,7 +379,8 @@ class CalculatedField(BaseNode):
         if not op_id_pairs:
             return
 
-        inputs = [Input(id_, "value") for _, id_ in op_id_pairs]
+        dynamic_pairs = [(op, id_) for op, id_ in op_id_pairs if isinstance(id_, str)]
+        inputs = [Input(id_, "value") for _, id_ in dynamic_pairs]
 
         @callback(
             Output(self._id, "value"),
@@ -312,8 +388,18 @@ class CalculatedField(BaseNode):
         )
         def calculated_callback(*values):
             try:
-                result = self._calculate(op_id_pairs, list(values))
-                return f"{result}"
+                if all(v is None for v in values):
+                    return f"{0:.{self.decimals}f}"
+
+                value_iter = iter(values)
+                resolved: Sequence[tuple[str, float | None]] = []
+                for op, id_ in op_id_pairs:
+                    if isinstance(id_, float):
+                        resolved.append((op, id_))
+                    else:
+                        resolved.append((op, next(value_iter)))
+                result = self._calculate(resolved, [v for _, v in resolved])
+                return f"{result:.{self.decimals}f}"
             except Exception as e:
                 return f"Error: {e}"
 
@@ -323,14 +409,19 @@ class CalculatedField(BaseNode):
             [
                 html.Label(
                     self.label,
-                    title=", ".join(id_ for _, id_ in self._get_all_ids()),
+                    title=", ".join(str(id_) for _, id_ in self._get_all_ids()),
                     style={
                         "visibility": "hidden" if self.hidelabel else "visible",
                     },
                 ),
-                dbc.Input(id=self._id, style={"width": "100%"}, readonly=True),
+                dbc.Input(
+                    id=self._id,
+                    style={"width": "100%"},
+                    readonly=True,
+                    className="microlayout-input-readonly",
+                ),
             ],
-            className="microlayout-calculated-field",
+            className="ssb-input",
         )
 
     def __str__(self, prefix: str = "", is_last: bool = True) -> str:
@@ -357,6 +448,9 @@ class CalculatedField(BaseNode):
 
         formula = " ".join(parts) if parts else "∅"
 
+        print(
+            f"{prefix}{branch}{node_name} ({self.label}, formula={formula}, id={self._id})"
+        )
         return f"{prefix}{branch}{node_name} ({self.label}, formula={formula}, id={self._id})"
 
 
@@ -387,13 +481,14 @@ class DropdownComponent(BaseNode):
         return html.Div(
             [
                 html.Label(self.label, title=self.field_settings._id.split("[")[0]),
-                dbc.Select(
+                dcc.Dropdown(
                     options=self.options,
                     id=self.field_settings._id,
-                    style={"width": "100%"},
+                    searchable=False,
+                    className="ssb-dropdown",
                 ),  # pyright: ignore
             ],
-            className="microlayout-dropdown",
+            className="ssb-input"
         )
 
 
@@ -402,6 +497,7 @@ class ChecklistComponent(BaseNode):
 
     type: Literal["checklist"]
     label: str
+    hidelabel: bool = False
     options: list[dict]
     field_settings: EditableField
 
@@ -450,15 +546,40 @@ class ChecklistComponent(BaseNode):
             states,
             getter_args,
         )
+
+        if len(self.options) == 1:
+            children = [
+                dcc.Checklist(
+                    options=[{**opt, "label": ""} for opt in self.options],
+                    id=self.field_settings._id,
+                ),
+                html.Label(
+                    self.options[0].get("label", ""),
+                    className="mb-1 ms-2",
+                ),
+            ]
+        else:
+            children = [
+                dcc.Checklist(
+                    options=self.options,
+                    id=self.field_settings._id,
+                ),
+            ]
+
         return html.Div(
             [
-                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
-                dbc.Checklist(
-                    options=self.options, switch=False, id=self.field_settings._id
-                ),  # pyright: ignore
+                html.Label(
+                    self.label,
+                    title=self.field_settings._id.split("[")[0],
+                    style={"visibility": "hidden" if self.hidelabel else "visible"},
+                ),
+                html.Div(
+                    className="ssb-checkbox d-flex align-items-center",
+                    children=children,
+                    style={"height": "44px"}, # to match ssb-input
+                ),
             ],
-            className="microlayout-checklist",
-            style={"display": "block"},
+            className="ssb-input",
         )
 
 
@@ -499,6 +620,7 @@ class KlassDropdown(BaseNode):
 class Textarea(BaseNode):
     type: Literal["textarea"]
     label: str
+    hidelabel: bool = False
     value: str | None = ""
     field_settings: EditableField
     readonly: bool = False
@@ -519,7 +641,14 @@ class Textarea(BaseNode):
         )
         return html.Div(
             [
-                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
+                html.Label(
+                    self.label,
+                    title=self.field_settings._id.split("[")[0],
+                    style={
+                        "visibility": "hidden" if self.hidelabel else "visible",
+                    },
+                    className="ssb-input",
+                ),
                 dbc.Textarea(
                     style={"width": "100%"},
                     id=self.field_settings._id,
@@ -601,7 +730,9 @@ Node = Annotated[
     | Textarea
     | KlassChecklist
     | ChecklistComponent
-    | DropdownComponent,
+    | DropdownComponent
+    | Tabs
+    | Tab,
     Field(discriminator="type"),
 ]
 
@@ -617,6 +748,8 @@ for m in (
     KlassChecklist,
     ChecklistComponent,
     DropdownComponent,
+    Tabs,
+    Tab,
 ):
     m.model_rebuild()
 

@@ -73,13 +73,20 @@ class TabImplementation:
         Returns:
             The layout containing the module layout.
         """
-        self.label = self.icon + " " + self.label
+        if self.icon:
+            label_content = (
+                [self.icon, " ", self.label]
+                if isinstance(self.icon, str)
+                else [self.icon, html.Span(self.label, className="ms-2")]
+            )
+        else:
+            label_content = self.label
         layout = dbc.Tab(
             html.Div(
                 className="tab-implementation",
                 children=self.get_module_layout(),
             ),
-            label=f"{self.label}",
+            label=label_content,
         )
         logger.debug(f"Generated {self.module_name} - {self.label} tab layout")
         return layout
@@ -138,6 +145,7 @@ class WindowImplementation:
 
     def __init__(
         self,
+        window_scrollable: bool | None = None,
     ) -> None:
         """Initialize the window implementation.
 
@@ -154,6 +162,7 @@ class WindowImplementation:
         if not hasattr(self, "icon"):
             self.icon = ""
 
+        self.window_scrollable = window_scrollable if window_scrollable is not None else True
         self._window_n = WindowImplementation._window_number
         self.window_callbacks()
         WindowImplementation._window_number += 1
@@ -176,19 +185,34 @@ class WindowImplementation:
                             dbc.ModalTitle(
                                 dbc.Row(
                                     [
-                                        dbc.Col(f"{self.icon} {self.label}"),
+                                        dbc.Col(
+                                            [
+                                                html.Span(
+                                                    self.icon,
+                                                    className="modal-title-icon",
+                                                ),
+                                                html.Span(
+                                                    self.label,
+                                                    className="modal-title-text",
+                                                ),
+                                            ],
+                                            className="window-implementation-modal-title",
+                                            width="auto",
+                                        ),
                                         dbc.Col(
                                             dbc.Button(
                                                 "Fullscreen visning",
                                                 id=f"{self._window_n}-{self.module_name}-modal-fullscreen",
+                                                className="ssb-btn primary-btn",
                                             ),
+                                            width="auto",
+                                            className="ms-auto",
                                         ),
                                     ],
                                     align="center",
-                                    justify="between",
-                                    className="w-100",
+                                    className="w-100 flex-nowrap",
                                 )
-                            )
+                            ),
                         ),
                         dbc.ModalBody(
                             html.Div(
@@ -200,10 +224,11 @@ class WindowImplementation:
                     id=f"{self._window_n}-{self.module_name}-modal",
                     size="xl",
                     fullscreen="xxl-down",
+                    scrollable=self.window_scrollable,
                 ),
                 sidebar_button(
-                    f"{self.icon}",
-                    f"{self.label}",
+                    self.icon,
+                    self.label,
                     f"sidebar-{self._window_n}-{self.module_name}-modal-button",
                 ),
             ]

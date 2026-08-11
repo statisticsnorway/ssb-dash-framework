@@ -12,6 +12,7 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from dash_iconify import DashIconify
 
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
@@ -45,7 +46,7 @@ class FreeSearch(ABC):
         self.module_number = FreeSearch._id_number
         self.module_name = self.__class__.__name__
         FreeSearch._id_number += 1
-        self.icon = "🔍"
+        self.icon = DashIconify(icon="feather:search", width=24)
         self.label = label
         self.conn = conn
 
@@ -73,23 +74,30 @@ class FreeSearch(ABC):
                         placeholder="SELECT * FROM databasetabell",
                     ),
                 ),
-                html.Div(
-                    className="freesearch-partition-button",
+                dbc.Row(
+                    className="freesearch-partition-button mb-2",
                     children=[
-                        dbc.Input(
-                            id="tab-frisøk-input1",
-                            placeholder="Velg partition. f.eks. {'aar': [2023], 'termin':[1, 2]}",
+                        dbc.Col(
+                            dbc.Input(
+                                id="tab-frisøk-input1",
+                                placeholder="Velg partition. f.eks. {'aar': [2023], 'termin':[1, 2]}",
+                            ),
+                            width="auto",
                         ),
-                        dbc.Button(
-                            "kjør",
-                            id="tab-frisøk-button1",
+                        dbc.Col(
+                            dbc.Button(
+                                "Kjør",
+                                id="tab-frisøk-button1",
+                                className="ssb-btn primary-btn",
+                            ),
+                            width="auto",
                         ),
                     ],
                 ),
                 dag.AgGrid(
                     defaultColDef={"editable": True},
                     id="tab-frisøk-table1",
-                    className="ag-theme-alpine header-style-on-filter",
+                    className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
                 ),
             ],
         )
@@ -197,13 +205,11 @@ class FreeSearchTab(TabImplementation, FreeSearch):
 class FreeSearchWindow(WindowImplementation, FreeSearch):
     """FreeSearchWindow is a class that creates a modal based on the FreeSearch module."""
 
-    def __init__(self, conn: Any | None = None) -> None:
+    def __init__(self, conn: Any | None = None, **kwargs: Any) -> None:
         """Initialize the FreeSearchWindow class.
 
         Args:
             database: The database connection or object used for querying.
         """
         FreeSearch.__init__(self, conn=conn)
-        WindowImplementation.__init__(
-            self,
-        )
+        WindowImplementation.__init__(self, **kwargs)

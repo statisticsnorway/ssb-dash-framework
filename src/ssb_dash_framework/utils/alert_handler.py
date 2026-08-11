@@ -12,6 +12,7 @@ from dash import callback
 from dash import ctx
 from dash import dcc
 from dash import html
+from dash_iconify import DashIconify
 
 from ..utils.functions import sidebar_button
 
@@ -19,14 +20,13 @@ logger = logging.getLogger(__name__)
 
 
 _DEFAULT_ICONS = {
-    "success": "bi bi-check-circle-fill",
-    "danger": "bi bi-x-circle-fill",
-    "warning": "bi bi-exclamation-triangle-fill",
-    "info": "bi bi-info-circle-fill",
-    "primary": "bi bi-bell-fill",
-    "secondary": "bi bi-bell-fill",
-    "light": "bi bi-bell-fill",
-    "dark": "bi bi-bell-fill",
+    "success": "feather:check-circle",
+    "warning": "feather:alert-triangle",
+    "info": "feather:info",
+    "primary": "feather:bell",
+    "secondary": "feather:bell",
+    "light": "feather:bell",
+    "dark": "feather:bell",
 }
 
 
@@ -42,11 +42,11 @@ def create_alert(
 
     Args:
         message: The alert message to display.
-        color: The color of the alert, typically 'info', 'warning', or 'danger'. Defaults to 'info'.
+        color: The color of the alert, typically 'info', 'warning'. Defaults to 'info'.
         ephemeral: If True, the alert appears for 5 seconds but remains in the store for the modal. Defaults to False.
         position: Controls alert placement ("bottom-left", "center", "top-right", etc.).
         duration: Decides for how long the alert should show in seconds. Defaults to 5.
-        icon: Defines the alert icon on the notification. Defaults to the icons listed in _DEFAULT_ICONS according to color.
+        icon: Defines the alert icon on the notification. Defaults to the icons listed in DashIconify ('Feather' icons) according to color.
 
     Returns:
         A dictionary containing the alert details, including timestamp, message, color, ephemeral status, and alert position.
@@ -138,13 +138,17 @@ class AlertHandler:
                                     [
                                         dbc.Col(
                                             dbc.Button(
-                                                "Vis alle", id="alert_filter_all"
+                                                "Vis alle",
+                                                id="alert_filter_all",
+                                                className="ssb-btn primary-btn",
                                             ),
                                             width="auto",
                                         ),
                                         dbc.Col(
                                             dbc.Button(
-                                                "Vis kun info", id="alert_filter_info"
+                                                "Vis kun info",
+                                                id="alert_filter_info",
+                                                className="ssb-btn primary-btn",
                                             ),
                                             width="auto",
                                         ),
@@ -152,6 +156,7 @@ class AlertHandler:
                                             dbc.Button(
                                                 "Vis kun editeringer",
                                                 id="alert_filter_success",
+                                                className="ssb-btn primary-btn",
                                             ),
                                             width="auto",
                                         ),
@@ -159,12 +164,7 @@ class AlertHandler:
                                             dbc.Button(
                                                 "Vis kun advarsel",
                                                 id="alert_filter_warning",
-                                            ),
-                                            width="auto",
-                                        ),
-                                        dbc.Col(
-                                            dbc.Button(
-                                                "Vis kun feil", id="alert_filter_danger"
+                                                className="ssb-btn primary-btn",
                                             ),
                                             width="auto",
                                         ),
@@ -179,7 +179,11 @@ class AlertHandler:
                     size="xl",
                     fullscreen="xxl-down",
                 ),
-                sidebar_button("📜", "App-logg", "sidebar-alerts-button"),
+                sidebar_button(
+                    DashIconify(icon="feather:bell", width=24),
+                    "App-logg",
+                    "sidebar-alerts-button",
+                ),
             ]
         )
 
@@ -223,7 +227,6 @@ class AlertHandler:
             Input("alert_filter_info", "n_clicks"),
             Input("alert_filter_success", "n_clicks"),
             Input("alert_filter_warning", "n_clicks"),
-            Input("alert_filter_danger", "n_clicks"),
             prevent_initial_call=True,
         )
         def set_filter(
@@ -231,7 +234,6 @@ class AlertHandler:
             __: int | None,
             ___: int | None,
             ____: int | None,
-            _____: int | None,
         ) -> str:
             """Updates the alert filter based on the clicked filter button.
 
@@ -243,7 +245,7 @@ class AlertHandler:
                 _____: Number of clicks on the "Vis kun feil" button.
 
             Returns:
-                str: The selected filter type ('all', 'info', 'warning', or 'danger').
+                str: The selected filter type ('all', 'info' or 'warning').
             """  # noqa: DOC102, DOC103, DOC106
             triggered_id = ctx.triggered_id if hasattr(ctx, "triggered_id") else None
             if triggered_id == "alert_filter_info":
@@ -252,8 +254,6 @@ class AlertHandler:
                 return "success"
             elif triggered_id == "alert_filter_warning":
                 return "warning"
-            elif triggered_id == "alert_filter_danger":
-                return "danger"
             else:
                 return "all"
 
@@ -271,7 +271,7 @@ class AlertHandler:
 
             Args:
                 alerts: A list of all alerts stored in the application.
-                current_filter: The current filter type ('all', 'info', 'warning', or 'danger').
+                current_filter: The current filter type ('all', 'info' or 'warning').
 
             Returns:
                 A list of Dash Bootstrap Components alerts to display in the modal.
@@ -284,38 +284,46 @@ class AlertHandler:
 
             components = []
             for i, alert_data in enumerate(alerts):
-                icon = (
-                    html.I(className=f"{alert_data['icon']} me-3 alert-icon")
-                    if alert_data.get("icon")
-                    else None
-                )
+                variant = alert_data["color"]
                 components.append(
                     dbc.Alert(
                         [
                             html.Div(
+                                DashIconify(icon=_map_icon(alert_data["color"])),
+                                className="icon-panel",
+                            ),
+                            html.Div(
                                 [
-                                    icon,
                                     html.Small(
                                         alert_data["timestamp"],
-                                        className="alert-timestamp me-3",
+                                        className="alert-timestamp content me-3",
                                     ),
                                     dcc.Markdown(
                                         alert_data["message"],
-                                        className="alert-message",
-                                        style={"display": "inline-block"},
+                                        className="content",
+                                        style={
+                                            "display": "inline-block",
+                                            "font-size": "16px",
+                                        },
                                     ),
                                 ],
-                                className="d-flex align-items-center",
+                                className="dialog-content",
                             ),
                         ],
-                        color=alert_data["color"],
                         dismissable=True,
                         is_open=True,
                         id={"type": "modal_alert", "index": i},
-                        className="mb-2 alert-modal-item",
+                        className=f"ssb-dialog {alert_data['color']} mb-2",
                     )
                 )
             return components
+
+        def _map_icon(variant: str) -> str:
+            return {
+                "warning": "feather:alert-triangle",
+                "info": "feather:info",
+                "success": "feather:check-circle",
+            }.get(variant, "feather:info")
 
         @callback(  # type: ignore[misc]
             Output("alert_store", "data", allow_duplicate=True),
@@ -396,25 +404,22 @@ class AlertHandler:
             def make_alert(a):
                 now = time.time()
                 dying = (now - a["created_at"]) > (a.get("duration", 6) - 0.8)
-                icon = (
-                    html.I(className=f"{a['icon']} me-2 alert-icon")
-                    if a.get("icon")
-                    else None
-                )
+                icon = DashIconify(icon=a["icon"]) if a.get("icon") else None
 
                 return dbc.Alert(
                     [
+                        html.Div(icon, className="icon-panel"),
                         html.Div(
-                            [
-                                icon,
-                                dcc.Markdown(a["message"], className="alert-message"),
-                            ],
-                            className="d-flex align-items-center",
+                            dcc.Markdown(
+                                a["message"],
+                                style={"font-size": "16px"},
+                                className="content",
+                            ),
+                            className="dialog-content",
                         ),
-                        # html.Small(a["timestamp"], className="alert-timestamp"),
                     ],
-                    color=a["color"],
-                    className=f"mb-2 alert-toast {'alert-dying' if dying else ''}",
+                    dismissable=False,
+                    className=f"ssb-dialog {a['color']} alert-toast {'alert-dying' if dying else ''}",
                 )
 
             bottom_left = [

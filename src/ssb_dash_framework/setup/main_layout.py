@@ -4,6 +4,7 @@ from typing import Any
 import dash_bootstrap_components as dbc
 from dash import dcc
 from dash import html
+from dash_iconify import DashIconify
 
 from ..utils.alert_handler import AlertHandler
 from ..utils.functions import sidebar_button
@@ -63,28 +64,25 @@ def main_layout(
     window_modules_list = [alerthandler.layout(), *window_modules]
 
     varvelger_toggle = [
-        html.Div([sidebar_button("🛆", "Vis variabler", "sidebar-varvelger-button")])
+        html.Div([sidebar_button(DashIconify(icon="feather:triangle", width=24), "Vis variabler", "sidebar-varvelger-button")])
     ]
     theme_toggle = html.Div(
-
         [
-                    html.Div(
-                        dbc.Button( 
-                            [
-            html.Span("🌙", id="theme-icon", className="sidebar-button-icon-spot"),
-            html.Span("Tema", className="sidebar-button-label-spot"),
-                ],
-            id="theme-toggle-button",
-            className="sidebar-button-button",
+            html.Div(
+                dbc.Button(
+                    [
+                        html.Span(
+                            "🌙", id="theme-icon", className="sidebar-button-icon-spot"
+                        ),
+                        html.Span("Tema", className="sidebar-button-label-spot"),
+                    ],
+                    id="theme-toggle-button",
+                    className="sidebar-button-button",
                 )
             ),
             dcc.Store(id="theme-store", data=True),
         ],
         style={"marginTop": "auto"},
-
-
-
-
     )
     window_modules_list = varvelger_toggle + window_modules_list + [theme_toggle]
     selected_tab_list = [
@@ -132,7 +130,11 @@ def main_layout(
                             html.Div(
                                 id="main-layout-tab-div",
                                 className="main-layout-tab-container",
-                                children=dbc.Tabs(selected_tab_list),
+                                children=dcc.Tabs(
+                                    id="main-layout-tab-list",
+                                    children=selected_tab_list,
+                                    className="ssb-tabs mb-4",
+                                ),
                             ),
                         ],
                     ),

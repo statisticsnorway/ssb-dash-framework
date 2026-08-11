@@ -105,6 +105,7 @@ class VisualizationBuilder:
                                                     value=[],
                                                     multi=True,
                                                     className="dbc",
+                                                    searchable=False,
                                                 ),
                                                 dcc.Dropdown(
                                                     id="sql-y",
@@ -112,6 +113,7 @@ class VisualizationBuilder:
                                                     value=[],
                                                     multi=True,
                                                     className="dbc",
+                                                    searchable=False,
                                                 ),
                                                 dcc.Dropdown(
                                                     id="sql-hover",
@@ -119,6 +121,7 @@ class VisualizationBuilder:
                                                     value=[],
                                                     multi=True,
                                                     className="dbc",
+                                                    searchable=False,
                                                 ),
                                                 dcc.Dropdown(
                                                     id="sql-graph-type",
@@ -150,6 +153,7 @@ class VisualizationBuilder:
                                                         },
                                                     ],
                                                     className="dbc",
+                                                    searchable=False,
                                                 ),
                                             ],
                                         ),

@@ -245,6 +245,7 @@ class HBMethod:
                                 id=f"{self.module_number}-hb-dropdown",
                                 options=self.time_units,
                                 value=self.time_units[0],
+                                searchable=False,
                             )
                         ),
                         dbc.Col(
@@ -388,6 +389,7 @@ class HBMethodWindow(WindowImplementation, HBMethod):
         time_units: list[str],
         varselector_variable: str = "statistikkvariabel",
         output: str = "ident",
+        **kwargs: Any
     ) -> None:
         """Initializes the HB method module.
 
@@ -406,4 +408,5 @@ class HBMethodWindow(WindowImplementation, HBMethod):
         )
         WindowImplementation.__init__(
             self,
+            **kwargs
         )

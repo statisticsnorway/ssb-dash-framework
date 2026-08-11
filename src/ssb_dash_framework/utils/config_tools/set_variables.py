@@ -57,6 +57,13 @@ class VariableSelectorConfig(BaseModel):  # TODO Add default templates?
                 config["time_units"][unit] = TimeUnitType.YEAR
         return cls(**config)
 
+    @classmethod
+    def from_dict(cls, config) -> "VariableSelectorConfig":
+        for unit in config["time_units"]:
+            if config["time_units"][unit] == "year":
+                config["time_units"][unit] = TimeUnitType.YEAR
+        return cls(**config)
+
     def __str__(self) -> str:
         lines = [
             "VariableSelectorConfig",

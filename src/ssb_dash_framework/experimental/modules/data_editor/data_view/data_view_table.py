@@ -56,7 +56,7 @@ class DataEditorTable(DataEditorDataView):
         super().__init__(
             applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
         )
-        print(self)
+        # print(self)
 
     def __str__(self):
         return (
@@ -69,20 +69,16 @@ class DataEditorTable(DataEditorDataView):
     def _create_layout(self) -> html.Div:
         return html.Div(
             id=f"{self.divname}",
-            style={
-                "height": "100vh",
-                "width": "100%",
-            },
+            style={"display": "none"},
             children=[
                 dag.AgGrid(
                     id=f"{self.module_name}-{self.module_number}-aggrid",
-                    className="ag-theme-alpine header-style-on-filter",
+                    className="ag-theme-alpine ag-theme-ssb mb-2",
                     style={"width": "100%", "height": "90vh"},
                     defaultColDef={
                         "resizable": True,
                         "sortable": True,
                         "floatingFilter": True,
-                        # "editable": True,
                         "filter": "agTextColumnFilter",
                         "flex": 1,
                     },
@@ -179,16 +175,6 @@ class DataEditorTable(DataEditorDataView):
             else:
                 long = False
                 variabel = edited[0]["colId"]
-            # if variabel in self.uneditable_columns:
-            #     alert_store = [
-            #         create_alert(
-            #             f"Kolonnen {variabel} kan ikke editeres!",
-            #             "danger",
-            #             ephemeral=True,
-            #         ),
-            #         *alert_store,
-            #     ]
-            #     return alert_store
 
             update = UpdateSkjemadata(
                 table=table,

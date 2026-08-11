@@ -1,17 +1,15 @@
-import random
 import os
+
 import pandas as pd
 
 from ssb_dash_framework import ControlFrameworkBase
-from ssb_dash_framework import register_control
+
 from .nspek_utils import get_nspek_connection
 from .nspek_utils import set_nspek_connection
 
 
 class NspekControls(ControlFrameworkBase):
-    """
-    Control framework som bruker nspek_core-tabellene som datakilde
-    """
+    """Control framework som bruker nspek_core-tabellene som datakilde"""
 
     def __init__(self, time_units=None, applies_to_subset=None):
         if time_units is None:
@@ -31,15 +29,13 @@ class NspekControls(ControlFrameworkBase):
         super().__init__(time_units=time_units, applies_to_subset=applies_to_subset)
 
     def get_current_kontroller(self) -> pd.DataFrame:
-        """
-        Leser kontroll-definisjoner fra database.
+        """Leser kontroll-definisjoner fra database.
 
         Returns:
             DataFrame med kontrollmetadata
         """
         with get_nspek_connection() as conn:
-            cursor = conn.raw_sql(
-                """
+            cursor = conn.raw_sql("""
                 SELECT
                     aar,
                     tema,
@@ -51,9 +47,7 @@ class NspekControls(ControlFrameworkBase):
                     sortering,*/
                     sist_kjoert
                 FROM nspek_core.kontroller
-                WHERE aar = 2024
-            """
-            )
+            """)
 
             rows = cursor.fetchall()
             cols = [c[0] for c in cursor.description]
@@ -67,8 +61,7 @@ class NspekControls(ControlFrameworkBase):
         return df
 
     def get_current_kontrollutslag(self, specific_control=None) -> pd.DataFrame:
-        """
-        Leser kontrollutslag fra database.
+        """Leser kontrollutslag fra database.
 
         Args:
             specific_control: filtrer på kontrollid (valgfritt)
@@ -85,14 +78,18 @@ class NspekControls(ControlFrameworkBase):
                     sekvensnummer,
                     orgnr as ident,
                     utslag,
-                    verdi
+                    verdi,
+                    org_form,
+                    sn2025_1,
+                    sn07_1,
+                    sektor_2014,
+                    undersektor_2014
                 FROM nspek_core.kontrollutslag
-                WHERE aar = 2024
             """
 
             if specific_control:
                 query += (
-                    f" AND kontrollid = '{specific_control}' ORDER by abs(verdi) DESC"
+                    f" WHERE kontrollid = '{specific_control}' ORDER by abs(verdi) DESC"
                 )
 
             cursor = conn.raw_sql(query)

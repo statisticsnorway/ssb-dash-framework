@@ -6,7 +6,7 @@ from dash import Input
 from dash import State
 from dash import html
 
-from .microlayout_components.editable_field_model import CallbackSettings
+from .microlayout_components.editable_field_model import CallbackSettings, batch_editable_fields
 from .microlayout_components.models import Layout
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,9 @@ class MicroLayoutAIO(html.Div):
         form_reference_number_column: str = "refnr",
         form_data_field_name_column: str = "feltnavn",
         formdata_field_value_column_name: str = "verdi",
+        mapping_table: str = "mapping_variabelnavn",
+        mapping_match_column: str = "variabel",
+        mapping_result_column: str = "feltsti",
         table_selector_id: str | None = None,
         form_selector_id: str | None = None,
         applies_to_tables: str | list[str] | None = None,
@@ -75,15 +78,21 @@ class MicroLayoutAIO(html.Div):
             form_reference_number_column=form_reference_number_column,
             formdata_fieldname_column=form_data_field_name_column,
             formdata_field_value_column_name=formdata_field_value_column_name,
+            mapping_table=mapping_table,
+            mapping_match_column=mapping_match_column,
+            mapping_result_column=mapping_result_column,
             table_selector_id=table_selector_id,
             form_selector_id=form_selector_id,
         )
-        html_layout = model.build(
-            settings=common_settings,
-            inputs=inputs,
-            states=states,
-            getter_args=extra_args,
-        )
+        
+        with batch_editable_fields():
+            html_layout = model.build(
+                settings=common_settings,
+                inputs=inputs,
+                states=states,
+                getter_args=extra_args,
+            )
+
         styles = {}
 
         if horizontal:

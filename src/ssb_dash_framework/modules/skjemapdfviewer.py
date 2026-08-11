@@ -2,6 +2,7 @@ import base64
 import logging
 from abc import ABC
 from abc import abstractmethod
+from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import callback
@@ -193,7 +194,7 @@ class SkjemapdfViewerTab(TabImplementation, SkjemapdfViewer):
 class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
     """Implementation of the SkjemapdfViewer as a window."""
 
-    def __init__(self, pdf_folder_path: str, form_identifier: str = "refnr") -> None:
+    def __init__(self, pdf_folder_path: str, form_identifier: str = "refnr", **kwargs: Any) -> None:
         """Initialize the SkjemapdfViewerWindow class.
 
         This class is a subclass of SkjemapdfViewer and is used to create a window for viewing PDF files.
@@ -205,4 +206,5 @@ class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
         SkjemapdfViewer.__init__(self, form_identifier, pdf_folder_path)
         WindowImplementation.__init__(
             self,
+            **kwargs
         )

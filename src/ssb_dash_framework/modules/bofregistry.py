@@ -1,18 +1,20 @@
-import logging
-import sqlite3
 from abc import ABC
 from abc import abstractmethod
+import logging
+import sqlite3
 from typing import Any
 
-import dash_ag_grid as dag
-import dash_bootstrap_components as dbc
-import pandas as pd
 from dash import callback
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
+import dash_ag_grid as dag
+import dash_bootstrap_components as dbc
+from dash_iconify import DashIconify
+import pandas as pd
 from sqlalchemy.util.typing import NoneType
 
 from ..setup.variableselector import VariableSelector
@@ -40,7 +42,7 @@ def ssb_foretak_modal() -> dbc.Modal:
                 [
                     dag.AgGrid(
                         id="bofregistry-ssb_foretak-table",
-                        className="ag-theme-alpine header-style-on-filter bofregistry-modal-aggrid",
+                        className="ag-theme-alpine ag-theme-ssb mb-2 bofregistry-modal-aggrid",
                         defaultColDef={
                             "editable": True,
                             "filter": True,
@@ -74,7 +76,7 @@ def ssb_bedrift_modal() -> dbc.Modal:
                 [
                     dag.AgGrid(
                         id="bofregistry-ssb_bedrift-table",
-                        className="ag-theme-alpine header-style-on-filter bofregistry-modal-aggrid",
+                        className="ag-theme-alpine ag-theme-ssb mb-2 bofregistry-modal-aggrid",
                         defaultColDef={
                             "editable": True,
                             "filter": True,
@@ -121,7 +123,7 @@ class BofInformation(ABC):
         self.module_number = BofInformation._id_number
         self.module_name = self.__class__.__name__
         BofInformation._id_number += 1
-        self.icon = "🗃️"
+        self.icon = DashIconify(icon="feather:archive", width=24)
 
         if label is None:
             label = "BoF Foretak"
@@ -142,7 +144,7 @@ class BofInformation(ABC):
             raise TypeError(
                 f"label must be a string, got {type(self.label).__name__} instead."
             )
-        if not isinstance(self.icon, str):
+        if not isinstance(self.icon, (str, Component)):
             raise TypeError(
                 f"icon must be a string, got {type(self.icon).__name__} instead."
             )
@@ -164,7 +166,7 @@ class BofInformation(ABC):
             )
         conn.close()
 
-    def generate_card(self, title: str, component_id: str, var_type: str) -> dbc.Card:
+    def generate_card(self, title: str, component_id: str, var_type: str) -> html.Div:
         """Generate a Dash Bootstrap card for displaying data.
 
         Args:
@@ -175,19 +177,22 @@ class BofInformation(ABC):
         Returns:
             dbc.Card: A styled card containing an input field.
         """
-        card = dbc.Card(
-            [
-                dbc.CardHeader(title),
-                dbc.CardBody(
-                    [
-                        dbc.Input(id=component_id, type=var_type),
+        return html.Div(
+            className="ssb-input",
+            children=[
+                html.Label(title),
+                html.Div(
+                    className="input-wrapper",
+                    children=[
+                        dbc.Input(
+                            id=component_id,
+                            type=var_type,
+                            readonly=True,
+                        )
                     ],
-                    className="bofregistry-card-body",
                 ),
             ],
-            className="bofregistry-card",
         )
-        return card
 
     def _create_layout(self) -> html.Div:
         """Generate the layout for the BoF Foretak tab."""
@@ -314,6 +319,7 @@ class BofInformation(ABC):
                             dbc.Button(
                                 "Vis mer foretaksinformasjon",
                                 id="tab-vof-foretak-button1",
+                                className="ssb-btn primary-btn",
                             ),
                             width="auto",
                         ),
@@ -321,6 +327,7 @@ class BofInformation(ABC):
                             dbc.Button(
                                 "Vis mer bedriftsinformasjon",
                                 id="tab-vof-foretak-button2",
+                                className="ssb-btn primary-btn",
                             ),
                             width="auto",
                         ),
@@ -337,7 +344,7 @@ class BofInformation(ABC):
                 html.Div(
                     dag.AgGrid(
                         id="tab-bof_foretak-table1",
-                        className="ag-theme-alpine header-style-on-filter bofregistry-table-bedrift-aggrid",
+                        className="ag-theme-alpine ag-theme-ssb mb-2 bofregistry-table-bedrift-aggrid",
                         columnSize="responsiveSizeToFit",
                         defaultColDef={
                             "filter": True,
@@ -637,7 +644,7 @@ class BofInformationWindow(WindowImplementation, BofInformation):
     """A class to implement a bof information module as a window."""
 
     def __init__(
-        self, label: str | None = None, variableselector_foretak_name: str | None = None
+        self, label: str | None = None, variableselector_foretak_name: str | None = None, **kwargs: Any
     ) -> None:
         """Initialize the BofInformationTab.
 
@@ -648,4 +655,4 @@ class BofInformationWindow(WindowImplementation, BofInformation):
             label=label,
             variableselector_foretak_name=variableselector_foretak_name,
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

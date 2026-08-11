@@ -1,24 +1,27 @@
-import base64
-import logging
 from abc import ABC
 from abc import abstractmethod
-from typing import ClassVar
-from PIL import Image
+import base64
 import io
+import logging
+from typing import ClassVar
+from typing import Any
 
-import gcsfs
-import dash_bootstrap_components as dbc
+from PIL import Image
 from dash import callback, clientside_callback, dcc, html
+from dash import ClientsideFunction
 from dash.dependencies import Input, State
 from dash.dependencies import Output
+from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
-from dash import ClientsideFunction
+import dash_bootstrap_components as dbc
+from dash_iconify import DashIconify
+import gcsfs
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
-from ..utils.module_validation import module_validator
 from ..utils.alert_handler import create_alert
+from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +41,7 @@ class Aarsregnskap(ABC):
     module_number: int
     module_name: str
     label: str
-    icon: str
+    icon: str | Component
     module_layout: html.Div
 
     def __init__(
@@ -53,7 +56,7 @@ class Aarsregnskap(ABC):
         self.module_name = self.__class__.__name__
         Aarsregnskap._id_number += 1
         self.label = "Årsregnskap"
-        self.icon = "🧾"
+        self.icon = DashIconify(icon="feather:file-text", width=24)
         self._is_valid()
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -99,30 +102,43 @@ class Aarsregnskap(ABC):
                             [
                                 dbc.Col(
                                     html.Div(
-                                        [
-                                            dbc.Label("år"),
-                                            dbc.Input(
-                                                id="tab-aarsregnskap-input-aar",
-                                                type="number",
+                                        className="ssb-input",
+                                        children=[
+                                            html.Label("orgnr"),
+                                            html.Div(
+                                                className="input-wrapper",
+                                                children=[
+                                                    dbc.Input(
+                                                        id="tab-aarsregnskap-input-orgnr",
+                                                        type="text",
+                                                    ),
+                                                ],
                                             ),
-                                        ]
+                                        ],
                                     )
                                 ),
                                 dbc.Col(
                                     html.Div(
-                                        [
-                                            dbc.Label("orgnr"),
-                                            dbc.Input(
-                                                id="tab-aarsregnskap-input-orgnr"
+                                        className="ssb-input",
+                                        children=[
+                                            html.Label("år"),
+                                            html.Div(
+                                                className="input-wrapper",
+                                                children=[
+                                                    dbc.Input(
+                                                        id="tab-aarsregnskap-input-aar",
+                                                        type="number",
+                                                    ),
+                                                ],
                                             ),
-                                        ]
+                                        ],
                                     )
                                 ),
                                 dbc.Col(
                                     html.A(
                                         dbc.Button(
                                             "Åpne i Brønnøysundregisteret",
-                                            color="primary",
+                                            className="ssb-btn primary-btn",
                                             size="sm",
                                         ),
                                         id="tab-aarsregnskap-brreg-link",
@@ -351,7 +367,6 @@ class Aarsregnskap(ABC):
                     create_alert(
                         message=f"Hverken PDF eller TIF av årsregnskapet funnet for årgang {aar}!",
                         color="warning",
-                        position="center",
                         duration=8,
                         ephemeral=True,
                     ),
@@ -387,7 +402,7 @@ class AarsregnskapTab(TabImplementation, Aarsregnskap):
 class AarsregnskapWindow(WindowImplementation, Aarsregnskap):
     """AarsregnskapWindow is an implementation of the Aarsregnskap module as a window in a Dash application."""
 
-    def __init__(self) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """Initializes the AarsregnskapWindow class."""
         Aarsregnskap.__init__(self)
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

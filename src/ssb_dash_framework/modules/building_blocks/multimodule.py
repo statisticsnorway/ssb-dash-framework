@@ -81,6 +81,7 @@ class MultiModule:
                         {"label": module.label, "value": i}
                         for i, module in enumerate(self.module_list)
                     ],
+                    searchable=False,
                     value=0,
                     clearable=False,
                 ),
@@ -143,7 +144,7 @@ class MultiModuleTab(TabImplementation, MultiModule):
 class MultiModuleWindow(WindowImplementation, MultiModule):
     """MultiModule implemented as a Window."""
 
-    def __init__(self, label: str, module_list: list[Any]) -> None:
+    def __init__(self, label: str, module_list: list[Any], **kwargs: Any) -> None:
         """Initialize the MultiModuleWindow.
 
         Args:
@@ -151,4 +152,4 @@ class MultiModuleWindow(WindowImplementation, MultiModule):
             module_list: A list of modules to switch between. Each module should have
         """
         MultiModule.__init__(self, label=label, module_list=module_list)
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

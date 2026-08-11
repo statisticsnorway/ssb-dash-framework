@@ -419,4 +419,4 @@ class EditingTableWindow(WindowImplementation, EditingTable):
             number_format=number_format,
             **kwargs,
         )
-        WindowImplementation.__init__(self)
+        WindowImplementation.__init__(self, **kwargs)

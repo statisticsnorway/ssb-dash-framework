@@ -15,19 +15,21 @@ from dash import html
 from dash.exceptions import PreventUpdate
 from ibis import _
 
-from ssb_dash_framework import VariableSelector
-from ssb_dash_framework.utils.config_tools.set_variables import get_ident
-from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
-from ssb_dash_framework.utils.core_query_functions import create_filter_dict
-from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
-from ssb_dash_framework.utils.alert_handler import create_alert
-
+from ....config.models import register_module
+from ....setup.variableselector import VariableSelector
 from ....utils.config_tools.connection import get_connection
+from ....utils.config_tools.set_variables import get_ident
+from ....utils.config_tools.set_variables import get_time_units
+from ....utils.core_query_functions import create_filter_dict
+from ....utils.core_query_functions import ibis_filter_with_dict
 from .registry import DataEditorRegistry
 
 logger = logging.getLogger(__name__)
 
 
+@register_module(
+    as_tab="DataEditor",
+)
 class DataEditor:
     """A module designed as a modular catch-all for micro-focused tasks.
 
@@ -108,7 +110,7 @@ class DataEditor:
                 dbc.Card(dbc.CardBody(module.layout()))
                 for module in DataEditorRegistry.sidebar_modules
             ],
-            className=f"{self.module_name}-sidebar-modules"
+            className=f"{self.module_name}-sidebar-modules",
         )
         _existing_views = []
         main_views = []
@@ -172,15 +174,30 @@ class DataEditor:
         """Creates the layout for the DataEditor module."""
         return dbc.Container(
             [
-                dbc.Row(html.H1(id=f"{self.module_name}-{self.module_number}-header", className=f"{self.module_name}-header")),
+                dbc.Row(
+                    html.H1(
+                        id=f"{self.module_name}-{self.module_number}-header",
+                        className=f"{self.module_name}-header",
+                    )
+                ),
                 dbc.Row(self.info_view),
                 dbc.Row(
                     [
                         dbc.Col(self.sidebar, className=f"{self.module_name}-sidebar"),
                         dbc.Col(
                             [
-                                dbc.Row(dbc.Card(dbc.CardBody(self.helper_row), className=f"{self.module_name}-helper-row")),
-                                dbc.Row(dbc.Card(dbc.CardBody(self.main_view), className=f"{self.module_name}-main-view")),
+                                dbc.Row(
+                                    dbc.Card(
+                                        dbc.CardBody(self.helper_row),
+                                        className=f"{self.module_name}-helper-row",
+                                    )
+                                ),
+                                dbc.Row(
+                                    dbc.Card(
+                                        dbc.CardBody(self.main_view),
+                                        className=f"{self.module_name}-main-view",
+                                    )
+                                ),
                             ],
                         ),
                     ]
@@ -195,21 +212,40 @@ class DataEditor:
 
     def module_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor."""
-        
+        variableselector = VariableSelector(
+            selected_inputs=[*get_time_units().keys()],
+            selected_states=[],
+        )
+
         @callback(
             VariableSelector([], []).get_output_object("refnr"),
             VariableSelector([], []).get_output_object("altinnskjema"),
             VariableSelector([], []).get_input(get_ident()),
+            variableselector.get_all_inputs(),
             prevent_initial_call=True,
         )
-        def clear_on_missing_ident(ident: str):
+        def clear_on_missing_ident(ident: str, *time_unit_values):
+            time_unit_keys = list(get_time_units().keys())
+            time_units = dict(zip(time_unit_keys, time_unit_values))
+
             if not ident:
                 raise PreventUpdate
             with get_connection() as conn:
                 t = conn.table("skjemamottak")
-                result = t.filter(_.ident == ident).limit(1).to_pandas()
-            if result.empty:
+                expr = _.ident == ident
+
+                for key, value in time_units.items():
+                    expr &= getattr(_, key) == value
+
+                result = t.filter(expr).limit(1).to_pandas()
+
+            if len(result) == 1:
+                row = result.iloc[0]
+                return row["refnr"], row["skjema"]
+
+            elif result.empty:
                 return "", ""
+
             raise PreventUpdate
 
         @callback(
@@ -249,8 +285,11 @@ class DataEditor:
                 #     styles.append({"display": "none"})
             if all(style == {"display": "none"} for style in styles):
                 message = f"No main_view defined for {selected_table} - {selected_form}"
-                logger.error(message)
-                raise ValueError(message)
+                # logger.error(message)
+                # raise ValueError(message)
+                if len(styles) == 1:
+                    return styles[0]
+                return styles
             if len(DataEditorRegistry.main_views) == 1:
                 logger.debug(
                     "Returning a single dict due to only one main_view being defined"
@@ -266,9 +305,7 @@ class DataEditor:
             Input("dataeditortableselector", "value"),
             VariableSelector([], []).get_input("altinnskjema"),
         )
-        def update_header(
-            selected_table: str, selected_form: str
-        ) -> str:
+        def update_header(selected_table: str, selected_form: str) -> str:
             """Show an info message telling the user which form and table are currently selected."""
             return f"Viser data for {selected_form} fra tabell {selected_table}"
 
@@ -324,8 +361,11 @@ class DataEditorTableSelector:
                 dbc.Label("Tabellvelger"),
                 dcc.Dropdown(
                     id="dataeditortableselector",
+                    searchable=False,
                     options=self.table_options,
                     value=self.starting_table,
+                    className="ssb-dropdown",
+                    placeholder="-- Velg tabell --"
                 ),
             ]
         )
@@ -414,7 +454,9 @@ class DataEditorInfoRow:
                 )
             )
 
-        return dbc.Row(dbc.CardGroup(info_fields), className=f"{self.module_name}-info-row")
+        return dbc.Row(
+            dbc.CardGroup(info_fields), className=f"{self.module_name}-info-row"
+        )
 
     def layout(self) -> dbc.Row:
         """Returns the module layout."""
@@ -445,6 +487,8 @@ class DataEditorInfoRow:
             ident: str, altinnskjema: str, *args: Any
         ) -> list[str | int | float | bool | None]:
             logger.debug(f"ident: {ident}\nargs: {args}")
+            if not ident:
+                raise PreventUpdate
             info_values = []
             time_unit_list = [x for x in get_time_units().keys()]
             time_units = args[: len(time_unit_list)]
@@ -464,7 +508,9 @@ class DataEditorInfoRow:
                         )
                         data = t.filter(
                             _.variabel == info_var.source_variable_name
-                        ).to_pandas()
+                        ).limit(1).execute()
+                        if data.empty:
+                            raise PreventUpdate
                         logger.debug(data)
                         value = data["verdi"].item()
                     info_values.append(value)
@@ -495,9 +541,22 @@ class DataEditorHelperButton:
             raise AttributeError("Lacking 'modal_body' attribute.")
         return html.Div(
             [
-                dbc.Button(
-                    self.label, id=f"{self.module_name}-{self.module_number}-button"
-                ),
+            html.Div(
+                [
+                    dbc.Button(
+                        self.label,
+                        id=f"{self.module_name}-{self.module_number}-button",
+                        className="ssb-btn primary-btn",
+                    ),
+                    html.Span(
+                        id=f"{self.module_name}-{self.module_number}-indicator",
+                        className="helper-button-indicator",
+                        children="",
+                        style={"display": "none"},
+                    ),
+                ],
+                style={"position": "relative", "display": "inline-block"},
+            ),
                 dbc.Modal(
                     [
                         dbc.ModalHeader(dbc.ModalTitle(self.label)),

@@ -1,3 +1,4 @@
+import atexit
 from collections.abc import Callable
 from collections.abc import Iterator
 from contextlib import AbstractContextManager
@@ -8,10 +9,11 @@ import ibis
 from eimerdb import EimerDBInstance
 from ibis.backends import BaseBackend
 from ibis.backends.postgres import Backend
+from psycopg import Connection
 from psycopg_pool import ConnectionPool
 
 _IS_POOLED: bool | None = None
-_CONNECTION: object | None = None
+_CONNECTION: ConnectionPool | None = None
 _CONNECTION_CALLABLE: Callable[..., Any] | None = None
 
 
@@ -102,7 +104,10 @@ def set_sqlite_connection(database_path: str) -> None:
 
 
 def set_postgres_connection(
-    database_url: str, pool_min_size: int = 1, pool_max_size: int = 1
+    database_url: str,
+    pool_min_size: int = 1,
+    pool_max_size: int = 1,
+    configure: Callable[[Connection], None] | None = None,
 ) -> None:
     """Helper function to configure a pooled connection to a postgres database.
 
@@ -110,14 +115,42 @@ def set_postgres_connection(
         database_url: Connection url for the database. Gets passed to psycopg_pool.ConnectionPool as conninfo argument.
         pool_min_size: The minimum size of the pool. Defaults to 1.
         pool_max_size: The maximum size of the pool. Defaults to 1.
+        configure: Optional callback the pool runs on every new connection, receiving
+            the raw ``psycopg.Connection``. Use it for per-connection session setup that
+            must apply to *all* pooled connections -- e.g. setting a session GUC for an
+            audit trail (``SET ...``) when ``pool_max_size > 1``. Passed straight through
+            to ``psycopg_pool.ConnectionPool``; defaults to ``None`` (no-op), so existing
+            callers are unaffected.
     """
     global _IS_POOLED, _CONNECTION, _CONNECTION_CALLABLE
     _IS_POOLED = True
 
+    # If a previous call already configured a pool, close it and drop its exit
+    # hook so exactly one pool (and one atexit handler) is ever live. Safe
+    # because every caller borrows connections through short-lived
+    # ``with get_connection() as conn:`` blocks -- nothing holds a pooled
+    # connection across this reconfiguration.
+    if _CONNECTION is not None:
+        atexit.unregister(_CONNECTION.close)
+        _CONNECTION.close()
+
     pool = ConnectionPool(
-        conninfo=database_url, min_size=pool_min_size, max_size=pool_max_size
+        conninfo=database_url,
+        min_size=pool_min_size,
+        max_size=pool_max_size,
+        configure=configure,
     )
     _CONNECTION = pool
+
+    # psycopg_pool opens daemon worker ('pool-N-worker-M') and scheduler
+    # threads as soon as the pool is created. If the pool is never closed those
+    # threads are still running at interpreter shutdown, and psycopg_pool warns
+    # "couldn't stop thread 'pool-1-worker-0' within 5.0 seconds" on exit (e.g.
+    # when the app is stopped with Ctrl+C). Closing the pool on exit stops them
+    # cleanly. ConnectionPool.close() is idempotent, so explicit closes
+    # elsewhere stay safe. Registered before the validation below so the pool is
+    # still cleaned up if connecting fails.
+    atexit.register(pool.close)
 
     @contextmanager
     def _wrap_ibis_postgres(*args: Any, **kwargs: Any) -> Iterator[BaseBackend]:
