@@ -85,7 +85,11 @@ class NspekControlView(ABC):
             layout: A Div element containing two tables, kontroller and kontrollutslag.
         """
         return html.Div(
-            style={"width": "100%"},
+            style={
+            "width": "100%",
+            "minWidth": "0",
+            "maxWidth": "1180px",
+            },
             children=[
                 dbc.Row(
                     [

@@ -2182,6 +2182,7 @@ class Naeringsspesifikasjon:
             style={
                 "width": "100%",
                 "minWidth": "0",
+                "maxWidth": "1180px",
             },
         )
 
