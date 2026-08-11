@@ -3535,9 +3535,9 @@ class Naeringsspesifikasjon:
                 )
 
                 kontroller_df = instance.get_current_kontroller()
-                kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict(
-                    "index"
-                )
+                kontroller_lookup = kontroller_df.set_index(
+                    ["aar", "kontrollid"]
+                ).to_dict("index")
 
                 if ctx.triggered_id == "run-controls-btn":
                     run_all_controls_for_sekvensnummer(conn, int(sekvensnummer))
@@ -3549,11 +3549,17 @@ class Naeringsspesifikasjon:
             if df.empty:
                 return [], base_class
 
-            df["skildring"] = df["kontrollid"].map(
-                lambda x: kontroller_lookup.get(x, {}).get("skildring")
+            df["skildring"] = df.apply(
+                lambda row: kontroller_lookup.get(
+                    (row["aar"], row["kontrollid"]), {}
+                ).get("skildring"),
+                axis=1,
             )
-            df["tema"] = df["kontrollid"].map(
-                lambda x: kontroller_lookup.get(x, {}).get("tema")
+            df["tema"] = df.apply(
+                lambda row: kontroller_lookup.get(
+                    (row["aar"], row["kontrollid"]), {}
+                ).get("tema"),
+                axis=1,
             )
 
             has_issues = df["utslag"].any()
