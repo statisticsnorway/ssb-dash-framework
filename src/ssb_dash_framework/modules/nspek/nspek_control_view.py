@@ -262,6 +262,7 @@ class NspekControlView(ABC):
         @callback(
             Output(f"{self.module_number}-kontroller", "rowData"),
             Output(f"{self.module_number}-kontroller", "columnDefs"),
+            Output(f"{self.module_number}-kontroller", "selectedRows"),
             Output("alert_store", "data", allow_duplicate=True),
             Input(f"{self.module_number}-kontroll-refresh", "n_clicks"),
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
@@ -288,13 +289,14 @@ class NspekControlView(ABC):
             df = instance.get_current_kontroller()
 
             if df is None or df.empty:
-                return [], [], store
+                return [], [], [], store
 
             columns = self._create_column_defs(df)
 
             return (
                 df.to_dict("records"),
                 columns,
+                [df.iloc[0].to_dict()],
                 [create_alert("Oppdatert", "info", ephemeral=True), *store],
             )
 

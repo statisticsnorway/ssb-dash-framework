@@ -676,8 +676,17 @@ def build_column_defs(sekvens_compare=None):
             "sortable": False,
             "resizable": True,
             "hide": col == "sekvensnummer",
-            "editable": col == "verdi",
-            "flex": 3 if col == "beskrivelse" else 2 if col == "post" else 1,
+            "editable": col == "verdi", 
+            "width": (
+                450 if col == "beskrivelse"
+                else 70 if col == "post"
+                else None
+            ),
+            "flex": (
+                None
+                if col in ["beskrivelse", "post"]
+                else 2
+            ),
             "valueFormatter": {
                 "function": (
                     "params.value == null ? '' : params.value.toLocaleString('no-NO')"
@@ -2438,6 +2447,8 @@ class Naeringsspesifikasjon:
                 axis=1,
             )
 
+            df["post"] = df["post"].where(df["post"].str.fullmatch(r"\d+"), "")
+
             row_data = df.to_dict("records")
             column_defs = build_column_defs(sekvens_compare)
 
@@ -2538,6 +2549,8 @@ class Naeringsspesifikasjon:
                 ),
                 axis=1,
             )
+
+            df["post"] = df["post"].where(df["post"].str.fullmatch(r"\d+"), "")
 
             row_data = df.to_dict("records")
             column_defs = build_column_defs(sekvens_compare)

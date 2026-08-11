@@ -47,6 +47,7 @@ class NspekControls(ControlFrameworkBase):
                     sortering,*/
                     sist_kjoert
                 FROM nspek_core.kontroller
+                ORDER BY aar DESC, tema DESC, sist_kjoert
             """)
 
             rows = cursor.fetchall()
