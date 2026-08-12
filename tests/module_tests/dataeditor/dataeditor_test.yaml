@@ -1,0 +1,37 @@
+app_settings:
+  port: 8000
+  # service_prefix: None
+  # stylesheet: None
+  enable_logging: false
+  logging_level: warning
+  log_to_file: false
+  variableselector: 
+    refnr: refnr
+    ident: ident
+    time_units:
+      aar: 1
+    grouping_variables:
+      - altinnskjema
+      - variabel
+  connection:
+    type: postgres
+    database_url: test
+modules:
+  tabs:
+    - type: DataEditor
+      inforow: 
+      buttons:
+        - type: DataEditorHistory
+        - type: DataEditorSupportTables
+      sidebar:
+        - type: DataEditorSidebarEditingStatus
+        - type: DataEditorSidebarComment
+      dataview:
+        - type: DataEditorTable
+          applies_to_tables: ["skjemadata"]
+          applies_to_forms: ["ra_xxxx"]
+        - type: DataViewCustom
+          applies_to_tables: ["skjemadata"]
+          applies_to_forms: ["ra_yyyy"]
+          layout:
+            # layout here
