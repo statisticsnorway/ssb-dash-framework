@@ -3191,7 +3191,7 @@ class Naeringsspesifikasjon:
                     1,
                     true,
                     NOW(),
-                    ''current_setting('nspek_app.user_id')''
+                    current_setting('nspek_app.user_id')
                 )
             """
 
