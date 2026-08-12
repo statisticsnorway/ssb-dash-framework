@@ -1,6 +1,8 @@
 import os
 
+from dash import no_update
 import plotly.express as px
+import pandas as pd
 from ibis import _
 from ssb_dash_framework.config.yaml_parser import config_parser_yaml
 from ssb_dash_framework.experimental.modules.data_editor.helper_buttons.supporting_table import (
@@ -33,7 +35,7 @@ else:
     )
 
 
-from ssb_dash_framework import app_setup
+from ssb_dash_framework import EditingTableWindow, app_setup
 from ssb_dash_framework import get_connection
 from ssb_dash_framework import main_layout
 from ssb_dash_framework import set_variables
@@ -49,7 +51,7 @@ VariableSelectorConfig(
     refnr="refnr",
     ident="ident",
     time_units={"aar": TimeUnitType.YEAR},
-    # grouping_variables=["komm_nr"]
+    grouping_variables=["fylke", "komm_nr"],
 )
 
 set_variables(
@@ -66,6 +68,9 @@ default_values = {
     "ident": "969744066",
     "altinnskjema": "RA-7357",
 }
+
+tab_list = []
+window_list = []
 
 port = 8070
 service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
@@ -130,17 +135,12 @@ DataEditorInfoRow(
     variables={"Navn": {"source": "enhetsinfo", "variable_name": "orgnavn"}}
 )
 
-# DataViewCustom(
-#     applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"], layout=layout
-# )
-
 
 def support_table_get_data(aar, skjema):
     with get_connection() as conn:
         t = conn.table("skjemadata_hoved")
         t = t.filter(t.aar == aar).filter(t.skjema == skjema)
         return t.to_pandas()
-
 
 
 DataEditorSupportTable(
@@ -151,11 +151,108 @@ DataEditorSupportTable(
 DataEditorSupportTables()
 DataEditorSidebarEditingStatus()
 DataEditorSidebarComment()
-# DataEditorTable(applies_to_tables=["skjemadata_hoved"], applies_to_forms=["RA-7357"])
 
-tab_list = [DataEditor()]
+tab_list.append(DataEditor())
 
-window_list = []
+
+def fylke_table(aar):
+    with get_connection() as conn:
+        e = conn.table("enhetsinfo")
+        e = (
+            e.filter(e.aar == aar)
+            .filter(e.variabel == "kommunenr")
+            .mutate(fylke=e.verdi.left(2))
+        )
+        t = conn.table("skjemadata_hoved")
+        return (
+            t.filter(t.aar == aar)
+            .filter(t.variabel == "totalareal")
+            .join(e, "ident", how="left")
+            .mutate(verdi=t.verdi.cast(float))
+            .group_by("fylke")
+            .agg(totalt_areal=_.verdi.sum())
+            .to_pandas()
+        )
+
+
+window_list.append(
+    EditingTableWindow(
+        label="Fylkestabell",
+        inputs=["aar"],
+        states=[],
+        get_data_func=fylke_table,
+        output="fylke",
+    )
+)
+
+
+def kommune_table(aar, fylke):
+    if not fylke:
+        return pd.DataFrame()
+    with get_connection() as conn:
+        e = conn.table("enhetsinfo")
+        e = (
+            e.filter(e.aar == aar)
+            .filter(e.variabel == "kommunenr")
+            .mutate(fylke=e.verdi.left(2))
+            .mutate(kommunenr=e.verdi)
+        )
+        t = conn.table("skjemadata_hoved")
+        return (
+            t.filter(t.aar == aar)
+            .filter(t.variabel == "totalareal")
+            .join(e, "ident", how="left")
+            .filter(_.fylke == fylke)
+            .mutate(verdi=t.verdi.cast(float))
+            .group_by("kommunenr")
+            .agg(totalt_areal=_.verdi.sum())
+            .to_pandas()
+        )
+
+
+window_list.append(
+    EditingTableWindow(
+        label="Kommunetabell",
+        inputs=["aar", "fylke"],
+        states=[],
+        get_data_func=kommune_table,
+        output="kommunenr",
+        output_varselector_name="komm_nr",
+    )
+)
+
+
+def units_in_kommune_table(aar, komm_nr):
+    if not komm_nr:
+        return pd.DataFrame()
+    with get_connection() as conn:
+        e = conn.table("enhetsinfo")
+        e = (
+            e.filter(e.aar == aar)
+            .filter(e.variabel == "kommunenr")
+            .mutate(kommunenr=e.verdi)
+        )
+        t = conn.table("skjemadata_hoved")
+        return (
+            t.filter(t.aar == aar)
+            .filter(t.variabel == "totalareal")
+            .join(e, "ident", how="left")
+            .filter(_.kommunenr == komm_nr)
+            .mutate(verdi=t.verdi.cast(float))
+            .to_pandas()
+        )
+
+
+window_list.append(
+    EditingTableWindow(
+        label="Enheter i kommune tabell",
+        inputs=["aar", "komm_nr"],
+        states=[],
+        get_data_func=units_in_kommune_table,
+        output="ident",
+    )
+)
+
 
 app.layout = main_layout(window_list, tab_list, default_values=default_values)
 
