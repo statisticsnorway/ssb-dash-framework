@@ -67,37 +67,101 @@ def create_alert(
 
 
 _TOAST_POSITIONS = ("bottom-left", "center", "top-right")
+_MAX_TOASTS_PER_POSITION = 4
+
+_ToastSlots = dict[str, list[tuple[dict[str, Any], bool] | None]]
+_ToastSignature = dict[str, list[list[Any] | None]]
+
+
+def _toast_slot_id(position: str, index: int) -> str:
+    """Builds the id of a single toast slot.
+
+    Args:
+        position: One of the toast positions.
+        index: The slot index within that position.
+
+    Returns:
+        The component id for that slot.
+    """
+    return f"alert-toast-{position}-{index}"
 
 
 def _ephemeral_toast_state(
-    alerts: list[dict[str, Any]] | None, now: float
-) -> tuple[list[tuple[dict[str, Any], bool]], dict[str, list[list[Any]]]]:
-    """Computes which ephemeral alerts are visible at a given time.
+    alerts: list[dict[str, Any]] | None,
+    now: float,
+    previous_signature: _ToastSignature | None = None,
+) -> tuple[_ToastSlots, _ToastSignature]:
+    """Assigns the currently visible ephemeral alerts to fixed toast slots.
+
+    Each toast lives in its own slot so that re-rendering one toast never
+    rewrites a sibling's slot. Since Dash 4.2.0 any write to a container's
+    children remounts every child in it (plotly/dash#3846), which restarts the
+    CSS entry animation, so a toast must keep the same slot for its whole life.
 
     Args:
         alerts: The current list of alerts stored in the application.
         now: The current time as a unix timestamp.
+        previous_signature: The signature from the previous tick, used to keep
+            each toast in the slot it already occupies.
 
     Returns:
-        A tuple of (visible, signature) where visible is a list of
-        (alert, is_dying) pairs and signature maps each toast position to a
-        JSON-serializable value that only changes when that container's toasts
-        need to change, so the display callback can skip re-rendering
-        containers whose contents are unchanged.
+        A tuple of (slots, signature). slots maps each position to a fixed-length
+        list holding either an (alert, is_dying) pair or None per slot, and
+        signature is the JSON-serializable equivalent used to detect which slots
+        actually changed.
     """
-    visible = [
-        (a, (now - a["created_at"]) > (a.get("duration", 5) - 0.8))
-        for a in (alerts or [])
-        if a.get("ephemeral", False) and (now - a["created_at"] < a.get("duration", 5))
-    ]
-    signature: dict[str, list[list[Any]]] = {pos: [] for pos in _TOAST_POSITIONS}
-    for a, dying in visible:
+    previous = previous_signature if isinstance(previous_signature, dict) else {}
+    slots: _ToastSlots = {
+        position: [None] * _MAX_TOASTS_PER_POSITION for position in _TOAST_POSITIONS
+    }
+
+    pending = []
+    for a in alerts or []:
+        if not a.get("ephemeral", False):
+            continue
+        duration = a.get("duration", 5)
+        age = now - a["created_at"]
+        if age >= duration:
+            continue
         position = a.get("position", "bottom-left")
-        if position in signature:
-            # str() because the signature round-trips through browser JSON,
-            # which does not reliably preserve the float/int type of timestamps
-            signature[position].append([str(a["created_at"]), a["message"], dying])
-    return visible, signature
+        if position not in slots:
+            position = "bottom-left"
+        # str() because the signature round-trips through browser JSON, which
+        # does not reliably preserve the float/int type of timestamps
+        pending.append((position, str(a["created_at"]), a, age > duration - 0.8))
+
+    unplaced = []
+    for position, key, alert, dying in pending:
+        for index, entry in enumerate(previous.get(position) or []):
+            if (
+                index < _MAX_TOASTS_PER_POSITION
+                and entry
+                and entry[0] == key
+                and slots[position][index] is None
+            ):
+                slots[position][index] = (alert, dying)
+                break
+        else:
+            unplaced.append((position, key, alert, dying))
+
+    for position, _key, alert, dying in unplaced:
+        for index in range(_MAX_TOASTS_PER_POSITION):
+            if slots[position][index] is None:
+                slots[position][index] = (alert, dying)
+                break
+
+    signature: _ToastSignature = {
+        position: [
+            (
+                [str(entry[0]["created_at"]), entry[0]["message"], entry[1]]
+                if entry
+                else None
+            )
+            for entry in slots[position]
+        ]
+        for position in _TOAST_POSITIONS
+    }
+    return slots, signature
 
 
 class AlertHandler:
@@ -152,17 +216,17 @@ class AlertHandler:
                 ),
                 dcc.Store(id="alert_filter", data="all"),
                 dcc.Store(id="alert_toast_signature", data={}),
-                html.Div(
-                    id="alert-container-bottom-left",
-                    className="alert-container bottom-left",
-                ),
-                html.Div(
-                    id="alert-container-center", className="alert-container center"
-                ),
-                html.Div(
-                    id="alert-container-top-right",
-                    className="alert-container top-right",
-                ),
+                *[
+                    html.Div(
+                        [
+                            html.Div(id=_toast_slot_id(position, index))
+                            for index in range(_MAX_TOASTS_PER_POSITION)
+                        ],
+                        id=f"alert-container-{position}",
+                        className=f"alert-container {position}",
+                    )
+                    for position in _TOAST_POSITIONS
+                ],
                 dcc.Interval(
                     id="alert_ephemeral_interval", interval=1000, n_intervals=0
                 ),  # The 1s tick drives toast appearance/expiry; idle ticks are cheap because the display callback raises PreventUpdate when the toast signature is unchanged.
@@ -406,9 +470,11 @@ class AlertHandler:
             return [a for i, a in enumerate(current_alerts) if i not in to_remove]
 
         @callback(  # type: ignore[misc]
-            Output("alert-container-bottom-left", "children"),
-            Output("alert-container-center", "children"),
-            Output("alert-container-top-right", "children"),
+            *[
+                Output(_toast_slot_id(position, index), "children")
+                for position in _TOAST_POSITIONS
+                for index in range(_MAX_TOASTS_PER_POSITION)
+            ],
             Output("alert_toast_signature", "data"),
             Input("alert_ephemeral_interval", "n_intervals"),
             State("alert_store", "data"),
@@ -417,35 +483,41 @@ class AlertHandler:
         def display_ephemeral_alerts(
             _: int,
             alerts: list[dict[str, Any]],
-            previous_signature: dict[str, list[list[Any]]] | None,
-        ) -> tuple[Any, Any, Any, dict[str, list[list[Any]]]]:
-            """Displays ephemeral alerts for 5 seconds.
+            previous_signature: _ToastSignature | None,
+        ) -> tuple[Any, ...]:
+            """Displays ephemeral alerts for the duration of each alert.
 
             Ephemeral alerts are not removed from the store, so they remain visible in the modal.
             Determines the location of the alert based on the input, where default is "bottom-left".
 
             Since Dash 4.2.0 every write to a container's children remounts the
-            DOM nodes and replays the CSS entry animation (plotly/dash#3846), so
-            a container's children must only be written when its toasts change:
-            unchanged containers get no_update and unchanged ticks skip entirely.
+            DOM nodes and replays the CSS entry animation (plotly/dash#3846).
+            Each toast therefore gets its own slot, and only the slots that
+            actually changed are written; unchanged ticks skip entirely.
 
             Args:
                 _: The number of intervals elapsed since the application started.
                 alerts: The current list of alerts stored in the application.
-                previous_signature: The per-position toast signature from the previous tick.
+                previous_signature: The toast slot signature from the previous tick.
 
             Returns:
-                The alerts to display per position (no_update where unchanged), plus the new toast signature.
+                The children of every toast slot (no_update where unchanged), plus the new toast signature.
 
             Raises:
-                PreventUpdate: If the visible toasts are unchanged since the previous tick.
+                PreventUpdate: If no toast slot changed since the previous tick.
             """  # noqa: DOC102, DOC103
-            visible, signature = _ephemeral_toast_state(alerts, time.time())
-
+            slots, signature = _ephemeral_toast_state(
+                alerts, time.time(), previous_signature
+            )
             previous = (
                 previous_signature if isinstance(previous_signature, dict) else {}
             )
-            if all(signature[pos] == previous.get(pos, []) for pos in _TOAST_POSITIONS):
+            empty: list[list[Any] | None] = [None] * _MAX_TOASTS_PER_POSITION
+
+            if all(
+                signature[position] == (previous.get(position) or empty)
+                for position in _TOAST_POSITIONS
+            ):
                 raise PreventUpdate
 
             def make_alert(a: dict[str, Any], dying: bool) -> dbc.Alert:
@@ -467,17 +539,15 @@ class AlertHandler:
                     className=f"ssb-dialog {a['color']} alert-toast {'alert-dying' if dying else ''}",
                 )
 
-            containers = [
-                (
-                    [
-                        make_alert(a, dying)
-                        for a, dying in visible
-                        if a.get("position", "bottom-left") == position
-                    ]
-                    if signature[position] != previous.get(position, [])
-                    else no_update
-                )
-                for position in _TOAST_POSITIONS
-            ]
+            children: list[Any] = []
+            for position in _TOAST_POSITIONS:
+                previous_slots = previous.get(position) or empty
+                for index in range(_MAX_TOASTS_PER_POSITION):
+                    was = previous_slots[index] if index < len(previous_slots) else None
+                    if signature[position][index] == was:
+                        children.append(no_update)
+                        continue
+                    entry = slots[position][index]
+                    children.append(make_alert(entry[0], entry[1]) if entry else [])
 
-            return containers[0], containers[1], containers[2], signature
+            return (*children, signature)
