@@ -1580,6 +1580,21 @@ Dash override for ssb-tabs DCC
   max-width: 600px;
 }
 
+.nspek-kontrollutslag-tab.has-issues span::before {
+    content: "";
+    display: inline-block;
+
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    vertical-align: middle;
+
+    background-image: url("https://api.iconify.design/feather/alert-triangle.svg");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+
 /*
 ssb-text-area
 */
@@ -1734,6 +1749,14 @@ Dash override for ssb-text-area
 /* Hover */
 .ag-theme-ssb .ag-row:hover {
   background-color: #f2f0ff;
+}
+
+/* Fjern avrundede hjørner */
+.ag-theme-ssb,
+.ag-theme-ssb .ag-root-wrapper,
+.ag-theme-ssb .ag-header,
+.ag-theme-ssb .ag-center-cols-container {
+    border-radius: 0 !important;
 }
 
 /*
@@ -2217,8 +2240,8 @@ Altinn Editor Support Tables
   overflow: hidden;
 }
 
-/* 
-DataEditor 
+/*
+DataEditor
 */
 
 .helper-button-indicator {

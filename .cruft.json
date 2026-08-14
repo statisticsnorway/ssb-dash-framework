@@ -1,7 +1,7 @@
 {
   "template": "https://github.com/statisticsnorway/ssb-pypitemplate.git",
-  "commit": "dcc4de1788caf9123ee2a56ca3828eee8be383a8",
-  "checkout": "2026.2.24",
+  "commit": "57b7b713c78245687a1d5421aba8bf01bead2245",
+  "checkout": "2026.5.27",
   "context": {
     "cookiecutter": {
       "project_name": "ssb-dash-framework",
@@ -26,7 +26,7 @@
         "trim_blocks": true
       },
       "_template": "https://github.com/statisticsnorway/ssb-pypitemplate.git",
-      "_commit": "dcc4de1788caf9123ee2a56ca3828eee8be383a8"
+      "_commit": "57b7b713c78245687a1d5421aba8bf01bead2245"
     }
   },
   "directory": null
