@@ -676,8 +676,17 @@ def build_column_defs(sekvens_compare=None):
             "sortable": False,
             "resizable": True,
             "hide": col == "sekvensnummer",
-            "editable": col == "verdi",
-            "flex": 3 if col == "beskrivelse" else 2 if col == "post" else 1,
+            "editable": col == "verdi", 
+            "width": (
+                450 if col == "beskrivelse"
+                else 70 if col == "post"
+                else None
+            ),
+            "flex": (
+                None
+                if col in ["beskrivelse", "post"]
+                else 2
+            ),
             "valueFormatter": {
                 "function": (
                     "params.value == null ? '' : params.value.toLocaleString('no-NO')"
@@ -2173,6 +2182,7 @@ class Naeringsspesifikasjon:
             style={
                 "width": "100%",
                 "minWidth": "0",
+                "maxWidth": "1180px",
             },
         )
 
@@ -2438,6 +2448,8 @@ class Naeringsspesifikasjon:
                 axis=1,
             )
 
+            df["post"] = df["post"].where(df["post"].str.fullmatch(r"\d+"), "")
+
             row_data = df.to_dict("records")
             column_defs = build_column_defs(sekvens_compare)
 
@@ -2538,6 +2550,8 @@ class Naeringsspesifikasjon:
                 ),
                 axis=1,
             )
+
+            df["post"] = df["post"].where(df["post"].str.fullmatch(r"\d+"), "")
 
             row_data = df.to_dict("records")
             column_defs = build_column_defs(sekvens_compare)
@@ -3177,7 +3191,7 @@ class Naeringsspesifikasjon:
                     1,
                     true,
                     NOW(),
-                    ''current_setting('nspek_app.user_id')''
+                    current_setting('nspek_app.user_id')
                 )
             """
 
@@ -3535,25 +3549,31 @@ class Naeringsspesifikasjon:
                 )
 
                 kontroller_df = instance.get_current_kontroller()
-                kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict(
-                    "index"
-                )
+                kontroller_lookup = kontroller_df.set_index(
+                    ["aar", "kontrollid"]
+                ).to_dict("index")
 
                 if ctx.triggered_id == "run-controls-btn":
                     run_all_controls_for_sekvensnummer(conn, int(sekvensnummer))
 
-                df = instance.get_current_kontrollutslag()
-
-            df = df[df["sekvensnummer"] == int(sekvensnummer)]
+                df = instance.get_current_kontrollutslag(
+                    sekvensnummer=int(sekvensnummer),
+                )
 
             if df.empty:
                 return [], base_class
 
-            df["skildring"] = df["kontrollid"].map(
-                lambda x: kontroller_lookup.get(x, {}).get("skildring")
+            df["skildring"] = df.apply(
+                lambda row: kontroller_lookup.get(
+                    (row["aar"], row["kontrollid"]), {}
+                ).get("skildring"),
+                axis=1,
             )
-            df["tema"] = df["kontrollid"].map(
-                lambda x: kontroller_lookup.get(x, {}).get("tema")
+            df["tema"] = df.apply(
+                lambda row: kontroller_lookup.get(
+                    (row["aar"], row["kontrollid"]), {}
+                ).get("tema"),
+                axis=1,
             )
 
             has_issues = df["utslag"].any()

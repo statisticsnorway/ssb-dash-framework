@@ -433,6 +433,10 @@ def save_incremental_control_db(
             AND kontrollid IN ({kontrollids_sql})
             """)
 
+        if df_kontrollutslag.empty:
+            conn.raw_sql("COMMIT;")
+            return
+
         df_kontrollutslag = enrich_with_bof(
             df_kontrollutslag,
             int(df_kontrollutslag["aar"].iloc[0]),

@@ -85,7 +85,11 @@ class NspekControlView(ABC):
             layout: A Div element containing two tables, kontroller and kontrollutslag.
         """
         return html.Div(
-            style={"width": "100%"},
+            style={
+            "width": "100%",
+            "minWidth": "0",
+            "maxWidth": "1400px",
+            },
             children=[
                 dbc.Row(
                     [
@@ -262,6 +266,7 @@ class NspekControlView(ABC):
         @callback(
             Output(f"{self.module_number}-kontroller", "rowData"),
             Output(f"{self.module_number}-kontroller", "columnDefs"),
+            Output(f"{self.module_number}-kontroller", "selectedRows"),
             Output("alert_store", "data", allow_duplicate=True),
             Input(f"{self.module_number}-kontroll-refresh", "n_clicks"),
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
@@ -288,13 +293,14 @@ class NspekControlView(ABC):
             df = instance.get_current_kontroller()
 
             if df is None or df.empty:
-                return [], [], store
+                return [], [], [], store
 
             columns = self._create_column_defs(df)
 
             return (
                 df.to_dict("records"),
                 columns,
+                [df.iloc[0].to_dict()],
                 [create_alert("Oppdatert", "info", ephemeral=True), *store],
             )
 
@@ -311,13 +317,17 @@ class NspekControlView(ABC):
 
             control_class = self.control_class
 
+            aar = int(selected[0]["aar"])
+            kontrollid = selected[0]["kontrollid"]
+
             instance = control_class(
                 time_units=self.time_units,
-                applies_to_subset={},
+                applies_to_subset={"aar": aar},
             )
 
             df = instance.get_current_kontrollutslag(
-                specific_control=selected[0]["kontrollid"]
+                aar=aar,
+                specific_control=kontrollid,
             )
 
             if df is None or df.empty:
