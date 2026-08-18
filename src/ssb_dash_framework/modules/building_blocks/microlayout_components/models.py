@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import uuid
-from typing import Annotated
+from typing import Annotated, Any
 from typing import Literal
 from typing import Sequence
 
@@ -18,80 +17,47 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import TypeAdapter
 from pydantic import computed_field
-from pydantic import field_validator
 
-from .editable_field_model import CallbackSettings
 from .editable_field_model import EditableField
+
+from abc import ABC, abstractmethod
+
+class FieldCallbackContainer(BaseModel):
+    settings: EditableField
+    parent_hash: int
+
+    def get_state(self):
+        return State(self._id, "value")
+
+    def get_input(self):
+        return Input(self._id, self.settings.variabel_trigger)
+
+    def get_output(self):
+        return Output(self._id, "value")
+
+    @computed_field
+    @property
+    def _id(self) -> str:
+        return self.settings.field_path + "_" + str(self.parent_hash)
+
+
+class Base(ABC):
+    @abstractmethod
+    def create(self) -> tuple[Any, list[FieldCallbackContainer] | FieldCallbackContainer | None]: ...
 
 
 # ---------- Base + shared ----------
-class BaseNode(BaseModel):
+class BaseNode(BaseModel, Base):
     # Discriminator field
     type: str
 
     # Allow future/unknown keys to pass through without breaking
-    model_config = ConfigDict(extra="allow")
-
-    def create(
-        self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> html.Div | html.H1 | html.H2 | html.H3 | dbc.Row | dbc.Col:
-        raise NotImplementedError
-
-    def __str__(self, prefix: str = "", is_last: bool = True) -> str:
-        branch = "└─ " if is_last else "├─ "
-        node_name = self.type.upper()
-
-        # Container node (has children)
-        if hasattr(self, "children") and isinstance(self.children, list):
-            lines = [f"{prefix}{branch}{node_name}:"]
-            child_prefix = prefix + ("    " if is_last else "│   ")
-            for i, child in enumerate(self.children):
-                lines.append(
-                    child.__str__(
-                        prefix=child_prefix, is_last=(i == len(self.children) - 1)
-                    )
-                )
-            return "\n".join(lines)
-
-        # Leaf node — dynamically include info
-        info_parts = []
-
-        # Label if exists
-        if hasattr(self, "label"):
-            info_parts.append(f"{self.label}")
-
-        # field_path for InputField or similar
-        if hasattr(self, "field_settings"):
-            info_parts.append(f"path={self.field_settings}")
-
-        # klass_code for KlassDropdown/KlassChecklist
-        if hasattr(self, "klass_code"):
-            info_parts.append(f"klass_code={self.klass_code}")
-
-        # size for Header
-        if hasattr(self, "size"):
-            info_parts.append(f"size={self.size}")
-
-        info_str = " (" + ", ".join(info_parts) + ")" if info_parts else ""
-        return f"{prefix}{branch}{node_name}{info_str}"
+    model_config = ConfigDict(extra="allow", frozen=True)
 
 
 class ContainerNode(BaseNode):
     # Recursive children: a list of Nodes (defined later via Union)
     children: list[Node] = Field(default_factory=list)
-
-    def create(
-        self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> html.Div | html.H1 | html.H2 | html.H3 | dbc.Row | dbc.Col:
-        raise NotImplementedError
 
 
 # ---------- Concrete node types ----------
@@ -100,23 +66,15 @@ class Row(ContainerNode):
 
     def create(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> dbc.Row:
+    ) -> tuple[dbc.Row, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
-        return dbc.Row(
-            [
-                child.create(
-                    settings,
-                    inputs,
-                    states,
-                    getter_args,
-                )
-                for child in self.children
-            ]
-        )
+        ids = []
+        children = []
+        for child in self.children:
+            comp, _id = child.create()
+            ids.append(_id)
+            children.append(comp)
+        return dbc.Row(children), ids
 
 
 class Col(ContainerNode):
@@ -124,23 +82,15 @@ class Col(ContainerNode):
 
     def create(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> dbc.Col:
+    ) -> tuple[dbc.Col, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
-        return dbc.Col(
-            [
-                child.create(
-                    settings,
-                    inputs,
-                    states,
-                    getter_args,
-                )
-                for child in self.children
-            ]
-        )
+        ids = []
+        children = []
+        for child in self.children:
+            comp, _id = child.create()
+            ids.append(_id)
+            children.append(comp)
+        return dbc.Col(children), ids
 
 
 class Tab(ContainerNode):
@@ -149,23 +99,20 @@ class Tab(ContainerNode):
 
     def create(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> dbc.Tab:
+    ) -> tuple[dbc.Tab, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
-        return dbc.Tab(
-            [
-                child.create(
-                    settings,
-                    inputs,
-                    states,
-                    getter_args,
-                )
-                for child in self.children
-            ],
-            label=self.label,
+        ids = []
+        children = []
+        for child in self.children:
+            comp, _id = child.create()
+            ids.append(_id)
+            children.append(comp)
+        return (
+            dbc.Tab(
+                children,
+                label=self.label,
+            ),
+            ids,
         )
 
 
@@ -175,23 +122,15 @@ class Tabs(ContainerNode):
 
     def create(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> dbc.Tabs:
+    ) -> tuple[dbc.Tabs, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
-        return dbc.Tabs(
-            [
-                child.create(
-                    settings,
-                    inputs,
-                    states,
-                    getter_args,
-                )
-                for child in self.tabs
-            ]
-        )
+        ids = []
+        children = []
+        for child in self.children:
+            comp, _id = child.create()
+            ids.append(_id)
+            children.append(comp)
+        return dbc.Tabs(children), ids
 
 
 class Header(BaseNode):
@@ -201,39 +140,35 @@ class Header(BaseNode):
 
     def create(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> html.H1 | html.H2 | html.H3 | html.H4:
+    ) -> tuple[html.H1 | html.H2 | html.H3 | html.H4, None]:
         """A method for creating the layout."""
         if self.size == "lg":
-            return html.H1(self.label)
+            return html.H1(self.label), None
         elif self.size == "md":
-            return html.H2(self.label)
+            return html.H2(self.label), None
         elif self.size == "sm":
-            return html.H3(self.label)
+            return html.H3(self.label), None
         else:
-            return html.H4(self.label)
+            return html.H4(self.label), None
 
 
 class Label(BaseNode):
     type: Literal["label"]
-    label: str = "" # acts as a placeholder if not specified
+    label: str = ""  # acts as a placeholder if not specified
     bold: bool = False
 
     def create(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> html.Div:
-        return html.Div(
-            html.Label(
-                self.label if self.label else "\u00A0", style={"fontWeight": "bold" if self.bold else "normal"}
+    ) -> tuple[html.Div, None]:
+        return (
+            html.Div(
+                html.Label(
+                    self.label if self.label else "\u00a0",
+                    style={"fontWeight": "bold" if self.bold else "normal"},
+                ),
+                className="microlayout-label",
             ),
-            className="microlayout-label",
+            None,
         )
 
 
@@ -241,48 +176,43 @@ class InputField(BaseNode):
     type: Literal["input"]
     label: str
     value: str | None = ""
-    field_settings: EditableField
     hidelabel: bool = False
     readonly: bool = False
+    field_settings: EditableField
 
     def create(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> html.Div:
+    ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
-        self.field_settings.create_callback(
-            settings,
-            inputs,
-            states,
-            getter_args,
-        )
-        return html.Div(
-            [
-                html.Label(
-                    self.label,
-                    title=self.field_settings._id.split("[")[0],
-                    style={
-                        "visibility": "hidden" if self.hidelabel else "visible",
-                    },
-                ),
-                dbc.Input(
-                    style={"width": "100%"},
-                    id=self.field_settings._id,
-                    debounce=True,
-                    readonly=self.readonly,
-                    className="microlayout-input-field"
-                    + (" microlayout-input-readonly" if self.readonly else ""),
-                ),
-            ],
-            className="ssb-input",
+        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=hash(self))
+        return (
+            html.Div(
+                [
+                    html.Label(
+                        self.label,
+                        title=self.label,
+                        style={
+                            "visibility": "hidden" if self.hidelabel else "visible",
+                        },
+                    ),
+                    dbc.Input(
+                        style={"width": "100%"},
+                        id=callback_info._id,
+                        debounce=True,
+                        readonly=self.readonly,
+                        className="microlayout-input-field"
+                        + (" microlayout-input-readonly" if self.readonly else ""),
+                    ),
+                ],
+                className="ssb-input",
+            ),
+            callback_info,
         )
 
 
 class CalculatedField(BaseNode):
     type: Literal["calculated-field"]
+    field_settings: EditableField
     label: str
     hidelabel: bool = False
     decimals: int = 1
@@ -339,7 +269,9 @@ class CalculatedField(BaseNode):
             "addition": [],
             "subtraction": [],
         }
-        incomplete_multiplicative = False # handles missing -> 0 for multiplication & division
+        incomplete_multiplicative = (
+            False  # handles missing -> 0 for multiplication & division
+        )
 
         for (op, _), value in zip(op_id_pairs, values):
             if value is not None and str(value).strip() != "":
@@ -457,101 +389,53 @@ class CalculatedField(BaseNode):
 class DropdownComponent(BaseNode):
     """A class describing the dropdown type."""
 
+    field_settings: EditableField
     type: Literal["dropdown"]
     label: str
     options: list[dict]
-    field_settings: EditableField
 
     def create(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> html.Div:
+    ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
-        _id = str(uuid.uuid4())
-        self.field_settings.variabel_trigger = "value"
-        self.field_settings.create_callback(
-            settings,
-            inputs,
-            states,
-            getter_args,
-        )
-        return html.Div(
-            [
-                html.Label(self.label, title=self.field_settings._id.split("[")[0]),
-                dcc.Dropdown(
-                    options=self.options,
-                    id=self.field_settings._id,
-                    searchable=False,
-                    className="ssb-dropdown",
-                ),  # pyright: ignore
-            ],
-            className="ssb-input"
+        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=hash(self))
+
+        return (
+            html.Div(
+                [
+                    html.Label(self.label, title=self.label),
+                    dcc.Dropdown(
+                        options=self.options,
+                        id=callback_info._id,
+                        searchable=False,
+                        className="ssb-dropdown",
+                    ),  # pyright: ignore
+                ],
+                className="ssb-input",
+            ),
+            callback_info,
         )
 
 
 class ChecklistComponent(BaseNode):
     """A class describing the checklist type."""
 
+    field_settings: EditableField
     type: Literal["checklist"]
     label: str
     hidelabel: bool = False
     options: list[dict]
-    field_settings: EditableField
 
     def create(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> html.Div:
+    ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
-
-        original_getter = self.field_settings.getter_func
-        original_updater = self.field_settings.update_func
-
-        def wrapped_getter(*args, **kwargs):
-            result = original_getter(*args, **kwargs)
-            if result is None or str(result).lower() in ("0", "false", ""):
-                return []
-            first = self.options[0]["value"] if self.options else 1
-            if isinstance(first, bool):
-                return [bool(result)]
-            if isinstance(first, int):
-                return [int(result)]
-            return [str(result)]
-
-        def wrapped_updater(value, *args, **kwargs):
-            if isinstance(value, list):
-                first = self.options[0]["value"] if self.options else 1
-                if isinstance(first, bool):
-                    value = bool(value)
-                elif isinstance(first, int):
-                    value = 1 if value else 0
-                elif first in ("1", "0"):
-                    value = "1" if value else "0"
-                else:
-                    value = "true" if value else "false"
-            return original_updater(value, *args, **kwargs)
-
-        self.field_settings.getter_func = wrapped_getter
-        self.field_settings.update_func = wrapped_updater
-        self.field_settings.variabel_trigger = "value"
-        self.field_settings.create_callback(
-            settings,
-            inputs,
-            states,
-            getter_args,
-        )
-
+        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=hash(self))
         if len(self.options) == 1:
             children = [
                 dcc.Checklist(
                     options=[{**opt, "label": ""} for opt in self.options],
-                    id=self.field_settings._id,
+                    id=callback_info._id,
                 ),
                 html.Label(
                     self.options[0].get("label", ""),
@@ -562,24 +446,27 @@ class ChecklistComponent(BaseNode):
             children = [
                 dcc.Checklist(
                     options=self.options,
-                    id=self.field_settings._id,
+                    id=callback_info._id,
                 ),
             ]
 
-        return html.Div(
-            [
-                html.Label(
-                    self.label,
-                    title=self.field_settings._id.split("[")[0],
-                    style={"visibility": "hidden" if self.hidelabel else "visible"},
-                ),
-                html.Div(
-                    className="ssb-checkbox d-flex align-items-center",
-                    children=children,
-                    style={"height": "44px"}, # to match ssb-input
-                ),
-            ],
-            className="ssb-input",
+        return (
+            html.Div(
+                [
+                    html.Label(
+                        self.label,
+                        title=self.label,
+                        style={"visibility": "hidden" if self.hidelabel else "visible"},
+                    ),
+                    html.Div(
+                        className="ssb-checkbox d-flex align-items-center",
+                        children=children,
+                        style={"height": "44px"},  # to match ssb-input
+                    ),
+                ],
+                className="ssb-input",
+            ),
+            callback_info,
         )
 
 
@@ -587,16 +474,11 @@ class KlassDropdown(BaseNode):
     type: Literal["klass-dropdown"]
     klass_code: str
     label: str
-
     field_settings: EditableField
 
     def create(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> html.Div:
+    ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         codes_dict = get_classification(self.klass_code).get_codes().to_dict()
         options = []
@@ -608,12 +490,7 @@ class KlassDropdown(BaseNode):
             label=self.label,
             options=options,
             field_settings=self.field_settings,
-        ).create(
-            settings,
-            inputs,
-            states,
-            getter_args,
-        )
+        ).create()
 
 
 # (Optional) If you plan to use these later, keep them here for completeness
@@ -622,28 +499,19 @@ class Textarea(BaseNode):
     label: str
     hidelabel: bool = False
     value: str | None = ""
-    field_settings: EditableField
     readonly: bool = False
+    field_settings: EditableField
 
     def create(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> html.Div:
+    ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
-        self.field_settings.create_callback(
-            settings,
-            inputs,
-            states,
-            getter_args,
-        )
+        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=hash(self))
         return html.Div(
             [
                 html.Label(
                     self.label,
-                    title=self.field_settings._id.split("[")[0],
+                    title=self.label,
                     style={
                         "visibility": "hidden" if self.hidelabel else "visible",
                     },
@@ -651,7 +519,7 @@ class Textarea(BaseNode):
                 ),
                 dbc.Textarea(
                     style={"width": "100%"},
-                    id=self.field_settings._id,
+                    id=callback_info._id,
                     debounce=True,
                     readonly=self.readonly,
                     className="microlayout-textarea-field"
@@ -659,7 +527,7 @@ class Textarea(BaseNode):
                 ),
             ],
             className="microlayout-textarea",
-        )
+        ), callback_info
 
 
 class KlassChecklist(BaseNode):
@@ -670,11 +538,7 @@ class KlassChecklist(BaseNode):
 
     def create(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ) -> html.Div:
+    ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         codes_dict = get_classification(self.klass_code).get_codes().to_dict()
         options = []
@@ -687,37 +551,16 @@ class KlassChecklist(BaseNode):
                 label=self.label,
                 options=options,
                 field_settings=self.field_settings,
-            ).create(
-                settings,
-                inputs,
-                states,
-                getter_args,
-            )
+            ).create()
         else:
             return DropdownComponent(
                 type="dropdown",
                 label=self.label,
                 options=options,
                 field_settings=self.field_settings,
-            ).create(
-                settings,
-                inputs,
-                states,
-                getter_args,
-            )
+            ).create()
 
 
-"""class ChecklistOption(BaseModel):
-    label: str
-    value: str
-
-
-class Checklist(BaseNode):
-    type: Literal["checklist"]
-    label: str
-    options: List[ChecklistOption]
-
-"""
 # ---------- Discriminated union (by 'type') ----------
 Node = Annotated[
     Row
@@ -755,6 +598,21 @@ for m in (
 
 NodeListAdapter = TypeAdapter(list[Node])
 
+def _flatten_ids(data: Sequence[FieldCallbackContainer | None | Sequence[FieldCallbackContainer]]) -> Sequence[FieldCallbackContainer]:
+
+    return_data = []
+    if isinstance(data, list):
+        for item in data:
+            if isinstance(item, list):
+                return_data += _flatten_ids(item)
+            elif item is not None:
+                return_data.append(item)
+            
+        return return_data
+    elif data is not None:
+        return_data.append(data)
+    
+    return return_data
 
 class Layout:
     def __init__(self, data: list) -> None:
@@ -763,19 +621,12 @@ class Layout:
 
     def build(
         self,
-        settings: CallbackSettings,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-    ):
+    ) -> tuple[list[Any], Sequence[FieldCallbackContainer]]:
         layout_list = []
+        ids = []
         for node in self.nodes:
-            layout = node.create(settings, inputs, states, getter_args)
+            layout, id_ = node.create()
             layout_list.append(layout)
-        return layout_list
-
-    def __str__(self) -> str:
-        lines = ["LAYOUT:"]
-        for i, node in enumerate(self.nodes):
-            lines.append(node.__str__(prefix="", is_last=(i == len(self.nodes) - 1)))
-        return "\n".join(lines)
+            ids.append(id_)
+        
+        return layout_list, _flatten_ids(ids)

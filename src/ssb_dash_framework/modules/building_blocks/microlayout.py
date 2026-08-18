@@ -1,15 +1,43 @@
 import logging
+from typing import Any
 import uuid
 from collections.abc import Callable
-
-from dash import Input
+from abc import abstractmethod, ABC
+from dash import Input, callback
 from dash import State
 from dash import html
 
-from .microlayout_components.editable_field_model import CallbackSettings, batch_editable_fields
-from .microlayout_components.models import Layout
+from ...utils.config_tools.set_variables import get_ident, get_refnr
+
+# from ssb_dash_framework import VariableSelector
+from ...setup.variableselector import VariableSelector
+
+# from .microlayout_components.editable_field_model import CallbackSettings
+from .microlayout_components.models import FieldCallbackContainer, Layout
 
 logger = logging.getLogger(__name__)
+
+
+class FetcherMeta(ABC):
+    @abstractmethod
+    def get_field(
+        self,
+        container: FieldCallbackContainer,
+        custom_inputs: list[Any],
+        variable_selector: list[Any],
+    ) -> Any: ...
+    
+    @abstractmethod
+    def update_field(self) -> Any:
+        ...
+
+    @abstractmethod
+    def get_field_history(self) -> Any:
+        ...
+
+    @abstractmethod
+    def get_field_list(self) -> Any:
+        ...
 
 
 class MicroLayoutAIO(html.Div):
@@ -22,43 +50,19 @@ class MicroLayoutAIO(html.Div):
     def __init__(
         self,
         layout: list[dict] | Layout,
-        getter_func: Callable[..., tuple],
-        update_func: Callable[..., tuple | None],
-        form_reference_input_id: str,
+        data_handler: FetcherMeta,
         inputs: list[Input] | None = None,
         states: list[State] | None = None,
-        getter_args: None | list = None,
         aio_id: str | None = None,
         horizontal: bool = False,
-        form_data_table: str = "skjemadata",
-        form_reference_number_column: str = "refnr",
-        form_data_field_name_column: str = "feltnavn",
-        formdata_field_value_column_name: str = "verdi",
-        mapping_table: str = "mapping_variabelnavn",
-        mapping_match_column: str = "variabel",
-        mapping_result_column: str = "feltsti",
-        table_selector_id: str | None = None,
-        form_selector_id: str | None = None,
-        applies_to_tables: str | list[str] | None = None,
-        applies_to_forms: str | list[str] | None = None,
     ) -> None:
         logger.warning(
             "This module is under development and might receive larger and/or breaking changes."
         )
         # The below is just for the __str__ dunder
-        self._form_data_table = form_data_table
-        self._form_reference_number_column = form_reference_number_column
-        self._form_data_field_name_column = form_data_field_name_column
-        self._formdata_field_value_column_name = formdata_field_value_column_name
-        self._form_reference_input_id = form_reference_input_id
-        self._table_selector_id = table_selector_id
-        self._form_selector_id = form_selector_id
-        self._applies_to_tables = applies_to_tables
-        self._applies_to_forms = applies_to_forms
+
         self._horizontal = horizontal
-        self._getter_func = getter_func
-        self._update_func = update_func
-        self._getter_args = getter_args
+        inputs = [] if inputs is None else inputs
         # The above is just for the __str__ dunder
 
         self.aio_id = aio_id or str(uuid.uuid4())
@@ -68,56 +72,42 @@ class MicroLayoutAIO(html.Div):
             model = Layout(layout)
         self._model = model  # Just for __str__ dunder
 
-        if getter_args:
-            extra_args = getter_args
-        else:
-            extra_args = []
-        common_settings = CallbackSettings(
-            form_data_table=form_data_table,
-            form_reference_input_id=form_reference_input_id,
-            form_reference_number_column=form_reference_number_column,
-            formdata_fieldname_column=form_data_field_name_column,
-            formdata_field_value_column_name=formdata_field_value_column_name,
-            mapping_table=mapping_table,
-            mapping_match_column=mapping_match_column,
-            mapping_result_column=mapping_result_column,
-            table_selector_id=table_selector_id,
-            form_selector_id=form_selector_id,
-        )
-        
-        with batch_editable_fields():
-            html_layout = model.build(
-                settings=common_settings,
-                inputs=inputs,
-                states=states,
-                getter_args=extra_args,
-            )
-
         styles = {}
 
         if horizontal:
             styles["display"] = "flex"
+        self.variableselector = VariableSelector([get_ident(), get_refnr()], [])
 
-        super().__init__(html_layout, id=f"{self.aio_id}-klass", style=styles)
+        layout, ids = model.build()
+        super().__init__(
+            layout, id=f"{self.aio_id}-klass", style=styles  # pyright: ignore
+        )
 
-    def __str__(self) -> str:
-        lines = [
-            self.__class__.__name__,
-            f"  aio_id:               {self.aio_id}",
-            f"  form_data_table:      {self._form_data_table}",
-            f"  form_reference_col:   {self._form_reference_number_column}",
-            f"  field_name_col:       {self._form_data_field_name_column}",
-            f"  field_value_col:      {self._formdata_field_value_column_name}",
-            f"  form_reference_id:    {self._form_reference_input_id}",
-            f"  table_selector_id:    {self._table_selector_id}",
-            f"  form_selector_id:     {self._form_selector_id}",
-            f"  applies_to_tables:    {self._applies_to_tables}",
-            f"  applies_to_forms:     {self._applies_to_forms}",
-            f"  horizontal:           {self._horizontal}",
-            f"  getter_func:          {self._getter_func.__name__}",
-            f"  update_func:          {self._update_func.__name__}",
-            f"  getter_args:          {self._getter_args}",
-            "",
-            str(self._model),
-        ]
-        return "\n".join(lines)
+        callback_ctx = {item._id: item for item in ids}
+
+        @callback(
+            # output=dict(),
+            inputs=dict(fields=dict({item._id: item.get_input() for item in ids})),
+            states=dict(),
+        )
+        def handle_field_value_change(fields: dict[str, Any]):
+            print("update", fields)
+            pass
+
+        @callback(
+            output={item._id: item.get_output() for item in ids},
+            inputs=dict(
+                custom_inputs=inputs,
+                variable_selector=self.variableselector.get_all_inputs(),
+            ),
+            states=dict(),
+        )
+        def handle_variable_selector_change(custom_inputs, variable_selector):
+            # print("hei", custom_inputs, variable_selector)
+            field_values = {}
+            for id_, field in callback_ctx.items():
+                field_val = data_handler.get_field(
+                    field, custom_inputs, variable_selector
+                )
+                field_values[id_] = field_val
+            return field_values
