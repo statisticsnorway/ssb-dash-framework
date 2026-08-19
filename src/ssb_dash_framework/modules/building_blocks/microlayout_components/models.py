@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Any
 from typing import Literal
 from typing import Sequence
-
+import uuid
 import dash_bootstrap_components as dbc
 from dash import dcc
 from dash import Input
@@ -24,7 +24,7 @@ from abc import ABC, abstractmethod
 
 class FieldCallbackContainer(BaseModel):
     settings: EditableField
-    parent_hash: int
+    parent_hash: str
 
     def get_state(self):
         return State(self._id, "value")
@@ -38,7 +38,7 @@ class FieldCallbackContainer(BaseModel):
     @computed_field
     @property
     def _id(self) -> str:
-        return self.settings.field_path + "_" + str(self.parent_hash)
+        return self.settings.field_path + "_" + self.parent_hash
 
 
 class Base(ABC):
@@ -184,7 +184,7 @@ class InputField(BaseNode):
         self,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
-        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=hash(self))
+        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=str(uuid.uuid4()))
         return (
             html.Div(
                 [
@@ -398,7 +398,7 @@ class DropdownComponent(BaseNode):
         self,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
-        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=hash(self))
+        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=str(uuid.uuid4()))
 
         return (
             html.Div(
@@ -430,7 +430,7 @@ class ChecklistComponent(BaseNode):
         self,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
-        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=hash(self))
+        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=str(uuid.uuid4()))
         if len(self.options) == 1:
             children = [
                 dcc.Checklist(
@@ -506,7 +506,7 @@ class Textarea(BaseNode):
         self,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
-        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=hash(self))
+        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=str(uuid.uuid4()))
         return html.Div(
             [
                 html.Label(

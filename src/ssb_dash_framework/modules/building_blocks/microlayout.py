@@ -27,17 +27,17 @@ class FetcherMeta(ABC):
         variable_selector: list[Any],
     ) -> Any: ...
     
-    @abstractmethod
-    def update_field(self) -> Any:
-        ...
+    #@abstractmethod
+    #def update_field(self) -> Any:
+    #    ...
 
-    @abstractmethod
-    def get_field_history(self) -> Any:
-        ...
+    #@abstractmethod
+    #def get_field_history(self) -> Any:
+    #    ...
 
-    @abstractmethod
-    def get_field_list(self) -> Any:
-        ...
+    #@abstractmethod
+    #def get_field_list(self) -> Any:
+    #    ...
 
 
 class MicroLayoutAIO(html.Div):
