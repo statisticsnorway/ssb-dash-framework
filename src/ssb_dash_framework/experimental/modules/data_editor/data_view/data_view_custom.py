@@ -12,6 +12,7 @@ from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
 
+from .....config.yaml_parser import config_parser_yaml
 from ssb_dash_framework.setup import VariableSelector
 from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
@@ -139,69 +140,144 @@ def _safe_get(data, v):
     return rows.item() if not rows.empty else None
 
 
-class DataViewCustomMicroLayout(MicroLayoutAIO):
-    _id_number = 0
 
-    def __init__(
-        self,
-        applies_to_tables: list[str],
-        applies_to_forms: list[str],
-        getter_func: Callable[..., tuple],
-        update_func: Callable[..., tuple | None],
-        layout: list[dict] | Layout | None = None,
-        layout_yaml_path: str | None = None,
-        form_reference_input_id: str | None = None,
-        inputs: list[Input] | None = None,
-        states: list[State] | None = None,
-        getter_args: None | list = None,
-        aio_id: str | None = None,
-        horizontal: bool = False,
-        form_data_table: str = "skjemadata",
-        form_reference_number_column: str | None = "refnr",
-        form_data_field_name_column: str = "feltnavn",
-        formdata_field_value_column_name: str = "verdi",
-        table_selector_id: str | None = "dataeditortableselector",
-        form_selector_id: str | None = "var-altinnskjema",
-    ) -> None:
-        if not layout and not layout_yaml_path:
-            raise ValueError("Either 'layout' or 'layout_yaml_path' must be defined.")
-        if layout_yaml_path:
-            if layout:
+from typing import Any
+
+from pandas import Series
+from .....modules.building_blocks.microlayout import FetcherMeta
+from .....utils.config_tools.connection import get_connection
+from dataclasses import dataclass
+import logging
+import time
+
+
+from ibis import Table
+import ibis
+from ibis.expr.types.relations import Table
+from ibis.expr.types.relations import Table
+
+from pydantic import BaseModel
+from .....modules.building_blocks.microlayout_components.models import FieldCallbackContainer
+
+logger = logging.getLogger(__name__)
+
+class CallbackSettings(BaseModel):
+    form_data_table: str
+    form_reference_number_column: str
+    formdata_field_value_column_name: str
+    formdata_fieldname_column: str
+
+    mapping_table: str = "mapping_variabelnavn"
+    mapping_match_column: str = "variabel"
+    mapping_result_column: str = "feltsti"
+
+    table_selector_id: str | None = None
+    form_selector_id: str | None = None
+
+
+@dataclass
+class CacheEntry:
+    entry: Table
+    last_cache_hit: float
+
+
+class FormGetterCached:
+    data: dict[str, CacheEntry] = {}
+
+    @staticmethod
+    def get_table(refnr: str, settings: CallbackSettings) -> Table:
+        """Materialize the whole refnr-filtered form in ONE query.
+
+        The per-field ``default_getter`` re-filters this result once per editable
+        field (~48 for RA-0255). Returning a *lazy* Postgres expression here means
+        each of those re-filters is a separate database round-trip on every refnr
+        change -- the dominant cost of loading the data editor.
+
+        Instead we execute a single query for the whole refnr-filtered form and
+        return an in-memory ``ibis.memtable``. The subsequent per-field
+        filter/select then run entirely in-process (DuckDB) with no further
+        database round-trips. ``get_form`` caches this materialized table; writes
+        evict it via :meth:`evict` so reads stay fresh.
+        """
+        with get_connection() as conn:
+            t = conn.table(settings.form_data_table)
+            if (
+                settings.form_reference_number_column not in t.columns
+            ):  # catch errors with querying from wrong table
                 raise ValueError(
-                    "When 'layout_yaml_path' is defined, 'layout' must be None"
+                    f"Column '{settings.form_reference_number_column}' not in table "
+                    f"'{settings.form_data_table}'. Available: {t.columns}"
                 )
-            layout = self.from_yaml(layout_yaml_path)
+            df = t.filter(
+                t[settings.form_reference_number_column] == refnr,
+            ).to_pandas()
+        # memtable preserves column names + dtypes; downstream filter/select run
+        # in DuckDB, so they never touch the database again.
+        return ibis.memtable(df)
 
-        super().__init__(
-            applies_to_tables=applies_to_tables,
-            applies_to_forms=applies_to_forms,
-            layout=layout,
-            getter_func=getter_func,
-            update_func=update_func,
-            form_reference_input_id=(
-                form_reference_input_id if form_reference_input_id else "var-refnr"
-            ),
-            inputs=inputs,
-            states=states,
-            getter_args=getter_args,
-            aio_id=aio_id,
-            horizontal=horizontal,
-            form_data_table=form_data_table,
-            form_reference_number_column=form_reference_number_column,
-            form_data_field_name_column=form_data_field_name_column,
-            formdata_field_value_column_name=formdata_field_value_column_name,
-            table_selector_id=table_selector_id,
-            form_selector_id=form_selector_id,
+    @classmethod
+    def clean_cache(cls):
+        max_size = 10
+        if len(cls.data.keys()) > max_size:
+            key, _ = min(cls.data.items(), key=lambda x: x[1].last_cache_hit)
+            cls.data.pop(key)
+
+    @classmethod
+    def evict(cls, refnr: str, table: str) -> None:
+        """Drop the cached form for ``(table, refnr)`` so the next read is fresh.
+
+        Call this after a write: because :meth:`get_table` now returns a
+        materialized snapshot, an un-evicted entry would serve stale values for up
+        to the ``get_form`` TTL after an edit.
+        """
+        cls.data.pop(f"{table}::{refnr}", None)
+
+    @classmethod
+    def get_form(cls, refnr: str, settings: CallbackSettings) -> Table:
+        cache_key = (
+            f"{settings.form_data_table}::{refnr}"  # for tables not querying skjemadata
         )
+        entry = cls.data.get(cache_key)
 
-    def __str__(self) -> str:
-        base = super().__str__()
-        lines = [
-            base,
-            f"  applies_to_tables:  {self._applies_to_tables}",
-            f"  applies_to_forms:   {self._applies_to_forms}",
+        if (entry is None) or ((time.perf_counter() - entry.last_cache_hit) > 5.0):
+            table = FormGetterCached.get_table(refnr, settings)
+            cls.data[cache_key] = CacheEntry(
+                entry=table, last_cache_hit=time.perf_counter()
+            )
+            cls.clean_cache()
+            return cls.data[cache_key].entry
+        cls.clean_cache()
+        return entry.entry
+
+
+class StandardDataHandler(FetcherMeta):
+
+    def __init__(self, settings: CallbackSettings) -> None:
+        self.settings = settings
+        self.cache = FormGetterCached()
+        super().__init__()
+
+    def get_field(self, field: FieldCallbackContainer, custom_inputs, variable_selector):
+        orgnr, refnr = variable_selector
+        
+        t = self.cache.get_form(refnr, self.settings)
+        filters = [
+            t[self.settings.form_reference_number_column] == refnr,
+            t[self.settings.formdata_fieldname_column] == field.settings.field_path,
         ]
-        return "\n".join(lines)
+        
+        res: Series | Any = (
+            t.filter(filters).select(self.settings.formdata_field_value_column_name).execute()
+        )
+        logger.debug(f"Returning:\n{res}")
+
+        if res.empty:
+            return None
+        if len(res) > 1:  # catch potential duplicates
+            logger.error(
+                f"Multiple rows returned for {field.settings.field_path}, refnr={refnr}. Using first row."
+            )
+        return res.iloc[0, 0]
 
 
 @register_module()
@@ -209,7 +285,7 @@ class DataViewCustom(DataEditorDataView):
     """DataView with a very flexible layout made to be tailored to specific needs."""
 
     _id_number = 0
-
+    
     def __init__(
         self,
         applies_to_tables: str | list[str],
@@ -241,7 +317,6 @@ class DataViewCustom(DataEditorDataView):
     def build_layout(self, layout: dict | list) -> list:
         """Builds the layout for the custom view."""
         components = []
-
         # guard against strings and other primitives
         if not isinstance(layout, (dict, list)):
             return components
@@ -271,22 +346,28 @@ class DataViewCustom(DataEditorDataView):
                     logger.debug(
                         f"Done converting:\n{json.dumps(layout['layout'], indent=2, ensure_ascii=False)}"
                     )
-                microlayout = DataViewCustomMicroLayout(
-                    applies_to_tables=self.applies_to_tables,
-                    applies_to_forms=self.applies_to_forms,
-                    layout=layout["layout"],
-                    getter_func=layout.get("getter_func", default_getter),
-                    update_func=layout.get("update_func", default_updater),
-                    form_data_table=layout.get("form_data_table"),
-                    form_data_field_name_column=layout.get(
-                        "form_data_field_name_column"
+
+                settings = CallbackSettings(
+                    form_data_table=layout.get("form_data_table", ""),
+                    formdata_fieldname_column=layout.get(
+                        "form_data_field_name_column", ""
                     ),
                     form_reference_number_column=layout.get(
                         "form_reference_number_column", "refnr"
                     ),
-                    form_reference_input_id=layout.get(
-                        "form_reference_input_id", "var-refnr"
-                    ),
+                    formdata_field_value_column_name = "verdi",
+                )
+                handler = StandardDataHandler(settings)
+                #print(layout)
+                microlayout = MicroLayoutAIO(
+                    data_handler=handler,
+                    #applies_to_tables=self.applies_to_tables,
+                    #applies_to_forms=self.applies_to_forms,
+                    layout=layout["layout"],
+                    #getter_func=layout.get("getter_func", default_getter),
+                    #update_func=layout.get("update_func", default_updater),
+                    
+                    
                     inputs=[Input(f"var-{unit}", "value") for unit in get_time_units()],
                 )
                 components.append(microlayout)
@@ -309,6 +390,12 @@ class DataViewCustom(DataEditorDataView):
     def module_callbacks(self) -> None:
         """Registers the module callbacks."""
         pass
+    
+    @classmethod
+    def from_yaml(cls, yaml_path):
+        config = config_parser_yaml(yaml_path)
+        print(config)
+        return cls.from_dict(config[0])
 
     @classmethod
     def from_dict(cls, config_dict):
@@ -345,7 +432,7 @@ class DataViewCustom(DataEditorDataView):
         # Our own classes with rich __str__
         if isinstance(
             component,
-            (DataViewCustomMicroLayout, DataViewCustomFigure, DataViewCustomTable),
+            (MicroLayoutAIO, DataViewCustomFigure, DataViewCustomTable),
         ):
             for line in str(component).splitlines():
                 lines.append(f"{prefix}{line}")
