@@ -19,6 +19,58 @@ This makes sure that the package structure can be re-arranged later without requ
 - Each module should have its own folder in modules/.
 - Each module must be able to be instantiated on its own, as the sole module in the app.
 
+Enforcement in test.
+
+## Modules communicate through the variable selector
+
+
+
+## Modules must be configurable through yaml files
+
+### Example test
+```yaml
+app_settings:
+  port: 8000
+  # service_prefix: None
+  # stylesheet: None
+  enable_logging: false
+  logging_level: warning
+  log_to_file: false
+  variableselector: 
+    refnr: refnr
+    ident: ident
+    time_units:
+      aar: 1
+    grouping_variables:
+      - altinnskjema
+      - variabel
+  connection:
+    type: postgres
+    database_url: test
+modules:
+  tabs:
+    - type: MyModule
+  windows:
+    - type: MyModule
+```
+
+```python
+from ssb_dash_framework import config_parser_yaml
+
+def test_yaml_MyModule() -> None:
+    config_parser_yaml(mymodule.yaml)
+```
+
+## In-development features and modules exists in experimental/
+
+
+
+## Experimental features and modules should only be imported using 'from ssb_dash_framework.experimental.feature'
+
+In order to make sure a user understands when something is in-development or experimental, it should not be importable as a top-level import.
+
+## Modules should have tests to prevent breaking changes in the api
+
 ```python
 from ssb_dash_framework import MyModule
 from ssb_dash_framework import MyModuleTab
@@ -31,23 +83,10 @@ def test_import_MyModule() -> None:
     assert MyModuleWindow is not None, "MyModuleWindow is not importable"
 
 
-def test_instantiation_default_connection() -> None:
+def test_instantiation() -> None:
     MyModuleTab()
     MyModuleWindow()
-
-
-def test_instantiation_custom_conn(ibis_polars_conn) -> None:
-    MyModuleTab(conn=ibis_polars_conn)
-    MyModuleWindow(conn=ibis_polars_conn)
 ```
-
-## Modules communicate through the variable selector
-
-
-
-## Modules must be configurable through yaml files
-
-
 
 ## Read operations should be database/backend agnostic
 
@@ -55,12 +94,3 @@ def test_instantiation_custom_conn(ibis_polars_conn) -> None:
 
 ## Updates to data source should go through models from utils/core_models.py
 
-
-
-## In-development features exists in experimental/
-
-
-
-## Experimental features should only be imported using 'from ssb_dash_framework.experimental.feature'
-
-In order to make sure a user understands when something is in-development or experimental, it should not be importable as a top-level import.
