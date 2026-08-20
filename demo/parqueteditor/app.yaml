@@ -1,9 +1,10 @@
 app_settings:
   port: 8000
+  stylesheet: lumen
   enable_logging: false
   logging_level: warning
   log_to_file: false
-  variableselector: 
+  variableselector:
     ident: orgnr
     time_units:
       aar: 1
