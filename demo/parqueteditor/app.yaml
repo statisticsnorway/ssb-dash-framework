@@ -7,7 +7,7 @@ app_settings:
     ident: orgnr
     time_units:
       aar: 1
-modules:
+modules: # Here you can add more modules and tailor your app to your needs.
   tabs:
     - type: ParquetEditor
       statistics_name: Demo
