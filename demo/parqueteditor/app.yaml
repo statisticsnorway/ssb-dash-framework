@@ -1,0 +1,22 @@
+app_settings:
+  port: 8000
+  enable_logging: false
+  logging_level: warning
+  log_to_file: false
+  variableselector: 
+    ident: orgnr
+    time_units:
+      aar: 1
+modules:
+  tabs:
+    - type: ParquetEditor
+      statistics_name: Demo
+      data_period: "2024" # Period you are editing
+      data_source: /buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet # Path to parquet file you want to edit
+      id_vars: ["aar", "orgnr"] # Combination of columns that identify a unique row in the dataset
+      output: ["aar", "orgnr"] # Optional, connects clicks on column to variable selector
+      output_varselector_name: ["aar", "orgnr"]
+
+    - type: ParquetEditorChangelog # To be able to view changelog, you can use this module
+      data_source: /buckets/produkt/editering-eksempel/inndata/test_p2024_v1.parquet
+      id_vars: ["aar", "orgnr"]
