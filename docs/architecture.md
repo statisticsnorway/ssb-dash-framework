@@ -1,5 +1,6 @@
 # Architecture in the package
 
+```
 ssb_dash_framework/
 ├── assets/        # Assets to make the application pretty
 ├── config/        # Tools for configuration through yaml files
@@ -7,6 +8,7 @@ ssb_dash_framework/
 ├── modules/       # Modules that a user can add to their application
 ├── setup/         # Application layout and initialization
 └── utils/         # Generic and reusable helpers
+```
 
 ## All code a user is expected to interact with should be a top-level import
 
