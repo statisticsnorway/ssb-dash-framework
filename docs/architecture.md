@@ -1,5 +1,9 @@
 # Architecture in the package
 
+The goal of the package is to support creation and sharing of reusable modules for analyzing, reviewing and correcting potentially flawed data.
+
+Folder structure in src
+
 ```
 ssb_dash_framework/
 ├── assets/        # Assets to make the application pretty
