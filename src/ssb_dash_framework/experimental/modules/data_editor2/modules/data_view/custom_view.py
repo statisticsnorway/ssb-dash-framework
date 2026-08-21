@@ -11,22 +11,18 @@ from dash import callback
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
+from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_custom import CallbackSettings
+from ssb_dash_framework.experimental.modules.data_editor2.utils import EditorSettings
 
-from .....config.yaml_parser import config_parser_yaml
+from ......config.yaml_parser import config_parser_yaml
 from ssb_dash_framework.setup import VariableSelector
-from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
-from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
-
-from .....config.models import register_module
-from .....modules.building_blocks.microlayout import MicroLayoutAIO
-from .....modules.building_blocks.microlayout_components.editable_field_model import (
-    default_getter,
-)
-from .....modules.building_blocks.microlayout_components.editable_field_model import (
-    default_updater,
-)
-from .....modules.building_blocks.microlayout_components.models import Layout
-from ..core import DataEditorDataView
+from ......utils.config_tools.set_variables import get_ident
+from ......utils.config_tools.set_variables import get_refnr
+from ......utils.config_tools.set_variables import get_time_units
+from ......config.models import register_module
+from ..microlayout.microlayout import MicroLayoutAIO
+from ...utils import EditorSettings
+from .base import DataEditorDataView
 
 logger = logging.getLogger(__name__)
 
@@ -144,8 +140,8 @@ def _safe_get(data, v):
 from typing import Any
 
 from pandas import Series
-from .....modules.building_blocks.microlayout import FetcherMeta
-from .....utils.config_tools.connection import get_connection
+from ...meta import FetcherMeta
+from ......utils.config_tools.connection import get_connection
 from dataclasses import dataclass
 import logging
 import time
@@ -156,132 +152,14 @@ import ibis
 from ibis.expr.types.relations import Table
 from ibis.expr.types.relations import Table
 
-from pydantic import BaseModel, ConfigDict
-from .....modules.building_blocks.microlayout_components.models import FieldCallbackContainer
+from pydantic import BaseModel
+from ..microlayout.microlayout_components.editable_field_model import FieldCallbackContainer
 
 logger = logging.getLogger(__name__)
 
-class CallbackSettings(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    form_data_table: str
-    form_reference_number_column: str
-    formdata_field_value_column_name: str
-    formdata_fieldname_column: str
-
-    mapping_table: str = "mapping_variabelnavn"
-    mapping_match_column: str = "variabel"
-    mapping_result_column: str = "feltsti"
-
-    table_selector_id: str | None = None
-    form_selector_id: str | None = None
 
 
-@dataclass
-class CacheEntry:
-    entry: Table
-    last_cache_hit: float
-
-
-class FormGetterCached:
-    data: dict[str, CacheEntry] = {}
-
-    @staticmethod
-    def get_table(refnr: str, settings: CallbackSettings) -> Table:
-        """Materialize the whole refnr-filtered form in ONE query.
-
-        The per-field ``default_getter`` re-filters this result once per editable
-        field (~48 for RA-0255). Returning a *lazy* Postgres expression here means
-        each of those re-filters is a separate database round-trip on every refnr
-        change -- the dominant cost of loading the data editor.
-
-        Instead we execute a single query for the whole refnr-filtered form and
-        return an in-memory ``ibis.memtable``. The subsequent per-field
-        filter/select then run entirely in-process (DuckDB) with no further
-        database round-trips. ``get_form`` caches this materialized table; writes
-        evict it via :meth:`evict` so reads stay fresh.
-        """
-        with get_connection() as conn:
-            t = conn.table(settings.form_data_table)
-            if (
-                settings.form_reference_number_column not in t.columns
-            ):  # catch errors with querying from wrong table
-                raise ValueError(
-                    f"Column '{settings.form_reference_number_column}' not in table "
-                    f"'{settings.form_data_table}'. Available: {t.columns}"
-                )
-            df = t.filter(
-                t[settings.form_reference_number_column] == refnr,
-            ).to_pandas()
-        # memtable preserves column names + dtypes; downstream filter/select run
-        # in DuckDB, so they never touch the database again.
-        return ibis.memtable(df)
-
-    @classmethod
-    def clean_cache(cls):
-        max_size = 10
-        if len(cls.data.keys()) > max_size:
-            key, _ = min(cls.data.items(), key=lambda x: x[1].last_cache_hit)
-            cls.data.pop(key)
-
-    @classmethod
-    def evict(cls, refnr: str, table: str) -> None:
-        """Drop the cached form for ``(table, refnr)`` so the next read is fresh.
-
-        Call this after a write: because :meth:`get_table` now returns a
-        materialized snapshot, an un-evicted entry would serve stale values for up
-        to the ``get_form`` TTL after an edit.
-        """
-        cls.data.pop(f"{table}::{refnr}", None)
-
-    @classmethod
-    def get_form(cls, refnr: str, settings: CallbackSettings) -> Table:
-        cache_key = (
-            f"{settings.form_data_table}::{refnr}"  # for tables not querying skjemadata
-        )
-        entry = cls.data.get(cache_key)
-
-        if (entry is None) or ((time.perf_counter() - entry.last_cache_hit) > 5.0):
-            table = FormGetterCached.get_table(refnr, settings)
-            cls.data[cache_key] = CacheEntry(
-                entry=table, last_cache_hit=time.perf_counter()
-            )
-            cls.clean_cache()
-            return cls.data[cache_key].entry
-        cls.clean_cache()
-        return entry.entry
-
-
-class StandardDataHandler(FetcherMeta):
-
-    def __init__(self, settings: CallbackSettings) -> None:
-        self.settings = settings
-        self.cache = FormGetterCached()
-        super().__init__()
-
-    def get_field(self, field: FieldCallbackContainer, custom_inputs, variable_selector):
-        orgnr, refnr = variable_selector
-        
-        t = self.cache.get_form(refnr, self.settings)
-        filters = [
-            t[self.settings.form_reference_number_column] == refnr,
-            t[self.settings.formdata_fieldname_column] == field.settings.field_path,
-        ]
-        
-        res: Series | Any = (
-            t.filter(filters).select(self.settings.formdata_field_value_column_name).execute()
-        )
-        logger.debug(f"Returning:\n{res}")
-
-        if res.empty:
-            return None
-        if len(res) > 1:  # catch potential duplicates
-            logger.error(
-                f"Multiple rows returned for {field.settings.field_path}, refnr={refnr}. Using first row."
-            )
-        return res.iloc[0, 0]
-
-
-@register_module()
+#@register_module()
 class DataViewCustom(DataEditorDataView):
     """DataView with a very flexible layout made to be tailored to specific needs."""
 
@@ -289,9 +167,8 @@ class DataViewCustom(DataEditorDataView):
     
     def __init__(
         self,
-        applies_to_tables: str | list[str],
-        applies_to_forms: str | list[str],
-        layout,
+        #settings: EditorSettings,
+        layout: dict,
         _from_config_file=False,
     ) -> None:
         """Initializes and registers the custom data view for selected tables and forms.
@@ -306,14 +183,9 @@ class DataViewCustom(DataEditorDataView):
         DataViewCustom._id_number += 1
         self.divname = f"{self.module_name}-{self.module_number}"
 
-        self.applies_to_tables = applies_to_tables
-        self.applies_to_forms = applies_to_forms
-
-        self.created_layout = self.build_layout(layout)
-        self.module_callbacks()
-        super().__init__(
-            applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
-        )
+        self._layout = layout
+        
+        
 
     def build_layout(self, layout: dict | list) -> list:
         """Builds the layout for the custom view."""
@@ -348,20 +220,10 @@ class DataViewCustom(DataEditorDataView):
                         f"Done converting:\n{json.dumps(layout['layout'], indent=2, ensure_ascii=False)}"
                     )
 
-                settings = CallbackSettings(
-                    form_data_table=layout.get("form_data_table", ""),
-                    formdata_fieldname_column=layout.get(
-                        "form_data_field_name_column", ""
-                    ),
-                    form_reference_number_column=layout.get(
-                        "form_reference_number_column", "refnr"
-                    ),
-                    formdata_field_value_column_name = "verdi",
-                )
-                handler = StandardDataHandler(settings)
-                #print(layout)
+                               
                 microlayout = MicroLayoutAIO(
-                    data_handler=handler,
+                    data_handler=self.fetcher,
+                    settings=self.callback_setting,
                     #applies_to_tables=self.applies_to_tables,
                     #applies_to_forms=self.applies_to_forms,
                     layout=layout["layout"],
@@ -369,7 +231,8 @@ class DataViewCustom(DataEditorDataView):
                     #update_func=layout.get("update_func", default_updater),
                     
                     
-                    inputs=[Input(f"var-{unit}", "value") for unit in get_time_units()],
+                    #inputs=[Input(f"var-{unit}", "value") for unit in get_time_units()],
+                    inputs=[VariableSelector(selected_inputs=[get_refnr()], selected_states=[]).get_input(get_refnr())]
                 )
                 components.append(microlayout)
             else:
@@ -386,6 +249,24 @@ class DataViewCustom(DataEditorDataView):
 
     def layout(self):
         """Returns the layout of the module."""
+        self.applies_to_tables = self.settings.form_data_tables
+        self.applies_to_forms = self.settings.form_list
+        form_data_tables = self._layout.get("applies_to_tables", self.settings.form_data_tables[0])
+        print(self._layout)
+        if isinstance(form_data_tables, list):
+            form_data_tables = form_data_tables[0]
+        self.callback_setting = CallbackSettings(
+            form_data_table = form_data_tables,
+            form_reference_number_column = self.settings.refnr_col,
+            formdata_field_value_column_name = self.settings.field_value_col,
+            formdata_fieldname_column = self.settings.field_name_col,
+            **self._layout
+        )
+        self.created_layout = self.build_layout(self._layout["layout"])
+        self.module_callbacks()
+        super().__init__(
+            applies_to_tables=self.applies_to_tables, applies_to_forms=self.applies_to_forms
+        )
         return self._create_layout()
 
     def module_callbacks(self) -> None:
@@ -395,7 +276,6 @@ class DataViewCustom(DataEditorDataView):
     @classmethod
     def from_yaml(cls, yaml_path):
         config = config_parser_yaml(yaml_path)
-        print(config)
         return cls.from_dict(config[0])
 
     @classmethod
@@ -406,10 +286,10 @@ class DataViewCustom(DataEditorDataView):
         if isinstance(config_dict, list):
             config_dict = config_dict[0]
 
+        #settings = EditorSettings()
         return cls(
-            applies_to_tables=config_dict["applies_to_tables"],
-            applies_to_forms=config_dict["applies_to_forms"],
-            layout=config_dict["layout"],
+            #settings=settings,
+            layout=config_dict,
             _from_config_file=True,
         )
 
@@ -417,13 +297,13 @@ class DataViewCustom(DataEditorDataView):
         lines = [
             f"DataViewCustom #{self.module_number}",
             f"  divname:            {self.divname}",
-            f"  applies_to_tables:  {self.applies_to_tables}",
-            f"  applies_to_forms:   {self.applies_to_forms}",
-            f"  components:         {len(self.created_layout)} top-level component(s)",
+            #f"  applies_to_tables:  {self.applies_to_tables}",
+            #f"  applies_to_forms:   {self.applies_to_forms}",
+            #f"  components:         {len(self.created_layout)} top-level component(s)",
             "",
         ]
-        for component in self.created_layout:
-            lines.extend(self._str_component(component, indent=2))
+        #for component in self.created_layout:
+        #    lines.extend(self._str_component(component, indent=2))
         return "\n".join(lines)
 
     def _str_component(self, component, indent: int = 0) -> list[str]:

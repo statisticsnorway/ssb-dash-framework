@@ -20,6 +20,9 @@ class TimeUnitType(Enum):
     WEEK = 5
     DAY = 6
 
+class TimeUnit(BaseModel):
+    name: str
+    frequency: TimeUnitType
 
 class VariableSelectorConfig(BaseModel):  # TODO Add default templates?
     """Configuration for the variable selector."""
@@ -35,7 +38,7 @@ class VariableSelectorConfig(BaseModel):  # TODO Add default templates?
         default=None, description="Additional identifier columns"
     )
 
-    time_units: dict[str, TimeUnitType] | None = Field(
+    time_units: TimeUnit | None = Field(
         default=None, description="Mapping of variable name to time unit type"
     )
 
@@ -75,8 +78,8 @@ class VariableSelectorConfig(BaseModel):  # TODO Add default templates?
 
         if self.time_units:
             lines.append("  time_units:")
-            for var, unit_type in self.time_units.items():
-                lines.append(f"    {var:<30} {unit_type}")
+            #for var, unit_type in self.time_units.items():
+            lines.append(f"    {self.time_units.name:<30} {self.time_units.frequency}")
         else:
             lines.append("  time_units:           (not set)")
 
@@ -120,10 +123,10 @@ def set_refnr(refnr_variable_name: str) -> None:
     REFNR = refnr_variable_name
 
 
-TIME_UNITS: dict[str, TimeUnitType] | None = None
+TIME_UNITS: TimeUnit | None = None
 
 
-def get_time_units() -> dict[str, TimeUnitType]:
+def get_time_units() -> TimeUnit:
     global TIME_UNITS
     if not TIME_UNITS:
         raise RuntimeError(
@@ -132,21 +135,14 @@ def get_time_units() -> dict[str, TimeUnitType]:
     return TIME_UNITS
 
 
-def set_time_units(time_units: dict[str, TimeUnitType]) -> None:
+def set_time_units(time_units: TimeUnit) -> None:
     global TIME_UNITS
 
-    if not isinstance(time_units, dict):
-        raise TypeError("time_units must be a dict[str, TimeUnitType]")
+    if not isinstance(time_units, TimeUnit):
+        raise TypeError("time_units must be a TimeUnit")
 
-    for key, value in time_units.items():
-        if not isinstance(key, str):
-            raise TypeError(f"Invalid key {key!r}: keys must be str")
-
-        if not isinstance(value, TimeUnitType):
-            raise TypeError(
-                f"Invalid value for '{key}': {value!r} must be TimeUnitType"
-            )
-        VariableSelectorOption(key)
+    
+    VariableSelectorOption(time_units.name)
 
     TIME_UNITS = time_units
 
