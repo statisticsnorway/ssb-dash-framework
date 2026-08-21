@@ -1,11 +1,16 @@
+"""Here we test compliance with architecture decisions outlined in docs/architecture.md where possible."""
+
 import ast
 from pathlib import Path
 
-ROOT = Path("src/ssb_dash_framework")
+PACKAGE_NAME = "ssb_dash_framework"
+ROOT = Path("src") / PACKAGE_NAME
 MODULES = ROOT / "modules"
 PREFIX = "ssb_dash_framework.modules."
-PACKAGE = PREFIX.rstrip(".")           # "ssb_dash_framework.modules"
+PACKAGE = PREFIX.rstrip(".")  # "ssb_dash_framework.modules"
 AGGREGATOR_INIT = MODULES / "__init__.py"
+EXPERIMENTAL = ROOT / "experimental"
+EXPERIMENTAL_PREFIX = f"{PACKAGE_NAME}.experimental"
 
 
 def resolve_import(path: Path, node: ast.AST) -> list[str]:
@@ -23,7 +28,9 @@ def resolve_import(path: Path, node: ast.AST) -> list[str]:
 
     package_parts = list(path.parent.relative_to(ROOT.parent).parts)
     hops = node.level - 1
-    package_parts = package_parts[: len(package_parts) - hops] if hops else package_parts
+    package_parts = (
+        package_parts[: len(package_parts) - hops] if hops else package_parts
+    )
 
     if node.module:
         package_parts = package_parts + node.module.split(".")
@@ -44,7 +51,7 @@ def build_export_map() -> dict[str, str]:
         for resolved in resolve_import(AGGREGATOR_INIT, node):
             if not resolved.startswith(PREFIX):
                 continue
-            source_module = resolved[len(PREFIX):].split(".")[0]
+            source_module = resolved[len(PREFIX) :].split(".")[0]
             for alias in node.names:
                 if alias.name == "*":
                     # Can't statically resolve star-imports; if the
@@ -85,10 +92,10 @@ def test_modules_are_independent():
                 # Case 1: `from ssb_dash_framework.modules.X import Y`
                 for name in resolve_import(path, node):
                     if name.startswith(PREFIX):
-                        imported_module = name[len(PREFIX):].split(".")[0]
-                        assert imported_module == module_name, (
-                            f"{path} imports {PREFIX}{imported_module}"
-                        )
+                        imported_module = name[len(PREFIX) :].split(".")[0]
+                        assert (
+                            imported_module == module_name
+                        ), f"{path} imports {PREFIX}{imported_module}"
 
                 # Case 2: `from ssb_dash_framework.modules import Y`
                 # (Y re-exported via the aggregator __init__.py)
@@ -105,3 +112,23 @@ def test_modules_are_independent():
                                 f"(from {PREFIX}{source_module}) via the "
                                 f"{PACKAGE} aggregator"
                             )
+
+
+def is_experimental_import(name: str) -> bool:
+    return name == EXPERIMENTAL_PREFIX or name.startswith(EXPERIMENTAL_PREFIX + ".")
+
+
+def test_experimental_is_not_imported_from_top_level():
+    for path in ROOT.rglob("*.py"):
+        # Skip experimental/ itself — code in there is allowed to
+        # import from its own package freely.
+        if path == EXPERIMENTAL or EXPERIMENTAL in path.parents:
+            continue
+
+        tree = ast.parse(path.read_text())
+        for node in ast.walk(tree):
+            for name in resolve_import(path, node):
+                assert not is_experimental_import(name), (
+                    f"{path} imports {name!r} — nothing outside "
+                    f"{EXPERIMENTAL_PREFIX} may import from experimental/"
+                )

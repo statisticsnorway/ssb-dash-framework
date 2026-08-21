@@ -29,7 +29,7 @@ Enforcement in test.
 
 ## Modules communicate through the variable selector
 
-
+The only way modules should communicate with eachother is the variable selector. It ensures that the application has a shared list of variables that can be relied on to keep every module on the same page.
 
 ## Modules must be configurable through yaml files
 
@@ -71,7 +71,7 @@ def test_yaml_MyModule() -> None:
 
 
 
-## Experimental features and modules should only be imported using 'from ssb_dash_framework.experimental.feature'
+## Experimental features and modules should only be imported using 'from ssb_dash_framework.experimental import ExpModule'
 
 In order to make sure a user understands when something is in-development or experimental, it should not be importable as a top-level import.
 
@@ -93,6 +93,18 @@ def test_instantiation() -> None:
     MyModuleTab()
     MyModuleWindow()
 ```
+
+## Modules in the package should be as simple as possible to configure
+
+
+
+## Modules in the package should be accessible to all users with a similar use case, not statistic specific
+
+
+
+### How to add custom modules
+
+See explanation in...
 
 ## Read operations should be database/backend agnostic
 
