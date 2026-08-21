@@ -24,17 +24,11 @@ from ssb_dash_framework import AltinnSkjemadataEditor
 from ssb_dash_framework import FreeSearchTab
 from ssb_dash_framework import app_setup
 from ssb_dash_framework import main_layout
-from ssb_dash_framework import set_eimerdb_connection
 from ssb_dash_framework import set_variables
 
 # from egentilpassing.hb_method import hb_get_data
 
 
-# Kobling til EimerDB som ligger i fellesbøtta.
-set_eimerdb_connection(
-    "ssb-dapla-felles-data-produkt-prod",
-    "produksjonstilskudd_altinn3",
-)
 selected_time_units = ["aar"]  # Tidsenheten(e) til dataene
 
 # Basic app-oppsett

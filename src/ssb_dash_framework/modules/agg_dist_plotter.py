@@ -22,7 +22,6 @@ from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils import active_no_duplicates_refnr_list
 from ..utils import get_connection
-from ..utils.eimerdb_helpers import create_partition_select
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -44,7 +43,7 @@ SQL_COLUMN_CONCAT = " || '_' || "
 class AggDistPlotter(ABC):
     """The AggDistPlotter module lets you view macro values for your variables and find the distribution between them and the largest contributors.
 
-    This module requires your data to follow the default eimerdb structure and requires som specific variables defined in the variable selector.
+    This module requires your data to follow the default data structure and requires som specific variables defined in the variable selector.
 
     Note:
         Current implementation is very locked into a specific data structure.
@@ -69,13 +68,11 @@ class AggDistPlotter(ABC):
         Args:
             time_units: Your time variables used in the variable selector. Example year, quarter, month, etc.
             conn: A connection object to a database. It must have a .query method that can handle SQL queries.
-                Currently designed with eimerdb in mind.
+
         """
         logger.warning(
             f"{self.__class__.__name__} is under development and may change in future releases."
         )
-        #        if not isinstance(conn, EimerDBInstance) and conn.__class__.__name__ != "Backend":
-        #            raise TypeError("Argument 'conn' must be an 'EimerDBInstance' or Ibis backend. Received: {type(conn)}")
         self.module_number = AggDistPlotter._id_number
         self.module_name = self.__class__.__name__
         AggDistPlotter._id_number += 1
@@ -330,10 +327,7 @@ class AggDistPlotter(ABC):
             _t_0 = str(time_vars[0])
             _t_1 = str(time_vars[1])
 
-            with get_connection(  # necessary_tables and partition_select are used for eimerdb connection.
-                necessary_tables=["skjemamottak", "datatyper", self.main_table_name],
-                partition_select=updated_partition_select,
-            ) as conn:
+            with get_connection() as conn:
                 skjemadata_tbl = conn.table(self.main_table_name)
                 datatyper_tbl = conn.table("datatyper")
 

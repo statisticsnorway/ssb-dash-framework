@@ -10,7 +10,6 @@ from dash import callback_context
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
 from ibis import _
 from psycopg_pool import ConnectionPool
 
@@ -57,7 +56,6 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                                 id=f"{self.module_name}-{self.module_number}-dropdown-refnr",
                                 className="ssb-dropdown",
                                 searchable=False,
-                                
                             )
                         ),
                         dbc.Col(
@@ -96,19 +94,8 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             refnr: str, skjema: str, *args: list[Any]
         ) -> tuple[str, list[dict[str, str]]]:
             """Collect relevant refnrs."""  # TODO Check what it actually does and needs to do.
-            
             if not refnr or not skjema:
                 raise PreventUpdate
-
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                args_before_timeunits = 1
-                N = len(get_time_units())
-                args = list(args)
-                # print(f"Utklipp: {args[args_before_timeunits:N+args_before_timeunits]}")
-                args[args_before_timeunits : N + args_before_timeunits] = list(
-                    map(int, args[args_before_timeunits : N + args_before_timeunits])
-                )
-                # print(f"test: {args}")
 
             filterdict = create_filter_dict(
                 ["skjema", get_ident(), *get_time_units()], [skjema, *args]
@@ -144,7 +131,6 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
 
             return comment[0]
 
-
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
             Input(f"{self.module_name}-{self.module_number}-save-button", "n_clicks"),
@@ -164,9 +150,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
 
             comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=value)
             logger.info(comment_update)
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                feedback = comment_update.update_eimer()
-            elif isinstance(_get_connection_object(), ConnectionPool):
+            if isinstance(_get_connection_object(), ConnectionPool):
                 logger.debug("Attempting to update using ibis logic.")
                 feedback = comment_update.update_ibis()
             else:

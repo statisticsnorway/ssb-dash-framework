@@ -15,17 +15,11 @@
 # ---
 
 
-import eimerdb as db
 import pandas as pd
 
 # %% metadata={}
 from ssb_dash_framework import ControlFrameworkBase
 from ssb_dash_framework import register_control
-
-conn = db.EimerDBInstance(
-    "ssb-dapla-felles-data-produkt-prod",
-    "produksjonstilskudd_altinn3",
-)
 
 
 class DemoControls(ControlFrameworkBase):
