@@ -5,7 +5,6 @@ from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-from dash_iconify import DashIconify
 
 # import ibis
 from dash import callback
@@ -15,10 +14,10 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from dash_iconify import DashIconify
 
 from ssb_dash_framework import ControlFrameworkBase
 
-# from eimerdb import EimerDBInstance
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
@@ -86,9 +85,9 @@ class NspekControlView(ABC):
         """
         return html.Div(
             style={
-            "width": "100%",
-            "minWidth": "0",
-            "maxWidth": "1400px",
+                "width": "100%",
+                "minWidth": "0",
+                "maxWidth": "1400px",
             },
             children=[
                 dbc.Row(

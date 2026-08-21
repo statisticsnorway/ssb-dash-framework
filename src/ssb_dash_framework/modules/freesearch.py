@@ -41,7 +41,7 @@ class FreeSearch(ABC):
             label: Label for the module, defaults to "Frisøk".
 
         Raises:
-            TypeError: If the connection object is not 'EimerDBInstance' or ibis connection.
+            TypeError: If the connection object is not ibis connection.
         """
         self.module_number = FreeSearch._id_number
         self.module_name = self.__class__.__name__

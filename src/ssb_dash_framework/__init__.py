@@ -32,8 +32,6 @@ from .modules import AltinnControlViewWindow
 from .modules import AltinnDataCapture
 from .modules import AltinnDataCaptureTab
 from .modules import AltinnDataCaptureWindow
-from .modules import AltinnSkjemadataEditor
-from .modules import AltinnSupportTable
 from .modules import Bedriftstabell
 from .modules import BedriftstabellTab
 from .modules import BedriftstabellWindow
@@ -88,7 +86,6 @@ from .setup import app_setup
 from .setup import main_layout
 from .setup import set_variables
 from .utils import AlertHandler
-from .utils import DatabaseBuilderAltinnEimerdb
 from .utils import DebugInspector
 from .utils import DemoDataCreator
 from .utils import TabImplementation
@@ -107,7 +104,6 @@ from .utils import hb_method
 from .utils import ibis_filter_with_dict
 from .utils import module_validator
 from .utils import set_connection
-from .utils import set_eimerdb_connection
 from .utils import set_postgres_connection
 from .utils import set_sqlite_connection
 from .utils import sidebar_button
@@ -127,8 +123,6 @@ __all__ = [
     "AltinnDataCapture",
     "AltinnDataCaptureTab",
     "AltinnDataCaptureWindow",
-    "AltinnSkjemadataEditor",
-    "AltinnSupportTable",
     "AppConfig",
     "AppModules",
     "AppSettings",
@@ -147,7 +141,6 @@ __all__ = [
     "ControlViewWindow",
     "DataEditor",
     "DataViewCustom",
-    "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
     "DemoDataCreator",
     "EditingTable",
@@ -223,7 +216,6 @@ __all__ = [
     "register_modules",
     "run_app_from_config",
     "set_connection",
-    "set_eimerdb_connection",
     "set_postgres_connection",
     "set_sqlite_connection",
     "set_variables",
