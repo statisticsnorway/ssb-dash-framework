@@ -14,8 +14,6 @@ from .altinn_control_view import ControlViewWindow
 from .altinn_data_capture import AltinnDataCapture
 from .altinn_data_capture import AltinnDataCaptureTab
 from .altinn_data_capture import AltinnDataCaptureWindow
-from .altinn_editor import AltinnSkjemadataEditor
-from .altinn_editor import AltinnSupportTable
 from .bedriftstabell import Bedriftstabell
 from .bedriftstabell import BedriftstabellTab
 from .bedriftstabell import BedriftstabellWindow
@@ -74,8 +72,6 @@ __all__ = [
     "AltinnDataCapture",
     "AltinnDataCaptureTab",
     "AltinnDataCaptureWindow",
-    "AltinnSkjemadataEditor",
-    "AltinnSupportTable",
     "Bedriftstabell",
     "BedriftstabellTab",
     "BedriftstabellWindow",
