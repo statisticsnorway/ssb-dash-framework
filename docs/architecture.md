@@ -69,13 +69,21 @@ def test_yaml_MyModule() -> None:
 
 ## In-development features and modules exists in experimental/
 
+The experimental/ folder exists in order to be able to beta-test features and modules.
 
+If a module or feature is in development and expected to have breaking changes, bugs, performance issues, etc. it can be kept here.
+
+Quality and test-coverage expectations are lower for code in experimental.
 
 ## Experimental features and modules should only be imported using 'from ssb_dash_framework.experimental import ExpModule'
 
 In order to make sure a user understands when something is in-development or experimental, it should not be importable as a top-level import.
 
-## Modules should have tests to prevent breaking changes in the api
+This ensures that using an experimental feature/module requires an *explicit opt-in*.
+
+## Modules should have tests to prevent breaking changes in the public api
+
+In order to prevent accidentally introducing breaking changes, at a minimum modules should have tests to ensure that the public API does not change.
 
 ```python
 from ssb_dash_framework import MyModule
