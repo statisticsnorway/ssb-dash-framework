@@ -1,7 +1,5 @@
 app_settings:
   port: 8000
-  # service_prefix: None
-  # stylesheet: None
   enable_logging: false
   logging_level: warning
   log_to_file: false
@@ -10,8 +8,6 @@ app_settings:
     type: postgres
     database_url: test
 modules:
-  dataeditor_components:
-    !include customview_skjemadata_hoved_ra-7357.yaml
   windows:
     - type: FreeSearch
   tabs:

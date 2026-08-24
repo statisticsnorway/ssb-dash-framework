@@ -53,7 +53,13 @@ def instantiate_module(module: ModuleConfig, type: Literal["tab", "window"]):
     library = importlib.import_module("ssb_dash_framework")
     cls = getattr(library, class_name, None)
     if cls is None:
-        raise ValueError(f"No class named '{class_name}' found in ssb_dash_framework.")
+        logger.warning(f"No class named '{class_name}' found in ssb_dash_framework.\nChecking ssb_dash_framework.experimental")
+
+        experimental = importlib.import_module("ssb_dash_framework.experimental")
+        cls = getattr(experimental, class_name, None)
+        if cls is None:
+            raise ValueError(f"No class named '{class_name}' found in ssb_dash_framework.")
+
 
     return cls(**module.extra_kwargs)
 
