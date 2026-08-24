@@ -119,7 +119,11 @@ class ValueNode(BaseNode):
         if isinstance(data, dict):
             # Mutate the raw input dictionary before validation
             if "id" not in data:
-                data["id"] = data.get("variabel", "") + "_" + str(uuid.uuid4())
+                new_id = data.get("variabel")
+                if new_id is None:
+                    data["id"] = str(uuid.uuid4())
+                else:
+                    data["id"] = new_id
         return data
 
     @computed_field
