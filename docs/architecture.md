@@ -104,11 +104,15 @@ def test_instantiation() -> None:
 
 ## Modules in the package should be as simple as possible to configure
 
-
+Simple configuration in this context is multifaceted and needs to account for how complicated the module is. The point is having as few arguments as possible, 
 
 ## Modules in the package should be accessible to all users with a similar use case, not statistic specific
 
+Modules should be usable for any statistic that follows a proposed data model and not specific to one or very few users. This is to reduce the maintenance burden and noise in the package.
 
+If you find a module that sounds helpful for your case, you should be able to implement it with a reasonable amount of effort.
+
+As an example, a time series module should be based on a data model that is common for time series analysis so that anyone using this methodology can use the module with minimal effort.
 
 ### How to add custom modules
 
@@ -119,4 +123,6 @@ See explanation in...
 
 
 ## Updates to data source should go through models from utils/core_models.py
+
+
 
