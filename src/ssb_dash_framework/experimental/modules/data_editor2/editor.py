@@ -1,4 +1,5 @@
-from abc import abstractmethod, ABC
+# pyright: reportInvalidTypeForm=false
+# pyright: reportCallIssue=false
 from logging import getLogger
 from dash import html
 import dash_bootstrap_components as dbc
@@ -13,7 +14,7 @@ from .meta import ModuleABC, FetcherMeta, ContextABC
 
 logger = getLogger(__name__)
 
-
+#@register_module("")
 class DataEditor:
     _module_count = 0
 
@@ -87,7 +88,7 @@ class DataEditor:
             children=dataview_list,
         )
 
-    def _create_layout(self) -> dbc.Container:
+    def _create_layout(self) -> dbc.Container: # pyright: ignore
         """Creates the layout for the DataEditor module."""
         return dbc.Container(
             [
@@ -123,7 +124,7 @@ class DataEditor:
             fluid=True,
         )
 
-    def layout(self) -> dbc.Container:
+    def layout(self) -> dbc.Container: # pyright: ignore
         """Generates the layout for the DataEditor."""
         return self._create_layout()
 

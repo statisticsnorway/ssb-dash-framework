@@ -1,3 +1,5 @@
+# pyright: reportInvalidTypeForm=false
+# pyright: reportCallIssue=false
 import logging
 from typing import Any
 
@@ -16,9 +18,6 @@ from psycopg_pool import ConnectionPool
 
 from ssb_dash_framework import VariableSelector
 from ssb_dash_framework import _get_connection_object
-from ssb_dash_framework import get_connection
-from ssb_dash_framework.utils.core_query_functions import create_filter_dict
-from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
 
 from ......utils.config_tools.set_variables import get_ident, get_refnr
 from ......utils.config_tools.set_variables import get_time_units
@@ -120,9 +119,6 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             if comment is None:
                 return ""
 
-            #if len(comment) > 1:
-                print(f"Multiple comments found for refnr={refnr}: {comment}")
-
             return comment
 
 
@@ -137,8 +133,8 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
         def update_output(save_click: int | None, value: Any, refnr: str, alert_store):
             """Update the comment when button is clicked."""
             if (
-                not callback_context.triggered_id
-                == f"{self.module_name}-{self.module_number}-save-button"
+                callback_context.triggered_id
+                != f"{self.module_name}-{self.module_number}-save-button"
             ):
                 logger.info("Preventing update")
                 raise PreventUpdate

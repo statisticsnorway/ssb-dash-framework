@@ -1,11 +1,12 @@
+# pyright: reportInvalidTypeForm=false
+# pyright: reportCallIssue=false
 from logging import getLogger
 from typing import Any
-from dash import State, Input, Output, callback
+from dash import Output, callback
 from dash.exceptions import PreventUpdate
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.set_variables import get_ident
 from .....utils.config_tools.set_variables import get_time_units
-from .....utils.core_query_functions import create_filter_dict
 from ..meta import ModuleABC
 from .info_row_model import InfoRowField
 import dash_bootstrap_components as dbc
@@ -64,15 +65,15 @@ class DataEditorInfoRow(ModuleABC):
                     [
                         dbc.CardHeader(
                             id=f"info-var-label-{info_var.name}", children=info_var.name
-                        ), # pyright: ignore
-                        dbc.CardBody(id=f"info-var-field-{info_var.name}"), # pyright: ignore
+                        ),
+                        dbc.CardBody(id=f"info-var-field-{info_var.name}"),
                     ]
-                ) # pyright: ignore
+                )
             )
 
         return dbc.Row(
             dbc.CardGroup(info_fields), className=f"{self.module_name}-info-row"
-        ) # pyright: ignore
+        )
 
     def layout(self) -> dbc.Row: # pyright: ignore
         """Returns the module layout."""

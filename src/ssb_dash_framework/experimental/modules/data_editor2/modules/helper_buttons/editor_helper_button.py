@@ -1,14 +1,16 @@
+# pyright: reportInvalidTypeForm=false
+# pyright: reportCallIssue=false
 from logging import getLogger
 from dash import html, Output, Input, State, callback
 from dash.exceptions import PreventUpdate
-from ..meta import ContextABC
+from ...meta import ContextABC
 import dash_bootstrap_components as dbc
 
 logger = getLogger(__name__)
 
 class DataEditorHelperButton(ContextABC):
     """Base class for defining a helper button component."""
-
+    modal_body: html. Div
     _id_number = 0
 
     def __init__(self, label: str) -> None:
@@ -63,7 +65,7 @@ class DataEditorHelperButton(ContextABC):
     def button_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor Support Tables module."""
 
-        @callback(  # type: ignore[misc]
+        @callback(
             Output(f"{self.module_name}-{self.module_number}-modal", "is_open"),
             Input(f"{self.module_name}-{self.module_number}-button", "n_clicks"),
             State(f"{self.module_name}-{self.module_number}-modal", "is_open"),

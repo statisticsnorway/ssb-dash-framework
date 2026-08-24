@@ -1,3 +1,5 @@
+# pyright: reportInvalidTypeForm=false
+# pyright: reportCallIssue=false
 # TODO: Add functionality to add more types of helper things into the module.
 import logging
 from collections.abc import Callable
@@ -13,7 +15,7 @@ from dash.dependencies import Output, Input
 from dash.exceptions import PreventUpdate
 from ssb_dash_framework.setup import VariableSelector
 
-from ..editor_helper_button import DataEditorHelperButton
+from .editor_helper_button import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +97,7 @@ class DataEditorSupportTable:
                 column_defs[0]["pinned"] = "left"
             return data.to_dict("records"), column_defs
 
-    def support_table_layout(self) -> dbc.Tab:
+    def support_table_layout(self) -> dbc.Tab:  # pyright: ignore
         """Creates the layout."""
         return dbc.Tab(
             self.support_table_content(),

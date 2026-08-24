@@ -42,18 +42,6 @@ class FetcherMeta(ABC):
         self, settings: EditorSettings, ident: str, period: str, fields: list[InfoRowField]
     ) -> dict[str, str | int | bool | float | None]: ...
 
-    # @abstractmethod
-    # def update_field(self) -> Any:
-    #    ...
-
-    # @abstractmethod
-    # def get_field_history(self) -> Any:
-    #    ...
-
-    # @abstractmethod
-    # def get_field_list(self) -> Any:
-    #    ...
-
 
 class ContextABC(ABC):
     """Base class for defining a contexted module."""
