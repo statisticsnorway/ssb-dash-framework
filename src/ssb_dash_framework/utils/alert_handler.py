@@ -12,6 +12,8 @@ from dash import callback
 from dash import ctx
 from dash import dcc
 from dash import html
+from dash import no_update
+from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 
 from ..utils.functions import sidebar_button
@@ -64,6 +66,104 @@ def create_alert(
     }
 
 
+_TOAST_POSITIONS = ("bottom-left", "center", "top-right")
+_MAX_TOASTS_PER_POSITION = 4
+
+_ToastSlots = dict[str, list[tuple[dict[str, Any], bool] | None]]
+_ToastSignature = dict[str, list[list[Any] | None]]
+
+
+def _toast_slot_id(position: str, index: int) -> str:
+    """Builds the id of a single toast slot.
+
+    Args:
+        position: One of the toast positions.
+        index: The slot index within that position.
+
+    Returns:
+        The component id for that slot.
+    """
+    return f"alert-toast-{position}-{index}"
+
+
+def _ephemeral_toast_state(
+    alerts: list[dict[str, Any]] | None,
+    now: float,
+    previous_signature: _ToastSignature | None = None,
+) -> tuple[_ToastSlots, _ToastSignature]:
+    """Assigns the currently visible ephemeral alerts to fixed toast slots.
+
+    Each toast lives in its own slot so that re-rendering one toast never
+    rewrites a sibling's slot. Since Dash 4.2.0 any write to a container's
+    children remounts every child in it (plotly/dash#3846), which restarts the
+    CSS entry animation, so a toast must keep the same slot for its whole life.
+
+    Args:
+        alerts: The current list of alerts stored in the application.
+        now: The current time as a unix timestamp.
+        previous_signature: The signature from the previous tick, used to keep
+            each toast in the slot it already occupies.
+
+    Returns:
+        A tuple of (slots, signature). slots maps each position to a fixed-length
+        list holding either an (alert, is_dying) pair or None per slot, and
+        signature is the JSON-serializable equivalent used to detect which slots
+        actually changed.
+    """
+    previous = previous_signature if isinstance(previous_signature, dict) else {}
+    slots: _ToastSlots = {
+        position: [None] * _MAX_TOASTS_PER_POSITION for position in _TOAST_POSITIONS
+    }
+
+    pending = []
+    for a in alerts or []:
+        if not a.get("ephemeral", False):
+            continue
+        duration = a.get("duration", 5)
+        age = now - a["created_at"]
+        if age >= duration:
+            continue
+        position = a.get("position", "bottom-left")
+        if position not in slots:
+            position = "bottom-left"
+        # str() because the signature round-trips through browser JSON, which
+        # does not reliably preserve the float/int type of timestamps
+        pending.append((position, str(a["created_at"]), a, age > duration - 0.8))
+
+    unplaced = []
+    for position, key, alert, dying in pending:
+        for index, entry in enumerate(previous.get(position) or []):
+            if (
+                index < _MAX_TOASTS_PER_POSITION
+                and entry
+                and entry[0] == key
+                and slots[position][index] is None
+            ):
+                slots[position][index] = (alert, dying)
+                break
+        else:
+            unplaced.append((position, key, alert, dying))
+
+    for position, _key, alert, dying in unplaced:
+        for index in range(_MAX_TOASTS_PER_POSITION):
+            if slots[position][index] is None:
+                slots[position][index] = (alert, dying)
+                break
+
+    signature: _ToastSignature = {
+        position: [
+            (
+                [str(entry[0]["created_at"]), entry[0]["message"], entry[1]]
+                if entry
+                else None
+            )
+            for entry in slots[position]
+        ]
+        for position in _TOAST_POSITIONS
+    }
+    return slots, signature
+
+
 class AlertHandler:
     """Manages alerts for the application.
 
@@ -100,7 +200,7 @@ class AlertHandler:
         """Creates the layout for the AlertHandler.
 
         The layout includes:
-        - `dcc.Store` components for storing all alerts and the current filter.
+        - `dcc.Store` components for storing all alerts, the current filter, and the last-rendered toast signature (used to skip redundant re-renders).
         - A fixed container for displaying ephemeral alerts.
         - An interval component to drive ephemeral updates.
         - A modal with filter buttons and a dismissable alert container.
@@ -115,20 +215,21 @@ class AlertHandler:
                     id="alert_store", data=[create_alert("Application started", "info")]
                 ),
                 dcc.Store(id="alert_filter", data="all"),
-                html.Div(
-                    id="alert-container-bottom-left",
-                    className="alert-container bottom-left",
-                ),
-                html.Div(
-                    id="alert-container-center", className="alert-container center"
-                ),
-                html.Div(
-                    id="alert-container-top-right",
-                    className="alert-container top-right",
-                ),
+                dcc.Store(id="alert_toast_signature", data={}),
+                *[
+                    html.Div(
+                        [
+                            html.Div(id=_toast_slot_id(position, index))
+                            for index in range(_MAX_TOASTS_PER_POSITION)
+                        ],
+                        id=f"alert-container-{position}",
+                        className=f"alert-container {position}",
+                    )
+                    for position in _TOAST_POSITIONS
+                ],
                 dcc.Interval(
                     id="alert_ephemeral_interval", interval=1000, n_intervals=0
-                ),  # Unsure of performance, check if maybe it should update less often.
+                ),  # The 1s tick drives toast appearance/expiry; idle ticks are cheap because the display callback raises PreventUpdate when the toast signature is unchanged.
                 dbc.Modal(
                     [
                         dbc.ModalHeader(dbc.ModalTitle("Varsler")),
@@ -284,7 +385,6 @@ class AlertHandler:
 
             components = []
             for i, alert_data in enumerate(alerts):
-                variant = alert_data["color"]
                 components.append(
                     dbc.Alert(
                         [
@@ -335,7 +435,7 @@ class AlertHandler:
         def remove_dismissed_alerts(
             is_open_list: list[dbc.Alert],
             current_alerts: list[dict[str, Any]],
-            current_filter,
+            current_filter: str,
         ) -> list[dict[str, Any]]:
             """Removes alerts that have been dismissed by the user.
 
@@ -344,6 +444,7 @@ class AlertHandler:
             Args:
                 is_open_list: A list indicating the open/closed state of each alert in the modal.
                 current_alerts: The current list of alerts stored in the application.
+                current_filter: The currently active alert filter ('all', 'info', 'success' or 'warning').
 
             Returns:
                 The updated list of alerts with dismissed alerts removed.
@@ -369,41 +470,57 @@ class AlertHandler:
             return [a for i, a in enumerate(current_alerts) if i not in to_remove]
 
         @callback(  # type: ignore[misc]
-            Output("alert-container-bottom-left", "children"),
-            Output("alert-container-center", "children"),
-            Output("alert-container-top-right", "children"),
+            *[
+                Output(_toast_slot_id(position, index), "children")
+                for position in _TOAST_POSITIONS
+                for index in range(_MAX_TOASTS_PER_POSITION)
+            ],
+            Output("alert_toast_signature", "data"),
             Input("alert_ephemeral_interval", "n_intervals"),
             State("alert_store", "data"),
+            State("alert_toast_signature", "data"),
         )
         def display_ephemeral_alerts(
-            _: int, alerts: list[dict[str, Any]]
-        ) -> tuple[list, list, list]:
-            """Displays ephemeral alerts for 5 seconds.
+            _: int,
+            alerts: list[dict[str, Any]],
+            previous_signature: _ToastSignature | None,
+        ) -> tuple[Any, ...]:
+            """Displays ephemeral alerts for the duration of each alert.
 
             Ephemeral alerts are not removed from the store, so they remain visible in the modal.
             Determines the location of the alert based on the input, where default is "bottom-left".
 
+            Since Dash 4.2.0 every write to a container's children remounts the
+            DOM nodes and replays the CSS entry animation (plotly/dash#3846).
+            Each toast therefore gets its own slot, and only the slots that
+            actually changed are written; unchanged ticks skip entirely.
+
             Args:
                 _: The number of intervals elapsed since the application started.
                 alerts: The current list of alerts stored in the application.
+                previous_signature: The toast slot signature from the previous tick.
 
             Returns:
-                A list of Dash Bootstrap Components alerts to display as ephemeral alerts.
+                The children of every toast slot (no_update where unchanged), plus the new toast signature.
+
+            Raises:
+                PreventUpdate: If no toast slot changed since the previous tick.
             """  # noqa: DOC102, DOC103
-            if not alerts:
-                return [], [], []
+            slots, signature = _ephemeral_toast_state(
+                alerts, time.time(), previous_signature
+            )
+            previous = (
+                previous_signature if isinstance(previous_signature, dict) else {}
+            )
+            empty: list[list[Any] | None] = [None] * _MAX_TOASTS_PER_POSITION
 
-            now = time.time()
-            ephemeral_alerts = [
-                a
-                for a in alerts
-                if a.get("ephemeral", False)
-                and (now - a["created_at"] < a.get("duration", 5))
-            ]
+            if all(
+                signature[position] == (previous.get(position) or empty)
+                for position in _TOAST_POSITIONS
+            ):
+                raise PreventUpdate
 
-            def make_alert(a):
-                now = time.time()
-                dying = (now - a["created_at"]) > (a.get("duration", 6) - 0.8)
+            def make_alert(a: dict[str, Any], dying: bool) -> dbc.Alert:
                 icon = DashIconify(icon=a["icon"]) if a.get("icon") else None
 
                 return dbc.Alert(
@@ -422,18 +539,15 @@ class AlertHandler:
                     className=f"ssb-dialog {a['color']} alert-toast {'alert-dying' if dying else ''}",
                 )
 
-            bottom_left = [
-                make_alert(a)
-                for a in ephemeral_alerts
-                if a.get("position", "bottom-left") == "bottom-left"
-            ]
-            center = [
-                make_alert(a) for a in ephemeral_alerts if a.get("position") == "center"
-            ]
-            top_right = [
-                make_alert(a)
-                for a in ephemeral_alerts
-                if a.get("position") == "top-right"
-            ]
+            children: list[Any] = []
+            for position in _TOAST_POSITIONS:
+                previous_slots = previous.get(position) or empty
+                for index in range(_MAX_TOASTS_PER_POSITION):
+                    was = previous_slots[index] if index < len(previous_slots) else None
+                    if signature[position][index] == was:
+                        children.append(no_update)
+                        continue
+                    entry = slots[position][index]
+                    children.append(make_alert(entry[0], entry[1]) if entry else [])
 
-            return bottom_left, center, top_right
+            return (*children, signature)
