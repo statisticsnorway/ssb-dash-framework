@@ -3,14 +3,14 @@ from dash import State, Input, Output
 
 
 class EditableField(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     field_path: str
     variabel_trigger: str = Field(default="n_blur")
-
+    id: str
 
 class FieldCallbackContainer(BaseModel):
     settings: EditableField
-    parent_hash: str
+    parent_id: str
 
     def get_state(self):
         return State(self._id, "value")
@@ -24,4 +24,4 @@ class FieldCallbackContainer(BaseModel):
     @computed_field
     @property
     def _id(self) -> str:
-        return self.settings.field_path + "_" + self.parent_hash
+        return self.parent_id

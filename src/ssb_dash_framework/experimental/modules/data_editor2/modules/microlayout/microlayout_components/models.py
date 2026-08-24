@@ -1,17 +1,20 @@
+# pyright: reportInvalidTypeForm=false
+# pyright: reportCallIssue=false
 from __future__ import annotations
 
 from typing import Annotated, Any
 from typing import Literal
 from typing import Sequence
 import uuid
+
 import dash_bootstrap_components as dbc
-from dash import dcc
+from dash import clientside_callback, dcc
 from dash import Input
 from dash import Output
 from dash import html
 from dash import callback
 from klass import get_classification
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import TypeAdapter
@@ -20,12 +23,75 @@ from pydantic import computed_field
 from .editable_field_model import EditableField, FieldCallbackContainer
 
 from abc import ABC, abstractmethod
+import ast
+import operator
+from typing import Any, Dict
+import string
 
+# 1. Define exactly what math operations are allowed
+ALLOWED_OPERATORS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.FloorDiv: operator.floordiv,
+    ast.Mod: operator.mod,
+    ast.USub: operator.neg,  # Supports negative numbers like -5
+    ast.UAdd: operator.pos,  # Supports +5
+    # Notice ast.Pow (**) is excluded to prevent CPU freezing!
+}
+
+# 2. Define allowed functions
+ALLOWED_FUNCTIONS = {
+    "round": round,
+}
+
+
+def safe_eval_ast(node: ast.AST, vars_dict: Dict[str, Any]) -> Any:
+    """Manually evaluates a compiled AST tree without using eval()."""
+
+    # Handle raw numbers
+    if isinstance(node, ast.Constant):
+        return node.value
+
+    # Handle variable lookups (inputs and constants)
+    elif isinstance(node, ast.Name):
+        if node.id in vars_dict:
+            return vars_dict[node.id]
+        raise NameError(f"Variable '{node.id}' is not allowed.")
+
+    # Handle basic math (X + Y, X - Y)
+    elif isinstance(node, ast.BinOp):
+        op_type = type(node.op)
+        if op_type in ALLOWED_OPERATORS:
+            left = safe_eval_ast(node.left, vars_dict)
+            right = safe_eval_ast(node.right, vars_dict)
+            return ALLOWED_OPERATORS[op_type](left, right)
+        raise TypeError(f"Operation {op_type.__name__} is not allowed.")
+
+    # Handle negative numbers (unary operators)
+    elif isinstance(node, ast.UnaryOp):
+        op_type = type(node.op)
+        if op_type in ALLOWED_OPERATORS:
+            operand = safe_eval_ast(node.operand, vars_dict)
+            return ALLOWED_OPERATORS[op_type](operand)
+        raise TypeError(f"Unary operation {op_type.__name__} is not allowed.")
+
+    # Handle functions (like round())
+    elif isinstance(node, ast.Call):
+        if isinstance(node.func, ast.Name) and node.func.id in ALLOWED_FUNCTIONS:
+            args = [safe_eval_ast(arg, vars_dict) for arg in node.args]
+            return ALLOWED_FUNCTIONS[node.func.id](*args)
+        raise NameError("Function call not allowed.")
+
+    raise ValueError(f"Unsupported syntax: {type(node).__name__}")
 
 
 class Base(ABC):
     @abstractmethod
-    def create(self) -> tuple[Any, list[FieldCallbackContainer] | FieldCallbackContainer | None]: ...
+    def create(
+        self,
+    ) -> tuple[Any, list[FieldCallbackContainer] | FieldCallbackContainer | None]: ...
 
 
 # ---------- Base + shared ----------
@@ -40,6 +106,33 @@ class BaseNode(BaseModel, Base):
 class ContainerNode(BaseNode):
     # Recursive children: a list of Nodes (defined later via Union)
     children: list[Node] = Field(default_factory=list)
+
+
+class ValueNode(BaseNode):
+    variabel: str
+    variabel_trigger: str = Field(default="value")
+    id: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def pre_init_id_creation(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            # Mutate the raw input dictionary before validation
+            if "id" not in data:
+                data["id"] = data.get("variabel", "") + "_" + str(uuid.uuid4())
+        return data
+
+    @computed_field
+    @property
+    def field_settings(self) -> EditableField:
+        return EditableField(
+            field_path=self.variabel, variabel_trigger=self.variabel_trigger, id=self.id
+        )
+
+    @computed_field
+    @property
+    def callback_settings(self) -> FieldCallbackContainer:
+        return FieldCallbackContainer(settings=self.field_settings, parent_id=self.id)
 
 
 # ---------- Concrete node types ----------
@@ -154,19 +247,21 @@ class Label(BaseNode):
         )
 
 
-class InputField(BaseNode):
+class InputField(ValueNode):
     type: Literal["input"]
     label: str
     value: str | None = ""
     hidelabel: bool = False
+    hidden: bool = False
     readonly: bool = False
-    field_settings: EditableField
+    variabel_trigger: str = "n_blur"
+    # field_settings: EditableField
 
     def create(
         self,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
-        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=str(uuid.uuid4()))
+        callback_info = self.callback_settings
         return (
             html.Div(
                 [
@@ -178,7 +273,10 @@ class InputField(BaseNode):
                         },
                     ),
                     dbc.Input(
-                        style={"width": "100%"},
+                        style={
+                            "width": "100%",
+                            "visibility": "hidden" if self.hidden else "visible",
+                        },
                         id=callback_info._id,
                         debounce=True,
                         readonly=self.readonly,
@@ -192,186 +290,113 @@ class InputField(BaseNode):
         )
 
 
-class CalculatedField(BaseNode):
+class CalculatedField(ValueNode):
     type: Literal["calculated-field"]
-    field_settings: EditableField
     label: str
     hidelabel: bool = False
+    variabel: str = Field(default="")
     decimals: int = 1
     applies_to_tables: list[str] = Field(default_factory=list)
     applies_to_forms: list[str] = Field(default_factory=list)
-    exponents: list[str | InputField | int | float] = Field(default_factory=list)
-    multiplication: list[str | InputField | int | float] = Field(default_factory=list)
-    division: list[str | InputField | int | float] = Field(default_factory=list)
-    addition: list[str | InputField | int | float] = Field(default_factory=list)
-    subtraction: list[str | InputField | int | float] = Field(default_factory=list)
+    expression: str
+    ids: dict[str, str]
+    constants: dict[str, str] = Field(default_factory=dict)
 
-    @computed_field
-    @property
-    def _id(self) -> str:
-        return self.label + str(self.applies_to_tables) + str(self.applies_to_forms)
-
-    def _get_all_ids(self) -> list[tuple[str, str]]:
-        """
-        Returns (operation, _id) pairs for all entries, resolving InputField to its _id.
-        Numeric entries are returned as-is (float), others as string IDs.
-        """
-        result = []
-        for op, fields in [
-            ("exponent", self.exponents),
-            ("multiplication", self.multiplication),
-            ("division", self.division),
-            ("addition", self.addition),
-            ("subtraction", self.subtraction),
-        ]:
-            for f in fields:
-                if isinstance(f, (int, float)):
-                    result.append((op, float(f)))  # literal number
-                elif isinstance(f, InputField):
-                    result.append((op, f.field_settings._id))
-                else:
-                    result.append(
-                        (
-                            op,
-                            f
-                            + str(self.applies_to_tables)
-                            + str(self.applies_to_forms),
-                        )
-                    )
-        return result
-
-    def _calculate(
-        self, op_id_pairs: Sequence[tuple[str, str]], values: list[float | int | None]
-    ) -> float:
-        """Applies operations in order: exponents → multiply → divide → add → subtract."""
-        op_values: dict[str, list[float]] = {
-            "exponent": [],
-            "multiplication": [],
-            "division": [],
-            "addition": [],
-            "subtraction": [],
+    def create(self, *args, **kwargs) -> tuple[html.Div, None]:
+        # self.create_callback()
+        fn_template = string.Template(
+            """
+        function($inputs) {
+        $constants
+        $conversions
+            return $expression
         }
-        incomplete_multiplicative = (
-            False  # handles missing -> 0 for multiplication & division
+        """
+        )
+        print(self)
+        input_list = []
+        input_keys_list = []
+        inputs_dict = {}
+        param_convert_str = ""
+        for key, value in self.ids.items():
+            input_comp = Input(value, "value")
+            input_list.append(input_comp)
+            input_keys_list.append(key)
+            param_convert_str += f"\t {key} = Number({key});\n"
+            inputs_dict[key] = {key: input_comp}
+
+        const_templ = ""
+        for key, value in self.constants.items():
+            const_templ += f"\t const {key} = {int(value)};\n"
+
+        clientside_func = fn_template.safe_substitute(
+            {
+                # "id": self.id,
+                "inputs": ", ".join(input_keys_list),
+                "expression": self.expression,
+                "constants": const_templ,
+                "conversions": param_convert_str,
+            }
+        )
+        print(clientside_func)
+
+        clientside_callback(
+            clientside_func,
+            Output(self.id, "value"),
+            *input_list,
+            prevent_initial_call=True,
+        )
+        tree = ast.parse(self.expression, mode="eval")
+        code = compile(tree, "<string>", "eval")
+        constants = {}
+        for key, value in self.constants.items():
+            constants[key] = int(value)
+
+        # @callback(
+        #    Output(self.id, "value"),
+        #    inputs={"inputs": inputs_dict},
+        # )
+        def run_calcs(inputs: dict[str, str]):
+            inputs_converted: dict[str, int] = {}
+            for key, value in inputs.items():
+                inputs_converted[key] = int(value)
+
+            namespace = {
+                "__builtins__": {},
+                "round": round,
+                **inputs_converted,
+                **constants,
+            }
+            result = eval(code, namespace)
+            return result
+
+        return (
+            html.Div(
+                [
+                    html.Label(
+                        self.label,
+                        title=self.label,
+                        style={
+                            "visibility": "hidden" if self.hidelabel else "visible",
+                        },
+                    ),
+                    dbc.Input(
+                        id=self.id,
+                        style={"width": "100%"},
+                        readonly=True,
+                        className="microlayout-input-readonly",
+                    ),
+                ],
+                className="ssb-input",
+            ),
+            None,
         )
 
-        for (op, _), value in zip(op_id_pairs, values):
-            if value is not None and str(value).strip() != "":
-                fval = float(value)
-                if op == "division" and fval == 0:
-                    incomplete_multiplicative = True
-                else:
-                    op_values[op].append(fval)
-            elif op in ("multiplication", "division", "exponent"):
-                incomplete_multiplicative = True
 
-        if incomplete_multiplicative:
-            return 0.0
-
-        if op_values["multiplication"] or op_values["division"]:
-            result = 1.0
-            for val in op_values["multiplication"]:
-                result *= val
-            for val in op_values["division"]:
-                result /= val
-            # apply addition/subtraction on top
-            for val in op_values["addition"]:
-                result += val
-            for val in op_values["subtraction"]:
-                result -= val
-        else:
-            result = 0.0
-            for val in op_values["addition"]:
-                result += val
-            for val in op_values["subtraction"]:
-                result -= val
-
-        return result
-
-    def create_callback(self) -> None:
-        op_id_pairs = self._get_all_ids()
-        if not op_id_pairs:
-            return
-
-        dynamic_pairs = [(op, id_) for op, id_ in op_id_pairs if isinstance(id_, str)]
-        inputs = [Input(id_, "value") for _, id_ in dynamic_pairs]
-
-        @callback(
-            Output(self._id, "value"),
-            inputs,
-        )
-        def calculated_callback(*values):
-            try:
-                if all(v is None for v in values):
-                    return f"{0:.{self.decimals}f}"
-
-                value_iter = iter(values)
-                resolved: Sequence[tuple[str, float | None]] = []
-                for op, id_ in op_id_pairs:
-                    if isinstance(id_, float):
-                        resolved.append((op, id_))
-                    else:
-                        resolved.append((op, next(value_iter)))
-                result = self._calculate(resolved, [v for _, v in resolved])
-                return f"{result:.{self.decimals}f}"
-            except Exception as e:
-                return f"Error: {e}"
-
-    def create(self, *args, **kwargs) -> html.Div:
-        self.create_callback()
-        return html.Div(
-            [
-                html.Label(
-                    self.label,
-                    title=", ".join(str(id_) for _, id_ in self._get_all_ids()),
-                    style={
-                        "visibility": "hidden" if self.hidelabel else "visible",
-                    },
-                ),
-                dbc.Input(
-                    id=self._id,
-                    style={"width": "100%"},
-                    readonly=True,
-                    className="microlayout-input-readonly",
-                ),
-            ],
-            className="ssb-input",
-        )
-
-    def __str__(self, prefix: str = "", is_last: bool = True) -> str:
-        branch = "└─ " if is_last else "├─ "
-        node_name = self.type.upper()
-
-        def fmt(fields):
-            return [
-                f.field_settings._id if isinstance(f, InputField) else str(f)
-                for f in fields
-            ]
-
-        parts = []
-        if self.exponents:
-            parts.append(f"exp({', '.join(fmt(self.exponents))})")
-        if self.multiplication:
-            parts.append(" * ".join(fmt(self.multiplication)))
-        if self.division:
-            parts.append(" / ".join(fmt(self.division)))
-        if self.addition:
-            parts.append(" + ".join(fmt(self.addition)))
-        if self.subtraction:
-            parts.append(" - ".join(fmt(self.subtraction)))
-
-        formula = " ".join(parts) if parts else "∅"
-
-        print(
-            f"{prefix}{branch}{node_name} ({self.label}, formula={formula}, id={self._id})"
-        )
-        return f"{prefix}{branch}{node_name} ({self.label}, formula={formula}, id={self._id})"
-
-
-class DropdownComponent(BaseNode):
+class DropdownComponent(ValueNode):
     """A class describing the dropdown type."""
 
-    field_settings: EditableField
+    # field_settings: EditableField
     type: Literal["dropdown"]
     label: str
     options: list[dict]
@@ -380,7 +405,8 @@ class DropdownComponent(BaseNode):
         self,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
-        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=str(uuid.uuid4()))
+        self.field_settings.variabel_trigger = "value"
+        callback_info = self.callback_settings
 
         return (
             html.Div(
@@ -391,7 +417,7 @@ class DropdownComponent(BaseNode):
                         id=callback_info._id,
                         searchable=False,
                         className="ssb-dropdown",
-                    ),  # pyright: ignore
+                    ),
                 ],
                 className="ssb-input",
             ),
@@ -399,21 +425,21 @@ class DropdownComponent(BaseNode):
         )
 
 
-class ChecklistComponent(BaseNode):
+class ChecklistComponent(ValueNode):
     """A class describing the checklist type."""
 
-    field_settings: EditableField
+    # field_settings: EditableField
     type: Literal["checklist"]
     label: str
     hidelabel: bool = False
     options: list[dict]
+    variabel_trigger: str = "value"
 
     def create(
         self,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
-        self.field_settings.variabel_trigger = "value"
-        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=str(uuid.uuid4()))
+        callback_info = self.callback_settings
         if len(self.options) == 1:
             children = [
                 dcc.Checklist(
@@ -453,11 +479,11 @@ class ChecklistComponent(BaseNode):
         )
 
 
-class KlassDropdown(BaseNode):
+class KlassDropdown(ValueNode):
     type: Literal["klass-dropdown"]
     klass_code: str
     label: str
-    field_settings: EditableField
+    # field_settings: EditableField
 
     def create(
         self,
@@ -467,58 +493,61 @@ class KlassDropdown(BaseNode):
         options = []
         for key, value in codes_dict.items():
             options.append({"label": value, "value": key})
-        print(self.field_settings)
-        print(codes_dict)
+
         return DropdownComponent(
             type="dropdown",
             label=self.label,
             options=options,
-            field_settings=self.field_settings,
+            variabel=self.variabel,
+            id=self.id,
         ).create()
 
 
 # (Optional) If you plan to use these later, keep them here for completeness
-class Textarea(BaseNode):
+class Textarea(ValueNode):
     type: Literal["textarea"]
     label: str
     hidelabel: bool = False
     value: str | None = ""
     readonly: bool = False
-    field_settings: EditableField
+    # field_settings: EditableField
 
     def create(
         self,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
-        callback_info = FieldCallbackContainer(settings=self.field_settings, parent_hash=str(uuid.uuid4()))
-        return html.Div(
-            [
-                html.Label(
-                    self.label,
-                    title=self.label,
-                    style={
-                        "visibility": "hidden" if self.hidelabel else "visible",
-                    },
-                    className="ssb-input",
-                ),
-                dbc.Textarea(
-                    style={"width": "100%"},
-                    id=callback_info._id,
-                    debounce=True,
-                    readonly=self.readonly,
-                    className="microlayout-textarea-field"
-                    + (" microlayout-textarea-readonly" if self.readonly else ""),
-                ),
-            ],
-            className="microlayout-textarea",
-        ), callback_info
+        callback_info = self.callback_settings
+        return (
+            html.Div(
+                [
+                    html.Label(
+                        self.label,
+                        title=self.label,
+                        style={
+                            "visibility": "hidden" if self.hidelabel else "visible",
+                        },
+                        className="ssb-input",
+                    ),
+                    dbc.Textarea(
+                        style={"width": "100%"},
+                        id=callback_info._id,
+                        debounce=True,
+                        readonly=self.readonly,
+                        className="microlayout-textarea-field"
+                        + (" microlayout-textarea-readonly" if self.readonly else ""),
+                    ),
+                ],
+                className="microlayout-textarea",
+            ),
+            callback_info,
+        )
 
 
-class KlassChecklist(BaseNode):
+class KlassChecklist(ValueNode):
     type: Literal["klass-checklist"]
     klass_code: str
     label: str
-    field_settings: EditableField
+    # field_settings: EditableField
 
     def create(
         self,
@@ -534,14 +563,16 @@ class KlassChecklist(BaseNode):
                 type="checklist",
                 label=self.label,
                 options=options,
-                field_settings=self.field_settings,
+                id=self.id,
+                variabel=self.variabel,
             ).create()
         else:
             return DropdownComponent(
                 type="dropdown",
                 label=self.label,
                 options=options,
-                field_settings=self.field_settings,
+                id=self.id,
+                variabel=self.variabel,
             ).create()
 
 
@@ -582,7 +613,10 @@ for m in (
 
 NodeListAdapter = TypeAdapter(list[Node])
 
-def _flatten_ids(data: Sequence[FieldCallbackContainer | None | Sequence[FieldCallbackContainer]]) -> Sequence[FieldCallbackContainer]:
+
+def _flatten_ids(
+    data: Sequence[FieldCallbackContainer | None | Sequence[FieldCallbackContainer]],
+) -> Sequence[FieldCallbackContainer]:
 
     return_data = []
     if isinstance(data, list):
@@ -591,12 +625,13 @@ def _flatten_ids(data: Sequence[FieldCallbackContainer | None | Sequence[FieldCa
                 return_data += _flatten_ids(item)
             elif item is not None:
                 return_data.append(item)
-            
+
         return return_data
     elif data is not None:
         return_data.append(data)
-    
+
     return return_data
+
 
 class Layout:
     def __init__(self, data: list) -> None:
@@ -612,5 +647,5 @@ class Layout:
             layout, id_ = node.create()
             layout_list.append(layout)
             ids.append(id_)
-        
+
         return layout_list, _flatten_ids(ids)

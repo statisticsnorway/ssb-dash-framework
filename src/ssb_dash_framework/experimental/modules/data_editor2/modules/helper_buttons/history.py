@@ -1,3 +1,5 @@
+# pyright: reportInvalidTypeForm=false
+# pyright: reportCallIssue=false
 import logging
 
 import dash_ag_grid as dag
@@ -17,7 +19,7 @@ from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
 from ......utils.config_tools.connection import _get_connection_object
 from ......utils.config_tools.connection import get_connection
-from ..editor_helper_button import DataEditorHelperButton
+from .editor_helper_button import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)
 

@@ -1,3 +1,5 @@
+# pyright: reportInvalidTypeForm=false
+# pyright: reportCallIssue=false
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
@@ -39,7 +41,7 @@ class DataEditorTableSelector(DataEditorHelperSidebar):
         """Creates the component."""
         return html.Div(
             [
-                dbc.Label("Tabellvelger"),  # pyright: ignore
+                dbc.Label("Tabellvelger"),
                 dcc.Dropdown(
                     id="dataeditortableselector",
                     searchable=False,

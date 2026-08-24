@@ -1,6 +1,7 @@
+# pyright: reportInvalidTypeForm=false
+# pyright: reportCallIssue=false
 import logging
 from typing import Any
-from typing import Literal
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -21,12 +22,9 @@ import tzlocal
 import time
 
 from ssb_dash_framework import VariableSelector
-from ssb_dash_framework.utils.core_query_functions import create_filter_dict
-from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
 
 from ......utils.config_tools.connection import _get_connection_object
-from ......utils.config_tools.connection import get_connection
-from ......utils.config_tools.set_variables import TimeUnit, get_ident
+from ......utils.config_tools.set_variables import get_ident
 from ......utils.config_tools.set_variables import get_refnr
 from ......utils.config_tools.set_variables import get_time_units
 from ......utils.core_models import UpdateSkjemamottakAktiv
@@ -68,7 +66,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 get_ident(),
                 get_time_units().name,
                 "altinnskjema",
-                "refnr",
+                get_refnr(),
             ],
         )
 
@@ -105,7 +103,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         )
         return html.Div(
             [
-                dcc.Store(id=f"skjemamottak-status-signal"),
+                dcc.Store(id="skjemamottak-status-signal"),
                 form_selector,
                 dbc.Row("Editeringsstatus"),
                 dbc.Row(
@@ -273,7 +271,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             
             
 
-        @callback(  # type: ignore[misc]
+        @callback(
             self.variableselector.get_output_object(get_refnr()),  # oppdater refnr
             self.variableselector.get_output_object(
                 "altinnskjema"
