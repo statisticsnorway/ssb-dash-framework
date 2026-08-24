@@ -234,7 +234,8 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 feedback = update_to_apply.update_ibis()
 
             else:
-                raise NotImplementedError
+                feedback = update_to_apply.to_alert(False)
+            #    raise NotImplementedError
 
             return [feedback, *alert_store], time.time()
 
