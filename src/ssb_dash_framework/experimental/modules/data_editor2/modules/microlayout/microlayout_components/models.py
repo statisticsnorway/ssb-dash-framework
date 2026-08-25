@@ -304,14 +304,13 @@ class CalculatedField(ValueNode):
     applies_to_forms: list[str] = Field(default_factory=list)
     expression: str
     ids: dict[str, str]
-    constants: dict[str, str] = Field(default_factory=dict)
+    #constants: dict[str, str] = Field(default_factory=dict)
 
     def create(self, *args, **kwargs) -> tuple[html.Div, None]:
         # self.create_callback()
         fn_template = string.Template(
             """
         function($inputs) {
-        $constants
         $conversions
             return $expression
         }
@@ -328,17 +327,12 @@ class CalculatedField(ValueNode):
             input_keys_list.append(key)
             param_convert_str += f"\t {key} = Number({key});\n"
             inputs_dict[key] = {key: input_comp}
-
-        const_templ = ""
-        for key, value in self.constants.items():
-            const_templ += f"\t const {key} = {int(value)};\n"
-
+       
         clientside_func = fn_template.safe_substitute(
             {
                 # "id": self.id,
                 "inputs": ", ".join(input_keys_list),
                 "expression": self.expression,
-                "constants": const_templ,
                 "conversions": param_convert_str,
             }
         )
@@ -352,9 +346,7 @@ class CalculatedField(ValueNode):
         )
         tree = ast.parse(self.expression, mode="eval")
         code = compile(tree, "<string>", "eval")
-        constants = {}
-        for key, value in self.constants.items():
-            constants[key] = int(value)
+        
 
         # @callback(
         #    Output(self.id, "value"),
@@ -369,7 +361,6 @@ class CalculatedField(ValueNode):
                 "__builtins__": {},
                 "round": round,
                 **inputs_converted,
-                **constants,
             }
             result = eval(code, namespace)
             return result
