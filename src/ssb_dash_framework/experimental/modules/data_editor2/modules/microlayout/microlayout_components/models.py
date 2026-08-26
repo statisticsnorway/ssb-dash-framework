@@ -7,7 +7,9 @@ from typing import Literal
 from typing import Sequence
 import uuid
 
+from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
+import dash_ag_grid as dag
 from dash import clientside_callback, dcc
 from dash import Input
 from dash import Output
@@ -19,9 +21,17 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import TypeAdapter
 from pydantic import computed_field
+from .......setup.variableselector import VariableSelector
+from .......utils.config_tools.set_variables import (
+    SelectedTimeUnit,
+    TimeUnit,
+    get_ident,
+    get_refnr,
+    get_time_units,
+)
 
 from .editable_field_model import EditableField, FieldCallbackContainer
-
+from ....meta import FetcherMeta
 from abc import ABC, abstractmethod
 import ast
 import operator
@@ -91,6 +101,7 @@ class Base(ABC):
     @abstractmethod
     def create(
         self,
+        fetcher: FetcherMeta,  # Fetcher is only included here for components that needs to create their own callbacks
     ) -> tuple[Any, list[FieldCallbackContainer] | FieldCallbackContainer | None]: ...
 
 
@@ -109,9 +120,10 @@ class ContainerNode(BaseNode):
 
 
 class ValueNode(BaseNode):
-    variabel: str
-    variabel_trigger: str = Field(default="value")
+    variable: str
+    variable_trigger: str = Field(default="value")
     id: str
+    use_variable_as_id: bool = Field(default=True)
 
     @model_validator(mode="before")
     @classmethod
@@ -119,8 +131,8 @@ class ValueNode(BaseNode):
         if isinstance(data, dict):
             # Mutate the raw input dictionary before validation
             if "id" not in data:
-                new_id = data.get("variabel")
-                if new_id is None:
+                new_id = data.get("variable")
+                if (new_id is None) or data["use_variable_as_id"] is False:
                     data["id"] = str(uuid.uuid4())
                 else:
                     data["id"] = new_id
@@ -130,7 +142,7 @@ class ValueNode(BaseNode):
     @property
     def field_settings(self) -> EditableField:
         return EditableField(
-            field_path=self.variabel, variabel_trigger=self.variabel_trigger, id=self.id
+            field_path=self.variable, variabel_trigger=self.variable_trigger, id=self.id
         )
 
     @computed_field
@@ -144,13 +156,13 @@ class Row(ContainerNode):
     type: Literal["row"]
 
     def create(
-        self,
+        self, fetcher: FetcherMeta
     ) -> tuple[dbc.Row, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
         children = []
         for child in self.children:
-            comp, _id = child.create()
+            comp, _id = child.create(fetcher)
             ids.append(_id)
             children.append(comp)
         return dbc.Row(children), ids
@@ -160,13 +172,13 @@ class Col(ContainerNode):
     type: Literal["col"]
 
     def create(
-        self,
+        self, fetcher: FetcherMeta
     ) -> tuple[dbc.Col, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
         children = []
         for child in self.children:
-            comp, _id = child.create()
+            comp, _id = child.create(fetcher)
             ids.append(_id)
             children.append(comp)
         return dbc.Col(children), ids
@@ -177,13 +189,13 @@ class Tab(ContainerNode):
     label: str
 
     def create(
-        self,
+        self, fetcher: FetcherMeta
     ) -> tuple[dbc.Tab, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
         children = []
         for child in self.children:
-            comp, _id = child.create()
+            comp, _id = child.create(fetcher)
             ids.append(_id)
             children.append(comp)
         return (
@@ -200,13 +212,13 @@ class Tabs(ContainerNode):
     tabs: list[Tab]
 
     def create(
-        self,
+        self, fetcher: FetcherMeta
     ) -> tuple[dbc.Tabs, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
         children = []
         for child in self.children:
-            comp, _id = child.create()
+            comp, _id = child.create(fetcher)
             ids.append(_id)
             children.append(comp)
         return dbc.Tabs(children), ids
@@ -218,7 +230,7 @@ class Header(BaseNode):
     size: Literal["xs", "sm", "md", "lg"] = "md"
 
     def create(
-        self,
+        self, fetcher: FetcherMeta
     ) -> tuple[html.H1 | html.H2 | html.H3 | html.H4, None]:
         """A method for creating the layout."""
         if self.size == "lg":
@@ -236,9 +248,7 @@ class Label(BaseNode):
     label: str = ""  # acts as a placeholder if not specified
     bold: bool = False
 
-    def create(
-        self,
-    ) -> tuple[html.Div, None]:
+    def create(self, fetcher: FetcherMeta) -> tuple[html.Div, None]:
         return (
             html.Div(
                 html.Label(
@@ -261,9 +271,7 @@ class InputField(ValueNode):
     variabel_trigger: str = "n_blur"
     # field_settings: EditableField
 
-    def create(
-        self,
-    ) -> tuple[html.Div, FieldCallbackContainer]:
+    def create(self, fetcher: FetcherMeta) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         callback_info = self.callback_settings
         return (
@@ -294,17 +302,99 @@ class InputField(ValueNode):
         )
 
 
+class TimeseriesView(ValueNode):
+    type: Literal["timeseries"]
+    label: str
+    num_periods: int
+    switchable: bool = Field(default=True)
+
+    def create(self, fetcher: FetcherMeta) -> tuple:
+        internal_id = str(uuid.uuid4())
+        selector = VariableSelector(
+            [get_refnr(), get_ident(), get_time_units().name], []
+        )
+
+        @callback(
+            # Output(self.callback_settings._id, "children"),
+            inputs={
+                "refnr": selector.get_input(get_refnr()),
+                "ident": selector.get_input(get_ident()),
+                "period": selector.get_input(get_time_units().name),
+            },
+        )
+        def get_timeseries_data(refnr, ident, period):
+            if not refnr or not ident or not period:
+                raise PreventUpdate
+
+            selected_period: SelectedTimeUnit = TimeUnit.parse(get_time_units(), period)
+
+            periods_to_get = [selected_period.to_str()]
+            for i in range(1, self.num_periods + 1):
+                prev_period = selected_period.subtract(i)
+                periods_to_get.append(prev_period.to_str())
+            self.callback_settings
+            timeseries = fetcher.get_timeseries(
+                self.variable, refnr, ident, periods_to_get
+            )
+
+            def sort_timeseries(period, frequency):
+                return TimeUnit.parse(frequency, period).dt
+
+            sorted_series = sorted(
+                timeseries,
+                key=lambda x: sort_timeseries(
+                    x["iso_period"], selected_period.timeunit
+                ),
+            )
+            print(sorted_series)
+            # return "ehei"
+
+        @callback(
+            Output(f"graph-container-{internal_id}", "style"),
+            Output(f"table-container-{internal_id}", "style"),
+            Input(f"switch-{internal_id}", "value"),
+        )
+        def toogle_graph(value):
+            if value:
+                return {"display": "block"}, {"display": "none"}
+            else:
+                return {"display": "none"}, {"display": "block"}
+
+        return (
+            html.Div(
+                children=[
+                    dbc.Label("Table view or graph view"),
+                    dbc.Checklist(
+                        options=[
+                            {"label": "", "value": 1},
+                        ],
+                        value=[1],
+                        id=f"switch-{internal_id}",
+                        switch=True,
+                    ),
+                    html.Div(
+                        children=[
+                            html.Div(id=f"graph-container-{internal_id}", style={"display": "block"}, children=["graph"]),
+                            html.Div(id=f"table-container-{internal_id}", style={"display": "none"}, children=["table"]),
+                        ]
+                    ),
+                ],
+            ),
+            None,
+        )
+
+
 class CalculatedField(ValueNode):
     type: Literal["calculated-field"]
     label: str
     hidelabel: bool = False
-    variabel: str = Field(default="")
+    variable: str = Field(default="")
     decimals: int = 1
     applies_to_tables: list[str] = Field(default_factory=list)
     applies_to_forms: list[str] = Field(default_factory=list)
     expression: str
     ids: dict[str, str]
-    #constants: dict[str, str] = Field(default_factory=dict)
+    # constants: dict[str, str] = Field(default_factory=dict)
 
     def create(self, *args, **kwargs) -> tuple[html.Div, None]:
         # self.create_callback()
@@ -327,7 +417,7 @@ class CalculatedField(ValueNode):
             input_keys_list.append(key)
             param_convert_str += f"\t {key} = Number({key});\n"
             inputs_dict[key] = {key: input_comp}
-       
+
         clientside_func = fn_template.safe_substitute(
             {
                 # "id": self.id,
@@ -346,7 +436,6 @@ class CalculatedField(ValueNode):
         )
         tree = ast.parse(self.expression, mode="eval")
         code = compile(tree, "<string>", "eval")
-        
 
         # @callback(
         #    Output(self.id, "value"),
@@ -396,9 +485,7 @@ class DropdownComponent(ValueNode):
     label: str
     options: list[dict]
 
-    def create(
-        self,
-    ) -> tuple[html.Div, FieldCallbackContainer]:
+    def create(self, fetcher: FetcherMeta) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         self.field_settings.variabel_trigger = "value"
         callback_info = self.callback_settings
@@ -430,9 +517,7 @@ class ChecklistComponent(ValueNode):
     options: list[dict]
     variabel_trigger: str = "value"
 
-    def create(
-        self,
-    ) -> tuple[html.Div, FieldCallbackContainer]:
+    def create(self, fetcher: FetcherMeta) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         callback_info = self.callback_settings
         if len(self.options) == 1:
@@ -480,9 +565,7 @@ class KlassDropdown(ValueNode):
     label: str
     # field_settings: EditableField
 
-    def create(
-        self,
-    ) -> tuple[html.Div, FieldCallbackContainer]:
+    def create(self, fetcher: FetcherMeta) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         codes_dict = get_classification(self.klass_code).get_codes().to_dict()
         options = []
@@ -493,12 +576,11 @@ class KlassDropdown(ValueNode):
             type="dropdown",
             label=self.label,
             options=options,
-            variabel=self.variabel,
+            variable=self.variable,
             id=self.id,
-        ).create()
+        ).create(fetcher)
 
 
-# (Optional) If you plan to use these later, keep them here for completeness
 class Textarea(ValueNode):
     type: Literal["textarea"]
     label: str
@@ -507,9 +589,7 @@ class Textarea(ValueNode):
     readonly: bool = False
     # field_settings: EditableField
 
-    def create(
-        self,
-    ) -> tuple[html.Div, FieldCallbackContainer]:
+    def create(self, fetcher: FetcherMeta) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         callback_info = self.callback_settings
         return (
@@ -544,9 +624,7 @@ class KlassChecklist(ValueNode):
     label: str
     # field_settings: EditableField
 
-    def create(
-        self,
-    ) -> tuple[html.Div, FieldCallbackContainer]:
+    def create(self, fetcher: FetcherMeta) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         codes_dict = get_classification(self.klass_code).get_codes().to_dict()
         options = []
@@ -559,16 +637,16 @@ class KlassChecklist(ValueNode):
                 label=self.label,
                 options=options,
                 id=self.id,
-                variabel=self.variabel,
-            ).create()
+                variable=self.variable,
+            ).create(fetcher)
         else:
             return DropdownComponent(
                 type="dropdown",
                 label=self.label,
                 options=options,
                 id=self.id,
-                variabel=self.variabel,
-            ).create()
+                variable=self.variable,
+            ).create(fetcher)
 
 
 # ---------- Discriminated union (by 'type') ----------
@@ -585,7 +663,8 @@ Node = Annotated[
     | ChecklistComponent
     | DropdownComponent
     | Tabs
-    | Tab,
+    | Tab
+    | TimeseriesView,
     Field(discriminator="type"),
 ]
 
@@ -603,6 +682,7 @@ for m in (
     DropdownComponent,
     Tabs,
     Tab,
+    TimeseriesView,
 ):
     m.model_rebuild()
 
@@ -634,12 +714,12 @@ class Layout:
         self.nodes = parsed_nodes
 
     def build(
-        self,
+        self, fetcher: FetcherMeta
     ) -> tuple[list[Any], Sequence[FieldCallbackContainer]]:
         layout_list = []
         ids = []
         for node in self.nodes:
-            layout, id_ = node.create()
+            layout, id_ = node.create(fetcher)
             layout_list.append(layout)
             ids.append(id_)
 

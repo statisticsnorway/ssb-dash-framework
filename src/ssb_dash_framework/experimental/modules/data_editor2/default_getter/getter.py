@@ -149,3 +149,16 @@ class StandardDataHandler(FetcherMeta):
                 value = data["verdi"].item()
                 info_values[info_var.name] = value
         return info_values
+
+    def get_timeseries(self, variable: str, refnr: str, ident: str, periods: list[str]):
+        print("fired", variable)
+        with get_connection(necessary_tables=["skjemadata"]) as conn:
+            t = conn.table("skjemadata")
+            data = (
+                t.filter(
+                    t["ident"] == ident,
+                    t["iso_period"].isin(periods),
+                    t["feltsti"] == variable
+                ).select("iso_period", "verdi").execute()
+            )
+        return data.to_dict(orient="records")
