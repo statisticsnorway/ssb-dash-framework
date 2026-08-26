@@ -56,11 +56,11 @@ class MicroLayoutAIO(html.Div):
         if horizontal:
             styles["display"] = "flex"
 
-        layout, ids = model.build()
+        layout, ids = model.build(data_handler)
         super().__init__(
             layout, id=f"{self.aio_id}-klass", style=styles  # pyright: ignore
         )
-
+        print(ids)
         callback_ctx = {item._id: item for item in ids}
         if len(ids):
             if isinstance(inputs, list):

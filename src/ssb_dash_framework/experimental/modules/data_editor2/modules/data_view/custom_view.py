@@ -55,9 +55,9 @@ class DataViewCustomFigure:
             Input("dataeditortableselector", "value"),
             self.variableselector.get_input("altinnskjema"),
             self.variableselector.get_input(get_refnr()),
-            *[self.variableselector.get_input(unit) for unit in get_time_units()],
+            self.variableselector.get_input(get_time_units().name),
         )
-        def make_figure(selected_table, selected_form, refnr, *args):
+        def make_figure(selected_table, selected_form, refnr, period):
             if (
                 selected_table not in self.applies_to_tables
                 or selected_form not in self.applies_to_forms
@@ -107,7 +107,7 @@ class DataViewCustomTable:
             Input("dataeditortableselector", "value"),
             self.variableselector.get_input("altinnskjema"),
             self.variableselector.get_input(get_refnr()),
-            *[self.variableselector.get_input(unit) for unit in get_time_units()],
+            self.variableselector.get_input( get_time_units().name),
         )
         def make_figure(selected_table, selected_form, refnr, *args):
             if (
@@ -365,15 +365,15 @@ def convert_node(node: dict | list, applies_to_tables=None, applies_to_forms=Non
         node["applies_to_tables"] = applies_to_tables
         node["applies_to_forms"] = applies_to_forms
 
-    if "variable" in node:
-        node = convert_node_build_field_settings(node, "field_path", node["variable"])
-        popped = node.pop("variable")
-        logger.debug(f"Removing value for 'variable' in node. Removed value: {popped}")
-        node = convert_node_build_field_settings(
-            node, "applies_to_tables", applies_to_tables
-        )
-        clean_forms = [f for f in applies_to_forms if f is not None]
-        node = convert_node_build_field_settings(node, "applies_to_forms", clean_forms)
+    #if "variable" in node:
+    #    node = convert_node_build_field_settings(node, "field_path", node["variable"])
+    #    popped = node.pop("variable")
+    #    logger.debug(f"Removing value for 'variable' in node. Removed value: {popped}")
+    #    node = convert_node_build_field_settings(
+    #        node, "applies_to_tables", applies_to_tables
+    #    )
+    #    clean_forms = [f for f in applies_to_forms if f is not None]
+    #    node = convert_node_build_field_settings(node, "applies_to_forms", clean_forms)
 
     if "children" in node:
         node["children"] = [

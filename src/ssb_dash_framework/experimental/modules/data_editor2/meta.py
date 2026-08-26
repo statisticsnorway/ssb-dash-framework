@@ -39,8 +39,21 @@ class FetcherMeta(ABC):
 
     @abstractmethod
     def get_info_row_fields(
-        self, settings: EditorSettings, ident: str, period: str, fields: list[InfoRowField]
+        self,
+        settings: EditorSettings,
+        ident: str,
+        period: str,
+        fields: list[InfoRowField],
     ) -> dict[str, str | int | bool | float | None]: ...
+
+    @abstractmethod
+    def get_timeseries(
+        self,
+        variable: str,
+        refnr: str,
+        ident: str,
+        periods: list[str],
+    ) -> list[dict]: ...
 
 
 class ContextABC(ABC):
