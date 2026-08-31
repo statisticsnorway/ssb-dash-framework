@@ -1,5 +1,5 @@
 from .sidebar.table_selector import DataEditorTableSelector
-from .info_row import DataEditorInfoRow
+from .inforow.info_row import DataEditorInfoRow
 from .helper_buttons.history import DataEditorHistory
 from .helper_buttons.supporting_table import DataEditorSupportTable
 from .helper_buttons.supporting_table import DataEditorSupportTables

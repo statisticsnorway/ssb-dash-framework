@@ -7,7 +7,6 @@ from ....config.models import register_module
 from ....setup.variableselector import VariableSelector
 from ....utils.config_tools.set_variables import get_time_units
 
-from .modules import DataEditorTableSelector
 from .modules import DataEditorInfoRow
 from .utils import EditorSettings
 from .meta import ModuleABC, FetcherMeta, ContextABC
@@ -32,15 +31,6 @@ class DataEditor:
             raise RuntimeError("Only one DataEditor can be created")
         DataEditor._module_count += 1
         self.module_name = self.__class__.__name__
-
-        if enable_table_selector:
-            self.enable_table_selector = True
-            DataEditorTableSelector(settings=settings)
-        else:
-            self.enable_table_selector = False
-            logger.warning(
-                "Without a table selector, it will not be possible to choose which table to view.\nDataEditor looks for the selected table as the 'value' attribute from the id 'dataeditortableselector'."
-            )
 
         self.icon = "🗊"
         self.label = "Data editor"

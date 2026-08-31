@@ -2,10 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Any
 import pandas as pd
 from dash import html
-from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_custom import (
-    CallbackSettings,
-)
-from .modules.info_row_model import (
+
+from .modules.inforow.info_row_model import (
     InfoRowField,
 )
 from .modules.microlayout.microlayout_components.editable_field_model import (
@@ -18,7 +16,7 @@ class FetcherMeta(ABC):
     @abstractmethod
     def get_field(
         self,
-        settings: CallbackSettings,
+        settings: EditorSettings,
         container: FieldCallbackContainer,
         inputs: list[Any] | dict[Any, Any],
     ) -> Any: ...
@@ -49,12 +47,20 @@ class FetcherMeta(ABC):
     @abstractmethod
     def get_timeseries(
         self,
-        variable: str,
+        settings: EditorSettings,
+        variable: str | list[str],
         refnr: str,
         ident: str,
         periods: list[str],
     ) -> list[dict]: ...
 
+    @abstractmethod
+    def get_dynamic_list(
+        self,
+        settings: EditorSettings,
+        wildcard: str,
+        refnr: str,
+    ) -> list[dict]: ...
 
 class ContextABC(ABC):
     """Base class for defining a contexted module."""

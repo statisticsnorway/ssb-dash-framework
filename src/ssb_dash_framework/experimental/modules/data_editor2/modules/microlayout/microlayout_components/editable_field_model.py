@@ -4,7 +4,7 @@ from dash import State, Input, Output
 
 class EditableField(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    field_path: str
+    variable: str
     variabel_trigger: str = Field(default="n_blur")
     id: str
 

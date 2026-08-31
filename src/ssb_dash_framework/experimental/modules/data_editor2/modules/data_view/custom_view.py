@@ -1,6 +1,5 @@
 import json
 import logging
-from collections.abc import Callable
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -11,8 +10,6 @@ from dash import callback
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
-from ssb_dash_framework.experimental.modules.data_editor.data_view.data_view_custom import CallbackSettings
-from ssb_dash_framework.experimental.modules.data_editor2.utils import EditorSettings
 
 from ......config.yaml_parser import config_parser_yaml
 from ssb_dash_framework.setup import VariableSelector
@@ -21,7 +18,6 @@ from ......utils.config_tools.set_variables import get_refnr
 from ......utils.config_tools.set_variables import get_time_units
 from ......config.models import register_module
 from ..microlayout.microlayout import MicroLayoutAIO
-from ...utils import EditorSettings
 from .base import DataEditorDataView
 
 logger = logging.getLogger(__name__)
@@ -130,30 +126,8 @@ class DataViewCustomTable:
         ]
         return "\n".join(lines)
 
-
-def _safe_get(data, v):
-    rows = data.loc[data["variabel"] == v]["verdi"]
-    return rows.item() if not rows.empty else None
-
-
-
-from typing import Any
-
-from pandas import Series
-from ...meta import FetcherMeta
-from ......utils.config_tools.connection import get_connection
-from dataclasses import dataclass
 import logging
-import time
 
-
-from ibis import Table
-import ibis
-from ibis.expr.types.relations import Table
-from ibis.expr.types.relations import Table
-
-from pydantic import BaseModel
-from ..microlayout.microlayout_components.editable_field_model import FieldCallbackContainer
 
 logger = logging.getLogger(__name__)
 
@@ -212,7 +186,7 @@ class DataViewCustom(DataEditorDataView):
                     )
                     converted = convert_node(
                         layout["layout"],
-                        applies_to_tables=self.applies_to_tables,
+                        applies_to_tables=self.applies_to_table,
                         applies_to_forms=self.applies_to_forms,
                     )
                     layout["layout"] = converted if isinstance(converted, list) else [converted]
@@ -223,15 +197,8 @@ class DataViewCustom(DataEditorDataView):
                                
                 microlayout = MicroLayoutAIO(
                     data_handler=self.fetcher,
-                    settings=self.callback_setting,
-                    #applies_to_tables=self.applies_to_tables,
-                    #applies_to_forms=self.applies_to_forms,
-                    layout=layout["layout"],
-                    #getter_func=layout.get("getter_func", default_getter),
-                    #update_func=layout.get("update_func", default_updater),
-                    
-                    
-                    #inputs=[Input(f"var-{unit}", "value") for unit in get_time_units()],
+                    settings=self.settings,
+                    layout=layout,
                     inputs=[VariableSelector(selected_inputs=[get_refnr()], selected_states=[]).get_input(get_refnr())]
                 )
                 components.append(microlayout)
@@ -249,23 +216,15 @@ class DataViewCustom(DataEditorDataView):
 
     def layout(self):
         """Returns the layout of the module."""
-        self.applies_to_tables = self.settings.form_data_tables
+        self.applies_to_table = self.settings.form_data_table
         self.applies_to_forms = self.settings.form_list
-        form_data_tables = self._layout.get("applies_to_tables", self.settings.form_data_tables[0])
-        print(self._layout)
+        form_data_tables = self._layout.get("applies_to_table", self.settings.form_data_table)
         if isinstance(form_data_tables, list):
             form_data_tables = form_data_tables[0]
-        self.callback_setting = CallbackSettings(
-            form_data_table = form_data_tables,
-            form_reference_number_column = self.settings.refnr_col,
-            formdata_field_value_column_name = self.settings.field_value_col,
-            formdata_fieldname_column = self.settings.field_name_col,
-            **self._layout
-        )
         self.created_layout = self.build_layout(self._layout["layout"])
         self.module_callbacks()
         super().__init__(
-            applies_to_tables=self.applies_to_tables, applies_to_forms=self.applies_to_forms
+            applies_to_tables=self.applies_to_table, applies_to_forms=self.applies_to_forms
         )
         return self._create_layout()
 
@@ -286,9 +245,7 @@ class DataViewCustom(DataEditorDataView):
         if isinstance(config_dict, list):
             config_dict = config_dict[0]
 
-        #settings = EditorSettings()
         return cls(
-            #settings=settings,
             layout=config_dict,
             _from_config_file=True,
         )
@@ -297,8 +254,8 @@ class DataViewCustom(DataEditorDataView):
         lines = [
             f"DataViewCustom #{self.module_number}",
             f"  divname:            {self.divname}",
-            #f"  applies_to_tables:  {self.applies_to_tables}",
-            #f"  applies_to_forms:   {self.applies_to_forms}",
+            f"  applies_to_tables:  {self.applies_to_table}",
+            f"  applies_to_forms:   {self.applies_to_forms}",
             #f"  components:         {len(self.created_layout)} top-level component(s)",
             "",
         ]
@@ -333,23 +290,10 @@ class DataViewCustom(DataEditorDataView):
         return lines
 
 
-def convert_node_build_field_settings(node, attribute, value):
-    logger.debug(f"node: {node}\nattribute: {attribute}\nvalue: {value}")
-    if "field_settings" not in node:
-        node["field_settings"] = {}
-    node["field_settings"].update({attribute: value})
-    logger.debug(node, attribute, value)
-    return node
-
-
 def convert_node(node: dict | list, applies_to_tables=None, applies_to_forms=None) -> dict | list:
     logger.debug(
         f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
     )
-    if applies_to_tables is None:
-        applies_to_tables = []
-    if applies_to_forms is None:
-        applies_to_forms = []
 
     if isinstance(node, list):
         return [
@@ -360,20 +304,6 @@ def convert_node(node: dict | list, applies_to_tables=None, applies_to_forms=Non
             )
             for listed_node in node
         ]
-
-    if "type" in node and node["type"] == "calculated-field":
-        node["applies_to_tables"] = applies_to_tables
-        node["applies_to_forms"] = applies_to_forms
-
-    #if "variable" in node:
-    #    node = convert_node_build_field_settings(node, "field_path", node["variable"])
-    #    popped = node.pop("variable")
-    #    logger.debug(f"Removing value for 'variable' in node. Removed value: {popped}")
-    #    node = convert_node_build_field_settings(
-    #        node, "applies_to_tables", applies_to_tables
-    #    )
-    #    clean_forms = [f for f in applies_to_forms if f is not None]
-    #    node = convert_node_build_field_settings(node, "applies_to_forms", clean_forms)
 
     if "children" in node:
         node["children"] = [
