@@ -34,9 +34,6 @@ from .modules import AltinnDataCaptureTab
 from .modules import AltinnDataCaptureWindow
 from .modules import AltinnSkjemadataEditor
 from .modules import AltinnSupportTable
-from .modules import Bedriftstabell
-from .modules import BedriftstabellTab
-from .modules import BedriftstabellWindow
 from .modules import BofInformation
 from .modules import BofInformationTab
 from .modules import BofInformationWindow
@@ -132,9 +129,6 @@ __all__ = [
     "AppConfig",
     "AppModules",
     "AppSettings",
-    "Bedriftstabell",
-    "BedriftstabellTab",
-    "BedriftstabellWindow",
     "BofInformation",
     "BofInformationTab",
     "BofInformationWindow",
