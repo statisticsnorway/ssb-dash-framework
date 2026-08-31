@@ -205,7 +205,7 @@ DASH custom styling for ssb-accordion
   font-size: 18px;
   font-weight: bold !important;
 }
-cord
+
 .ssb-accordion .accordion-button:focus {
   box-shadow: none !important;
   color: #162327;
