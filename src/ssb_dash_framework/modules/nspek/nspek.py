@@ -462,27 +462,73 @@ def get_skjoennslignet(conn, sekvensnummer: int) -> pd.DataFrame:
     return df
 
 
-def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
-    """Fetch and return pandas dataframe containing BOF info from parquet or sqlite fallback for a given orgnr.
+def get_bof_database_path() -> Path:
+    """Find the available BOF database."""
 
-    Example use: get_bofinfo("979443137", "2024")
+    database_paths = [
+        Path("/buckets/shared/vof/oracle-hns/ssb_foretak.db"),
+        Path("/buckets/delt-oracle-hns/ssb_foretak.db"),
+    ]
+
+    for database_path in database_paths:
+        if database_path.exists():
+            return database_path
+
+    raise FileNotFoundError(
+        "Fant ikke ssb_foretak.db. Sjekket følgende filbaner: "
+        f"{', '.join(str(path) for path in database_paths)}"
+    )
+
+
+def orgnr_exists_in_bof(orgnr: str) -> bool:
+    """Checks if organisation exists in BOF registry.
+
+    Example use: orgnr_exists_in_bof("979443137")
     """
+    try:
+        db_path = get_bof_database_path()
+
+        conn = ibis.sqlite.connect(str(db_path))
+        t = conn.table("ssb_foretak")
+
+        df = t.filter(_.orgnr == orgnr).limit(1).execute()
+
+        return not df.empty
+
+    except Exception as e:
+        logger.error(f"BOF lookup feilet: {e}")
+        return True
+
+
+def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
+    """Fetch and return BOF info for a given orgnr."""
     year = str(aar)
 
-    parquet_paths = [
-        (
-            f"/buckets/shared/vof/"
-            f"situttak/vof-aarsfil_data/"
-            f"klargjorte-data/parquet/"
-            f"vof-aarsfil_p{year}_v1.parquet"
-        ),
-        (
-            f"/buckets/shared/vof/"
-            f"situttak/vof-aarsfil_data/"
-            f"klargjorte-data/parquet/"
-            f"vof-aarsfil-forelopig_p{year}_v1.parquet"
-        ),
+    bof_base_paths = [
+        "/buckets/shared/vof",
+        "/buckets/delt-situttak",
     ]
+
+    parquet_paths = []
+
+    for base_path in bof_base_paths:
+        if base_path == "/buckets/shared/vof":
+            parquet_base = (
+                f"{base_path}/situttak/vof-aarsfil_data/"
+                "klargjorte-data/parquet"
+            )
+        else:
+            parquet_base = (
+                f"{base_path}/vof-aarsfil_data/"
+                "klargjorte-data/parquet"
+            )
+
+        parquet_paths.extend(
+            [
+                f"{parquet_base}/vof-aarsfil_p{year}_v1.parquet",
+                f"{parquet_base}/vof-aarsfil-forelopig_p{year}_v1.parquet",
+            ]
+        )
 
     rename_map = {
         "org_nr": "orgnr",
@@ -513,13 +559,11 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
     ]
 
     for path in parquet_paths:
-
         if not Path(path).exists():
             continue
 
         try:
             conn = ibis.duckdb.connect()
-
             t = conn.read_parquet(path)
 
             df = t.filter(_.org_nr == str(ident)).execute()
@@ -535,29 +579,34 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
 
             return df[expected_columns]
 
-        except Exception as e:
-            logger.error(
-                f"Failed reading parquet {path}: {e}",
-                exc_info=True,
+        except Exception:
+            logger.exception("Failed reading parquet %s", path)
+
+    # SQLite fallback
+    sqlite_paths = [
+        "/buckets/shared/vof/oracle-hns/ssb_foretak.db",
+        "/buckets/delt-oracle-hns/ssb_foretak.db",
+    ]
+
+    for sqlite_path in sqlite_paths:
+        if not Path(sqlite_path).exists():
+            continue
+
+        try:
+            conn = ibis.sqlite.connect(sqlite_path)
+            t = conn.table("ssb_foretak")
+
+            df = t.filter(_.orgnr == ident).execute()
+
+            return df
+
+        except Exception:
+            logger.exception(
+                "Failed reading sqlite fallback %s",
+                sqlite_path,
             )
 
-    # fallback sqlite
-    try:
-        conn = ibis.sqlite.connect("/buckets/shared/vof/oracle-hns/ssb_foretak.db")
-
-        t = conn.table("ssb_foretak")
-
-        df = t.filter(_.orgnr == ident).execute()
-
-        return df
-
-    except Exception as e:
-        logger.error(
-            f"Failed reading sqlite fallback: {e}",
-            exc_info=True,
-        )
-
-        return pd.DataFrame(columns=expected_columns)
+    return pd.DataFrame(columns=expected_columns)
 
 
 def get_value(series) -> str:
@@ -1389,6 +1438,7 @@ class Naeringsspesifikasjon:
                     searchable=False,
                 ),
             ],
+            className="ssb-dropdown-card",
         )
         return dropdown_card
 
@@ -1759,8 +1809,13 @@ class Naeringsspesifikasjon:
                         ),
                         dbc.Modal(
                             [
-                                dbc.ModalHeader(dbc.ModalTitle("Advarsel")),
-                                dbc.ModalBody(id="negative-value-modal-body"),
+                                dbc.ModalHeader(
+                                    dbc.ModalTitle("Advarsel"),
+                                    close_button=False,
+                                ),
+                                dbc.ModalBody(
+                                    id="negative-value-modal-body"
+                                ),
                                 dbc.ModalFooter(
                                     [
                                         dbc.Button(
@@ -1781,13 +1836,16 @@ class Naeringsspesifikasjon:
                             id="modal-negative-value",
                             is_open=False,
                             centered=True,
-                            backdrop="static",
-                            className="negative-warning-modal",
+                            backdrop=False,
+                            className="ssb-modal ssb-modal-warning",
                         ),
                         dbc.Modal(
                             [
                                 dbc.ModalHeader(
-                                    dbc.ModalTitle(id="feltkommentar-modal-title")
+                                    dbc.ModalTitle(
+                                        id="feltkommentar-modal-title"
+                                    ),
+                                    close_button=False,
                                 ),
                                 dbc.ModalBody(
                                     [
@@ -1835,8 +1893,9 @@ class Naeringsspesifikasjon:
                             id="feltkommentar-modal",
                             is_open=False,
                             centered=True,
-                            backdrop="static",
-                        ),
+                            backdrop=False,
+                            className="ssb-modal ssb-modal-comment",
+                        )
                     ],
                     style={"marginBottom": "10px"},
                 ),

@@ -71,13 +71,20 @@ def main_layout(
             html.Div(
                 dbc.Button(
                     [
-                        html.Span(
-                            "🌙", id="theme-icon", className="sidebar-button-icon-spot"
+                        DashIconify(
+                            icon="feather:moon",
+                            width=20,
+                            height=20,
+                            id="theme-icon",
+                            className="sidebar-button-icon-spot",
                         ),
-                        html.Span("Tema", className="sidebar-button-label-spot"),
+                        html.Span(
+                            "Tema",
+                            className="sidebar-button-label-spot",
+                        ),
                     ],
                     id="theme-toggle-button",
-                    className="sidebar-button-button",
+                    className="sidebar-button-button ssb-btn primary-btn",
                 )
             ),
             dcc.Store(id="theme-store", data=True),
