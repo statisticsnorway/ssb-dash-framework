@@ -3,7 +3,6 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
-from ...utils import EditorSettings
 from .editing_sidebar_helper import DataEditorHelperSidebar
 
 
@@ -12,7 +11,7 @@ class DataEditorTableSelector(DataEditorHelperSidebar):
 
     _id_number = 0
 
-    def __init__(self, settings: EditorSettings) -> None:
+    def __init__(self, form_data_tables: list[str], starting_table: str) -> None:
         """Initializes the table selector component.
 
         Args:
@@ -28,14 +27,14 @@ class DataEditorTableSelector(DataEditorHelperSidebar):
         DataEditorTableSelector._id_number += 1
 
         self.table_options = [
-            {"label": item, "value": item} for item in settings.form_data_tables
+            {"label": item, "value": item} for item in form_data_tables
         ]
 
-        if settings.starting_table not in settings.form_data_tables:
+        if starting_table not in form_data_tables:
             raise ValueError(
-                f"Selected starting table not found in data source.\nExpected one of: '{settings.form_data_tables}'.\nReceived: '{settings.starting_table}'"
+                f"Selected starting table not found in data source.\nExpected one of: '{form_data_tables}'.\nReceived: '{starting_table}'"
             )
-        self.starting_table = settings.starting_table
+        self.starting_table = starting_table
 
     def _create_layout(self) -> html.Div:
         """Creates the component."""

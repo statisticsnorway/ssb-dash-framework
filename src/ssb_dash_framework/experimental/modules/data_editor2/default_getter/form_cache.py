@@ -6,7 +6,6 @@ import time
 
 import tzlocal
 
-from pydantic import BaseModel, ConfigDict
 from ibis import Table
 import ibis
 from ibis import _
@@ -15,22 +14,9 @@ from ibis.expr.types.relations import Table
 
 from ssb_dash_framework import get_connection
 
+from ..utils import EditorSettings
 logger = logging.getLogger(__name__)
 local_tz = tzlocal.get_localzone()
-
-class CallbackSettings(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    form_data_table: str
-    form_reference_number_column: str
-    formdata_field_value_column_name: str
-    formdata_fieldname_column: str
-
-    mapping_table: str = "mapping_variabelnavn"
-    mapping_match_column: str = "variabel"
-    mapping_result_column: str = "feltsti"
-
-    table_selector_id: str | None = None
-    form_selector_id: str | None = None
 
 
 @dataclass
@@ -43,7 +29,7 @@ class FormGetterCached:
     data: dict[str, CacheEntry] = {}
 
     @staticmethod
-    def get_table(refnr: str, settings: CallbackSettings) -> Table:
+    def get_table(refnr: str, settings: EditorSettings) -> Table:
         """Materialize the whole refnr-filtered form in ONE query.
 
         The per-field ``default_getter`` re-filters this result once per editable
@@ -60,14 +46,14 @@ class FormGetterCached:
         with get_connection() as conn:
             t = conn.table(settings.form_data_table)
             if (
-                settings.form_reference_number_column not in t.columns
+                settings.refnr_col not in t.columns
             ):  # catch errors with querying from wrong table
                 raise ValueError(
-                    f"Column '{settings.form_reference_number_column}' not in table "
+                    f"Column '{settings.refnr_col}' not in table "
                     f"'{settings.form_data_table}'. Available: {t.columns}"
                 )
             df = t.filter(
-                t[settings.form_reference_number_column] == refnr,
+                t[settings.refnr_col] == refnr,
             ).to_pandas()
         # memtable preserves column names + dtypes; downstream filter/select run
         # in DuckDB, so they never touch the database again.
@@ -91,7 +77,7 @@ class FormGetterCached:
         cls.data.pop(f"{table}::{refnr}", None)
 
     @classmethod
-    def get_form(cls, refnr: str, settings: CallbackSettings) -> Table:
+    def get_form(cls, refnr: str, settings: EditorSettings) -> Table:
         cache_key = (
             f"{settings.form_data_table}::{refnr}"  # for tables not querying skjemadata
         )

@@ -21,11 +21,11 @@ from ..utils import (
 from ..modules.microlayout.microlayout_components.editable_field_model import (
     FieldCallbackContainer,
 )
-from ..modules.info_row_model import (
+from ..modules.inforow.info_row_model import (
     InfoRowField,
 )
 
-from .form_cache import FormGetterCached, CallbackSettings
+from .form_cache import FormGetterCached
 
 logger = logging.getLogger(__name__)
 local_tz = tzlocal.get_localzone()
@@ -39,26 +39,24 @@ class StandardDataHandler(FetcherMeta):
         super().__init__()
 
     def get_field(
-        self, setting: CallbackSettings, container: FieldCallbackContainer, inputs: list
+        self, setting: EditorSettings, container: FieldCallbackContainer, inputs: list
     ):
         refnr = inputs[0]
-        # print(refnr, setting, container)
+        
         t = self.cache.get_form(refnr, setting)
         filters = [
-            t[setting.form_reference_number_column] == refnr,
-            t[setting.formdata_fieldname_column] == container.settings.field_path,
+            t[setting.refnr_col] == refnr,
+            t[setting.field_name_col] == container.settings.variable,
         ]
 
-        res: Series | Any = (
-            t.filter(filters).select(setting.formdata_field_value_column_name).execute()
-        )
+        res: Series | Any = t.filter(filters).select(setting.field_value_col).execute()
         logger.debug(f"Returning:\n{res}")
 
         if res.empty:
             return None
         if len(res) > 1:  # catch potential duplicates
             logger.error(
-                f"Multiple rows returned for {container.settings.field_path}, refnr={refnr}. Using first row."
+                f"Multiple rows returned for {container.settings.variable}, refnr={refnr}. Using first row."
             )
         return res.iloc[0, 0]
 
@@ -150,15 +148,60 @@ class StandardDataHandler(FetcherMeta):
                 info_values[info_var.name] = value
         return info_values
 
-    def get_timeseries(self, variable: str, refnr: str, ident: str, periods: list[str]):
-        print("fired", variable)
-        with get_connection(necessary_tables=["skjemadata"]) as conn:
-            t = conn.table("skjemadata")
-            data = (
-                t.filter(
-                    t["ident"] == ident,
-                    t["iso_period"].isin(periods),
-                    t["feltsti"] == variable
-                ).select("iso_period", "verdi").execute()
+    def get_timeseries(
+        self,
+        settings: EditorSettings,
+        variable: str | list[str],
+        refnr: str,
+        ident: str,
+        periods: list[str],
+    ):
+
+        with get_connection(necessary_tables=[settings.form_data_table]) as conn:
+            t = conn.table(settings.form_data_table)
+            temp_filter = t.filter(
+                t[settings.ident_col] == ident,
+                t[settings.period_col].isin(periods),  # pyright: ignore
+            ).select(
+                settings.period_col, settings.field_value_col, settings.field_name_col
             )
+
+            if isinstance(variable, list):
+                temp_filter = temp_filter.filter(
+                    t[settings.field_name_col].isin(variable)  # pyright: ignore
+                )
+            else:
+                temp_filter = temp_filter.filter(t[settings.field_name_col] == variable)
+
+            data = temp_filter.pivot_wider(
+                id_cols=settings.period_col,
+                names_from=settings.field_name_col,
+                values_from=settings.field_value_col,
+            ).execute()
         return data.to_dict(orient="records")
+
+    def get_dynamic_list(
+        self,
+        settings: EditorSettings,
+        wildcard: str,
+        refnr: str,
+    ) -> list[dict]:
+        with get_connection(necessary_tables=[settings.form_data_table]) as conn:
+            t = conn.table(settings.form_data_table)
+            temp_filter = t.filter(
+                t[settings.refnr_col] == refnr,
+                # t["feltnavn"] == "NyEngAnnetGjodsID",
+                t[settings.field_name_col].ilike(wildcard),
+            )  # .pivot_wider(id_cols="indeks", names_from="feltnavn", values_from="verdi")
+
+            data = temp_filter.execute()
+            fieldname_parent = f"{settings.field_name_col}_parent"
+            data[fieldname_parent] = data[settings.field_name_col].str.rsplit("/", n=1)
+            data[fieldname_parent] = data[fieldname_parent].str[0]
+            complete_data = data.pivot_table(
+                settings.field_value_col,
+                index=[fieldname_parent],
+                columns="feltnavn",
+                aggfunc=", ".join,
+            ).reset_index()
+        return complete_data.to_dict(orient="records")

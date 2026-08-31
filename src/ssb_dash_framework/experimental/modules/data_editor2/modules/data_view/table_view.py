@@ -45,8 +45,8 @@ class DataEditorTable(DataEditorDataView):
         DataEditorTable._id_number += 1
         self.time_units = (
             get_time_units()
-        )  # TODO fix, make set/get time_units functions
-        self.refnr = get_refnr()  # TODO fix, maybe make set/get for refnr?
+        ) 
+        self.refnr = get_refnr() 
         self.variable_selector = VariableSelector(
             selected_inputs=[
                 self.time_units.name,
@@ -59,7 +59,7 @@ class DataEditorTable(DataEditorDataView):
         self.divname = f"{self.module_name}-{self.module_number}"
         self.module_callbacks()
         super().__init__(
-            applies_to_tables=settings.form_data_tables,
+            applies_to_tables=settings.form_data_table,
             applies_to_forms=settings.form_list,
         )
         # print(self)

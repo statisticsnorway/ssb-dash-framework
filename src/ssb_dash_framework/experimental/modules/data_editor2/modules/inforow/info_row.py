@@ -4,10 +4,10 @@ from logging import getLogger
 from typing import Any
 from dash import Output, callback
 from dash.exceptions import PreventUpdate
-from .....setup.variableselector import VariableSelector
-from .....utils.config_tools.set_variables import get_ident
-from .....utils.config_tools.set_variables import get_time_units
-from ..meta import ModuleABC
+from ......setup.variableselector import VariableSelector
+from ......utils.config_tools.set_variables import get_ident
+from ......utils.config_tools.set_variables import get_time_units
+from ...meta import ModuleABC
 from .info_row_model import InfoRowField
 import dash_bootstrap_components as dbc
 
