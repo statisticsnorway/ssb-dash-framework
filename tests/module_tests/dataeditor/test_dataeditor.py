@@ -1,27 +1,17 @@
 import pandas as pd
 
-import pytest
-
 
 def test_dataeditor_python_api():
-    from ssb_dash_framework import (
-        DataEditor,
-        DataEditorSupportTables,
-        DataEditorSupportTable,
-        DataEditorHistory,
-        DataEditorSidebarEditingStatus,
-        DataEditorSidebarComment,
-        DataEditorTable,
-        DataViewCustom,
-        StandardDataHandler,
-        EditorSettings,
-        VariableSelectorConfig,
-    )
-
-    from ssb_dash_framework.utils.config_tools.set_variables import (
-        TimeUnit,
-        TimeUnitType,
-    )
+    from ssb_dash_framework import DataEditor
+    from ssb_dash_framework import DataEditorHistory
+    from ssb_dash_framework import DataEditorSidebarComment
+    from ssb_dash_framework import DataEditorSidebarEditingStatus
+    from ssb_dash_framework import DataViewCustom
+    from ssb_dash_framework import EditorSettings
+    from ssb_dash_framework import StandardDataHandler
+    from ssb_dash_framework import VariableSelectorConfig
+    from ssb_dash_framework.utils.config_tools.set_variables import TimeUnit
+    from ssb_dash_framework.utils.config_tools.set_variables import TimeUnitType
 
     VariableSelectorConfig(
         refnr="refnr",
@@ -87,9 +77,16 @@ def test_dataeditor_python_api():
 
 
 def test_dataeditor_yaml_based():
+    from ssb_dash_framework import AppConfig
     from ssb_dash_framework import DataEditor
+    from ssb_dash_framework import build_app_from_config
+    from ssb_dash_framework import config_parser_yaml
 
-    instance = DataEditor.from_yaml("dataeditor_test.yaml")
-
+    path = "dataeditor_test.yaml"
+    if path.endswith(".yaml"):
+        yaml_content = config_parser_yaml(path)
+        config = AppConfig(**yaml_content)
+    app, tabs, windows = build_app_from_config()
+    instance = tabs[0]
     assert instance is not None
     assert isinstance(instance, DataEditor)
