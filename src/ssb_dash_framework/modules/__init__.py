@@ -38,6 +38,18 @@ from .building_blocks import MicroLayoutAIO
 from .building_blocks import MultiModule
 from .building_blocks import MultiModuleTab
 from .building_blocks import MultiModuleWindow
+from .data_editor import DataEditor
+from .data_editor import DataEditorHistory
+from .data_editor import DataEditorInfoRow
+from .data_editor import DataEditorSidebarComment
+from .data_editor import DataEditorSidebarEditingStatus
+from .data_editor import DataEditorSupportTable
+from .data_editor import DataEditorSupportTables
+from .data_editor import DataEditorTable
+from .data_editor import DataEditorTableSelector
+from .data_editor import DataViewCustom
+from .data_editor import EditorSettings
+from .data_editor import StandardDataHandler
 from .freesearch import FreeSearch
 from .freesearch import FreeSearchTab
 from .freesearch import FreeSearchWindow
@@ -88,9 +100,20 @@ __all__ = [
     "ControlView",
     "ControlViewTab",
     "ControlViewWindow",
+    "DataEditor",
+    "DataEditorHistory",
+    "DataEditorInfoRow",
+    "DataEditorSidebarComment",
+    "DataEditorSidebarEditingStatus",
+    "DataEditorSupportTable",
+    "DataEditorSupportTables",
+    "DataEditorTable",
+    "DataEditorTableSelector",
+    "DataViewCustom",
     "EditingTable",
     "EditingTableTab",
     "EditingTableWindow",
+    "EditorSettings",
     "FigureDisplay",
     "FigureDisplayTab",
     "FigureDisplayWindow",
@@ -118,6 +141,7 @@ __all__ = [
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",
+    "StandardDataHandler",
     "VisualizationBuilder",
     "VisualizationBuilderWindow",
     "apply_edits",
