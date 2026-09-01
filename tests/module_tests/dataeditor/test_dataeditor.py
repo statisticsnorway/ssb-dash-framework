@@ -82,11 +82,11 @@ def test_dataeditor_yaml_based():
     from ssb_dash_framework import build_app_from_config
     from ssb_dash_framework import config_parser_yaml
 
-    path = "dataeditor_test.yaml"
+    path = "tests/module_tests/dataeditor/dataeditor_test.yaml"
     if path.endswith(".yaml"):
         yaml_content = config_parser_yaml(path)
         config = AppConfig(**yaml_content)
-    app, tabs, windows = build_app_from_config()
+    app, tabs, windows = build_app_from_config(config)
     instance = tabs[0]
     assert instance is not None
     assert isinstance(instance, DataEditor)
