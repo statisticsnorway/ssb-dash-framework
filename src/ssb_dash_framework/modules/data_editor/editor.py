@@ -10,7 +10,7 @@ from ...utils.config_tools.set_variables import get_time_units
 from .meta import ContextABC
 from .meta import FetcherMeta
 from .meta import ModuleABC
-from .modules import DataEditorInfoRow
+from .modules.inforow.info_row import DataEditorInfoRow
 from .utils import EditorSettings
 
 logger = getLogger(__name__)
