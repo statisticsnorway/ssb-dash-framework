@@ -1,18 +1,27 @@
 import pandas as pd
+
 import pytest
 
 
 def test_dataeditor_python_api():
-    from ssb_dash_framework import DataEditor
-    from ssb_dash_framework import DataEditorHistory
-    from ssb_dash_framework import DataEditorSidebarComment
-    from ssb_dash_framework import DataEditorSidebarEditingStatus
-    from ssb_dash_framework import DataViewCustom
-    from ssb_dash_framework import EditorSettings
-    from ssb_dash_framework import StandardDataHandler
-    from ssb_dash_framework import VariableSelectorConfig
-    from ssb_dash_framework.utils.config_tools.set_variables import TimeUnit
-    from ssb_dash_framework.utils.config_tools.set_variables import TimeUnitType
+    from ssb_dash_framework import (
+        DataEditor,
+        DataEditorSupportTables,
+        DataEditorSupportTable,
+        DataEditorHistory,
+        DataEditorSidebarEditingStatus,
+        DataEditorSidebarComment,
+        DataEditorTable,
+        DataViewCustom,
+        StandardDataHandler,
+        EditorSettings,
+        VariableSelectorConfig,
+    )
+
+    from ssb_dash_framework.utils.config_tools.set_variables import (
+        TimeUnit,
+        TimeUnitType,
+    )
 
     VariableSelectorConfig(
         refnr="refnr",
@@ -77,7 +86,6 @@ def test_dataeditor_python_api():
     assert isinstance(instance, DataEditor)
 
 
-@pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_yaml_based():
     from ssb_dash_framework import DataEditor
 
