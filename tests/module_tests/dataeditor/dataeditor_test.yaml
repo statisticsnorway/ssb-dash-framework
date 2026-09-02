@@ -5,21 +5,34 @@ app_settings:
   enable_logging: false
   logging_level: warning
   log_to_file: false
-  variableselector: 
+  variableselector:
     refnr: refnr
     ident: ident
-    time_units:
-      aar: 1
     grouping_variables:
       - altinnskjema
       - variabel
+    time_units:
+        name: aar
+        frequency: year
   connection:
     type: postgres
     database_url: test
 modules:
   tabs:
     - type: DataEditor
-      inforow: 
+      settings:
+        starting_table: "skjemadata"
+        form_data_table: "skjemadata"
+        form_list:
+          - "RA-0187"
+        period_col: "iso_period"
+        ident_col: "ident"
+        refnr_col: "refnr"
+        form_name_col: "skjema"
+        field_name_col: "feltsti"
+        field_value_col: "verdi"
+      data_handler: StandardDataHandler
+      inforow:
       buttons:
         - type: DataEditorHistory
         - type: DataEditorSupportTables

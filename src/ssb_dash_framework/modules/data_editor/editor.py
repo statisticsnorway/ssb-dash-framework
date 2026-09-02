@@ -5,6 +5,7 @@ from logging import getLogger
 import dash_bootstrap_components as dbc
 from dash import html
 
+from ...config.models import register_module
 from ...setup.variableselector import VariableSelector
 from ...utils.config_tools.set_variables import get_time_units
 from .meta import ContextABC
@@ -16,7 +17,7 @@ from .utils import EditorSettings
 logger = getLogger(__name__)
 
 
-# @register_module("")
+@register_module(as_tab="DataEditor")
 class DataEditor:
     _module_count = 0
 

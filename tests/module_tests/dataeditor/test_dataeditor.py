@@ -13,6 +13,8 @@ def test_dataeditor_python_api():
     from ssb_dash_framework.utils.config_tools.set_variables import TimeUnit
     from ssb_dash_framework.utils.config_tools.set_variables import TimeUnitType
 
+    DataEditor._module_count = 0  # Reset the count
+
     VariableSelectorConfig(
         refnr="refnr",
         ident="ident",
@@ -82,11 +84,15 @@ def test_dataeditor_yaml_based():
     from ssb_dash_framework import build_app_from_config
     from ssb_dash_framework import config_parser_yaml
 
+    DataEditor._module_count = 0  # Reset the count
+
     path = "tests/module_tests/dataeditor/dataeditor_test.yaml"
     if path.endswith(".yaml"):
         yaml_content = config_parser_yaml(path)
+        print(yaml_content)
         config = AppConfig(**yaml_content)
     app, tabs, windows = build_app_from_config(config)
     instance = tabs[0]
+
     assert instance is not None
     assert isinstance(instance, DataEditor)

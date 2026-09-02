@@ -1,12 +1,14 @@
 """"""
 
 import logging
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
+
 import pendulum
 from pydantic import BaseModel
 from pydantic import Field
-from dataclasses import dataclass
+from pydantic import field_validator
 
 from ...setup.variableselector import VariableSelectorOption
 
@@ -40,6 +42,18 @@ class TimeUnitType(Enum):
 class TimeUnit(BaseModel):
     name: str
     frequency: TimeUnitType
+
+    @field_validator("frequency", mode="before")
+    @classmethod
+    def parse_frequency(cls, value: str | TimeUnitType) -> TimeUnitType:
+        print("TEST")
+        if isinstance(value, TimeUnitType):
+            return value
+
+        try:
+            return TimeUnitType[value.upper().replace("-", "_")]
+        except KeyError:
+            raise ValueError(f"Invalid time unit frequency: {value!r}")
 
     @staticmethod
     def parse(timeunit: "TimeUnit", period: str):
@@ -76,6 +90,7 @@ class TimeUnit(BaseModel):
                 dt = pendulum.from_format(period, timeunit.frequency.to_fmt())
 
         return SelectedTimeUnit(timeunit=timeunit, dt=dt)
+
 
 @dataclass
 class SelectedTimeUnit:
