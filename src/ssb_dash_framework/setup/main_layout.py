@@ -64,7 +64,15 @@ def main_layout(
     window_modules_list = [alerthandler.layout(), *window_modules]
 
     varvelger_toggle = [
-        html.Div([sidebar_button(DashIconify(icon="feather:triangle", width=24), "Vis variabler", "sidebar-varvelger-button")])
+        html.Div(
+            [
+                sidebar_button(
+                    DashIconify(icon="feather:triangle", width=24),
+                    "Vis variabler",
+                    "sidebar-varvelger-button",
+                )
+            ]
+        )
     ]
     theme_toggle = html.Div(
         [

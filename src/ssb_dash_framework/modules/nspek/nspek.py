@@ -464,7 +464,6 @@ def get_skjoennslignet(conn, sekvensnummer: int) -> pd.DataFrame:
 
 def get_bof_database_path() -> Path:
     """Find the available BOF database."""
-
     database_paths = [
         Path("/buckets/shared/vof/oracle-hns/ssb_foretak.db"),
         Path("/buckets/delt-oracle-hns/ssb_foretak.db"),
@@ -514,14 +513,10 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
     for base_path in bof_base_paths:
         if base_path == "/buckets/shared/vof":
             parquet_base = (
-                f"{base_path}/situttak/vof-aarsfil_data/"
-                "klargjorte-data/parquet"
+                f"{base_path}/situttak/vof-aarsfil_data/" "klargjorte-data/parquet"
             )
         else:
-            parquet_base = (
-                f"{base_path}/vof-aarsfil_data/"
-                "klargjorte-data/parquet"
-            )
+            parquet_base = f"{base_path}/vof-aarsfil_data/" "klargjorte-data/parquet"
 
         parquet_paths.extend(
             [
@@ -726,17 +721,9 @@ def build_column_defs(sekvens_compare=None):
             "resizable": True,
             "filter": True,
             "hide": col == "sekvensnummer",
-            "editable": col == "verdi", 
-            "width": (
-                430 if col == "beskrivelse"
-                else 90 if col == "post"
-                else None
-            ),
-            "flex": (
-                None
-                if col in ["beskrivelse", "post"]
-                else 2
-            ),
+            "editable": col == "verdi",
+            "width": (430 if col == "beskrivelse" else 90 if col == "post" else None),
+            "flex": (None if col in ["beskrivelse", "post"] else 2),
             "valueFormatter": {
                 "function": (
                     "params.value == null ? '' : params.value.toLocaleString('no-NO')"
@@ -816,10 +803,7 @@ def build_regnskap_dataframe(
     sekvens_compare: int | None,
     toggle_petroleum: list[str],
 ) -> pd.DataFrame:
-    """
-    Henter og bygger dataframe for balanseregnskap eller resultatregnskap.
-    """
-
+    """Henter og bygger dataframe for balanseregnskap eller resultatregnskap."""
     post_descriptions = post_description_data(regnskapstype)
 
     with get_nspek_connection() as conn:
@@ -852,15 +836,9 @@ def build_regnskap_dataframe(
     post_descriptions = post_descriptions.copy()
     ident_data = ident_data.copy()
 
-    post_descriptions["felt"] = (
-        post_descriptions["felt"]
-        .astype(str)
-    )
+    post_descriptions["felt"] = post_descriptions["felt"].astype(str)
 
-    ident_data["felt"] = (
-        ident_data["felt"]
-        .astype(str)
-    )
+    ident_data["felt"] = ident_data["felt"].astype(str)
 
     # Bygg hoveddata
     df_main = post_descriptions.merge(
@@ -884,10 +862,7 @@ def build_regnskap_dataframe(
 
         df_compare = df_compare.copy()
 
-        df_compare["felt"] = (
-            df_compare["felt"]
-            .astype(str)
-        )
+        df_compare["felt"] = df_compare["felt"].astype(str)
 
         df_compare = df_compare.rename(
             columns={
@@ -906,14 +881,8 @@ def build_regnskap_dataframe(
         verdi = df["verdi"]
         verdi_compare = df["verdi_compare"]
 
-        df["diff"] = (
-            verdi.fillna(0)
-            - verdi_compare.fillna(0)
-        ).where(
-            ~(
-                verdi.isna()
-                & verdi_compare.isna()
-            )
+        df["diff"] = (verdi.fillna(0) - verdi_compare.fillna(0)).where(
+            ~(verdi.isna() & verdi_compare.isna())
         )
 
     else:
@@ -940,21 +909,12 @@ def build_regnskap_dataframe(
     # Feltkommentarer
     # --------------------------------------------------
 
-    valid_comment_row = (
-        df["post"]
-        .fillna("")
-        .astype(str)
-        .ne("")
-        &
-        ~df["is_ui_sum"]
-        .astype("boolean")
-        .fillna(False)
-    )
+    valid_comment_row = df["post"].fillna("").astype(str).ne("") & ~df[
+        "is_ui_sum"
+    ].astype("boolean").fillna(False)
 
     # Ikon kun på gyldige kommentarrader
-    df["feltkommentar_ikon"] = valid_comment_row.map(
-        lambda x: "💬" if x else ""
-    )
+    df["feltkommentar_ikon"] = valid_comment_row.map(lambda x: "💬" if x else "")
 
     # Selve kommentaren
     df["feltkommentar_tekst"] = df["post"].map(
@@ -968,10 +928,7 @@ def build_regnskap_dataframe(
     )
 
     # Har raden en aktiv kommentar?
-    df["har_feltkommentar"] = (
-        valid_comment_row
-        & df["post"].isin(comments)
-    )
+    df["har_feltkommentar"] = valid_comment_row & df["post"].isin(comments)
 
     # Tooltip
     df["feltkommentar_tooltip"] = df.apply(
@@ -989,9 +946,7 @@ def build_regnskap_dataframe(
 
     # Vis kun numeriske poster i gridet
     df["post"] = df["post"].where(
-        df["post"]
-        .astype(str)
-        .str.fullmatch(r"\d+"),
+        df["post"].astype(str).str.fullmatch(r"\d+"),
         "",
     )
 
@@ -1501,14 +1456,14 @@ class Naeringsspesifikasjon:
                     "style": {
                         "backgroundColor": "#c8e6c9",
                         "color": "#162327",
-                    }, # lys grønn
+                    },  # lys grønn
                 },
                 {
                     "condition": "params.data && params.data.operation_type === 'UPDATE'",
                     "style": {
                         "backgroundColor": "#ffe082",
                         "color": "#162327",
-                    }, # lys gul
+                    },  # lys gul
                 },
                 {
                     "condition": "params.data && params.data.operation_type === 'INSERT' && params.data.process_type === 'innsamling'",
@@ -1820,9 +1775,7 @@ class Naeringsspesifikasjon:
                                     dbc.ModalTitle("Advarsel"),
                                     close_button=False,
                                 ),
-                                dbc.ModalBody(
-                                    id="negative-value-modal-body"
-                                ),
+                                dbc.ModalBody(id="negative-value-modal-body"),
                                 dbc.ModalFooter(
                                     [
                                         dbc.Button(
@@ -1849,9 +1802,7 @@ class Naeringsspesifikasjon:
                         dbc.Modal(
                             [
                                 dbc.ModalHeader(
-                                    dbc.ModalTitle(
-                                        id="feltkommentar-modal-title"
-                                    ),
+                                    dbc.ModalTitle(id="feltkommentar-modal-title"),
                                     close_button=False,
                                 ),
                                 dbc.ModalBody(
@@ -1902,7 +1853,7 @@ class Naeringsspesifikasjon:
                             centered=True,
                             backdrop=False,
                             className="ssb-modal ssb-modal-comment",
-                        )
+                        ),
                     ],
                     style={"marginBottom": "10px"},
                 ),
@@ -2636,10 +2587,7 @@ class Naeringsspesifikasjon:
             if not aar or not orgnr_foretak:
                 raise PreventUpdate
 
-            if (
-                refresh_data
-                and refresh_data.get("status") == "invalid_search"
-            ):
+            if refresh_data and refresh_data.get("status") == "invalid_search":
                 return [], []
 
             df = build_regnskap_dataframe(
@@ -2655,9 +2603,7 @@ class Naeringsspesifikasjon:
 
             row_data = df.to_dict("records")
 
-            column_defs = build_column_defs(
-                sekvens_compare
-            )
+            column_defs = build_column_defs(sekvens_compare)
 
             return row_data, column_defs
 
@@ -2687,10 +2633,7 @@ class Naeringsspesifikasjon:
             if not aar or not orgnr_foretak:
                 raise PreventUpdate
 
-            if (
-                refresh_data
-                and refresh_data.get("status") == "invalid_search"
-            ):
+            if refresh_data and refresh_data.get("status") == "invalid_search":
                 return [], []
 
             df = build_regnskap_dataframe(
@@ -2706,9 +2649,7 @@ class Naeringsspesifikasjon:
 
             row_data = df.to_dict("records")
 
-            column_defs = build_column_defs(
-                sekvens_compare
-            )
+            column_defs = build_column_defs(sekvens_compare)
 
             return row_data, column_defs
 
