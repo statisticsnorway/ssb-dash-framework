@@ -73,8 +73,7 @@ def main_layout(
                     [
                         DashIconify(
                             icon="feather:moon",
-                            width=20,
-                            height=20,
+                            width=24,
                             id="theme-icon",
                             className="sidebar-button-icon-spot",
                         ),

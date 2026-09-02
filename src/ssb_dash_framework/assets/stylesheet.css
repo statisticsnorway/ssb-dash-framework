@@ -1559,6 +1559,10 @@ Dash override for ssb-tabs DCC
   background-size: contain;
 }
 
+.dark-mode .nspek-kontrollutslag-tab.has-issues span::before {
+  filter: invert(1);
+}
+
 /*
 ssb-text-area
 */
@@ -2420,6 +2424,7 @@ Sidebar button
   word-break: break-all;
   margin-bottom: 5%;
   width: 100%;
+  justify-content: center;
 }
 
 .sidebar-button-icon-spot {

@@ -1498,15 +1498,24 @@ class Naeringsspesifikasjon:
             "styleConditions": [
                 {
                     "condition": "params.data && params.data.operation_type === 'INSERT' && params.data.process_type === 'editering'",
-                    "style": {"backgroundColor": "#c8e6c9"},  # lys grønn
+                    "style": {
+                        "backgroundColor": "#c8e6c9",
+                        "color": "#162327",
+                    }, # lys grønn
                 },
                 {
                     "condition": "params.data && params.data.operation_type === 'UPDATE'",
-                    "style": {"backgroundColor": "#ffe082"},  # lys gul
+                    "style": {
+                        "backgroundColor": "#ffe082",
+                        "color": "#162327",
+                    }, # lys gul
                 },
                 {
                     "condition": "params.data && params.data.operation_type === 'INSERT' && params.data.process_type === 'innsamling'",
-                    "style": {"backgroundColor": "#bde4ff"},  # lys blå
+                    "style": {
+                        "backgroundColor": "#bde4ff",
+                        "color": "#162327",
+                    },  # lys blå
                 },
             ]
         }
@@ -1529,8 +1538,6 @@ class Naeringsspesifikasjon:
                     "style": {
                         "fontStyle": "italic",
                         "fontWeight": "normal",
-                        "backgroundColor": "#F0F8F9",  # SSB mørk 1
-                        "color": "#333333",
                     },
                 },
             ]
