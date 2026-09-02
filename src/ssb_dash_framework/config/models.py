@@ -4,15 +4,13 @@ from typing import Any
 from typing import Literal
 
 from pydantic import BaseModel
-from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
 
-from ..utils.config_tools.set_variables import TimeUnitType
-from ..utils.config_tools.set_variables import apply_config
+from ..utils.config_tools.set_variables import VariableSelectorConfig
 from ..utils.implementations import TabImplementation
 from ..utils.implementations import WindowImplementation
-from ..utils.config_tools.set_variables import VariableSelectorConfig
+
 
 class RegisteredModule(BaseModel):
     type: str
@@ -198,7 +196,6 @@ class AppModules(BaseModel):
     ``windows`` → passed as ``window_list`` to main_layout()
     """
 
-    dataeditor_components: list[ModuleConfig] = []
     tabs: list[ModuleConfig] = []
     windows: list[ModuleConfig] = []
 
