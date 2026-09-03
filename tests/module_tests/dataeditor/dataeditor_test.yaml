@@ -21,16 +21,16 @@ modules:
   tabs:
     - type: DataEditor
       settings:
-        starting_table: "skjemadata"
-        form_data_table: "skjemadata"
+        starting_table: skjemadata
+        form_data_table: skjemadata
         form_list:
-          - "RA-0187"
-        period_col: "iso_period"
-        ident_col: "ident"
-        refnr_col: "refnr"
-        form_name_col: "skjema"
-        field_name_col: "feltsti"
-        field_value_col: "verdi"
+          - RA-0187
+        period_col: iso_period
+        ident_col: ident
+        refnr_col: refnr
+        form_name_col: skjema
+        field_name_col: feltsti
+        field_value_col: verdi
       data_handler: StandardDataHandler
       inforow:
       buttons:
