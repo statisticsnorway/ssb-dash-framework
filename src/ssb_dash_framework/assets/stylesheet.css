@@ -195,33 +195,24 @@ ssb-accordion
 DASH custom styling for ssb-accordion
 */
 
-/* Fjern ramme rundt accordion*/
 .ssb-accordion,
 .ssb-accordion .accordion {
   border: none !important;
 }
 
-/* Fjern header styling */
 .ssb-accordion .accordion-button {
   background: transparent !important;
+  font-size: 18px;
+  font-weight: bold !important;
 }
 
-/* Fjern focus/active styling */
 .ssb-accordion .accordion-button:focus {
   box-shadow: none !important;
   color: #162327;
 }
 
-/* Fjern focus/active styling */
 .ssb-accordion .accordion-button:hover {
   color: #00824d;
-}
-
-
-/* fet skrift på accordion header*/
-.ssb-accordion .accordion-button {
-  font-size: 18px;
-  font-weight: bold !important;
 }
 
 .ssb-accordion .accordion-body {
@@ -386,19 +377,13 @@ ssb-btn
   border: none;
   color: inherit;
   cursor: pointer;
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  padding: 0;
-  text-align: left;
-  font-family: "Roboto", sans-serif !important;
-  font-stretch: normal;
-  font-weight: normal;
   font-family: "Open Sans", sans-serif;
+  font-size: 16px;
   font-style: normal;
   font-weight: 700;
-  font-size: 16px;
   line-height: 20px;
+  padding: 0;
+  text-align: left;
 }
 
 .ssb-btn-tertiary .button-header .button-grid {
@@ -503,15 +488,12 @@ ssb-btn
 /*
 dash override for ssb-btn
 */
-/* Juster knapphøyde i forms */
+
 .ssb-btn {
   height: 44px;
-  /* matcher Bootstrap input height */
   padding: 6px 12px;
-  /* litt mindre padding */
   display: flex;
   align-items: center;
-  /* vertikal sentrering av tekst */
   text-transform: none !important;
   font-family: "Open Sans", sans-serif !important;
 }
@@ -519,6 +501,7 @@ dash override for ssb-btn
 /*
 ssb-checkboxes
 */
+
 .ssb-checkbox {
   font-family: "Open Sans", sans-serif !important;
   font-stretch: normal;
@@ -626,13 +609,13 @@ ssb-checkboxes
 /*
 Dash override for ssb-checkbox
 */
+
 .ssb-checkbox .form-check {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-/* checkbox base */
 .ssb-checkbox input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
@@ -646,18 +629,15 @@ Dash override for ssb-checkbox
   flex-shrink: 0;
 }
 
-/* hover */
 .ssb-checkbox input[type="checkbox"]:hover {
   border: 2px solid #00824d;
 }
 
-/* checked state */
 .ssb-checkbox input[type="checkbox"]:checked {
   background: #274247;
   border: 1px solid #274247;
 }
 
-/* checkmark */
 .ssb-checkbox input[type="checkbox"]:checked::after {
   content: "";
   position: absolute;
@@ -670,7 +650,6 @@ Dash override for ssb-checkbox
   transform: rotate(45deg);
 }
 
-/* label alignment (Dash auto-generert label) */
 .ssb-checkbox label {
   margin: 5;
   display: flex;
@@ -680,19 +659,16 @@ Dash override for ssb-checkbox
   color: #162327;
 }
 
-/* spacing mellom checkbox og tekst */
 .ssb-checkbox input[type="checkbox"] {
   margin: 0;
 }
 
-/* disable conflicting SSB checkbox styling */
 .ssb-checkbox .checkbox-label::before,
 .ssb-checkbox .checkbox-label::after {
   content: none !important;
   display: none !important;
 }
 
-/* disable hidden input trick */
 .ssb-checkbox input[type="checkbox"] {
   opacity: 1 !important;
   position: relative !important;
@@ -720,6 +696,7 @@ Dash override for ssb-checkbox
 /*
 ssb-dialog
 */
+
 .ssb-dialog {
   font-family: "Open Sans", sans-serif !important;
   font-stretch: normal;
@@ -811,7 +788,6 @@ Dash override for ssb-radio buttons
   font-family: "Roboto", sans-serif;
   font-stretch: normal;
   font-weight: normal;
-  color: #162327 !important;
 }
 
 .ssb-radio-buttons input[type="radio"] {
@@ -852,6 +828,7 @@ Dash override for ssb-radio buttons
 /*
 Dash override for ssb-dialog
 */
+
 .ssb-dialog {
   position: relative;
 }
@@ -860,7 +837,6 @@ Dash override for ssb-dialog
   position: absolute;
   top: 6px;
   right: 6px;
-
   background: transparent;
   border: none;
   font-size: 18px;
@@ -904,7 +880,6 @@ ssb-dropdown
   outline: 1px solid #dc3400;
 }
 
-/* selected value area (inside the closed button) */
 .ssb-dropdown .dash-dropdown-value {
   display: flex;
   align-items: center;
@@ -913,7 +888,6 @@ ssb-dropdown
   font-weight: 400;
 }
 
-/* dropdown arrow */
 .ssb-dropdown .dash-dropdown-trigger-icon {
   color: #00824d;
 }
@@ -947,14 +921,12 @@ ssb-dropdown
   font-family: "Roboto", sans-serif !important;
   font-size: 16px;
   line-height: 1.25;
-  padding: 12px;
-  box-sizing: border-box;
-  width: 100%;
   padding: 0;
   height: 43px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .dash-options-list-option.dash-dropdown-option:hover {
@@ -994,7 +966,6 @@ ssb-dropdown
   padding: 5px;
 }
 
-
 .dash-dropdown-options .dash-options-list-option-checkbox[type="radio"] {
   display: none;
 }
@@ -1005,9 +976,8 @@ ssb-dropdown
   width: 18px;
   height: 18px;
   margin-left: 5px;
-  border: 1px solid #162327;
-  border-radius: 2px;
   border: 2px solid #274247;
+  border-radius: 2px;
   background: #fff;
   cursor: pointer;
   position: relative;
@@ -1046,7 +1016,7 @@ ssb-dropdown
 }
 
 .dash-dropdown-search-icon {
-  display: none; /* SSB reference has no icon in the search box */
+  display: none;
 }
 
 .dash-dropdown-search {
@@ -1062,6 +1032,16 @@ ssb-dropdown
 
 .dash-dropdown-search::placeholder {
   color: #2d6975;
+}
+
+.ssb-input label,
+.ssb-dropdown-card .dropdown-label {
+  color: #162327;
+  font-family: "Roboto", sans-serif !important;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 1.2;
+  margin-bottom: 4px;
 }
 
 /*
@@ -1309,7 +1289,6 @@ Dash override for ssb-input
 .ssb-dropdown .dropdown-label {
   font-size: 14px;
   margin-bottom: 4px;
-  /* litt tighter enn 5px */
   line-height: 1.2;
 }
 
@@ -1325,6 +1304,7 @@ Dash override for ssb-input
 /*
 ssb-nested-accordions
 */
+
 .ssb-nested-accordion {
   font-family: "Roboto", sans-serif !important;
   font-stretch: normal;
@@ -1402,6 +1382,7 @@ ssb-nested-accordions
 /*
 Dash override for ssb-nested-accordion
 */
+
 .ssb-nested-accordion .accordion-item {
   border: none !important;
 }
@@ -1410,32 +1391,23 @@ Dash override for ssb-nested-accordion
   background: transparent !important;
   box-shadow: none !important;
   padding: 8px 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding-left: 0;
 }
 
 .ssb-nested-accordion .accordion-body {
   padding: 10px 10px 10px 30px !important;
 }
 
-/* Nested accordion button */
-.ssb-nested-accordion .accordion-button {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  /* viktig */
-  gap: 8px;
-  padding-left: 0;
-}
-
-/* Flytt caret til venstre */
 .ssb-nested-accordion .accordion-button::after {
   order: -1;
-  /* flytter ikonet foran teksten */
   margin-left: 0;
   margin-right: 8px;
-  /* spacing til tekst */
 }
 
-/* Sørg for riktig rotasjon */
 .ssb-nested-accordion .accordion-button:not(.collapsed)::after {
   transform: rotate(180deg);
 }
@@ -1443,6 +1415,7 @@ Dash override for ssb-nested-accordion
 /*
 ssb-tabs
 */
+
 .ssb-tabs {
   display: flex;
   flex-direction: row;
@@ -1519,14 +1492,12 @@ ssb-tabs
 Dash override for ssb-tabs DCC
 */
 
-/* container */
 .ssb-tabs .tab-container,
 .ssb-tabs .tab,
 .ssb-tabs .tab-parent {
   border: none !important;
 }
 
-/* tab base */
 .ssb-tabs .tab {
   font-family: "Roboto", sans-serif;
   font-weight: bold;
@@ -1539,13 +1510,11 @@ Dash override for ssb-tabs DCC
   position: relative;
 }
 
-/* remove Dash default underline/box */
 .ssb-tabs .tab--selected {
   background: transparent !important;
   border: none !important;
 }
 
-/* underline effect (SSB style) */
 .ssb-tabs .tab::after {
   content: "";
   position: absolute;
@@ -1557,47 +1526,46 @@ Dash override for ssb-tabs DCC
   transition: all 0.2s;
 }
 
-/* hover + focus */
 .ssb-tabs .tab:hover::after,
 .ssb-tabs .tab:focus::after {
   height: 4px;
 }
 
-/* active tab */
 .ssb-tabs .tab--selected::after {
   height: 4px;
   background: #1a9d49;
 }
 
-/* spacing fix mobile-ish behavior */
 .ssb-tabs .tab:last-child {
   margin-right: 0;
 }
 
-/* Tabs skal ikke fylle hele bredden */
 #main-layout-tab-list,
 #main-layout-tab-list * {
   max-width: 600px;
 }
 
 .nspek-kontrollutslag-tab.has-issues span::before {
-    content: "";
-    display: inline-block;
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  vertical-align: middle;
+  background-image: url("https://api.iconify.design/feather/alert-triangle.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
 
-    width: 20px;
-    height: 20px;
-    margin-right: 10px;
-    vertical-align: middle;
-
-    background-image: url("https://api.iconify.design/feather/alert-triangle.svg");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
+.dark-mode .nspek-kontrollutslag-tab.has-issues span::before {
+  filter: invert(1);
 }
 
 /*
 ssb-text-area
 */
+
 .ssb-text-area {
   font-family: "Roboto", sans-serif !important;
   font-stretch: normal;
@@ -1693,6 +1661,7 @@ ssb-text-area
 /*
 Dash override for ssb-text-area
 */
+
 .ssb-text-area {
   width: 100%;
   max-width: 100%;
@@ -1706,15 +1675,15 @@ Dash override for ssb-text-area
   min-height: 44px;
   resize: vertical;
   box-sizing: border-box;
+  border: 1px;
+  border-radius: 0;
 }
 
 /* =========================
    SSB AG GRID THEME
    ========================= */
 
-/* Arver Alpine (viktig!) */
 .ag-theme-ssb {
-  /* dette gjør at du får hele Alpine base */
   --ag-foreground-color: #162327;
   --ag-background-color: #ffffff;
   --ag-header-background-color: #ffffff;
@@ -1722,14 +1691,24 @@ Dash override for ssb-text-area
   --ag-border-color: #274247;
   --ag-row-hover-color: #f2f0ff;
   --ag-selected-row-background-color: #e6f4ea;
+  --ag-odd-row-background-color: #ecfeed;
 }
 
-/* Wrapper look (SSB table wrapper feel) */
+/* AG Grid row-selection checkbox */
+
+.ag-theme-ssb .ag-checkbox-input-wrapper.ag-checked {
+  background-color: #00824d;
+  border-color: #00824d;
+}
+
+.ag-theme-ssb .ag-checkbox-input-wrapper.ag-checked::after {
+  color: #ffffff;
+}
+
 .ag-theme-ssb {
   border: 1px solid #274247;
 }
 
-/* Header styling */
 .ag-theme-ssb .ag-header {
   background-color: #ffffff;
   border-bottom: 1px solid #274247;
@@ -1737,7 +1716,6 @@ Dash override for ssb-text-area
   font-family: "Roboto", sans-serif !important;
 }
 
-/* Alternating rows (SSB-style striping) */
 .ag-theme-ssb .ag-row:nth-child(odd) {
   background-color: #ecfeed;
 }
@@ -1746,17 +1724,494 @@ Dash override for ssb-text-area
   border-bottom: 1px solid #c3dcdc;
 }
 
-/* Hover */
 .ag-theme-ssb .ag-row:hover {
   background-color: #f2f0ff;
 }
 
-/* Fjern avrundede hjørner */
 .ag-theme-ssb,
 .ag-theme-ssb .ag-root-wrapper,
 .ag-theme-ssb .ag-header,
 .ag-theme-ssb .ag-center-cols-container {
-    border-radius: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* =========================
+   SSB MODAL
+   ========================= */
+
+.ssb-modal .modal-content {
+  border: 1px solid #274247;
+  border-radius: 0;
+  box-shadow: 0 8px 24px rgba(22, 35, 39, 0.25);
+  overflow: hidden;
+}
+
+/*
+HEADER
+*/
+
+.ssb-modal .modal-header {
+  display: flex;
+  align-items: center;
+  background-color: #00824d;
+  border: none;
+  border-radius: 0;
+  padding: 16px 24px;
+}
+
+.ssb-modal .modal-title,
+.ssb-modal .modal-title-text,
+.ssb-modal .modal-title-icon {
+  color: #ffffff !important;
+  font-family: "Roboto", sans-serif !important;
+}
+
+.ssb-modal .modal-title-text {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.ssb-modal .modal-title-icon {
+  font-size: 20px;
+}
+
+/*
+MODAL HEADER CONTROLS
+*/
+
+.ssb-modal .ssb-modal-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0;
+  color: #ffffff !important;
+}
+
+.ssb-modal .ssb-modal-icon-button svg {
+  color: #ffffff !important;
+}
+
+/*
+CLOSE BUTTON
+*/
+
+.ssb-modal .btn-close {
+  width: 32px;
+  height: 32px;
+  margin: 0 0 0 4px;
+  padding: 0;
+  border-radius: 0;
+  filter: brightness(0) invert(1);
+  opacity: 1;
+}
+
+/*
+BODY
+*/
+
+.ssb-modal .modal-body {
+  background-color: #ffffff;
+  color: #162327;
+  font-family: "Open Sans", sans-serif;
+  padding: 24px;
+}
+
+/*
+FOOTER
+*/
+
+.ssb-modal .modal-footer {
+  background-color: #ffffff;
+  border-top: 1px solid #c3dcdc;
+  border-radius: 0;
+  padding: 16px 24px;
+}
+
+/*
+REMOVE BOOTSTRAP ROUNDING
+*/
+
+.ssb-modal .modal-header,
+.ssb-modal .modal-footer,
+.ssb-modal .modal-content {
+  border-radius: 0;
+}
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+/* =========================
+   MODAL
+   ========================= */
+
+.dark-mode .ssb-modal .modal-content {
+  background-color: #222222;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark-mode .ssb-modal .modal-header {
+  background-color: #00824d;
+  color: #ffffff;
+}
+
+.dark-mode .ssb-modal .modal-title,
+.dark-mode .ssb-modal .modal-title-text,
+.dark-mode .ssb-modal .modal-title-icon,
+.dark-mode .ssb-modal .ssb-modal-icon-button,
+.dark-mode .ssb-modal .ssb-modal-icon-button svg {
+  color: #ffffff !important;
+}
+
+.dark-mode .ssb-modal .modal-body,
+.dark-mode .ssb-modal .modal-footer {
+  background-color: #303030;
+  color: #ffffff;
+}
+
+.dark-mode .ssb-modal .modal-footer {
+  border-top-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark-mode .ssb-modal .btn-close {
+  filter: brightness(0) invert(1);
+  opacity: 1;
+}
+
+/* =========================
+   FORM LABELS
+   ========================= */
+
+.dark-mode .ssb-input label,
+.dark-mode .ssb-dropdown-card .dropdown-label,
+.dark-mode .ssb-text-area label {
+  color: #ffffff;
+}
+
+/* =========================
+   INPUT / TEXTAREA
+   ========================= */
+
+.dark-mode .ssb-input input,
+.dark-mode .ssb-text-area textarea,
+.dark-mode .ssb-text-area .comment-textarea {
+  background-color: #303030;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.dark-mode .ssb-input input::placeholder,
+.dark-mode .ssb-text-area textarea::placeholder,
+.dark-mode .ssb-text-area .comment-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.dark-mode .ssb-input:hover input:not(:disabled),
+.dark-mode .ssb-input input:focus,
+.dark-mode .ssb-text-area:hover textarea:not(:disabled),
+.dark-mode .ssb-text-area textarea:focus,
+.dark-mode .ssb-text-area .comment-textarea:focus {
+  border-color: #b6e8b8;
+  outline-color: #b6e8b8;
+}
+
+.dark-mode .ssb-input input:disabled,
+.dark-mode .ssb-text-area textarea:disabled {
+  background-color: #3a3a3a;
+  color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.dark-mode .ssb-text-area {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* =========================
+   CHECKBOXES
+   ========================= */
+
+.dark-mode .ssb-checkbox,
+.dark-mode .ssb-checkbox label,
+.dark-mode .ssb-checkbox .form-check label {
+  color: #ffffff;
+}
+
+.dark-mode .ssb-checkbox input[type="checkbox"] {
+  background: #303030;
+  border-color: #ffffff;
+}
+
+.dark-mode .ssb-checkbox input[type="checkbox"]:hover {
+  border-color: #00824d;
+}
+
+.dark-mode .ssb-checkbox input[type="checkbox"]:checked {
+  background: #00824d;
+  border-color: #00824d;
+}
+
+.dark-mode .ssb-checkbox input[type="checkbox"]:checked::after {
+  border-color: #ffffff;
+}
+
+.dark-mode .ssb-checkbox input[type="checkbox"]:disabled {
+  background: #3a3a3a;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.dark-mode .ssb-checkbox label:has(input:disabled) {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* =========================
+   ACCORDION
+   ========================= */
+
+.dark-mode .ssb-accordion,
+.dark-mode .ssb-accordion .accordion-body {
+  color: #ffffff;
+}
+
+.dark-mode .ssb-accordion .accordion-header .header-text,
+.dark-mode .ssb-accordion .accordion-header .sub-header,
+.dark-mode .ssb-accordion .accordion-button {
+  color: #ffffff !important;
+}
+
+.dark-mode .ssb-accordion .accordion-header:hover .header-text,
+.dark-mode .ssb-accordion .accordion-header:hover .sub-header {
+  color: #b6e8b8;
+}
+
+.dark-mode .ssb-accordion .accordion-button,
+.dark-mode .ssb-accordion .accordion-button:not(.collapsed) {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.dark-mode .ssb-accordion .accordion-button::after,
+.dark-mode .ssb-accordion .accordion-button:not(.collapsed)::after,
+.dark-mode .ssb-nested-accordion .accordion-button::after,
+.dark-mode .ssb-nested-accordion .accordion-button:not(.collapsed)::after {
+    filter: brightness(0) saturate(100%)
+            invert(42%) sepia(45%) saturate(900%)
+            hue-rotate(105deg) brightness(90%);
+}
+
+.dark-mode .ssb-accordion .accordion-button:focus {
+  box-shadow: none !important;
+}
+
+.dark-mode .ssb-accordion:not(.without-borders)::before {
+  border-top-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark-mode .ssb-accordion:not(.without-borders)::after {
+  border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+
+/* =========================
+   NESTED ACCORDION
+   ========================= */
+
+.dark-mode .ssb-nested-accordion .nested-accordion-header .header-text,
+.dark-mode .ssb-nested-accordion .nested-accordion-body,
+.dark-mode .ssb-nested-accordion .accordion-button {
+  color: #ffffff !important;
+}
+
+.dark-mode .ssb-nested-accordion .nested-accordion-header:hover .header-text,
+.dark-mode .ssb-nested-accordion .nested-accordion-header.open .header-text,
+.dark-mode .ssb-nested-accordion .nested-accordion-header.open .sub-header {
+  color: #b6e8b8;
+}
+
+.dark-mode .ssb-nested-accordion .accordion-button,
+.dark-mode .ssb-nested-accordion .accordion-button:not(.collapsed) {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* =========================
+   DROPDOWN
+   ========================= */
+
+.dark-mode .ssb-dropdown {
+  background-color: #303030;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.dark-mode .ssb-dropdown .dash-dropdown-value {
+  color: #ffffff;
+}
+
+.dark-mode .ssb-dropdown .dash-dropdown-trigger-icon {
+  color: #b6e8b8;
+}
+
+.dark-mode .ssb-dropdown:hover,
+.dark-mode .ssb-dropdown:focus {
+  border-color: #b6e8b8;
+  outline-color: #b6e8b8;
+}
+
+.dark-mode .dash-dropdown-content,
+.dark-mode .dash-options-list-option.dash-dropdown-option {
+  background-color: #303030;
+  color: #ffffff;
+}
+
+.dark-mode .dash-dropdown-content {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.dark-mode .dash-options-list-option.dash-dropdown-option:hover {
+  background-color: #274247;
+  color: #ffffff;
+}
+
+.dark-mode .dash-options-list-option.dash-dropdown-option.selected,
+.dark-mode .dash-options-list-option.dash-dropdown-option[aria-selected="true"] {
+  background-color: #00824d;
+  color: #ffffff !important;
+}
+
+.dark-mode .dash-dropdown-search-container {
+  background-color: #303030;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.dark-mode .dash-dropdown-search {
+  background-color: transparent;
+  color: #ffffff;
+}
+
+.dark-mode .dash-dropdown-search::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.dark-mode .dash-options-list::-webkit-scrollbar-track {
+  background: #303030;
+}
+
+.dark-mode .dash-options-list::-webkit-scrollbar-thumb {
+  background: #666666;
+}
+
+/* Dropdown checkbox */
+
+.dark-mode .dash-dropdown-options .dash-options-list-option-checkbox {
+  background: #303030;
+  border-color: #ffffff;
+}
+
+.dark-mode .dash-dropdown-options .dash-options-list-option[aria-selected="true"]
+.dash-options-list-option-checkbox {
+  background: #00824d;
+  border-color: #00824d;
+}
+
+/* =========================
+   MAIN DCC TABS
+   ========================= */
+
+.dark-mode #main-layout-tab-list .tab,
+.dark-mode #main-layout-tab-list .tab--selected,
+.dark-mode #main-layout-tab-list .tab:hover,
+.dark-mode #main-layout-tab-list .tab:focus {
+  color: #ffffff !important;
+}
+
+/* =========================
+   AG GRID
+   ========================= */
+
+.dark-mode .ag-theme-ssb {
+  --ag-foreground-color: #ffffff;
+  --ag-background-color: #303030;
+  --ag-header-background-color: #222222;
+  --ag-header-foreground-color: #ffffff;
+
+  --ag-border-color: rgba(255, 255, 255, 0.15);
+  --ag-row-hover-color: rgba(255, 255, 255, 0.08);
+  --ag-selected-row-background-color: rgba(55, 90, 127, 0.5);
+  --ag-range-selection-background-color: rgba(55, 90, 127, 0.3);
+
+  --ag-cell-horizontal-border: solid rgba(255, 255, 255, 0.08);
+  --ag-header-column-separator-color: rgba(255, 255, 255, 0.15);
+
+  --ag-input-focus-border-color: #b6e8b8;
+  --ag-input-background-color: #303030;
+
+  --ag-disabled-foreground-color: rgba(255, 255, 255, 0.5);
+
+  --ag-modal-overlay-background-color: rgba(0, 0, 0, 0.5);
+  --ag-panel-background-color: #303030;
+  --ag-tool-panel-background-color: #303030;
+
+  --ag-filter-tool-panel-group-title-bar-background-color: #303030;
+  --ag-subheader-background-color: #303030;
+  --ag-subheader-toolbar-background-color: #303030;
+  --ag-control-panel-background-color: #303030;
+
+  --ag-side-panel-border-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark-mode .ag-theme-ssb {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark-mode .ag-theme-ssb .ag-header {
+  background-color: #222222;
+  border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark-mode .ag-theme-ssb .ag-row {
+  background-color: #303030;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark-mode .ag-theme-ssb .ag-row:nth-child(odd) {
+  background-color: #3a3a3a;
+}
+
+.dark-mode .ag-theme-ssb .ag-row:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* AG Grid row-selection checkbox */
+
+.dark-mode .ag-theme-ssb .ag-checkbox-input-wrapper {
+  background-color: #303030;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.dark-mode .ag-theme-ssb .ag-checkbox-input-wrapper.ag-checked {
+  background-color: #00824d;
+  border-color: #00824d;
+}
+
+.dark-mode .ag-theme-ssb .ag-checkbox-input-wrapper.ag-checked::after {
+  color: #ffffff;
+}
+
+/* =========================
+   AG GRID - COMMON ROUNDING
+   ========================= */
+
+.ag-theme-ssb,
+.ag-theme-ssb .ag-root-wrapper,
+.ag-theme-ssb .ag-header,
+.ag-theme-ssb .ag-center-cols-container {
+  border-radius: 0 !important;
 }
 
 /*
@@ -1968,6 +2423,7 @@ Sidebar button
   word-break: break-all;
   margin-bottom: 5%;
   width: 100%;
+  justify-content: center;
 }
 
 .sidebar-button-icon-spot {
