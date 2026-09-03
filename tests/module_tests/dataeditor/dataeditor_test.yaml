@@ -52,74 +52,74 @@ modules:
             form_name_col: "skjema"
             field_name_col: "feltsti"
             field_value_col: "verdi"
-        # - type: DataViewCustom
-        #   layout:
-        #     - type: row
-        #       children:
-        #         - type: col
-        #           children:
-        #             - type: microlayout
-        #               label: Internett_salg
-        #               applies_to_table: skjemadata
-        #               applies_to_forms:
-        #                 - RA-0187
-        #                 - RA-0745
-        #               field_name_col: "feltsti"
-        #               field_value_col: "verdi"
-        #               layout:
-        #                 - type: header
-        #                   label: Omsetning i Varehandelen
-        #                   size: md
-        #     - type: col
-        #       children:
-        #       - type: microlayout
-        #         label: Internett_salg
-        #         applies_to_table: skjemadata
-        #         applies_to_forms:
-        #           - RA-0187
-        #         field_name_col: "feltsti"
-        #         field_value_col: "verdi"
-        #         layout:
-        #           - type: header
-        #             label: Omsetning i Varehandelen
-        #             size: md
-        #           - type: row
-        #             children:
-        #               - type: col
-        #                 children:
-        #                 - type: input
-        #                   label: Omsetning
-        #                   id: "omsVirksomhetPerioden"
-        #                   variable: "/omsVirksomhetPerioden"
-        #                 - type: input
-        #                   label: Omsetning forrige periode
-        #                   id: oms_fr
-        #                   variable: "/omsForrigePerPrefill"
-        #                 - type: calculated-field
-        #                   label: Differanse
-        #                   ids:
-        #                     oms: omsVirksomhetPerioden
-        #                     oms_fr: oms_fr
-        #                   expression: "Math.round((oms - oms_fr) / 1000, 0)"
-        #               - type: col
-        #                 children:
-        #                 - type: klass-dropdown
-        #                   klass_code: "689"
-        #                   label: Årsak null omsetning
-        #                   variable: "/nullOmsPerAarsak"
-        #                   variable_trigger: "value"
-        #                 - type: input
-        #                   label: Årsak null omsetning kommentar
-        #                   variable: "/nullOmsPerAarsakSpes"
-        #                 - type: input
-        #                   label: Årsak lik omsetning
-        #                   variable: "/likOmsToPerioderAarsak"
-        #                 - type: input
-        #                   label: Årsak lik kommentar
-        #                   variable: "/likOmsToPerioderAarsakSpes"
-        #                 - type: timeseries
-        #                   variable:
-        #                   - "/omsVirksomhetPerioden"
-        #                   - "/omsForrigePerPrefill"
-        #                   num_periods: 12
-        #                   label: Omsetning historikk
+        - type: DataViewCustom
+          layout:
+            - type: row
+              children:
+                - type: col
+                  children:
+                    - type: microlayout
+                      label: Internett_salg
+                      applies_to_table: skjemadata
+                      applies_to_forms:
+                        - RA-0187
+                        - RA-0745
+                      field_name_col: "feltsti"
+                      field_value_col: "verdi"
+                      layout:
+                        - type: header
+                          label: Omsetning i Varehandelen
+                          size: md
+            - type: col
+              children:
+              - type: microlayout
+                label: Internett_salg
+                applies_to_table: skjemadata
+                applies_to_forms:
+                  - RA-0187
+                field_name_col: "feltsti"
+                field_value_col: "verdi"
+                layout:
+                  - type: header
+                    label: Omsetning i Varehandelen
+                    size: md
+                  - type: row
+                    children:
+                      - type: col
+                        children:
+                        - type: input
+                          label: Omsetning
+                          id: "omsVirksomhetPerioden"
+                          variable: "/omsVirksomhetPerioden"
+                        - type: input
+                          label: Omsetning forrige periode
+                          id: oms_fr
+                          variable: "/omsForrigePerPrefill"
+                        - type: calculated-field
+                          label: Differanse
+                          ids:
+                            oms: omsVirksomhetPerioden
+                            oms_fr: oms_fr
+                          expression: "Math.round((oms - oms_fr) / 1000, 0)"
+                      - type: col
+                        children:
+                        - type: klass-dropdown
+                          klass_code: "689"
+                          label: Årsak null omsetning
+                          variable: "/nullOmsPerAarsak"
+                          variable_trigger: "value"
+                        - type: input
+                          label: Årsak null omsetning kommentar
+                          variable: "/nullOmsPerAarsakSpes"
+                        - type: input
+                          label: Årsak lik omsetning
+                          variable: "/likOmsToPerioderAarsak"
+                        - type: input
+                          label: Årsak lik kommentar
+                          variable: "/likOmsToPerioderAarsakSpes"
+                        - type: timeseries
+                          variable:
+                          - "/omsVirksomhetPerioden"
+                          - "/omsForrigePerPrefill"
+                          num_periods: 12
+                          label: Omsetning historikk
