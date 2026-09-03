@@ -19,6 +19,7 @@ from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
 from psycopg_pool import ConnectionPool
 
+from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.set_variables import get_ident
@@ -33,6 +34,7 @@ logger = logging.getLogger(__name__)
 local_tz = tzlocal.get_localzone()
 
 
+@register_module()
 class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
     """A sidebar module for inspecting and updating the status of the selected form by 'refnr'.
 

@@ -14,6 +14,7 @@ from psycopg_pool import ConnectionPool
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
 from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
 
+from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.connection import get_connection
@@ -27,6 +28,7 @@ from .base import DataEditorDataView
 logger = logging.getLogger(__name__)
 
 
+@register_module()
 class DataEditorTable(DataEditorDataView):
     """Requires table selector."""
 
@@ -42,6 +44,10 @@ class DataEditorTable(DataEditorDataView):
         self.module_number = DataEditorTable._id_number
         self.module_name = self.__class__.__name__
         DataEditorTable._id_number += 1
+
+        if isinstance(settings, dict):
+            settings = EditorSettings(**settings)
+
         self.time_units = get_time_units()
         self.refnr = get_refnr()
         self.variable_selector = VariableSelector(

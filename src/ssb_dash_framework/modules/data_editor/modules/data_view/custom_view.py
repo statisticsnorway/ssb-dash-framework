@@ -10,6 +10,7 @@ from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
 
+from .....config.models import register_module
 from .....config.yaml_parser import config_parser_yaml
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.set_variables import get_refnr
@@ -129,7 +130,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# @register_module()
+@register_module()
 class DataViewCustom(DataEditorDataView):
     """DataView with a very flexible layout made to be tailored to specific needs."""
 

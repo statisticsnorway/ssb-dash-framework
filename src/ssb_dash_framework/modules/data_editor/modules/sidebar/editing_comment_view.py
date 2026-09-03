@@ -15,6 +15,7 @@ from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
 from psycopg_pool import ConnectionPool
 
+from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.set_variables import get_ident
@@ -26,6 +27,7 @@ from .editing_sidebar_helper import DataEditorHelperSidebar
 logger = logging.getLogger(__name__)
 
 
+@register_module()
 class DataEditorSidebarComment(DataEditorHelperSidebar):
     """Sidebar component for showing a field comment."""
 
