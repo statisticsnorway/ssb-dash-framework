@@ -462,27 +462,68 @@ def get_skjoennslignet(conn, sekvensnummer: int) -> pd.DataFrame:
     return df
 
 
-def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
-    """Fetch and return pandas dataframe containing BOF info from parquet or sqlite fallback for a given orgnr.
+def get_bof_database_path() -> Path:
+    """Find the available BOF database."""
+    database_paths = [
+        Path("/buckets/shared/vof/oracle-hns/ssb_foretak.db"),
+        Path("/buckets/delt-oracle-hns/ssb_foretak.db"),
+    ]
 
-    Example use: get_bofinfo("979443137", "2024")
+    for database_path in database_paths:
+        if database_path.exists():
+            return database_path
+
+    raise FileNotFoundError(
+        "Fant ikke ssb_foretak.db. Sjekket følgende filbaner: "
+        f"{', '.join(str(path) for path in database_paths)}"
+    )
+
+
+def orgnr_exists_in_bof(orgnr: str) -> bool:
+    """Checks if organisation exists in BOF registry.
+
+    Example use: orgnr_exists_in_bof("979443137")
     """
+    try:
+        db_path = get_bof_database_path()
+
+        conn = ibis.sqlite.connect(str(db_path))
+        t = conn.table("ssb_foretak")
+
+        df = t.filter(_.orgnr == orgnr).limit(1).execute()
+
+        return not df.empty
+
+    except Exception as e:
+        logger.error(f"BOF lookup feilet: {e}")
+        return True
+
+
+def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
+    """Fetch and return BOF info for a given orgnr."""
     year = str(aar)
 
-    parquet_paths = [
-        (
-            f"/buckets/shared/vof/"
-            f"situttak/vof-aarsfil_data/"
-            f"klargjorte-data/parquet/"
-            f"vof-aarsfil_p{year}_v1.parquet"
-        ),
-        (
-            f"/buckets/shared/vof/"
-            f"situttak/vof-aarsfil_data/"
-            f"klargjorte-data/parquet/"
-            f"vof-aarsfil-forelopig_p{year}_v1.parquet"
-        ),
+    bof_base_paths = [
+        "/buckets/shared/vof",
+        "/buckets/delt-situttak",
     ]
+
+    parquet_paths = []
+
+    for base_path in bof_base_paths:
+        if base_path == "/buckets/shared/vof":
+            parquet_base = (
+                f"{base_path}/situttak/vof-aarsfil_data/" "klargjorte-data/parquet"
+            )
+        else:
+            parquet_base = f"{base_path}/vof-aarsfil_data/" "klargjorte-data/parquet"
+
+        parquet_paths.extend(
+            [
+                f"{parquet_base}/vof-aarsfil_p{year}_v1.parquet",
+                f"{parquet_base}/vof-aarsfil-forelopig_p{year}_v1.parquet",
+            ]
+        )
 
     rename_map = {
         "org_nr": "orgnr",
@@ -513,13 +554,11 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
     ]
 
     for path in parquet_paths:
-
         if not Path(path).exists():
             continue
 
         try:
             conn = ibis.duckdb.connect()
-
             t = conn.read_parquet(path)
 
             df = t.filter(_.org_nr == str(ident)).execute()
@@ -535,29 +574,34 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
 
             return df[expected_columns]
 
-        except Exception as e:
-            logger.error(
-                f"Failed reading parquet {path}: {e}",
-                exc_info=True,
+        except Exception:
+            logger.exception("Failed reading parquet %s", path)
+
+    # SQLite fallback
+    sqlite_paths = [
+        "/buckets/shared/vof/oracle-hns/ssb_foretak.db",
+        "/buckets/delt-oracle-hns/ssb_foretak.db",
+    ]
+
+    for sqlite_path in sqlite_paths:
+        if not Path(sqlite_path).exists():
+            continue
+
+        try:
+            conn = ibis.sqlite.connect(sqlite_path)
+            t = conn.table("ssb_foretak")
+
+            df = t.filter(_.orgnr == ident).execute()
+
+            return df
+
+        except Exception:
+            logger.exception(
+                "Failed reading sqlite fallback %s",
+                sqlite_path,
             )
 
-    # fallback sqlite
-    try:
-        conn = ibis.sqlite.connect("/buckets/shared/vof/oracle-hns/ssb_foretak.db")
-
-        t = conn.table("ssb_foretak")
-
-        df = t.filter(_.orgnr == ident).execute()
-
-        return df
-
-    except Exception as e:
-        logger.error(
-            f"Failed reading sqlite fallback: {e}",
-            exc_info=True,
-        )
-
-        return pd.DataFrame(columns=expected_columns)
+    return pd.DataFrame(columns=expected_columns)
 
 
 def get_value(series) -> str:
@@ -677,17 +721,9 @@ def build_column_defs(sekvens_compare=None):
             "resizable": True,
             "filter": True,
             "hide": col == "sekvensnummer",
-            "editable": col == "verdi", 
-            "width": (
-                430 if col == "beskrivelse"
-                else 90 if col == "post"
-                else None
-            ),
-            "flex": (
-                None
-                if col in ["beskrivelse", "post"]
-                else 2
-            ),
+            "editable": col == "verdi",
+            "width": (430 if col == "beskrivelse" else 90 if col == "post" else None),
+            "flex": (None if col in ["beskrivelse", "post"] else 2),
             "valueFormatter": {
                 "function": (
                     "params.value == null ? '' : params.value.toLocaleString('no-NO')"
@@ -767,10 +803,7 @@ def build_regnskap_dataframe(
     sekvens_compare: int | None,
     toggle_petroleum: list[str],
 ) -> pd.DataFrame:
-    """
-    Henter og bygger dataframe for balanseregnskap eller resultatregnskap.
-    """
-
+    """Henter og bygger dataframe for balanseregnskap eller resultatregnskap."""
     post_descriptions = post_description_data(regnskapstype)
 
     with get_nspek_connection() as conn:
@@ -803,15 +836,9 @@ def build_regnskap_dataframe(
     post_descriptions = post_descriptions.copy()
     ident_data = ident_data.copy()
 
-    post_descriptions["felt"] = (
-        post_descriptions["felt"]
-        .astype(str)
-    )
+    post_descriptions["felt"] = post_descriptions["felt"].astype(str)
 
-    ident_data["felt"] = (
-        ident_data["felt"]
-        .astype(str)
-    )
+    ident_data["felt"] = ident_data["felt"].astype(str)
 
     # Bygg hoveddata
     df_main = post_descriptions.merge(
@@ -835,10 +862,7 @@ def build_regnskap_dataframe(
 
         df_compare = df_compare.copy()
 
-        df_compare["felt"] = (
-            df_compare["felt"]
-            .astype(str)
-        )
+        df_compare["felt"] = df_compare["felt"].astype(str)
 
         df_compare = df_compare.rename(
             columns={
@@ -857,14 +881,8 @@ def build_regnskap_dataframe(
         verdi = df["verdi"]
         verdi_compare = df["verdi_compare"]
 
-        df["diff"] = (
-            verdi.fillna(0)
-            - verdi_compare.fillna(0)
-        ).where(
-            ~(
-                verdi.isna()
-                & verdi_compare.isna()
-            )
+        df["diff"] = (verdi.fillna(0) - verdi_compare.fillna(0)).where(
+            ~(verdi.isna() & verdi_compare.isna())
         )
 
     else:
@@ -891,21 +909,12 @@ def build_regnskap_dataframe(
     # Feltkommentarer
     # --------------------------------------------------
 
-    valid_comment_row = (
-        df["post"]
-        .fillna("")
-        .astype(str)
-        .ne("")
-        &
-        ~df["is_ui_sum"]
-        .astype("boolean")
-        .fillna(False)
-    )
+    valid_comment_row = df["post"].fillna("").astype(str).ne("") & ~df[
+        "is_ui_sum"
+    ].astype("boolean").fillna(False)
 
     # Ikon kun på gyldige kommentarrader
-    df["feltkommentar_ikon"] = valid_comment_row.map(
-        lambda x: "💬" if x else ""
-    )
+    df["feltkommentar_ikon"] = valid_comment_row.map(lambda x: "💬" if x else "")
 
     # Selve kommentaren
     df["feltkommentar_tekst"] = df["post"].map(
@@ -919,10 +928,7 @@ def build_regnskap_dataframe(
     )
 
     # Har raden en aktiv kommentar?
-    df["har_feltkommentar"] = (
-        valid_comment_row
-        & df["post"].isin(comments)
-    )
+    df["har_feltkommentar"] = valid_comment_row & df["post"].isin(comments)
 
     # Tooltip
     df["feltkommentar_tooltip"] = df.apply(
@@ -940,9 +946,7 @@ def build_regnskap_dataframe(
 
     # Vis kun numeriske poster i gridet
     df["post"] = df["post"].where(
-        df["post"]
-        .astype(str)
-        .str.fullmatch(r"\d+"),
+        df["post"].astype(str).str.fullmatch(r"\d+"),
         "",
     )
 
@@ -1389,6 +1393,7 @@ class Naeringsspesifikasjon:
                     searchable=False,
                 ),
             ],
+            className="ssb-dropdown-card",
         )
         return dropdown_card
 
@@ -1448,15 +1453,24 @@ class Naeringsspesifikasjon:
             "styleConditions": [
                 {
                     "condition": "params.data && params.data.operation_type === 'INSERT' && params.data.process_type === 'editering'",
-                    "style": {"backgroundColor": "#c8e6c9"},  # lys grønn
+                    "style": {
+                        "backgroundColor": "#c8e6c9",
+                        "color": "#162327",
+                    },  # lys grønn
                 },
                 {
                     "condition": "params.data && params.data.operation_type === 'UPDATE'",
-                    "style": {"backgroundColor": "#ffe082"},  # lys gul
+                    "style": {
+                        "backgroundColor": "#ffe082",
+                        "color": "#162327",
+                    },  # lys gul
                 },
                 {
                     "condition": "params.data && params.data.operation_type === 'INSERT' && params.data.process_type === 'innsamling'",
-                    "style": {"backgroundColor": "#bde4ff"},  # lys blå
+                    "style": {
+                        "backgroundColor": "#bde4ff",
+                        "color": "#162327",
+                    },  # lys blå
                 },
             ]
         }
@@ -1479,8 +1493,6 @@ class Naeringsspesifikasjon:
                     "style": {
                         "fontStyle": "italic",
                         "fontWeight": "normal",
-                        "backgroundColor": "#F0F8F9",  # SSB mørk 1
-                        "color": "#333333",
                     },
                 },
             ]
@@ -1759,7 +1771,10 @@ class Naeringsspesifikasjon:
                         ),
                         dbc.Modal(
                             [
-                                dbc.ModalHeader(dbc.ModalTitle("Advarsel")),
+                                dbc.ModalHeader(
+                                    dbc.ModalTitle("Advarsel"),
+                                    close_button=False,
+                                ),
                                 dbc.ModalBody(id="negative-value-modal-body"),
                                 dbc.ModalFooter(
                                     [
@@ -1781,13 +1796,14 @@ class Naeringsspesifikasjon:
                             id="modal-negative-value",
                             is_open=False,
                             centered=True,
-                            backdrop="static",
-                            className="negative-warning-modal",
+                            backdrop=False,
+                            className="ssb-modal ssb-modal-warning",
                         ),
                         dbc.Modal(
                             [
                                 dbc.ModalHeader(
-                                    dbc.ModalTitle(id="feltkommentar-modal-title")
+                                    dbc.ModalTitle(id="feltkommentar-modal-title"),
+                                    close_button=False,
                                 ),
                                 dbc.ModalBody(
                                     [
@@ -1835,7 +1851,8 @@ class Naeringsspesifikasjon:
                             id="feltkommentar-modal",
                             is_open=False,
                             centered=True,
-                            backdrop="static",
+                            backdrop=False,
+                            className="ssb-modal ssb-modal-comment",
                         ),
                     ],
                     style={"marginBottom": "10px"},
@@ -2570,10 +2587,7 @@ class Naeringsspesifikasjon:
             if not aar or not orgnr_foretak:
                 raise PreventUpdate
 
-            if (
-                refresh_data
-                and refresh_data.get("status") == "invalid_search"
-            ):
+            if refresh_data and refresh_data.get("status") == "invalid_search":
                 return [], []
 
             df = build_regnskap_dataframe(
@@ -2589,9 +2603,7 @@ class Naeringsspesifikasjon:
 
             row_data = df.to_dict("records")
 
-            column_defs = build_column_defs(
-                sekvens_compare
-            )
+            column_defs = build_column_defs(sekvens_compare)
 
             return row_data, column_defs
 
@@ -2621,10 +2633,7 @@ class Naeringsspesifikasjon:
             if not aar or not orgnr_foretak:
                 raise PreventUpdate
 
-            if (
-                refresh_data
-                and refresh_data.get("status") == "invalid_search"
-            ):
+            if refresh_data and refresh_data.get("status") == "invalid_search":
                 return [], []
 
             df = build_regnskap_dataframe(
@@ -2640,9 +2649,7 @@ class Naeringsspesifikasjon:
 
             row_data = df.to_dict("records")
 
-            column_defs = build_column_defs(
-                sekvens_compare
-            )
+            column_defs = build_column_defs(sekvens_compare)
 
             return row_data, column_defs
 
