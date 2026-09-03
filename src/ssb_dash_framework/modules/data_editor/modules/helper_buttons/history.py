@@ -10,6 +10,7 @@ from dash import Output
 from dash import callback
 from dash import html
 
+from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.set_variables import get_refnr
 from .....utils.config_tools.set_variables import get_time_units
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 local_tz = tzlocal.get_localzone()
 
 
+@register_module()
 class DataEditorHistory(DataEditorHelperButton):
     """This module provides supporting tables for the DataEditor.
 

@@ -5,6 +5,8 @@ from logging import getLogger
 import dash_bootstrap_components as dbc
 from dash import html
 
+from ...config.loader import instantiate_module
+from ...config.models import ModuleConfig
 from ...config.models import register_module
 from ...setup.variableselector import VariableSelector
 from ...utils.config_tools.set_variables import get_time_units
@@ -56,6 +58,10 @@ class DataEditor:
         buttons_list = []
         if buttons is not None:
             for module in buttons:
+                if isinstance(module, dict):
+                    module = instantiate_module(
+                        ModuleConfig(**module), type="component", strict=False
+                    )
                 module.set_settings(data_handler, settings)
                 buttons_list.append(dbc.Col(module.layout()))  # pyright: ignore
         self.helper_row = dbc.Row(buttons_list)  # pyright: ignore
@@ -63,6 +69,10 @@ class DataEditor:
         sidebar_list = []
         if sidebar is not None:
             for module in sidebar:
+                if isinstance(module, dict):
+                    module = instantiate_module(
+                        ModuleConfig(**module), type="component", strict=False
+                    )
                 module.set_settings(data_handler, settings)
                 sidebar_list.append(
                     dbc.Card(dbc.CardBody(module.layout()))  # pyright: ignore
@@ -75,6 +85,10 @@ class DataEditor:
         dataview_list: list[html.Div] = []
         if dataview is not None:
             for view in dataview:
+                if isinstance(view, dict):
+                    view = instantiate_module(
+                        ModuleConfig(**view), type="component", strict=False
+                    )
                 view.set_settings(data_handler, settings)
                 dataview_list.append(view.layout())
 

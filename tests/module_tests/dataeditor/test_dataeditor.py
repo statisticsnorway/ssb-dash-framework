@@ -89,7 +89,10 @@ def test_dataeditor_yaml_based():
     path = "tests/module_tests/dataeditor/dataeditor_test.yaml"
     if path.endswith(".yaml"):
         yaml_content = config_parser_yaml(path)
-        print(yaml_content)
+
+        # import json
+        # print(json.dumps(yaml_content, indent=2))
+
         config = AppConfig(**yaml_content)
     app, tabs, windows = build_app_from_config(config)
     instance = tabs[0]

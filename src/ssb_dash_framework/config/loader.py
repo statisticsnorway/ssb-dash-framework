@@ -35,8 +35,12 @@ def setup_variableselector(
     ...
 
 
-def instantiate_module(module: ModuleConfig, type: Literal["tab", "window"]):
-    if type not in ["tab", "window"]:
+def instantiate_module(
+    module: ModuleConfig,
+    type: Literal["tab", "window", "component"],
+    strict: bool = True,
+):
+    if strict and type not in ["tab", "window"]:
         raise ValueError("'type' must be either 'tab' or 'window'.")
 
     validation_model = get_from_module_registry(module.type)
@@ -49,6 +53,8 @@ def instantiate_module(module: ModuleConfig, type: Literal["tab", "window"]):
         if not validation_model.as_window:
             raise ValueError(f"{module.type} is not available as a window.")
         class_name = validation_model.as_window
+    else:
+        class_name = validation_model.type
 
     library = importlib.import_module("ssb_dash_framework")
     cls = getattr(library, class_name, None)
