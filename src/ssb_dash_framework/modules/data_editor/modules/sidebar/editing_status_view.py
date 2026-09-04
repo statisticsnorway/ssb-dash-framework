@@ -6,6 +6,7 @@ from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+
 import tzlocal
 from dash import Input
 from dash import Output
@@ -19,6 +20,7 @@ from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
 from psycopg_pool import ConnectionPool
 
+from .....utils.alert_handler import create_alert
 from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
@@ -158,6 +160,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         """Registers the callbacks for the module."""
 
         @callback(
+            Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             Output(f"{self.module_name}-{self.module_number}-radioitems", "value"),
             Output(
@@ -173,9 +176,34 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             if not refnr:
                 raise PreventUpdate
 
-            data = self.fetcher.get_form_status(refnr)
+            try:
+                data = self.fetcher.get_form_status(refnr)
+            except Exception as e:
+                logger.warning(
+                    f"Getting initial form status returned with an error: {e}"
+                )
+                alert = create_alert(
+                    f"Getting initial form status returned with an error: {e}",
+                    color="warning",
+                )
+                return (
+                    alert,
+                    no_update,
+                    no_update,
+                    f"Viser skjema: {refnr}",
+                )
+
             if data is None:
-                raise PreventUpdate
+                alert = create_alert(
+                    "Getting initial form status returned None",
+                    color="warning",
+                )
+                return (
+                    alert,
+                    no_update,
+                    no_update,
+                    f"Viser skjema: {refnr}",
+                )
 
             new_checkbox = ["Aktiv"] if data.active else []
             new_radio = data.status
@@ -185,7 +213,13 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             )
             radio_out = new_radio if new_radio != current_radio else no_update
 
+            alert = create_alert(
+                "Getting initial form status was successful",
+                color="info",
+            )
+
             return (
+                alert,
                 checkbox_out,
                 radio_out,
                 f"Viser skjema: {refnr}",
@@ -242,6 +276,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             return [feedback, *alert_store], time.time()
 
         @callback(
+            Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_name}-{self.module_number}-form-table", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-form-table", "columnDefs"),
             Output(
@@ -263,14 +298,29 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             if ident is None:
                 raise PreventUpdate
 
-            data = self.fetcher.get_refnrs_by_period_ident(
-                self.settings, ident, time_units
-            )
+            try:
+                data = self.fetcher.get_refnrs_by_period_ident(
+                    self.settings, ident, time_units
+                )
+            except Exception as e:
+                message = f"Getting all reference numbers by ident for a period failed with error: {e}"
+                logger.warning(message)
+                alert = create_alert(message, color="warning")
+                return alert, [], [], True
 
             if data is None:
-                raise PreventUpdate
+                message = "Getting all reference numbers by ident for a period returned with None"
+                logger.warning(message)
+                alert = create_alert(message, color="warning")
+                return alert, [], [], True
+
+            alert = create_alert(
+                "Getting all reference numbers by ident for a period was successful",
+                color="info",
+            )
 
             return (
+                alert,
                 data.to_dict("records"),
                 [{"field": x, "headerName": x} for x in data.columns],
                 True,
