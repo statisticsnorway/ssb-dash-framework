@@ -244,9 +244,7 @@ class AlertHandler:
             Output("alert_store", "data"), Input("alert_pusher_to_store", "n_intervals")
         )
         def push_local_queue(_n_intervals):
-            print(_n_intervals)
             new_messages = self._drain()
-            print(new_messages)
             patch_obj = Patch()
             patch_obj.extend(new_messages)
             return patch_obj
