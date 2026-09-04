@@ -38,7 +38,7 @@ class DataEditor:
         DataEditor._module_count += 1
         self.module_name = self.__class__.__name__
         if isinstance(settings, dict):
-            settings = EditorSettings(**settings)
+            settings = EditorSettings.model_validate(settings)
         if not isinstance(settings, EditorSettings):
             raise TypeError(
                 "Argument 'settings' must be either an EditorSettings instance or a dict that can validate to one."

@@ -15,7 +15,7 @@ from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 from ssb_dash_framework.utils.core_models import UpdateSkjemadata
 from ssb_dash_framework.utils.core_models import UpdateSkjemamottak
 
-from ...meta import FetcherMeta
+from .meta import MicrolayoutMeta
 from ...utils import EditorSettings
 from .microlayout_components.models import Layout
 
@@ -33,7 +33,7 @@ class MicroLayoutAIO(html.Div):
         self,
         layout: list[dict] | dict | Layout,
         settings: EditorSettings,
-        data_handler: FetcherMeta,
+        data_handler: MicrolayoutMeta,
         inputs: list[Input] | dict[Any, Input] | None = None,
         states: list[State] | None = None,
         aio_id: str | None = None,

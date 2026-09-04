@@ -1,5 +1,3 @@
-from typing import Literal
-
 from pydantic import BaseModel
 
 
@@ -20,8 +18,3 @@ class EditorSettings(BaseModel):
 
     table_selector_id: str | None = None
     form_selector_id: str | None = None
-
-
-class RefnrStatus(BaseModel):
-    active: bool
-    status: Literal["Under arbeid", "Ferdig", "Ubehandlet"]
