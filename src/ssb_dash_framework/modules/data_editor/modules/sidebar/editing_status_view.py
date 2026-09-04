@@ -1,9 +1,13 @@
+# pyright: reportInvalidTypeForm=false
+# pyright: reportCallIssue=false
 import logging
+import time
 from typing import Any
-from typing import Literal
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+
+import tzlocal
 from dash import Input
 from dash import Output
 from dash import State
@@ -13,30 +17,26 @@ from dash import dcc
 from dash import html
 from dash import no_update
 from dash.exceptions import PreventUpdate
-import ibis.selectors as s
 from eimerdb import EimerDBInstance
-from ibis import _
 from psycopg_pool import ConnectionPool
-import tzlocal
-import time
 
-from ssb_dash_framework import VariableSelector
-from ssb_dash_framework.utils.core_query_functions import create_filter_dict
-from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
-
+from .....utils.alert_handler import AlertHandler, create_alert
+from .....config.models import register_module
+from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
-from .....utils.config_tools.connection import get_connection
 from .....utils.config_tools.set_variables import get_ident
+from .....utils.config_tools.set_variables import get_refnr
 from .....utils.config_tools.set_variables import get_time_units
-from .....utils.core_models import UpdateSkjemamottakAktiv
 from .....utils.core_models import UpdateSkjemamottak
-from ..core import DataEditorHelperSidebar
+from .....utils.core_models import UpdateSkjemamottakAktiv
+from .editing_sidebar_helper import DataEditorHelperSidebar
 
 logger = logging.getLogger(__name__)
 
 local_tz = tzlocal.get_localzone()
 
 
+@register_module()
 class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
     """A sidebar module for inspecting and updating the status of the selected form by 'refnr'.
 
@@ -65,9 +65,9 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             selected_inputs=[],
             selected_states=[
                 get_ident(),
-                *get_time_units().keys(),
+                get_time_units().name,
                 "altinnskjema",
-                "refnr",
+                get_refnr(),
             ],
         )
 
@@ -104,7 +104,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         )
         return html.Div(
             [
-                dcc.Store(id=f"skjemamottak-status-signal"),
+                dcc.Store(id="skjemamottak-status-signal"),
                 form_selector,
                 dbc.Row("Editeringsstatus"),
                 dbc.Row(
@@ -160,12 +160,13 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         """Registers the callbacks for the module."""
 
         @callback(
+            #Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             Output(f"{self.module_name}-{self.module_number}-radioitems", "value"),
             Output(
                 f"{self.module_name}-{self.module_number}-refnr-text-row", "children"
             ),
-            self.variableselector.get_input("refnr"),
+            self.variableselector.get_input(get_refnr()),
             Input("skjemamottak-status-signal", "data"),
             State(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             State(f"{self.module_name}-{self.module_number}-radioitems", "value"),
@@ -175,74 +176,85 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             if not refnr:
                 raise PreventUpdate
 
-            with get_connection() as conn:
-                t = conn.table("skjemamottak")
-                data = t.filter(_.refnr == refnr).to_pandas()
+            try:
+                data = self.fetcher.get_form_status(refnr)
+            except Exception as e:
+                logger.warning(
+                    f"Getting initial form status returned with an error: {e}"
+                )
+                AlertHandler.warning(f"Getting initial form status returned with an error: {e}")
+                return (
+                    no_update,
+                    no_update,
+                    f"Viser skjema: {refnr}",
+                )
 
-            if data.empty:
-                raise PreventUpdate
+            if data is None:
+                AlertHandler.warning("Getting initial form status returned None")
+                return (
+                    no_update,
+                    no_update,
+                    f"Viser skjema: {refnr}",
+                )
 
-            row = data.iloc[0]
-
-            new_checkbox = ["Aktiv"] if row["aktiv"] else []
-            new_radio = row["status"]
+            new_checkbox = ["Aktiv"] if data.active else []
+            new_radio = data.status
 
             checkbox_out = (
                 new_checkbox if new_checkbox != current_checkbox else no_update
             )
             radio_out = new_radio if new_radio != current_radio else no_update
 
+            AlertHandler.success("Getting initial form status was successful")
+
             return (
                 checkbox_out,
                 radio_out,
-                f'Viser skjema: {row["skjema"]}',
+                f"Viser skjema: {refnr}",
             )
 
+        checkbox_id = f"{self.module_name}-{self.module_number}-checkbox"
+        radio_id = f"{self.module_name}-{self.module_number}-radioitems"
+
         @callback(
-            Output("alert_store", "data", allow_duplicate=True),
             Output("skjemamottak-status-signal", "data", allow_duplicate=True),
-            Input(f"{self.module_name}-{self.module_number}-checkbox", "value"),
-            Input(f"{self.module_name}-{self.module_number}-radioitems", "value"),
-            State(self.variableselector.get_input("refnr").component_id, "value"),
-            State("alert_store", "data"),
+            Input(checkbox_id, "value"),
+            Input(radio_id, "value"),
+            self.variableselector.get_state(get_refnr()),
             prevent_initial_call=True,
         )
         def update_status(
             aktiv_status,
             status_code,
             refnr,
-            alert_store,
         ):
 
             triggered_id = ctx.triggered_id
 
-            if triggered_id == f"{self.module_name}-{self.module_number}-checkbox":
+            if triggered_id == checkbox_id:
 
-                update_to_apply = UpdateSkjemamottakAktiv(
-                    refnr=refnr, value=bool(aktiv_status)
-                )
+                #update_to_apply = UpdateSkjemamottakAktiv(
+                #    refnr=refnr, value=bool(aktiv_status)
+                #)
+                self.fetcher.update_form_active_status(refnr, bool(aktiv_status))
 
-            elif triggered_id == f"{self.module_name}-{self.module_number}-radioitems":
+            elif triggered_id == radio_id:
 
-                update_to_apply = UpdateSkjemamottak(
-                    refnr=refnr,
-                    column="status",
-                    value=status_code,
-                )
+                #update_to_apply = UpdateSkjemamottak(
+                #    refnr=refnr,
+                #    column="status",
+                #    value=status_code,
+                #)
+                self.fetcher.update_form_status(refnr, status_code)
 
             else:
                 raise PreventUpdate
 
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                feedback = update_to_apply.update_eimer()
+            message = "Updating form status was successfull"
+            logger.debug(message)
+            AlertHandler.success(message)
 
-            elif isinstance(_get_connection_object(), ConnectionPool):
-                feedback = update_to_apply.update_ibis()
-
-            else:
-                raise NotImplementedError
-
-            return [feedback, *alert_store], time.time()
+            return time.time()
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-form-table", "rowData"),
@@ -250,58 +262,54 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             Output(
                 f"{self.module_name}-{self.module_number}-form-table-modal", "is_open"
             ),
-            Input(f"{self.module_name}-{self.module_number}-button", "n_clicks"),
-            self.variableselector.get_all_states(),
+            inputs={
+                "click": Input(
+                    f"{self.module_name}-{self.module_number}-button", "n_clicks"
+                ),
+                "ident": self.variableselector.get_state(get_ident()),
+                "time_units": self.variableselector.get_state(get_time_units().name),
+            },
         )
-        def view_refnrs_by_ident(click: int | None, *args: list[Any]):
+        def view_refnrs_by_ident(click: int | None, ident: str | None, time_units: str):
             """Populates a table showing all relevant received forms from the relevant 'ident'."""
+
             if ctx.triggered_id != f"{self.module_name}-{self.module_number}-button":
                 raise PreventUpdate
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                args_before_timeunits = 1
-                N = len(get_time_units())
-                args = list(args)
-                args[args_before_timeunits : N + args_before_timeunits] = list(
-                    map(int, args[args_before_timeunits : N + args_before_timeunits])
-                )
 
-            filterdict = create_filter_dict([get_ident(), *get_time_units()], [*args])
-            with get_connection() as conn:
-                t = conn.table("skjemamottak")
-                data = (
-                    t.filter(ibis_filter_with_dict(filterdict))
-                    .order_by(_.dato_mottatt.desc())
-                    .select(
-                        "skjema",
-                        "dato_mottatt",
-                        "refnr",
-                        s.matches(r"^(editert|status)$"),
-                        "kommentar",
-                        "aktiv",
-                    )
-                    .to_pandas()
+            if ident is None:
+                raise PreventUpdate
+
+            try:
+                data = self.fetcher.get_refnrs_by_period_ident(
+                    self.settings, ident, time_units
                 )
-                data["dato_mottatt"] = (
-                    data["dato_mottatt"]
-                    .dt.tz_convert(local_tz)
-                    .dt.tz_localize(None)
-                    .dt.strftime("%Y-%m-%d %H:%M:%S")
-                )
+            except Exception as e:
+                message = f"Getting all reference numbers by ident for a period failed with error: {e}"
+                logger.warning(message)
+                AlertHandler.warning(message)
+                return no_update, no_update, no_update
+
+            if data is None:
+                message = "Getting all reference numbers by ident for a period returned with None"
+                logger.warning(message)
+                AlertHandler.warning(message)
+                return no_update, no_update, no_update
+           
             return (
                 data.to_dict("records"),
                 [{"field": x, "headerName": x} for x in data.columns],
                 True,
             )
 
-        @callback(  # type: ignore[misc]
-            self.variableselector.get_output_object("refnr"),  # oppdater refnr
+        @callback(
+            self.variableselector.get_output_object(get_refnr()),  # oppdater refnr
             self.variableselector.get_output_object(
                 "altinnskjema"
             ),  # oppdater altinnskjema
             Input(
                 f"{self.module_name}-{self.module_number}-form-table", "selectedRows"
             ),
-            self.variableselector.get_input("refnr"),
+            self.variableselector.get_input(get_refnr()),
             self.variableselector.get_input("altinnskjema"),
             prevent_initial_call=True,
         )

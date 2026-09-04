@@ -19,8 +19,6 @@ from .config import register_modules
 from .config import run_app_from_config
 from .control import ControlFrameworkBase
 from .control import register_control
-from .experimental.modules.data_editor.core import DataEditor
-from .experimental.modules.data_editor.data_view.data_view_custom import DataViewCustom
 from .modules import Aarsregnskap
 from .modules import AarsregnskapTab
 from .modules import AarsregnskapWindow
@@ -46,9 +44,20 @@ from .modules import CanvasWindow
 from .modules import ControlView
 from .modules import ControlViewTab
 from .modules import ControlViewWindow
+from .modules import DataEditor
+from .modules import DataEditorHistory
+from .modules import DataEditorInfoRow
+from .modules import DataEditorSidebarComment
+from .modules import DataEditorSidebarEditingStatus
+from .modules import DataEditorSupportTable
+from .modules import DataEditorSupportTables
+from .modules import DataEditorTable
+from .modules import DataEditorTableSelector
+from .modules import DataViewCustom
 from .modules import EditingTable
 from .modules import EditingTableTab
 from .modules import EditingTableWindow
+from .modules import EditorSettings
 from .modules import FigureDisplay
 from .modules import FigureDisplayTab
 from .modules import FigureDisplayWindow
@@ -76,6 +85,7 @@ from .modules import PimemorizerTab
 from .modules import SkjemapdfViewer
 from .modules import SkjemapdfViewerTab
 from .modules import SkjemapdfViewerWindow
+from .modules import StandardDataHandler
 from .modules import VisualizationBuilder
 from .modules import VisualizationBuilderWindow
 from .modules import apply_edits
@@ -146,6 +156,16 @@ __all__ = [
     "ControlViewTab",
     "ControlViewWindow",
     "DataEditor",
+    "DataEditor",
+    "DataEditorHistory",
+    "DataEditorInfoRow",
+    "DataEditorSidebarComment",
+    "DataEditorSidebarEditingStatus",
+    "DataEditorSupportTable",
+    "DataEditorSupportTables",
+    "DataEditorTable",
+    "DataEditorTableSelector",
+    "DataViewCustom",
     "DataViewCustom",
     "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
@@ -153,6 +173,7 @@ __all__ = [
     "EditingTable",
     "EditingTableTab",
     "EditingTableWindow",
+    "EditorSettings",
     "FigureDisplay",
     "FigureDisplayTab",
     "FigureDisplayWindow",
@@ -186,6 +207,7 @@ __all__ = [
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",
+    "StandardDataHandler",
     "TabImplementation",
     "VariableSelector",
     "VariableSelectorConfig",

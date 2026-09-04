@@ -1,3 +1,5 @@
+# pyright: reportInvalidTypeForm=false
+# pyright: reportCallIssue=false
 import logging
 from typing import Any
 
@@ -10,24 +12,19 @@ from dash import callback_context
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
-from ibis import _
-from psycopg_pool import ConnectionPool
 
-from ssb_dash_framework import VariableSelector
-from ssb_dash_framework import _get_connection_object
-from ssb_dash_framework import get_connection
-from ssb_dash_framework.utils.core_query_functions import create_filter_dict
-from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
-
+from .....utils.alert_handler import AlertHandler, create_alert
+from .....config.models import register_module
+from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.set_variables import get_ident
+from .....utils.config_tools.set_variables import get_refnr
 from .....utils.config_tools.set_variables import get_time_units
-from .....utils.core_models import UpdateSkjemamottakKommentar
-from ..core import DataEditorHelperSidebar
+from .editing_sidebar_helper import DataEditorHelperSidebar
 
 logger = logging.getLogger(__name__)
 
 
+@register_module()
 class DataEditorSidebarComment(DataEditorHelperSidebar):
     """Sidebar component for showing a field comment."""
 
@@ -40,7 +37,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
         DataEditorSidebarComment._id_number += 1
 
         self.variableselector = VariableSelector(
-            selected_inputs=[get_ident(), *get_time_units().keys()], selected_states=[]
+            selected_inputs=[get_ident(), get_time_units().name], selected_states=[]
         )
         self.module_callbacks()
 
@@ -57,7 +54,6 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                                 id=f"{self.module_name}-{self.module_number}-dropdown-refnr",
                                 className="ssb-dropdown",
                                 searchable=False,
-                                
                             )
                         ),
                         dbc.Col(
@@ -88,36 +84,23 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             Output(
                 f"{self.module_name}-{self.module_number}-dropdown-refnr", "options"
             ),
-            self.variableselector.get_input("refnr"),
+            self.variableselector.get_input(get_refnr()),
+            self.variableselector.get_input(get_ident()),
             self.variableselector.get_input("altinnskjema"),
-            self.variableselector.get_all_callback_objects(),
+            self.variableselector.get_input(get_time_units().name),
         )
         def find_refnrs(
-            refnr: str, skjema: str, *args: list[Any]
+            refnr: str, ident, skjema: str, period
         ) -> tuple[str, list[dict[str, str]]]:
-            """Collect relevant refnrs."""  # TODO Check what it actually does and needs to do.
-            
-            if not refnr or not skjema:
+            """Collect relevant refnrs."""
+            if not refnr or not skjema or not ident:
+                raise PreventUpdate
+            data = self.fetcher.get_refnrs_by_period_ident(self.settings, ident, period)
+
+            if data is None:
                 raise PreventUpdate
 
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                args_before_timeunits = 1
-                N = len(get_time_units())
-                args = list(args)
-                # print(f"Utklipp: {args[args_before_timeunits:N+args_before_timeunits]}")
-                args[args_before_timeunits : N + args_before_timeunits] = list(
-                    map(int, args[args_before_timeunits : N + args_before_timeunits])
-                )
-                # print(f"test: {args}")
-
-            filterdict = create_filter_dict(
-                ["skjema", get_ident(), *get_time_units()], [skjema, *args]
-            )
-            logger.debug(f"Filterdict: {filterdict}")
-            with get_connection() as conn:
-                s = conn.table("skjemamottak")
-                s = s.filter(ibis_filter_with_dict(filterdict))
-                refnrs = s.select("refnr").distinct().execute()["refnr"].tolist()
+            refnrs = data[self.settings.refnr_col].unique().tolist()
             logger.debug(f"default_refnr: {refnr}\nrefnrs: {refnrs}")
 
             return refnr, [{"label": x, "value": x} for x in refnrs]
@@ -128,50 +111,47 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
         )
         def get_comment(refnr: str) -> str:
             """Gets the comment for the selected 'refnr'."""
-            with get_connection() as conn:
-                s = conn.table("skjemamottak")
-                comment = (
-                    s.filter(_.refnr == refnr)
-                    .select("kommentar")
-                    .limit(1)
-                    .to_pandas()["kommentar"]
-                )
-            if len(comment) == 0:
+
+            try:
+                comment = self.fetcher.get_comment(refnr)
+                comment_update = "Comment was updated successfully"
+                logger.info(comment_update)
+                AlertHandler.info(comment_update)
+            except Exception as e:
+                error_msg = f"Comment failed to update with error: {e}"
+                logger.info(error_msg)
+                AlertHandler.info(error_msg) 
+
+            if comment is None:
+                error_msg = "Comment returned with None"
+                logger.info(error_msg)
+                AlertHandler.info(error_msg) 
                 return ""
 
-            if len(comment) > 1:
-                print(f"Multiple comments found for refnr={refnr}: {comment}")
+            return comment
 
-            return comment[0]
-
+        save_button_id = f"{self.module_name}-{self.module_number}-save-button"
 
         @callback(
-            Output("alert_store", "data", allow_duplicate=True),
-            Input(f"{self.module_name}-{self.module_number}-save-button", "n_clicks"),
+            Input(save_button_id, "n_clicks"),
             State(f"{self.module_name}-{self.module_number}-comment-text", "value"),
             State(f"{self.module_name}-{self.module_number}-dropdown-refnr", "value"),
-            State("alert_store", "data"),
             prevent_initial_call=True,
         )
-        def update_output(save_click: int | None, value: Any, refnr: str, alert_store):
+        def update_output(save_click: int | None, value: Any, refnr: str):
             """Update the comment when button is clicked."""
-            if (
-                not callback_context.triggered_id
-                == f"{self.module_name}-{self.module_number}-save-button"
-            ):
+            if callback_context.triggered_id != save_button_id:
                 logger.info("Preventing update")
                 raise PreventUpdate
 
-            comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=value)
-            logger.info(comment_update)
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                feedback = comment_update.update_eimer()
-            elif isinstance(_get_connection_object(), ConnectionPool):
-                logger.debug("Attempting to update using ibis logic.")
-                feedback = comment_update.update_ibis()
-            else:
-                raise NotImplementedError(
-                    f"Connection of type '{type(_get_connection_object())}' is not implemented yet."
-                )
-
-            return [feedback, *alert_store]
+            # comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=value)
+            try:
+                self.fetcher.update_form_reception_comment(refnr, value)
+                comment_update = "Comment was updated successfully"
+                logger.info(comment_update)
+                AlertHandler.info(comment_update)
+            except Exception as e:
+                error_msg = f"Comment failed to update with error: {e}"
+                logger.info(error_msg)
+                AlertHandler.info(error_msg) 
+            

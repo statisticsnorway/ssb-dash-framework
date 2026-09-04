@@ -1,3 +1,5 @@
+# pyright: reportInvalidTypeForm=false
+# pyright: reportCallIssue=false
 # TODO: Add functionality to add more types of helper things into the module.
 import logging
 from collections.abc import Callable
@@ -9,15 +11,19 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import callback
 from dash import html
-from dash.dependencies import Output, Input
+from dash.dependencies import Input
+from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
+
 from ssb_dash_framework.setup import VariableSelector
 
-from ..core import DataEditorHelperButton
+from .....config.models import register_module
+from .editor_helper_button import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)
 
 
+# @register_module()
 class DataEditorSupportTable:
     """Class for adding a supporting table to the component in DataEditor."""
 
@@ -95,7 +101,7 @@ class DataEditorSupportTable:
                 column_defs[0]["pinned"] = "left"
             return data.to_dict("records"), column_defs
 
-    def support_table_layout(self) -> dbc.Tab:
+    def support_table_layout(self) -> dbc.Tab:  # pyright: ignore
         """Creates the layout."""
         return dbc.Tab(
             self.support_table_content(),
@@ -104,6 +110,7 @@ class DataEditorSupportTable:
         )
 
 
+@register_module()
 class DataEditorSupportTables(DataEditorHelperButton):
     """This module provides supporting tables for the DataEditor.
 

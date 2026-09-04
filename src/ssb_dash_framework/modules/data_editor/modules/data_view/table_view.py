@@ -14,23 +14,27 @@ from psycopg_pool import ConnectionPool
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
 from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
 
+from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.connection import get_connection
+from .....utils.config_tools.set_variables import get_ident
+from .....utils.config_tools.set_variables import get_refnr
+from .....utils.config_tools.set_variables import get_time_units
 from .....utils.core_models import UpdateSkjemadata
-from ..core import DataEditorDataView
-from .....utils.alert_handler import create_alert
+from ...utils import EditorSettings
+from .base import DataEditorDataView
+
 logger = logging.getLogger(__name__)
 
 
+@register_module()
 class DataEditorTable(DataEditorDataView):
     """Requires table selector."""
 
     _id_number = 0
 
-    def __init__(
-        self, applies_to_tables: list[str], applies_to_forms: list[str]
-    ) -> None:
+    def __init__(self, settings: EditorSettings) -> None:
         """Initializes a DataEditorTable for selected tables and forms.
 
         Args:
@@ -40,21 +44,26 @@ class DataEditorTable(DataEditorDataView):
         self.module_number = DataEditorTable._id_number
         self.module_name = self.__class__.__name__
         DataEditorTable._id_number += 1
-        self.time_units = ["aar"]  # TODO fix, make set/get time_units functions
-        self.refnr = "refnr"  # TODO fix, maybe make set/get for refnr?
+
+        if isinstance(settings, dict):
+            settings = EditorSettings(**settings)
+
+        self.time_units = get_time_units()
+        self.refnr = get_refnr()
         self.variable_selector = VariableSelector(
             selected_inputs=[
-                *self.time_units,
+                self.time_units.name,
                 "altinnskjema",
-                "refnr",
+                get_refnr(),
             ],  # Order of inputs is not random!
             selected_states=[],
         )
-        self.uneditable_columns = {"id", "ident", "refnr", "skjema", "variabel"}
+        self.uneditable_columns = {"id", get_ident(), get_refnr(), "skjema", "variabel"}
         self.divname = f"{self.module_name}-{self.module_number}"
         self.module_callbacks()
         super().__init__(
-            applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
+            applies_to_tables=settings.form_data_table,
+            applies_to_forms=settings.form_list,
         )
         # print(self)
 
@@ -93,37 +102,27 @@ class DataEditorTable(DataEditorDataView):
         @callback(
             Output(f"{self.module_name}-{self.module_number}-aggrid", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-aggrid", "columnDefs"),
-            Input("dataeditortableselector", "value"),
-            self.variable_selector.get_all_callback_objects(),
+            inputs={
+                "selected_table": Input("dataeditortableselector", "value"),
+                "form": self.variable_selector.get_input("altinnskjema"),
+                "refnr": self.variable_selector.get_input(get_refnr()),
+                "period": self.variable_selector.get_input(get_time_units().name),
+            },
+            # self.variable_selector.get_all_callback_objects(),
         )
-        def read_table(selected_table: str, *args: list[str]):
+        def read_table(selected_table: str, form, refnr, period):
             """Populate the table view with data."""
-            selected_form = args[len(self.time_units)]
-
             if selected_table not in self.applies_to_tables:
                 logger.info("Preventing update: table mismatch.")
                 raise PreventUpdate
 
-            if (
-                self.applies_to_forms
-                and selected_form not in self.applies_to_forms
-            ):
+            if self.applies_to_forms and form not in self.applies_to_forms:
                 logger.info("Preventing update: form mismatch.")
                 raise PreventUpdate
-            # if (
-            #     selected_table not in self.applies_to_tables
-            #     or args[len(self.time_units)] not in self.applies_to_forms
-            # ):
-            #     logger.info("Preventing update.")
-            #     raise PreventUpdate
-
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                N = len(self.time_units)
-                args = list(args)
-                args[:N] = map(int, args[:N])
 
             filter_dict = create_filter_dict(
-                variables=[*self.time_units, "skjema", "refnr"], values=args
+                variables=[self.time_units.name, "skjema", "refnr"],
+                values=[period, form, refnr],
             )
 
             logger.debug(f"Filterdict: {filter_dict}")
@@ -143,7 +142,7 @@ class DataEditorTable(DataEditorDataView):
                         "row_id",
                         "row_ids",
                         "enhetsinfo_row_ids",
-                        *self.time_units,
+                        self.time_units.name,
                         "skjema",
                         "refnr",
                     ],
@@ -203,7 +202,9 @@ class DataEditorTable(DataEditorDataView):
             prevent_initial_call=True,
         )
         def send_variabel_to_variableselector(
-            click: dict[str, Any], row_data: list[dict[str, Any]], statistikkvariabel: str
+            click: dict[str, Any],
+            row_data: list[dict[str, Any]],
+            statistikkvariabel: str,
         ) -> str:
             """Make it possible to click the table and affect the VariableSelector."""
             logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")

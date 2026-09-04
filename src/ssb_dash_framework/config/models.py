@@ -4,12 +4,10 @@ from typing import Any
 from typing import Literal
 
 from pydantic import BaseModel
-from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
 
-from ..utils.config_tools.set_variables import TimeUnitType
-from ..utils.config_tools.set_variables import apply_config
+from ..utils.config_tools.set_variables import VariableSelectorConfig
 from ..utils.implementations import TabImplementation
 from ..utils.implementations import WindowImplementation
 
@@ -99,46 +97,6 @@ def register_implementation_modules():
 
 def register_modules():
     register_implementation_modules()
-
-
-class VariableSelectorConfig(BaseModel):  # TODO Add default templates?
-    """Configuration for the variable selector."""
-
-    refnr: str | None = Field(
-        default=None,
-        description="Column containing reference number or similar unique identifier for observation.",
-    )
-    ident: str | None = Field(default=None, description="Primary identifier column")
-    secondary_idents: list[str] | None = Field(
-        default=None, description="Additional identifier columns"
-    )
-    time_units: dict[str, TimeUnitType] | None = Field(
-        default=None, description="Mapping of variable name to time unit type"
-    )
-    grouping_variables: list[str] | None = Field(
-        default=None, description="Variables used for grouping operations"
-    )
-
-    def model_post_init(self, __context: Any) -> None:
-        apply_config(self)
-
-    def __str__(self) -> str:
-        lines = [
-            "VariableSelectorConfig",
-            f"  refnr:                {self.refnr or '(not set)'}",
-            f"  ident:                {self.ident or '(not set)'}",
-            f"  secondary_idents:     {', '.join(self.secondary_idents) if self.secondary_idents else '(not set)'}",
-            f"  grouping_variables:   {', '.join(self.grouping_variables) if self.grouping_variables else '(not set)'}",
-        ]
-
-        if self.time_units:
-            lines.append("  time_units:")
-            for var, unit_type in self.time_units.items():
-                lines.append(f"    {var:<30} {unit_type}")
-        else:
-            lines.append("  time_units:           (not set)")
-
-        return "\n".join(lines)
 
 
 class AppSettings(BaseModel):
@@ -238,7 +196,6 @@ class AppModules(BaseModel):
     ``windows`` → passed as ``window_list`` to main_layout()
     """
 
-    dataeditor_components: list[ModuleConfig] = []
     tabs: list[ModuleConfig] = []
     windows: list[ModuleConfig] = []
 
