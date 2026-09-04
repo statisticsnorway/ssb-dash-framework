@@ -20,7 +20,7 @@ from dash.exceptions import PreventUpdate
 from eimerdb import EimerDBInstance
 from psycopg_pool import ConnectionPool
 
-from .....utils.alert_handler import create_alert
+from .....utils.alert_handler import AlertHandler, create_alert
 from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
@@ -160,7 +160,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         """Registers the callbacks for the module."""
 
         @callback(
-            Output("alert_store", "data", allow_duplicate=True),
+            #Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             Output(f"{self.module_name}-{self.module_number}-radioitems", "value"),
             Output(
@@ -187,7 +187,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     color="warning",
                 )
                 return (
-                    alert,
+                    #alert,
                     no_update,
                     no_update,
                     f"Viser skjema: {refnr}",
@@ -199,7 +199,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     color="warning",
                 )
                 return (
-                    alert,
+                    #alert,
                     no_update,
                     no_update,
                     f"Viser skjema: {refnr}",
@@ -219,7 +219,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             )
 
             return (
-                alert,
+                #alert,
                 checkbox_out,
                 radio_out,
                 f"Viser skjema: {refnr}",
@@ -248,35 +248,40 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
 
             if triggered_id == checkbox_id:
 
-                update_to_apply = UpdateSkjemamottakAktiv(
-                    refnr=refnr, value=bool(aktiv_status)
-                )
+                #update_to_apply = UpdateSkjemamottakAktiv(
+                #    refnr=refnr, value=bool(aktiv_status)
+                #)
+                self.fetcher.update_form_active_status(refnr, bool(aktiv_status))
 
             elif triggered_id == radio_id:
 
-                update_to_apply = UpdateSkjemamottak(
-                    refnr=refnr,
-                    column="status",
-                    value=status_code,
-                )
+                #update_to_apply = UpdateSkjemamottak(
+                #    refnr=refnr,
+                #    column="status",
+                #    value=status_code,
+                #)
+                self.fetcher.update_form_status(refnr, status_code)
 
             else:
                 raise PreventUpdate
 
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                feedback = update_to_apply.update_eimer()
+            message = "Updating form status was sucessfull"
+            logger.debug(message)
+            feedback = create_alert(message, color="info")
+            #if isinstance(_get_connection_object(), EimerDBInstance):
+            #    feedback = update_to_apply.update_eimer()
 
-            elif isinstance(_get_connection_object(), ConnectionPool):
-                feedback = update_to_apply.update_ibis()
+            #elif isinstance(_get_connection_object(), ConnectionPool):
+            #    feedback = update_to_apply.update_ibis()
 
-            else:
-                feedback = update_to_apply.to_alert(False)
+            #else:
+            #    feedback = update_to_apply.to_alert(False)
             #    raise NotImplementedError
 
             return [feedback, *alert_store], time.time()
 
         @callback(
-            Output("alert_store", "data", allow_duplicate=True),
+            #Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_name}-{self.module_number}-form-table", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-form-table", "columnDefs"),
             Output(
@@ -292,6 +297,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         )
         def view_refnrs_by_ident(click: int | None, ident: str | None, time_units: str):
             """Populates a table showing all relevant received forms from the relevant 'ident'."""
+            AlertHandler.success("Created an alert")
             if ctx.triggered_id != f"{self.module_name}-{self.module_number}-button":
                 raise PreventUpdate
 
@@ -306,21 +312,22 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 message = f"Getting all reference numbers by ident for a period failed with error: {e}"
                 logger.warning(message)
                 alert = create_alert(message, color="warning")
-                return alert, [], [], True
+                return no_update, no_update, no_update
 
             if data is None:
                 message = "Getting all reference numbers by ident for a period returned with None"
                 logger.warning(message)
                 alert = create_alert(message, color="warning")
-                return alert, [], [], True
+                return no_update, no_update, no_update
 
             alert = create_alert(
                 "Getting all reference numbers by ident for a period was successful",
                 color="info",
             )
+            
 
             return (
-                alert,
+                #alert,
                 data.to_dict("records"),
                 [{"field": x, "headerName": x} for x in data.columns],
                 True,

@@ -12,16 +12,13 @@ from dash import callback_context
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
-from psycopg_pool import ConnectionPool
 
+from .....utils.alert_handler import create_alert
 from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
-from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.set_variables import get_ident
 from .....utils.config_tools.set_variables import get_refnr
 from .....utils.config_tools.set_variables import get_time_units
-from .....utils.core_models import UpdateSkjemamottakKommentar
 from .editing_sidebar_helper import DataEditorHelperSidebar
 
 logger = logging.getLogger(__name__)
@@ -138,16 +135,19 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 logger.info("Preventing update")
                 raise PreventUpdate
 
-            comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=value)
+            #comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=value)
+            self.fetcher.update_form_reception_comment(refnr, value)
+            comment_update = "Comment was updated successfully"
             logger.info(comment_update)
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                feedback = comment_update.update_eimer()
-            elif isinstance(_get_connection_object(), ConnectionPool):
-                logger.debug("Attempting to update using ibis logic.")
-                feedback = comment_update.update_ibis()
-            else:
-                raise NotImplementedError(
-                    f"Connection of type '{type(_get_connection_object())}' is not implemented yet."
-                )
+            feedback = create_alert(comment_update)
+            #if isinstance(_get_connection_object(), EimerDBInstance):
+            #    feedback = comment_update.update_eimer()
+            #elif isinstance(_get_connection_object(), ConnectionPool):
+            #    logger.debug("Attempting to update using ibis logic.")
+            #    feedback = comment_update.update_ibis()
+            #else:
+            #    raise NotImplementedError(
+            #        f"Connection of type '{type(_get_connection_object())}' is not implemented yet."
+            #    )
 
             return [feedback, *alert_store]
