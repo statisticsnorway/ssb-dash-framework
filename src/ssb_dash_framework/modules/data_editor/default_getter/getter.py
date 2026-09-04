@@ -14,7 +14,7 @@ from ..modules.microlayout.microlayout_components.editable_field_model import (
     FieldCallbackContainer,
 )
 from ..utils import EditorSettings
-from ..utils import RefnrStatus
+from ..modules.sidebar.meta import RefnrStatus
 from .form_cache import FormGetterCached
 
 logger = logging.getLogger(__name__)
