@@ -20,7 +20,7 @@ from ......utils.config_tools.set_variables import TimeUnit
 from ......utils.config_tools.set_variables import get_ident
 from ......utils.config_tools.set_variables import get_refnr
 from ......utils.config_tools.set_variables import get_time_units
-from ....meta import FetcherMeta
+from ..meta import MicrolayoutMeta
 from ....utils import EditorSettings
 
 GRAPH_COLORS = [
@@ -42,7 +42,7 @@ class TimeseriesAio(html.Div):
         variables: str | list[str],
         num_periods: int,
         settings: EditorSettings,
-        fetcher: FetcherMeta,
+        fetcher: MicrolayoutMeta,
         width: int,
         _id: str | None = None,
         **kwargs,
@@ -55,8 +55,6 @@ class TimeseriesAio(html.Div):
         selector = VariableSelector(
             [get_refnr(), get_ident(), get_time_units().name], []
         )
-
-        GRAPH_CYCLE = cycle(GRAPH_COLORS)
 
         initial_fig = go.Figure(data=[])
         initial_fig.update_layout(
@@ -164,6 +162,7 @@ class TimeseriesAio(html.Div):
 
             patch_obj["data"] = []
             x_axis = [item[settings.period_col] for item in sorted_series]
+            GRAPH_CYCLE = cycle(GRAPH_COLORS)
             for i in temp_variables:
                 y_axis = []
                 for item in sorted_series:

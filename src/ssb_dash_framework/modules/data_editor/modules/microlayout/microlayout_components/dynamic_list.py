@@ -10,14 +10,14 @@ from ......setup.variableselector import VariableSelector
 from ......utils.config_tools.set_variables import get_ident
 from ......utils.config_tools.set_variables import get_refnr
 from ......utils.config_tools.set_variables import get_time_units
-from ....meta import FetcherMeta
+from ..meta import MicrolayoutMeta
 from ....utils import EditorSettings
 
 
 class DynamicListEditor(html.Div):
     def __init__(
         self,
-        fetcher: FetcherMeta,
+        fetcher: MicrolayoutMeta,
         settings: EditorSettings,
         wildcard: str,
         _id: str | None = None,

@@ -1,67 +1,24 @@
 from abc import ABC
 from abc import abstractmethod
-from typing import Any
 
-import pandas as pd
 from dash import html
 
-from .modules.inforow.info_row_model import InfoRowField
-from .modules.microlayout.microlayout_components.editable_field_model import (
-    FieldCallbackContainer,
-)
 from .utils import EditorSettings
-from .utils import RefnrStatus
 
+from .modules.sidebar.meta import SidebarMeta
+from .modules.inforow.meta import InforowMeta
+from .modules.helper_buttons.meta import HelperButtonMeta
+from .modules.microlayout.meta import MicrolayoutMeta
 
-class FetcherMeta(ABC):
-    @abstractmethod
-    def get_field(
-        self,
-        settings: EditorSettings,
-        container: FieldCallbackContainer,
-        inputs: list[Any] | dict[Any, Any],
-    ) -> Any: ...
+SettingsType = EditorSettings
 
-    @abstractmethod
-    def get_form_status(self, refnr: str) -> RefnrStatus | None: ...
-
-    @abstractmethod
-    def get_refnrs_by_period_ident(
-        self, settings: EditorSettings, ident: str, period: str
-    ) -> pd.DataFrame | None: ...
-
-    @abstractmethod
-    def get_comment(self, refnr: str) -> str | None: ...
-
-    @abstractmethod
-    def get_history(self, refnr: str) -> pd.DataFrame: ...
-
-    @abstractmethod
-    def get_info_row_fields(
-        self,
-        settings: EditorSettings,
-        ident: str,
-        period: str,
-        fields: list[InfoRowField],
-    ) -> dict[str, str | int | bool | float | None]: ...
-
-    @abstractmethod
-    def get_timeseries(
-        self,
-        settings: EditorSettings,
-        variable: str | list[str],
-        refnr: str,
-        ident: str,
-        periods: list[str],
-    ) -> list[dict]: ...
-
-    @abstractmethod
-    def get_dynamic_list(
-        self,
-        settings: EditorSettings,
-        wildcard: str,
-        refnr: str,
-    ) -> list[dict]: ...
+class FetcherMeta(
+    SidebarMeta[SettingsType],
+    InforowMeta[SettingsType],
+    HelperButtonMeta,
+    MicrolayoutMeta[SettingsType],
+):
+    ...
 
 
 class ContextABC(ABC):

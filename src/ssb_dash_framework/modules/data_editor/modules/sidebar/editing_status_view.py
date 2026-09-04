@@ -191,11 +191,14 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 f"Viser skjema: {refnr}",
             )
 
+        checkbox_id = f"{self.module_name}-{self.module_number}-checkbox"
+        radio_id = f"{self.module_name}-{self.module_number}-radioitems"
+
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
             Output("skjemamottak-status-signal", "data", allow_duplicate=True),
-            Input(f"{self.module_name}-{self.module_number}-checkbox", "value"),
-            Input(f"{self.module_name}-{self.module_number}-radioitems", "value"),
+            Input(checkbox_id, "value"),
+            Input(radio_id, "value"),
             self.variableselector.get_state(get_refnr()),
             State("alert_store", "data"),
             prevent_initial_call=True,
@@ -209,13 +212,13 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
 
             triggered_id = ctx.triggered_id
 
-            if triggered_id == f"{self.module_name}-{self.module_number}-checkbox":
+            if triggered_id == checkbox_id:
 
                 update_to_apply = UpdateSkjemamottakAktiv(
                     refnr=refnr, value=bool(aktiv_status)
                 )
 
-            elif triggered_id == f"{self.module_name}-{self.module_number}-radioitems":
+            elif triggered_id == radio_id:
 
                 update_to_apply = UpdateSkjemamottak(
                     refnr=refnr,

@@ -25,7 +25,7 @@ from pydantic import TypeAdapter
 from pydantic import computed_field
 from pydantic import model_validator
 
-from ....meta import FetcherMeta
+from ..meta import MicrolayoutMeta
 from ....utils import EditorSettings
 from .dynamic_list import DynamicListEditor
 from .editable_field_model import EditableField
@@ -37,7 +37,7 @@ class Base(ABC):
     @abstractmethod
     def create(
         self,
-        fetcher: FetcherMeta,  # Fetcher is only included here for components that needs to create their own callbacks
+        fetcher: MicrolayoutMeta,  # Fetcher is only included here for components that needs to create their own callbacks
         settings: EditorSettings,
     ) -> tuple[Any, list[FieldCallbackContainer] | FieldCallbackContainer | None]: ...
 
@@ -95,7 +95,7 @@ class Row(ContainerNode):
     type: Literal["row"]
 
     def create(
-        self, fetcher: FetcherMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[dbc.Row, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
@@ -111,7 +111,7 @@ class Col(ContainerNode):
     type: Literal["col"]
 
     def create(
-        self, fetcher: FetcherMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[dbc.Col, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
@@ -128,7 +128,7 @@ class Tab(ContainerNode):
     label: str
 
     def create(
-        self, fetcher: FetcherMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[dbc.Tab, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
@@ -151,7 +151,7 @@ class Tabs(ContainerNode):
     tabs: list[Tab]
 
     def create(
-        self, fetcher: FetcherMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[dbc.Tabs, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
@@ -169,7 +169,7 @@ class Header(BaseNode):
     size: Literal["xs", "sm", "md", "lg"] = "md"
 
     def create(
-        self, fetcher: FetcherMeta, _settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, _settings: EditorSettings
     ) -> tuple[html.H1 | html.H2 | html.H3 | html.H4, None]:
         """A method for creating the layout."""
         if self.size == "lg":
@@ -188,7 +188,7 @@ class Label(BaseNode):
     bold: bool = False
 
     def create(
-        self, fetcher: FetcherMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[html.Div, None]:
         return (
             html.Div(
@@ -213,7 +213,7 @@ class InputField(ValueNode):
     # field_settings: EditableField
 
     def create(
-        self, fetcher: FetcherMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         callback_info = self.callback_settings
@@ -254,7 +254,7 @@ class TimeseriesView(ValueNode):
     use_variable_as_id: bool = Field(default=False)
     switchable: bool = Field(default=True)
 
-    def create(self, fetcher: FetcherMeta, settings: EditorSettings) -> tuple:
+    def create(self, fetcher: MicrolayoutMeta, settings: EditorSettings) -> tuple:
         internal_id = str(uuid.uuid4())
 
         return (
@@ -277,7 +277,7 @@ class DynamicListView(ValueNode):
     use_variable_as_id: bool = False
     switchable: bool = Field(default=True)
 
-    def create(self, fetcher: FetcherMeta, settings: EditorSettings) -> tuple:
+    def create(self, fetcher: MicrolayoutMeta, settings: EditorSettings) -> tuple:
         internal_id = str(uuid.uuid4())
 
         return (
@@ -362,7 +362,7 @@ class DropdownComponent(ValueNode):
     options: list[dict]
 
     def create(
-        self, fetcher: FetcherMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         self.field_settings.variabel_trigger = "value"
@@ -396,7 +396,7 @@ class ChecklistComponent(ValueNode):
     variabel_trigger: str = "value"
 
     def create(
-        self, fetcher: FetcherMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         callback_info = self.callback_settings
@@ -446,7 +446,7 @@ class KlassDropdown(ValueNode):
     # field_settings: EditableField
 
     def create(
-        self, fetcher: FetcherMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         codes_dict = get_classification(self.klass_code).get_codes().to_dict()
@@ -472,7 +472,7 @@ class Textarea(ValueNode):
     # field_settings: EditableField
 
     def create(
-        self, fetcher: FetcherMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         callback_info = self.callback_settings
@@ -509,7 +509,7 @@ class KlassChecklist(ValueNode):
     # field_settings: EditableField
 
     def create(
-        self, fetcher: FetcherMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         codes_dict = get_classification(self.klass_code).get_codes().to_dict()
@@ -602,7 +602,7 @@ class Layout:
         self.nodes = parsed_nodes
 
     def build(
-        self, fetcher: FetcherMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[list[Any], Sequence[FieldCallbackContainer]]:
         layout_list = []
         ids = []
