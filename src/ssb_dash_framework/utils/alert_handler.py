@@ -2,9 +2,10 @@ import datetime
 import logging
 import time
 from typing import Any
+import copy
 
 import dash_bootstrap_components as dbc
-from dash import ALL
+from dash import ALL, Patch
 from dash import Input
 from dash import Output
 from dash import State
@@ -89,6 +90,43 @@ class AlertHandler:
             return alert_log
     """
 
+    _queue = []
+
+    @classmethod
+    def _add_alert(
+        cls,
+        msg: str,
+        color: str,
+        ephemeral: bool | None = False,
+        position: str | None = "bottom-left",
+        duration: int | None = 5,
+        icon: str | None = None,
+    ):
+        alert = create_alert(msg, color, ephemeral, position, duration, icon)
+        cls._queue.append(alert)
+
+    @classmethod
+    def _drain(cls) -> list[dict[str, Any]]:
+        queue_copy = copy.deepcopy(cls._queue)
+        cls._queue = []
+        return queue_copy
+
+    @classmethod
+    def success(cls, msg: str):
+        cls._add_alert(msg, "success")
+
+    @classmethod
+    def warning(cls, msg: str):
+        cls._add_alert(msg, "warning")
+    
+    @classmethod
+    def error(cls, msg: str):
+        cls._add_alert(msg, "error")
+
+    @classmethod
+    def info(cls, msg: str):
+        cls._add_alert(msg, "error")
+
     def __init__(self) -> None:
         """Initializes the AlertHandler instance.
 
@@ -126,6 +164,7 @@ class AlertHandler:
                     id="alert-container-top-right",
                     className="alert-container top-right",
                 ),
+                dcc.Interval(id="alert_pusher_to_store", interval=1000, n_intervals=0),
                 dcc.Interval(
                     id="alert_ephemeral_interval", interval=1000, n_intervals=0
                 ),  # Unsure of performance, check if maybe it should update less often.
@@ -200,6 +239,17 @@ class AlertHandler:
         Notes:
             - Alerts must be added to each callback to ensure proper functionality.
         """
+
+        @callback(  # type: ignore[misc]
+            Output("alert_store", "data"), Input("alert_pusher_to_store", "n_intervals")
+        )
+        def push_local_queue(_n_intervals):
+            print(_n_intervals)
+            new_messages = self._drain()
+            print(new_messages)
+            patch_obj = Patch()
+            patch_obj.extend(new_messages)
+            return patch_obj
 
         @callback(  # type: ignore[misc]
             Output("alerts_modal", "is_open"),

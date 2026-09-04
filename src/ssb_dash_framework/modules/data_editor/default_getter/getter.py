@@ -195,3 +195,12 @@ class StandardDataHandler(FetcherMeta):
                 aggfunc=", ".join,
             ).reset_index()
         return complete_data.to_dict(orient="records")
+
+    def update_form_active_status(self, refnr: str, value: bool) -> None:
+        pass
+
+    def update_form_reception_comment(self, refnr: str, comment: str) -> None:
+        pass
+
+    def update_form_status(self, refnr: str, status_code: Any) -> None:
+        pass
