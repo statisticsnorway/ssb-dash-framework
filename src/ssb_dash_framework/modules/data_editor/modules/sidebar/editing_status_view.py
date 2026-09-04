@@ -182,24 +182,16 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 logger.warning(
                     f"Getting initial form status returned with an error: {e}"
                 )
-                alert = create_alert(
-                    f"Getting initial form status returned with an error: {e}",
-                    color="warning",
-                )
+                AlertHandler.warning(f"Getting initial form status returned with an error: {e}")
                 return (
-                    #alert,
                     no_update,
                     no_update,
                     f"Viser skjema: {refnr}",
                 )
 
             if data is None:
-                alert = create_alert(
-                    "Getting initial form status returned None",
-                    color="warning",
-                )
+                AlertHandler.warning("Getting initial form status returned None")
                 return (
-                    #alert,
                     no_update,
                     no_update,
                     f"Viser skjema: {refnr}",
@@ -213,13 +205,9 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             )
             radio_out = new_radio if new_radio != current_radio else no_update
 
-            alert = create_alert(
-                "Getting initial form status was successful",
-                color="info",
-            )
+            AlertHandler.success("Getting initial form status was successful")
 
             return (
-                #alert,
                 checkbox_out,
                 radio_out,
                 f"Viser skjema: {refnr}",
@@ -229,19 +217,16 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         radio_id = f"{self.module_name}-{self.module_number}-radioitems"
 
         @callback(
-            Output("alert_store", "data", allow_duplicate=True),
             Output("skjemamottak-status-signal", "data", allow_duplicate=True),
             Input(checkbox_id, "value"),
             Input(radio_id, "value"),
             self.variableselector.get_state(get_refnr()),
-            State("alert_store", "data"),
             prevent_initial_call=True,
         )
         def update_status(
             aktiv_status,
             status_code,
             refnr,
-            alert_store,
         ):
 
             triggered_id = ctx.triggered_id
@@ -265,23 +250,13 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             else:
                 raise PreventUpdate
 
-            message = "Updating form status was sucessfull"
+            message = "Updating form status was successfull"
             logger.debug(message)
-            feedback = create_alert(message, color="info")
-            #if isinstance(_get_connection_object(), EimerDBInstance):
-            #    feedback = update_to_apply.update_eimer()
+            AlertHandler.success(message)
 
-            #elif isinstance(_get_connection_object(), ConnectionPool):
-            #    feedback = update_to_apply.update_ibis()
-
-            #else:
-            #    feedback = update_to_apply.to_alert(False)
-            #    raise NotImplementedError
-
-            return [feedback, *alert_store], time.time()
+            return time.time()
 
         @callback(
-            #Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_name}-{self.module_number}-form-table", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-form-table", "columnDefs"),
             Output(
@@ -297,7 +272,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         )
         def view_refnrs_by_ident(click: int | None, ident: str | None, time_units: str):
             """Populates a table showing all relevant received forms from the relevant 'ident'."""
-            AlertHandler.success("Created an alert")
+
             if ctx.triggered_id != f"{self.module_name}-{self.module_number}-button":
                 raise PreventUpdate
 
@@ -311,23 +286,16 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             except Exception as e:
                 message = f"Getting all reference numbers by ident for a period failed with error: {e}"
                 logger.warning(message)
-                alert = create_alert(message, color="warning")
+                AlertHandler.warning(message)
                 return no_update, no_update, no_update
 
             if data is None:
                 message = "Getting all reference numbers by ident for a period returned with None"
                 logger.warning(message)
-                alert = create_alert(message, color="warning")
+                AlertHandler.warning(message)
                 return no_update, no_update, no_update
-
-            alert = create_alert(
-                "Getting all reference numbers by ident for a period was successful",
-                color="info",
-            )
-            
-
+           
             return (
-                #alert,
                 data.to_dict("records"),
                 [{"field": x, "headerName": x} for x in data.columns],
                 True,

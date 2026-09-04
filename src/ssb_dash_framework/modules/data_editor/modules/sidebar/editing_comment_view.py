@@ -13,7 +13,7 @@ from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
 
-from .....utils.alert_handler import create_alert
+from .....utils.alert_handler import AlertHandler, create_alert
 from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.set_variables import get_ident
@@ -111,43 +111,47 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
         )
         def get_comment(refnr: str) -> str:
             """Gets the comment for the selected 'refnr'."""
-            comment = self.fetcher.get_comment(refnr)
+
+            try:
+                comment = self.fetcher.get_comment(refnr)
+                comment_update = "Comment was updated successfully"
+                logger.info(comment_update)
+                AlertHandler.info(comment_update)
+            except Exception as e:
+                error_msg = f"Comment failed to update with error: {e}"
+                logger.info(error_msg)
+                AlertHandler.info(error_msg) 
 
             if comment is None:
+                error_msg = "Comment returned with None"
+                logger.info(error_msg)
+                AlertHandler.info(error_msg) 
                 return ""
 
             return comment
 
+        save_button_id = f"{self.module_name}-{self.module_number}-save-button"
+
         @callback(
-            Output("alert_store", "data", allow_duplicate=True),
-            Input(f"{self.module_name}-{self.module_number}-save-button", "n_clicks"),
+            Input(save_button_id, "n_clicks"),
             State(f"{self.module_name}-{self.module_number}-comment-text", "value"),
             State(f"{self.module_name}-{self.module_number}-dropdown-refnr", "value"),
-            State("alert_store", "data"),
             prevent_initial_call=True,
         )
-        def update_output(save_click: int | None, value: Any, refnr: str, alert_store):
+        def update_output(save_click: int | None, value: Any, refnr: str):
             """Update the comment when button is clicked."""
-            if (
-                callback_context.triggered_id
-                != f"{self.module_name}-{self.module_number}-save-button"
-            ):
+            if callback_context.triggered_id != save_button_id:
                 logger.info("Preventing update")
                 raise PreventUpdate
 
-            #comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=value)
-            self.fetcher.update_form_reception_comment(refnr, value)
-            comment_update = "Comment was updated successfully"
-            logger.info(comment_update)
-            feedback = create_alert(comment_update)
-            #if isinstance(_get_connection_object(), EimerDBInstance):
-            #    feedback = comment_update.update_eimer()
-            #elif isinstance(_get_connection_object(), ConnectionPool):
-            #    logger.debug("Attempting to update using ibis logic.")
-            #    feedback = comment_update.update_ibis()
-            #else:
-            #    raise NotImplementedError(
-            #        f"Connection of type '{type(_get_connection_object())}' is not implemented yet."
-            #    )
-
-            return [feedback, *alert_store]
+            # comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=value)
+            try:
+                self.fetcher.update_form_reception_comment(refnr, value)
+                comment_update = "Comment was updated successfully"
+                logger.info(comment_update)
+                AlertHandler.info(comment_update)
+            except Exception as e:
+                error_msg = f"Comment failed to update with error: {e}"
+                logger.info(error_msg)
+                AlertHandler.info(error_msg) 
+            

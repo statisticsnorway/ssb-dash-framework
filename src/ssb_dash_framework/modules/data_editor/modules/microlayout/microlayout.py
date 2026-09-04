@@ -52,8 +52,6 @@ class MicroLayoutAIO(html.Div):
         if isinstance(layout, Layout):
             model = layout
         elif isinstance(layout, dict):
-            print("MicrolayoutAio", layout)
-            # self.settings.form_data_tables
             model = Layout(layout["layout"])
         else:
             model = Layout(layout)
