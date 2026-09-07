@@ -462,27 +462,68 @@ def get_skjoennslignet(conn, sekvensnummer: int) -> pd.DataFrame:
     return df
 
 
-def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
-    """Fetch and return pandas dataframe containing BOF info from parquet or sqlite fallback for a given orgnr.
+def get_bof_database_path() -> Path:
+    """Find the available BOF database."""
+    database_paths = [
+        Path("/buckets/shared/vof/oracle-hns/ssb_foretak.db"),
+        Path("/buckets/delt-oracle-hns/ssb_foretak.db"),
+    ]
 
-    Example use: get_bofinfo("979443137", "2024")
+    for database_path in database_paths:
+        if database_path.exists():
+            return database_path
+
+    raise FileNotFoundError(
+        "Fant ikke ssb_foretak.db. Sjekket følgende filbaner: "
+        f"{', '.join(str(path) for path in database_paths)}"
+    )
+
+
+def orgnr_exists_in_bof(orgnr: str) -> bool:
+    """Checks if organisation exists in BOF registry.
+
+    Example use: orgnr_exists_in_bof("979443137")
     """
+    try:
+        db_path = get_bof_database_path()
+
+        conn = ibis.sqlite.connect(str(db_path))
+        t = conn.table("ssb_foretak")
+
+        df = t.filter(_.orgnr == orgnr).limit(1).execute()
+
+        return not df.empty
+
+    except Exception as e:
+        logger.error(f"BOF lookup feilet: {e}")
+        return True
+
+
+def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
+    """Fetch and return BOF info for a given orgnr."""
     year = str(aar)
 
-    parquet_paths = [
-        (
-            f"/buckets/shared/vof/"
-            f"situttak/vof-aarsfil_data/"
-            f"klargjorte-data/parquet/"
-            f"vof-aarsfil_p{year}_v1.parquet"
-        ),
-        (
-            f"/buckets/shared/vof/"
-            f"situttak/vof-aarsfil_data/"
-            f"klargjorte-data/parquet/"
-            f"vof-aarsfil-forelopig_p{year}_v1.parquet"
-        ),
+    bof_base_paths = [
+        "/buckets/shared/vof",
+        "/buckets/delt-situttak",
     ]
+
+    parquet_paths = []
+
+    for base_path in bof_base_paths:
+        if base_path == "/buckets/shared/vof":
+            parquet_base = (
+                f"{base_path}/situttak/vof-aarsfil_data/" "klargjorte-data/parquet"
+            )
+        else:
+            parquet_base = f"{base_path}/vof-aarsfil_data/" "klargjorte-data/parquet"
+
+        parquet_paths.extend(
+            [
+                f"{parquet_base}/vof-aarsfil_p{year}_v1.parquet",
+                f"{parquet_base}/vof-aarsfil-forelopig_p{year}_v1.parquet",
+            ]
+        )
 
     rename_map = {
         "org_nr": "orgnr",
@@ -513,13 +554,11 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
     ]
 
     for path in parquet_paths:
-
         if not Path(path).exists():
             continue
 
         try:
             conn = ibis.duckdb.connect()
-
             t = conn.read_parquet(path)
 
             df = t.filter(_.org_nr == str(ident)).execute()
@@ -535,29 +574,34 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
 
             return df[expected_columns]
 
-        except Exception as e:
-            logger.error(
-                f"Failed reading parquet {path}: {e}",
-                exc_info=True,
+        except Exception:
+            logger.exception("Failed reading parquet %s", path)
+
+    # SQLite fallback
+    sqlite_paths = [
+        "/buckets/shared/vof/oracle-hns/ssb_foretak.db",
+        "/buckets/delt-oracle-hns/ssb_foretak.db",
+    ]
+
+    for sqlite_path in sqlite_paths:
+        if not Path(sqlite_path).exists():
+            continue
+
+        try:
+            conn = ibis.sqlite.connect(sqlite_path)
+            t = conn.table("ssb_foretak")
+
+            df = t.filter(_.orgnr == ident).execute()
+
+            return df
+
+        except Exception:
+            logger.exception(
+                "Failed reading sqlite fallback %s",
+                sqlite_path,
             )
 
-    # fallback sqlite
-    try:
-        conn = ibis.sqlite.connect("/buckets/shared/vof/oracle-hns/ssb_foretak.db")
-
-        t = conn.table("ssb_foretak")
-
-        df = t.filter(_.orgnr == ident).execute()
-
-        return df
-
-    except Exception as e:
-        logger.error(
-            f"Failed reading sqlite fallback: {e}",
-            exc_info=True,
-        )
-
-        return pd.DataFrame(columns=expected_columns)
+    return pd.DataFrame(columns=expected_columns)
 
 
 def get_value(series) -> str:
@@ -675,9 +719,11 @@ def build_column_defs(sekvens_compare=None):
             "headerName": col,
             "sortable": False,
             "resizable": True,
+            "filter": True,
             "hide": col == "sekvensnummer",
             "editable": col == "verdi",
-            "flex": 3 if col == "beskrivelse" else 2 if col == "post" else 1,
+            "width": (430 if col == "beskrivelse" else 90 if col == "post" else None),
+            "flex": (None if col in ["beskrivelse", "post"] else 2),
             "valueFormatter": {
                 "function": (
                     "params.value == null ? '' : params.value.toLocaleString('no-NO')"
@@ -745,6 +791,166 @@ def build_column_defs(sekvens_compare=None):
     column_defs.append(feltkommentar_ikon_column())
 
     return column_defs
+
+
+def build_regnskap_dataframe(
+    regnskapstype: str,
+    structure,
+    aar: str,
+    orgnr_foretak: str,
+    toggle_blank: list[str],
+    sekvensnummer: int,
+    sekvens_compare: int | None,
+    toggle_petroleum: list[str],
+) -> pd.DataFrame:
+    """Henter og bygger dataframe for balanseregnskap eller resultatregnskap."""
+    post_descriptions = post_description_data(regnskapstype)
+
+    with get_nspek_connection() as conn:
+
+        ident_data = fetch_data_by_orgnr(
+            conn,
+            regnskapstype,
+            orgnr_foretak,
+            aar,
+            sekvensnummer,
+        )
+
+        comments = get_latest_field_comments(
+            conn,
+            orgnr_foretak,
+        )
+
+        if sekvens_compare:
+            df_compare = fetch_data_by_orgnr(
+                conn,
+                regnskapstype,
+                orgnr_foretak,
+                aar,
+                sekvens_compare,
+            )
+        else:
+            df_compare = None
+
+    # Sørg for samme datatype før merge
+    post_descriptions = post_descriptions.copy()
+    ident_data = ident_data.copy()
+
+    post_descriptions["felt"] = post_descriptions["felt"].astype(str)
+
+    ident_data["felt"] = ident_data["felt"].astype(str)
+
+    # Bygg hoveddata
+    df_main = post_descriptions.merge(
+        ident_data,
+        how="left",
+        on="felt",
+    )
+
+    df_main["sekvensnummer"] = sekvensnummer
+
+    df_main = df_main.rename(
+        columns={
+            "tekst": "beskrivelse",
+            "felt": "post",
+            "belop": "verdi",
+        }
+    )
+
+    # Legg til sammenligningsdata
+    if df_compare is not None:
+
+        df_compare = df_compare.copy()
+
+        df_compare["felt"] = df_compare["felt"].astype(str)
+
+        df_compare = df_compare.rename(
+            columns={
+                "tekst": "beskrivelse",
+                "felt": "post",
+                "belop": "verdi_compare",
+            }
+        )
+
+        df = df_main.merge(
+            df_compare,
+            on="post",
+            how="left",
+        )
+
+        verdi = df["verdi"]
+        verdi_compare = df["verdi_compare"]
+
+        df["diff"] = (verdi.fillna(0) - verdi_compare.fillna(0)).where(
+            ~(verdi.isna() & verdi_compare.isna())
+        )
+
+    else:
+        df = df_main
+
+    # Legg til UI-summer og filtre
+    df = add_ui_sums(
+        df,
+        structure,
+    )
+
+    df = apply_blank_filter(
+        df,
+        toggle_blank,
+    )
+
+    df = apply_petroleum_filter(
+        df,
+        orgnr_foretak,
+        toggle_petroleum,
+    )
+
+    # --------------------------------------------------
+    # Feltkommentarer
+    # --------------------------------------------------
+
+    valid_comment_row = df["post"].fillna("").astype(str).ne("") & ~df[
+        "is_ui_sum"
+    ].astype("boolean").fillna(False)
+
+    # Ikon kun på gyldige kommentarrader
+    df["feltkommentar_ikon"] = valid_comment_row.map(lambda x: "💬" if x else "")
+
+    # Selve kommentaren
+    df["feltkommentar_tekst"] = df["post"].map(
+        lambda x: comments.get(
+            x,
+            {},
+        ).get(
+            "kommentar",
+            "",
+        )
+    )
+
+    # Har raden en aktiv kommentar?
+    df["har_feltkommentar"] = valid_comment_row & df["post"].isin(comments)
+
+    # Tooltip
+    df["feltkommentar_tooltip"] = df.apply(
+        lambda r: (
+            r["feltkommentar_tekst"]
+            if r["har_feltkommentar"]
+            else (
+                "Klikk for å legge til feltkommentar"
+                if valid_comment_row.loc[r.name]
+                else ""
+            )
+        ),
+        axis=1,
+    )
+
+    # Vis kun numeriske poster i gridet
+    df["post"] = df["post"].where(
+        df["post"].astype(str).str.fullmatch(r"\d+"),
+        "",
+    )
+
+    return df
 
 
 def fetch_data_by_orgnr(
@@ -1197,6 +1403,7 @@ class Naeringsspesifikasjon:
                     searchable=False,
                 ),
             ],
+            className="ssb-dropdown-card",
         )
         return dropdown_card
 
@@ -1256,15 +1463,24 @@ class Naeringsspesifikasjon:
             "styleConditions": [
                 {
                     "condition": "params.data && params.data.operation_type === 'INSERT' && params.data.process_type === 'editering'",
-                    "style": {"backgroundColor": "#c8e6c9"},  # lys grønn
+                    "style": {
+                        "backgroundColor": "#c8e6c9",
+                        "color": "#162327",
+                    },  # lys grønn
                 },
                 {
                     "condition": "params.data && params.data.operation_type === 'UPDATE'",
-                    "style": {"backgroundColor": "#ffe082"},  # lys gul
+                    "style": {
+                        "backgroundColor": "#ffe082",
+                        "color": "#162327",
+                    },  # lys gul
                 },
                 {
                     "condition": "params.data && params.data.operation_type === 'INSERT' && params.data.process_type === 'innsamling'",
-                    "style": {"backgroundColor": "#bde4ff"},  # lys blå
+                    "style": {
+                        "backgroundColor": "#bde4ff",
+                        "color": "#162327",
+                    },  # lys blå
                 },
             ]
         }
@@ -1287,8 +1503,6 @@ class Naeringsspesifikasjon:
                     "style": {
                         "fontStyle": "italic",
                         "fontWeight": "normal",
-                        "backgroundColor": "#F0F8F9",  # SSB mørk 1
-                        "color": "#333333",
                     },
                 },
             ]
@@ -1567,7 +1781,10 @@ class Naeringsspesifikasjon:
                         ),
                         dbc.Modal(
                             [
-                                dbc.ModalHeader(dbc.ModalTitle("Advarsel")),
+                                dbc.ModalHeader(
+                                    dbc.ModalTitle("Advarsel"),
+                                    close_button=False,
+                                ),
                                 dbc.ModalBody(id="negative-value-modal-body"),
                                 dbc.ModalFooter(
                                     [
@@ -1589,13 +1806,14 @@ class Naeringsspesifikasjon:
                             id="modal-negative-value",
                             is_open=False,
                             centered=True,
-                            backdrop="static",
-                            className="negative-warning-modal",
+                            backdrop=False,
+                            className="ssb-modal ssb-modal-warning",
                         ),
                         dbc.Modal(
                             [
                                 dbc.ModalHeader(
-                                    dbc.ModalTitle(id="feltkommentar-modal-title")
+                                    dbc.ModalTitle(id="feltkommentar-modal-title"),
+                                    close_button=False,
                                 ),
                                 dbc.ModalBody(
                                     [
@@ -1643,7 +1861,8 @@ class Naeringsspesifikasjon:
                             id="feltkommentar-modal",
                             is_open=False,
                             centered=True,
-                            backdrop="static",
+                            backdrop=False,
+                            className="ssb-modal ssb-modal-comment",
                         ),
                     ],
                     style={"marginBottom": "10px"},
@@ -2183,6 +2402,7 @@ class Naeringsspesifikasjon:
             style={
                 "width": "100%",
                 "minWidth": "0",
+                "maxWidth": "1180px",
             },
         )
 
@@ -2370,12 +2590,9 @@ class Naeringsspesifikasjon:
             orgnr_foretak: str,
             toggle_blank: list[str],
             sekvensnummer: int,
-            sekvens_compare: int,
+            sekvens_compare: int | None,
             toggle_petroleum: list[str],
         ):
-
-            # if refresh_data and "balanse" not in refresh_data:
-            #     raise PreventUpdate
 
             if not aar or not orgnr_foretak:
                 raise PreventUpdate
@@ -2383,72 +2600,19 @@ class Naeringsspesifikasjon:
             if refresh_data and refresh_data.get("status") == "invalid_search":
                 return [], []
 
-            post_descriptions = post_description_data("balanseregnskap")
-            with get_nspek_connection() as conn:
-                ident_data = fetch_data_by_orgnr(
-                    conn, "balanseregnskap", orgnr_foretak, aar, sekvensnummer
-                )
-
-            post_descriptions["felt"] = post_descriptions["felt"].astype(str)
-            ident_data["felt"] = ident_data["felt"].astype(str)
-
-            df_main = post_descriptions.merge(ident_data, how="left", on="felt")
-            df_main["sekvensnummer"] = sekvensnummer
-            df_main = df_main.rename(
-                columns={"tekst": "beskrivelse", "felt": "post", "belop": "verdi"}
-            )
-
-            if sekvens_compare:
-                with get_nspek_connection() as conn:
-                    df_compare = fetch_data_by_orgnr(
-                        conn, "balanseregnskap", orgnr_foretak, aar, sekvens_compare
-                    )
-                df_compare = df_compare.rename(
-                    columns={
-                        "tekst": "beskrivelse",
-                        "felt": "post",
-                        "belop": "verdi_compare",
-                    }
-                )
-
-                df = df_main.merge(df_compare, on="post", how="left")
-                verdi = df["verdi"]
-                verdi_compare = df["verdi_compare"]
-                verdi_calc = verdi.fillna(0)
-                verdi_compare_calc = verdi_compare.fillna(0)
-                df["diff"] = (verdi_calc - verdi_compare_calc).where(
-                    ~(verdi.isna() & verdi_compare.isna())
-                )
-
-            else:
-                df = df_main
-
-            df = add_ui_sums(df, BALANSE_STRUCTURE)
-            df = apply_blank_filter(df, toggle_blank)
-            df = apply_petroleum_filter(df, orgnr_foretak, toggle_petroleum)
-
-            with get_nspek_connection() as conn:
-                comments = get_latest_field_comments(conn, orgnr_foretak)
-            valid_comment_row = df["post"].fillna("").astype(str).ne("") & ~df[
-                "is_ui_sum"
-            ].astype("boolean").fillna(False)
-            df["feltkommentar_ikon"] = valid_comment_row.map(
-                lambda x: "💬" if x else ""
-            )
-            df["feltkommentar_tekst"] = df["post"].map(
-                lambda x: comments.get(x, {}).get("kommentar", "")
-            )
-            df["har_feltkommentar"] = df["post"].isin(comments)
-            df["feltkommentar_tooltip"] = df.apply(
-                lambda r: (
-                    r["feltkommentar_tekst"]
-                    if r["har_feltkommentar"]
-                    else "Klikk for å legge til feltkommentar"
-                ),
-                axis=1,
+            df = build_regnskap_dataframe(
+                regnskapstype="balanseregnskap",
+                structure=BALANSE_STRUCTURE,
+                aar=aar,
+                orgnr_foretak=orgnr_foretak,
+                toggle_blank=toggle_blank,
+                sekvensnummer=sekvensnummer,
+                sekvens_compare=sekvens_compare,
+                toggle_petroleum=toggle_petroleum,
             )
 
             row_data = df.to_dict("records")
+
             column_defs = build_column_defs(sekvens_compare)
 
             return row_data, column_defs
@@ -2472,12 +2636,9 @@ class Naeringsspesifikasjon:
             orgnr_foretak: str,
             toggle_blank: list[str],
             sekvensnummer: int,
-            sekvens_compare: int,
+            sekvens_compare: int | None,
             toggle_petroleum: list[str],
         ):
-
-            # if refresh_data and "resultat" not in refresh_data:
-            #     raise PreventUpdate
 
             if not aar or not orgnr_foretak:
                 raise PreventUpdate
@@ -2485,71 +2646,19 @@ class Naeringsspesifikasjon:
             if refresh_data and refresh_data.get("status") == "invalid_search":
                 return [], []
 
-            post_descriptions = post_description_data("resultatregnskap")
-            with get_nspek_connection() as conn:
-                ident_data = fetch_data_by_orgnr(
-                    conn, "resultatregnskap", orgnr_foretak, aar, sekvensnummer
-                )
-
-            post_descriptions["felt"] = post_descriptions["felt"].astype(str)
-            ident_data["felt"] = ident_data["felt"].astype(str)
-
-            df_main = post_descriptions.merge(ident_data, how="left", on="felt")
-            df_main["sekvensnummer"] = sekvensnummer
-            df_main = df_main.rename(
-                columns={"tekst": "beskrivelse", "felt": "post", "belop": "verdi"}
-            )
-
-            if sekvens_compare:
-                with get_nspek_connection() as conn:
-                    df_compare = fetch_data_by_orgnr(
-                        conn, "resultatregnskap", orgnr_foretak, aar, sekvens_compare
-                    )
-                df_compare = df_compare.rename(
-                    columns={
-                        "tekst": "beskrivelse",
-                        "felt": "post",
-                        "belop": "verdi_compare",
-                    }
-                )
-
-                df = df_main.merge(df_compare, on="post", how="left")
-                verdi = df["verdi"]
-                verdi_compare = df["verdi_compare"]
-                verdi_calc = verdi.fillna(0)
-                verdi_compare_calc = verdi_compare.fillna(0)
-                df["diff"] = (verdi_calc - verdi_compare_calc).where(
-                    ~(verdi.isna() & verdi_compare.isna())
-                )
-
-            else:
-                df = df_main
-
-            df = add_ui_sums(df, RESULTAT_STRUCTURE)
-            df = apply_blank_filter(df, toggle_blank)
-            df = apply_petroleum_filter(df, orgnr_foretak, toggle_petroleum)
-
-            with get_nspek_connection() as conn:
-                comments = get_latest_field_comments(conn, orgnr_foretak)
-            valid_comment_row = df["post"].fillna("").astype(str).ne("") & ~df[
-                "is_ui_sum"
-            ].astype("boolean").fillna(False)
-
-            df["har_feltkommentar"] = valid_comment_row
-            df["feltkommentar_tekst"] = df["post"].map(
-                lambda x: comments.get(x, {}).get("kommentar", "")
-            )
-            df["har_feltkommentar"] = df["post"].isin(comments)
-            df["feltkommentar_tooltip"] = df.apply(
-                lambda r: (
-                    r["feltkommentar_tekst"]
-                    if r["har_feltkommentar"]
-                    else "Klikk for å legge til feltkommentar"
-                ),
-                axis=1,
+            df = build_regnskap_dataframe(
+                regnskapstype="resultatregnskap",
+                structure=RESULTAT_STRUCTURE,
+                aar=aar,
+                orgnr_foretak=orgnr_foretak,
+                toggle_blank=toggle_blank,
+                sekvensnummer=sekvensnummer,
+                sekvens_compare=sekvens_compare,
+                toggle_petroleum=toggle_petroleum,
             )
 
             row_data = df.to_dict("records")
+
             column_defs = build_column_defs(sekvens_compare)
 
             return row_data, column_defs
@@ -3187,7 +3296,7 @@ class Naeringsspesifikasjon:
                     1,
                     true,
                     NOW(),
-                    ''current_setting('nspek_app.user_id')''
+                    current_setting('nspek_app.user_id')
                 )
             """
 
@@ -3545,25 +3654,31 @@ class Naeringsspesifikasjon:
                 )
 
                 kontroller_df = instance.get_current_kontroller()
-                kontroller_lookup = kontroller_df.set_index("kontrollid").to_dict(
-                    "index"
-                )
+                kontroller_lookup = kontroller_df.set_index(
+                    ["aar", "kontrollid"]
+                ).to_dict("index")
 
                 if ctx.triggered_id == "run-controls-btn":
                     run_all_controls_for_sekvensnummer(conn, int(sekvensnummer))
 
-                df = instance.get_current_kontrollutslag()
-
-            df = df[df["sekvensnummer"] == int(sekvensnummer)]
+                df = instance.get_current_kontrollutslag(
+                    sekvensnummer=int(sekvensnummer),
+                )
 
             if df.empty:
                 return [], base_class
 
-            df["skildring"] = df["kontrollid"].map(
-                lambda x: kontroller_lookup.get(x, {}).get("skildring")
+            df["skildring"] = df.apply(
+                lambda row: kontroller_lookup.get(
+                    (row["aar"], row["kontrollid"]), {}
+                ).get("skildring"),
+                axis=1,
             )
-            df["tema"] = df["kontrollid"].map(
-                lambda x: kontroller_lookup.get(x, {}).get("tema")
+            df["tema"] = df.apply(
+                lambda row: kontroller_lookup.get(
+                    (row["aar"], row["kontrollid"]), {}
+                ).get("tema"),
+                axis=1,
             )
 
             has_issues = df["utslag"].any()

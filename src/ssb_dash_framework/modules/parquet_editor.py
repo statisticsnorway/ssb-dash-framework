@@ -25,6 +25,7 @@ from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
 from ..utils.module_validation import module_validator
+from ..config.models import register_module
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,9 @@ def check_for_bucket_path(path: str | Path) -> None:
             "Due to differences in how files in '/buckets/...' behave compared to files in the cloud buckets this functionality is currently limited to only work with paths that starts with '/buckets/'."
         )
 
-
+@register_module(
+    as_tab="ParquetEditor",
+)
 class ParquetEditor:
     """Simple module with the sole purpose of editing a parquet file.
 
@@ -542,7 +545,9 @@ class ParquetEditor:
         ChangeDataLog.model_validate(changelog_entry)
         return changelog_entry
 
-
+@register_module(
+    as_tab="ParquetEditorChangelog",
+)
 class ParquetEditorChangelog:
     """Simple module with the sole purpose of showing the changes made using ParquetEditor.
 
@@ -552,12 +557,12 @@ class ParquetEditorChangelog:
 
     _id_number: int = 0
 
-    def __init__(self, id_vars: list[str], file_path: str) -> None:
+    def __init__(self, id_vars: list[str], data_source: str) -> None:
         """Initializes the module and makes a few validation checks before moving on.
 
         Args:
             id_vars: A list of columns that together form a unique identifier for a single row in your data.
-            file_path: The path to the parquet file you want to find the changelog for.
+            data_source: The path to the parquet file you want to find the changelog for.
         """
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
@@ -568,8 +573,8 @@ class ParquetEditorChangelog:
         )
         self.user = os.getenv("DAPLA_USER")
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
-        path = Path(file_path)
-        self.log_filepath = get_log_path(file_path)
+        path = Path(data_source)
+        self.log_filepath = get_log_path(data_source)
         self.label = "Changes - " + path.stem
 
         self.module_layout = self._create_layout()

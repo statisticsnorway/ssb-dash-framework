@@ -8,6 +8,7 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from dash_iconify import DashIconify
 
 from ..utils.functions import sidebar_button
 
@@ -182,37 +183,39 @@ class WindowImplementation:
                 dbc.Modal(
                     [
                         dbc.ModalHeader(
-                            dbc.ModalTitle(
-                                dbc.Row(
-                                    [
-                                        dbc.Col(
-                                            [
-                                                html.Span(
-                                                    self.icon,
-                                                    className="modal-title-icon",
-                                                ),
-                                                html.Span(
-                                                    self.label,
-                                                    className="modal-title-text",
-                                                ),
-                                            ],
-                                            className="window-implementation-modal-title",
-                                            width="auto",
-                                        ),
-                                        dbc.Col(
-                                            dbc.Button(
-                                                "Fullscreen visning",
-                                                id=f"{self._window_n}-{self.module_name}-modal-fullscreen",
-                                                className="ssb-btn primary-btn",
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        [
+                                            html.Span(
+                                                self.icon,
+                                                className="modal-title-icon",
                                             ),
-                                            width="auto",
-                                            className="ms-auto",
+                                            html.Span(
+                                                self.label,
+                                                className="modal-title-text",
+                                            ),
+                                        ],
+                                        className="window-implementation-modal-title",
+                                    ),
+                                    dbc.Col(
+                                        dbc.Button(
+                                            DashIconify(
+                                                icon="feather:maximize-2",
+                                                width=18,
+                                            ),
+                                            id=f"{self._window_n}-{self.module_name}-modal-fullscreen",
+                                            className="ssb-modal-icon-button",
+                                            title="Maksimer vindu",
                                         ),
-                                    ],
-                                    align="center",
-                                    className="w-100 flex-nowrap",
-                                )
+                                        width="auto",
+                                        className="ms-auto",
+                                    ),
+                                ],
+                                align="center",
+                                className="w-100 flex-nowrap",
                             ),
+                            close_button=True,
                         ),
                         dbc.ModalBody(
                             html.Div(
@@ -222,6 +225,7 @@ class WindowImplementation:
                         ),
                     ],
                     id=f"{self._window_n}-{self.module_name}-modal",
+                    className ="ssb-modal",
                     size="xl",
                     fullscreen="xxl-down",
                     scrollable=self.window_scrollable,
@@ -277,21 +281,45 @@ class WindowImplementation:
 
         @callback(  # type: ignore[misc]
             Output(f"{self._window_n}-{self.module_name}-modal", "fullscreen"),
-            Output(f"{self._window_n}-{self.module_name}-modal-fullscreen", "children"),
-            Input(f"{self._window_n}-{self.module_name}-modal-fullscreen", "n_clicks"),
-            State(f"{self._window_n}-{self.module_name}-modal", "fullscreen"),
+            Output(
+                f"{self._window_n}-{self.module_name}-modal-fullscreen",
+                "children",
+            ),
+            Output(
+                f"{self._window_n}-{self.module_name}-modal-fullscreen",
+                "title",
+            ),
+            Input(
+                f"{self._window_n}-{self.module_name}-modal-fullscreen",
+                "n_clicks",
+            ),
+            State(
+                f"{self._window_n}-{self.module_name}-modal",
+                "fullscreen",
+            ),
         )
         def toggle_fullscreen_modal(
-            n_clicks: int, fullscreen_state: str | bool
-        ) -> tuple:
-            fullscreen: str | bool
-            if n_clicks and n_clicks > 0:
-                if fullscreen_state is True:
-                    fullscreen = "xxl-down"
-                    label = "Fullscreen visning"
-                else:
-                    fullscreen = True
-                    label = "Minimer vindu"
-                return fullscreen, label
-            else:
+            n_clicks: int,
+            fullscreen_state: str | bool,
+        ) -> tuple[str | bool, DashIconify, str]:
+            if not n_clicks:
                 raise PreventUpdate
+
+            if fullscreen_state is True:
+                return (
+                    "xxl-down",
+                    DashIconify(
+                        icon="feather:maximize-2",
+                        width=18,
+                    ),
+                    "Maksimer vindu",
+                )
+
+            return (
+                True,
+                DashIconify(
+                    icon="feather:minimize-2",
+                    width=18,
+                ),
+                "Minimer vindu",
+            )
