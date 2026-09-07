@@ -7,11 +7,8 @@ import tzlocal
 from ibis import _
 from pandas import Series
 
+from ssb_parquedit import ParquEdit
 from ....utils.config_tools.connection import get_connection
-from ....utils.core_models import UpdateSkjemamottak
-from ....utils.core_models import UpdateSkjemamottakAktiv
-from ....utils.core_models import UpdateSkjemamottakKommentar
-from ....utils.core_models import UpdateSkjemadata
 from ..meta import FetcherMeta
 from ..modules.inforow.info_row_model import InfoRowField
 from ..modules.microlayout.microlayout_components.editable_field_model import (
@@ -25,11 +22,12 @@ logger = logging.getLogger(__name__)
 local_tz = tzlocal.get_localzone()
 
 
-class StandardDataHandler(FetcherMeta):
+class AltinnFormParqueditHandler(FetcherMeta):
 
-    def __init__(self) -> None:
+    def __init__(self, conn: ParquEdit) -> None:
         # self.settings = settings
         self.cache = FormGetterCached()
+        self.conn = conn
         super().__init__()
 
     def get_field(
@@ -108,13 +106,6 @@ class StandardDataHandler(FetcherMeta):
                 )
                 .to_pandas()
             )
-            # data["dato_mottatt"] = (
-            # data["dato_mottatt"]
-            # .dt.tz_convert(local_tz)
-            # .dt.tz_localize(None)
-            # .dt.strftime("%Y-%m-%d %H:%M:%S")
-            # )
-        # print(data)
         return data
 
     def get_info_row_fields(
@@ -201,22 +192,25 @@ class StandardDataHandler(FetcherMeta):
         return complete_data.to_dict(orient="records")
 
     def update_form_active_status(self, refnr: str, value: bool) -> None:
-        update_to_apply = UpdateSkjemamottakAktiv(refnr=refnr, value=bool(value))
+        formdata: pd.DataFrame = self.conn.view(
+            "skjemamottak", f"refnr = '{refnr}'", limit=1
+        )
+        if formdata.shape[1] != 0:
+            rowid = formdata.iloc[0, :]["rowid"]
+            self.conn.edit(
+                "skjemamottak",
+                rowid,
+                {"status": value},
+                change_event_reason="REVIEW",
+                change_comment="Status på skjema endret manuelt",
+            )
 
     def update_form_reception_comment(self, refnr: str, comment: str) -> None:
-        comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=comment)
+        pass
 
-    def update_form_status(
-        self,
-        refnr: str,
-        status_code: Literal["Under behandling", "Ferdig", "Ubehandlet"],
-    ) -> None:
-        update_to_apply = UpdateSkjemamottak(
-            refnr=refnr,
-            column="status",
-            value=status_code,
-        )
-
+    def update_form_status(self, refnr: str, status_code: Literal["Under behandling", "Ferdig", "Ubehandlet"]) -> None:
+        pass
+    
     def update_field_value(
         self,
         refnr: str,
@@ -227,18 +221,4 @@ class StandardDataHandler(FetcherMeta):
         container: FieldCallbackContainer,
         inputs: list[Any] | dict[Any, Any],
     ) -> Any:
-        long = settings.field_name_col == "variabel"
-        update_form = UpdateSkjemadata(
-            table=settings.form_data_table,
-            identifier_column=settings.refnr_col,
-            refnr=refnr,
-            ident=ident,
-            column=settings.field_value_col,
-            value=value,
-            old_value=old_value,
-            variable=container.settings.variable,
-            long=long,
-            mapping_table=settings.mapping_table,
-            mapping_match_column=settings.mapping_match_column,
-            mapping_result_column=settings.mapping_result_column,
-        )
+        pass

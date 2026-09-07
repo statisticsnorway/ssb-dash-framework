@@ -10,10 +10,9 @@ from dash import html
 from dash.exceptions import PreventUpdate
 
 from ssb_dash_framework.setup.variableselector import VariableSelector
+from ssb_dash_framework.utils.alert_handler import AlertHandler
 from ssb_dash_framework.utils.config_tools.set_variables import get_ident
 from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
-from ssb_dash_framework.utils.core_models import UpdateSkjemadata
-from ssb_dash_framework.utils.core_models import UpdateSkjemamottak
 
 from .meta import MicrolayoutMeta
 from ...utils import EditorSettings
@@ -106,34 +105,30 @@ class MicroLayoutAIO(html.Div):
                         )
                         raise PreventUpdate
 
-                    old_value = data_handler.get_field(
-                        self.settings, custom_ctx, custom_inputs
-                    )
-                    long = settings.field_name_col == "variabel"
-
-                    update_form = UpdateSkjemadata(
-                        table=self.settings.form_data_table,
-                        identifier_column=self.settings.refnr_col,
-                        refnr=refnr,
-                        ident=ident,
-                        column=self.settings.field_value_col,
-                        value=value,
-                        old_value=old_value,
-                        variable=custom_ctx.settings.variable,
-                        long=long,
-                        mapping_table=settings.mapping_table,
-                        mapping_match_column=settings.mapping_match_column,
-                        mapping_result_column=settings.mapping_result_column,
-                    )
-
-                    update_skjemamottak = UpdateSkjemamottak(
-                        refnr=refnr,
-                        column="status",
-                        value="Under arbeid",
-                        on_skjemadata_update=True,
-                    )
-
-            # updated_value = fields[ctx.triggered_id]
+                    try:
+                        old_value = data_handler.get_field(
+                            self.settings, custom_ctx, custom_inputs
+                        )
+                        if old_value != value:
+                            data_handler.update_field_value(
+                                refnr,
+                                ident,
+                                value,
+                                old_value,
+                                self.settings,
+                                custom_ctx,
+                                custom_inputs,
+                            )
+                            data_handler.update_form_status(refnr, "Under arbeid")
+                        else:
+                            logger.debug(
+                                "Skippping form value update since value was same as previous value"
+                            )
+                        raise PreventUpdate
+                    except Exception as e:
+                        msg = f"Updating field value and updating form status for form field {custom_ctx.settings.variable} failed with error: {e}"
+                        logger.warning(msg)
+                        AlertHandler.warning(msg)
 
         @callback(
             output={item._id: item.get_output() for item in ids},
@@ -142,10 +137,16 @@ class MicroLayoutAIO(html.Div):
             },
         )
         def handle_variable_selector_change(custom_inputs):
-            # print("hei", custom_inputs, variable_selector)
             field_values = {}
-            # print("custom_inputs", custom_inputs)
             for id_, field in callback_ctx.items():
-                field_val = data_handler.get_field(self.settings, field, custom_inputs)
-                field_values[id_] = field_val
+                try:
+                    field_val = data_handler.get_field(
+                        self.settings, field, custom_inputs
+                    )
+                    field_values[id_] = field_val
+                except Exception as e:
+                    msg = f"Getting data for form field {field} failed with error: {e}"
+                    logger.warning(msg)
+                    AlertHandler.warning(msg)
+
             return field_values

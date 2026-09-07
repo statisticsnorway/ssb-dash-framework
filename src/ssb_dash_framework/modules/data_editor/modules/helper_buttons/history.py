@@ -4,14 +4,16 @@ import logging
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+
 import tzlocal
-from dash import Input
+from dash import Input, no_update
 from dash import Output
 from dash import callback
 from dash import html
 
 from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
+from .....utils.alert_handler import AlertHandler
 from .....utils.config_tools.set_variables import get_refnr
 from .....utils.config_tools.set_variables import get_time_units
 from .editor_helper_button import DataEditorHelperButton
@@ -89,7 +91,17 @@ class DataEditorHistory(DataEditorHelperButton):
             *self.variableselector.get_all_callback_objects(),
         )
         def update_history_view(is_open, insert_toggle: bool, refnr, *args):
-            df = self.fetcher.get_history(refnr)
+            try:
+                df = self.fetcher.get_history(refnr)
+            except Exception as e:
+                msg = f"Getting editing history failed with error: {e}"
+                logger.warning(msg)
+                AlertHandler.warning(msg)
+                return (
+                    no_update,
+                    no_update,
+                )
+
             columns = [
                 {
                     "headerName": col,

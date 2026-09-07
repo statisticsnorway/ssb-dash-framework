@@ -24,7 +24,7 @@ class SidebarMeta[T](ABC):
     def get_comment(self, refnr: str) -> str | None: ...
 
     @abstractmethod
-    def update_form_status(self, refnr: str, status_code: Any) -> None:
+    def update_form_status(self, refnr: str, status_code: Literal["Under arbeid", "Ferdig", "Ubehandlet"]) -> None:
         ...
 
     @abstractmethod

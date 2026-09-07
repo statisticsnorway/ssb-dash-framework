@@ -13,7 +13,7 @@ from .modules.microlayout.meta import MicrolayoutMeta
 SettingsType = EditorSettings
 
 class FetcherMeta(
-    SidebarMeta[SettingsType],
+    #SidebarMeta[SettingsType],
     InforowMeta[SettingsType],
     HelperButtonMeta,
     MicrolayoutMeta[SettingsType],

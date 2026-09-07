@@ -95,7 +95,12 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             """Collect relevant refnrs."""
             if not refnr or not skjema or not ident:
                 raise PreventUpdate
-            data = self.fetcher.get_refnrs_by_period_ident(self.settings, ident, period)
+            try:
+                data = self.fetcher.get_refnrs_by_period_ident(self.settings, ident, period)
+            except Exception as e:
+                error_msg = f"Failed to get reference for ident by period with error: {e}"
+                logger.info(error_msg)
+                AlertHandler.info(error_msg) 
 
             if data is None:
                 raise PreventUpdate
@@ -145,7 +150,6 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 logger.info("Preventing update")
                 raise PreventUpdate
 
-            # comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=value)
             try:
                 self.fetcher.update_form_reception_comment(refnr, value)
                 comment_update = "Comment was updated successfully"

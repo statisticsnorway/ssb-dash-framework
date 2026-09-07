@@ -26,8 +26,7 @@ from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.set_variables import get_ident
 from .....utils.config_tools.set_variables import get_refnr
 from .....utils.config_tools.set_variables import get_time_units
-from .....utils.core_models import UpdateSkjemamottak
-from .....utils.core_models import UpdateSkjemamottakAktiv
+
 from .editing_sidebar_helper import DataEditorHelperSidebar
 
 logger = logging.getLogger(__name__)
@@ -231,21 +230,9 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             triggered_id = ctx.triggered_id
 
             if triggered_id == checkbox_id:
-
-                #update_to_apply = UpdateSkjemamottakAktiv(
-                #    refnr=refnr, value=bool(aktiv_status)
-                #)
                 self.fetcher.update_form_active_status(refnr, bool(aktiv_status))
-
             elif triggered_id == radio_id:
-
-                #update_to_apply = UpdateSkjemamottak(
-                #    refnr=refnr,
-                #    column="status",
-                #    value=status_code,
-                #)
                 self.fetcher.update_form_status(refnr, status_code)
-
             else:
                 raise PreventUpdate
 

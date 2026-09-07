@@ -9,6 +9,7 @@ from dash import callback
 from dash.exceptions import PreventUpdate
 
 from .....setup.variableselector import VariableSelector
+from .....utils.alert_handler import AlertHandler
 from .....utils.config_tools.set_variables import get_ident
 from .....utils.config_tools.set_variables import get_time_units
 from ...meta import ModuleABC
@@ -122,10 +123,15 @@ class DataEditorInfoRow(ModuleABC):
                 else:
                     vars_to_collect.append(item)
 
-            field_data = self.fetcher.get_info_row_fields(
-                self.settings, ident, period, vars_to_collect
-            )
-            info_values.update(field_data)
+            try:
+                field_data = self.fetcher.get_info_row_fields(
+                    self.settings, ident, period, vars_to_collect
+                )
+                info_values.update(field_data)
+            except Exception as e:
+                error_msg = f"Get field for inforow failed with error: {e}"
+                logger.info(error_msg)
+                AlertHandler.info(error_msg)
 
             logger.debug(f"info_values: {info_values}")
             return info_values

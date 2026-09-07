@@ -2,8 +2,9 @@ from abc import abstractmethod, ABC
 from typing import Any
 
 from .microlayout_components.editable_field_model import FieldCallbackContainer
+from ..sidebar.meta import SidebarMeta
 
-class MicrolayoutMeta[T](ABC):
+class MicrolayoutMeta[T](SidebarMeta):
     @abstractmethod
     def get_field(
         self,
@@ -11,6 +12,19 @@ class MicrolayoutMeta[T](ABC):
         container: FieldCallbackContainer,
         inputs: list[Any] | dict[Any, Any],
     ) -> Any: ...
+
+    @abstractmethod
+    def update_field_value(
+        self,
+        refnr: str,
+        ident: str,
+        value: Any,
+        old_value: Any,
+        settings: T,
+        container: FieldCallbackContainer,
+        inputs: list[Any] | dict[Any, Any],
+    ) -> Any: ...
+
 
     @abstractmethod
     def get_timeseries(

@@ -35,6 +35,7 @@ dependencies = [
     "dash (==4.1.0)",
     "gcsfs (>=2026.8.0,<2027.0.0)",
     "pendulum (>=3.2.0,<4.0.0)",
+    "ssb-parquedit (>=0.0.11,<0.0.12)",
 ]
 
 [project.urls]

@@ -67,11 +67,10 @@ class ValueNode(BaseNode):
     def pre_init_id_creation(cls, data: Any) -> Any:
         if isinstance(data, dict):
             # Mutate the raw input dictionary before validation
-            if "id" not in data:
-                var_as_is = data.get("use_variable_as_id", True)
+            var_as_is = data.get("use_variable_as_id", True)
+            if ("id" not in data) or (var_as_is == False):
                 new_id = data.get("variable")
-                # if var_as_is == False
-                if (new_id is None) or (var_as_is == False) or isinstance(new_id, list):
+                if (new_id is None) or isinstance(new_id, list):
                     data["id"] = str(uuid.uuid4())
                 else:
                     data["id"] = new_id

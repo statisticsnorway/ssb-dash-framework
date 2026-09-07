@@ -1,18 +1,21 @@
 import uuid
+import logging
 
 import dash_ag_grid as dag
-from dash import Output
+from dash import Output, no_update
 from dash import callback
 from dash import html
 from dash.exceptions import PreventUpdate
 
 from ......setup.variableselector import VariableSelector
+from ......utils.alert_handler import AlertHandler
 from ......utils.config_tools.set_variables import get_ident
 from ......utils.config_tools.set_variables import get_refnr
 from ......utils.config_tools.set_variables import get_time_units
 from ..meta import MicrolayoutMeta
 from ....utils import EditorSettings
 
+logger = logging.getLogger(__name__)
 
 class DynamicListEditor(html.Div):
     def __init__(
@@ -47,8 +50,14 @@ class DynamicListEditor(html.Div):
         def update_table(refnr, ident, period):
             if not refnr or not ident or not period:
                 raise PreventUpdate
-            refnr = "394ee263060d"
-            data = fetcher.get_dynamic_list(settings, wildcard, refnr)
+            
+            try:
+                data = fetcher.get_dynamic_list(settings, wildcard, refnr)
+            except Exception as e:
+                msg = f"Getting dynamic list failed with error: {e}"
+                logger.warning(msg)
+                AlertHandler.warning(msg)
+                return (no_update, no_update)
 
             keys = set()
             for item in data:

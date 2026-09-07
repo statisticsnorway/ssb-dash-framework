@@ -2,11 +2,12 @@
 # pyright: reportCallIssue=false
 import uuid
 from itertools import cycle
+import logging
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
-from dash import Input
+from dash import Input, no_update
 from dash import Output
 from dash import Patch
 from dash import callback
@@ -15,6 +16,7 @@ from dash import html
 from dash.exceptions import PreventUpdate
 
 from ......setup.variableselector import VariableSelector
+from ......utils.alert_handler import AlertHandler
 from ......utils.config_tools.set_variables import SelectedTimeUnit
 from ......utils.config_tools.set_variables import TimeUnit
 from ......utils.config_tools.set_variables import get_ident
@@ -22,6 +24,8 @@ from ......utils.config_tools.set_variables import get_refnr
 from ......utils.config_tools.set_variables import get_time_units
 from ..meta import MicrolayoutMeta
 from ....utils import EditorSettings
+
+logger = logging.getLogger(__name__)
 
 GRAPH_COLORS = [
     "rgba(26, 157, 73, 255)",
@@ -140,9 +144,15 @@ class TimeseriesAio(html.Div):
                 prev_period = selected_period.subtract(i)
                 periods_to_get.append(prev_period.to_str())
 
-            timeseries = fetcher.get_timeseries(
-                settings, variables, refnr, ident, periods_to_get
-            )
+            try:
+                timeseries = fetcher.get_timeseries(
+                    settings, variables, refnr, ident, periods_to_get
+                )
+            except Exception as e:
+                msg = f"Getting timeseries values failed with error: {e}"
+                logger.warning(msg)
+                AlertHandler.warning(msg)
+                return (no_update, no_update)
 
             def sort_timeseries(period, frequency):
                 return TimeUnit.parse(frequency, period).dt
