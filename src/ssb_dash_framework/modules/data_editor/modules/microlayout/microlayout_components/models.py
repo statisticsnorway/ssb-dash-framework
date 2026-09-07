@@ -39,6 +39,7 @@ class Base(ABC):
         self,
         fetcher: MicrolayoutMeta,  # Fetcher is only included here for components that needs to create their own callbacks
         settings: EditorSettings,
+        aio_id: str,
     ) -> tuple[Any, list[FieldCallbackContainer] | FieldCallbackContainer | None]: ...
 
 
@@ -94,13 +95,13 @@ class Row(ContainerNode):
     type: Literal["row"]
 
     def create(
-        self, fetcher: MicrolayoutMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str,
     ) -> tuple[dbc.Row, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
         children = []
         for child in self.children:
-            comp, _id = child.create(fetcher, settings)
+            comp, _id = child.create(fetcher, settings, aio_id)
             ids.append(_id)
             children.append(comp)
         return dbc.Row(children), ids
@@ -110,13 +111,13 @@ class Col(ContainerNode):
     type: Literal["col"]
 
     def create(
-        self, fetcher: MicrolayoutMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str,
     ) -> tuple[dbc.Col, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
         children = []
         for child in self.children:
-            comp, _id = child.create(fetcher, settings)
+            comp, _id = child.create(fetcher, settings, aio_id)
             ids.append(_id)
             children.append(comp)
         return dbc.Col(children), ids
@@ -127,13 +128,13 @@ class Tab(ContainerNode):
     label: str
 
     def create(
-        self, fetcher: MicrolayoutMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str,
     ) -> tuple[dbc.Tab, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
         children = []
         for child in self.children:
-            comp, _id = child.create(fetcher, settings)
+            comp, _id = child.create(fetcher, settings, aio_id)
             ids.append(_id)
             children.append(comp)
         return (
@@ -150,13 +151,13 @@ class Tabs(ContainerNode):
     tabs: list[Tab]
 
     def create(
-        self, fetcher: MicrolayoutMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str,
     ) -> tuple[dbc.Tabs, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
         children = []
         for child in self.children:
-            comp, _id = child.create(fetcher, settings)
+            comp, _id = child.create(fetcher, settings, aio_id)
             ids.append(_id)
             children.append(comp)
         return dbc.Tabs(children), ids
@@ -168,7 +169,7 @@ class Header(BaseNode):
     size: Literal["xs", "sm", "md", "lg"] = "md"
 
     def create(
-        self, fetcher: MicrolayoutMeta, _settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, _settings: EditorSettings, aio_id: str,
     ) -> tuple[html.H1 | html.H2 | html.H3 | html.H4, None]:
         """A method for creating the layout."""
         if self.size == "lg":
@@ -187,7 +188,7 @@ class Label(BaseNode):
     bold: bool = False
 
     def create(
-        self, fetcher: MicrolayoutMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str,
     ) -> tuple[html.Div, None]:
         return (
             html.Div(
@@ -212,7 +213,7 @@ class InputField(ValueNode):
     # field_settings: EditableField
 
     def create(
-        self, fetcher: MicrolayoutMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         callback_info = self.callback_settings
@@ -231,7 +232,7 @@ class InputField(ValueNode):
                             "width": "100%",
                             "visibility": "hidden" if self.hidden else "visible",
                         },
-                        id=callback_info._id,
+                        id={"comp_id": callback_info._id, "aio": aio_id},
                         debounce=True,
                         readonly=self.readonly,
                         className="microlayout-input-field"
@@ -253,7 +254,7 @@ class TimeseriesView(ValueNode):
     use_variable_as_id: bool = Field(default=False)
     switchable: bool = Field(default=True)
 
-    def create(self, fetcher: MicrolayoutMeta, settings: EditorSettings) -> tuple:
+    def create(self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str,) -> tuple:
         internal_id = str(uuid.uuid4())
 
         return (
@@ -276,7 +277,7 @@ class DynamicListView(ValueNode):
     use_variable_as_id: bool = False
     switchable: bool = Field(default=True)
 
-    def create(self, fetcher: MicrolayoutMeta, settings: EditorSettings) -> tuple:
+    def create(self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str) -> tuple:
         internal_id = str(uuid.uuid4())
 
         return (
@@ -297,7 +298,7 @@ class CalculatedField(ValueNode):
     ids: dict[str, str]
     # constants: dict[str, str] = Field(default_factory=dict)
 
-    def create(self, *args, **kwargs) -> tuple[html.Div, None]:
+    def create(self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str) -> tuple[html.Div, None]:
         # self.create_callback()
         fn_template = string.Template("""
         function($inputs) {
@@ -308,8 +309,9 @@ class CalculatedField(ValueNode):
         input_list = []
         input_keys_list = []
         param_convert_str = ""
+
         for key, value in self.ids.items():
-            input_comp = Input(value, "value")
+            input_comp = Input({"comp_id": value, "aio": aio_id}, "value")
             input_list.append(input_comp)
             input_keys_list.append(key)
             param_convert_str += f"\t {key} = Number({key});\n"
@@ -361,7 +363,7 @@ class DropdownComponent(ValueNode):
     options: list[dict]
 
     def create(
-        self, fetcher: MicrolayoutMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         self.field_settings.variabel_trigger = "value"
@@ -373,7 +375,7 @@ class DropdownComponent(ValueNode):
                     html.Label(self.label, title=self.label),
                     dcc.Dropdown(
                         options=self.options,
-                        id=callback_info._id,
+                        id={"comp_id": callback_info._id, "aio": aio_id},
                         searchable=False,
                         className="ssb-dropdown",
                     ),
@@ -395,7 +397,7 @@ class ChecklistComponent(ValueNode):
     variabel_trigger: str = "value"
 
     def create(
-        self, fetcher: MicrolayoutMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         callback_info = self.callback_settings
@@ -403,7 +405,7 @@ class ChecklistComponent(ValueNode):
             children = [
                 dcc.Checklist(
                     options=[{**opt, "label": ""} for opt in self.options],
-                    id=callback_info._id,
+                    id={"comp_id": callback_info._id, "aio": aio_id},
                 ),
                 html.Label(
                     self.options[0].get("label", ""),
@@ -445,7 +447,7 @@ class KlassDropdown(ValueNode):
     # field_settings: EditableField
 
     def create(
-        self, fetcher: MicrolayoutMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         codes_dict = get_classification(self.klass_code).get_codes().to_dict()
@@ -459,7 +461,7 @@ class KlassDropdown(ValueNode):
             options=options,
             variable=self.variable,
             id=self.id,
-        ).create(fetcher, settings)
+        ).create(fetcher, settings, aio_id)
 
 
 class Textarea(ValueNode):
@@ -471,7 +473,7 @@ class Textarea(ValueNode):
     # field_settings: EditableField
 
     def create(
-        self, fetcher: MicrolayoutMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         callback_info = self.callback_settings
@@ -488,7 +490,7 @@ class Textarea(ValueNode):
                     ),
                     dbc.Textarea(
                         style={"width": "100%"},
-                        id=callback_info._id,
+                        id={"comp_id": callback_info._id, "aio": aio_id},
                         debounce=True,
                         readonly=self.readonly,
                         className="microlayout-textarea-field"
@@ -508,7 +510,7 @@ class KlassChecklist(ValueNode):
     # field_settings: EditableField
 
     def create(
-        self, fetcher: MicrolayoutMeta, settings: EditorSettings
+        self, fetcher: MicrolayoutMeta, settings: EditorSettings, aio_id: str,
     ) -> tuple[html.Div, FieldCallbackContainer]:
         """A method for creating the layout."""
         codes_dict = get_classification(self.klass_code).get_codes().to_dict()
@@ -523,7 +525,7 @@ class KlassChecklist(ValueNode):
                 options=options,
                 id=self.id,
                 variable=self.variable,
-            ).create(fetcher, settings)
+            ).create(fetcher, settings, aio_id)
         else:
             return DropdownComponent(
                 type="dropdown",
@@ -531,7 +533,7 @@ class KlassChecklist(ValueNode):
                 options=options,
                 id=self.id,
                 variable=self.variable,
-            ).create(fetcher, settings)
+            ).create(fetcher, settings, aio_id)
 
 
 # ---------- Discriminated union (by 'type') ----------
@@ -596,9 +598,10 @@ def _flatten_ids(
 
 
 class Layout:
-    def __init__(self, data: list) -> None:
+    def __init__(self, data: list, aio_id: str) -> None:
         parsed_nodes: list[Node] = NodeListAdapter.validate_python(data)
         self.nodes = parsed_nodes
+        self.aio_id = aio_id
 
     def build(
         self, fetcher: MicrolayoutMeta, settings: EditorSettings
@@ -606,7 +609,7 @@ class Layout:
         layout_list = []
         ids = []
         for node in self.nodes:
-            layout, id_ = node.create(fetcher, settings)
+            layout, id_ = node.create(fetcher, settings, self.aio_id)
             layout_list.append(layout)
             ids.append(id_)
 

@@ -51,9 +51,9 @@ class MicroLayoutAIO(html.Div):
         if isinstance(layout, Layout):
             model = layout
         elif isinstance(layout, dict):
-            model = Layout(layout["layout"])
+            model = Layout(layout["layout"], self.aio_id)
         else:
-            model = Layout(layout)
+            model = Layout(layout, self.aio_id)
         self._model = model  # Just for __str__ dunder
 
         styles = {}
@@ -80,7 +80,7 @@ class MicroLayoutAIO(html.Div):
 
             @callback(
                 inputs={
-                    "fields": {item._id: item.get_input() for item in ids},
+                    "fields": {item._id: item.get_input(self.aio_id) for item in ids},
                     "refnr": self.variableselector.get_state(get_refnr()),
                     "ident": self.variableselector.get_state(get_ident()),
                     "custom_inputs": input_states,
@@ -97,8 +97,8 @@ class MicroLayoutAIO(html.Div):
                     raise PreventUpdate
 
                 if ctx.triggered_id:
-                    custom_ctx = callback_ctx.get(ctx.triggered_id)
-                    value = fields.get(ctx.triggered_id)
+                    custom_ctx = callback_ctx.get(ctx.triggered_id["comp_id"])
+                    value = fields.get(ctx.triggered_id["comp_id"])
                     if not custom_ctx or not value:
                         logger.debug(
                             "Skippping form value update since triggered id was none or it didn't match any fields"
@@ -131,7 +131,7 @@ class MicroLayoutAIO(html.Div):
                         AlertHandler.warning(msg)
 
         @callback(
-            output={item._id: item.get_output() for item in ids},
+            output={item._id: item.get_output(self.aio_id) for item in ids},
             inputs={
                 "custom_inputs": inputs,
             },
