@@ -5,7 +5,6 @@ from ssb_dash_framework import ModuleConfig
 from ssb_dash_framework import VariableSelectorConfig
 from ssb_dash_framework import build_app_from_config
 
-
 def test_yaml_app_settings(config_yaml):
     AppSettings(**config_yaml["app_settings"])
 

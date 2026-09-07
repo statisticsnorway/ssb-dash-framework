@@ -1,5 +1,4 @@
 """SSB Dash Framework."""
-
 from .config import AppConfig
 from .config import AppModules
 from .config import AppSettings
@@ -19,8 +18,6 @@ from .config import register_modules
 from .config import run_app_from_config
 from .control import ControlFrameworkBase
 from .control import register_control
-from .experimental.modules.data_editor.core import DataEditor
-from .experimental.modules.data_editor.data_view.data_view_custom import DataViewCustom
 from .modules import Aarsregnskap
 from .modules import AarsregnskapTab
 from .modules import AarsregnskapWindow
@@ -111,10 +108,12 @@ from .utils import set_eimerdb_connection
 from .utils import set_postgres_connection
 from .utils import set_sqlite_connection
 from .utils import sidebar_button
+from . import experimental
 
 # from .utils import th_error
 
 __all__ = [
+    "experimental",
     "Aarsregnskap",
     "AarsregnskapTab",
     "AarsregnskapWindow",
@@ -145,8 +144,6 @@ __all__ = [
     "ControlView",
     "ControlViewTab",
     "ControlViewWindow",
-    "DataEditor",
-    "DataViewCustom",
     "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
     "DemoDataCreator",
