@@ -3,11 +3,11 @@ from collections.abc import Callable
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
-from urllib.parse import quote_plus
 
 import pandas as pd
 from ibis import BaseBackend
 from ibis.backends.postgres import Backend
+from psycopg.conninfo import make_conninfo
 from psycopg_pool import ConnectionPool
 
 _IS_POOLED_NSPEK: bool | None = None
@@ -15,15 +15,14 @@ _CONNECTION_NSPEK: object | None = None
 _CONNECTION_CALLABLE_NSPEK: Callable[..., Any] | None = None
 
 
-def _build_nspek_conn_url(
+def _build_nspek_conninfo(
     database_user: str,
     host: str = "localhost",
     port: int = 5432,
     database: str = "nspek",
 ) -> str:
-    """Build the psycopg ``conninfo`` URL for the nspek postgres connection."""
-    encoded_user = quote_plus(database_user)
-    return f"postgresql://{encoded_user}@{host}:{port}/{database}"
+    """Build escaped libpq connection parameters for the NSPEK database."""
+    return make_conninfo(user=database_user, host=host, port=port, dbname=database)
 
 
 def set_nspek_connection(
@@ -34,6 +33,10 @@ def set_nspek_connection(
 ) -> None:
     """Helper function to configure a pooled connection to the nspek postgres database.
 
+    Authentication is supplied by the deployment's Cloud SQL Auth Proxy with
+    automatic IAM database authentication enabled. No static password is stored
+    in the connection parameters.
+
     Args:
         database_user: Database user (IAM principal) to connect as. Defaults to the
             ``nspek-developers`` service account.
@@ -41,6 +44,9 @@ def set_nspek_connection(
         port: Database port. Defaults to 5432.
         database: Database name. Defaults to "nspek". Override this (and host/port as
             needed) when the nspek data lives in a differently named database.
+
+    Raises:
+        TypeError: If the connection wrapper does not yield an Ibis backend.
     """
     global _IS_POOLED_NSPEK, _CONNECTION_NSPEK, _CONNECTION_CALLABLE_NSPEK
 
@@ -48,7 +54,7 @@ def set_nspek_connection(
         database_user if database_user else "nspek-developers@dapla-group-sa-p-ye.iam"
     )
 
-    conn_url = _build_nspek_conn_url(DB_USER, host=host, port=port, database=database)
+    conninfo = _build_nspek_conninfo(DB_USER, host=host, port=port, database=database)
 
     _IS_POOLED_NSPEK = True
 
@@ -61,7 +67,7 @@ def set_nspek_connection(
         atexit.unregister(_CONNECTION_NSPEK.close)
         _CONNECTION_NSPEK.close()
 
-    pool = ConnectionPool(conninfo=conn_url, min_size=1, max_size=1)
+    pool = ConnectionPool(conninfo=conninfo, min_size=1, max_size=1)
     _CONNECTION_NSPEK = pool
 
     # psycopg_pool opens daemon worker ('pool-N-worker-M') and scheduler
