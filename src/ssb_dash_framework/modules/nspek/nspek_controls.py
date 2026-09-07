@@ -47,6 +47,7 @@ class NspekControls(ControlFrameworkBase):
                     sortering,*/
                     sist_kjoert
                 FROM nspek_core.kontroller
+                ORDER BY aar DESC, tema DESC, sist_kjoert
             """)
 
             rows = cursor.fetchall()
@@ -60,10 +61,17 @@ class NspekControls(ControlFrameworkBase):
 
         return df
 
-    def get_current_kontrollutslag(self, specific_control=None) -> pd.DataFrame:
+    def get_current_kontrollutslag(
+        self,
+        aar: int | None = None,
+        sekvensnummer: int | None = None,
+        specific_control: str | None = None,
+    ) -> pd.DataFrame:
         """Leser kontrollutslag fra database.
 
         Args:
+            aar: filtrer på årgang (valgfritt)
+            sekvensnummer: filtrer på sekvensnummer (valgfritt)
             specific_control: filtrer på kontrollid (valgfritt)
 
         Returns:
@@ -87,10 +95,22 @@ class NspekControls(ControlFrameworkBase):
                 FROM nspek_core.kontrollutslag
             """
 
+            conditions = []
+
+            if aar is not None:
+                conditions.append(f"aar = {int(aar)}")
+
+            if sekvensnummer is not None:
+                conditions.append(f"sekvensnummer = {int(sekvensnummer)}")
+
             if specific_control:
-                query += (
-                    f" WHERE kontrollid = '{specific_control}' ORDER by abs(verdi) DESC"
-                )
+                specific_control = specific_control.replace("'", "''")
+                conditions.append(f"kontrollid = '{specific_control}'")
+
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+
+            query += " ORDER BY abs(verdi) DESC"
 
             cursor = conn.raw_sql(query)
             rows = cursor.fetchall()

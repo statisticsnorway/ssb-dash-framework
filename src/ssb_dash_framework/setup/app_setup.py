@@ -8,6 +8,7 @@ from dash import State
 from dash import callback
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import load_figure_template
+from dash_iconify import DashIconify
 
 from ..utils.app_logger import enable_app_logging
 
@@ -156,7 +157,9 @@ def app_setup(
     app.clientside_callback(
         """
         function(n_clicks) {
-            if (!n_clicks) return [true, "🌙"];
+            if (!n_clicks) {
+                return [true, "feather:moon"];
+            }
             const is_light = n_clicks % 2 === 0;
             const lumen = "https://cdn.jsdelivr.net/npm/bootswatch@5.3.6/dist/lumen/bootstrap.min.css";
             const darkly = "https://cdn.jsdelivr.net/npm/bootswatch@5.3.6/dist/darkly/bootstrap.min.css";
@@ -169,11 +172,11 @@ def app_setup(
                 }
             }
             document.body.classList.toggle('dark-mode', !is_light);
-            return [is_light, is_light ? "🌙" : "☀️"];
+            return [is_light, is_light ? "feather:moon" : "feather:sun"];
         }
         """,
         Output("theme-store", "data"),
-        Output("theme-icon", "children"),
+        Output("theme-icon", "icon"),
         Input("theme-toggle-button", "n_clicks"),
     )
 
