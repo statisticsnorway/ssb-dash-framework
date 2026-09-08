@@ -13,8 +13,8 @@ from dash.exceptions import PreventUpdate
 from .....config.models import register_module
 from .....config.yaml_parser import config_parser_yaml
 from .....setup.variableselector import VariableSelector
-from .....utils.config_tools.set_variables import get_refnr
-from .....utils.config_tools.set_variables import get_time_units
+#from .....utils.config_tools.set_variables import get_refnr
+#from .....utils.config_tools.set_variables import get_time_units
 from ..microlayout.microlayout import MicroLayoutAIO
 from .base import DataEditorDataView
 
@@ -28,7 +28,7 @@ class DataViewCustomFigure:
         self.module_number = DataViewCustomFigure._id_number
         self.module_name = self.__class__.__name__
         DataViewCustomFigure._id_number += 1
-        self.variableselector = VariableSelector([], [])
+        #self.variableselector = VariableSelector([], [])
         self.label = label
         self.figure_func = figure_func
         self.applies_to_tables = applies_to_tables
@@ -47,9 +47,11 @@ class DataViewCustomFigure:
         @callback(
             Output(f"{self.module_name}-{self.module_number}-figure", "figure"),
             Input("dataeditortableselector", "value"),
-            self.variableselector.get_input("altinnskjema"),
-            self.variableselector.get_input(get_refnr()),
-            self.variableselector.get_input(get_time_units().name),
+            VariableSelector.get_input("altinnskjema"),
+            VariableSelector.get_refnr(Input),
+            VariableSelector.get_timevar(Input)
+            #self.variableselector.get_input(get_refnr()),
+            #self.variableselector.get_input(get_time_units().name),
         )
         def make_figure(selected_table, selected_form, refnr, period):
             if (
@@ -76,7 +78,7 @@ class DataViewCustomTable:
         self.module_number = DataViewCustomFigure._id_number
         self.module_name = self.__class__.__name__
         DataViewCustomFigure._id_number += 1
-        self.variableselector = VariableSelector([], [])
+        #self.variableselector = VariableSelector([], [])
         self.label = label
         self.table_func = table_func
         self.applies_to_tables = applies_to_tables
@@ -99,9 +101,11 @@ class DataViewCustomTable:
             Output(f"{self.module_name}-{self.module_number}-table", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-table", "columnDefs"),
             Input("dataeditortableselector", "value"),
-            self.variableselector.get_input("altinnskjema"),
-            self.variableselector.get_input(get_refnr()),
-            self.variableselector.get_input(get_time_units().name),
+            VariableSelector.get_input("altinnskjema"),
+            VariableSelector.get_refnr(Input),
+            VariableSelector.get_timevar(Input)
+            #self.variableselector.get_input(get_refnr()),
+            #self.variableselector.get_input(get_time_units().name),
         )
         def make_figure(selected_table, selected_form, refnr, *args):
             if (
@@ -196,9 +200,10 @@ class DataViewCustom(DataEditorDataView):
                     settings=self.settings,
                     layout=layout,
                     inputs=[
-                        VariableSelector(
-                            selected_inputs=[get_refnr()], selected_states=[]
-                        ).get_input(get_refnr())
+                        #VariableSelector(
+                        #    selected_inputs=[get_refnr()], selected_states=[]
+                        #).get_input(get_refnr())
+                        VariableSelector.get_refnr(Input)
                     ],
                 )
                 components.append(microlayout)

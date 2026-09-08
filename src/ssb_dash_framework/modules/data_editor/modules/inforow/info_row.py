@@ -4,14 +4,14 @@ from logging import getLogger
 from typing import Any
 
 import dash_bootstrap_components as dbc
-from dash import Output
+from dash import Input, Output, no_update
 from dash import callback
 from dash.exceptions import PreventUpdate
 
 from .....setup.variableselector import VariableSelector
 from .....utils.alert_handler import AlertHandler
-from .....utils.config_tools.set_variables import get_ident
-from .....utils.config_tools.set_variables import get_time_units
+#from .....utils.config_tools.set_variables import get_ident
+#from .....utils.config_tools.set_variables import get_time_units
 from ...meta import ModuleABC
 from .info_row_model import InfoRowField
 
@@ -85,14 +85,14 @@ class DataEditorInfoRow(ModuleABC):
 
     def module_callbacks(self) -> None:
         """Registers callbacks for the module."""
-        variableselector = VariableSelector(
-            selected_inputs=[],
-            selected_states=[
-                x.source_variable_name
-                for x in self.info_variables
-                if x.source == "variableselector"
-            ],
-        )
+        #variableselector = VariableSelector(
+        #    selected_inputs=[],
+        #    selected_states=[
+        #        x.source_variable_name
+        #        for x in self.info_variables
+        #        if x.source == "variableselector"
+        #    ],
+        #)
 
         @callback(
             output={
@@ -100,11 +100,11 @@ class DataEditorInfoRow(ModuleABC):
                 for info_var in self.info_variables
             },
             inputs={
-                "ident": variableselector.get_input(get_ident()),
-                "period": variableselector.get_input(get_time_units().name),
+                "ident": VariableSelector.get_refnr(Input),
+                "period": VariableSelector.get_timevar(Input),
                 "states": {
                     item.component_id: item
-                    for item in variableselector.get_all_states()
+                    for item in VariableSelector.get_all_states()
                 },
             },
         )
@@ -115,7 +115,7 @@ class DataEditorInfoRow(ModuleABC):
             if not ident or not period or not states:
                 raise PreventUpdate
             info_values = {}
-            vars_to_collect = []
+            vars_to_collect: list[InfoRowField] = []
             for item in self.info_variables:
                 if item.source == "variableselector":
                     value = states[f"var-{item.source_variable_name}"]
@@ -131,7 +131,8 @@ class DataEditorInfoRow(ModuleABC):
             except Exception as e:
                 error_msg = f"Get field for inforow failed with error: {e}"
                 logger.info(error_msg)
-                AlertHandler.info(error_msg)
+                AlertHandler.warning(error_msg)
+                info_values.update({var.name: no_update for var in vars_to_collect})
 
             logger.debug(f"info_values: {info_values}")
             return info_values

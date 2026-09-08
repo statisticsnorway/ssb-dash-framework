@@ -2,16 +2,16 @@ import uuid
 import logging
 
 import dash_ag_grid as dag
-from dash import Output, no_update
+from dash import Input, Output, no_update
 from dash import callback
 from dash import html
 from dash.exceptions import PreventUpdate
 
 from ......setup.variableselector import VariableSelector
 from ......utils.alert_handler import AlertHandler
-from ......utils.config_tools.set_variables import get_ident
-from ......utils.config_tools.set_variables import get_refnr
-from ......utils.config_tools.set_variables import get_time_units
+#from ......utils.config_tools.set_variables import get_ident
+#from ......utils.config_tools.set_variables import get_refnr
+#from ......utils.config_tools.set_variables import get_time_units
 from ..meta import MicrolayoutMeta
 from ....utils import EditorSettings
 
@@ -31,10 +31,6 @@ class DynamicListEditor(html.Div):
 
         table_id = f"table-{_id}"
 
-        selector = VariableSelector(
-            [get_refnr(), get_ident(), get_time_units().name], []
-        )
-
         layout = [dag.AgGrid(id=table_id, style={"width": 1000})]
         super().__init__(id=_id, children=layout, **kwargs)
 
@@ -42,9 +38,9 @@ class DynamicListEditor(html.Div):
             Output(table_id, "rowData"),
             Output(table_id, "columnDefs"),
             inputs={
-                "refnr": selector.get_input(get_refnr()),
-                "ident": selector.get_input(get_ident()),
-                "period": selector.get_input(get_time_units().name),
+                "refnr": VariableSelector.get_refnr(Input),
+                "ident": VariableSelector.get_ident(Input),
+                "period": VariableSelector.get_timevar(Input),
             },
         )
         def update_table(refnr, ident, period):

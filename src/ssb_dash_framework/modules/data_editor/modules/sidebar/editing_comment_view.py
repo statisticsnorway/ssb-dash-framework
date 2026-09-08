@@ -13,12 +13,12 @@ from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
 
-from .....utils.alert_handler import AlertHandler, create_alert
+from .....utils.alert_handler import AlertHandler
 from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
-from .....utils.config_tools.set_variables import get_ident
-from .....utils.config_tools.set_variables import get_refnr
-from .....utils.config_tools.set_variables import get_time_units
+#from .....utils.config_tools.set_variables import get_ident
+#from .....utils.config_tools.set_variables import get_refnr
+#from .....utils.config_tools.set_variables import get_time_units
 from .editing_sidebar_helper import DataEditorHelperSidebar
 
 logger = logging.getLogger(__name__)
@@ -36,9 +36,6 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
         self.module_name = self.__class__.__name__
         DataEditorSidebarComment._id_number += 1
 
-        self.variableselector = VariableSelector(
-            selected_inputs=[get_ident(), get_time_units().name], selected_states=[]
-        )
         self.module_callbacks()
 
         super().__init__()
@@ -84,10 +81,12 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             Output(
                 f"{self.module_name}-{self.module_number}-dropdown-refnr", "options"
             ),
-            self.variableselector.get_input(get_refnr()),
-            self.variableselector.get_input(get_ident()),
-            self.variableselector.get_input("altinnskjema"),
-            self.variableselector.get_input(get_time_units().name),
+            VariableSelector.get_refnr(Input),
+            VariableSelector.get_ident(Input),
+            #self.variableselector.get_input(get_refnr()),
+            #self.variableselector.get_input(get_ident()),
+            VariableSelector.get_input("altinnskjema"),
+            VariableSelector.get_timevar(Input),
         )
         def find_refnrs(
             refnr: str, ident, skjema: str, period

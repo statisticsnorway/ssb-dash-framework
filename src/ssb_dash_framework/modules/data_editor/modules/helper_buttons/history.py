@@ -6,7 +6,7 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 
 import tzlocal
-from dash import Input, no_update
+from dash import Input, State, no_update
 from dash import Output
 from dash import callback
 from dash import html
@@ -14,8 +14,8 @@ from dash import html
 from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.alert_handler import AlertHandler
-from .....utils.config_tools.set_variables import get_refnr
-from .....utils.config_tools.set_variables import get_time_units
+#from .....utils.config_tools.set_variables import get_refnr
+#from .....utils.config_tools.set_variables import get_time_units
 from .editor_helper_button import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)
@@ -42,10 +42,6 @@ class DataEditorHistory(DataEditorHelperButton):
         self.module_number = DataEditorHistory._id_number
         self.module_name = self.__class__.__name__
 
-        self.variableselector = VariableSelector(
-            selected_inputs=[],
-            selected_states=[get_refnr(), get_time_units().name],
-        )
         self.modal_body = self._create_modal_body()
 
         super().__init__(label="Historikk")
@@ -88,9 +84,9 @@ class DataEditorHistory(DataEditorHelperButton):
             Output(f"{self.module_name}-{self.module_number}-table", "columnDefs"),
             Input(f"{self.module_name}-{self.module_number}-modal", "is_open"),
             Input(f"{self.module_name}-{self.module_number}-toggle", "value"),
-            *self.variableselector.get_all_callback_objects(),
+            VariableSelector.get_refnr(Input),
         )
-        def update_history_view(is_open, insert_toggle: bool, refnr, *args):
+        def update_history_view(is_open, insert_toggle: bool, refnr):
             try:
                 df = self.fetcher.get_history(refnr)
             except Exception as e:

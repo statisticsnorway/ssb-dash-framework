@@ -23,9 +23,10 @@ from .....utils.alert_handler import AlertHandler, create_alert
 from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
-from .....utils.config_tools.set_variables import get_ident
-from .....utils.config_tools.set_variables import get_refnr
-from .....utils.config_tools.set_variables import get_time_units
+
+# from .....utils.config_tools.set_variables import get_ident
+# from .....utils.config_tools.set_variables import get_refnr
+# from .....utils.config_tools.set_variables import get_time_units
 
 from .editing_sidebar_helper import DataEditorHelperSidebar
 
@@ -58,16 +59,6 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         self.module_number = DataEditorSidebarEditingStatus._id_number
         self.module_name = self.__class__.__name__
         DataEditorSidebarEditingStatus._id_number += 1
-
-        self.variableselector = VariableSelector(
-            selected_inputs=[],
-            selected_states=[
-                get_ident(),
-                get_time_units().name,
-                "altinnskjema",
-                get_refnr(),
-            ],
-        )
 
         self.status_options = (
             status_options
@@ -158,13 +149,13 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         """Registers the callbacks for the module."""
 
         @callback(
-            #Output("alert_store", "data", allow_duplicate=True),
+            # Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             Output(f"{self.module_name}-{self.module_number}-radioitems", "value"),
             Output(
                 f"{self.module_name}-{self.module_number}-refnr-text-row", "children"
             ),
-            self.variableselector.get_input(get_refnr()),
+            VariableSelector.get_refnr(Input),
             Input("skjemamottak-status-signal", "data"),
             State(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             State(f"{self.module_name}-{self.module_number}-radioitems", "value"),
@@ -180,7 +171,9 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 logger.warning(
                     f"Getting initial form status returned with an error: {e}"
                 )
-                AlertHandler.warning(f"Getting initial form status returned with an error: {e}")
+                AlertHandler.warning(
+                    f"Getting initial form status returned with an error: {e}"
+                )
                 return (
                     no_update,
                     no_update,
@@ -218,7 +211,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             Output("skjemamottak-status-signal", "data", allow_duplicate=True),
             Input(checkbox_id, "value"),
             Input(radio_id, "value"),
-            self.variableselector.get_state(get_refnr()),
+            VariableSelector.get_refnr(State),
             prevent_initial_call=True,
         )
         def update_status(
@@ -252,8 +245,8 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 "click": Input(
                     f"{self.module_name}-{self.module_number}-button", "n_clicks"
                 ),
-                "ident": self.variableselector.get_state(get_ident()),
-                "time_units": self.variableselector.get_state(get_time_units().name),
+                "ident": VariableSelector.get_ident(State),
+                "time_units": VariableSelector.get_timevar(State),
             },
         )
         def view_refnrs_by_ident(click: int | None, ident: str | None, time_units: str):
@@ -280,7 +273,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 logger.warning(message)
                 AlertHandler.warning(message)
                 return no_update, no_update, no_update
-           
+
             return (
                 data.to_dict("records"),
                 [{"field": x, "headerName": x} for x in data.columns],
@@ -288,15 +281,14 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             )
 
         @callback(
-            self.variableselector.get_output_object(get_refnr()),  # oppdater refnr
-            self.variableselector.get_output_object(
-                "altinnskjema"
-            ),  # oppdater altinnskjema
+            VariableSelector.get_refnr(Output),  # oppdater refnr
+            VariableSelector.get_output_object("altinnskjema"),  # oppdater altinnskjema
             Input(
                 f"{self.module_name}-{self.module_number}-form-table", "selectedRows"
             ),
-            self.variableselector.get_input(get_refnr()),
-            self.variableselector.get_input("altinnskjema"),
+            # self.variableselector.get_input(get_refnr()),
+            VariableSelector.get_refnr(Input),
+            VariableSelector.get_input("altinnskjema"),
             prevent_initial_call=True,
         )
         def selected_refnr(

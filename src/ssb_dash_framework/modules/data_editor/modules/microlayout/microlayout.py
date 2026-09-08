@@ -11,8 +11,8 @@ from dash.exceptions import PreventUpdate
 
 from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.utils.alert_handler import AlertHandler
-from ssb_dash_framework.utils.config_tools.set_variables import get_ident
-from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
+#from ssb_dash_framework.utils.config_tools.set_variables import get_ident
+#from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 
 from .meta import MicrolayoutMeta
 from ...utils import EditorSettings
@@ -46,7 +46,6 @@ class MicroLayoutAIO(html.Div):
         self._horizontal = horizontal
         inputs = [] if inputs is None else inputs
         # The above is just for the __str__ dunder
-        self.variableselector = VariableSelector([], [])
         self.aio_id = aio_id or str(uuid.uuid4())
         if isinstance(layout, Layout):
             model = layout
@@ -81,8 +80,8 @@ class MicroLayoutAIO(html.Div):
             @callback(
                 inputs={
                     "fields": {item._id: item.get_input(self.aio_id) for item in ids},
-                    "refnr": self.variableselector.get_state(get_refnr()),
-                    "ident": self.variableselector.get_state(get_ident()),
+                    "refnr": VariableSelector.get_refnr(Input),
+                    "ident": VariableSelector.get_ident(State),
                     "custom_inputs": input_states,
                 },
                 prevent_initial_call=True,

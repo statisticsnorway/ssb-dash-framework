@@ -26,7 +26,7 @@ from sqlalchemy import text
 from contextlib import contextmanager
 
 from ssb_dash_framework.setup import VariableSelector
-from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
+#from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
 
 from ....utils.alert_handler import create_alert
 from ....utils.config_tools.connection import _get_connection_object

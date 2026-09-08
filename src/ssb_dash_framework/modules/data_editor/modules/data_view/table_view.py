@@ -17,9 +17,9 @@ from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.connection import get_connection
-from .....utils.config_tools.set_variables import get_ident
-from .....utils.config_tools.set_variables import get_refnr
-from .....utils.config_tools.set_variables import get_time_units
+#from .....utils.config_tools.set_variables import get_ident
+#from .....utils.config_tools.set_variables import get_refnr
+#from .....utils.config_tools.set_variables import get_time_units
 from .....utils.core_models import UpdateSkjemadata
 
 from ...utils import EditorSettings
@@ -48,17 +48,24 @@ class DataEditorTable(DataEditorDataView):
         if isinstance(settings, dict):
             settings = EditorSettings(**settings)
 
-        self.time_units = get_time_units()
-        self.refnr = get_refnr()
-        self.variable_selector = VariableSelector(
-            selected_inputs=[
-                self.time_units.name,
-                "altinnskjema",
-                get_refnr(),
-            ],  # Order of inputs is not random!
-            selected_states=[],
-        )
-        self.uneditable_columns = {"id", get_ident(), get_refnr(), "skjema", "variabel"}
+        self.time_units = VariableSelector._time_unit
+        if self.time_units is None:
+            raise RuntimeError("Time units is not defined in the variableselector")
+        self.refnr = VariableSelector._refnr
+        if self.refnr is None:
+            raise RuntimeError("Refnr is not defined in the variableselector")
+        self.ident = VariableSelector._ident
+        if self.ident is None:
+            raise RuntimeError("Ident is not defined in the variableselector")
+        #self.variable_selector = VariableSelector(
+        #    selected_inputs=[
+        #        self.time_units.name,
+        #        "altinnskjema",
+        #        get_refnr(),
+        #    ],  # Order of inputs is not random!
+        #    selected_states=[],
+        #)
+        self.uneditable_columns = {"id", self.ident, self.refnr, "skjema", "variabel"}
         self.divname = f"{self.module_name}-{self.module_number}"
         self.module_callbacks()
         super().__init__(
@@ -104,9 +111,9 @@ class DataEditorTable(DataEditorDataView):
             Output(f"{self.module_name}-{self.module_number}-aggrid", "columnDefs"),
             inputs={
                 "selected_table": Input("dataeditortableselector", "value"),
-                "form": self.variable_selector.get_input("altinnskjema"),
-                "refnr": self.variable_selector.get_input(get_refnr()),
-                "period": self.variable_selector.get_input(get_time_units().name),
+                "form": VariableSelector.get_input("altinnskjema"),
+                "refnr": VariableSelector.get_refnr(Input),#self.variable_selector.get_input(get_refnr()),
+                "period": VariableSelector.get_timevar(Input)#self.variable_selector.get_input(get_time_units().name),
             },
             # self.variable_selector.get_all_callback_objects(),
         )
@@ -193,10 +200,10 @@ class DataEditorTable(DataEditorDataView):
             return [feedback, *alert_store]
 
         @callback(  # type: ignore[misc]
-            self.variable_selector.get_output_object("variabel"),
+            VariableSelector.get_output_object("variabel"),
             Input(f"{self.module_name}-{self.module_number}-aggrid", "cellClicked"),
             State(f"{self.module_name}-{self.module_number}-aggrid", "rowData"),
-            self.variable_selector.get_state("variabel"),
+            VariableSelector.get_state("variabel"),
             prevent_initial_call=True,
         )
         def send_variabel_to_variableselector(

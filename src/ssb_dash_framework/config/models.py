@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from pydantic import field_validator
 from pydantic import model_validator
 
-from ..utils.config_tools.set_variables import VariableSelectorConfig
+from ..setup.variableselector.set_variables import VariableSelectorConfig
 from ..utils.implementations import TabImplementation
 from ..utils.implementations import WindowImplementation
 

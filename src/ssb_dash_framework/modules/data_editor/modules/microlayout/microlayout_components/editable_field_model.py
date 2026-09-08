@@ -1,4 +1,4 @@
-from dash import MATCH, Input
+from dash import Input
 from dash import Output
 from dash import State
 from pydantic import BaseModel

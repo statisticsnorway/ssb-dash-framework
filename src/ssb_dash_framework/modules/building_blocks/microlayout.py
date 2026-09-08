@@ -7,7 +7,7 @@ from dash import Input, callback
 from dash import State
 from dash import html
 
-from ...utils.config_tools.set_variables import get_ident, get_refnr
+#from ...utils.config_tools.set_variables import get_ident, get_refnr
 
 # from ssb_dash_framework import VariableSelector
 from ...setup.variableselector import VariableSelector
@@ -76,7 +76,7 @@ class MicroLayoutAIO(html.Div):
 
         if horizontal:
             styles["display"] = "flex"
-        self.variableselector = VariableSelector([get_ident(), get_refnr()], [])
+        #self.variableselector = VariableSelector([get_ident(), get_refnr()], [])
 
         layout, ids = model.build()
         super().__init__(
@@ -98,7 +98,7 @@ class MicroLayoutAIO(html.Div):
             output={item._id: item.get_output() for item in ids},
             inputs=dict(
                 custom_inputs=inputs,
-                variable_selector=self.variableselector.get_all_inputs(),
+                variable_selector=VariableSelector.get_all_states(),
             ),
             states=dict(),
         )

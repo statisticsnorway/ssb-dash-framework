@@ -1,6 +1,7 @@
 import logging
-from typing import Any
+from typing import Any, Literal, cast
 from typing import ClassVar
+import warnings
 
 import dash_bootstrap_components as dbc
 from dash import Input
@@ -10,10 +11,26 @@ from dash import callback
 from dash import html
 from dash.exceptions import PreventUpdate
 
-from ..utils.alert_handler import create_alert
+from .time_unit import TimeUnit
+from ...utils.alert_handler import AlertHandler
 
 logger = logging.getLogger(__name__)
 
+InputType = (
+    Literal[
+        "text",
+        "number",
+        "password",
+        "email",
+        "range",
+        "search",
+        "tel",
+        "url",
+        "hidden",
+        "time",
+    ]
+    | None
+)
 
 def set_variables(variable_list: str | list[str]) -> None:
     """Sets the list of variables for the VariableSelector.
@@ -29,15 +46,10 @@ def set_variables(variable_list: str | list[str]) -> None:
         >>> set_variables("kvartal")
         >>> set_variables(["foretak", "aar"])
     """
-    if isinstance(variable_list, str):
-        variable_list = [variable_list]
-    if not all(isinstance(variable, str) for variable in variable_list):
-        raise TypeError(
-            f"Expected all elements in variable_list to be str, received {variable_list}"
-        )
-    logger.debug(f"Sets up variable options for {variable_list}")
-    for variable in variable_list:
-        VariableSelectorOption(variable_title=variable)
+    warnings.warn("'set_variables' feature is deprecated", DeprecationWarning)
+    raise NotImplementedError(
+        "set_variables if deprecated. Migrate to VariableSelectorConfig"
+    )
 
 
 class VariableSelector:
@@ -48,11 +60,18 @@ class VariableSelector:
     """
 
     _variableselectoroptions: ClassVar[list["VariableSelectorOption"]] = []
+    # _inputs: ClassVar[list[str]] = []
+    # _states: ClassVar[list[str]] = []
+    _refnr: ClassVar[str | None] = None
+    _ident: ClassVar[str | None] = None
+    _time_unit: ClassVar[None | TimeUnit] = None
+    _secondary_ident: ClassVar[list[str] | None] = None
+    _grouping_variables: ClassVar[list[str] | None] = None
 
     def __init__(
         self,
-        selected_inputs: list[str],
-        selected_states: list[str],
+        # selected_inputs: list[str],
+        # selected_states: list[str],
         default_values: dict[str, str | int | float] | None = None,
     ) -> None:
         """Initializes the VariableSelector class.
@@ -71,9 +90,12 @@ class VariableSelector:
             - The `get_output_object` method can be used to create an Output object updating the main VariableSelector in the app through a callback.
         """
         self.options = [option.title for option in self._variableselectoroptions]
-        self.inputs = selected_inputs
-        self.states = selected_states
-        self.selected_variables = [*selected_inputs, *selected_states]
+        # self.inputs = selected_inputs
+        # self.states = selected_states
+        # VariableSelector._inputs = selected_inputs
+        # VariableSelector._states = selected_states
+
+        # self.selected_variables = [*selected_inputs, *selected_states]
         self.default_values = default_values
 
         self._is_valid()
@@ -82,25 +104,25 @@ class VariableSelector:
 
     def _is_valid(self) -> None:
         """Ensures the VariableSelector is set up as intended."""
-        valid_states_inputs = [
-            option.title for option in VariableSelector._variableselectoroptions
-        ]
+        # valid_states_inputs = [
+        #    option.title for option in VariableSelector._variableselectoroptions
+        # ]
         for _option in self._variableselectoroptions:
             if not isinstance(_option, VariableSelectorOption):
                 raise TypeError(
                     f"Invalid type. Should only contain values of type VariableSelectorOption. Received type: {type(_option)}: {_option}"
                 )
 
-        for _input in self.inputs:
-            if _input not in valid_states_inputs:
-                raise ValueError(
-                    f"Invalid value for selected_inputs. Received {_input}. Expected one of {valid_states_inputs}"
-                )
-        for _state in self.states:
-            if _state not in valid_states_inputs:
-                raise ValueError(
-                    f"Invalid value for selected_states. Received {_state}. Expected one of {valid_states_inputs}"
-                )
+        # for _input in self.inputs:
+        #    if _input not in valid_states_inputs:
+        #        raise ValueError(
+        #            f"Invalid value for selected_inputs. Received {_input}. Expected one of {valid_states_inputs}"
+        #        )
+        # for _state in self.states:
+        #    if _state not in valid_states_inputs:
+        #        raise ValueError(
+        #            f"Invalid value for selected_states. Received {_state}. Expected one of {valid_states_inputs}"
+        #        )
 
     def _default_values_is_valid(self) -> None:
         """Validates the default values dictionary."""
@@ -127,8 +149,9 @@ class VariableSelector:
                         f"Invalid type for {key} in default_value. Received type {type(self.default_values[key])} Expected int or float."
                     )
 
+    @classmethod
     def get_option(
-        self, search_term: str, search_target: str = "title"
+        cls, search_term: str, search_target: str = "title"
     ) -> "VariableSelectorOption":
         """Retrieves a VariableSelectorOption by variable name.
 
@@ -147,79 +170,171 @@ class VariableSelector:
             raise ValueError(
                 f"'search_target' must be 'title' or 'id'. Received: {search_target}"
             )
-        for option in self._variableselectoroptions:
-            if search_target == "title" and option.title == search_term:
+        for option in cls._variableselectoroptions:
+            if (search_target == "title" and option.title == search_term) or (
+                search_target == "id" and option.id == search_term
+            ):
                 return option
-            elif search_target == "id" and option.id == search_term:
-                return option
+
         if search_target == "title":
             raise ValueError(
-                f"ValueError: '{search_term}' not in list of options, expected one of {[x.title for x in self._variableselectoroptions]}\nIf you need to add {search_term} to the available options, refer to the VariableSelectorOption docstring."
+                f"ValueError: '{search_term}' not in list of options, expected one of {[x.title for x in cls._variableselectoroptions]}\nIf you need to add {search_term} to the available options, refer to the VariableSelectorOption docstring."
             )
         elif search_target == "id":
             raise ValueError(
-                f"ValueError: '{search_term}' not in list of options, expected one of {[x.id for x in self._variableselectoroptions]}\nIf you need to add {search_term} to the available options, refer to the VariableSelectorOption docstring."
+                f"ValueError: '{search_term}' not in list of options, expected one of {[x.id for x in cls._variableselectoroptions]}\nIf you need to add {search_term} to the available options, refer to the VariableSelectorOption docstring."
             )
         else:
-            raise Exception(
+            raise RuntimeError(
                 "No idea how you ended up here, please create an issue on our GitHub repository."
             )
 
-    def get_input(self, requested: str, search_target: str = "title") -> Input:
+    @classmethod
+    def get_input(
+        cls, requested: str | list[str], search_target: str = "title"
+    ) -> list[Input]:
         """Retrieves a Input object for the selected variable."""
-        retrieved_option = self.get_option(
-            search_term=requested, search_target=search_target
-        )
-        return Input(retrieved_option.id, "value")
+        if isinstance(requested, str):
+            requested = [requested]
 
-    def get_all_inputs(self) -> list[Input]:
-        """Retrieves a list of Dash Input objects for selected inputs."""
-        to_be_returned = [
-            Input(option.id, "value")
-            for input_title in self.inputs
-            for option in self._variableselectoroptions
-            if option.title == input_title
-        ]
-        logger.debug(f"Gettings inputs: {to_be_returned}")
-        if len(to_be_returned) == 0:
-            logger.debug(
-                "Returning empty list of inputs. This is fine if intentional, but could cause weird bugs if not. Check this if something is missing from callbacks."
+        inputs = []
+        for var in requested:
+            retrieved_option = cls.get_option(
+                search_term=var, search_target=search_target
             )
-        return to_be_returned
+            inputs.append(Input(retrieved_option.id, "value"))
+        return inputs
 
-    def get_state(self, requested: str, search_target: str = "title") -> State:
+    @classmethod
+    def _match_type[T: (
+        Input,
+        State,
+        Output,
+    )](cls, var: str | None, _type: type[Input | State | Output]) -> T:
+        if var is None:
+            raise RuntimeError(
+                f"You used a module that requested the variable '{var}'. This variable is not set in the VariableSelectorConfig"
+            )
+
+        if _type is Input:
+            return cast(T, cls.get_input(var)[0])
+
+        elif _type is State:
+            return cast(T, cls.get_state(var))
+
+        elif _type is Output:
+            return cast(T, cls.get_output_object(var))
+        else:
+            raise RuntimeError(
+                f"You used a module that requested the variable '{var}'. This variable is not set in the VariableSelectorConfig"
+            )
+
+    @classmethod
+    def get_timevar[T: (
+        Input,
+        State,
+        Output,
+    )](cls, _type: type[Input | State | Output]) -> T:
+        timevar = cls._time_unit
+        if timevar is None:
+            raise RuntimeError("Time unit is not set")
+        return cls._match_type(timevar.name, _type=_type)
+
+    @classmethod
+    def get_refnr[T: (
+        Input,
+        State,
+        Output,
+    )](cls, _type: type[Input | State | Output]) -> T:
+        refnr = cls._refnr
+        return cls._match_type(refnr, _type=_type)
+
+    @classmethod
+    def get_ident[T: (
+        Input,
+        State,
+        Output,
+    )](cls, _type: type[Input | State | Output]) -> T:
+        ident = cls._ident
+        return cls._match_type(ident, _type=_type)
+
+    @classmethod
+    def get_secondary_ident[T: (
+        Input,
+        State,
+        Output,
+    )](cls, _type: type[Input | State | Output]) -> list[T]:
+        secondary_idents = cls._secondary_ident
+        if secondary_idents is None:
+            secondary_idents = []
+
+        return [cls._match_type(var, _type=_type) for var in secondary_idents]
+
+    @classmethod
+    def get_grouping_vars[T: (
+        Input,
+        State,
+        Output,
+    )](cls, _type: type[Input | State | Output]) -> list[T]:
+        grouping_vars = cls._grouping_variables
+        if grouping_vars is None:
+            grouping_vars = []
+
+        return [cls._match_type(var, _type=_type) for var in grouping_vars]
+
+    # @classmethod
+    # def get_all_inputs(cls) -> list[Input]:
+    #    """Retrieves a list of Dash Input objects for selected inputs."""
+    #    to_be_returned = [
+    #        Input(option.id, "value")
+    #        for input_title in cls._inputs
+    #        for option in cls._variableselectoroptions
+    #        if option.title == input_title
+    #    ]
+    #    logger.debug(f"Gettings inputs: {to_be_returned}")
+    #    if len(to_be_returned) == 0:
+    #        logger.debug(
+    #            "Returning empty list of inputs. This is fine if intentional, but could cause weird bugs if not. Check this if something is missing from callbacks."
+    #        )
+    #    return to_be_returned
+
+    @classmethod
+    def get_state(cls, requested: str, search_target: str = "title") -> State:
         """Retrieves a State object for the selected variable."""
-        retrieved_option = self.get_option(
+        retrieved_option = cls.get_option(
             search_term=requested, search_target=search_target
         )
         return State(retrieved_option.id, "value")
 
-    def get_all_states(self) -> list[State]:
-        """Retrieves a list of Dash State objects for selected states."""
-        to_be_returned = [
-            State(option.id, "value")
-            for state_title in self.states
-            for option in self._variableselectoroptions
-            if option.title == state_title
-        ]
-        logger.debug(f"Gettings inputs: {to_be_returned}")
-        if len(to_be_returned) == 0:
-            logger.debug(
-                "Returning empty list of states. This is fine if intentional, but could cause weird bugs if not. Check this if something is missing from callbacks."
-            )
-        return to_be_returned
+    # @classmethod
+    # def get_all_states(cls) -> list[State]:
+    #    """Retrieves a list of Dash State objects for selected states."""
+    #    to_be_returned = [
+    #        State(option.id, "value")
+    #        for state_title in cls._states
+    #        for option in cls._variableselectoroptions
+    #        if option.title == state_title
+    #    ]
+    #    logger.debug(f"Gettings inputs: {to_be_returned}")
+    #    if len(to_be_returned) == 0:
+    #        logger.debug(
+    #            "Returning empty list of states. This is fine if intentional, but could cause weird bugs if not. Check this if something is missing from callbacks."
+    #        )
+    #    return to_be_returned
 
-    def get_all_callback_objects(self) -> list[Input | State]:
-        """Retrieves a list of Dash Input and State objects for all selected variables."""
-        to_be_returned = self.get_all_inputs() + self.get_all_states()
-        logger.debug(f"Getting callback objects: {to_be_returned}")
-        if len(to_be_returned) == 0:
-            logger.debug(
-                "Returning empty list of inputs and states. This is fine if intentional, but could cause weird bugs if not. Check this if something is missing from callbacks."
-            )
-        return to_be_returned
+    # @classmethod
+    # def get_all_callback_objects(cls) -> list[Input | State]:
+    #    """Retrieves a list of Dash Input and State objects for all selected variables."""
+    #    to_be_returned = cls.get_all_inputs() + cls.get_all_states()
+    #    logger.debug(f"Getting callback objects: {to_be_returned}")
+    #    if len(to_be_returned) == 0:
+    #        logger.debug(
+    #            "Returning empty list of inputs and states. This is fine if intentional, but could cause weird bugs if not. Check this if something is missing from callbacks."
+    #        )
+    #    return to_be_returned
 
-    def get_output_object(self, variable: str) -> Output:
+    @classmethod
+    def get_output_object(cls, variable: str) -> Output:
         """Creates a Dash Output object for a given variable.
 
         Use this if you need to have a module output back to the shared VariableSelector in the main layout.
@@ -233,20 +348,24 @@ class VariableSelector:
         Raises:
             ValueError: If the name (title) does not exist in any of the options available to the VariableSelector
         """
-        if variable not in [option.title for option in self._variableselectoroptions]:
+        if variable not in [option.title for option in cls._variableselectoroptions]:
             raise ValueError(
-                f"Invalid variable name, expected one of {[option.title for option in self._variableselectoroptions]}. Received {variable}"
+                f"Invalid variable name, expected one of {[option.title for option in cls._variableselectoroptions]}. Received {variable}"
             )
-        option = self.get_option(variable)
+        option = cls.get_option(variable)
         output_object = Output(option.id, "value", allow_duplicate=True)
         logger.debug(f"Getting output object for {variable}: {output_object}")
         return output_object
+
+    @classmethod
+    def get_all_states(cls) -> list[State]:
+        return [State(var.id, "value") for var in cls._variableselectoroptions]
 
     def _create_variable_card(
         self,
         text: str,
         component_id: str,
-        input_type: str,
+        input_type: InputType,
         value: str | int | float | None = None,
     ) -> dbc.Col:
         """Generate a Dash Bootstrap card with an input field.
@@ -290,42 +409,23 @@ class VariableSelector:
         """Utility function to add alerts to updates on the variable selector."""
 
         @callback(  # type: ignore[misc]
-            Output("alert_store", "data", allow_duplicate=True),
             Input(component_id, "value"),
-            State("alert_store", "data"),
             prevent_initial_call=True,
         )
-        def alert_connection(
-            value: Any, error_log: list[dict[str, Any]]
-        ) -> list[dict[str, Any]]:
+        def alert_connection(value: Any) -> None:
             """Alert callback connecting variable picker card to the alert handler."""
-            logger.debug(f"Args:\nvalue: {value}\nerror_log: {error_log}")
             logger.info(
                 f"Attempting to update variable selector: {component_name} to {value}"
             )
             if isinstance(value, str):
-                error_log = [
-                    create_alert(
-                        f"Oppdatering av variabelvelger: {component_name} til {value}",
-                        "info",
-                        ephemeral=True,
-                    ),
-                    *error_log,
-                ]
-                # avoid triggering identical alerts
-                if len(error_log) >= 2 and error_log[0].get("message") == error_log[1].get("message"):
-                    raise PreventUpdate
-                return error_log
+                AlertHandler.info(
+                    f"Oppdatering av variabelvelger: {component_name} til {value}"
+                )
             else:
-                error_log = [
-                    create_alert(
-                        f"Problem med oppdatering av {component_name} til {value}. Sjekk datatype, burde være string men mottok {type(value)}",
-                        "warning",
-                        ephemeral=True,
-                    ),
-                    *error_log,
-                ]
-                return error_log
+                AlertHandler.warning(
+                    f"Problem med oppdatering av {component_name} til {value}. Sjekk datatype, burde være string men mottok {type(value)}"
+                )
+                raise PreventUpdate
 
         alert_connection.__name__ = f"alert_connection_{component_id}"
         return alert_connection
@@ -339,8 +439,9 @@ class VariableSelector:
         else:
             default_values = self.default_values
         layout = []
-        for variable in self.selected_variables:
-            option = self.get_option(variable)
+        for variable in self._variableselectoroptions:
+            print(variable)
+            option = self.get_option(variable.title)
             card = self._create_variable_card(
                 text=option.title,
                 component_id=option.id,
@@ -384,7 +485,7 @@ class VariableSelectorOption:  # TODO: Should maybe reverse the logic and have t
             )
         self.title = variable_title
         self.id = f"var-{variable_id}" if variable_id else f"var-{variable_title}"
-        self.type = "text"
+        self.type: InputType = "text"
 
         self._is_valid()
 
@@ -395,7 +496,18 @@ class VariableSelectorOption:  # TODO: Should maybe reverse the logic and have t
     def _is_valid(self) -> None:
         """Validates the option before adding it to the list."""
         self._already_exists()
-        valid_types = ["text"]
+        valid_types = [
+            "text",
+            "number",
+            "password",
+            "email",
+            "range",
+            "search",
+            "tel",
+            "url",
+            "hidden",
+            "time",
+        ]
         if self.type not in valid_types:
             raise ValueError(
                 f"Invalid value for variable_type. Expected one of {valid_types}, received {self.type}"

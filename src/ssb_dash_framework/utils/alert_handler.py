@@ -112,20 +112,20 @@ class AlertHandler:
         return queue_copy
 
     @classmethod
-    def success(cls, msg: str):
-        cls._add_alert(msg, "success")
+    def success(cls, msg: str, ephemeral: bool | None = False):
+        cls._add_alert(msg, "success", ephemeral=ephemeral)
 
     @classmethod
-    def warning(cls, msg: str):
-        cls._add_alert(msg, "warning")
+    def warning(cls, msg: str, ephemeral: bool | None = True):
+        cls._add_alert(msg, "warning", ephemeral=ephemeral)
     
     @classmethod
-    def error(cls, msg: str):
-        cls._add_alert(msg, "error")
+    def error(cls, msg: str, ephemeral: bool | None = True):
+        cls._add_alert(msg, "error", ephemeral=ephemeral)
 
     @classmethod
-    def info(cls, msg: str):
-        cls._add_alert(msg, "error")
+    def info(cls, msg: str, ephemeral: bool | None = False):
+        cls._add_alert(msg, "error", ephemeral=ephemeral)
 
     def __init__(self) -> None:
         """Initializes the AlertHandler instance.

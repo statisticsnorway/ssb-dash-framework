@@ -16,12 +16,14 @@ from dash import html
 from dash.exceptions import PreventUpdate
 
 from ......setup.variableselector import VariableSelector
+from ......setup.variableselector import TimeUnit
+from ......setup.variableselector import SelectedTimeUnit
 from ......utils.alert_handler import AlertHandler
-from ......utils.config_tools.set_variables import SelectedTimeUnit
-from ......utils.config_tools.set_variables import TimeUnit
-from ......utils.config_tools.set_variables import get_ident
-from ......utils.config_tools.set_variables import get_refnr
-from ......utils.config_tools.set_variables import get_time_units
+#from ......utils.config_tools.set_variables import SelectedTimeUnit
+#from ......utils.config_tools.set_variables import TimeUnit
+#from ......utils.config_tools.set_variables import get_ident
+#from ......utils.config_tools.set_variables import get_refnr
+#from ......utils.config_tools.set_variables import get_time_units
 from ..meta import MicrolayoutMeta
 from ....utils import EditorSettings
 
@@ -55,10 +57,6 @@ class TimeseriesAio(html.Div):
             internal_id = str(uuid.uuid4())
         else:
             internal_id = _id
-
-        selector = VariableSelector(
-            [get_refnr(), get_ident(), get_time_units().name], []
-        )
 
         initial_fig = go.Figure(data=[])
         initial_fig.update_layout(
@@ -128,16 +126,19 @@ class TimeseriesAio(html.Div):
             Output(f"graph-{internal_id}", "figure"),
             Output(f"table-{internal_id}", "rowData"),
             inputs={
-                "refnr": selector.get_input(get_refnr()),
-                "ident": selector.get_input(get_ident()),
-                "period": selector.get_input(get_time_units().name),
+                "refnr": VariableSelector.get_refnr(Input),
+                "ident": VariableSelector.get_ident(Input),
+                "period": VariableSelector.get_timevar(Input),
             },
         )
         def get_timeseries_data(refnr, ident, period):
             if not refnr or not ident or not period:
                 raise PreventUpdate
-
-            selected_period: SelectedTimeUnit = TimeUnit.parse(get_time_units(), period)
+            timeunit = VariableSelector._time_unit
+            if timeunit is None:
+                raise PreventUpdate
+                
+            selected_period: SelectedTimeUnit = TimeUnit.parse(timeunit, period)
 
             periods_to_get = [selected_period.to_str()]
             for i in range(1, num_periods + 1):
