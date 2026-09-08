@@ -13,8 +13,6 @@ from dash.exceptions import PreventUpdate
 from .....config.models import register_module
 from .....config.yaml_parser import config_parser_yaml
 from .....setup.variableselector import VariableSelector
-#from .....utils.config_tools.set_variables import get_refnr
-#from .....utils.config_tools.set_variables import get_time_units
 from ..microlayout.microlayout import MicroLayoutAIO
 from .base import DataEditorDataView
 

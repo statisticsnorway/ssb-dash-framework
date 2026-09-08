@@ -19,11 +19,6 @@ from ......setup.variableselector import VariableSelector
 from ......setup.variableselector import TimeUnit
 from ......setup.variableselector import SelectedTimeUnit
 from ......utils.alert_handler import AlertHandler
-#from ......utils.config_tools.set_variables import SelectedTimeUnit
-#from ......utils.config_tools.set_variables import TimeUnit
-#from ......utils.config_tools.set_variables import get_ident
-#from ......utils.config_tools.set_variables import get_refnr
-#from ......utils.config_tools.set_variables import get_time_units
 from ..meta import MicrolayoutMeta
 from ....utils import EditorSettings
 
@@ -137,7 +132,7 @@ class TimeseriesAio(html.Div):
             timeunit = VariableSelector._time_unit
             if timeunit is None:
                 raise PreventUpdate
-                
+
             selected_period: SelectedTimeUnit = TimeUnit.parse(timeunit, period)
 
             periods_to_get = [selected_period.to_str()]

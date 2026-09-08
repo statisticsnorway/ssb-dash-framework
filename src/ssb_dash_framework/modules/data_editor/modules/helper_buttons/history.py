@@ -6,7 +6,8 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 
 import tzlocal
-from dash import Input, State, no_update
+from dash import Input
+from dash import no_update
 from dash import Output
 from dash import callback
 from dash import html
@@ -14,8 +15,6 @@ from dash import html
 from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.alert_handler import AlertHandler
-#from .....utils.config_tools.set_variables import get_refnr
-#from .....utils.config_tools.set_variables import get_time_units
 from .editor_helper_button import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)

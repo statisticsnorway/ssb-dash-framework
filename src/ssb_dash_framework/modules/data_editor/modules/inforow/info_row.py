@@ -10,8 +10,6 @@ from dash.exceptions import PreventUpdate
 
 from .....setup.variableselector import VariableSelector
 from .....utils.alert_handler import AlertHandler
-#from .....utils.config_tools.set_variables import get_ident
-#from .....utils.config_tools.set_variables import get_time_units
 from ...meta import ModuleABC
 from .info_row_model import InfoRowField
 
@@ -85,14 +83,14 @@ class DataEditorInfoRow(ModuleABC):
 
     def module_callbacks(self) -> None:
         """Registers callbacks for the module."""
-        #variableselector = VariableSelector(
+        # variableselector = VariableSelector(
         #    selected_inputs=[],
         #    selected_states=[
         #        x.source_variable_name
         #        for x in self.info_variables
         #        if x.source == "variableselector"
         #    ],
-        #)
+        # )
 
         @callback(
             output={

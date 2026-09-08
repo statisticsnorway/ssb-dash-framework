@@ -17,9 +17,6 @@ from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.connection import get_connection
-#from .....utils.config_tools.set_variables import get_ident
-#from .....utils.config_tools.set_variables import get_refnr
-#from .....utils.config_tools.set_variables import get_time_units
 from .....utils.core_models import UpdateSkjemadata
 
 from ...utils import EditorSettings
@@ -48,23 +45,21 @@ class DataEditorTable(DataEditorDataView):
         if isinstance(settings, dict):
             settings = EditorSettings(**settings)
 
-        self.time_units = VariableSelector._time_unit
-        if self.time_units is None:
+        time_units = VariableSelector._time_unit
+        if time_units is None:
             raise RuntimeError("Time units is not defined in the variableselector")
-        self.refnr = VariableSelector._refnr
-        if self.refnr is None:
+        self.time_units = time_units
+
+        refnr = VariableSelector._refnr
+        if refnr is None:
             raise RuntimeError("Refnr is not defined in the variableselector")
-        self.ident = VariableSelector._ident
-        if self.ident is None:
+        self.refnr = refnr
+
+        ident = VariableSelector._ident
+        if ident is None:
             raise RuntimeError("Ident is not defined in the variableselector")
-        #self.variable_selector = VariableSelector(
-        #    selected_inputs=[
-        #        self.time_units.name,
-        #        "altinnskjema",
-        #        get_refnr(),
-        #    ],  # Order of inputs is not random!
-        #    selected_states=[],
-        #)
+        self.ident = ident
+
         self.uneditable_columns = {"id", self.ident, self.refnr, "skjema", "variabel"}
         self.divname = f"{self.module_name}-{self.module_number}"
         self.module_callbacks()
@@ -112,10 +107,9 @@ class DataEditorTable(DataEditorDataView):
             inputs={
                 "selected_table": Input("dataeditortableselector", "value"),
                 "form": VariableSelector.get_input("altinnskjema"),
-                "refnr": VariableSelector.get_refnr(Input),#self.variable_selector.get_input(get_refnr()),
-                "period": VariableSelector.get_timevar(Input)#self.variable_selector.get_input(get_time_units().name),
+                "refnr": VariableSelector.get_refnr(Input),
+                "period": VariableSelector.get_timevar(Input),
             },
-            # self.variable_selector.get_all_callback_objects(),
         )
         def read_table(selected_table: str, form, refnr, period):
             """Populate the table view with data."""
@@ -163,7 +157,7 @@ class DataEditorTable(DataEditorDataView):
             return df.to_dict("records"), columndefs
 
         @callback(
-            Output("alert_store", "data", allow_duplicate=True),
+            Output("alert_store", component_property="data", allow_duplicate=True),
             Input(
                 f"{self.module_name}-{self.module_number}-aggrid", "cellValueChanged"
             ),

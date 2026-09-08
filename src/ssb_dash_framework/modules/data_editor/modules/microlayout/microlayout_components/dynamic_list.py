@@ -9,13 +9,11 @@ from dash.exceptions import PreventUpdate
 
 from ......setup.variableselector import VariableSelector
 from ......utils.alert_handler import AlertHandler
-#from ......utils.config_tools.set_variables import get_ident
-#from ......utils.config_tools.set_variables import get_refnr
-#from ......utils.config_tools.set_variables import get_time_units
 from ..meta import MicrolayoutMeta
 from ....utils import EditorSettings
 
 logger = logging.getLogger(__name__)
+
 
 class DynamicListEditor(html.Div):
     def __init__(
@@ -46,7 +44,7 @@ class DynamicListEditor(html.Div):
         def update_table(refnr, ident, period):
             if not refnr or not ident or not period:
                 raise PreventUpdate
-            
+
             try:
                 data = fetcher.get_dynamic_list(settings, wildcard, refnr)
             except Exception as e:

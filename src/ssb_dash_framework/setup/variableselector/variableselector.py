@@ -70,8 +70,8 @@ class VariableSelector:
 
     def __init__(
         self,
-        # selected_inputs: list[str],
-        # selected_states: list[str],
+        selected_inputs: list[str],
+        selected_states: list[str],
         default_values: dict[str, str | int | float] | None = None,
     ) -> None:
         """Initializes the VariableSelector class.

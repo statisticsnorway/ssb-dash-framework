@@ -1,4 +1,4 @@
-from abc import abstractmethod, ABC
+from abc import abstractmethod
 from typing import Any
 
 from .microlayout_components.editable_field_model import FieldCallbackContainer

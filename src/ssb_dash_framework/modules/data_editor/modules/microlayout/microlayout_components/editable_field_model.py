@@ -22,10 +22,18 @@ class FieldCallbackContainer(BaseModel):
     def get_state(self, aio_id: str):
         return State({"comp_id": self._id, "aio": aio_id}, "value")
 
-    def get_input(self, aio_id: str,):
-        return Input({"comp_id": self._id, "aio": aio_id}, self.settings.variabel_trigger)
+    def get_input(
+        self,
+        aio_id: str,
+    ):
+        return Input(
+            {"comp_id": self._id, "aio": aio_id}, self.settings.variabel_trigger
+        )
 
-    def get_output(self, aio_id: str,):
+    def get_output(
+        self,
+        aio_id: str,
+    ):
         return Output({"comp_id": self._id, "aio": aio_id}, "value")
 
     @computed_field

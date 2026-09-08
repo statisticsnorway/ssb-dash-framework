@@ -11,8 +11,6 @@ from dash.exceptions import PreventUpdate
 
 from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.utils.alert_handler import AlertHandler
-#from ssb_dash_framework.utils.config_tools.set_variables import get_ident
-#from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
 
 from .meta import MicrolayoutMeta
 from ...utils import EditorSettings
