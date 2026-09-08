@@ -12,6 +12,7 @@ class EditableField(BaseModel):
     variable: str
     variabel_trigger: str = Field(default="n_blur")
     id: str
+    type: str
 
 
 class FieldCallbackContainer(BaseModel):

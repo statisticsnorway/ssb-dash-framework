@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Literal
 
+from dash import no_update
 import ibis.selectors as s
 import pandas as pd
 import tzlocal
@@ -52,6 +53,10 @@ class StandardDataHandler(FetcherMeta):
             logger.error(
                 f"Multiple rows returned for {container.settings.variable}, refnr={refnr}. Using first row."
             )
+        
+        if container.settings.type == "checklist":
+            return res.iloc[0, 0].str.split(",")
+
         return res.iloc[0, 0]
 
     def get_comment(self, refnr: str) -> str | None:

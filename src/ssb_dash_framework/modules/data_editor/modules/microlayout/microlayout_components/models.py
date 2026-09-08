@@ -36,6 +36,7 @@ from .timeseries_aio import TimeseriesAio
 class CreateArguments(BaseModel):
     """This class exists to make it easier to add extra paramaters to the create function instead of copying 15 times."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     fetcher: MicrolayoutMeta  # Fetcher is only included here for components that needs to create their own callbacks
     settings: EditorSettings
     aio_id: str
@@ -86,7 +87,10 @@ class ValueNode(BaseNode):
     @property
     def field_settings(self) -> EditableField:
         return EditableField(
-            variable=self.variable, variabel_trigger=self.variable_trigger, id=self.id
+            variable=self.variable,
+            variabel_trigger=self.variable_trigger,
+            id=self.id,
+            type=self.type,
         )
 
     @computed_field
