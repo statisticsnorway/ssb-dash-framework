@@ -26,10 +26,12 @@ class ContextABC(ABC):
 
     fetcher: FetcherMeta
     settings: EditorSettings
+    instance_id: str
 
-    def set_settings(self, fetcher: FetcherMeta, settings: EditorSettings):
+    def set_settings(self, fetcher: FetcherMeta, settings: EditorSettings, instance_id: str):
         self.fetcher = fetcher
         self.settings = settings
+        self.instance_id = instance_id
 
 
 class ModuleABC(ContextABC):

@@ -220,5 +220,8 @@ class AltinnFormParqueditHandler(FetcherMeta):
         settings: EditorSettings,
         container: FieldCallbackContainer,
         inputs: list[Any] | dict[Any, Any],
+        editing_code: str | None
     ) -> Any:
+        if container.settings.type == "checklist":
+            value = ",".join(value)
         pass

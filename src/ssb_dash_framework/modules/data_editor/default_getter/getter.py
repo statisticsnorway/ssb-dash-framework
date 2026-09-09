@@ -55,7 +55,7 @@ class StandardDataHandler(FetcherMeta):
             )
         
         if container.settings.type == "checklist":
-            return res.iloc[0, 0].str.split(",")
+            return str(res.iloc[0, 0]).split(",")
 
         return res.iloc[0, 0]
 
@@ -231,6 +231,7 @@ class StandardDataHandler(FetcherMeta):
         settings: EditorSettings,
         container: FieldCallbackContainer,
         inputs: list[Any] | dict[Any, Any],
+        editing_code: str | None
     ) -> Any:
         long = settings.field_name_col == "variabel"
         update_form = UpdateSkjemadata(

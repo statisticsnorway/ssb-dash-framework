@@ -14,6 +14,7 @@ from ssb_dash_framework.utils.alert_handler import AlertHandler
 
 from .meta import MicrolayoutMeta
 from ...utils import EditorSettings
+from ...utils import EDITING_CODE_DROPDOWN
 from .microlayout_components.models import Layout
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ class MicroLayoutAIO(html.Div):
         layout: list[dict] | dict | Layout,
         settings: EditorSettings,
         data_handler: MicrolayoutMeta,
+        instance_id: str | None,
         inputs: list[Input] | dict[Any, Input] | None = None,
         states: list[State] | None = None,
         aio_id: str | None = None,
@@ -81,6 +83,9 @@ class MicroLayoutAIO(html.Div):
                     "refnr": VariableSelector.get_refnr(Input),
                     "ident": VariableSelector.get_ident(State),
                     "custom_inputs": input_states,
+                    "editing_code": Input(
+                        EDITING_CODE_DROPDOWN(instance_id), "value", allow_optional=True
+                    ),
                 },
                 prevent_initial_call=True,
             )
@@ -89,6 +94,7 @@ class MicroLayoutAIO(html.Div):
                 refnr: str | None,
                 ident: str | None,
                 custom_inputs: list | None,
+                editing_code: str | None = None,
             ):
                 if not refnr or not ident or not custom_inputs:
                     raise PreventUpdate
@@ -115,6 +121,7 @@ class MicroLayoutAIO(html.Div):
                                 self.settings,
                                 custom_ctx,
                                 custom_inputs,
+                                editing_code
                             )
                             data_handler.update_form_status(refnr, "Under arbeid")
                         else:

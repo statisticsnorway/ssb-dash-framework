@@ -55,7 +55,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                         ),
                         dbc.Col(
                             dbc.Button(
-                                "Lagre",
+                                "Lagre kommentar",
                                 id=f"{self.module_name}-{self.module_number}-save-button",
                                 className="ssb-btn primary-btn",
                             )

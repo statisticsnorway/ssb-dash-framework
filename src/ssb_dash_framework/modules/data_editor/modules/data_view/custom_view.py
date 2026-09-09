@@ -197,6 +197,7 @@ class DataViewCustom(DataEditorDataView):
                     data_handler=self.fetcher,
                     settings=self.settings,
                     layout=layout,
+                    instance_id=self.instance_id,
                     inputs=[
                         #VariableSelector(
                         #    selected_inputs=[get_refnr()], selected_states=[]

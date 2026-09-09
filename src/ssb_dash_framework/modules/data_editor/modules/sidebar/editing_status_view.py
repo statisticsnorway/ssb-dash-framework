@@ -17,16 +17,11 @@ from dash import dcc
 from dash import html
 from dash import no_update
 from dash.exceptions import PreventUpdate
-from psycopg_pool import ConnectionPool
 
-from .....utils.alert_handler import AlertHandler, create_alert
+from .....utils.alert_handler import AlertHandler
 from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
-from .....utils.config_tools.connection import _get_connection_object
-
-# from .....utils.config_tools.set_variables import get_ident
-# from .....utils.config_tools.set_variables import get_refnr
-# from .....utils.config_tools.set_variables import get_time_units
+from ...utils import EDITING_CODE_DROPDOWN
 
 from .editing_sidebar_helper import DataEditorHelperSidebar
 
@@ -109,36 +104,35 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 ),
                 dbc.Row(
                     [
-                        dbc.Col(
-                            [
-                                dbc.Row("Status"),
-                                dbc.Row(
-                                    dcc.RadioItems(
-                                        id=f"{self.module_name}-{self.module_number}-radioitems",
-                                        options=self.status_options,
-                                        className="ssb-radio-buttons",
-                                    )
-                                ),
-                            ]
+                        dbc.Row("Status"),
+                        dbc.Row(
+                            dcc.RadioItems(
+                                id=f"{self.module_name}-{self.module_number}-radioitems",
+                                options=self.status_options,
+                                className="ssb-radio-buttons",
+                            )
                         ),
-                        dbc.Col(
-                            [
-                                dbc.Row("Aktiv"),
-                                dbc.Row(
-                                    html.Div(
-                                        className="ssb-checkbox d-flex align-items-center",
-                                        children=[
-                                            dcc.Checklist(
-                                                id=f"{self.module_name}-{self.module_number}-checkbox",
-                                                options=[
-                                                    {"label": "", "value": "Aktiv"}
-                                                ],
-                                            ),
-                                            html.Label("Ja", className="mb-1 ms-2"),
-                                        ],
-                                    )
-                                ),
-                            ]
+                        dbc.Row("Aktiv"),
+                        dbc.Row(
+                            html.Div(
+                                className="ssb-checkbox d-flex align-items-center",
+                                children=[
+                                    dcc.Checklist(
+                                        id=f"{self.module_name}-{self.module_number}-checkbox",
+                                        options=[{"label": "", "value": "Aktiv"}],
+                                    ),
+                                    html.Label("Ja", className="mb-1 ms-2"),
+                                ],
+                            )
+                        ),
+                        dbc.Row("Editeringskode", style={"margin-top": "10px"}),
+                        dcc.Dropdown(
+                            className="ssb-dropdown",
+                            searchable=False,
+                            id=EDITING_CODE_DROPDOWN(self.instance_id),
+                            style={"margin-top": "4px"},
+                            value="CONTACT",
+                            options=[{"label": "Kontakt med oppgavegiver", "value": "CONTACT"}],
                         ),
                     ]
                 ),

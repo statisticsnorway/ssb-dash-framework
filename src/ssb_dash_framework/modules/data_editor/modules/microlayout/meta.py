@@ -23,6 +23,7 @@ class MicrolayoutMeta[T](SidebarMeta):
         settings: T,
         container: FieldCallbackContainer,
         inputs: list[Any] | dict[Any, Any],
+        editing_code: str | None
     ) -> Any: ...
 
 

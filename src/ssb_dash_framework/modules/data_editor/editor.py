@@ -1,6 +1,7 @@
 # pyright: reportInvalidTypeForm=false
 # pyright: reportCallIssue=false
 from logging import getLogger
+import uuid
 
 import dash_bootstrap_components as dbc
 from dash import html
@@ -37,6 +38,7 @@ class DataEditor:
             raise RuntimeError("Only one DataEditor can be created")
         DataEditor._module_count += 1
         self.module_name = self.__class__.__name__
+        instance_id = str(uuid.uuid4())
         if isinstance(settings, dict):
             settings = EditorSettings.model_validate(settings)
         if not isinstance(settings, EditorSettings):
@@ -49,7 +51,7 @@ class DataEditor:
         inforow_list = {} if inforow is None else inforow
 
         self.info_view_row = DataEditorInfoRow(inforow_list)
-        self.info_view_row.set_settings(data_handler, settings)
+        self.info_view_row.set_settings(data_handler, settings, instance_id)
 
         self.info_view = html.Div(
             self.info_view_row.layout(),  # pyright: ignore
@@ -62,7 +64,7 @@ class DataEditor:
                     module = instantiate_module(
                         ModuleConfig(**module), type="component", strict=False
                     )
-                module.set_settings(data_handler, settings)
+                module.set_settings(data_handler, settings, instance_id)
                 buttons_list.append(dbc.Col(module.layout()))  # pyright: ignore
         self.helper_row = dbc.Row(buttons_list)  # pyright: ignore
 
@@ -73,7 +75,7 @@ class DataEditor:
                     module = instantiate_module(
                         ModuleConfig(**module), type="component", strict=False
                     )
-                module.set_settings(data_handler, settings)
+                module.set_settings(data_handler, settings, instance_id)
                 sidebar_list.append(
                     dbc.Card(dbc.CardBody(module.layout()))  # pyright: ignore
                 )
@@ -89,7 +91,7 @@ class DataEditor:
                     view = instantiate_module(
                         ModuleConfig(**view), type="component", strict=False
                     )
-                view.set_settings(data_handler, settings)
+                view.set_settings(data_handler, settings, instance_id)
                 dataview_list.append(view.layout())
 
         # Make default view
