@@ -64,20 +64,34 @@ def main_layout(
     window_modules_list = [alerthandler.layout(), *window_modules]
 
     varvelger_toggle = [
-        html.Div([sidebar_button(DashIconify(icon="feather:triangle", width=24), "Vis variabler", "sidebar-varvelger-button")])
+        html.Div(
+            [
+                sidebar_button(
+                    DashIconify(icon="feather:triangle", width=24),
+                    "Vis variabler",
+                    "sidebar-varvelger-button",
+                )
+            ]
+        )
     ]
     theme_toggle = html.Div(
         [
             html.Div(
                 dbc.Button(
                     [
-                        html.Span(
-                            "🌙", id="theme-icon", className="sidebar-button-icon-spot"
+                        DashIconify(
+                            icon="feather:moon",
+                            width=24,
+                            id="theme-icon",
+                            className="sidebar-button-icon-spot",
                         ),
-                        html.Span("Tema", className="sidebar-button-label-spot"),
+                        html.Span(
+                            "Tema",
+                            className="sidebar-button-label-spot",
+                        ),
                     ],
                     id="theme-toggle-button",
-                    className="sidebar-button-button",
+                    className="sidebar-button-button ssb-btn primary-btn",
                 )
             ),
             dcc.Store(id="theme-store", data=True),
