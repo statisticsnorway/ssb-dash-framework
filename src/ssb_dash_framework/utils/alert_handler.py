@@ -33,7 +33,7 @@ _DEFAULT_ICONS = {
 
 def create_alert(
     message: str,
-    color: str | None = "info",
+    color: str = "info",
     ephemeral: bool | None = False,
     position: str | None = "bottom-left",
     duration: int | None = 5,
