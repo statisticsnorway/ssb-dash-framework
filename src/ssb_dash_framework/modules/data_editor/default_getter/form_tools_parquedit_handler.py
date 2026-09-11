@@ -208,9 +208,13 @@ class AltinnFormParqueditHandler(FetcherMeta):
     def update_form_reception_comment(self, refnr: str, comment: str) -> None:
         pass
 
-    def update_form_status(self, refnr: str, status_code: Literal["Under behandling", "Ferdig", "Ubehandlet"]) -> None:
+    def update_form_status(
+        self,
+        refnr: str,
+        status_code: Literal["Under behandling", "Ferdig", "Ubehandlet"],
+    ) -> None:
         pass
-    
+
     def update_field_value(
         self,
         refnr: str,
@@ -220,7 +224,7 @@ class AltinnFormParqueditHandler(FetcherMeta):
         settings: EditorSettings,
         container: FieldCallbackContainer,
         inputs: list[Any] | dict[Any, Any],
-        editing_code: str | None
+        editing_code: str | None,
     ) -> Any:
         if container.settings.type == "checklist":
             value = ",".join(value)

@@ -53,7 +53,7 @@ class StandardDataHandler(FetcherMeta):
             logger.error(
                 f"Multiple rows returned for {container.settings.variable}, refnr={refnr}. Using first row."
             )
-        
+
         if container.settings.type == "checklist":
             return str(res.iloc[0, 0]).split(",")
 
@@ -231,7 +231,7 @@ class StandardDataHandler(FetcherMeta):
         settings: EditorSettings,
         container: FieldCallbackContainer,
         inputs: list[Any] | dict[Any, Any],
-        editing_code: str | None
+        editing_code: str | None,
     ) -> Any:
         long = settings.field_name_col == "variabel"
         update_form = UpdateSkjemadata(
