@@ -16,9 +16,6 @@ from .altinn_data_capture import AltinnDataCaptureTab
 from .altinn_data_capture import AltinnDataCaptureWindow
 from .altinn_editor import AltinnSkjemadataEditor
 from .altinn_editor import AltinnSupportTable
-from .bedriftstabell import Bedriftstabell
-from .bedriftstabell import BedriftstabellTab
-from .bedriftstabell import BedriftstabellWindow
 from .bofregistry import BofInformation
 from .bofregistry import BofInformationTab
 from .bofregistry import BofInformationWindow
@@ -76,9 +73,6 @@ __all__ = [
     "AltinnDataCaptureWindow",
     "AltinnSkjemadataEditor",
     "AltinnSupportTable",
-    "Bedriftstabell",
-    "BedriftstabellTab",
-    "BedriftstabellWindow",
     "BofInformation",
     "BofInformationTab",
     "BofInformationWindow",
