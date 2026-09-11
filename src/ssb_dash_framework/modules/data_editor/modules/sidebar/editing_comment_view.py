@@ -16,9 +16,7 @@ from dash.exceptions import PreventUpdate
 from .....utils.alert_handler import AlertHandler
 from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
-#from .....utils.config_tools.set_variables import get_ident
-#from .....utils.config_tools.set_variables import get_refnr
-#from .....utils.config_tools.set_variables import get_time_units
+
 from .editing_sidebar_helper import DataEditorHelperSidebar
 
 logger = logging.getLogger(__name__)
@@ -83,8 +81,6 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             ),
             VariableSelector.get_refnr(Input),
             VariableSelector.get_ident(Input),
-            #self.variableselector.get_input(get_refnr()),
-            #self.variableselector.get_input(get_ident()),
             VariableSelector.get_input("altinnskjema"),
             VariableSelector.get_timevar(Input),
         )
@@ -95,11 +91,15 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             if not refnr or not skjema or not ident:
                 raise PreventUpdate
             try:
-                data = self.fetcher.get_refnrs_by_period_ident(self.settings, ident, period)
+                data = self.fetcher.get_refnrs_by_period_ident(
+                    self.settings, ident, period
+                )
             except Exception as e:
-                error_msg = f"Failed to get reference for ident by period with error: {e}"
+                error_msg = (
+                    f"Failed to get reference for ident by period with error: {e}"
+                )
                 logger.info(error_msg)
-                AlertHandler.info(error_msg) 
+                AlertHandler.info(error_msg)
 
             if data is None:
                 raise PreventUpdate
@@ -125,12 +125,12 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             except Exception as e:
                 error_msg = f"Comment failed to update with error: {e}"
                 logger.info(error_msg)
-                AlertHandler.info(error_msg) 
+                AlertHandler.info(error_msg)
 
             if comment is None:
                 error_msg = "Comment returned with None"
                 logger.info(error_msg)
-                AlertHandler.info(error_msg) 
+                AlertHandler.info(error_msg)
                 return ""
 
             return comment
@@ -157,5 +157,4 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             except Exception as e:
                 error_msg = f"Comment failed to update with error: {e}"
                 logger.info(error_msg)
-                AlertHandler.info(error_msg) 
-            
+                AlertHandler.info(error_msg)

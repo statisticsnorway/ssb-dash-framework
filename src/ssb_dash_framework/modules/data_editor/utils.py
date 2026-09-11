@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 EDITING_CODE_DROPDOWN = lambda aio_id: f"{aio_id}-update-queue"
 
+
 class EditorSettings(BaseModel):
     starting_table: str
     form_data_table: str

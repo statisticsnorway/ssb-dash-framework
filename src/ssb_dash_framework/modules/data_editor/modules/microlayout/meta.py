@@ -4,6 +4,7 @@ from typing import Any
 from .microlayout_components.editable_field_model import FieldCallbackContainer
 from ..sidebar.meta import SidebarMeta
 
+
 class MicrolayoutMeta[T](SidebarMeta):
     @abstractmethod
     def get_field(
@@ -23,9 +24,8 @@ class MicrolayoutMeta[T](SidebarMeta):
         settings: T,
         container: FieldCallbackContainer,
         inputs: list[Any] | dict[Any, Any],
-        editing_code: str | None
+        editing_code: str | None,
     ) -> Any: ...
-
 
     @abstractmethod
     def get_timeseries(

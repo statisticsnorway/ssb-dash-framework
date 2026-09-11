@@ -117,7 +117,6 @@ class DataEditorTable(DataEditorDataView):
                 logger.info("Preventing update: table mismatch.")
                 raise PreventUpdate
 
-
             if self.applies_to_forms and form not in self.applies_to_forms:
                 logger.info("Preventing update: form mismatch.")
                 raise PreventUpdate

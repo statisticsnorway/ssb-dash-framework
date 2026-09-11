@@ -9,8 +9,7 @@ from dash import html
 from ...config.loader import instantiate_module
 from ...config.models import ModuleConfig
 from ...config.models import register_module
-from ...setup.variableselector import VariableSelector
-#from ...utils.config_tools.set_variables import get_time_units
+
 from .meta import ContextABC
 from .meta import FetcherMeta
 from .meta import ModuleABC

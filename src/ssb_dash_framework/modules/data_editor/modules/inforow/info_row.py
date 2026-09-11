@@ -83,14 +83,6 @@ class DataEditorInfoRow(ModuleABC):
 
     def module_callbacks(self) -> None:
         """Registers callbacks for the module."""
-        # variableselector = VariableSelector(
-        #    selected_inputs=[],
-        #    selected_states=[
-        #        x.source_variable_name
-        #        for x in self.info_variables
-        #        if x.source == "variableselector"
-        #    ],
-        # )
 
         @callback(
             output={

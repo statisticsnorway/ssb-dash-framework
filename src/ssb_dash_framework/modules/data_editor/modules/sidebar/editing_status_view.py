@@ -143,7 +143,6 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         """Registers the callbacks for the module."""
 
         @callback(
-            # Output("alert_store", "data", allow_duplicate=True),
             Output(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             Output(f"{self.module_name}-{self.module_number}-radioitems", "value"),
             Output(
@@ -280,7 +279,6 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             Input(
                 f"{self.module_name}-{self.module_number}-form-table", "selectedRows"
             ),
-            # self.variableselector.get_input(get_refnr()),
             VariableSelector.get_refnr(Input),
             VariableSelector.get_input("altinnskjema"),
             prevent_initial_call=True,

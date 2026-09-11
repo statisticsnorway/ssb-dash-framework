@@ -5,20 +5,19 @@ from dash import html
 
 from .utils import EditorSettings
 
-from .modules.sidebar.meta import SidebarMeta
 from .modules.inforow.meta import InforowMeta
 from .modules.helper_buttons.meta import HelperButtonMeta
 from .modules.microlayout.meta import MicrolayoutMeta
 
 SettingsType = EditorSettings
 
+
 class FetcherMeta(
-    #SidebarMeta[SettingsType],
+    # SidebarMeta[SettingsType],
     InforowMeta[SettingsType],
     HelperButtonMeta,
     MicrolayoutMeta[SettingsType],
-):
-    ...
+): ...
 
 
 class ContextABC(ABC):
@@ -28,7 +27,9 @@ class ContextABC(ABC):
     settings: EditorSettings
     instance_id: str
 
-    def set_settings(self, fetcher: FetcherMeta, settings: EditorSettings, instance_id: str):
+    def set_settings(
+        self, fetcher: FetcherMeta, settings: EditorSettings, instance_id: str
+    ):
         self.fetcher = fetcher
         self.settings = settings
         self.instance_id = instance_id

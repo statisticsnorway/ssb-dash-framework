@@ -26,7 +26,6 @@ class DataViewCustomFigure:
         self.module_number = DataViewCustomFigure._id_number
         self.module_name = self.__class__.__name__
         DataViewCustomFigure._id_number += 1
-        #self.variableselector = VariableSelector([], [])
         self.label = label
         self.figure_func = figure_func
         self.applies_to_tables = applies_to_tables
@@ -47,9 +46,7 @@ class DataViewCustomFigure:
             Input("dataeditortableselector", "value"),
             VariableSelector.get_input("altinnskjema"),
             VariableSelector.get_refnr(Input),
-            VariableSelector.get_timevar(Input)
-            #self.variableselector.get_input(get_refnr()),
-            #self.variableselector.get_input(get_time_units().name),
+            VariableSelector.get_timevar(Input),
         )
         def make_figure(selected_table, selected_form, refnr, period):
             if (
@@ -76,7 +73,6 @@ class DataViewCustomTable:
         self.module_number = DataViewCustomFigure._id_number
         self.module_name = self.__class__.__name__
         DataViewCustomFigure._id_number += 1
-        #self.variableselector = VariableSelector([], [])
         self.label = label
         self.table_func = table_func
         self.applies_to_tables = applies_to_tables
@@ -101,9 +97,7 @@ class DataViewCustomTable:
             Input("dataeditortableselector", "value"),
             VariableSelector.get_input("altinnskjema"),
             VariableSelector.get_refnr(Input),
-            VariableSelector.get_timevar(Input)
-            #self.variableselector.get_input(get_refnr()),
-            #self.variableselector.get_input(get_time_units().name),
+            VariableSelector.get_timevar(Input),
         )
         def make_figure(selected_table, selected_form, refnr, *args):
             if (
@@ -198,12 +192,7 @@ class DataViewCustom(DataEditorDataView):
                     settings=self.settings,
                     layout=layout,
                     instance_id=self.instance_id,
-                    inputs=[
-                        #VariableSelector(
-                        #    selected_inputs=[get_refnr()], selected_states=[]
-                        #).get_input(get_refnr())
-                        VariableSelector.get_refnr(Input)
-                    ],
+                    inputs=[VariableSelector.get_refnr(Input)],
                 )
                 components.append(microlayout)
             else:

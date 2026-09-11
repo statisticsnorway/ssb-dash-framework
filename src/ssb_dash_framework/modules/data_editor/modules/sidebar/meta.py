@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -24,13 +24,12 @@ class SidebarMeta[T](ABC):
     def get_comment(self, refnr: str) -> str | None: ...
 
     @abstractmethod
-    def update_form_status(self, refnr: str, status_code: Literal["Under arbeid", "Ferdig", "Ubehandlet"]) -> None:
-        ...
+    def update_form_status(
+        self, refnr: str, status_code: Literal["Under arbeid", "Ferdig", "Ubehandlet"]
+    ) -> None: ...
 
     @abstractmethod
-    def update_form_active_status(self, refnr: str, value: bool) -> None:
-        ...
-    
+    def update_form_active_status(self, refnr: str, value: bool) -> None: ...
+
     @abstractmethod
-    def update_form_reception_comment(self, refnr: str, comment: str) -> None:
-        ...
+    def update_form_reception_comment(self, refnr: str, comment: str) -> None: ...
