@@ -13,23 +13,25 @@ from psycopg_pool import ConnectionPool
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
 from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
 
+from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.connection import get_connection
 from .....utils.core_models import UpdateSkjemadata
-from ..core import DataEditorDataView
+
+from ...utils import EditorSettings
+from .base import DataEditorDataView
 
 logger = logging.getLogger(__name__)
 
 
+@register_module()
 class DataEditorTable(DataEditorDataView):
     """Requires table selector."""
 
     _id_number = 0
 
-    def __init__(
-        self, applies_to_tables: list[str], applies_to_forms: list[str]
-    ) -> None:
+    def __init__(self, settings: EditorSettings) -> None:
         """Initializes a DataEditorTable for selected tables and forms.
 
         Args:
@@ -39,21 +41,31 @@ class DataEditorTable(DataEditorDataView):
         self.module_number = DataEditorTable._id_number
         self.module_name = self.__class__.__name__
         DataEditorTable._id_number += 1
-        self.time_units = ["aar"]  # TODO fix, make set/get time_units functions
-        self.refnr = "refnr"  # TODO fix, maybe make set/get for refnr?
-        self.variable_selector = VariableSelector(
-            selected_inputs=[
-                *self.time_units,
-                "altinnskjema",
-                "refnr",
-            ],  # Order of inputs is not random!
-            selected_states=[],
-        )
-        self.uneditable_columns = {"id", "ident", "refnr", "skjema", "variabel"}
+
+        if isinstance(settings, dict):
+            settings = EditorSettings(**settings)
+
+        time_units = VariableSelector._time_unit
+        if time_units is None:
+            raise RuntimeError("Time units is not defined in the variableselector")
+        self.time_units = time_units
+
+        refnr = VariableSelector._refnr
+        if refnr is None:
+            raise RuntimeError("Refnr is not defined in the variableselector")
+        self.refnr = refnr
+
+        ident = VariableSelector._ident
+        if ident is None:
+            raise RuntimeError("Ident is not defined in the variableselector")
+        self.ident = ident
+
+        self.uneditable_columns = {"id", self.ident, self.refnr, "skjema", "variabel"}
         self.divname = f"{self.module_name}-{self.module_number}"
         self.module_callbacks()
         super().__init__(
-            applies_to_tables=applies_to_tables, applies_to_forms=applies_to_forms
+            applies_to_tables=settings.form_data_table,
+            applies_to_forms=settings.form_list,
         )
         # print(self)
 
@@ -92,29 +104,26 @@ class DataEditorTable(DataEditorDataView):
         @callback(
             Output(f"{self.module_name}-{self.module_number}-aggrid", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-aggrid", "columnDefs"),
-            Input("dataeditortableselector", "value"),
-            self.variable_selector.get_all_callback_objects(),
+            inputs={
+                "selected_table": Input("dataeditortableselector", "value"),
+                "form": VariableSelector.get_input("altinnskjema"),
+                "refnr": VariableSelector.get_refnr(Input),
+                "period": VariableSelector.get_timevar(Input),
+            },
         )
-        def read_table(selected_table: str, *args: list[str]):
+        def read_table(selected_table: str, form, refnr, period):
             """Populate the table view with data."""
-            selected_form = args[len(self.time_units)]
-
             if selected_table not in self.applies_to_tables:
                 logger.info("Preventing update: table mismatch.")
                 raise PreventUpdate
 
-            if self.applies_to_forms and selected_form not in self.applies_to_forms:
+            if self.applies_to_forms and form not in self.applies_to_forms:
                 logger.info("Preventing update: form mismatch.")
                 raise PreventUpdate
-            # if (
-            #     selected_table not in self.applies_to_tables
-            #     or args[len(self.time_units)] not in self.applies_to_forms
-            # ):
-            #     logger.info("Preventing update.")
-            #     raise PreventUpdate
 
             filter_dict = create_filter_dict(
-                variables=[*self.time_units, "skjema", "refnr"], values=args
+                variables=[self.time_units.name, "skjema", "refnr"],
+                values=[period, form, refnr],
             )
 
             logger.debug(f"Filterdict: {filter_dict}")
@@ -134,7 +143,7 @@ class DataEditorTable(DataEditorDataView):
                         "row_id",
                         "row_ids",
                         "enhetsinfo_row_ids",
-                        *self.time_units,
+                        self.time_units.name,
                         "skjema",
                         "refnr",
                     ],
@@ -147,7 +156,7 @@ class DataEditorTable(DataEditorDataView):
             return df.to_dict("records"), columndefs
 
         @callback(
-            Output("alert_store", "data", allow_duplicate=True),
+            Output("alert_store", component_property="data", allow_duplicate=True),
             Input(
                 f"{self.module_name}-{self.module_number}-aggrid", "cellValueChanged"
             ),
@@ -184,10 +193,10 @@ class DataEditorTable(DataEditorDataView):
             return [feedback, *alert_store]
 
         @callback(  # type: ignore[misc]
-            self.variable_selector.get_output_object("variabel"),
+            VariableSelector.get_output_object("variabel"),
             Input(f"{self.module_name}-{self.module_number}-aggrid", "cellClicked"),
             State(f"{self.module_name}-{self.module_number}-aggrid", "rowData"),
-            self.variable_selector.get_state("variabel"),
+            VariableSelector.get_state("variabel"),
             prevent_initial_call=True,
         )
         def send_variabel_to_variableselector(

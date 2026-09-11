@@ -2,28 +2,25 @@ import logging
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-import pandas as pd
+
 import tzlocal
 from dash import Input
+from dash import no_update
 from dash import Output
 from dash import callback
 from dash import html
-from ibis import _
-from psycopg_pool import ConnectionPool
 
-from ssb_dash_framework import VariableSelector
-from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
-from ssb_dash_framework.utils.config_tools.set_variables import get_time_units
-
-from .....utils.config_tools.connection import _get_connection_object
-from .....utils.config_tools.connection import get_connection
-from ..core import DataEditorHelperButton
+from .....config.models import register_module
+from .....setup.variableselector import VariableSelector
+from .....utils.alert_handler import AlertHandler
+from .editor_helper_button import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)
 
 local_tz = tzlocal.get_localzone()
 
 
+@register_module()
 class DataEditorHistory(DataEditorHelperButton):
     """This module provides supporting tables for the DataEditor.
 
@@ -33,8 +30,6 @@ class DataEditorHistory(DataEditorHelperButton):
         Adding your own supporting tables is not supported at this time.
     """
 
-    _id_number = 0
-
     def __init__(
         self,
         applies_to_tables: list[str] | None = None,
@@ -43,11 +38,7 @@ class DataEditorHistory(DataEditorHelperButton):
         """Initializes the DataEditorEditorSupportTables module."""
         self.module_number = DataEditorHistory._id_number
         self.module_name = self.__class__.__name__
-        DataEditorHistory._id_number += 1
-        self.variableselector = VariableSelector(
-            selected_inputs=[],
-            selected_states=[get_refnr(), *[x for x in get_time_units().keys()]],
-        )
+
         self.modal_body = self._create_modal_body()
 
         super().__init__(label="Historikk")
@@ -85,50 +76,37 @@ class DataEditorHistory(DataEditorHelperButton):
         )
 
     def module_callbacks(self):
-        connection_object = _get_connection_object()
-
         @callback(
             Output(f"{self.module_name}-{self.module_number}-table", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-table", "columnDefs"),
             Input(f"{self.module_name}-{self.module_number}-modal", "is_open"),
             Input(f"{self.module_name}-{self.module_number}-toggle", "value"),
-            *self.variableselector.get_all_callback_objects(),
+            VariableSelector.get_refnr(Input),
         )
-        def update_history_view(is_open, insert_toggle: bool, refnr, *args):
-
-            if isinstance(connection_object, ConnectionPool):
-                logger.debug("Using ConnectionPool logic.")
-                with get_connection() as conn:
-                    t = conn.table("skjemadataendringshistorikk")
-                    query = t.filter(_.refnr == refnr).order_by(_.endret_tid.desc())
-                    if insert_toggle:
-                        query = query.filter(
-                            _.process_type != "Altinn3"
-                        )  # Filtering here to not show the original insert in the history table as the original data will be visible as "old value" in the changelog.
-                    df = query.to_pandas()
-                    df["endret_tid"] = (
-                        pd.to_datetime(df["endret_tid"], utc=True)
-                        .dt.tz_convert(local_tz)
-                        .dt.floor("s")
-                        .dt.tz_localize(None)
-                        .dt.strftime("%Y-%m-%d %H:%M:%S")
-                    )
-                    columns = [
-                        {
-                            "headerName": col,
-                            "field": col,
-                            "filter": True,
-                            "resizable": True,
-                            "hide": col
-                            in [
-                                "skjema",
-                                "refnr",
-                            ],
-                        }
-                        for col in df.columns
-                    ]
-                    return df.to_dict("records"), columns
-            else:
-                raise NotImplementedError(
-                    f"Connection of type {type(connection_object)} is not currently supported."
+        def update_history_view(is_open, insert_toggle: bool, refnr):
+            try:
+                df = self.fetcher.get_history(refnr)
+            except Exception as e:
+                msg = f"Getting editing history failed with error: {e}"
+                logger.warning(msg)
+                AlertHandler.warning(msg)
+                return (
+                    no_update,
+                    no_update,
                 )
+
+            columns = [
+                {
+                    "headerName": col,
+                    "field": col,
+                    "filter": True,
+                    "resizable": True,
+                    "hide": col
+                    in [
+                        "skjema",
+                        "refnr",
+                    ],
+                }
+                for col in df.columns
+            ]
+            return df.to_dict("records"), columns

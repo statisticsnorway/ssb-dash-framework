@@ -9,15 +9,19 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import callback
 from dash import html
-from dash.dependencies import Output, Input
+from dash.dependencies import Input
+from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
+
 from ssb_dash_framework.setup import VariableSelector
 
-from ..core import DataEditorHelperButton
+from .....config.models import register_module
+from .editor_helper_button import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)
 
 
+# @register_module()
 class DataEditorSupportTable:
     """Class for adding a supporting table to the component in DataEditor."""
 
@@ -48,7 +52,7 @@ class DataEditorSupportTable:
         self.get_data_func = get_data_func
         self.pin_leftmost_column = pin_leftmost_column
         self.suffix_to_colour_grey = suffix_to_colour_grey or ["_x"]
-        self.variableselector = VariableSelector(inputs, states if states else [])
+
         self.suptable_id = DataEditorSupportTable.suptable_id
         DataEditorSupportTable.suptable_id += 1
         DataEditorSupportTables.support_components.append(self.support_table_layout())
@@ -73,7 +77,7 @@ class DataEditorSupportTable:
             Output(f"support-table-{self.suptable_id}", "rowData"),
             Output(f"support-table-{self.suptable_id}", "columnDefs"),
             Input(f"{DataEditorSupportTables.__name__}-0-modal", "is_open"),
-            *self.variableselector.get_all_callback_objects(),
+            *VariableSelector.get_all_states(),
             prevent_initial_call=True,
         )
         def load_support_table_data(is_open: bool, *args: Any):
@@ -95,7 +99,7 @@ class DataEditorSupportTable:
                 column_defs[0]["pinned"] = "left"
             return data.to_dict("records"), column_defs
 
-    def support_table_layout(self) -> dbc.Tab:
+    def support_table_layout(self) -> dbc.Tab:  # pyright: ignore
         """Creates the layout."""
         return dbc.Tab(
             self.support_table_content(),
@@ -104,6 +108,7 @@ class DataEditorSupportTable:
         )
 
 
+@register_module()
 class DataEditorSupportTables(DataEditorHelperButton):
     """This module provides supporting tables for the DataEditor.
 

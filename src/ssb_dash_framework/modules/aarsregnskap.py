@@ -18,9 +18,10 @@ from dash_iconify import DashIconify
 import gcsfs
 
 from ..setup.variableselector import VariableSelector
+from ..setup.variableselector import TimeUnit
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
-from ..utils.alert_handler import create_alert
+from ..utils.alert_handler import AlertHandler
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -69,10 +70,6 @@ class Aarsregnskap(ABC):
             ValueError: If required variables ('var-aar' or 'var-foretak') are
                 not found in the VariableSelector.
         """
-        if "var-aar" not in [x.id for x in VariableSelector._variableselectoroptions]:
-            raise ValueError(
-                "var-aar not found in the VariableSelector. Please add it using '''VariableSelectorOption('aar')'''"
-            )
         if (
             "var-foretak"
             not in [  # TODO: Make it possible to define a separate value for fetching årsregnskap? Or keep it locked to foretak?
@@ -80,7 +77,7 @@ class Aarsregnskap(ABC):
             ]
         ):
             raise ValueError(
-                "var-foretak not found in the VariableSelector. Please add it using '''VariableSelectorOption('foretak')'''"
+                "var-foretak not found in the VariableSelector. Please add 'foretak' to the variableselector-config"
             )
 
     def _create_layout(self) -> html.Div:
@@ -213,9 +210,9 @@ class Aarsregnskap(ABC):
 
         @callback(  # type: ignore[misc]
             Output("tab-aarsregnskap-input-aar", "value"),
-            Input("var-aar", "value"),
+            VariableSelector.get_timevar(Input),
         )
-        def update_aar(aar: int) -> int:
+        def update_aar(period: str | None) -> int:
             """Update the year input field based on the selected year.
 
             Args:
@@ -224,6 +221,15 @@ class Aarsregnskap(ABC):
             Returns:
                 The updated year value.
             """
+            frequency = VariableSelector._time_unit
+            if frequency is None:
+                raise PreventUpdate
+
+            if period is None:
+                raise PreventUpdate
+
+            selected_period = TimeUnit.parse(frequency, period)
+            aar = selected_period.dt.year
             logger.debug(f"Args:\naar: {aar}\n")
             return aar
 
@@ -250,13 +256,11 @@ class Aarsregnskap(ABC):
             Output("tab-aarsregnskap-img-container", "style"),
             Output("tab-aarsregnskap-zoom-controls", "style"),
             Output("tab-aarsregnskap-brreg-link", "href"),
-            Output("alert_store", "data", allow_duplicate=True),
             Input("tab-aarsregnskap-input-aar", "value"),
             Input("tab-aarsregnskap-input-orgnr", "value"),
-            State("alert_store", "data"),
             prevent_initial_call="initial_duplicate",
         )
-        def update_pdf_source(aar: int, orgnr: str, alert_store):
+        def update_pdf_source(aar: int, orgnr: str):
             """Fetch and encode the PDF source based on the year and organization number.
             If PDF cannot be found, it fetches the TIF-file instead (if it exists), and styles it like a PDF.
             Returns an alert to the user if neither can be found.
@@ -363,15 +367,9 @@ class Aarsregnskap(ABC):
                 )
             except FileNotFoundError:
                 logger.debug("TIF not found either")
-                alert_store = [
-                    create_alert(
-                        message=f"Hverken PDF eller TIF av årsregnskapet funnet for årgang {aar}!",
-                        color="warning",
-                        duration=8,
-                        ephemeral=True,
-                    ),
-                    *alert_store,
-                ]
+                AlertHandler.warning(
+                    f"Hverken PDF eller TIF av årsregnskapet funnet for årgang {aar}!"
+                )
                 return (
                     None,
                     [],
@@ -379,7 +377,6 @@ class Aarsregnskap(ABC):
                     hide_div,
                     {"display": "none"},
                     brreg_link,
-                    alert_store,
                 )
 
         clientside_callback(
