@@ -451,7 +451,7 @@ def get_kpi_metadata(
     return []
 
 
-class NSPEKDashboard:
+class NspekDashboard:
     """The Naeringsspesifikasjon module lets you view the nspek/naeringsspesifikasjon for a specified foretak (var-ident)."""
 
     _id_number: ClassVar[int] = 0
@@ -466,7 +466,7 @@ class NSPEKDashboard:
         #set_nspek_connection(
         #    db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
         #)
-        self.module_number = NSPEKDashboard._id_number
+        self.module_number = NspekDashboard._id_number
         self.module_name = self.__class__.__name__
         self.icon = DashIconify(icon="feather:activity", width=24)
         self.label = "NSPEK Status"
@@ -485,7 +485,7 @@ class NSPEKDashboard:
         module_validator(self)
 
     def _is_valid(self) -> None:
-        for var in NSPEKDashboard._required_variables:
+        for var in NspekDashboard._required_variables:
             try:
                 self.variableselector.get_option(f"var-{var}", search_target="id")
             except ValueError as e:
@@ -1941,21 +1941,21 @@ class NSPEKDashboard:
             )
 
 
-class NSPEKDashboardTab(TabImplementation, NSPEKDashboard):
+class NspekDashboardTab(TabImplementation, NspekDashboard):
     """NaeringsspesifikasjonTab is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
 
     def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
         """Initializes the NaeringsspesifikasjonTab class."""
-        NSPEKDashboard.__init__(self, time_units=time_units, db_user=db_user)
+        NspekDashboard.__init__(self, time_units=time_units, db_user=db_user)
         TabImplementation.__init__(self)
 
 
-class NSPEKDashboardWindow(WindowImplementation, NSPEKDashboard):
+class NspekDashboardWindow(WindowImplementation, NspekDashboard):
     """NaeringsspesifikasjonWindow is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
 
     def __init__(
         self, time_units: list[str], db_user: str | None = None, **kwargs: Any
     ) -> None:
         """Initializes the NaeringsspesifikasjonWindow class."""
-        NSPEKDashboard.__init__(self, time_units=time_units, db_user=db_user)
+        NspekDashboard.__init__(self, time_units=time_units, db_user=db_user)
         WindowImplementation.__init__(self, **kwargs)
