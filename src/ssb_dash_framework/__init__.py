@@ -32,8 +32,6 @@ from .modules import AltinnControlViewWindow
 from .modules import AltinnDataCapture
 from .modules import AltinnDataCaptureTab
 from .modules import AltinnDataCaptureWindow
-from .modules import AltinnSkjemadataEditor
-from .modules import AltinnSupportTable
 from .modules import BofInformation
 from .modules import BofInformationTab
 from .modules import BofInformationWindow
