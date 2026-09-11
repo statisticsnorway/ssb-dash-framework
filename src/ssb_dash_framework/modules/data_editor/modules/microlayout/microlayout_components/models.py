@@ -1,5 +1,3 @@
-# pyright: reportInvalidTypeForm=false
-# pyright: reportCallIssue=false
 from __future__ import annotations
 
 import string

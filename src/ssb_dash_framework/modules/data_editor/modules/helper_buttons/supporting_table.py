@@ -1,5 +1,3 @@
-# pyright: reportInvalidTypeForm=false
-# pyright: reportCallIssue=false
 # TODO: Add functionality to add more types of helper things into the module.
 import logging
 from collections.abc import Callable

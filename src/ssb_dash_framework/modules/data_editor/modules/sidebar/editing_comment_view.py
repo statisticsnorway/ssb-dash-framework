@@ -1,5 +1,3 @@
-# pyright: reportInvalidTypeForm=false
-# pyright: reportCallIssue=false
 import logging
 from typing import Any
 

@@ -1,5 +1,3 @@
-# pyright: reportInvalidTypeForm=false
-# pyright: reportCallIssue=false
 import uuid
 from itertools import cycle
 import logging

@@ -1,5 +1,3 @@
-# pyright: reportInvalidTypeForm=false
-# pyright: reportCallIssue=false
 import logging
 
 import dash_ag_grid as dag

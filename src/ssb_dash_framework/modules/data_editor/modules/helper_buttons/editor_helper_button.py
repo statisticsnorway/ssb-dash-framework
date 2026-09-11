@@ -1,5 +1,3 @@
-# pyright: reportInvalidTypeForm=false
-# pyright: reportCallIssue=false
 from logging import getLogger
 
 import dash_bootstrap_components as dbc

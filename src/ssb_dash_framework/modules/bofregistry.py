@@ -15,7 +15,6 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash_iconify import DashIconify
 import pandas as pd
-from sqlalchemy.util.typing import NoneType
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
