@@ -8,7 +8,6 @@ from dash import State
 from dash import callback
 from dash import html
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
 from psycopg_pool import ConnectionPool
 
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
@@ -19,7 +18,7 @@ from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.connection import get_connection
 from .....utils.core_models import UpdateSkjemadata
 from ..core import DataEditorDataView
-from .....utils.alert_handler import create_alert
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,10 +103,7 @@ class DataEditorTable(DataEditorDataView):
                 logger.info("Preventing update: table mismatch.")
                 raise PreventUpdate
 
-            if (
-                self.applies_to_forms
-                and selected_form not in self.applies_to_forms
-            ):
+            if self.applies_to_forms and selected_form not in self.applies_to_forms:
                 logger.info("Preventing update: form mismatch.")
                 raise PreventUpdate
             # if (
@@ -116,11 +112,6 @@ class DataEditorTable(DataEditorDataView):
             # ):
             #     logger.info("Preventing update.")
             #     raise PreventUpdate
-
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                N = len(self.time_units)
-                args = list(args)
-                args[:N] = map(int, args[:N])
 
             filter_dict = create_filter_dict(
                 variables=[*self.time_units, "skjema", "refnr"], values=args
@@ -187,10 +178,7 @@ class DataEditorTable(DataEditorDataView):
                 old_value=edited[0]["oldValue"],
             )
             logger.info(update)
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                logger.debug("Attempting to update using eimerdb logic.")
-                feedback = update.update_eimer(long)
-            elif isinstance(_get_connection_object(), ConnectionPool):
+            if isinstance(_get_connection_object(), ConnectionPool):
                 logger.debug("Attempting to update using ibis logic.")
                 feedback = update.update_ibis(long)
             return [feedback, *alert_store]
@@ -203,7 +191,9 @@ class DataEditorTable(DataEditorDataView):
             prevent_initial_call=True,
         )
         def send_variabel_to_variableselector(
-            click: dict[str, Any], row_data: list[dict[str, Any]], statistikkvariabel: str
+            click: dict[str, Any],
+            row_data: list[dict[str, Any]],
+            statistikkvariabel: str,
         ) -> str:
             """Make it possible to click the table and affect the VariableSelector."""
             logger.debug(f"Args:\nclick: {click}\nrow_data: {row_data}")

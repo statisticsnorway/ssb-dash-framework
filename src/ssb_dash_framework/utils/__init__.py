@@ -7,14 +7,12 @@ from .config_tools import _get_connection_callable
 from .config_tools import _get_connection_object
 from .config_tools import get_connection
 from .config_tools import set_connection
-from .config_tools import set_eimerdb_connection
 from .config_tools import set_postgres_connection
 from .config_tools import set_sqlite_connection
 from .core_query_functions import active_no_duplicates_refnr_list
 from .core_query_functions import conn_is_ibis
 from .core_query_functions import create_filter_dict
 from .core_query_functions import ibis_filter_with_dict
-from .datahelper import DatabaseBuilderAltinnEimerdb
 from .datahelper import DemoDataCreator
 from .datahelper import create_database
 from .datahelper import create_database_engine
@@ -30,7 +28,6 @@ from .r_helpers import hb_method
 
 __all__ = [
     "AlertHandler",
-    "DatabaseBuilderAltinnEimerdb",
     "DebugInspector",
     "DemoDataCreator",
     "TabImplementation",
@@ -50,7 +47,6 @@ __all__ = [
     "ibis_filter_with_dict",
     "module_validator",
     "set_connection",
-    "set_eimerdb_connection",
     "set_postgres_connection",
     "set_sqlite_connection",
     "sidebar_button",

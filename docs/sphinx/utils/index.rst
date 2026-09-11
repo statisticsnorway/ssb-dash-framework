@@ -11,7 +11,6 @@ Module containing utility and helper functions shared between components in the 
    App_logger <app_logger>
    Datahelper <datahelper>
    Debugger_modal <debugger_modal>
-   Eimerdb_helpers <eimerdb_helpers>
    Functions <functions>
    Implementations <implementations>
    Module_validation <module_validation>

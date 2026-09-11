@@ -5,7 +5,6 @@ from typing import Any
 from typing import ClassVar
 
 import pandas as pd
-from eimerdb import EimerDBInstance
 from ibis import _
 from psycopg_pool import ConnectionPool
 
@@ -190,7 +189,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             None
 
         Raises:
-            NotImplementedError: If connection is not EimerDBInstance or Ibis connection.
+            NotImplementedError: If connection is not Ibis connection.
         """
         logger.info(f"Registering control: {control}")
         registered_controls = self.get_current_kontroller()
@@ -221,9 +220,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             return None
         logger.debug(f"Rows to register:\n{rows_to_register}")
         connection_object = _get_connection_object()
-        if isinstance(connection_object, EimerDBInstance):
-            connection_object.insert("kontroller", rows_to_register)
-        elif isinstance(connection_object, ConnectionPool):
+        if isinstance(connection_object, ConnectionPool):
             connection_object.insert("kontroller", rows_to_register)
         else:
             raise NotImplementedError(
@@ -422,9 +419,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         # Now to insert new rows into the table.
         logger.debug(f"Inserting {control_results.shape[0]} new rows.")
         connection_object = _get_connection_object()
-        if isinstance(connection_object, EimerDBInstance):
-            connection_object.insert("kontrollutslag", control_results)
-        elif isinstance(connection_object, ConnectionPool):
+        if isinstance(connection_object, ConnectionPool):
             connection_object.insert("kontrollutslag", control_results)
         else:
             raise NotImplementedError(
@@ -498,9 +493,7 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         update_query = self.generate_update_query(changed)
 
         connection_object = _get_connection_object()
-        if isinstance(connection_object, EimerDBInstance):
-            connection_object.query(update_query)
-        elif isinstance(connection_object, ConnectionPool):
+        if isinstance(connection_object, ConnectionPool):
             with get_connection() as conn:
                 conn.raw_sql(update_query)
         else:

@@ -18,7 +18,6 @@ from dash_iconify import DashIconify
 
 from ssb_dash_framework import ControlFrameworkBase
 
-# from eimerdb import EimerDBInstance
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation

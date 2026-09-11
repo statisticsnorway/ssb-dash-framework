@@ -14,8 +14,6 @@ from .altinn_control_view import ControlViewWindow
 from .altinn_data_capture import AltinnDataCapture
 from .altinn_data_capture import AltinnDataCaptureTab
 from .altinn_data_capture import AltinnDataCaptureWindow
-from .altinn_editor import AltinnSkjemadataEditor
-from .altinn_editor import AltinnSupportTable
 from .bofregistry import BofInformation
 from .bofregistry import BofInformationTab
 from .bofregistry import BofInformationWindow
