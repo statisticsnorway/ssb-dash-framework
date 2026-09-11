@@ -7,6 +7,7 @@ from typing import Any
 import dash_bootstrap_components as dbc
 from dash import callback
 from dash import html
+from dash import Input
 from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 import gcsfs
@@ -34,7 +35,7 @@ class SkjemapdfViewer(ABC):
             pdf_folder_path: The path to the folder containing the PDF files.
         """
         self.label = "🗎 Skjema"
-        self.variableselector = VariableSelector([form_identifier], [])
+        # self.variableselector = VariableSelector([form_identifier], [])
         self.pdf_folder_path = pdf_folder_path
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -113,16 +114,16 @@ class SkjemapdfViewer(ABC):
             - The first callback updates the form identifier input field.
             - The second callback fetches and encodes the PDF file as a data URI for display in the iframe.
         """
-        dynamic_states = [
-            self.variableselector.get_all_inputs(),
-            self.variableselector.get_all_states(),
-        ]
+        # dynamic_states = [
+        #    self.variableselector.get_all_inputs(),
+        #    self.variableselector.get_all_states(),
+        # ]
 
         @callback(  # type: ignore[misc]
             Output("skjemapdf-input", "value"),
-            *dynamic_states,
+            VariableSelector.get_refnr(Input),
         )
-        def update_form(orgnr: str) -> str:
+        def update_form(refnr: str) -> str:
             """Update the form identifier input field.
 
             Args:
@@ -131,12 +132,12 @@ class SkjemapdfViewer(ABC):
             Returns:
                 str: The updated organization number value.
             """
-            logger.debug("Args:\n" + f"orgnr: {orgnr}")
-            return orgnr
+            logger.debug("Args:\n" + f"refnr: {refnr}")
+            return refnr
 
         @callback(  # type: ignore[misc]
             Output("skjemapdf-iframe1", "src"),
-            *dynamic_states,
+            VariableSelector.get_refnr(Input),
         )
         def update_pdfskjema_source(form_identifier: str) -> str | None:
             """Fetch and encode the PDF source based on the form identifier.
@@ -194,7 +195,9 @@ class SkjemapdfViewerTab(TabImplementation, SkjemapdfViewer):
 class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
     """Implementation of the SkjemapdfViewer as a window."""
 
-    def __init__(self, pdf_folder_path: str, form_identifier: str = "refnr", **kwargs: Any) -> None:
+    def __init__(
+        self, pdf_folder_path: str, form_identifier: str = "refnr", **kwargs: Any
+    ) -> None:
         """Initialize the SkjemapdfViewerWindow class.
 
         This class is a subclass of SkjemapdfViewer and is used to create a window for viewing PDF files.
@@ -204,7 +207,4 @@ class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
             form_identifier: The identifier for the form. Defaults to "refnr".
         """
         SkjemapdfViewer.__init__(self, form_identifier, pdf_folder_path)
-        WindowImplementation.__init__(
-            self,
-            **kwargs
-        )
+        WindowImplementation.__init__(self, **kwargs)
