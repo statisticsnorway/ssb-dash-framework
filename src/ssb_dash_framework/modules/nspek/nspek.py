@@ -75,12 +75,8 @@ RESULTAT_STRUCTURE = {
 }
 
 NEGATIVE_ACCOUNTS = {
-    "1296",
-    "1298",
-    "1299",
     "2010",
     "2080",
-    "2095",
     "3300",
     "4995",
     "6998",
@@ -306,6 +302,13 @@ PETROLEUM_ORGNR = {
 }
 
 PETROLEUM_POSTS = {
+    "1101",
+    "1102",
+    "1103",
+    "1104",
+    "1470",
+    "2185",
+    "2470",
     "3001",
     "3002",
     "3003",
@@ -315,6 +318,41 @@ PETROLEUM_POSTS = {
     "3007",
     "3008",
     "3886",
+    "4001",
+    "4002",
+    "4003",
+    "4004",
+    "4007",
+    "4008",
+    "6001",
+    "6002",
+    "6004",
+    "6051",
+    "6052",
+    "6053",
+    "6054",
+    "6110",
+    "6120",
+    "6130",
+    "6140",
+    "6350",
+    "6750",
+    "6751",
+    "6752",
+    "7501"
+    "7502",
+    "7503",
+    "7650",
+    "7651",
+    "7701",
+    "7886",
+    "8054",
+    "8059",
+    "8075",
+    "8120",
+    "8154",
+    "8159",
+    "8175",
 }
 
 
@@ -1689,6 +1727,7 @@ class Naeringsspesifikasjon:
                                 ),
                             ],
                             id="modal-editeringslogg",
+                            className = "ssb-modal",
                             is_open=False,
                             size="xl",
                             style={
@@ -1762,6 +1801,7 @@ class Naeringsspesifikasjon:
                                 ),
                             ],
                             id="modal-generell-kommentar-historikk",
+                            className="ssb-modal",
                             is_open=False,
                             size="xl",
                             style={
@@ -2722,6 +2762,12 @@ class Naeringsspesifikasjon:
                         pending["sekvensnummer"],
                         pending["post"],
                         pending["value"],
+                    )
+
+                    run_controls_changed_fields_for_sekvensnummer(
+                        conn,
+                        pending["sekvensnummer"],
+                        changed_fields=[pending["post"]],
                     )
 
                 alert_store = [

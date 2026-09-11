@@ -18,6 +18,7 @@ from dash_iconify import DashIconify
 
 from ssb_dash_framework import ControlFrameworkBase
 
+# from eimerdb import EimerDBInstance
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
@@ -87,7 +88,7 @@ class NspekControlView(ABC):
             style={
                 "width": "100%",
                 "minWidth": "0",
-                "maxWidth": "1400px",
+                #"maxWidth": "1600px",
             },
             children=[
                 dbc.Row(
@@ -158,6 +159,7 @@ class NspekControlView(ABC):
             "aar": 100,
             "tema": 100,
             "sist_kjoert": 140,
+            "aktiv": 100,
             "utslag": 80,
             "verdi": 160,
             "kontrollid": 220,
@@ -181,6 +183,7 @@ class NspekControlView(ABC):
             "sekvensnummer": "Sekvens",
             "ident": "Orgnr",
             "utslag": "Utslag",
+            "aktiv": "Aktiv",
             "verdi": "Avvik",
             "org_form": "Orgform",
             "sn2025_1": "SN2025",
@@ -312,11 +315,11 @@ class NspekControlView(ABC):
         @callback(
             Output(f"{self.module_number}-kontrollutslag", "rowData"),
             Output(f"{self.module_number}-kontrollutslag", "columnDefs"),
+            Output(f"{self.module_number}-kontrollutslag", "filterModel"),
             Input(f"{self.module_number}-kontroller", "selectedRows"),
             prevent_initial_call=True,
         )
         def get_kontrollutslag(selected):
-
             if not selected:
                 raise PreventUpdate
 
@@ -336,13 +339,24 @@ class NspekControlView(ABC):
             )
 
             if df is None or df.empty:
-                return [], []
+                return [], [], {}
 
             df["foretak"] = df["ident"]
 
             columns = self._create_column_defs(df)
 
-            return df.to_dict("records"), columns
+            filter_model = {
+                "aktiv": {
+                    "filterType": "boolean",
+                    "type": "true",
+                }
+            }
+
+            return (
+                df.to_dict("records"),
+                columns,
+                filter_model,
+            )
 
         @callback(
             *[
