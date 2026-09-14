@@ -192,6 +192,7 @@ class DataViewCustom(DataEditorDataView):
                     settings=self.settings,
                     layout=layout,
                     instance_id=self.instance_id,
+                    parent_id=self.divname,
                     inputs=[VariableSelector.get_refnr(Input)],
                 )
                 components.append(microlayout)
