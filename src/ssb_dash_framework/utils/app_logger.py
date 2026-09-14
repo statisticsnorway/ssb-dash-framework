@@ -1,73 +1,129 @@
+import json
 import logging
 import sys
+from datetime import datetime
 from pathlib import Path
+
 
 _LOGGING_ENABLED: bool = False
 
 
-def enable_app_logging(level: str = "info", log_to_file: bool = False) -> None:
-    """This function enables logging for the editing framework.
+class JsonlFormatter(logging.Formatter):
+    """Formats logging records as JSON Lines."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        log_entry = {
+            "time": datetime.fromtimestamp(record.created)
+            .astimezone()
+            .isoformat(timespec="milliseconds"),
+            "level": record.levelname,
+            "source_file": record.filename,
+            "module_name": None,
+            "module_number": None,
+            "function": record.funcName,
+            "message": record.getMessage(),
+        }
+
+        return json.dumps(log_entry, ensure_ascii=False)
+
+
+def enable_app_logging(
+    level: str = "info",
+    log_to_file: bool = False,
+) -> None:
+    """Enable logging for the editing framework.
 
     Args:
-        level: The logging level to set. Can be one of "debug", "info", "warning", "error", or "critical".
-            Defaults to "info".
-        log_to_file: if True, logs will also be written to a file named "app.log". Defaults to False.
-            This file should not be saved in the repository, as it will contain sensitive information in the logs.
+        level:
+            Logging level. One of "debug", "info", "warning",
+            "error", or "critical".
+
+        log_to_file:
+            If True, logs will also be written to
+            "/home/onyxia/work/app.jsonl".
 
     Raises:
-        TypeError: If level is not a string. Or
-            if log_to_file is not a bool.
-        FileNotFoundError: If cannot find a 'work' folder.
-        ValueError: If the provided logging level is not valid.
-        RuntimeError: If logging is already enabled.
+        TypeError:
+            If level is not a string or log_to_file is not a bool.
 
-    Note:
-        The logging output will be sent to both the console and a file named "app.log".
-        Also adds a logging message to indicate that the app was started. This is to make it possible to differentaiate different sessions.
+        FileNotFoundError:
+            If the work directory does not exist.
+
+        ValueError:
+            If the provided logging level is not valid.
+
+        RuntimeError:
+            If logging is already enabled.
     """
+    global _LOGGING_ENABLED
+
     if not isinstance(level, str):
-        raise TypeError(f"level must be bool, received: {type(level)}")
-    if not isinstance(log_to_file, bool):
-        raise TypeError(f"log_to_file must be bool, received: {type(log_to_file)}")
-    if globals()["_LOGGING_ENABLED"]:
-        raise RuntimeError(
-            "ssb-dash-framework logger is already enabled, either set 'enable_logging' to False in app_setup or make sure you are not running 'enable_app_logging()' directly."
+        raise TypeError(
+            f"level must be str, received: {type(level)}"
         )
+
+    if not isinstance(log_to_file, bool):
+        raise TypeError(
+            f"log_to_file must be bool, received: {type(log_to_file)}"
+        )
+
+    if _LOGGING_ENABLED:
+        raise RuntimeError(
+            "ssb-dash-framework logger is already enabled, "
+            "either set 'enable_logging' to False in app_setup "
+            "or make sure you are not running "
+            "'enable_app_logging()' directly."
+        )
+
     level = level.lower()
-    if level == "debug":
-        chosen_level = logging.DEBUG
-    elif level == "info":
-        chosen_level = logging.INFO
-    elif level == "warning":
-        chosen_level = logging.WARNING
-    elif level == "error":
-        chosen_level = logging.ERROR
-    elif level == "critical":
-        chosen_level = logging.CRITICAL
-    else:
+
+    level_mapping = {
+        "debug": logging.DEBUG,
+        "info": logging.INFO,
+        "warning": logging.WARNING,
+        "error": logging.ERROR,
+        "critical": logging.CRITICAL,
+    }
+
+    if level not in level_mapping:
         raise ValueError(f"Invalid logging level: {level}")
+
     logger = logging.getLogger("ssb_dash_framework")
-    logger.setLevel(chosen_level)
-    handlers: list[logging.Handler] = []
+    logger.setLevel(level_mapping[level])
+
+    # Prevent log messages from propagating to the root logger.
+    # This avoids duplicate messages in Jupyter.
+    logger.propagate = False
+
+    # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
-    handlers.append(console_handler)
+
+    console_formatter = logging.Formatter(
+        "%(asctime)s - %(levelname)s - %(name)s - "
+        "%(funcName)s - %(message)s"
+    )
+
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+
+    # JSONL file handler
     if log_to_file:
-        log_path = Path("/home/onyxia/work/app.log")
+        log_path = Path("/home/onyxia/work/app.jsonl")
+
         if not log_path.parent.exists():
-            raise FileNotFoundError(f"Directory does not exist: {log_path.parent}")
-        file_handler = logging.FileHandler(log_path, mode="a")
-        handlers.append(file_handler)
+            raise FileNotFoundError(
+                f"Directory does not exist: {log_path.parent}"
+            )
 
-    formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)s - %(name)s - %(funcName)s - %(message)s",
-    )
-    for handler in handlers:
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        file_handler = logging.FileHandler(
+            log_path,
+            mode="a",
+            encoding="utf-8",
+        )
 
-    logger.propagate = (
-        False  # Nødvendig pga jupyter som insisterer på å legge til enda en handler.
-    )
-    globals()["_LOGGING_ENABLED"] = True
+        file_handler.setFormatter(JsonlFormatter())
+        logger.addHandler(file_handler)
+
+    _LOGGING_ENABLED = True
 
     logger.info("App logging started.")

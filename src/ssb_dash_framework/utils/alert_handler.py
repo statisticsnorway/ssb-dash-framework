@@ -2,6 +2,9 @@ import datetime
 import logging
 import time
 from typing import Any
+import dash_ag_grid as dag
+from pathlib import Path
+import json
 
 import dash_bootstrap_components as dbc
 from dash import ALL
@@ -134,44 +137,91 @@ class AlertHandler:
                         dbc.ModalHeader(dbc.ModalTitle("Varsler")),
                         dbc.ModalBody(
                             [
-                                dbc.Row(
+                                dbc.Tabs(
                                     [
-                                        dbc.Col(
-                                            dbc.Button(
-                                                "Vis alle",
-                                                id="alert_filter_all",
-                                                className="ssb-btn primary-btn",
-                                            ),
-                                            width="auto",
+                                        dbc.Tab(
+                                            label="Appvarsler",
+                                            children=[
+                                                dbc.Row(
+                                                    [
+                                                        dbc.Col(
+                                                            dbc.Button(
+                                                                "Vis alle",
+                                                                id="alert_filter_all",
+                                                                className="ssb-btn primary-btn",
+                                                            ),
+                                                            width="auto",
+                                                        ),
+                                                        dbc.Col(
+                                                            dbc.Button(
+                                                                "Vis kun info",
+                                                                id="alert_filter_info",
+                                                                className="ssb-btn primary-btn",
+                                                            ),
+                                                            width="auto",
+                                                        ),
+                                                        dbc.Col(
+                                                            dbc.Button(
+                                                                "Vis kun editeringer",
+                                                                id="alert_filter_success",
+                                                                className="ssb-btn primary-btn",
+                                                            ),
+                                                            width="auto",
+                                                        ),
+                                                        dbc.Col(
+                                                            dbc.Button(
+                                                                "Vis kun advarsel",
+                                                                id="alert_filter_warning",
+                                                                className="ssb-btn primary-btn",
+                                                            ),
+                                                            width="auto",
+                                                        ),
+                                                    ],
+                                                    className="mb-3",
+                                                ),
+                                                dbc.Row(
+                                                    html.Div(
+                                                        id="alert_modal_container"
+                                                    ),
+                                                ),
+                                            ],
                                         ),
-                                        dbc.Col(
-                                            dbc.Button(
-                                                "Vis kun info",
-                                                id="alert_filter_info",
-                                                className="ssb-btn primary-btn",
-                                            ),
-                                            width="auto",
+                                        dbc.Tab(
+                                            label="Programlogg",
+                                            children=[
+                                                dbc.Row(
+                                                    [
+                                                        dbc.Col(
+                                                            dcc.Dropdown(
+                                                                [
+                                                                    "Debug",
+                                                                    "Info",
+                                                                    "Warning",
+                                                                    "Error",
+                                                                    "Critical",
+                                                                ],
+                                                                "Info",
+                                                                id="alert_programlog_dropdown",
+                                                            )
+                                                        ),
+                                                        dbc.Col(
+                                                            dbc.Button(
+                                                                children="Refresh log",
+                                                                id="alert_programlog_refresh",
+                                                                className="ssb-btn primary-btn",
+                                                            )
+                                                        ),
+                                                    ]
+                                                ),
+                                                dbc.Row(
+                                                    children=dag.AgGrid(
+                                                        id="alert_handler_applog_table"
+                                                    )
+                                                ),
+                                            ],
                                         ),
-                                        dbc.Col(
-                                            dbc.Button(
-                                                "Vis kun editeringer",
-                                                id="alert_filter_success",
-                                                className="ssb-btn primary-btn",
-                                            ),
-                                            width="auto",
-                                        ),
-                                        dbc.Col(
-                                            dbc.Button(
-                                                "Vis kun advarsel",
-                                                id="alert_filter_warning",
-                                                className="ssb-btn primary-btn",
-                                            ),
-                                            width="auto",
-                                        ),
-                                    ],
-                                    className="mb-3",
+                                    ]
                                 ),
-                                html.Div(id="alert_modal_container"),
                             ]
                         ),
                     ],
@@ -437,3 +487,91 @@ class AlertHandler:
             ]
 
             return bottom_left, center, top_right
+
+        @callback(
+            Output("alert_handler_applog_table", "rowData"),
+            Output("alert_handler_applog_table", "columnDefs"),
+            Input("alert_programlog_refresh", "n_click"),
+            Input("alert_programlog_dropdown", "value"),
+        )
+        def update_program_log(n_click, selected_level):
+            LOG_PATH = Path("/home/onyxia/work/app.jsonl")
+            if not LOG_PATH.exists():
+                return [], []
+
+            level_priority = {
+                "DEBUG": 10,
+                "INFO": 20,
+                "WARNING": 30,
+                "ERROR": 40,
+                "CRITICAL": 50,
+            }
+
+            selected_level = selected_level.upper()
+            selected_priority = level_priority[selected_level]
+
+            rows = []
+
+            with LOG_PATH.open("r", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+
+                    if not line:
+                        continue
+
+                    try:
+                        log_entry = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+
+                    log_level = log_entry.get("level", "").upper()
+
+                    if level_priority.get(log_level, 0) < selected_priority:
+                        continue
+
+                    rows.append(log_entry)
+
+            rows.reverse()
+
+            column_defs = [
+                {
+                    "field": "time",
+                    "headerName": "Time",
+                    "width": 190,
+                },
+                {
+                    "field": "level",
+                    "headerName": "Level",
+                    "width": 90,
+                },
+                {
+                    "field": "source_file",
+                    "headerName": "Source file",
+                    "width": 140,
+                },
+                {
+                    "field": "module_name",
+                    "headerName": "Module",
+                    "width": 120,
+                },
+                {
+                    "field": "module_number",
+                    "headerName": "Module #",
+                    "width": 90,
+                },
+                {
+                    "field": "function",
+                    "headerName": "Function",
+                    "width": 120,
+                },
+                {
+                    "field": "message",
+                    "headerName": "Message",
+                    "flex": 1,
+                    "minWidth": 300,
+                    "wrapText": True,
+                    "autoHeight": True,
+                },
+            ]
+
+            return rows, column_defs
