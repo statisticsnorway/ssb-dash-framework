@@ -79,8 +79,11 @@ NEGATIVE_ACCOUNTS = {
     "2080",
     "3300",
     "4995",
+    "6751",
     "6998",
     "7099",
+    "8322",
+    "8324",
 }
 
 
@@ -142,8 +145,8 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
 
         finansposter_og_skattekostnad = (
             ui_sum_rows["UI_SUM_8000_8099"]["verdi"]
-            + ui_sum_rows["UI_SUM_8100_8299"]["verdi"]
-            + ui_sum_rows["UI_SUM_8300_8999"]["verdi"]
+            - ui_sum_rows["UI_SUM_8100_8299"]["verdi"]
+            - ui_sum_rows["UI_SUM_8300_8999"]["verdi"]
         )
 
         ui_sum_rows["UI_SUM_3000_3999"] = {
