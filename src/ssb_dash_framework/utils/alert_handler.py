@@ -462,6 +462,7 @@ class AlertHandler:
                             className="dialog-content",
                         ),
                     ],
+                    duration=a.get("duration", 6) * 1000,
                     dismissable=False,
                     className=f"ssb-dialog {a['color']} alert-toast {'alert-dying' if dying else ''}",
                 )
