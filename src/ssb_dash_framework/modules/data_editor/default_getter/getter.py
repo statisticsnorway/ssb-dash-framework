@@ -85,9 +85,9 @@ class StandardDataHandler(FetcherMeta):
         row = data.iloc[0]
         # print(row)
         status = "Ubehandlet"
-        if row["editert"] == "ferdig":
+        if row["status"] == "ferdig":
             status = "Ferdig"
-        if row["editert"] == "under editering":
+        if row["status"] == "under editering":
             status = "Under arbeid"
         return RefnrStatus(active=row["aktiv"], status=status)
 

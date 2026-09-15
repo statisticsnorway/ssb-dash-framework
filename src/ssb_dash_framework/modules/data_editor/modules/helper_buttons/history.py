@@ -85,7 +85,7 @@ class DataEditorHistory(DataEditorHelperButton):
         )
         def update_history_view(is_open, insert_toggle: bool, refnr):
             try:
-                df = self.fetcher.get_history(refnr)
+                df = self.fetcher.get_history(refnr, insert_toggle)
             except Exception as e:
                 msg = f"Getting editing history failed with error: {e}"
                 logger.warning(msg)

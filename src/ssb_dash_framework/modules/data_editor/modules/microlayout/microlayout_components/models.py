@@ -335,7 +335,7 @@ class CalculatedField(ValueNode):
 
         clientside_callback(
             clientside_func,
-            Output(self.id, "value"),
+            Output({"comp_id": self.id, "aio": options.aio_id}, "value"),
             *input_list,
             prevent_initial_call=True,
         )
@@ -351,7 +351,7 @@ class CalculatedField(ValueNode):
                         },
                     ),
                     dbc.Input(
-                        id=self.id,
+                        id={"comp_id": self.id, "aio": options.aio_id},
                         style={"width": "100%"},
                         readonly=True,
                         className="microlayout-input-readonly",
