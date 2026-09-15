@@ -5,7 +5,7 @@ from typing import Any
 import copy
 
 import dash_bootstrap_components as dbc
-from dash import ALL, Patch
+from dash import ALL, Patch, set_props
 from dash import Input
 from dash import Output
 from dash import State
@@ -90,7 +90,7 @@ class AlertHandler:
             return alert_log
     """
 
-    _queue = []
+    #_queue = []
 
     @classmethod
     def _add_alert(
@@ -103,13 +103,9 @@ class AlertHandler:
         icon: str | None = None,
     ):
         alert = create_alert(msg, color, ephemeral, position, duration, icon)
-        cls._queue.append(alert)
-
-    @classmethod
-    def _drain(cls) -> list[dict[str, Any]]:
-        queue_copy = copy.deepcopy(cls._queue)
-        cls._queue = []
-        return queue_copy
+        patch_obj = Patch()
+        patch_obj.append(alert)
+        set_props("alert_store", {"data": patch_obj})
 
     @classmethod
     def success(cls, msg: str, ephemeral: bool | None = False):
@@ -240,14 +236,14 @@ class AlertHandler:
             - Alerts must be added to each callback to ensure proper functionality.
         """
 
-        @callback(  # type: ignore[misc]
-            Output("alert_store", "data"), Input("alert_pusher_to_store", "n_intervals")
-        )
-        def push_local_queue(_n_intervals):
-            new_messages = self._drain()
-            patch_obj = Patch()
-            patch_obj.extend(new_messages)
-            return patch_obj
+        #@callback(  # type: ignore[misc]
+        #    Output("alert_store", "data"), Input("alert_pusher_to_store", "n_intervals")
+        #)
+        #def push_local_queue(_n_intervals):
+        #    new_messages = self._drain()
+        #    patch_obj = Patch()
+        #    patch_obj.extend(new_messages)
+        #    return patch_obj
 
         @callback(  # type: ignore[misc]
             Output("alerts_modal", "is_open"),
@@ -420,11 +416,11 @@ class AlertHandler:
             Output("alert-container-bottom-left", "children"),
             Output("alert-container-center", "children"),
             Output("alert-container-top-right", "children"),
-            Input("alert_ephemeral_interval", "n_intervals"),
-            State("alert_store", "data"),
+            #Input("alert_ephemeral_interval", "n_intervals"),
+            Input("alert_store", "data"),
         )
         def display_ephemeral_alerts(
-            _: int, alerts: list[dict[str, Any]]
+            alerts: list[dict[str, Any]]
         ) -> tuple[list, list, list]:
             """Displays ephemeral alerts for 5 seconds.
 
