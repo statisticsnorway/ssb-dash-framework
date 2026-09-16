@@ -56,7 +56,7 @@ class FormGetterCached:
 
     @classmethod
     def clean_cache(cls):
-        max_size = 10
+        max_size = 100
         if len(cls.data.keys()) > max_size:
             key, _ = min(cls.data.items(), key=lambda x: x[1].time_to_live)
             cls.data.pop(key)

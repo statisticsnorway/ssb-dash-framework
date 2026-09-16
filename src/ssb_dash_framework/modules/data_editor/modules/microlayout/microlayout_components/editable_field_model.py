@@ -27,7 +27,7 @@ class FieldCallbackContainer(BaseModel):
         aio_id: str,
     ):
         return Input(
-            {"comp_id": self._id, "aio": aio_id}, self.settings.variabel_trigger
+            {"comp_id": self._id, "aio": aio_id}, self.settings.variabel_trigger, allow_optional=True
         )
 
     def get_output(

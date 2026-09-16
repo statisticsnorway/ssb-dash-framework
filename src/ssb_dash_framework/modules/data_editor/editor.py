@@ -13,6 +13,8 @@ from .meta import FetcherMeta
 from .meta import ModuleABC
 from .modules.inforow.info_row import DataEditorInfoRow
 from .utils import EditorSettings
+from ...setup.variableselector import VariableSelector
+from dash import callback, Input, Output, State
 
 logger = getLogger(__name__)
 
@@ -81,6 +83,7 @@ class DataEditor:
             className=f"{self.module_name}-sidebar-modules",
         )
 
+        self.dataview = dataview
         dataview_list: list[html.Div] = []
         if dataview is not None:
             for view in dataview:
@@ -91,14 +94,27 @@ class DataEditor:
                 view.set_settings(data_handler, settings, instance_id)
                 dataview_list.append(view.layout())
 
-        # Make default view
-        if len(dataview_list):
-            dataview_list[0].style = {"display": "block"}  # pyright: ignore
+        self.dataview_layouts = {}
+        if dataview is not None:
+            for view, layout_div in zip(dataview, dataview_list):
+                tables = view.applies_to_tables if hasattr(view, "applies_to_tables") else [settings.form_data_table]
+                # if not tables and hasattr(view, "applies_to_table"):
+                #     tables = view.applies_to_table if isinstance(view.applies_to_table, list) else [view.applies_to_table]
+                forms = view.applies_to_forms if hasattr(view, "applies_to_forms") else settings.form_list
+
+                for t in tables:
+                    for f in forms:
+                        self.dataview_layouts[(t, f)] = layout_div
+
+        initial_children = [dataview_list[0]] if len(dataview_list) else []
+        if initial_children:
+            initial_children[0].style = {"display": "block"}
 
         self.main_view = html.Div(
             id=f"{self.module_name}-div",
-            children=dataview_list,
+            children=initial_children,
         )
+        self.module_callbacks()
 
     def _create_layout(self) -> dbc.Container:  # pyright: ignore
         """Creates the layout for the DataEditor module."""
@@ -142,4 +158,20 @@ class DataEditor:
 
     def module_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor."""
-        pass
+        
+        if not self.dataview or not self.main_view:
+            return
+            
+        @callback(
+            Output(f"{self.module_name}-div", "children"),
+            State("dataeditortableselector", "value"),
+            VariableSelector.get_input("altinnskjema"),
+        )
+        def toggle_view_visibility(selected_table, selected_form):
+            if not selected_table or not selected_form:
+                return []
+            layout_div = self.dataview_layouts.get((selected_table, selected_form))
+            if layout_div is not None:
+                layout_div.style = {"display": "block"}
+                return [layout_div]
+            return []

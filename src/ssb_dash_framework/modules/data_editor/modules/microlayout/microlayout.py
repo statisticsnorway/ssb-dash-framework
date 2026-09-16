@@ -36,8 +36,7 @@ class MicroLayoutAIO(html.Div):
         inputs: list[Input] | dict[Any, Input] | None = None,
         states: list[State] | None = None,
         aio_id: str | None = None,
-        horizontal: bool = False,
-        parent_id: str | None = None
+        horizontal: bool = False
     ) -> None:
         logger.warning(
             "This module is under development and might receive larger and/or breaking changes."
@@ -99,7 +98,7 @@ class MicroLayoutAIO(html.Div):
             ):
                 if not refnr or not ident or not custom_inputs:
                     raise PreventUpdate
-
+            
                 if ctx.triggered_id and isinstance(ctx.triggered_id, dict):
                     custom_ctx = callback_ctx.get(ctx.triggered_id["comp_id"])
                     value = fields.get(ctx.triggered_id["comp_id"])
@@ -138,14 +137,10 @@ class MicroLayoutAIO(html.Div):
         @callback(
             output={item._id: item.get_output(self.aio_id) for item in ids},
             inputs={
-                "custom_inputs": inputs,
-                "style": Input(parent_id if parent_id else "", "style", allow_optional=True)
+                "custom_inputs": inputs
             },
         )
         def handle_variable_selector_change(custom_inputs, style: dict | None = None):
-            if (style is not None) and (isinstance(style, dict)):
-                if style.get("display") != "block":
-                    raise PreventUpdate
 
             field_values = {}
             for id_, field in callback_ctx.items():

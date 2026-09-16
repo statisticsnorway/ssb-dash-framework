@@ -83,7 +83,7 @@ class StandardDataHandler(FetcherMeta):
             return None
 
         row = data.iloc[0]
-        # print(row)
+
         status = "Ubehandlet"
         if row["status"] == "ferdig":
             status = "Ferdig"
@@ -111,7 +111,7 @@ class StandardDataHandler(FetcherMeta):
                     "kommentar",
                     "aktiv",
                 )
-                .to_pandas()
+                .execute()
             )
             # data["dato_mottatt"] = (
             # data["dato_mottatt"]

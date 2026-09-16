@@ -44,7 +44,7 @@ class DataViewCustomFigure:
         @callback(
             Output(f"{self.module_name}-{self.module_number}-figure", "figure"),
             Input("dataeditortableselector", "value"),
-            VariableSelector.get_input("altinnskjema"),
+            VariableSelector.get_state("altinnskjema"),
             VariableSelector.get_refnr(Input),
             VariableSelector.get_timevar(Input),
         )
@@ -95,7 +95,7 @@ class DataViewCustomTable:
             Output(f"{self.module_name}-{self.module_number}-table", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-table", "columnDefs"),
             Input("dataeditortableselector", "value"),
-            VariableSelector.get_input("altinnskjema"),
+            VariableSelector.get_state("altinnskjema"),
             VariableSelector.get_refnr(Input),
             VariableSelector.get_timevar(Input),
         )
@@ -192,7 +192,6 @@ class DataViewCustom(DataEditorDataView):
                     settings=self.settings,
                     layout=layout,
                     instance_id=self.instance_id,
-                    parent_id=self.divname,
                     inputs=[VariableSelector.get_refnr(Input)],
                 )
                 components.append(microlayout)
@@ -210,13 +209,22 @@ class DataViewCustom(DataEditorDataView):
 
     def layout(self):
         """Returns the layout of the module."""
-        self.applies_to_table = self.settings.form_data_table
-        self.applies_to_forms = self.settings.form_list
-        form_data_tables = self._layout.get(
-            "applies_to_table", self.settings.form_data_table
-        )
-        if isinstance(form_data_tables, list):
-            form_data_tables = form_data_tables[0]
+        tables = self._layout.get("applies_to_tables") or self._layout.get("applies_to_table")
+        if tables is None:
+            self.applies_to_table = [self.settings.form_data_table]
+        elif isinstance(tables, str):
+            self.applies_to_table = [tables]
+        else:
+            self.applies_to_table = list(tables)
+
+        forms = self._layout.get("applies_to_forms")
+        if forms is None:
+            self.applies_to_forms = self.settings.form_list
+        elif isinstance(forms, str):
+            self.applies_to_forms = [forms]
+        else:
+            self.applies_to_forms = list(forms)
+
         self.created_layout = self.build_layout(self._layout["layout"])
         self.module_callbacks()
         super().__init__(

@@ -380,9 +380,6 @@ class CalculatedField(BaseNode):
 
         formula = " ".join(parts) if parts else "∅"
 
-        print(
-            f"{prefix}{branch}{node_name} ({self.label}, formula={formula}, id={self._id})"
-        )
         return f"{prefix}{branch}{node_name} ({self.label}, formula={formula}, id={self._id})"
 
 
