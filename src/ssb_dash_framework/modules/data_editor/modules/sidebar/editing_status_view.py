@@ -130,7 +130,12 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                             id=EDITING_CODE_DROPDOWN(self.instance_id),
                             style={"margin-top": "4px"},
                             value="CONTACT",
-                            options=[{"label": "Kontakt med oppgavegiver", "value": "CONTACT"}],
+                            options=[
+                                {
+                                    "label": "Kontakt med oppgavegiver",
+                                    "value": "CONTACT",
+                                }
+                            ],
                         ),
                     ]
                 ),
@@ -139,6 +144,29 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
 
     def module_callbacks(self) -> None:
         """Registers the callbacks for the module."""
+
+        @callback(
+            VariableSelector.get_refnr(Output),
+            inputs={
+                "ident": VariableSelector.get_ident(Input),
+                "period": VariableSelector.get_timevar(Input),
+            },
+            prevent_initial_call=True
+        )
+        def update_refnr(ident, period):
+            try:
+                refnr = self.fetcher.get_refnrs_by_period_ident(
+                    self.settings, ident, period
+                )
+                if refnr is not None:
+                    return refnr[self.settings.refnr_col].tolist()[0]
+                else:
+                    return no_update
+            except Exception as e:
+                msg = f"Getting reference numbers for ident returned with an error: {e}"
+                logger.warning(msg)
+                AlertHandler.warning(msg)
+                return no_update
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-checkbox", "value"),
