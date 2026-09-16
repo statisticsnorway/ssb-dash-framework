@@ -147,6 +147,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
 
         @callback(
             VariableSelector.get_refnr(Output),
+            VariableSelector.get_output_object("altinnskjema"),
             inputs={
                 "ident": VariableSelector.get_ident(Input),
                 "period": VariableSelector.get_timevar(Input),
@@ -159,15 +160,16 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     self.settings, ident, period
                 )
                 if refnr is not None:
-                    return refnr[self.settings.refnr_col].tolist()[0]
+                    skjema = refnr["skjema"].item()
+                    return refnr[self.settings.refnr_col].tolist()[0], skjema
                 else:
-                    return no_update
+                    return no_update, no_update
                     
             except Exception as e:
                 msg = f"Getting reference numbers for ident returned with an error: {e}"
                 logger.warning(msg)
                 AlertHandler.warning(msg)
-                return no_update
+                return no_update, no_update
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-checkbox", "value"),

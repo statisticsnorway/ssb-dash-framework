@@ -67,7 +67,6 @@ class DataEditorTable(DataEditorDataView):
             applies_to_tables=settings.form_data_table,
             applies_to_forms=settings.form_list,
         )
-        # print(self)
 
     def __str__(self):
         return (
@@ -106,7 +105,7 @@ class DataEditorTable(DataEditorDataView):
             Output(f"{self.module_name}-{self.module_number}-aggrid", "columnDefs"),
             inputs={
                 "selected_table": Input("dataeditortableselector", "value"),
-                "form": VariableSelector.get_input("altinnskjema"),
+                "form": VariableSelector.get_state("altinnskjema"),
                 "refnr": VariableSelector.get_refnr(Input),
                 "period": VariableSelector.get_timevar(Input),
             },
