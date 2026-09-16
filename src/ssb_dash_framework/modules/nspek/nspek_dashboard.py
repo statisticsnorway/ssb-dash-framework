@@ -6,8 +6,7 @@ from pathlib import Path
 from typing import Any
 from typing import ClassVar
 import plotly.express as px
-import random
-from datetime import datetime, timedelta
+import plotly.graph_objects as go
 
 import dash_bootstrap_components as dbc
 import ibis
@@ -16,11 +15,9 @@ from dash import callback
 from dash import ctx
 from dash import dcc
 from dash import html
-from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
-from dash.exceptions import PreventUpdate
 from dash_ag_grid import AgGrid
 from dash_iconify import DashIconify
 from ibis import _
@@ -31,7 +28,7 @@ from ...utils import TabImplementation
 from ...utils import WindowImplementation
 from ...utils.alert_handler import create_alert
 from ...utils.module_validation import module_validator
-#from .nspek_utils import get_nspek_connection
+from .nspek_utils import get_nspek_connection
 #from .nspek_utils import set_nspek_connection
 
 ibis.options.interactive = True
@@ -66,28 +63,28 @@ TYPE_REGNSKAP_TABLE = {
 
 
 KPI_CONFIG = {
-    "bruker": {
+    "constructed": {
         "title": "Konstruert",
-        "card_id": "nspek-dashboard-bruker-card",
-        "modal_id": "nspek-dashboard-bruker-modal",
-        "grid_id": "nspek-dashboard-bruker-grid",
+        "card_id": "nspek-dashboard-constructed-card",
+        "modal_id": "nspek-dashboard-constructed-modal",
+        "grid_id": "nspek-dashboard-constructed-grid",
+        "kilde": "K",
         "description": (
             "Viser registreringene som er konstruert av SSB, "
-            "inkludert organisasjonsnummer, bruker og tidspunkt."
+            "inkludert organisasjonsnummer og tidspunkt for registrering."
         ),
         "columns": [
             {
                 "field": "orgnr",
                 "headerName": "Organisasjonsnummer",
-                "filter": "agTextColumnFilter",
-            },
-            {
-                "field": "bruker",
-                "headerName": "Bruker",
             },
             {
                 "field": "tidspunkt",
                 "headerName": "Tidspunkt",
+            },
+            {
+                "field": "sekvensnummer",
+                "headerName": "Sekvensnummer",
             },
         ],
     },
@@ -96,6 +93,7 @@ KPI_CONFIG = {
         "card_id": "nspek-dashboard-ske-card",
         "modal_id": "nspek-dashboard-ske-modal",
         "grid_id": "nspek-dashboard-ske-grid",
+        "kilde": "N",
         "description": (
             "Viser registreringene som er mottatt fra Skatteetaten (SKE), "
             "inkludert organisasjonsnummer og tidspunkt for mottak."
@@ -104,15 +102,20 @@ KPI_CONFIG = {
             {
                 "field": "orgnr",
                 "headerName": "Organisasjonsnummer",
-                "filter": "agTextColumnFilter",
-            },
-            {
-                "field": "bruker",
-                "headerName": "Bruker",
+                "filter": False,
+                "sortable": False,
             },
             {
                 "field": "tidspunkt",
                 "headerName": "Tidspunkt",
+                "filter": False,
+                "sortable": False,
+            },
+            {
+                "field": "sekvensnummer",
+                "headerName": "Sekvensnummer",
+                "filter": False,
+                "sortable": False,
             },
         ],
     },
@@ -121,6 +124,7 @@ KPI_CONFIG = {
         "card_id": "nspek-dashboard-total-card",
         "modal_id": "nspek-dashboard-total-modal",
         "grid_id": "nspek-dashboard-total-grid",
+        "kilde": None,
         "description": (
             "Viser alle registreringene i populasjonen, "
             "uavhengig av hvordan registreringen er opprettet."
@@ -129,44 +133,93 @@ KPI_CONFIG = {
             {
                 "field": "orgnr",
                 "headerName": "Organisasjonsnummer",
-                "filter": "agTextColumnFilter",
-            },
-            {
-                "field": "bruker",
-                "headerName": "Bruker",
+                "filter": False,
+                "sortable": False,
             },
             {
                 "field": "tidspunkt",
                 "headerName": "Tidspunkt",
-            },
-        ],
-    },
-    "skjoenn": {
-        "title": "Skjønnslignet",
-        "card_id": "nspek-dashboard-skjoenn-card",
-        "modal_id": "nspek-dashboard-skjoenn-modal",
-        "grid_id": "nspek-dashboard-skjoenn-grid",
-        "description": (
-            "Viser registreringene som er skjønnslignet av SKE."
-        ),
-        "columns": [
-            {
-                "field": "orgnr",
-                "headerName": "Organisasjonsnummer",
-                "filter": "agTextColumnFilter",
+                "filter": False,
+                "sortable": False,
             },
             {
-                "field": "bruker",
-                "headerName": "Bruker",
+                "field": "kilde",
+                "headerName": "Kilde",
+                "filter": False,
+                "sortable": False,
             },
             {
-                "field": "tidspunkt",
-                "headerName": "Tidspunkt",
+                "field": "sekvensnummer",
+                "headerName": "Sekvensnummer",
+                "filter": False,
+                "sortable": False,
             },
         ],
     },
 }
 
+
+def get_nspek_kpi_modal_data(
+    aar: int,
+    kilde: str | None = None,
+    start_row: int = 0,
+    end_row: int = 100,
+) -> tuple[pd.DataFrame, int]:
+    """Return one page of KPI modal rows and the total row count."""
+
+    aar = int(aar)
+    start_row = max(int(start_row), 0)
+    end_row = max(int(end_row), start_row)
+    limit = max(end_row - start_row, 1)
+
+    kilde_filter = "" if kilde is None else f"AND kilde = '{kilde}'"
+
+    with get_nspek_connection() as conn:
+        query = f"""
+            SELECT
+                orgnr,
+                dato_mottatt AS tidspunkt,
+                kilde,
+                sekvensnummer
+            FROM nspek_core.registrering
+            WHERE aar = {aar}
+              {kilde_filter}
+            ORDER BY dato_mottatt DESC, sekvensnummer DESC
+            LIMIT {limit}
+            OFFSET {start_row}
+        """
+
+        cursor = conn.raw_sql(query)
+        try:
+            rows = cursor.fetchall()
+        finally:
+            cursor.close()
+
+        count_query = f"""
+            SELECT COUNT(*)
+            FROM nspek_core.registrering
+            WHERE aar = {aar}
+              {kilde_filter}
+        """
+
+        cursor = conn.raw_sql(count_query)
+        try:
+            count_row = cursor.fetchone()
+        finally:
+            cursor.close()
+
+    df = pd.DataFrame(
+        rows,
+        columns=["orgnr", "tidspunkt", "kilde", "sekvensnummer"],
+    )
+
+    if not df.empty:
+        df["tidspunkt"] = pd.to_datetime(
+            df["tidspunkt"],
+            errors="coerce",
+        ).dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    return df, int(count_row[0] or 0)
 
 def get_versions(conn, ident: str, aar: str) -> pd.DataFrame:
     """Fetch and return pandas dataframe containing all sekvensnummer sorted by versjon_nr from nspek_core view v_registrering_versjon.
@@ -287,168 +340,162 @@ def fetch_data_by_orgnr(
     return df
 
 
-def get_demo_population_data() -> pd.DataFrame:
-    return pd.DataFrame(
-        {
-            "dato": pd.date_range(
-                "2026-01-01",
-                periods=8,
-                freq="W",
-            ),
-            "bruker": [
-                11,
-                19,
-                24,
-                31,
-                42,
-                55,
-                61,
-                67,
-            ],
-            "skjoenn": [
-                5,
-                9,
-                12,
-                15,
-                21,
-                27,
-                30,
-                34,
-            ],
-            "ske": [
-                80,
-                150,
-                260,
-                340,
-                420,
-                510,
-                560,
-                610,
-            ],
-        }
-    )
-
-
 def construct_sequence(
     orgnr: str,
-) -> dict[str, str]:
-    """Mock konstruksjon av sekvens for et organisasjonsnummer."""
+    aar: int,
+) -> dict[str, str | int]:
+    """Check for existing NSPEK registration and construct if needed."""
 
     orgnr = str(orgnr).strip()
+    aar = int(aar)
 
-    # ------------------------------------------------------------
-    # Mock: Sjekk om det allerede finnes en sekvens
-    # ------------------------------------------------------------
+    try:
+        with get_nspek_connection() as conn:
+            # ------------------------------------------------------------
+            # Sjekk om det allerede finnes en registrering
+            # ------------------------------------------------------------
+            query = f"""
+                SELECT sekvensnummer
+                FROM nspek_core.registrering
+                WHERE orgnr = '{orgnr}'
+                  AND aar = {aar}
+                LIMIT 1
+            """
 
-    mock_existing_sequences = {
-        "979443137": 2291859,
-        "932598957": 2291860,
-    }
+            cursor = conn.raw_sql(query)
 
-    if orgnr in mock_existing_sequences:
-        sekvensnummer = mock_existing_sequences[orgnr]
+            try:
+                row = cursor.fetchone()
+            finally:
+                cursor.close()
+
+            if row is not None:
+                sekvensnummer = row[0]
+
+                return {
+                    "status": "info",
+                    "orgnr": orgnr,
+                    "sekvensnummer": sekvensnummer,
+                    "message": (
+                        "Det finnes allerede en "
+                        f"næringsspesifikasjon ({sekvensnummer}) "
+                        f"for {aar}."
+                    ),
+                }
+
+            # ------------------------------------------------------------
+            # Opprett ny tom næringsspesifikasjon
+            # ------------------------------------------------------------
+            query = f"""
+                INSERT INTO nspek_core.registrering (
+                    aar,
+                    sekvensnummer,
+                    orgnr,
+                    dato_mottatt,
+                    kilde
+                )
+                VALUES (
+                    {aar},
+                    nextval('nspek_core.construct_seq'),
+                    '{orgnr}',
+                    now(),
+                    'K'
+                )
+                RETURNING sekvensnummer
+            """
+
+            cursor = conn.raw_sql(query)
+
+            try:
+                row = cursor.fetchone()
+            finally:
+                cursor.close()
+
+            sekvensnummer = row[0]
+
+            return {
+                "status": "success",
+                "orgnr": orgnr,
+                "sekvensnummer": sekvensnummer,
+                "message": (
+                    "Ny næringsspesifikasjon ble konstruert "
+                    f"med sekvensnummer ({sekvensnummer})."
+                ),
+            }
+
+    except Exception:
+        logger.exception(
+            "Feil ved konstruksjon av NSPEK for %s",
+            orgnr,
+        )
 
         return {
-            "status": "info",
+            "status": "warning",
             "orgnr": orgnr,
             "message": (
-                f"Det finnes allerede en sekvens "
-                f"({sekvensnummer})."
+                "Det oppstod en feil ved konstruksjon "
+                "av næringsspesifikasjonen."
             ),
         }
 
-    # ------------------------------------------------------------
-    # Mock: Opprett nytt sekvensnummer
-    # ------------------------------------------------------------
 
-    mock_new_sequence = 3000000 + int(orgnr[-4:])
+def get_nspek_kpis(aar: int) -> dict[str, int]:
+    """Return KPI values for NSPEK registrations."""
+
+    aar = int(aar)
+
+    with get_nspek_connection() as conn:
+        query = f"""
+            SELECT
+                COUNT(*) FILTER (WHERE kilde = 'K') AS antall_konstruerte,
+                COUNT(*) FILTER (WHERE kilde = 'N') AS antall_ske,
+                COUNT(*) AS antall_totalt
+            FROM nspek_core.registrering
+            WHERE aar = {aar}
+        """
+
+        cursor = conn.raw_sql(query)
+
+        try:
+            row = cursor.fetchone()
+        finally:
+            cursor.close()
 
     return {
-        "status": "success",
-        "orgnr": orgnr,
-        "message": (
-            f"Ny sekvens {mock_new_sequence} "
-            "ble konstruert."
-        ),
+        "antall_konstruerte": int(row[0] or 0),
+        "antall_ske": int(row[1] or 0),
+        "antall_totalt": int(row[2] or 0),
     }
 
 
-def get_kpi_metadata(
-    kpi_type: str,
-) -> list[dict]:
-    """Return randomly generated mock metadata for a KPI."""
+def get_nspek_development_data(aar: int) -> pd.DataFrame:
+    """Return monthly NSPEK registration counts for the selected year."""
 
-    counts = {
-        "bruker": 67,
-        "ske": 610,
-        "skjoenn": 34,
-    }
+    aar = int(aar)
 
-    brukere = [
-        "sik",
-        "mif",
-        "hmt",
-        "jca",
-        "ret",
-        "aeh",
-        "klh",
-        "jem",
-        "tve",
-        "gnh",
-        "rga",
-        "cgy",
-    ]
+    with get_nspek_connection() as conn:
+        query = f"""
+            SELECT
+                DATE_TRUNC('month', dato_mottatt) AS maaned,
+                COUNT(*) FILTER (WHERE kilde = 'K') AS konstruert,
+                COUNT(*) FILTER (WHERE kilde = 'N') AS ske
+            FROM nspek_core.registrering
+            WHERE aar = {aar}
+            GROUP BY DATE_TRUNC('month', dato_mottatt)
+            ORDER BY maaned
+        """
 
-    def generate_orgnr() -> str:
-        """Generate a random 9-digit organisation number."""
-        return str(random.randint(100_000_000, 999_999_999))
+        cursor = conn.raw_sql(query)
 
-    def generate_timestamp() -> str:
-        """Generate a random timestamp within the last 30 days."""
-        end = datetime.now()
-        start = end - timedelta(days=30)
+        try:
+            rows = cursor.fetchall()
+        finally:
+            cursor.close()
 
-        seconds = random.randint(
-            0,
-            int((end - start).total_seconds()),
-        )
-
-        timestamp = start + timedelta(seconds=seconds)
-
-        return timestamp.strftime("%Y-%m-%d %H:%M")
-
-    def generate_rows(
-        count: int,
-        bruker: str | None = None,
-    ) -> list[dict]:
-        """Generate random KPI metadata rows."""
-
-        return [
-            {
-                "orgnr": generate_orgnr(),
-                "bruker": bruker or random.choice(brukere),
-                "tidspunkt": generate_timestamp(),
-            }
-            for _ in range(count)
-        ]
-
-    if kpi_type == "bruker":
-        return generate_rows(67)
-
-    if kpi_type == "ske":
-        return generate_rows(610, bruker="SKE")
-
-    if kpi_type == "skjoenn":
-        return generate_rows(34)
-
-    if kpi_type == "total":
-        return (
-            generate_rows(67)
-            + generate_rows(610, bruker="SKE")
-            + generate_rows(34)
-        )
-
-    return []
+    return pd.DataFrame(
+        rows,
+        columns=["maaned", "konstruert", "ske"],
+    )
 
 
 class NspekDashboard:
@@ -511,15 +558,23 @@ class NspekDashboard:
         )
         return card_info
 
-    def create_dropdown_card(self, title: str, component_id: str):
+    def create_dropdown_card(
+        self,
+        title: str,
+        component_id: str,
+        options=None,
+        value=None,
+    ):
         dropdown_card = html.Div(
             children=[
                 html.Span(title, className="dropdown-label"),
                 dcc.Dropdown(
                     id=component_id,
                     className="ssb-dropdown",
+                    options=options,
+                    value=value,
                     placeholder="-- Velg --",
-                    clearable=True,
+                    clearable=False,
                     searchable=False,
                 ),
             ],
@@ -703,11 +758,11 @@ class NspekDashboard:
                                         title="Antall registreringer",
                                         component_id=count_id,
                                         size="large",
-                                        icon="/proxy/8000/assets/test2.svg",
+                                        icon="/proxy/8000/assets/test.svg",
                                         subtitle="foretak",
-                                        time_text="2026",
+                                        time_text="Valgt årgang",
                                     ),
-                                    md=6,
+                                    md=8,
                                 ),
 
                                 # Description + refresh button
@@ -726,7 +781,7 @@ class NspekDashboard:
                                             className="d-flex justify-content-end mt-auto",
                                         ),
                                     ],
-                                    md=6,
+                                    md=4,
                                     className="d-flex flex-column",
                                 ),
                             ],
@@ -736,15 +791,22 @@ class NspekDashboard:
                         AgGrid(
                             id=grid_id,
                             columnDefs=column_defs,
-                            rowData=[],
                             defaultColDef={
-                                "sortable": True,
-                                "filter": True,
+                                "sortable": False,
+                                "filter": False,
                                 "resizable": True,
                             },
                             columnSize="sizeToFit",
+                            rowModelType="infinite",
                             dashGridOptions={
                                 "animateRows": False,
+                                "pagination": True,
+                                "paginationPageSize": 100,
+                                "cacheBlockSize": 100,
+                                "maxBlocksInCache": 5,
+                                "infiniteInitialRowCount": 1,
+                                "rowBuffer": 0,
+                                "maxConcurrentDatasourceRequests": 1,
                             },
                             className="ag-theme-alpine ag-theme-ssb",
                             style={
@@ -862,52 +924,60 @@ class NspekDashboard:
 
     def create_development_figure(self, df: pd.DataFrame):
         long_df = df.melt(
-            id_vars="dato",
-            value_vars=["bruker", "ske", "skjoenn"],
+            id_vars="maaned",
+            value_vars=["konstruert", "ske"],
             var_name="kilde",
             value_name="antall",
         )
 
         labels = {
-            "bruker": "Konstruert av bruker",
+            "konstruert": "Konstruert",
             "ske": "Mottatt fra SKE",
-            "skjoenn": "Skjønnslignet",
         }
-
         long_df["kilde"] = long_df["kilde"].map(labels)
+
+        long_df["maaned_label"] = (
+            pd.to_datetime(long_df["maaned"])
+            .dt.month.map(
+                {
+                    1: "Januar",
+                    2: "Februar",
+                    3: "Mars",
+                    4: "April",
+                    5: "Mai",
+                    6: "Juni",
+                    7: "Juli",
+                    8: "August",
+                    9: "September",
+                    10: "Oktober",
+                    11: "November",
+                    12: "Desember",
+                }
+            )
+            + " "
+            + pd.to_datetime(long_df["maaned"]).dt.year.astype(str)
+        )
 
         fig = px.line(
             long_df,
-            x="dato",
+            x="maaned",
             y="antall",
             color="kilde",
             markers=True,
             color_discrete_map={
-                "Konstruert av bruker": "#075745",
+                "Konstruert": "#075745",
                 "Mottatt fra SKE": "#1A9D49",
-                "Skjønnslignet": "#1D9DE2",
             },
+            custom_data=["maaned_label"],
         )
 
         fig.update_traces(
             marker=dict(size=8),
+            hovertemplate=(
+                "<b>%{customdata[0]}</b><br>"
+                "%{fullData.name}: %{y}<extra></extra>"
+            ),
         )
-
-        fig.update_traces(
-            selector={"name": "Konstruert av bruker"},
-            marker_symbol="circle",
-        )
-
-        fig.update_traces(
-            selector={"name": "Mottatt fra SKE"},
-            marker_symbol="triangle-up",
-        )
-
-        fig.update_traces(
-            selector={"name": "Skjønnslignet"},
-            marker_symbol="square",
-        )
-
         fig.update_layout(
             margin={"l": 10, "r": 10, "t": 30, "b": 75},
             hovermode="closest",
@@ -987,46 +1057,18 @@ class NspekDashboard:
 
         return fig
 
-
     def create_distribution_figure(self, df: pd.DataFrame):
-        long_df = df.melt(
-            id_vars="dato",
-            value_vars=["bruker", "ske", "skjoenn"],
-            var_name="kilde",
-            value_name="antall",
-        )
-
-        labels = {
-            "bruker": "Konstruert av bruker",
-            "ske": "Mottatt fra SKE",
-            "skjoenn": "Skjønnslignet",
-        }
-
-        long_df["kilde"] = long_df["kilde"].map(labels)
-
         fig = px.bar(
-            long_df,
-            x="dato",
+            df,
+            x="kategori",
             y="antall",
-            color="kilde",
-            barmode="group",
-            color_discrete_map={
-                "Konstruert av bruker": "#075745",
-                "Mottatt fra SKE": "#1A9D49",
-                "Skjønnslignet": "#1D9DE2",
-            },
+            text="antall",
         )
 
+        fig.update_traces(textposition="outside")
         fig.update_layout(
-            margin={"l": 10, "r": 10, "t": 30, "b": 75},
-            legend={
-                "orientation": "h",
-                "y": -0.20,
-                "yanchor": "top",
-                "x": 0,
-                "xanchor": "left",
-                "title": None,
-            },
+            margin={"l": 10, "r": 20, "t": 20, "b": 50},
+            showlegend=False,
             font={
                 "family": "Open Sans, Arial, sans-serif",
                 "size": 12,
@@ -1040,7 +1082,7 @@ class NspekDashboard:
                 "linewidth": 1,
             },
             yaxis={
-                "title": None,
+                "title": "Antall registreringer",
                 "showgrid": True,
                 "gridcolor": "#E6E6E6",
                 "gridwidth": 1,
@@ -1048,60 +1090,44 @@ class NspekDashboard:
                 "linecolor": "#21383A",
                 "linewidth": 1,
             },
-            annotations=[
-                {
-                    "text": "Antall",
-                    "xref": "paper",
-                    "yref": "paper",
-                    "x": 0,
-                    "y": 1,
-                    "xanchor": "left",
-                    "yanchor": "bottom",
-                    "xshift": -35,
-                    "showarrow": False,
-                    "font": {
-                        "family": "Open Sans, Arial, sans-serif",
-                        "size": 12,
-                        "color": "#21383A",
-                    },
-                },
-                {
-                    "text": "Dato",
-                    "xref": "paper",
-                    "yref": "paper",
-                    "x": 1,
-                    "y": 0,
-                    "xanchor": "right",
-                    "yanchor": "top",
-                    "yshift": -20,
-                    "showarrow": False,
-                    "font": {
-                        "family": "Open Sans, Arial, sans-serif",
-                        "size": 12,
-                        "color": "#21383A",
-                    },
-                },
-            ],
             plot_bgcolor="white",
             paper_bgcolor="white",
         )
 
         return fig
 
-
     def create_development_table(self, df: pd.DataFrame) -> html.Div:
         table_df = df.copy()
 
-        table_df["dato"] = pd.to_datetime(table_df["dato"]).dt.strftime(
-            "%d.%m.%Y"
-        )
+        if not table_df.empty:
+            maaneder = {
+                1: "Januar",
+                2: "Februar",
+                3: "Mars",
+                4: "April",
+                5: "Mai",
+                6: "Juni",
+                7: "Juli",
+                8: "August",
+                9: "September",
+                10: "Oktober",
+                11: "November",
+                12: "Desember",
+            }
+
+            dato = pd.to_datetime(table_df["maaned"])
+
+            table_df["maaned"] = (
+                dato.dt.month.map(maaneder)
+                + " "
+                + dato.dt.year.astype(str)
+            )
 
         table_df = table_df.rename(
             columns={
-                "dato": "Dato",
-                "bruker": "Konstruert av bruker",
+                "maaned": "Måned",
+                "konstruert": "Konstruert",
                 "ske": "Mottatt fra SKE",
-                "skjoenn": "Skjønnslignet",
             }
         )
 
@@ -1114,24 +1140,14 @@ class NspekDashboard:
             class_name="ssb-table",
         )
 
-        return html.Div(
-            table,
-            className="ssb-table-wrapper",
-        )
+        return html.Div(table, className="ssb-table-wrapper")
 
     def create_distribution_table(self, df: pd.DataFrame) -> html.Div:
         table_df = df.copy()
-
-        table_df["dato"] = pd.to_datetime(table_df["dato"]).dt.strftime(
-            "%d.%m.%Y"
-        )
-
         table_df = table_df.rename(
             columns={
-                "dato": "Dato",
-                "bruker": "Konstruert av bruker",
-                "ske": "Mottatt fra SKE",
-                "skjoenn": "Skjønnslignet",
+                "kategori": "Kategori",
+                "antall": "Antall",
             }
         )
 
@@ -1144,10 +1160,7 @@ class NspekDashboard:
             class_name="ssb-table",
         )
 
-        return html.Div(
-            table,
-            className="ssb-table-wrapper",
-        )
+        return html.Div(table, className="ssb-table-wrapper")
 
 
     def _create_layout(self):
@@ -1160,33 +1173,75 @@ class NspekDashboard:
                         ),
                         dbc.ModalBody(
                             [
+                                dbc.Row(
+                                    [
+                                        dbc.Col(
+                                            self.create_dropdown_card(
+                                                title="Årgang",
+                                                component_id="nspek-dashboard-construct-aar",
+                                                options=[
+                                                    {"label": "2025", "value": 2025},
+                                                    {"label": "2024", "value": 2024},
+                                                ],
+                                                value=2024,
+                                            ),
+                                            width=4,
+                                        ),
+                                    ],
+                                    className="mb-3",
+                                ),
+
+                                html.Div(
+                                    "Skriv inn ett eller flere organisasjonsnummer, ett per linje.",
+                                    className="nspek-construct-result-label",
+                                ),
+
                                 html.Div(
                                     className="ssb-text-area",
                                     children=[
-                                        dbc.Textarea(
-                                            id="nspek-dashboard-construct-orgnr",
-                                            placeholder=(
-                                                "Skriv inn ett eller flere organisasjonsnummer, "
-                                                "ett per linje.\n\n"
-                                                "Eksempel:\n"
-                                                "979443137\n"
-                                                "932598957\n"
-                                                "987654321\n"
-                                                "999888777"
-                                            ),
-                                            className="comment-textarea",
-                                            style={
-                                                "width": "100%",
-                                                "height": "600px",
-                                                "padding": "10px 12px",
+                                        dcc.Loading(
+                                            id="nspek-dashboard-construct-loading",
+                                            #type="circle",
+                                            color="#00824D",
+                                            overlay_style={
+                                                "visibility": "visible",
+                                                "filter": "blur(2px)",
                                             },
+                                            children=[
+                                                dbc.Textarea(
+                                                    id="nspek-dashboard-construct-orgnr",
+                                                    placeholder=(
+                                                        "Eksempel:\n"
+                                                        "979443137\n"
+                                                        "932598957\n"
+                                                        "987654321\n"
+                                                        "999888777"
+                                                    ),
+                                                    className="comment-textarea",
+                                                    readOnly=False,
+                                                    style={
+                                                        "width": "100%",
+                                                        "height": "600px",
+                                                        "padding": "10px 12px",
+                                                    },
+                                                ),
+                                                html.Div(
+                                                    id="nspek-dashboard-construct-loading-trigger",
+                                                    style={"display": "none"},
+                                                ),
+                                            ],
                                         ),
                                     ],
                                 ),
+
                                 html.Small(
-                                    "Du kan også lime inn en liste med organisasjonsnummer. Duplikater vil bli fjernet i behandlingen.",
+                                    (
+                                        "Du kan også lime inn en liste med organisasjonsnummer. "
+                                        "Duplikater vil bli fjernet i behandlingen."
+                                    ),
                                     className="text-muted",
                                 ),
+
                                 html.Div(
                                     id="nspek-dashboard-construct-result",
                                     className="mt-3 nspek-construct-result-container",
@@ -1196,14 +1251,15 @@ class NspekDashboard:
                         dbc.ModalFooter(
                             [
                                 dbc.Button(
-                                    "Avbryt",
-                                    id="nspek-dashboard-construct-cancel",
+                                    "Lukk",
+                                    id="nspek-dashboard-construct-close",
                                     className="ssb-btn secondary-btn",
                                 ),
                                 dbc.Button(
                                     "Konstruer",
                                     id="nspek-dashboard-construct-submit",
                                     className="ssb-btn primary-btn",
+                                    disabled=True,
                                 ),
                             ]
                         ),
@@ -1213,6 +1269,8 @@ class NspekDashboard:
                     is_open=False,
                     scrollable=True,
                     size="xl",
+                    backdrop="static",
+                    keyboard=False,
                     style={
                         "maxWidth": "100vw",
                         "width": "100vw",
@@ -1240,7 +1298,7 @@ class NspekDashboard:
                         dbc.Col(
                             self.create_kpi_card(
                                 "Totalt i populasjonen",
-                                "nspek-demo-card-total",
+                                "nspek-dashboard-total-value",
                                 "feather:users",
                                 "Totalt antall registreringer",
                                 card_id="nspek-dashboard-total-card",
@@ -1250,7 +1308,7 @@ class NspekDashboard:
                         dbc.Col(
                             self.create_kpi_card(
                                 "Mottatt fra SKE",
-                                "nspek-demo-card-ske",
+                                "nspek-dashboard-ske-value",
                                 "feather:database",
                                 "Data mottatt fra SKE",
                                 card_id="nspek-dashboard-ske-card",
@@ -1260,20 +1318,42 @@ class NspekDashboard:
                         dbc.Col(
                             self.create_kpi_card(
                                 "Konstruert",
-                                "nspek-demo-card-bruker",
+                                "nspek-dashboard-constructed-value",
                                 "feather:user-check",
                                 "Registreringer opprettet av SSB",
-                                card_id="nspek-dashboard-bruker-card",
+                                card_id="nspek-dashboard-constructed-card",
                             ),
                             md=3,
                         ),
                         dbc.Col(
-                            self.create_kpi_card(
-                                "Skjønnslignet",
-                                "nspek-demo-card-skjoenn",
-                                "feather:alert-triangle",
-                                "Registreringer skjønnslignet av SKE",
-                                card_id="nspek-dashboard-skjoenn-card",
+                            html.Div(
+                                [
+                                    self.create_dropdown_card(
+                                        title="Årgang",
+                                        component_id="nspek-dashboard-aar",
+                                        options=[
+                                            {"label": "2025", "value": 2025},
+                                            {"label": "2024", "value": 2024},
+                                        ],
+                                        value=2025,
+                                    ),
+                                    html.Div(
+                                        [
+                                            dbc.Button(
+                                                "Oppdater data",
+                                                id="nspek-dashboard-refresh",
+                                                className="ssb-btn primary-btn",
+                                            ),
+                                            dbc.Button(
+                                                "Konstruer",
+                                                id="nspek-dashboard-construct",
+                                                className="ssb-btn primary-btn",
+                                            ),
+                                        ],
+                                        className="nspek-dashboard-action-buttons",
+                                    ),
+                                ],
+                                className="d-flex flex-column gap-2",
                             ),
                             md=3,
                         ),
@@ -1281,75 +1361,6 @@ class NspekDashboard:
                     className="g-3 mb-5",
                 ),
                 
-                # ============================================================
-                # GREEN-BOX og LARGE og KNAPPER
-                # ============================================================
-
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            self.create_key_figure(
-                                title="Fullføringsgrad",
-                                component_id="nspek-dashboard-kf-completion",
-                                size="medium",
-                                subtitle="prosent",
-                                time_text="Status for innsamlingen",
-                                green_box=True,
-                            ),
-                            md=4,
-                        ),
-                        dbc.Col(
-                            self.create_key_figure(
-                                title="Totalt i NSPEK-populasjonen",
-                                component_id="nspek-dashboard-kf-total",
-                                size="large",
-                                icon="/proxy/8000/assets/test2.svg",
-                                subtitle="foretak",
-                                time_text="2026",
-                            ),
-                            md=6,
-                        ),
-                        dbc.Col(
-                            html.Div(
-                                [
-                                    dbc.Button(
-                                        [
-                                            html.Span("Oppdater data", className="ms-2"),
-                                        ],
-                                        id="nspek-dashboard-refresh",
-                                        className="ssb-btn primary-btn",
-                                    ),
-                                    dbc.Button(
-                                        [
-                                            html.Span("Konstruer", className="ms-2"),
-                                        ],
-                                        id="nspek-dashboard-construct",
-                                        className="ssb-btn primary-btn",
-                                    ),
-                                    #dbc.Button(
-                                    #    [
-                                    #        html.Span("Innstillinger", className="ms-2"),
-                                    #    ],
-                                    #    id="nspek-dashboard-settings",
-                                    #    className="ssb-btn primary-btn",
-                                    #),
-                                    #dbc.Button(
-                                    #    [
-                                    #        html.Span("Hjelp", className="ms-2"),
-                                    #    ],
-                                    #    id="nspek-dashboard-help",
-                                    #    className="ssb-btn primary-btn",
-                                    #),
-                                ],
-                                className="nspek-dashboard-action-buttons",
-                            ),
-                            md=2,
-                            className="d-flex justify-content-end align-items-start",
-                        ),
-                    ],
-                    className="mb-5",
-                ),
-
                 # ============================================================
                 # GRAFER
                 # ============================================================
@@ -1361,7 +1372,7 @@ class NspekDashboard:
                                 dbc.CardBody(
                                     [
                                         html.H5(
-                                            "Fordeling i innsamling",
+                                            "Utvikling i innsamling",
                                             className="ssb-chart-title",
                                         ),
 
@@ -1384,9 +1395,9 @@ class NspekDashboard:
                                                         label="Vis som tabell",
                                                         value="table",
                                                         children=[
-                                                            self.create_development_table(
-                                                                get_demo_population_data()
-                                                            ),
+                                                            html.Div(
+                                                                id="nspek-dashboard-development-table"
+                                                            )
                                                         ],
                                                     ),
                                                 ],
@@ -1409,7 +1420,7 @@ class NspekDashboard:
                                         ),
                                         dcc.Tabs(
                                             id="nspek-dashboard-distribution-tabs",
-                                            value="figure",
+                                            value="table",
                                             children=[
                                                 dcc.Tab(
                                                     label="Vis som figur",
@@ -1425,9 +1436,9 @@ class NspekDashboard:
                                                     label="Vis som tabell",
                                                     value="table",
                                                     children=[
-                                                        self.create_distribution_table(
-                                                            get_demo_population_data()
-                                                        ),
+                                                        html.Div(
+                                                            id="nspek-dashboard-distribution-table"
+                                                        )
                                                     ],
                                                 ),
                                             ],
@@ -1443,101 +1454,6 @@ class NspekDashboard:
                     className="g-3 mb-5",
                 ),
 
-                # ============================================================
-                # MEDIUM KEY FIGURES
-                # ============================================================
-                
-                html.H4(
-                    "Medium – gruppe på to",
-                    className="mb-3",
-                ),
-
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            self.create_key_figure(
-                                title="Mottatt fra SKE",
-                                component_id="nspek-dashboard-kf-ske",
-                                size="medium",
-                                icon="/proxy/8000/assets/test.svg",
-                                subtitle="foretak",
-                                time_text="2026",
-                            ),
-                            md=6,
-                        ),
-                        dbc.Col(
-                            self.create_key_figure(
-                                title="Konstruert av bruker",
-                                component_id="nspek-dashboard-kf-bruker",
-                                size="medium",
-                                icon="/proxy/8000/assets/test2.svg",
-                                subtitle="foretak",
-                                time_text="2026",
-                            ),
-                            md=6,
-                        ),
-                    ],
-                    className="g-4 mb-5",
-                ),
-
-                # ============================================================
-                # SMALL
-                # ============================================================
-
-                html.H4(
-                    "Small – gruppe på fire",
-                    className="mb-3",
-                ),
-
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            self.create_key_figure(
-                                title="Innkommet siste uke",
-                                component_id="nspek-dashboard-kf-weekly",
-                                size="small",
-                                icon="/proxy/8000/assets/test.svg",
-                                subtitle="registreringer",
-                                time_text="Uke 35",
-                            ),
-                            md=4,
-                        ),
-                        dbc.Col(
-                            self.create_key_figure(
-                                title="Ferdigstilt",
-                                component_id="nspek-dashboard-kf-finished",
-                                size="small",
-                                icon="/proxy/8000/assets/test2.svg",
-                                subtitle="registreringer",
-                                time_text="2026",
-                            ),
-                            md=4,
-                        ),
-                        dbc.Col(
-                            self.create_key_figure(
-                                title="Gjenstår",
-                                component_id="nspek-dashboard-kf-remaining",
-                                size="small",
-                                icon="/proxy/8000/assets/test.svg",
-                                subtitle="registreringer",
-                                time_text="2026",
-                            ),
-                            md=4,
-                        ),
-                        dbc.Col(
-                            self.create_key_figure(
-                                title="Feilregistreringer",
-                                component_id="nspek-dashboard-kf-errors",
-                                size="small",
-                                icon="/proxy/8000/assets/test2.svg",
-                                subtitle="registreringer",
-                                time_text="2026",
-                            ),
-                            md=4,
-                        ),
-                    ],
-                    className="g-4 mb-5",
-                ),
             ],
             className="nspek-dashboard-container",
         )
@@ -1545,89 +1461,6 @@ class NspekDashboard:
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the Naeringsspesifikasjon module."""
-
-        @callback(
-            # Cards
-            Output("nspek-demo-card-total", "children"),
-            Output("nspek-demo-card-bruker", "children"),
-            Output("nspek-demo-card-ske", "children"),
-            Output("nspek-demo-card-skjoenn", "children"),
-
-            # Medium
-            Output("nspek-dashboard-kf-ske", "children"),
-            Output("nspek-dashboard-kf-bruker", "children"),
-
-            # Small
-            Output("nspek-dashboard-kf-weekly", "children"),
-            Output("nspek-dashboard-kf-finished", "children"),
-            Output("nspek-dashboard-kf-remaining", "children"),
-            Output("nspek-dashboard-kf-errors", "children"),
-
-            # Large
-            Output("nspek-dashboard-kf-total", "children"),
-
-            # Green box
-            Output("nspek-dashboard-kf-completion", "children"),
-
-            # Graphs
-            Output("nspek-dashboard-development-graph", "figure"),
-            Output("nspek-dashboard-distribution-graph", "figure"),
-
-            Input("nspek-dashboard-refresh", "n_clicks"),
-        )
-        def update_dashboard(n_clicks):
-
-            df = get_demo_population_data()
-
-            bruker = df["bruker"].iloc[-1]
-            ske = df["ske"].iloc[-1]
-            skjoenn = df["skjoenn"].iloc[-1]
-
-            total = bruker + ske + skjoenn
-
-            # Demo-tall
-            weekly = 124
-            finished = 598
-            remaining = total - finished
-            errors = 42
-
-            completion_rate = (
-                finished / total * 100
-                if total
-                else 0
-            )
-
-            # Grafer
-            development_figure = self.create_development_figure(df)
-            distribution_figure = self.create_distribution_figure(df)
-
-            return (
-                # Cards
-                f"{total:,}".replace(",", " "),
-                f"{bruker:,}".replace(",", " "),
-                f"{ske:,}".replace(",", " "),
-                f"{skjoenn:,}".replace(",", " "),
-
-                # Medium
-                f"{ske:,}".replace(",", " "),
-                f"{bruker:,}".replace(",", " "),
-
-                # Small
-                f"{weekly:,}".replace(",", " "),
-                f"{finished:,}".replace(",", " "),
-                f"{remaining:,}".replace(",", " "),
-                f"{errors:,}".replace(",", " "),
-
-                # Large
-                f"{total:,}".replace(",", " "),
-
-                # Green box
-                f"{completion_rate:.1f}".replace(".", ","),
-
-                # Graphs
-                development_figure,
-                distribution_figure,
-            )
 
         @callback(
             Output(
@@ -1639,7 +1472,7 @@ class NspekDashboard:
                 "n_clicks",
             ),
             Input(
-                "nspek-dashboard-construct-cancel",
+                "nspek-dashboard-construct-close",
                 "n_clicks",
             ),
             State(
@@ -1660,6 +1493,10 @@ class NspekDashboard:
                 "nspek-dashboard-construct-result",
                 "children",
             ),
+            Output(
+                "nspek-dashboard-construct-loading-trigger",
+                "children",
+            ),
             Input(
                 "nspek-dashboard-construct-submit",
                 "n_clicks",
@@ -1668,17 +1505,73 @@ class NspekDashboard:
                 "nspek-dashboard-construct-orgnr",
                 "value",
             ),
+            State(
+                "nspek-dashboard-construct-aar",
+                "value",
+            ),
             prevent_initial_call=True,
+            running=[
+                (
+                    Output(
+                        "nspek-dashboard-construct-orgnr",
+                        "readOnly",
+                    ),
+                    True,
+                    False,
+                ),
+                (
+                    Output(
+                        "nspek-dashboard-construct-submit",
+                        "disabled",
+                        allow_duplicate=True,
+                    ),
+                    True,
+                    False,
+                ),
+                (
+                    Output(
+                        "nspek-dashboard-construct-submit",
+                        "children",
+                    ),
+                    "Konstruerer …",
+                    "Konstruer",
+                ),
+                (
+                    Output(
+                        "nspek-dashboard-construct-close",
+                        "disabled",
+                    ),
+                    True,
+                    False,
+                ),
+            ],
         )
         def construct_sequences(
             n_clicks,
             orgnr_text,
+            aar,
         ):
+            if aar is None:
+                return (
+                    self.create_dialog(
+                        variant="warning",
+                        message=(
+                            "Velg en årgang før du konstruerer "
+                            "næringsspesifikasjoner."
+                        ),
+                        title="Advarsel",
+                    ),
+                    "",
+                )
+
             if not orgnr_text or not orgnr_text.strip():
-                return self.create_dialog(
-                    variant="warning",
-                    message="Skriv inn minst ett organisasjonsnummer.",
-                    title="Advarsel",
+                return (
+                    self.create_dialog(
+                        variant="warning",
+                        message="Skriv inn minst ett organisasjonsnummer.",
+                        title="Advarsel",
+                    ),
+                    "",
                 )
 
             orgnr_list = list(
@@ -1693,9 +1586,11 @@ class NspekDashboard:
 
             for orgnr in orgnr_list:
 
-                # --------------------------------------------------------
+                time.sleep(1)
+
+                # ------------------------------------------------------------
                 # Valider format
-                # --------------------------------------------------------
+                # ------------------------------------------------------------
 
                 if len(orgnr) > 9:
                     results.append(
@@ -1704,7 +1599,8 @@ class NspekDashboard:
                             "orgnr": f"{orgnr[:12]}...",
                             "message": (
                                 "Ugyldig organisasjonsnummer. "
-                                "Organisasjonsnummeret kan ikke være lengre enn 9 tegn."
+                                "Organisasjonsnummeret kan ikke være "
+                                "lengre enn 9 tegn."
                             ),
                         }
                     )
@@ -1723,9 +1619,9 @@ class NspekDashboard:
                     )
                     continue
 
-                # --------------------------------------------------------
+                # ------------------------------------------------------------
                 # Sjekk BoF
-                # --------------------------------------------------------
+                # ------------------------------------------------------------
 
                 if not orgnr_exists_in_bof(orgnr):
                     results.append(
@@ -1740,35 +1636,66 @@ class NspekDashboard:
                     )
                     continue
 
-                # --------------------------------------------------------
-                # Mock DB-sjekk + konstruksjon
-                # --------------------------------------------------------
+                # ------------------------------------------------------------
+                # DB-sjekk + konstruksjon
+                # ------------------------------------------------------------
 
-                result = construct_sequence(orgnr)
+                result = construct_sequence(
+                    orgnr=orgnr,
+                    aar=aar,
+                )
+
                 results.append(result)
+                print(result)
 
-            all_processed = bool(results)
+            all_processed = (
+                bool(orgnr_list)
+                and len(results) == len(orgnr_list)
+                and all(
+                    result["status"] in {"success", "info"}
+                    for result in results
+                )
+            )
 
-            return html.Div(
+            has_warnings = any(
+                result["status"] == "warning"
+                for result in results
+            )
+
+            if all_processed:
+                job_dialog = self.create_dialog(
+                    variant="success",
+                    message="Alle organisasjonsnummer behandlet.",
+                    title="Suksess",
+                )
+            elif has_warnings:
+                job_dialog = self.create_dialog(
+                    variant="warning",
+                    message=(
+                        "Jobben er ferdig, men ett eller flere "
+                        "organisasjonsnummer kunne ikke behandles."
+                    ),
+                    title="Advarsel",
+                )
+            else:
+                job_dialog = self.create_dialog(
+                    variant="info",
+                    message="Jobben er ferdig.",
+                    title="Informasjon",
+                )
+
+            result_content = html.Div(
                 [
-                    # ------------------------------------------------------------
-                    # Status for jobben
-                    # ------------------------------------------------------------
-
                     html.Div(
                         "Status for jobben",
                         className="nspek-construct-result-label",
                     ),
 
-                    self.create_dialog(
-                        variant="success",
-                        message="Alle organisasjonsnummer behandlet.",
-                        title="Suksess",
-                    ),
+                    job_dialog,
 
-                    # ------------------------------------------------------------
+                    # --------------------------------------------------------
                     # Status per organisasjonsnummer
-                    # ------------------------------------------------------------
+                    # --------------------------------------------------------
 
                     html.Div(
                         "Status per organisasjonsnummer",
@@ -1791,153 +1718,221 @@ class NspekDashboard:
                 ]
             )
 
+            return result_content, ""
+
         @callback(
-            Output("nspek-dashboard-bruker-modal", "is_open"),
-            Output("nspek-dashboard-ske-modal", "is_open"),
-            Output("nspek-dashboard-total-modal", "is_open"),
-            Output("nspek-dashboard-skjoenn-modal", "is_open"),
-
-            # Åpne
-            Input("nspek-dashboard-bruker-card", "n_clicks"),
-            Input("nspek-dashboard-ske-card", "n_clicks"),
-            Input("nspek-dashboard-total-card", "n_clicks"),
-            Input("nspek-dashboard-skjoenn-card", "n_clicks"),
-
-            # Lukke
-            Input("nspek-dashboard-bruker-modal-close", "n_clicks"),
-            Input("nspek-dashboard-ske-modal-close", "n_clicks"),
-            Input("nspek-dashboard-total-modal-close", "n_clicks"),
-            Input("nspek-dashboard-skjoenn-modal-close", "n_clicks"),
-
-            # Nåværende state
-            State("nspek-dashboard-bruker-modal", "is_open"),
-            State("nspek-dashboard-ske-modal", "is_open"),
-            State("nspek-dashboard-total-modal", "is_open"),
-            State("nspek-dashboard-skjoenn-modal", "is_open"),
-
-            prevent_initial_call=True,
+            Output(
+                "nspek-dashboard-construct-submit",
+                "disabled",
+            ),
+            Input(
+                "nspek-dashboard-construct-aar",
+                "value",
+            ),
+            Input(
+                "nspek-dashboard-construct-orgnr",
+                "value",
+            ),
         )
-        def toggle_kpi_modals(
-            bruker_clicks,
-            ske_clicks,
-            total_clicks,
-            skjoenn_clicks,
-            bruker_close,
-            ske_close,
-            total_close,
-            skjoenn_close,
-            bruker_open,
-            ske_open,
-            total_open,
-            skjoenn_open,
-        ):
-            triggered_id = ctx.triggered_id
-
-            card_to_index = {
-                "nspek-dashboard-bruker-card": 0,
-                "nspek-dashboard-ske-card": 1,
-                "nspek-dashboard-total-card": 2,
-                "nspek-dashboard-skjoenn-card": 3,
-            }
-
-            close_to_index = {
-                "nspek-dashboard-bruker-modal-close": 0,
-                "nspek-dashboard-ske-modal-close": 1,
-                "nspek-dashboard-total-modal-close": 2,
-                "nspek-dashboard-skjoenn-modal-close": 3,
-            }
-
-            if triggered_id in card_to_index:
-                states = [False, False, False, False]
-                states[card_to_index[triggered_id]] = True
-                return tuple(states)
-
-            if triggered_id in close_to_index:
-                states = [
-                    bruker_open,
-                    ske_open,
-                    total_open,
-                    skjoenn_open,
-                ]
-                states[close_to_index[triggered_id]] = False
-                return tuple(states)
-
+        def update_construct_button_disabled(aar, orgnr_text):
             return (
-                bruker_open,
-                ske_open,
-                total_open,
-                skjoenn_open,
+                aar is None
+                or not orgnr_text
+                or not orgnr_text.strip()
             )
 
         @callback(
-            Output("nspek-dashboard-bruker-grid", "rowData"),
-            Output("nspek-dashboard-bruker-grid-count", "children"),
-
-            Output("nspek-dashboard-ske-grid", "rowData"),
-            Output("nspek-dashboard-ske-grid-count", "children"),
-
-            Output("nspek-dashboard-total-grid", "rowData"),
-            Output("nspek-dashboard-total-grid-count", "children"),
-
-            Output("nspek-dashboard-skjoenn-grid", "rowData"),
-            Output("nspek-dashboard-skjoenn-grid-count", "children"),
-
-            # Kort
-            Input("nspek-dashboard-bruker-card", "n_clicks"),
-            Input("nspek-dashboard-ske-card", "n_clicks"),
+            Output("nspek-dashboard-total-modal", "is_open"),
+            Output("nspek-dashboard-ske-modal", "is_open"),
+            Output("nspek-dashboard-constructed-modal", "is_open"),
             Input("nspek-dashboard-total-card", "n_clicks"),
-            Input("nspek-dashboard-skjoenn-card", "n_clicks"),
-
-            # Oppdater-knapper
-            Input("nspek-dashboard-bruker-grid-refresh", "n_clicks"),
-            Input("nspek-dashboard-ske-grid-refresh", "n_clicks"),
-            Input("nspek-dashboard-total-grid-refresh", "n_clicks"),
-            Input("nspek-dashboard-skjoenn-grid-refresh", "n_clicks"),
-
+            Input("nspek-dashboard-total-modal-close", "n_clicks"),
+            Input("nspek-dashboard-ske-card", "n_clicks"),
+            Input("nspek-dashboard-ske-modal-close", "n_clicks"),
+            Input("nspek-dashboard-constructed-card", "n_clicks"),
+            Input("nspek-dashboard-constructed-modal-close", "n_clicks"),
+            State("nspek-dashboard-total-modal", "is_open"),
+            State("nspek-dashboard-ske-modal", "is_open"),
+            State("nspek-dashboard-constructed-modal", "is_open"),
             prevent_initial_call=True,
         )
-        def update_kpi_metadata(
-            bruker_clicks,
-            ske_clicks,
-            total_clicks,
-            skjoenn_clicks,
-            bruker_refresh,
-            ske_refresh,
-            total_refresh,
-            skjoenn_refresh,
+        def toggle_kpi_modals(
+            total_card_clicks,
+            total_close_clicks,
+            ske_card_clicks,
+            ske_close_clicks,
+            constructed_card_clicks,
+            constructed_close_clicks,
+            total_is_open,
+            ske_is_open,
+            constructed_is_open,
         ):
-            kpi_by_trigger = {
-                "nspek-dashboard-bruker-card": "bruker",
-                "nspek-dashboard-ske-card": "ske",
-                "nspek-dashboard-total-card": "total",
-                "nspek-dashboard-skjoenn-card": "skjoenn",
+            triggered_id = ctx.triggered_id
 
-                "nspek-dashboard-bruker-grid-refresh": "bruker",
-                "nspek-dashboard-ske-grid-refresh": "ske",
-                "nspek-dashboard-total-grid-refresh": "total",
-                "nspek-dashboard-skjoenn-grid-refresh": "skjoenn",
-            }
+            states = [total_is_open, ske_is_open, constructed_is_open]
 
-            kpi_type = kpi_by_trigger.get(ctx.triggered_id)
+            if triggered_id == "nspek-dashboard-total-card":
+                return True, False, False
+            if triggered_id == "nspek-dashboard-total-modal-close":
+                return False, ske_is_open, constructed_is_open
+            if triggered_id == "nspek-dashboard-ske-card":
+                return False, True, False
+            if triggered_id == "nspek-dashboard-ske-modal-close":
+                return total_is_open, False, constructed_is_open
+            if triggered_id == "nspek-dashboard-constructed-card":
+                return False, False, True
+            if triggered_id == "nspek-dashboard-constructed-modal-close":
+                return total_is_open, ske_is_open, False
 
-            if kpi_type is None:
-                raise PreventUpdate
+            return states
 
-            data = get_kpi_metadata(kpi_type)
-            count = f"{len(data):,}".replace(",", " ")
+        @callback(
+            Output("nspek-dashboard-total-grid-count", "children"),
+            Output("nspek-dashboard-ske-grid-count", "children"),
+            Output("nspek-dashboard-constructed-grid-count", "children"),
+            Input("nspek-dashboard-aar", "value"),
+            Input("nspek-dashboard-refresh", "n_clicks"),
+            Input("nspek-dashboard-total-grid-refresh", "n_clicks"),
+            Input("nspek-dashboard-ske-grid-refresh", "n_clicks"),
+            Input("nspek-dashboard-constructed-grid-refresh", "n_clicks"),
+        )
+        def update_kpi_modal_counts(
+            aar,
+            _dashboard_refresh,
+            _total_refresh,
+            _ske_refresh,
+            _constructed_refresh,
+        ):
+            if aar is None:
+                return "0", "0", "0"
+
+            kpis = get_nspek_kpis(aar)
 
             return (
-                data if kpi_type == "bruker" else no_update,
-                count if kpi_type == "bruker" else no_update,
+                f"{kpis['antall_totalt']:,}".replace(",", " "),
+                f"{kpis['antall_ske']:,}".replace(",", " "),
+                f"{kpis['antall_konstruerte']:,}".replace(",", " "),
+            )
 
-                data if kpi_type == "ske" else no_update,
-                count if kpi_type == "ske" else no_update,
+        @callback(
+            Output("nspek-dashboard-total-grid", "getRowsResponse"),
+            Input("nspek-dashboard-total-grid", "getRowsRequest"),
+            State("nspek-dashboard-aar", "value"),
+        )
+        def load_total_kpi_rows(request, aar):
+            if not request or aar is None:
+                return {"rowData": [], "rowCount": 0}
 
-                data if kpi_type == "total" else no_update,
-                count if kpi_type == "total" else no_update,
+            df, total_count = get_nspek_kpi_modal_data(
+                aar,
+                start_row=request.get("startRow", 0),
+                end_row=request.get("endRow", 100),
+            )
 
-                data if kpi_type == "skjoenn" else no_update,
-                count if kpi_type == "skjoenn" else no_update,
+            return {"rowData": df.to_dict("records"), "rowCount": total_count}
+
+        @callback(
+            Output("nspek-dashboard-ske-grid", "getRowsResponse"),
+            Input("nspek-dashboard-ske-grid", "getRowsRequest"),
+            State("nspek-dashboard-aar", "value"),
+        )
+        def load_ske_kpi_rows(request, aar):
+            if not request or aar is None:
+                return {"rowData": [], "rowCount": 0}
+
+            df, total_count = get_nspek_kpi_modal_data(
+                aar,
+                kilde="N",
+                start_row=request.get("startRow", 0),
+                end_row=request.get("endRow", 100),
+            )
+
+            return {"rowData": df.to_dict("records"), "rowCount": total_count}
+
+        @callback(
+            Output("nspek-dashboard-constructed-grid", "getRowsResponse"),
+            Input("nspek-dashboard-constructed-grid", "getRowsRequest"),
+            State("nspek-dashboard-aar", "value"),
+        )
+        def load_constructed_kpi_rows(request, aar):
+            if not request or aar is None:
+                return {"rowData": [], "rowCount": 0}
+
+            df, total_count = get_nspek_kpi_modal_data(
+                aar,
+                kilde="K",
+                start_row=request.get("startRow", 0),
+                end_row=request.get("endRow", 100),
+            )
+
+            return {"rowData": df.to_dict("records"), "rowCount": total_count}
+
+        @callback(
+            Output("nspek-dashboard-total-value", "children"),
+            Output("nspek-dashboard-ske-value", "children"),
+            Output("nspek-dashboard-constructed-value", "children"),
+            Output("nspek-dashboard-development-graph", "figure"),
+            Output("nspek-dashboard-development-table", "children"),
+            Output("nspek-dashboard-distribution-graph", "figure"),
+            Output("nspek-dashboard-distribution-table", "children"),
+            Input("nspek-dashboard-aar", "value"),
+            Input("nspek-dashboard-refresh", "n_clicks"),
+        )
+        def update_nspek_dashboard(aar, _n_clicks):
+            if aar is None:
+                empty_figure = go.Figure()
+                message = html.Div("Velg en årgang.")
+                return (
+                    "–",
+                    "–",
+                    "–",
+                    empty_figure,
+                    message,
+                    empty_figure,
+                    message,
+                )
+
+            kpis = get_nspek_kpis(aar)
+            development_df = get_nspek_development_data(aar)
+
+            total = kpis["antall_totalt"]
+            ske = kpis["antall_ske"]
+            konstruert = kpis["antall_konstruerte"]
+
+            distribution_df = pd.DataFrame(
+                [
+                    {
+                        "kategori": "Mottatt fra SKE",
+                        "antall": ske,
+                    },
+                    {
+                        "kategori": "Konstruert",
+                        "antall": konstruert,
+                    },
+                ]
+            )
+
+            development_figure = self.create_development_figure(
+                development_df
+            )
+            development_table = self.create_development_table(
+                development_df
+            )
+            distribution_figure = self.create_distribution_figure(
+                distribution_df
+            )
+            distribution_table = self.create_distribution_table(
+                distribution_df
+            )
+
+            return (
+                f"{total:,}".replace(",", " "),
+                f"{ske:,}".replace(",", " "),
+                f"{konstruert:,}".replace(",", " "),
+                development_figure,
+                development_table,
+                distribution_figure,
+                distribution_table,
             )
 
 
