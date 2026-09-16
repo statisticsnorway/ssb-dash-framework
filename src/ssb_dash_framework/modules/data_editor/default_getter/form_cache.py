@@ -17,7 +17,7 @@ local_tz = tzlocal.get_localzone()
 @dataclass
 class CacheEntry:
     entry: Table
-    last_cache_hit: float
+    time_to_live: float
 
 
 class FormGetterCached:
@@ -58,7 +58,7 @@ class FormGetterCached:
     def clean_cache(cls):
         max_size = 10
         if len(cls.data.keys()) > max_size:
-            key, _ = min(cls.data.items(), key=lambda x: x[1].last_cache_hit)
+            key, _ = min(cls.data.items(), key=lambda x: x[1].time_to_live)
             cls.data.pop(key)
 
     @classmethod
@@ -78,10 +78,10 @@ class FormGetterCached:
         )
         entry = cls.data.get(cache_key)
 
-        if (entry is None) or ((time.perf_counter() - entry.last_cache_hit) > 5.0):
+        if (entry is None) or ((time.perf_counter() - entry.time_to_live) > 5.0):
             table = FormGetterCached.get_table(refnr, settings)
             cls.data[cache_key] = CacheEntry(
-                entry=table, last_cache_hit=time.perf_counter()
+                entry=table, time_to_live=time.perf_counter()
             )
             cls.clean_cache()
             return cls.data[cache_key].entry
