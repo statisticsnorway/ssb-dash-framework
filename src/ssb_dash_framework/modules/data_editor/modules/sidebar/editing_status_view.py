@@ -162,6 +162,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     return refnr[self.settings.refnr_col].tolist()[0]
                 else:
                     return no_update
+                    
             except Exception as e:
                 msg = f"Getting reference numbers for ident returned with an error: {e}"
                 logger.warning(msg)

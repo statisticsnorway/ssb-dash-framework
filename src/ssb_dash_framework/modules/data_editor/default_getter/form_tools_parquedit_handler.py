@@ -63,7 +63,7 @@ class AltinnFormParqueditHandler(FetcherMeta):
             )[0]
         return comment  # pyright: ignore
 
-    def get_history(self, refnr: str) -> pd.DataFrame:
+    def get_history(self, refnr: str, insert_toogle: bool) -> pd.DataFrame:
         return pd.DataFrame()
 
     def get_form_status(self, refnr: str) -> RefnrStatus | None:
