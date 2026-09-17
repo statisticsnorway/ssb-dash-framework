@@ -1,3 +1,6 @@
+# pyright: reportCallIssue=false
+# pyright: reportGeneralTypeIssues=false
+# pyright: reportArgumentType=false
 from abc import ABC
 from abc import abstractmethod
 import logging
@@ -19,7 +22,7 @@ import pandas as pd
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
-from ..utils import create_alert
+from ..utils import AlertHandler
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -111,7 +114,7 @@ class BofInformation(ABC):
     def __init__(
         self,
         label: str | None = None,
-        variableselector_foretak_name: str | None = None,
+        variableselector_foretak_name: str = "foretak",
     ) -> None:
         """Initialize the BofInformation tab component.
 
@@ -127,11 +130,7 @@ class BofInformation(ABC):
         if label is None:
             label = "BoF Foretak"
         self.label = label
-        if variableselector_foretak_name is None:
-            variableselector_foretak_name = "foretak"
-        self.variableselector = VariableSelector(
-            selected_inputs=[variableselector_foretak_name], selected_states=[]
-        )
+        self.inputs = [variableselector_foretak_name]
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self._is_valid()
@@ -383,14 +382,13 @@ class BofInformation(ABC):
             - The `bof_data` callback fetches and updates data in the cards based on the selected foretak.
             - It also runs a check for "has_bedrift" to be able to sort by the selected bedrift if necessary.
         """
-        dynamic_states = [
-            self.variableselector.get_all_inputs(),
-            self.variableselector.get_all_states(),
-        ]
+        dynamic_states = []
 
+        for _input in self.inputs:
+            dynamic_states.append(VariableSelector.get_input(_input))
         # check if var-bedrift exists
         try:
-            self.variableselector.get_option("var-bedrift", search_target="id")
+            VariableSelector.get_option("var-bedrift", search_target="id")
             has_bedrift = True
         except ValueError:
             has_bedrift = False
@@ -460,33 +458,22 @@ class BofInformation(ABC):
         @callback(  # type: ignore[misc]
             Output("bofregistry-ssb_bedrift-table", "rowData"),
             Output("bofregistry-ssb_bedrift-table", "columnDefs"),
-            Output("alert_store", "data", allow_duplicate=True),
             Input("tab-vof-foretak-button2", "n_clicks"),
             State("tab-bof_foretak-table1", "selectedRows"),
-            State("alert_store", "data"),
             prevent_initial_call=True,
         )
         def ssb_bof_bedrift(
             n_clicks: int | None,
             selected_row: list[dict[str, Any]],
-            alert_store: list[dict[str, Any]],
-        ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+        ) -> tuple[list[dict[Any, Any]], list[dict[str, Any]]]:
             logger.debug(
                 "Args:\n" + f"n_clicks: {n_clicks}\n" + f"selected_row: {selected_row}"
             )
             if n_clicks is None or not selected_row:
                 logger.debug("Raised PreventUpdate")
-                alert_store = [
-                    create_alert(
-                        "Velg en bedrift fra bedriftslisten under for å hente BoF bedriftsinfo.",
-                        "info",
-                        position="center",
-                        duration=6,
-                        ephemeral=True,
-                    ),
-                    *alert_store,
-                ]
-                return [], [], alert_store
+                AlertHandler.info("Velg en bedrift fra bedriftslisten under for å hente BoF bedriftsinfo.")
+               
+                return [], []
 
             orgnr = selected_row[0]["orgnr"]
             with sqlite3.connect(SSB_BEDRIFT_PATH) as conn:
@@ -502,7 +489,7 @@ class BofInformation(ABC):
                 }
                 for col in df.columns
             ]
-            return df.to_dict("records"), columns, []
+            return df.to_dict("records"), columns
 
         @callback(  # type: ignore[misc]
             Output("tab-bof_foretak-orgnrcard", "value"),
@@ -643,7 +630,10 @@ class BofInformationWindow(WindowImplementation, BofInformation):
     """A class to implement a bof information module as a window."""
 
     def __init__(
-        self, label: str | None = None, variableselector_foretak_name: str | None = None, **kwargs: Any
+        self,
+        label: str | None = None,
+        variableselector_foretak_name: str | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize the BofInformationTab.
 
