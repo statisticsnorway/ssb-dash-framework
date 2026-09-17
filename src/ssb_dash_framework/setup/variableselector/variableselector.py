@@ -206,6 +206,20 @@ class VariableSelector:
         return inputs
 
     @classmethod
+    def get_state(cls, requested: str | list[str], search_target: str = "title") -> list[State]:
+        """Retrieves a State object for the selected variable."""
+        if isinstance(requested, str):
+            requested = [requested]
+
+        states = []
+        for var in requested:
+            retrieved_option = cls.get_option(
+                search_term=var, search_target=search_target
+            )
+            states.append(Input(retrieved_option.id, "value"))
+        return states
+
+    @classmethod
     def _match_type[T: (
         Input,
         State,
@@ -298,13 +312,6 @@ class VariableSelector:
     #        )
     #    return to_be_returned
 
-    @classmethod
-    def get_state(cls, requested: str, search_target: str = "title") -> State:
-        """Retrieves a State object for the selected variable."""
-        retrieved_option = cls.get_option(
-            search_term=requested, search_target=search_target
-        )
-        return State(retrieved_option.id, "value")
 
     # @classmethod
     # def get_all_states(cls) -> list[State]:
