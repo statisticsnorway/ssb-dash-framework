@@ -11,7 +11,6 @@ from dash import callback
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
-from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
