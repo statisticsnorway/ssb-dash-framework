@@ -34,6 +34,7 @@ from .modules import ControlView
 from .modules import ControlViewTab
 from .modules import ControlViewWindow
 from .modules import DataEditor
+from .modules import DataEditorContactInfo
 from .modules import DataEditorHistory
 from .modules import DataEditorInfoRow
 from .modules import DataEditorSidebarComment
@@ -125,6 +126,7 @@ __all__ = [
     "DataEditor",
     "DataEditor",
     "DataEditorHistory",
+    "DataEditorContactInfo",
     "DataEditorInfoRow",
     "DataEditorSidebarComment",
     "DataEditorSidebarEditingStatus",

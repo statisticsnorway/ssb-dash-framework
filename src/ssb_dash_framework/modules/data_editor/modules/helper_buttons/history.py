@@ -3,7 +3,6 @@ import logging
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 
-import tzlocal
 from dash import Input
 from dash import no_update
 from dash import Output
@@ -16,9 +15,6 @@ from .....utils.alert_handler import AlertHandler
 from .editor_helper_button import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)
-
-local_tz = tzlocal.get_localzone()
-
 
 @register_module()
 class DataEditorHistory(DataEditorHelperButton):

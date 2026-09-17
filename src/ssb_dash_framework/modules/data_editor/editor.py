@@ -167,6 +167,7 @@ class DataEditor:
             Output(f"{self.module_name}-div", "children"),
             State("dataeditortableselector", "value"),
             VariableSelector.get_input("altinnskjema"),
+            prevent_initial_call=True
         )
         def toggle_view_visibility(selected_table, selected_form):
             if not selected_table or not selected_form:

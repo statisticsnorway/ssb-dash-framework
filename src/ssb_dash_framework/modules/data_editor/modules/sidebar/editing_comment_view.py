@@ -98,6 +98,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 )
                 logger.info(error_msg)
                 AlertHandler.info(error_msg)
+                data = None
 
             if data is None:
                 raise PreventUpdate

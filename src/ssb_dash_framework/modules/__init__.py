@@ -28,6 +28,7 @@ from .building_blocks import MultiModuleTab
 from .building_blocks import MultiModuleWindow
 from .data_editor import DataEditor
 from .data_editor import DataEditorHistory
+from .data_editor import DataEditorContactInfo
 from .data_editor import DataEditorInfoRow
 from .data_editor import DataEditorSidebarComment
 from .data_editor import DataEditorSidebarEditingStatus
@@ -72,6 +73,7 @@ __all__ = [
     "ControlViewWindow",
     "DataEditor",
     "DataEditorHistory",
+    "DataEditorContactInfo",
     "DataEditorInfoRow",
     "DataEditorSidebarComment",
     "DataEditorSidebarEditingStatus",

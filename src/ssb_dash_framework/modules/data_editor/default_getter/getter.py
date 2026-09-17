@@ -73,6 +73,9 @@ class StandardDataHandler(FetcherMeta):
     def get_history(self, refnr: str, insert_toogle: bool) -> pd.DataFrame:
         return pd.DataFrame()
 
+    def get_contact_info(self, refnr: str) -> pd.DataFrame:
+        return pd.DataFrame()
+
     def get_form_status(self, refnr: str) -> RefnrStatus | None:
         # print("hei", refnr)
         with get_connection() as conn:

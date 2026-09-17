@@ -4,6 +4,7 @@ import pandas as pd
 def test_dataeditor_python_api():
     from ssb_dash_framework import DataEditor
     from ssb_dash_framework import DataEditorHistory
+    from ssb_dash_framework import DataEditorContactInfo
     from ssb_dash_framework import DataEditorSidebarComment
     from ssb_dash_framework import DataEditorSidebarEditingStatus
     from ssb_dash_framework import DataViewCustom
@@ -58,6 +59,7 @@ def test_dataeditor_python_api():
             #     ]
             # ),
             DataEditorHistory(),
+            DataEditorContactInfo(),
         ],
         sidebar=[
             DataEditorSidebarEditingStatus(),
