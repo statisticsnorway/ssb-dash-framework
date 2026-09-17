@@ -121,7 +121,7 @@ class AlertHandler:
 
     @classmethod
     def info(cls, msg: str, ephemeral: bool | None = False):
-        cls._add_alert(msg, "error", ephemeral=ephemeral)
+        cls._add_alert(msg, "info", ephemeral=ephemeral)
 
     def __init__(self) -> None:
         """Initializes the AlertHandler instance.
