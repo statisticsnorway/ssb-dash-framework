@@ -97,10 +97,11 @@ class DataEditor:
         self.dataview_layouts = {}
         if dataview is not None:
             for view, layout_div in zip(dataview, dataview_list):
-                tables = view.applies_to_tables if hasattr(view, "applies_to_tables") else [settings.form_data_table]
+                tables = getattr(view, "applies_to_tables") if hasattr(view, "applies_to_tables") else [settings.form_data_table]
                 # if not tables and hasattr(view, "applies_to_table"):
                 #     tables = view.applies_to_table if isinstance(view.applies_to_table, list) else [view.applies_to_table]
-                forms = view.applies_to_forms if hasattr(view, "applies_to_forms") else settings.form_list
+                
+                forms = getattr(view, "applies_to_forms") if hasattr(view, "applies_to_forms") else settings.form_list
 
                 for t in tables:
                     for f in forms:
@@ -108,7 +109,7 @@ class DataEditor:
 
         initial_children = [dataview_list[0]] if len(dataview_list) else []
         if initial_children:
-            initial_children[0].style = {"display": "block"}
+            setattr(initial_children[0], "style", {"display": "block"})
 
         self.main_view = html.Div(
             id=f"{self.module_name}-div",
