@@ -14,10 +14,10 @@ from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 
-from ..utils import TabImplementation
-from ..utils import WindowImplementation
-from ..utils import get_connection
-from ..utils.module_validation import module_validator
+from ...utils import TabImplementation
+from ...utils import WindowImplementation
+from ...utils import get_connection
+from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 

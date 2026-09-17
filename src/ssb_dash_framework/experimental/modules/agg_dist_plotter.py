@@ -17,12 +17,12 @@ from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
 
-from ..setup.variableselector import VariableSelector
-from ..utils import TabImplementation
-from ..utils import WindowImplementation
-from ..utils import active_no_duplicates_refnr_list
-from ..utils import get_connection
-from ..utils.module_validation import module_validator
+from ...setup.variableselector import VariableSelector
+from ...utils import TabImplementation
+from ...utils import WindowImplementation
+from ...utils import active_no_duplicates_refnr_list
+from ...utils import get_connection
+from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 

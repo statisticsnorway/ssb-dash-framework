@@ -3,17 +3,11 @@
 from .aarsregnskap import Aarsregnskap
 from .aarsregnskap import AarsregnskapTab
 from .aarsregnskap import AarsregnskapWindow
-from .agg_dist_plotter import AggDistPlotter
-from .agg_dist_plotter import AggDistPlotterTab
-from .agg_dist_plotter import AggDistPlotterWindow
 from .altinn_control_view import AltinnControlViewTab
 from .altinn_control_view import AltinnControlViewWindow
 from .altinn_control_view import ControlView
 from .altinn_control_view import ControlViewTab
 from .altinn_control_view import ControlViewWindow
-from .altinn_data_capture import AltinnDataCapture
-from .altinn_data_capture import AltinnDataCaptureTab
-from .altinn_data_capture import AltinnDataCaptureWindow
 from .bofregistry import BofInformation
 from .bofregistry import BofInformationTab
 from .bofregistry import BofInformationWindow
@@ -45,11 +39,6 @@ from .data_editor import DataEditorTableSelector
 from .data_editor import DataViewCustom
 from .data_editor import EditorSettings
 from .data_editor import StandardDataHandler
-from .freesearch import FreeSearch
-from .freesearch import FreeSearchTab
-from .freesearch import FreeSearchWindow
-from .hb_method import HBMethod
-from .hb_method import HBMethodWindow
 from .nspek import Naeringsspesifikasjon
 from .nspek import NaeringsspesifikasjonTab
 from .nspek import NaeringsspesifikasjonWindow
@@ -66,23 +55,13 @@ from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab
 from .skjemapdfviewer import SkjemapdfViewerWindow
-from .visualizationbuilder import VisualizationBuilder
-from .visualizationbuilder import VisualizationBuilderWindow
 
 __all__ = [
     "Aarsregnskap",
     "AarsregnskapTab",
     "AarsregnskapWindow",
-    "AggDistPlotter",
-    "AggDistPlotterTab",
-    "AggDistPlotterWindow",
     "AltinnControlViewTab",
     "AltinnControlViewWindow",
-    "AltinnDataCapture",
-    "AltinnDataCaptureTab",
-    "AltinnDataCaptureWindow",
-    "AltinnSkjemadataEditor",
-    "AltinnSupportTable",
     "BofInformation",
     "BofInformationTab",
     "BofInformationWindow",
@@ -109,11 +88,6 @@ __all__ = [
     "FigureDisplay",
     "FigureDisplayTab",
     "FigureDisplayWindow",
-    "FreeSearch",
-    "FreeSearchTab",
-    "FreeSearchWindow",
-    "HBMethod",
-    "HBMethodWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
@@ -134,8 +108,6 @@ __all__ = [
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",
     "StandardDataHandler",
-    "VisualizationBuilder",
-    "VisualizationBuilderWindow",
     "apply_edits",
     "export_from_parqueteditor",
     "get_export_log_path",

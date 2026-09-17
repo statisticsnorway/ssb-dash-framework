@@ -16,12 +16,12 @@ from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
 
-from ..setup.variableselector import VariableSelector
-from ..utils.implementations import TabImplementation
-from ..utils.implementations import WindowImplementation
-from ..utils.module_validation import module_validator
-from ..utils.r_helpers import _get_kostra_r
-from ..utils.r_helpers import hb_method
+from ...setup.variableselector import VariableSelector
+from ...utils.implementations import TabImplementation
+from ...utils.implementations import WindowImplementation
+from ...utils.module_validation import module_validator
+from ...utils.r_helpers import _get_kostra_r
+from ...utils.r_helpers import hb_method
 
 logger = logging.getLogger(__name__)
 

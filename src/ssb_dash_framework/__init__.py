@@ -22,14 +22,8 @@ from .control import register_control
 from .modules import Aarsregnskap
 from .modules import AarsregnskapTab
 from .modules import AarsregnskapWindow
-from .modules import AggDistPlotter
-from .modules import AggDistPlotterTab
-from .modules import AggDistPlotterWindow
 from .modules import AltinnControlViewTab
 from .modules import AltinnControlViewWindow
-from .modules import AltinnDataCapture
-from .modules import AltinnDataCaptureTab
-from .modules import AltinnDataCaptureWindow
 from .modules import BofInformation
 from .modules import BofInformationTab
 from .modules import BofInformationWindow
@@ -56,11 +50,6 @@ from .modules import EditorSettings
 from .modules import FigureDisplay
 from .modules import FigureDisplayTab
 from .modules import FigureDisplayWindow
-from .modules import FreeSearch
-from .modules import FreeSearchTab
-from .modules import FreeSearchWindow
-from .modules import HBMethod
-from .modules import HBMethodWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
@@ -81,8 +70,6 @@ from .modules import SkjemapdfViewer
 from .modules import SkjemapdfViewerTab
 from .modules import SkjemapdfViewerWindow
 from .modules import StandardDataHandler
-from .modules import VisualizationBuilder
-from .modules import VisualizationBuilderWindow
 from .modules import apply_edits
 from .modules import export_from_parqueteditor
 from .modules import get_export_log_path
@@ -121,15 +108,9 @@ __all__ = [
     "Aarsregnskap",
     "AarsregnskapTab",
     "AarsregnskapWindow",
-    "AggDistPlotter",
-    "AggDistPlotterTab",
-    "AggDistPlotterWindow",
     "AlertHandler",
     "AltinnControlViewTab",
     "AltinnControlViewWindow",
-    "AltinnDataCapture",
-    "AltinnDataCaptureTab",
-    "AltinnDataCaptureWindow",
     "AppConfig",
     "AppModules",
     "AppSettings",
@@ -164,11 +145,6 @@ __all__ = [
     "FigureDisplay",
     "FigureDisplayTab",
     "FigureDisplayWindow",
-    "FreeSearch",
-    "FreeSearchTab",
-    "FreeSearchWindow",
-    "HBMethod",
-    "HBMethodWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
@@ -199,8 +175,6 @@ __all__ = [
     "VariableSelector",
     "VariableSelectorConfig",
     "VariableSelectorOption",
-    "VisualizationBuilder",
-    "VisualizationBuilderWindow",
     "WindowImplementation",
     "_get_connection_callable",
     "_get_connection_object",
