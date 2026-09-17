@@ -12,14 +12,13 @@ from dash import callback_context as ctx
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
-from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
-from ..utils.alert_handler import create_alert
+from ..utils.alert_handler import AlertHandler
 from ..utils.config_tools.connection import get_connection
 from ..utils.module_validation import module_validator
 
@@ -42,7 +41,7 @@ class ControlView(ABC):
 
     def __init__(
         self,
-        time_units: list[str],
+        # time_units: list[str],
         control_dict: dict[str, Any],
         outputs: list[str] | None = None,
     ) -> None:  # TODO add proper annotation for control_dict value
@@ -67,21 +66,10 @@ class ControlView(ABC):
 
         self.control_dict = control_dict
         self.outputs = outputs
-        self._is_valid()
         self.module_layout = self.create_layout()
-        self.variableselector = VariableSelector(
-            selected_inputs=time_units, selected_states=[]
-        )
-        self.time_units = [
-            self.variableselector.get_option(x).id.removeprefix("var-")
-            for x in time_units
-        ]
+
         self.module_callbacks()
         module_validator(self)
-
-    def _is_valid(self) -> None:
-        VariableSelector([], []).get_option("var-altinnskjema", search_target="id")
-        VariableSelector([], []).get_option("var-ident", search_target="id")
 
     def create_layout(self) -> html.Div:
         """Generates the layout for the ControlView module.
@@ -165,66 +153,54 @@ class ControlView(ABC):
 
         @callback(
             Output(f"{self.module_number}-kontroll-var", "children"),
-            Input("var-altinnskjema", "value"),
-            self.variableselector.get_all_inputs(),
+            VariableSelector.get_input("altinnskjema"),
+            VariableSelector.get_timevar(Input),
         )
-        def kontroller_show_selected_controls(skjema: str | None, *args: Any):
-            logger.debug(f"Args:\nskjema: {skjema}\nargs: {args}")
-            partition_args = dict(zip(self.time_units, args, strict=False))
-            if partition_args is not None and skjema is not None:
+        def kontroller_show_selected_controls(skjema: str | None, period: str | None):
+            logger.debug(f"Args:\nskjema: {skjema}\nperiod: {period}")
+            time_unit_variable: str = getattr(VariableSelector._time_unit, "name")
+            partition_args = {time_unit_variable: period}
+            if skjema is not None:
                 valgte_vars = f"valgt partisjon: {partition_args}\nvalgt skjema: {skjema if skjema else 'Velg skjema for å starte'}"
                 return valgte_vars
 
         @callback(
-            Output("alert_store", "data", allow_duplicate=True),
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
-            State("alert_store", "data"),
             prevent_initial_call=True,
         )
-        def alert_user_of_controls(
-            click: int | None, alert_store: list[dict[str, Any]]
-        ) -> list[dict[str, Any]]:
-            return [
-                create_alert(
-                    "Kjører kontroller, dette kan ta litt tid, du får beskjed når den er ferdig. Ikke klikk på knappen igjen.",
-                    "info",
-                    ephemeral=True,
-                    duration=10,
-                ),
-                *alert_store,
-            ]
+        def alert_user_of_controls(click: int | None):
+            AlertHandler.info(
+                "Kjører kontroller, dette kan ta litt tid, du får beskjed når den er ferdig. Ikke klikk på knappen igjen."
+            )
 
         @callback(
             Output(f"{self.module_number}-kontroller", "rowData"),
             Output(f"{self.module_number}-kontroller", "columnDefs"),
-            Output("alert_store", "data", allow_duplicate=True),
-            Input("var-altinnskjema", "value"),
+            VariableSelector.get_input("altinnskjema"),
             Input(f"{self.module_number}-kontroll-refresh", "n_clicks"),
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
-            State("alert_store", "data"),
-            *self.variableselector.get_all_inputs(),
+            VariableSelector.get_timevar(Input),
             prevent_initial_call=True,
         )
         def get_kontroller_overview(
             skjema: str,
             refresh: int | None,
             rerun: int | None,
-            alert_store: list[dict[str, Any]],
-            *args: Any,
+            period: Any,
         ):
             logger.debug(
                 f"Args:\n"
                 f"skjema: {skjema}\n"
                 f"refresh: {refresh}\n"
                 f"rerun: {rerun}\n"
-                f"args: {args}"
+                f"period: {period}"
             )
+            time_unit_variable: str = getattr(VariableSelector._time_unit, "name")
 
-            logger.debug(dict(zip(self.time_units, args, strict=False)))
+            logger.debug({time_unit_variable: period})
             control_class_instance = self.control_dict[skjema](
-                time_units=self.time_units,
-                applies_to_subset=dict(zip(self.time_units, args, strict=False))
-                | {"skjema": [skjema]},
+                time_units=time_unit_variable,
+                applies_to_subset={"skjema": [skjema], time_unit_variable: period},
             )
             if (
                 ctx.triggered_id == f"{self.module_number}-kontroll-run-button"
@@ -239,15 +215,11 @@ class ControlView(ABC):
                         == "No control methods found. Remember to use the 'register_control' decorator function."
                     ):
                         logger.info("No control methods found.")
-                        alert_store = [
-                            create_alert(
-                                f"Ingen kontroller funnet i {control_class_instance.__class__.__name__}",
-                                "warning",
-                                ephemeral=True,
-                            ),
-                            *alert_store,
-                        ]
-                        return [], [], alert_store
+                        AlertHandler.warning(
+                            f"Ingen kontroller funnet i {control_class_instance.__class__.__name__}"
+                        )
+
+                        return [], []
                     else:
                         raise e
             else:
@@ -321,34 +293,22 @@ class ControlView(ABC):
                 columns[0]["checkboxSelection"] = True
                 columns[0]["headerCheckboxSelection"] = True
                 if ctx.triggered_id == f"{self.module_number}-kontroll-run-button":
-                    alert_store = [
-                        create_alert(
-                            f"Kontrollkjøring ferdig for kontroller i {control_class_instance.__class__.__name__}",
-                            "info",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
+                    AlertHandler.info(
+                        f"Kontrollkjøring ferdig for kontroller i {control_class_instance.__class__.__name__}"
+                    )
                 else:
-                    alert_store = [
-                        create_alert(
-                            "Kontrollvisning oppdatert.",
-                            "info",
-                            ephemeral=True,
-                        ),
-                        *alert_store,
-                    ]
-                return result.to_dict("records"), columns, alert_store
+                    AlertHandler.info("Kontrollvisning oppdatert.")
+
+                return result.to_dict("records"), columns
 
         @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-kontrollutslag", "rowData"),
             Output(f"{self.module_number}-kontrollutslag", "columnDefs"),
             Input(f"{self.module_number}-kontroller", "selectedRows"),
-            self.variableselector.get_all_inputs(),
-            #            *self.create_callback_components("State"),
+            VariableSelector.get_timevar(Input),
         )
-        def get_kontrollutslag(current_row: list[dict[Any, Any]], *args: Any):
-            logger.debug(f"Args:\ncurrent_row: {current_row}\nargs: {args}")
+        def get_kontrollutslag(current_row: list[dict[Any, Any]], period: Any):
+            logger.debug(f"Args:\ncurrent_row: {current_row}\nperiod: {period}")
             if current_row is None or len(current_row) == 0:
                 logger.debug("No current_row, raising PreventUpdate.")
                 raise PreventUpdate
@@ -407,10 +367,7 @@ class ControlView(ABC):
             return result.to_dict("records"), columns
 
         @callback(
-            *[
-                self.variableselector.get_output_object(output)
-                for output in self.outputs
-            ],
+            *[VariableSelector.get_output_object(output) for output in self.outputs],
             Input(f"{self.module_number}-kontrollutslag", "selectedRows"),
             prevent_initial_call="initial_duplicate",
         )
@@ -440,13 +397,11 @@ class ControlViewTab(TabImplementation, ControlView):
 
     def __init__(
         self,
-        time_units: list[str],
         control_dict: dict[str, Any],
     ) -> None:
         """Initializes the ControlViewTab module."""
         ControlView.__init__(
             self,
-            time_units=time_units,
             control_dict=control_dict,
         )
         TabImplementation.__init__(self)
@@ -457,13 +412,11 @@ class ControlViewWindow(WindowImplementation, ControlView):
 
     def __init__(
         self,
-        time_units: list[str],
         control_dict: dict[str, Any],
     ) -> None:
         """Initializes the ControlViewWindow module."""
         ControlView.__init__(
             self,
-            time_units=time_units,
             control_dict=control_dict,
         )
         WindowImplementation.__init__(self)
@@ -473,7 +426,7 @@ class ControlViewWindow(WindowImplementation, ControlView):
 class AltinnControlViewTab(TabImplementation, ControlView):
     """ControlView implemented as a tab."""
 
-    def __init__(self, time_units: list[str], control_dict: dict[str, Any]) -> None:
+    def __init__(self, control_dict: dict[str, Any]) -> None:
         """Initializes the ControlViewTab module."""
         warnings.warn(
             "AltinnControlViewTab is deprecated and will be removed in a future version. "
@@ -483,7 +436,6 @@ class AltinnControlViewTab(TabImplementation, ControlView):
         )
         ControlView.__init__(
             self,
-            time_units=time_units,
             control_dict=control_dict,
         )
         TabImplementation.__init__(self)
@@ -492,9 +444,7 @@ class AltinnControlViewTab(TabImplementation, ControlView):
 class AltinnControlViewWindow(WindowImplementation, ControlView):
     """ControlView implemented as a window."""
 
-    def __init__(
-        self, time_units: list[str], control_dict: dict[str, Any], **kwargs: Any
-    ) -> None:
+    def __init__(self, control_dict: dict[str, Any], **kwargs: Any) -> None:
         """Initializes the ControlViewWindow module."""
         warnings.warn(
             "AltinnControlViewWindow is deprecated and will be removed in a future version. "
@@ -504,7 +454,6 @@ class AltinnControlViewWindow(WindowImplementation, ControlView):
         )
         ControlView.__init__(
             self,
-            time_units=time_units,
             control_dict=control_dict,
         )
         WindowImplementation.__init__(self, **kwargs)
