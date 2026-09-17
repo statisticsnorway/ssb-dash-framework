@@ -225,7 +225,7 @@ class DataViewCustom(DataEditorDataView):
         else:
             self.applies_to_forms = list(forms)
 
-        self.created_layout = self.build_layout(self._layout["layout"])
+        self.created_layout = self.build_layout(self._layout)
         self.module_callbacks()
         super().__init__(
             applies_to_tables=self.applies_to_table,

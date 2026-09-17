@@ -1,4 +1,5 @@
 import pandas as pd
+import json
 
 
 def test_dataeditor_python_api():
@@ -70,7 +71,7 @@ def test_dataeditor_python_api():
             #     applies_to_forms=["RA-xxxx"],
             # ),
             DataViewCustom(
-                layout={"layout":{"type":"row","children":[]}},
+                layout={"type":"row","children":[]},
             ),
         ],
     )
@@ -91,10 +92,9 @@ def test_dataeditor_yaml_based():
     if path.endswith(".yaml"):
         yaml_content = config_parser_yaml(path)
 
-        # import json
-        # print(json.dumps(yaml_content, indent=2))
+    print(json.dumps(yaml_content, indent=2))
 
-        config = AppConfig(**yaml_content)
+    config = AppConfig(**yaml_content)
     app, tabs, windows = build_app_from_config(config)
     instance = tabs[0]
 
