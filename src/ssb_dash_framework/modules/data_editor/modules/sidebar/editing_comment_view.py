@@ -125,6 +125,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 error_msg = f"Comment failed to update with error: {e}"
                 logger.info(error_msg)
                 AlertHandler.info(error_msg)
+                comment = None
 
             if comment is None:
                 error_msg = "Comment returned with None"

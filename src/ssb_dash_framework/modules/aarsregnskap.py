@@ -322,8 +322,7 @@ class Aarsregnskap(ABC):
                     show_iframe,
                     hide_div,
                     {"display": "none"},
-                    brreg_link,
-                    [],
+                    brreg_link
                 )
 
             except FileNotFoundError:
@@ -362,8 +361,7 @@ class Aarsregnskap(ABC):
                     hide_iframe,
                     show_div,
                     {"display": "block"},
-                    brreg_link,
-                    [],
+                    brreg_link
                 )
             except FileNotFoundError:
                 logger.debug("TIF not found either")
