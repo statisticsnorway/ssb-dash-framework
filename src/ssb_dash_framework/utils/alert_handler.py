@@ -117,7 +117,7 @@ class AlertHandler:
     
     @classmethod
     def error(cls, msg: str, ephemeral: bool | None = True):
-        cls._add_alert(msg, "error", ephemeral=ephemeral)
+        cls._add_alert(msg, "warning", ephemeral=ephemeral)
 
     @classmethod
     def info(cls, msg: str, ephemeral: bool | None = False):
