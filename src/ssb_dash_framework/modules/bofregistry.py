@@ -130,6 +130,10 @@ class BofInformation(ABC):
         if label is None:
             label = "BoF Foretak"
         self.label = label
+        if not variableselector_foretak_name:
+            variableselector_foretak_name = "foretak"
+        if not isinstance(variableselector_foretak_name, str):
+            raise TypeError(f"Type for 'variableselector_foretak_name' must be 'str. Received: '{type(variableselector_foretak_name)}'")
         self.inputs = [variableselector_foretak_name]
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -388,7 +392,7 @@ class BofInformation(ABC):
             dynamic_states.append(VariableSelector.get_input(_input))
         # check if var-bedrift exists
         try:
-            VariableSelector.get_option("var-bedrift", search_target="id")
+            VariableSelector.get_option("var-bedrift", search_target="id") # TODO: This might be unreliable
             has_bedrift = True
         except ValueError:
             has_bedrift = False
