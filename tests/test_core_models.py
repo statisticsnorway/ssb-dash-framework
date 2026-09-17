@@ -65,7 +65,7 @@ def test_get_feltsti_default_columns() -> None:
 
 def test_get_feltsti_custom_columns() -> None:
     """A project whose table uses variabel_kortnavn/variabel_feltsti can configure it."""
-    conn = ibis.connect("duckdb://")
+    conn = ibis.polars.connect()
     conn.create_table(
         "mapping_variabelnavn",
         pd.DataFrame(
@@ -86,7 +86,7 @@ def test_get_feltsti_custom_columns() -> None:
 
 def test_get_feltsti_custom_table_name() -> None:
     """The lookup table name itself is configurable."""
-    conn = ibis.connect("duckdb://")
+    conn = ibis.polars.connect()
     conn.create_table(
         "feltsti_mapping",
         pd.DataFrame(
