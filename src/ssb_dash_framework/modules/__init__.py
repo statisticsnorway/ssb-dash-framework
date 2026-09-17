@@ -23,7 +23,6 @@ from .building_blocks import FigureDisplayWindow
 from .building_blocks import MapDisplay
 from .building_blocks import MapDisplayTab
 from .building_blocks import MapDisplayWindow
-from .building_blocks import MicroLayoutAIO
 from .building_blocks import MultiModule
 from .building_blocks import MultiModuleTab
 from .building_blocks import MultiModuleWindow
@@ -91,7 +90,6 @@ __all__ = [
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
-    "MicroLayoutAIO",
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",
