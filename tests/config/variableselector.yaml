@@ -6,3 +6,4 @@ time_units:
 grouping_variables:
   - altinnskjema
   - variabel
+  - foretak
