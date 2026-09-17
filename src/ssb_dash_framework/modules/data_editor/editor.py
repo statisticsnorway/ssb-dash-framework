@@ -1,22 +1,33 @@
-from logging import getLogger
 import uuid
+from logging import getLogger
 
 import dash_bootstrap_components as dbc
+from dash import Output
+from dash import State
+from dash import callback
 from dash import html
 
 from ...config.loader import instantiate_module
 from ...config.models import ModuleConfig
 from ...config.models import register_module
-
+from ...setup.variableselector import VariableSelector
 from .meta import ContextABC
 from .meta import FetcherMeta
 from .meta import ModuleABC
 from .modules.inforow.info_row import DataEditorInfoRow
 from .utils import EditorSettings
-from ...setup.variableselector import VariableSelector
-from dash import callback, Input, Output, State
 
 logger = getLogger(__name__)
+
+
+def _instantiate_data_handler(name: str) -> FetcherMeta:
+    """Resolves a data handler referenced by name in a config file."""
+    import importlib
+
+    cls = getattr(importlib.import_module("ssb_dash_framework"), name, None)
+    if cls is None or not isinstance(cls, type) or not issubclass(cls, FetcherMeta):
+        raise ValueError(f"No data handler named '{name}' found in ssb_dash_framework.")
+    return cls()
 
 
 @register_module(as_tab="DataEditor")
@@ -44,6 +55,8 @@ class DataEditor:
             raise TypeError(
                 "Argument 'settings' must be either an EditorSettings instance or a dict that can validate to one."
             )
+        if isinstance(data_handler, str):
+            data_handler = _instantiate_data_handler(data_handler)
         self.icon = "🗊"
         self.label = "Data editor"
 
@@ -97,11 +110,19 @@ class DataEditor:
         self.dataview_layouts = {}
         if dataview is not None:
             for view, layout_div in zip(dataview, dataview_list):
-                tables = getattr(view, "applies_to_tables") if hasattr(view, "applies_to_tables") else [settings.form_data_table]
+                tables = (
+                    view.applies_to_tables
+                    if hasattr(view, "applies_to_tables")
+                    else [settings.form_data_table]
+                )
                 # if not tables and hasattr(view, "applies_to_table"):
                 #     tables = view.applies_to_table if isinstance(view.applies_to_table, list) else [view.applies_to_table]
-                
-                forms = getattr(view, "applies_to_forms") if hasattr(view, "applies_to_forms") else settings.form_list
+
+                forms = (
+                    view.applies_to_forms
+                    if hasattr(view, "applies_to_forms")
+                    else settings.form_list
+                )
 
                 for t in tables:
                     for f in forms:
@@ -109,7 +130,7 @@ class DataEditor:
 
         initial_children = [dataview_list[0]] if len(dataview_list) else []
         if initial_children:
-            setattr(initial_children[0], "style", {"display": "block"})
+            initial_children[0].style = {"display": "block"}
 
         self.main_view = html.Div(
             id=f"{self.module_name}-div",
@@ -159,15 +180,14 @@ class DataEditor:
 
     def module_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor."""
-        
         if not self.dataview or not self.main_view:
             return
-            
+
         @callback(
             Output(f"{self.module_name}-div", "children"),
             State("dataeditortableselector", "value"),
             VariableSelector.get_input("altinnskjema"),
-            prevent_initial_call=True
+            prevent_initial_call=True,
         )
         def toggle_view_visibility(selected_table, selected_form):
             if not selected_table or not selected_form:

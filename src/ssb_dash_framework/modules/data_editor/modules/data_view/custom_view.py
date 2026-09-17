@@ -209,7 +209,10 @@ class DataViewCustom(DataEditorDataView):
 
     def layout(self):
         """Returns the layout of the module."""
-        tables = self._layout.get("applies_to_tables") or self._layout.get("applies_to_table")
+        layout_config = self._layout if isinstance(self._layout, dict) else {}
+        tables = layout_config.get("applies_to_tables") or layout_config.get(
+            "applies_to_table"
+        )
         if tables is None:
             self.applies_to_table = [self.settings.form_data_table]
         elif isinstance(tables, str):
@@ -217,7 +220,7 @@ class DataViewCustom(DataEditorDataView):
         else:
             self.applies_to_table = list(tables)
 
-        forms = self._layout.get("applies_to_forms")
+        forms = layout_config.get("applies_to_forms")
         if forms is None:
             self.applies_to_forms = self.settings.form_list
         elif isinstance(forms, str):
