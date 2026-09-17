@@ -11,9 +11,8 @@ def test_dataeditor_python_api():
     from ssb_dash_framework import EditorSettings
     from ssb_dash_framework import StandardDataHandler
     from ssb_dash_framework import VariableSelectorConfig
-    from ssb_dash_framework.utils.config_tools.set_variables import TimeUnit
-    from ssb_dash_framework.utils.config_tools.set_variables import TimeUnitType
-
+    from ssb_dash_framework.setup.variableselector.time_unit import TimeUnit
+    from ssb_dash_framework.setup.variableselector.time_unit import TimeUnitType
     DataEditor._module_count = 0  # Reset the count
 
     VariableSelectorConfig(
@@ -71,7 +70,7 @@ def test_dataeditor_python_api():
             #     applies_to_forms=["RA-xxxx"],
             # ),
             DataViewCustom(
-                layout={"layout": {}},
+                layout={"layout":{"type":"row","children":[]}},
             ),
         ],
     )
