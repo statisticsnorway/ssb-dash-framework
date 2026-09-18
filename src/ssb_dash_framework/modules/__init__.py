@@ -18,8 +18,6 @@ from .building_blocks import EditingTable
 from .building_blocks import EditingTableTab
 from .building_blocks import EditingTableWindow
 from .building_blocks import FigureDisplay
-from .building_blocks import FigureDisplayTab
-from .building_blocks import FigureDisplayWindow
 from .building_blocks import MapDisplay
 from .building_blocks import MapDisplayTab
 from .building_blocks import MapDisplayWindow
@@ -87,8 +85,6 @@ __all__ = [
     "EditingTableWindow",
     "EditorSettings",
     "FigureDisplay",
-    "FigureDisplayTab",
-    "FigureDisplayWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
