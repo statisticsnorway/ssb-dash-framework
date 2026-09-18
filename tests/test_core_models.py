@@ -24,9 +24,21 @@ def _make_update(**overrides: object) -> UpdateSkjemadata:
 
 
 def _conn_with_mapping(data: dict[str, list[str]]) -> ibis.BaseBackend:
-    conn = ibis.connect("duckdb://")
+    conn = ibis.polars.connect()
     conn.create_table("mapping_variabelnavn", pd.DataFrame(data))
     return conn
+
+
+def test_conn_with_mapping():
+    conn = _conn_with_mapping(
+        data={
+            "aar": ["2024"],
+            "skjema": ["RA-0255"],
+            "variabel": ["omsetning"],
+            "feltsti": ["sum.omsetning.total"],
+        }
+    )
+    assert conn is not None
 
 
 def test_updateskjemadata_mapping_config_defaults() -> None:
@@ -53,7 +65,7 @@ def test_get_feltsti_default_columns() -> None:
 
 def test_get_feltsti_custom_columns() -> None:
     """A project whose table uses variabel_kortnavn/variabel_feltsti can configure it."""
-    conn = ibis.connect("duckdb://")
+    conn = ibis.polars.connect()
     conn.create_table(
         "mapping_variabelnavn",
         pd.DataFrame(
@@ -74,7 +86,7 @@ def test_get_feltsti_custom_columns() -> None:
 
 def test_get_feltsti_custom_table_name() -> None:
     """The lookup table name itself is configurable."""
-    conn = ibis.connect("duckdb://")
+    conn = ibis.polars.connect()
     conn.create_table(
         "feltsti_mapping",
         pd.DataFrame(

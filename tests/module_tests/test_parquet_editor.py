@@ -10,8 +10,7 @@ from ssb_dash_framework import ParquetEditor
 from ssb_dash_framework import export_from_parqueteditor
 from ssb_dash_framework import get_export_log_path
 from ssb_dash_framework import get_log_path
-from ssb_dash_framework import set_variables
-
+from ssb_dash_framework import VariableSelectorOption
 
 @pytest.fixture(autouse=True)
 def disable_bucket_check(monkeypatch):
@@ -90,7 +89,8 @@ def test_get_export_log_path():
 
 def test_changelog_creation_success(monkeypatch) -> None:
     os.environ["DAPLA_USER"] = "TEST"
-    set_variables(["aar", "orgnr"])
+    VariableSelectorOption("aar")
+    VariableSelectorOption("orgnr")
     example_change = {
         "rowIndex": 0,
         "rowId": "0",

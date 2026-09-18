@@ -31,7 +31,7 @@ def _is_valid_bool(v: Any) -> bool:
     return s in {"true", "false", "1", "0"}
 
 
-_VALIDATORS: dict[str, Callable[[Any], str | None]] = {
+_VALIDATORS: dict[str, Callable[[Any], str | None | bool]] = {
     "string": lambda v: True,
     "integer": _is_valid_int,
     "number": _is_valid_int,
