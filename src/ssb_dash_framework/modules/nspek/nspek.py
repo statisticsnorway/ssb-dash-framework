@@ -70,23 +70,32 @@ RESULTAT_STRUCTURE = {
     "finansposter og skattekostnad": {
         "finansinntekter": (8000, 8099),
         "finanskostnader": (8100, 8299),
-        "skattekostnader": (8300, 8999),
+        "resultatkomponent for IFRS foretak": (8900, 8999),
+        "skattekostnader": (8300, 8899),
     },
 }
 
 NEGATIVE_ACCOUNTS = {
-    "1296",
-    "1298",
-    "1299",
     "2010",
     "2080",
-    "2095",
     "3300",
     "4995",
+    "6751",
     "6998",
     "7099",
+    "8322",
+    "8324",
 }
 
+def get_post_number(post: pd.Series) -> pd.Series:
+    """Returnerer den numeriske delen av postidentifikatoren."""
+    return pd.to_numeric(
+        post.astype(str).str.extract(
+            r"^(\d+(?:\.\d+)?)",
+            expand=False,
+        ),
+        errors="coerce",
+    )
 
 def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
     """Adds UI sum rows used for display aggregation in AG Grid.
@@ -100,9 +109,10 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
 
     df["post"] = df["post"].astype(str)
 
-    post_numeric = pd.to_numeric(df["post"], errors="coerce")
+    post_numeric = get_post_number(df["post"])
+
     df_numeric = df.loc[post_numeric.notna()].copy()
-    df_numeric["post_int"] = post_numeric.loc[post_numeric.notna()].astype(int)
+    df_numeric["post_int"] = (post_numeric.loc[post_numeric.notna()].astype(int))
 
     def apply_sign(row):
         return -1 if row["post"] in NEGATIVE_ACCOUNTS else 1
@@ -146,8 +156,8 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
 
         finansposter_og_skattekostnad = (
             ui_sum_rows["UI_SUM_8000_8099"]["verdi"]
-            + ui_sum_rows["UI_SUM_8100_8299"]["verdi"]
-            + ui_sum_rows["UI_SUM_8300_8999"]["verdi"]
+            - ui_sum_rows["UI_SUM_8100_8299"]["verdi"]
+            - ui_sum_rows["UI_SUM_8300_8899"]["verdi"]
         )
 
         ui_sum_rows["UI_SUM_3000_3999"] = {
@@ -170,9 +180,9 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
             "is_ui_sum": True,
         }
 
-        ui_sum_rows["UI_SUM_8000_8999"] = {
+        ui_sum_rows["UI_SUM_8000_8899"] = {
             "beskrivelse": "SUM forslag for finansposter og skattekostnad",
-            "post": "UI_SUM_8000_8999",
+            "post": "UI_SUM_8000_8899",
             "verdi": finansposter_og_skattekostnad,
             "verdi_compare": None,
             "diff": None,
@@ -185,7 +195,8 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
             - ui_sum_rows["UI_SUM_4000_7999"]["verdi"]
             + ui_sum_rows["UI_SUM_8000_8099"]["verdi"]
             - ui_sum_rows["UI_SUM_8100_8299"]["verdi"]
-            - ui_sum_rows["UI_SUM_8300_8999"]["verdi"]
+            - ui_sum_rows["UI_SUM_8300_8899"]["verdi"]
+            + ui_sum_rows["UI_SUM_8900_8999"]["verdi"]
         )
 
         ui_sum_rows["UI_SUM_3000_8999"] = {
@@ -248,9 +259,10 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
         "UI_SUM_4000_7999": "sumDriftskostnad",
         "UI_SUM_8000_8099": "sumFinansinntekt",
         "UI_SUM_8100_8299": "sumFinanskostnad",
-        "UI_SUM_8300_8999": "sumSkattekostnad",
+        "UI_SUM_8300_8899": "sumSkattekostnad",
         "": "sumSkattekostnad",
-        "UI_SUM_8000_8999": "sumSkattekostnad",
+        "UI_SUM_8000_8899": "sumSkattekostnad",
+        "UI_SUM_8900_8999": "8909.2",
         "UI_SUM_3000_8999": "aarsresultat",
     }
 
@@ -306,6 +318,13 @@ PETROLEUM_ORGNR = {
 }
 
 PETROLEUM_POSTS = {
+    "1101",
+    "1102",
+    "1103",
+    "1104",
+    "1470",
+    "2185",
+    "2470",
     "3001",
     "3002",
     "3003",
@@ -315,6 +334,41 @@ PETROLEUM_POSTS = {
     "3007",
     "3008",
     "3886",
+    "4001",
+    "4002",
+    "4003",
+    "4004",
+    "4007",
+    "4008",
+    "6001",
+    "6002",
+    "6004",
+    "6051",
+    "6052",
+    "6053",
+    "6054",
+    "6110",
+    "6120",
+    "6130",
+    "6140",
+    "6350",
+    "6750",
+    "6751",
+    "6752",
+    "7501"
+    "7502",
+    "7503",
+    "7650",
+    "7651",
+    "7701",
+    "7886",
+    "8054",
+    "8059",
+    "8075",
+    "8120",
+    "8154",
+    "8159",
+    "8175",
 }
 
 
@@ -366,6 +420,7 @@ def apply_blank_filter(df: pd.DataFrame, toggle_blank: list[str]) -> pd.DataFram
                 "Finansinntekter",
                 "Finanskostnader",
                 "Skattekostnader",
+                "Resultatkomponent for IFRS foretak",
             ]
         )
         | df["beskrivelse"].str.startswith("SUM", na=False)
@@ -667,6 +722,8 @@ def build_column_defs(sekvens_compare=None):
         "Finansposter og skattekostnad",
         "SUM Finansposter og skattekostnad",
         "SUM forslag for finansposter og skattekostnad",
+        "Resultatkomponent for IFRS foretak",
+        "SUM forslag for resultatkomponent for IFRS foretak",
         "SUM Årsresultat",
         "SUM forslag for årsresultat",
     ]
@@ -944,9 +1001,11 @@ def build_regnskap_dataframe(
         axis=1,
     )
 
-    # Vis kun numeriske poster i gridet
+    # Vis kun gyldige poster i gridet
     df["post"] = df["post"].where(
-        df["post"].astype(str).str.fullmatch(r"\d+"),
+        df["post"]
+        .astype(str)
+        .str.fullmatch(r"\d+(?:\.\d+)?(?:_[A-Za-z0-9]+)?"),
         "",
     )
 
@@ -1154,6 +1213,35 @@ def add_update_counts(conn, df):
     df["antall_endringer"] = df["antall_endringer"].fillna(0)
 
     return df
+
+
+def get_constructed_sequences(
+    conn,
+    sekvensnummer: list[int],
+) -> set[int]:
+    """Returnerer sekvensnummer som inneholder konstruerte rader."""
+
+    if not sekvensnummer:
+        return set()
+
+    config = TYPE_REGNSKAP_TABLE["registrering"]
+
+    t = conn.table(
+        config["table"],
+        database=config["database"],
+    )
+
+    df = (
+        t.filter(
+            _.sekvensnummer.isin(sekvensnummer)
+            & (_.kilde == "K")
+        )
+        .select(_.sekvensnummer)
+        .distinct()
+        .execute()
+    )
+
+    return set(df["sekvensnummer"].tolist())
 
 
 def get_available_years(conn, ident: str) -> list[int]:
@@ -1689,6 +1777,7 @@ class Naeringsspesifikasjon:
                                 ),
                             ],
                             id="modal-editeringslogg",
+                            className = "ssb-modal",
                             is_open=False,
                             size="xl",
                             style={
@@ -1762,6 +1851,7 @@ class Naeringsspesifikasjon:
                                 ),
                             ],
                             id="modal-generell-kommentar-historikk",
+                            className="ssb-modal",
                             is_open=False,
                             size="xl",
                             style={
@@ -2724,6 +2814,12 @@ class Naeringsspesifikasjon:
                         pending["value"],
                     )
 
+                    run_controls_changed_fields_for_sekvensnummer(
+                        conn,
+                        pending["sekvensnummer"],
+                        changed_fields=[pending["post"]],
+                    )
+
                 alert_store = [
                     create_alert(
                         f"{pending['post']} oppdatert til {pending['value']}",
@@ -2888,14 +2984,30 @@ class Naeringsspesifikasjon:
 
                 df = add_update_counts(conn, df)
 
-            df["label"] = df.apply(
-                lambda row: row["label"]
-                + (" (editert)" if row["antall_endringer"] > 0 else ""),
-                axis=1,
-            )
+                constructed_sequences = get_constructed_sequences(
+                    conn,
+                    df["sekvensnummer"].tolist(),
+                )
+
+                df["label"] = df.apply(
+                    lambda row: row["label"]
+                    + (
+                        " (konstruert)"
+                        if row["sekvensnummer"] in constructed_sequences
+                        else (
+                            " (editert)"
+                            if row["antall_endringer"] > 0
+                            else ""
+                        )
+                    ),
+                    axis=1,
+                )
 
             options = [
-                {"label": row["label"], "value": row["sekvensnummer"]}
+                {
+                    "label": row["label"],
+                    "value": row["sekvensnummer"],
+                }
                 for _, row in df.iterrows()
             ]
 
@@ -2975,9 +3087,22 @@ class Naeringsspesifikasjon:
                         df_current,
                     )
 
+                    constructed_sequences = get_constructed_sequences(
+                        conn,
+                        df_current["sekvensnummer"].tolist(),
+                    )
+
                     df_current["label"] = df_current.apply(
                         lambda row: row["label"]
-                        + (" (editert)" if row["antall_endringer"] > 0 else ""),
+                        + (
+                            " (konstruert)"
+                            if row["sekvensnummer"] in constructed_sequences
+                            else (
+                                " (editert)"
+                                if row["antall_endringer"] > 0
+                                else ""
+                            )
+                        ),
                         axis=1,
                     )
 
