@@ -2613,18 +2613,81 @@ REMOVE BOOTSTRAP ROUNDING
    ========================================================= */
 
 /* =========================
+   BASE / SSB THEME
+   ========================= */
+
+.dark-mode {
+  --ssb-dark-bg: #222222;
+  --ssb-dark-bg-secondary: #303030;
+  --ssb-dark-bg-tertiary: #3a3a3a;
+
+  --ssb-dark-text: #ffffff;
+  --ssb-dark-text-secondary: rgba(255, 255, 255, 0.75);
+  --ssb-dark-text-muted: rgba(255, 255, 255, 0.55);
+
+  --ssb-dark-border: rgba(255, 255, 255, 0.15);
+  --ssb-dark-border-strong: rgba(255, 255, 255, 0.35);
+
+  --ssb-dark-hover: rgba(255, 255, 255, 0.08);
+
+  --ssb-dark-green: #00824d;
+  --ssb-dark-green-light: #b6e8b8;
+
+  color: var(--ssb-dark-text);
+}
+
+/* =========================
+   GENERAL TEXT
+   ========================= */
+
+.dark-mode .ssb-text-wrapper,
+.dark-mode .ssb-card,
+.dark-mode .ssb-chart-card,
+.dark-mode .ssb-chart-title,
+.dark-mode .ssb-key-figures {
+  color: var(--ssb-dark-text);
+}
+
+/* =========================
+   CARDS
+   ========================= */
+
+.dark-mode .ssb-card,
+.dark-mode .ssb-chart-card {
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
+  border-color: var(--ssb-dark-border);
+}
+
+.dark-mode .ssb-card .card-title,
+.dark-mode .ssb-card .card-content,
+.dark-mode .ssb-card .nspek-dashboard-kpi-value,
+.dark-mode .ssb-card .nspek-dashboard-kpi-description {
+  color: var(--ssb-dark-text);
+}
+
+.dark-mode .ssb-card .card-icon {
+  color: var(--ssb-dark-green-light);
+}
+
+.dark-mode .ssb-card:hover {
+  border-color: var(--ssb-dark-border-strong);
+}
+
+/* =========================
    MODAL
    ========================= */
 
 .dark-mode .ssb-modal .modal-content {
-  background-color: #222222;
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.15);
+  background-color: var(--ssb-dark-bg);
+  color: var(--ssb-dark-text);
+  border-color: var(--ssb-dark-border);
 }
 
 .dark-mode .ssb-modal .modal-header {
-  background-color: #00824d;
-  color: #ffffff;
+  background-color: var(--ssb-dark-green);
+  color: var(--ssb-dark-text);
+  border-bottom-color: var(--ssb-dark-border);
 }
 
 .dark-mode .ssb-modal .modal-title,
@@ -2632,22 +2695,64 @@ REMOVE BOOTSTRAP ROUNDING
 .dark-mode .ssb-modal .modal-title-icon,
 .dark-mode .ssb-modal .ssb-modal-icon-button,
 .dark-mode .ssb-modal .ssb-modal-icon-button svg {
-  color: #ffffff !important;
+  color: var(--ssb-dark-text) !important;
 }
 
 .dark-mode .ssb-modal .modal-body,
 .dark-mode .ssb-modal .modal-footer {
-  background-color: #303030;
-  color: #ffffff;
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
 }
 
 .dark-mode .ssb-modal .modal-footer {
-  border-top-color: rgba(255, 255, 255, 0.15);
+  border-top-color: var(--ssb-dark-border);
 }
 
 .dark-mode .ssb-modal .btn-close {
   filter: brightness(0) invert(1);
   opacity: 1;
+}
+
+/* =========================
+   DIALOG
+   ========================= */
+
+.dark-mode .dialog,
+.dark-mode .ssb-dialog {
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
+  border-color: var(--ssb-dark-border);
+}
+
+.dark-mode .dialog-title,
+.dark-mode .dialog-content,
+.dark-mode .dialog-orgnr,
+.dark-mode .dialog-message {
+  color: var(--ssb-dark-text);
+}
+
+.dark-mode .dialog-close {
+  color: var(--ssb-dark-text);
+}
+
+.dark-mode .dialog-close:hover {
+  color: var(--ssb-dark-green-light);
+}
+
+/* Mini-dialog */
+
+.dark-mode .dialog-mini,
+.dark-mode .ssb-dialog-mini {
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
+  border-color: var(--ssb-dark-border);
+}
+
+.dark-mode .dialog-mini .dialog-title,
+.dark-mode .dialog-mini .dialog-content,
+.dark-mode .ssb-dialog-mini .dialog-title,
+.dark-mode .ssb-dialog-mini .dialog-content {
+  color: var(--ssb-dark-text);
 }
 
 /* =========================
@@ -2657,7 +2762,7 @@ REMOVE BOOTSTRAP ROUNDING
 .dark-mode .ssb-input label,
 .dark-mode .ssb-dropdown-card .dropdown-label,
 .dark-mode .ssb-text-area label {
-  color: #ffffff;
+  color: var(--ssb-dark-text);
 }
 
 /* =========================
@@ -2667,15 +2772,15 @@ REMOVE BOOTSTRAP ROUNDING
 .dark-mode .ssb-input input,
 .dark-mode .ssb-text-area textarea,
 .dark-mode .ssb-text-area .comment-textarea {
-  background-color: #303030;
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.35);
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
+  border-color: var(--ssb-dark-border-strong);
 }
 
 .dark-mode .ssb-input input::placeholder,
 .dark-mode .ssb-text-area textarea::placeholder,
 .dark-mode .ssb-text-area .comment-textarea::placeholder {
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--ssb-dark-text-muted);
 }
 
 .dark-mode .ssb-input:hover input:not(:disabled),
@@ -2683,19 +2788,19 @@ REMOVE BOOTSTRAP ROUNDING
 .dark-mode .ssb-text-area:hover textarea:not(:disabled),
 .dark-mode .ssb-text-area textarea:focus,
 .dark-mode .ssb-text-area .comment-textarea:focus {
-  border-color: #b6e8b8;
-  outline-color: #b6e8b8;
+  border-color: var(--ssb-dark-green-light);
+  outline-color: var(--ssb-dark-green-light);
 }
 
 .dark-mode .ssb-input input:disabled,
 .dark-mode .ssb-text-area textarea:disabled {
-  background-color: #3a3a3a;
-  color: rgba(255, 255, 255, 0.5);
-  border-color: rgba(255, 255, 255, 0.25);
+  background-color: var(--ssb-dark-bg-tertiary);
+  color: var(--ssb-dark-text-muted);
+  border-color: var(--ssb-dark-border);
 }
 
 .dark-mode .ssb-text-area {
-  border-color: rgba(255, 255, 255, 0.35);
+  border-color: var(--ssb-dark-border-strong);
 }
 
 /* =========================
@@ -2705,34 +2810,34 @@ REMOVE BOOTSTRAP ROUNDING
 .dark-mode .ssb-checkbox,
 .dark-mode .ssb-checkbox label,
 .dark-mode .ssb-checkbox .form-check label {
-  color: #ffffff;
+  color: var(--ssb-dark-text);
 }
 
 .dark-mode .ssb-checkbox input[type="checkbox"] {
-  background: #303030;
-  border-color: #ffffff;
+  background: var(--ssb-dark-bg-secondary);
+  border-color: var(--ssb-dark-text);
 }
 
 .dark-mode .ssb-checkbox input[type="checkbox"]:hover {
-  border-color: #00824d;
+  border-color: var(--ssb-dark-green);
 }
 
 .dark-mode .ssb-checkbox input[type="checkbox"]:checked {
-  background: #00824d;
-  border-color: #00824d;
+  background: var(--ssb-dark-green);
+  border-color: var(--ssb-dark-green);
 }
 
 .dark-mode .ssb-checkbox input[type="checkbox"]:checked::after {
-  border-color: #ffffff;
+  border-color: var(--ssb-dark-text);
 }
 
 .dark-mode .ssb-checkbox input[type="checkbox"]:disabled {
-  background: #3a3a3a;
+  background: var(--ssb-dark-bg-tertiary);
   border-color: rgba(255, 255, 255, 0.4);
 }
 
 .dark-mode .ssb-checkbox label:has(input:disabled) {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--ssb-dark-text-muted);
 }
 
 /* =========================
@@ -2741,18 +2846,18 @@ REMOVE BOOTSTRAP ROUNDING
 
 .dark-mode .ssb-accordion,
 .dark-mode .ssb-accordion .accordion-body {
-  color: #ffffff;
+  color: var(--ssb-dark-text);
 }
 
 .dark-mode .ssb-accordion .accordion-header .header-text,
 .dark-mode .ssb-accordion .accordion-header .sub-header,
 .dark-mode .ssb-accordion .accordion-button {
-  color: #ffffff !important;
+  color: var(--ssb-dark-text) !important;
 }
 
 .dark-mode .ssb-accordion .accordion-header:hover .header-text,
 .dark-mode .ssb-accordion .accordion-header:hover .sub-header {
-  color: #b6e8b8;
+  color: var(--ssb-dark-green-light);
 }
 
 .dark-mode .ssb-accordion .accordion-button,
@@ -2765,9 +2870,9 @@ REMOVE BOOTSTRAP ROUNDING
 .dark-mode .ssb-accordion .accordion-button:not(.collapsed)::after,
 .dark-mode .ssb-nested-accordion .accordion-button::after,
 .dark-mode .ssb-nested-accordion .accordion-button:not(.collapsed)::after {
-    filter: brightness(0) saturate(100%)
-            invert(42%) sepia(45%) saturate(900%)
-            hue-rotate(105deg) brightness(90%);
+  filter: brightness(0) saturate(100%)
+          invert(42%) sepia(45%) saturate(900%)
+          hue-rotate(105deg) brightness(90%);
 }
 
 .dark-mode .ssb-accordion .accordion-button:focus {
@@ -2775,11 +2880,11 @@ REMOVE BOOTSTRAP ROUNDING
 }
 
 .dark-mode .ssb-accordion:not(.without-borders)::before {
-  border-top-color: rgba(255, 255, 255, 0.15);
+  border-top-color: var(--ssb-dark-border);
 }
 
 .dark-mode .ssb-accordion:not(.without-borders)::after {
-  border-bottom-color: rgba(255, 255, 255, 0.15);
+  border-bottom-color: var(--ssb-dark-border);
 }
 
 /* =========================
@@ -2789,13 +2894,13 @@ REMOVE BOOTSTRAP ROUNDING
 .dark-mode .ssb-nested-accordion .nested-accordion-header .header-text,
 .dark-mode .ssb-nested-accordion .nested-accordion-body,
 .dark-mode .ssb-nested-accordion .accordion-button {
-  color: #ffffff !important;
+  color: var(--ssb-dark-text) !important;
 }
 
 .dark-mode .ssb-nested-accordion .nested-accordion-header:hover .header-text,
 .dark-mode .ssb-nested-accordion .nested-accordion-header.open .header-text,
 .dark-mode .ssb-nested-accordion .nested-accordion-header.open .sub-header {
-  color: #b6e8b8;
+  color: var(--ssb-dark-green-light);
 }
 
 .dark-mode .ssb-nested-accordion .accordion-button,
@@ -2805,19 +2910,29 @@ REMOVE BOOTSTRAP ROUNDING
 }
 
 /* =========================
-   KEY-FIGURES
+   KEY FIGURES
    ========================= */
 
 .dark-mode .ssb-key-figures {
-  color: #ffffff;
+  color: var(--ssb-dark-text);
 }
 
 .dark-mode .ssb-key-figures .kf-icon {
-  color: #ffffff;
+  color: var(--ssb-dark-text);
+}
+
+.dark-mode .ssb-key-figures .kf-icon svg {
+  color: var(--ssb-dark-text);
+}
+
+.dark-mode .ssb-key-figures .kf-title,
+.dark-mode .ssb-key-figures .kf-time,
+.dark-mode .ssb-key-figures .ssb-number {
+  color: var(--ssb-dark-text);
 }
 
 .dark-mode .ssb-key-figures .kf-title.subtitle {
-  color: #ffffff;
+  color: var(--ssb-dark-text);
 }
 
 .dark-mode .ssb-key-figures.green-box {
@@ -2833,62 +2948,62 @@ REMOVE BOOTSTRAP ROUNDING
    ========================= */
 
 .dark-mode .ssb-dropdown {
-  background-color: #303030;
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.35);
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
+  border-color: var(--ssb-dark-border-strong);
 }
 
 .dark-mode .ssb-dropdown .dash-dropdown-value {
-  color: #ffffff;
+  color: var(--ssb-dark-text);
 }
 
 .dark-mode .ssb-dropdown .dash-dropdown-trigger-icon {
-  color: #b6e8b8;
+  color: var(--ssb-dark-green-light);
 }
 
 .dark-mode .ssb-dropdown:hover,
 .dark-mode .ssb-dropdown:focus {
-  border-color: #b6e8b8;
-  outline-color: #b6e8b8;
+  border-color: var(--ssb-dark-green-light);
+  outline-color: var(--ssb-dark-green-light);
 }
 
 .dark-mode .dash-dropdown-content,
 .dark-mode .dash-options-list-option.dash-dropdown-option {
-  background-color: #303030;
-  color: #ffffff;
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
 }
 
 .dark-mode .dash-dropdown-content {
-  border-color: rgba(255, 255, 255, 0.35);
+  border-color: var(--ssb-dark-border-strong);
 }
 
 .dark-mode .dash-options-list-option.dash-dropdown-option:hover {
   background-color: #274247;
-  color: #ffffff;
+  color: var(--ssb-dark-text);
 }
 
 .dark-mode .dash-options-list-option.dash-dropdown-option.selected,
 .dark-mode .dash-options-list-option.dash-dropdown-option[aria-selected="true"] {
-  background-color: #00824d;
-  color: #ffffff !important;
+  background-color: var(--ssb-dark-green);
+  color: var(--ssb-dark-text) !important;
 }
 
 .dark-mode .dash-dropdown-search-container {
-  background-color: #303030;
-  border-color: rgba(255, 255, 255, 0.35);
+  background-color: var(--ssb-dark-bg-secondary);
+  border-color: var(--ssb-dark-border-strong);
 }
 
 .dark-mode .dash-dropdown-search {
   background-color: transparent;
-  color: #ffffff;
+  color: var(--ssb-dark-text);
 }
 
 .dark-mode .dash-dropdown-search::placeholder {
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--ssb-dark-text-muted);
 }
 
 .dark-mode .dash-options-list::-webkit-scrollbar-track {
-  background: #303030;
+  background: var(--ssb-dark-bg-secondary);
 }
 
 .dark-mode .dash-options-list::-webkit-scrollbar-thumb {
@@ -2898,14 +3013,14 @@ REMOVE BOOTSTRAP ROUNDING
 /* Dropdown checkbox */
 
 .dark-mode .dash-dropdown-options .dash-options-list-option-checkbox {
-  background: #303030;
-  border-color: #ffffff;
+  background: var(--ssb-dark-bg-secondary);
+  border-color: var(--ssb-dark-text);
 }
 
 .dark-mode .dash-dropdown-options .dash-options-list-option[aria-selected="true"]
 .dash-options-list-option-checkbox {
-  background: #00824d;
-  border-color: #00824d;
+  background: var(--ssb-dark-green);
+  border-color: var(--ssb-dark-green);
 }
 
 /* =========================
@@ -2916,7 +3031,97 @@ REMOVE BOOTSTRAP ROUNDING
 .dark-mode #main-layout-tab-list .tab--selected,
 .dark-mode #main-layout-tab-list .tab:hover,
 .dark-mode #main-layout-tab-list .tab:focus {
-  color: #ffffff !important;
+  color: var(--ssb-dark-text) !important;
+}
+
+/* =========================
+   CHART CARDS
+   ========================= */
+
+.dark-mode .ssb-chart-card {
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
+  border-color: var(--ssb-dark-border);
+}
+
+.dark-mode .ssb-chart-card .card-body {
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
+}
+
+.dark-mode .ssb-chart-title {
+  color: var(--ssb-dark-text);
+}
+
+/* =========================
+   CHART TABS
+   ========================= */
+
+.dark-mode .ssb-chart-tabs {
+  color: var(--ssb-dark-text);
+}
+
+.dark-mode .ssb-chart-tabs .tab {
+  background-color: transparent;
+  color: var(--ssb-dark-text-secondary);
+  border-color: var(--ssb-dark-border);
+}
+
+.dark-mode .ssb-chart-tabs .tab--selected {
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
+  border-color: var(--ssb-dark-green);
+}
+
+.dark-mode .ssb-chart-tabs .tab:hover {
+  color: var(--ssb-dark-green-light);
+}
+
+/* =========================
+   SSB TABLE
+   ========================= */
+
+.dark-mode .ssb-table-wrapper {
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
+}
+
+.dark-mode .ssb-table {
+  --bs-table-bg: var(--ssb-dark-bg-secondary);
+  --bs-table-color: var(--ssb-dark-text);
+  --bs-table-border-color: var(--ssb-dark-border);
+
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
+  border-color: var(--ssb-dark-border);
+}
+
+.dark-mode .ssb-table thead,
+.dark-mode .ssb-table thead tr,
+.dark-mode .ssb-table thead th {
+  background-color: var(--ssb-dark-bg);
+  color: var(--ssb-dark-text);
+  border-color: var(--ssb-dark-border);
+}
+
+.dark-mode .ssb-table tbody,
+.dark-mode .ssb-table tbody tr,
+.dark-mode .ssb-table tbody td {
+  background-color: var(--ssb-dark-bg-secondary);
+  color: var(--ssb-dark-text);
+  border-color: var(--ssb-dark-border);
+}
+
+.dark-mode .ssb-table tbody tr:hover td {
+  background-color: var(--ssb-dark-hover);
+  color: var(--ssb-dark-text);
+}
+
+/* Bootstrap striped tables */
+
+.dark-mode .ssb-table.table-striped > tbody > tr:nth-of-type(odd) > * {
+  --bs-table-accent-bg: var(--ssb-dark-bg-tertiary);
+  color: var(--ssb-dark-text);
 }
 
 /* =========================
@@ -2990,6 +3195,132 @@ REMOVE BOOTSTRAP ROUNDING
 
 .dark-mode .ag-theme-ssb .ag-checkbox-input-wrapper.ag-checked::after {
   color: #ffffff;
+}
+
+/* ============================================================
+   SSB CHARTS / TABLES – DARK MODE
+   ============================================================ */
+
+.dark-mode .ssb-chart-title {
+    color: #ffffff !important;
+}
+
+
+/* ------------------------------------------------------------
+   SSB table
+   ------------------------------------------------------------ */
+
+.dark-mode .ssb-table-wrapper {
+    background-color: #303030;
+    color: #ffffff;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.dark-mode .ssb-table {
+    --bs-table-color: #ffffff;
+    --bs-table-bg: #303030;
+    --bs-table-border-color: rgba(255, 255, 255, 0.15);
+
+    --bs-table-striped-color: #ffffff;
+    --bs-table-striped-bg: #3a3a3a;
+
+    --bs-table-hover-color: #ffffff;
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.08);
+
+    color: #ffffff !important;
+    background-color: #303030 !important;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+
+/* ------------------------------------------------------------
+   Header
+   ------------------------------------------------------------ */
+
+.dark-mode .ssb-table thead,
+.dark-mode .ssb-table thead tr,
+.dark-mode .ssb-table thead th {
+    --bs-table-bg: #222222;
+
+    background-color: #222222 !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+
+/* ------------------------------------------------------------
+   Body cells
+   ------------------------------------------------------------ */
+
+.dark-mode .ssb-table tbody td,
+.dark-mode .ssb-table tbody th {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.15);
+
+    /* Viktig: Bootstrap bruker box-shadow for tabellbakgrunnen */
+    box-shadow: inset 0 0 0 9999px #303030 !important;
+}
+
+
+/* ------------------------------------------------------------
+   Striped rows
+   ------------------------------------------------------------ */
+
+.dark-mode .ssb-table tbody tr:nth-child(odd) td,
+.dark-mode .ssb-table tbody tr:nth-child(odd) th {
+    --bs-table-bg: #3a3a3a;
+
+    background-color: #3a3a3a !important;
+    box-shadow: inset 0 0 0 9999px #3a3a3a !important;
+}
+
+.dark-mode .ssb-table tbody tr:nth-child(even) td,
+.dark-mode .ssb-table tbody tr:nth-child(even) th {
+    --bs-table-bg: #303030;
+
+    background-color: #303030 !important;
+    box-shadow: inset 0 0 0 9999px #303030 !important;
+}
+
+
+/* ------------------------------------------------------------
+   Hover
+   ------------------------------------------------------------ */
+
+.dark-mode .ssb-table tbody tr:hover td,
+.dark-mode .ssb-table tbody tr:hover th {
+    --bs-table-hover-bg: #464646;
+    --bs-table-hover-color: #ffffff;
+
+    background-color: #464646 !important;
+    box-shadow: inset 0 0 0 9999px #464646 !important;
+    color: #ffffff !important;
+}
+
+/* =========================
+   BUTTONS
+   ========================= */
+
+.dark-mode .ssb-btn.primary-btn {
+  color: #ffffff;
+}
+
+.dark-mode .ssb-btn.primary-btn:hover,
+.dark-mode .ssb-btn.primary-btn:focus {
+  color: #ffffff;
+}
+
+/* =========================
+   LINKS
+   ========================= */
+
+.dark-mode a {
+  color: var(--ssb-dark-green-light);
+}
+
+.dark-mode a:hover {
+  color: #d0f0d2;
 }
 
 /* =========================
