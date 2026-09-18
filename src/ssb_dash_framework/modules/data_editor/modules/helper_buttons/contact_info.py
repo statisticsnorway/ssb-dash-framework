@@ -1,4 +1,7 @@
 import logging
+from ssb_dash_framework.modules.data_editor.modules.helper_buttons.meta import (
+    ContactInfo,
+)
 from typing import Any
 import pandas as pd
 from dash import Input
@@ -17,6 +20,7 @@ from .editor_helper_button import DataEditorHelperButton
 from .meta import ContactInfo
 
 logger = logging.getLogger(__name__)
+
 
 class DataEditorContactInfo(DataEditorHelperButton):
     """This module provides supporting tables for the DataEditor.
@@ -42,7 +46,11 @@ class DataEditorContactInfo(DataEditorHelperButton):
         self.module_callbacks()
 
     def create_info_card(
-        self, title: str, component_id: str, var_type: str | int, style: dict | None = None
+        self,
+        title: str,
+        component_id: str,
+        var_type: str | int,
+        style: dict | None = None,
     ):
         card_info = html.Div(
             className="ssb-input",
@@ -85,7 +93,6 @@ class DataEditorContactInfo(DataEditorHelperButton):
                                 ),
                                 width=1,
                             ),
-                            
                             dbc.Col(
                                 self.create_info_card(
                                     title="Kontaktperson",
@@ -123,7 +130,11 @@ class DataEditorContactInfo(DataEditorHelperButton):
                                                 dcc.Checklist(
                                                     id="dataeditor-kontaktinfo-bekreftet",
                                                     options=[
-                                                        {"label": "", "value": "1", "disabled": True}
+                                                        {
+                                                            "label": "",
+                                                            "value": "1",
+                                                            "disabled": True,
+                                                        }
                                                     ],
                                                     value=[],
                                                 ),
@@ -223,7 +234,7 @@ class DataEditorContactInfo(DataEditorHelperButton):
         )
         def create_info_cards_kontaktinfo(
             refnr: str,
-        ) -> tuple:
+        ) -> tuple[str, str, str, str, str, list[str], str, str, dict[str, str], str]:
             """Returns a tuple of strings with the values for info cards for the kontaktinfo module in DataEditor.
             These cards will hold kontaktinfo foretak.
             """
@@ -231,42 +242,35 @@ class DataEditorContactInfo(DataEditorHelperButton):
                 raise PreventUpdate
 
             try:
-                df: pd.DataFrame = self.fetcher.get_contact_info(refnr)
+                info: ContactInfo = self.fetcher.get_contact_info(
+                    refnr
+                )  # pyright: ignore
 
             except Exception as e:
                 msg = f"Getting contact info failed with error: {e}"
-                logger.warning(msg)
+                logger.exception(msg)
                 AlertHandler.warning(msg)
-                return ContactInfo().as_dash_tuple()
+                info = ContactInfo.empty()
 
-            orgnr = df["ident"].item()
-            skjema = df["skjema"].item()
-            kontaktperson = df["kontaktperson"].item()
-            epost = df["epost"].item()
-            tlf = df["telefon"].item()
-            bekreftet = df["bekreftet_kontaktinfo"].item()
-            kommentar_kontaktinfo = df["kommentar_kontaktinfo"].item()
-            kommentar_krevende = df["kommentar_krevende"].item()
-            
             comment_count = sum(
                 [
-                    bool(kommentar_kontaktinfo),
-                    bool(kommentar_krevende),
+                    bool(info.kommentar_kontaktinfo),
+                    bool(info.kommentar_krevende),
                 ]
             )
             indicator_style = (
                 {"display": "block"} if comment_count > 0 else {"display": "none"}
             )
 
-            return ContactInfo(
-                orgnr=orgnr,
-                skjema=skjema,
-                kontaktperson=kontaktperson,
-                epost=epost,
-                tlf=tlf,
-                bekreftet=[bekreftet] if bekreftet else [],
-                kommentar_kontaktinfo=kommentar_kontaktinfo,
-                kommentar_krevende=kommentar_krevende,
-                indicator_style=indicator_style,
-                comment_count=str(comment_count) if comment_count > 0 else "",
-            ).as_dash_tuple()
+            return (
+                info.ident,
+                info.skjema,
+                info.kontaktperson,
+                info.epost,
+                info.telefon,
+                [info.bekreftet_kontaktinfo] if info.bekreftet_kontaktinfo else [],
+                info.kommentar_kontaktinfo,
+                info.kommentar_krevende,
+                indicator_style,
+                str(comment_count) if comment_count > 0 else "",
+            )
