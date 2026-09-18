@@ -15,7 +15,7 @@ from .modules.inforow.info_row import DataEditorInfoRow
 from .utils import EditorSettings
 from ...setup.variableselector import VariableSelector
 from dash import callback, Input, Output, State
-
+from ...utils.metaclasses import instantiate_class_instance
 logger = getLogger(__name__)
 
 
@@ -44,6 +44,8 @@ class DataEditor:
             raise TypeError(
                 "Argument 'settings' must be either an EditorSettings instance or a dict that can validate to one."
             )
+        if isinstance(data_handler, str):
+            data_handler = instantiate_class_instance(data_handler, FetcherMeta)
         self.icon = "🗊"
         self.label = "Data editor"
 

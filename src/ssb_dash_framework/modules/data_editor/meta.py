@@ -8,11 +8,13 @@ from .utils import EditorSettings
 from .modules.inforow.meta import InforowMeta
 from .modules.helper_buttons.meta import HelperButtonMeta
 from .modules.microlayout.meta import MicrolayoutMeta
+from ...utils.metaclasses import BaseDatahandler
 
 SettingsType = EditorSettings
 
 
 class FetcherMeta(
+    BaseDatahandler,
     # SidebarMeta[SettingsType],
     InforowMeta[SettingsType],
     HelperButtonMeta,
