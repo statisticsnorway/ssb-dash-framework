@@ -152,7 +152,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 "ident": VariableSelector.get_ident(Input),
                 "period": VariableSelector.get_timevar(Input),
             },
-            prevent_initial_call=True
+            prevent_initial_call=True,
         )
         def update_refnr(ident, period):
             try:
@@ -164,7 +164,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     return refnr[self.settings.refnr_col].tolist()[0], skjema
                 else:
                     return no_update, no_update
-                    
+
             except Exception as e:
                 msg = f"Getting reference numbers for ident returned with an error: {e}"
                 logger.warning(msg)
@@ -263,20 +263,16 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             Output(
                 f"{self.module_name}-{self.module_number}-form-table-modal", "is_open"
             ),
-            inputs={
-                "click": Input(
-                    f"{self.module_name}-{self.module_number}-button", "n_clicks"
-                ),
-                "ident": VariableSelector.get_ident(State),
-                "time_units": VariableSelector.get_timevar(State),
-            },
+            Input(f"{self.module_name}-{self.module_number}-button", "n_clicks"),
+            VariableSelector.get_ident(State),
+            VariableSelector.get_timevar(State),
         )
         def view_refnrs_by_ident(click: int | None, ident: str | None, time_units: str):
             """Populates a table showing all relevant received forms from the relevant 'ident'."""
 
             if ctx.triggered_id != f"{self.module_name}-{self.module_number}-button":
                 raise PreventUpdate
-
+                
             if ident is None:
                 raise PreventUpdate
 

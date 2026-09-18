@@ -12,9 +12,9 @@ class ContactInfo(BaseModel):
     kontaktperson: str = ""
     epost: str = ""
     tlf: str = ""
-    bekreftet: list[bool] = Field(
-        default_factory=list[bool],
-        description="Whether the kontaktinfo in the Altinn3 survey was 'bekreftet', where str(1) = bekreftet.",
+    bekreftet: list[str] = Field(
+        default_factory=list,
+        description="Selected Checklist values for 'bekreftet' (holds '1' if confirmed, else empty).",
     )
     kommentar_kontaktinfo: str = ""
     kommentar_krevende: str = ""
