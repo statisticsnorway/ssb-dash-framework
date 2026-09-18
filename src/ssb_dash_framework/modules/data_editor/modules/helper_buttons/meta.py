@@ -7,32 +7,32 @@ from pydantic import BaseModel
 from pydantic import Field
 
 class ContactInfo(BaseModel):
-    orgnr: str = ""
-    skjema: str = ""
-    kontaktperson: str = ""
-    epost: str = ""
-    tlf: str = ""
-    bekreftet: list[str] = Field(
-        default_factory=list,
-        description="Selected Checklist values for 'bekreftet' (holds '1' if confirmed, else empty).",
-    )
-    kommentar_kontaktinfo: str = ""
-    kommentar_krevende: str = ""
-    indicator_style: dict[str, str] = Field(
-        default_factory=lambda: {"display": "none"},
-        description="Show (or hide) indicator for when comment_count > 0.",
-    )
-    comment_count: str = Field(
-        default="", description="Count of how many comments are filled out in the Altinn3 survey."
-    )
+    ident: str
+    skjema: str
+    kontaktperson: str
+    epost: str
+    telefon: str
+    bekreftet_kontaktinfo: str
+    kommentar_kontaktinfo: str
+    kommentar_krevende: str
 
-    def as_dash_tuple(self) -> tuple:
-        """Values in field-declaration order, matching the callback's Output order."""
-        return tuple(self.model_dump().values())
+    @classmethod
+    def empty(cls) -> "ContactInfo":
+        """Blank instance for error/no-data fallback paths."""
+        return cls(
+            ident="",
+            skjema="",
+            kontaktperson="",
+            epost="",
+            telefon="",
+            bekreftet_kontaktinfo="",
+            kommentar_kontaktinfo="",
+            kommentar_krevende="",
+        )
 
 class HelperButtonMeta(ABC):
     @abstractmethod
     def get_history(self, refnr: str, insert_toggle: bool | None = None) -> pd.DataFrame: ...
 
     @abstractmethod
-    def get_contact_info(self, refnr: str) -> pd.DataFrame: ...
+    def get_contact_info(self, refnr: str) -> ContactInfo: ...
