@@ -3,6 +3,7 @@
 from .alert_handler import AlertHandler
 from .alert_handler import create_alert
 from .app_logger import enable_app_logging
+from .base_classes import ModuleBase
 from .config_tools import _get_connection_callable
 from .config_tools import _get_connection_object
 from .config_tools import get_connection
@@ -30,6 +31,7 @@ __all__ = [
     "AlertHandler",
     "DebugInspector",
     "DemoDataCreator",
+    "ModuleBase",
     "TabImplementation",
     "WindowImplementation",
     "_get_connection_callable",

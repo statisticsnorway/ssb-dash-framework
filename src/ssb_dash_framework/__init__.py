@@ -49,8 +49,6 @@ from .modules import EditingTableTab
 from .modules import EditingTableWindow
 from .modules import EditorSettings
 from .modules import FigureDisplay
-from .modules import FigureDisplayTab
-from .modules import FigureDisplayWindow
 from .modules import MapDisplay
 from .modules import MapDisplayTab
 from .modules import MapDisplayWindow
@@ -82,6 +80,7 @@ from .setup import set_variables
 from .utils import AlertHandler
 from .utils import DebugInspector
 from .utils import DemoDataCreator
+from .utils import ModuleBase
 from .utils import TabImplementation
 from .utils import WindowImplementation
 from .utils import _get_connection_callable
@@ -143,11 +142,10 @@ __all__ = [
     "EditingTableWindow",
     "EditorSettings",
     "FigureDisplay",
-    "FigureDisplayTab",
-    "FigureDisplayWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
+    "ModuleBase",
     "ModuleConfig",
     "MultiModule",
     "MultiModule",
