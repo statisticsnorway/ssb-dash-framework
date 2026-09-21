@@ -16,8 +16,9 @@ class InforowMeta[T](ABC):
     def get_info_row_fields(
         self,
         settings: T,
-        ident: str,
+        refnr: str,
         period: str,
         fields: list[InfoRowField],
+        states: dict[str, dict]
     ) -> dict[str, str | int | bool | float | None]: ...
 

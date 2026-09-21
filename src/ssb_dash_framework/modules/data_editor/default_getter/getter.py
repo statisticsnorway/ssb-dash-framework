@@ -131,7 +131,7 @@ class StandardDataHandler(FetcherMeta):
     def get_info_row_fields(
         self,
         settings: EditorSettings,
-        ident: str,
+        refnr: str,
         period: str,
         fields: list[InfoRowField],
     ) -> dict[str, str | int | bool | float | None]:
@@ -141,7 +141,7 @@ class StandardDataHandler(FetcherMeta):
                 logger.debug(f"Getting data for:\n{info_var}")
                 t = conn.table(info_var.source)
                 t = t.filter(
-                    t[settings.ident_col] == ident, t[settings.period_col] == period
+                    t[settings.ident_col] == refnr, t[settings.period_col] == period
                 )
                 data = (
                     t.filter(_.variabel == info_var.source_variable_name)

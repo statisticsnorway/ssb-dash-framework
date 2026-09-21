@@ -475,7 +475,7 @@ class BofInformation(ABC):
             )
             if n_clicks is None or not selected_row:
                 logger.debug("Raised PreventUpdate")
-                AlertHandler.info("Velg en bedrift fra bedriftslisten under for å hente BoF bedriftsinfo.")
+                AlertHandler.info("Velg en bedrift fra bedriftslisten under for å hente BoF bedriftsinfo.", ephemeral=True)
                
                 return [], []
 
