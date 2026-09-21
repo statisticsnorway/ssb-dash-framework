@@ -9,21 +9,18 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 
 from ...setup.variableselector import VariableSelector
-from ...utils import TabImplementation
-from ...utils import WindowImplementation
-from ...utils.module_validation import module_validator
+from ...utils.base_classes import AsType
+from ...utils.base_classes import ModuleBase
 
 logger = logging.getLogger(__name__)
 
 
-class FigureDisplay:
+class FigureDisplay(ModuleBase):
     """This module is used to display a plotly figure in the editing framework.
 
     It simplifies connecting a figure to the variable selector and allows for any figure to be used as long as it works in Dash.
     It also allows for click data to be processed and passed to the variable selector.
     """
-
-    _id_number: int = 0
 
     def __init__(
         self,
@@ -33,6 +30,8 @@ class FigureDisplay:
         states: list[str] | None = None,
         output: str | None = None,
         clickdata_func: Callable[..., Any] | None = None,
+        as_type: AsType | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize the FigureDisplay module.
 
@@ -47,6 +46,9 @@ class FigureDisplay:
             clickdata_func: A function to process the click data.
                 It should accept the click data as an argument and return a value to be sent to the output variable.
                 If None, no click data will be processed. Defaults to None.
+            as_type: Whether the module is implemented as a "Tab" or a "Window".
+                If None, it is inferred from which list the module is placed in when passed to `main_layout`.
+            **kwargs: Additional keyword arguments passed to `ModuleBase`.
 
         Note:
             - The clickdata_func needs to process the click data and return a string value that will be sent to the output variable specified in the output argument.
@@ -72,12 +74,9 @@ class FigureDisplay:
                     ]
                 }
         """
-        self.module_number = FigureDisplay._id_number
-        self.module_name = self.__class__.__name__
-        FigureDisplay._id_number += 1
+        self.label = label
         self.icon = "📈"
 
-        self.label = label
         if states is None:
             states = []
 
@@ -87,32 +86,18 @@ class FigureDisplay:
         self.output = output
         self.clickdata_func = clickdata_func
 
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
-
-        module_validator(self)
+        super().__init__(as_type=as_type, **kwargs)
 
     def _create_layout(self) -> html.Div:
         layout = html.Div(
             dcc.Graph(
-                id=f"{self.module_number}-figuredisplay",
+                id=f"{self.module_id}-figuredisplay",
                 className="figuredisplay-graph",
             ),
             className="figuredisplay",
         )
         logger.debug("Generated layout.")
         return layout
-
-    def layout(self) -> html.Div:
-        """Define the layout for the FigureDisplay module.
-
-        Because this module can be used as a a component in other modules, it needs to have a layout method that is not abstract.
-        For implementations as tab or window, this method should still be overridden.
-
-        Returns:
-            html.Div: A Dash HTML Div component representing the layout of the module to be displayed directly.
-        """
-        return self.module_layout
 
     def module_callbacks(self) -> None:
         """Define the callbacks for the module."""
@@ -123,7 +108,7 @@ class FigureDisplay:
             dynamic_states.append(VariableSelector.get_state(_state))
 
         @callback(  # type: ignore[misc]
-            Output(f"{self.module_number}-figuredisplay", "figure"), *dynamic_states
+            Output(f"{self.module_id}-figuredisplay", "figure"), *dynamic_states
         )
         def display_figure(
             *dynamic_states: list[str],
@@ -145,7 +130,7 @@ class FigureDisplay:
 
             @callback(  # type: ignore[misc]
                 VariableSelector.get_output_object(variable=self.output),
-                Input(f"{self.module_number}-figuredisplay", "clickData"),
+                Input(f"{self.module_id}-figuredisplay", "clickData"),
                 prevent_initial_call=True,
             )
             def transfer_clickdata(
@@ -159,53 +144,3 @@ class FigureDisplay:
                     return "No clickdata_func provided"
                 return str(self.clickdata_func(clickdata))
 
-
-class FigureDisplayTab(TabImplementation, FigureDisplay):
-    """FigureDisplay implemented as a tab."""
-
-    def __init__(
-        self,
-        label: str,
-        figure_func: Callable[..., Any],
-        inputs: list[str],
-        states: list[str] | None = None,
-        output: str | None = None,
-        clickdata_func: Callable[..., Any] | None = None,
-    ) -> None:
-        """Initializes FigureDisplayTab."""
-        FigureDisplay.__init__(
-            self,
-            label=label,
-            inputs=inputs,
-            states=states,
-            figure_func=figure_func,
-            output=output,
-            clickdata_func=clickdata_func,
-        )
-        TabImplementation.__init__(self)
-
-
-class FigureDisplayWindow(WindowImplementation, FigureDisplay):
-    """FigureDisplay implemented as a window."""
-
-    def __init__(
-        self,
-        label: str,
-        figure_func: Callable[..., Any],
-        inputs: list[str],
-        states: list[str] | None = None,
-        output: str | None = None,
-        clickdata_func: Callable[..., Any] | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initializes FigureDisplayWindow."""
-        FigureDisplay.__init__(
-            self,
-            label=label,
-            inputs=inputs,
-            states=states,
-            figure_func=figure_func,
-            output=output,
-            clickdata_func=clickdata_func,
-        )
-        WindowImplementation.__init__(self, **kwargs)

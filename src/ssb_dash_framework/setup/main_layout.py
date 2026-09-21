@@ -7,6 +7,7 @@ from dash import html
 from dash_iconify import DashIconify
 
 from ..utils.alert_handler import AlertHandler
+from ..utils.base_classes import ModuleBase
 from ..utils.functions import sidebar_button
 from ..utils.implementations import TabModule
 from ..utils.implementations import WindowModule
@@ -16,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 def main_layout(
-    window_list: list[WindowModule],
-    tab_list: list[dbc.Tab | TabModule],
+    window_list: list[WindowModule | ModuleBase],
+    tab_list: list[dbc.Tab | TabModule | ModuleBase],
     variable_list: list[str] | None = None,
     default_values: dict[str, Any] | None = None,
 ) -> dbc.Container:
@@ -35,6 +36,7 @@ def main_layout(
     Notes:
         - The function includes an alert handler modal and a toggle button for the variable selector.
         - Each tab in `tab_list` must implement a `layout()` method and have a `label` attribute.
+        - Modules based on `ModuleBase` that were instantiated without `as_type` are implemented as a window or a tab based on which list they are placed in.
     """
     # for window in window_list:
     #     if not hasattr(window, "layout"):
@@ -60,7 +62,11 @@ def main_layout(
         selected_states=variable_list, selected_inputs=[]#, default_values=default_values
     )  # Because inputs and states don't matter in main_layout, everything is put into the VariableSelector as states. Every module defines its own VariableSelector that sets up interactions. This is to simplify it for the user while maintaining flexibility.
 
-    window_modules = [module.layout() for module in window_list]
+    window_modules = []
+    for module in window_list:
+        if isinstance(module, ModuleBase):
+            module.set_implementation("Window")
+        window_modules.append(module.layout())
     alerthandler = AlertHandler()
     window_modules_list = [alerthandler.layout(), *window_modules]
 
@@ -100,10 +106,19 @@ def main_layout(
         style={"marginTop": "auto"},
     )
     window_modules_list = varvelger_toggle + window_modules_list + [theme_toggle]
-    selected_tab_list = [
-        (tab if isinstance(tab, dbc.Tab) else dbc.Tab(tab.layout(), label=tab.label))
-        for tab in tab_list
-    ]
+    selected_tab_list = []
+    for tab in tab_list:
+        if isinstance(tab, dbc.Tab):
+            selected_tab_list.append(tab)
+            continue
+        if isinstance(tab, ModuleBase):
+            tab.set_implementation("Tab")
+        tab_layout = tab.layout()
+        selected_tab_list.append(
+            tab_layout
+            if isinstance(tab_layout, dbc.Tab)
+            else dbc.Tab(tab_layout, label=tab.label)
+        )
     layout = dbc.Container(
         [
             html.Div(

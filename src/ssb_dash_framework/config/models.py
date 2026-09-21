@@ -8,6 +8,7 @@ from pydantic import field_validator
 from pydantic import model_validator
 
 from ..setup.variableselector.set_variables import VariableSelectorConfig
+from ..utils.base_classes import ModuleBase
 from ..utils.implementations import TabImplementation
 from ..utils.implementations import WindowImplementation
 
@@ -95,8 +96,29 @@ def register_implementation_modules():
         )
 
 
+def register_modulebase_modules():
+    """Register modules based on ModuleBase, which can be used both as a tab and as a window."""
+    for module in ModuleBase.__subclasses__():
+        if inspect.isabstract(module):
+            continue
+        if module.__name__ in [
+            registered_module.type for registered_module in get_module_registry()
+        ]:
+            raise ValueError(f"Module '{module.__name__}' is already registered")
+        model_signature = inspect.signature(module)
+        _MODULE_REGISTRY.append(
+            RegisteredModule(
+                type=module.__name__,
+                as_tab=module.__name__,
+                as_window=module.__name__,
+                kwargs=list(model_signature.parameters.keys()),
+            )
+        )
+
+
 def register_modules():
     register_implementation_modules()
+    register_modulebase_modules()
 
 
 class AppSettings(BaseModel):

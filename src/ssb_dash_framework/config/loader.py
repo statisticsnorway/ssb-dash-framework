@@ -1,3 +1,4 @@
+import builtins
 import importlib
 import logging
 import os
@@ -5,6 +6,7 @@ from typing import Literal
 
 from ..setup.app_setup import app_setup
 from ..setup.main_layout import main_layout
+from ..utils.base_classes import ModuleBase
 from .models import AppConfig
 from .models import AppModules
 from .models import AppSettings
@@ -60,6 +62,13 @@ def instantiate_module(
     cls = getattr(library, class_name, None)
     if cls is None:
         raise ValueError(f"No class named '{class_name}' found in ssb_dash_framework.")
+
+    if (
+        isinstance(cls, builtins.type)
+        and issubclass(cls, ModuleBase)
+        and type in ("tab", "window")
+    ):
+        return cls(as_type="Tab" if type == "tab" else "Window", **module.extra_kwargs)
 
     return cls(**module.extra_kwargs)
 
