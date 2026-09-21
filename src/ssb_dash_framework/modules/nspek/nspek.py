@@ -37,6 +37,17 @@ from .nspek_utils import set_nspek_connection
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
+WRITE_ENABLED_DB_USERS = {
+    "nspek-developers@dapla-group-sa-p-ye.iam",
+    "strukt-naering-developers@dapla-group-sa-p-ye.iam",
+    "forskteknar-narin-developers@dapla-group-sa-p-ye.iam",
+    "speshelse-developers@dapla-group-sa-p-ye.iam",
+    "finmark-developers@dapla-group-sa-p-ye.iam",
+    "uh-tjenester-developers@dapla-group-sa-p-ye.iam",
+    "off-fin-developers@dapla-group-sa-p-ye.iam",
+    "skatt-naering-developers@dapla-group-sa-p-ye.iam",
+}
+
 virksomhetsinfo_variabler = [
     "virksomhetstype",
     "regeltypeForAarsregnskap",
@@ -712,7 +723,7 @@ def feltkommentar_ikon_column():
     }
 
 
-def build_column_defs(sekvens_compare=None):
+def build_column_defs(sekvens_compare=None, can_write=True,):
 
     columns = ["beskrivelse", "post", "verdi", "verdi_compare", "diff", "sekvensnummer"]
 
@@ -791,7 +802,7 @@ def build_column_defs(sekvens_compare=None):
             "resizable": True,
             "filter": True,
             "hide": col == "sekvensnummer",
-            "editable": col == "verdi",
+            "editable": col == "verdi" and can_write,
             "width": (430 if col == "beskrivelse" else 90 if col == "post" else None),
             "flex": (None if col in ["beskrivelse", "post"] else 2),
             "valueFormatter": {
@@ -1327,13 +1338,16 @@ def save_regnskap_value(
 
 
 def handle_regnskap_edit(
-    edited, alert_store, refresh_data, regnskapstype: str, refresh_key: str
+    edited, alert_store, refresh_data, regnskapstype: str, refresh_key: str, can_write: bool = True,
 ):
     """Central handler for nspek grid edits (balanse + resultat).
 
     Example use:
     handle_regnskap_edit(..., "balanseregnskap", "balanse")
     """
+    if not can_write:
+        raise PreventUpdate
+
     alert_store = alert_store or []
 
     row = edited[0]["data"]
@@ -1434,9 +1448,13 @@ class Naeringsspesifikasjon:
 
     def __init__(self, time_units: list[str], db_user: str | None) -> None:
         """Explanation of module."""
-        set_nspek_connection(
-            db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
+        self.db_user = (
+            db_user
+            if db_user
+            else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
         )
+        self.can_write = self.db_user in WRITE_ENABLED_DB_USERS
+        set_nspek_connection(self.db_user)
         self.module_number = Naeringsspesifikasjon._id_number
         self.module_name = self.__class__.__name__
         self.icon = DashIconify(icon="feather:book", width=24)
@@ -1517,12 +1535,21 @@ class Naeringsspesifikasjon:
         )
         return checkbox
 
-    def create_dialog(self, variant: str, title: str, message: str):
+    def create_dialog(
+        self,
+        variant: str,
+        title: str,
+        message: str,
+        close_button_id: str = "close-version-warning",
+    ):
         dialog = html.Div(
             className=f"ssb-dialog {variant} mt-2 mb-1",
             children=[
                 html.Div(
-                    DashIconify(icon=self._map_icon(variant), width=40),
+                    DashIconify(
+                        icon=self._map_icon(variant),
+                        width=40,
+                    ),
                     className="icon-panel",
                 ),
                 html.Div(
@@ -1534,12 +1561,13 @@ class Naeringsspesifikasjon:
                 ),
                 html.Button(
                     "✕",
-                    id="close-version-warning",
+                    id=close_button_id,
                     n_clicks=0,
                     className="dialog-close",
                 ),
             ],
         )
+
         return dialog
 
     def _map_icon(self, variant):
@@ -1699,6 +1727,16 @@ class Naeringsspesifikasjon:
                             style={"display": "none"},
                         ),
                         dcc.Store(id="nspek-version-warning-closed", data=False),
+                        html.Div(
+                            id="nspek-readonly-warning",
+                            children=self.create_dialog(
+                                variant="info",
+                                title="Kun lesetilgang",
+                                message="Du har kun lesetilgang til NSPEK.",
+                                close_button_id="close-readonly-warning",
+                            ),
+                            style={"display": "none"},
+                        ),
                         dbc.Modal(
                             [
                                 dbc.ModalHeader(
@@ -1843,7 +1881,7 @@ class Naeringsspesifikasjon:
                                                 "field": "aktiv",
                                                 "headerName": "Aktiv",
                                                 "width": 90,
-                                                "editable": True,
+                                                "editable": self.can_write,
                                             },
                                         ],
                                         rowData=[],
@@ -1932,6 +1970,7 @@ class Naeringsspesifikasjon:
                                             id="feltkommentar-modal-delete",
                                             color="danger",
                                             outline=True,
+                                            disabled=not self.can_write,
                                             style={"display": "none"},
                                             className="ssb-btn negative me-auto",
                                         ),
@@ -1945,8 +1984,8 @@ class Naeringsspesifikasjon:
                                             "Lagre",
                                             id="feltkommentar-modal-save",
                                             color="primary",
+                                            disabled=not self.can_write,
                                             className="ssb-btn primary-btn",
-                                            disabled=True,
                                         ),
                                     ]
                                 ),
@@ -2161,6 +2200,7 @@ class Naeringsspesifikasjon:
                                                             dbc.Button(
                                                                 "Lagre",
                                                                 id="btn-save-kommentar",
+                                                                disabled=not self.can_write,
                                                                 className="ssb-btn primary-btn",
                                                             ),
                                                             width="auto",
@@ -2230,7 +2270,7 @@ class Naeringsspesifikasjon:
                                                         {
                                                             "field": "aktiv",
                                                             "width": 70,
-                                                            "editable": True,
+                                                            "editable": self.can_write,
                                                         },
                                                     ],
                                                     rowData=[],
@@ -2420,6 +2460,7 @@ class Naeringsspesifikasjon:
                                     "Kjør kontroller",
                                     id="run-controls-btn",
                                     n_clicks=0,
+                                    disabled=not self.can_write,
                                     className="ssb-btn primary-btn mb-2",
                                 ),
                                 dcc.Loading(
@@ -2746,7 +2787,7 @@ class Naeringsspesifikasjon:
 
             row_data = df.to_dict("records")
 
-            column_defs = build_column_defs(sekvens_compare)
+            column_defs = build_column_defs(sekvens_compare, can_write=self.can_write)
 
             return row_data, column_defs
 
@@ -2792,7 +2833,7 @@ class Naeringsspesifikasjon:
 
             row_data = df.to_dict("records")
 
-            column_defs = build_column_defs(sekvens_compare)
+            column_defs = build_column_defs(sekvens_compare, can_write=self.can_write)
 
             return row_data, column_defs
 
@@ -2814,6 +2855,7 @@ class Naeringsspesifikasjon:
                 refresh_data,
                 regnskapstype="balanseregnskap",
                 refresh_key="balanse",
+                can_write=self.can_write,
             )
 
         @callback(
@@ -2834,6 +2876,7 @@ class Naeringsspesifikasjon:
                 refresh_data,
                 regnskapstype="resultatregnskap",
                 refresh_key="resultat",
+                can_write=self.can_write,
             )
 
         @callback(
@@ -2848,6 +2891,9 @@ class Naeringsspesifikasjon:
             prevent_initial_call=True,
         )
         def confirm_negative(_, pending, alert_store, refresh_data):
+            if not self.can_write:
+                raise PreventUpdate
+            
             if not pending:
                 raise PreventUpdate
 
@@ -3331,6 +3377,8 @@ class Naeringsspesifikasjon:
             prevent_initial_call=True,
         )
         def save_kommentar(n_clicks, orgnr, kommentar, alert_store):
+            if not self.can_write:
+                raise PreventUpdate
 
             if not orgnr:
                 raise PreventUpdate
@@ -3408,6 +3456,8 @@ class Naeringsspesifikasjon:
         def save_feltkommentar(
             n_clicks, orgnr, felt, kommentar, alert_store, refresh_data
         ):
+            if not self.can_write:
+                raise PreventUpdate
 
             if not orgnr:
                 raise PreventUpdate
@@ -3551,6 +3601,8 @@ class Naeringsspesifikasjon:
         def toggle_feltkommentar_aktiv(
             edited, orgnr, alert_store, toggle_inactive, refresh_data
         ):
+            if not self.can_write:
+                raise PreventUpdate
 
             logger.debug(f"edited: {edited}\norgnr: {orgnr}\n")
 
@@ -3711,6 +3763,8 @@ class Naeringsspesifikasjon:
             prevent_initial_call=True,
         )
         def toggle_kommentar_aktiv(edited, orgnr, alert_store):
+            if not self.can_write:
+                raise PreventUpdate
 
             if not edited or not orgnr:
                 raise PreventUpdate
@@ -3827,6 +3881,8 @@ class Naeringsspesifikasjon:
                 ).to_dict("index")
 
                 if ctx.triggered_id == "run-controls-btn":
+                    if not self.can_write:
+                        raise PreventUpdate
                     run_all_controls_for_sekvensnummer(conn, int(sekvensnummer))
 
                 df = instance.get_current_kontrollutslag(
@@ -3993,6 +4049,8 @@ class Naeringsspesifikasjon:
             prevent_initial_call=True,
         )
         def toggle_feltkommentar_modal_save(text, store):
+            if not self.can_write:
+                return True
 
             if not store:
                 return True
@@ -4021,6 +4079,9 @@ class Naeringsspesifikasjon:
             refresh_data,
         ):
 
+            if not self.can_write:
+                raise PreventUpdate
+            
             if not store or not orgnr:
                 raise PreventUpdate
 
@@ -4122,6 +4183,8 @@ class Naeringsspesifikasjon:
             alert_store,
             refresh_data,
         ):
+            if not self.can_write:
+                raise PreventUpdate
 
             if not store or not orgnr:
                 raise PreventUpdate
@@ -4183,6 +4246,49 @@ class Naeringsspesifikasjon:
                     alert_store,
                     True,
                 )
+
+        @callback(
+            Output("nspek-readonly-warning", "style"),
+            Output("nspek-readonly-warning", "children"),
+            Input("nspek-balansedata-grid", "cellClicked"),
+            Input("nspek-resultatdata-grid", "cellClicked"),
+            Input("close-readonly-warning", "n_clicks"),
+            prevent_initial_call=True,
+        )
+        def toggle_readonly_warning(
+            balanse_cell,
+            resultat_cell,
+            close_clicks,
+        ):
+            if self.can_write:
+                raise PreventUpdate
+
+            # Lukk dialogen
+            if ctx.triggered_id == "close-readonly-warning":
+                return {"display": "none"}, ""
+
+            if ctx.triggered_id == "nspek-balansedata-grid":
+                cell = balanse_cell
+            elif ctx.triggered_id == "nspek-resultatdata-grid":
+                cell = resultat_cell
+            else:
+                raise PreventUpdate
+
+            if not cell or cell.get("colId") != "verdi":
+                raise PreventUpdate
+
+            return (
+                {"display": "flex"},
+                self.create_dialog(
+                    variant="info",
+                    title="Kun lesetilgang",
+                    message=(
+                        "Du har kun lesetilgang til NSPEK. "
+                        "Endringer kan derfor ikke lagres."
+                    ),
+                    close_button_id="close-readonly-warning",
+                ),
+            )
 
 
 class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
