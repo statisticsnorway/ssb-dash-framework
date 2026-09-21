@@ -4,6 +4,7 @@ from typing import Any, Literal
 from dash import no_update
 import ibis.selectors as s
 import pandas as pd
+from ssb_dash_framework.modules.data_editor.modules.helper_buttons.meta import ContactInfo
 import tzlocal
 from ibis import _
 from pandas import Series
@@ -73,9 +74,11 @@ class StandardDataHandler(FetcherMeta):
     def get_history(self, refnr: str, insert_toogle: bool) -> pd.DataFrame:
         return pd.DataFrame()
 
-    def get_contact_info(self, refnr: str) -> pd.DataFrame:
-        return pd.DataFrame()
-
+    def get_contact_info(self, refnr: str) -> ContactInfo:
+        data = pd.DataFrame()
+        row_data = data.to_dict(orient="records")[0]
+        return ContactInfo.model_validate(row_data)
+        
     def get_form_status(self, refnr: str) -> RefnrStatus | None:
         # print("hei", refnr)
         with get_connection() as conn:

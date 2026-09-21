@@ -4,7 +4,7 @@ from ssb_dash_framework.modules.data_editor.modules.helper_buttons.meta import (
 )
 from typing import Any
 import pandas as pd
-from dash import Input
+from dash import Input, no_update
 from dash import Output
 from dash import callback
 from dash import html
@@ -230,7 +230,7 @@ class DataEditorContactInfo(DataEditorHelperButton):
                 component_id=f"{self.module_name}-{self.module_number}-indicator",
                 component_property="children",
             ),
-            VariableSelector.get_refnr(Input),
+            inputs={"refnr": VariableSelector.get_refnr(Input)},
         )
         def create_info_cards_kontaktinfo(
             refnr: str,
