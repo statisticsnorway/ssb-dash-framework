@@ -3,6 +3,7 @@ from typing import Any, Literal
 
 import ibis.selectors as s
 import pandas as pd
+from ssb_dash_framework.modules.data_editor.modules.helper_buttons.meta import ContactInfo
 import tzlocal
 from ibis import _
 from pandas import Series
@@ -65,6 +66,9 @@ class AltinnFormParqueditHandler(FetcherMeta):
 
     def get_history(self, refnr: str, insert_toogle: bool) -> pd.DataFrame:
         return pd.DataFrame()
+
+    def get_contact_info(self, refnr: str) -> ContactInfo:
+        return ContactInfo.empty()
 
     def get_form_status(self, refnr: str) -> RefnrStatus | None:
         # print("hei", refnr)

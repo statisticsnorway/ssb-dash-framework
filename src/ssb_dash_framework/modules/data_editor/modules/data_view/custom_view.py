@@ -169,7 +169,6 @@ class DataViewCustom(DataEditorDataView):
                 components.append(dbc.Row(self.build_layout(layout["children"])))
             elif layout["type"] == "col":
                 components.append(dbc.Col(self.build_layout(layout["children"])))
-
             elif layout["type"] == "microlayout":
                 if self._from_config_file:
                     logger.debug(
@@ -195,6 +194,10 @@ class DataViewCustom(DataEditorDataView):
                     inputs=[VariableSelector.get_refnr(Input)],
                 )
                 components.append(microlayout)
+            elif (layout["type"] == "CustomView") or (layout["type"] == "DataViewCustom"):
+                internal_layout = layout["layout"]
+                for item in internal_layout:
+                    components.extend(self.build_layout(item))
             else:
                 raise ValueError(
                     f"Value for 'type' must be a valid component. Found type '{layout['type']}'"
@@ -209,6 +212,8 @@ class DataViewCustom(DataEditorDataView):
 
     def layout(self):
         """Returns the layout of the module."""
+        if isinstance(self._layout, list):
+            self._layout = {"layout": self._layout, "type": "CustomView"}
         tables = self._layout.get("applies_to_tables") or self._layout.get("applies_to_table")
         if tables is None:
             self.applies_to_table = [self.settings.form_data_table]

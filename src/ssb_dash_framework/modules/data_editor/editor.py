@@ -38,6 +38,14 @@ class DataEditor:
         DataEditor._module_count += 1
         self.module_name = self.__class__.__name__
         instance_id = str(uuid.uuid4())
+        if isinstance(data_handler, str):
+            import importlib
+            library = importlib.import_module("ssb_dash_framework")
+            cls = getattr(library, data_handler, None)
+            if cls is not None:
+                data_handler = cls()
+            else:
+                raise ValueError("The specified data handler is not supported")
         if isinstance(settings, dict):
             settings = EditorSettings.model_validate(settings)
         if not isinstance(settings, EditorSettings):
