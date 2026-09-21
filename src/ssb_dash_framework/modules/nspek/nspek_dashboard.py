@@ -15,6 +15,7 @@ from dash import callback
 from dash import ctx
 from dash import dcc
 from dash import html
+from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
@@ -1494,6 +1495,9 @@ class NspekDashboard:
             return not is_open
 
         @callback(
+            self.variableselector.get_output_object("ident"),
+            self.variableselector.get_output_object("aar"),
+            self.variableselector.get_output_object("foretak"),
             Output(
                 "nspek-dashboard-construct-result",
                 "children",
@@ -1556,8 +1560,15 @@ class NspekDashboard:
             orgnr_text,
             aar,
         ):
+            # ================================================================
+            # Valider input
+            # ================================================================
+
             if aar is None:
                 return (
+                    no_update,
+                    no_update,
+                    no_update,
                     self.create_dialog(
                         variant="warning",
                         message=(
@@ -1571,6 +1582,9 @@ class NspekDashboard:
 
             if not orgnr_text or not orgnr_text.strip():
                 return (
+                    no_update,
+                    no_update,
+                    no_update,
                     self.create_dialog(
                         variant="warning",
                         message="Skriv inn minst ett organisasjonsnummer.",
@@ -1588,6 +1602,10 @@ class NspekDashboard:
             )
 
             results = []
+
+            # ================================================================
+            # Behandle organisasjonsnummer
+            # ================================================================
 
             for orgnr in orgnr_list:
 
@@ -1653,41 +1671,73 @@ class NspekDashboard:
                 results.append(result)
                 print(result)
 
-            all_processed = (
-                bool(orgnr_list)
-                and len(results) == len(orgnr_list)
-                and all(
-                    result["status"] in {"success", "info"}
-                    for result in results
-                )
-            )
+            # ================================================================
+            # Status for jobben
+            # ================================================================
 
-            has_warnings = any(
-                result["status"] == "warning"
+            has_success = any(
+                result["status"] in {"success", "info"}
                 for result in results
             )
 
-            if all_processed:
-                job_dialog = self.create_dialog(
-                    variant="success",
-                    message="Alle organisasjonsnummer behandlet.",
-                    title="Suksess",
-                )
-            elif has_warnings:
+            if not has_success:
                 job_dialog = self.create_dialog(
                     variant="warning",
-                    message=(
-                        "Jobben er ferdig, men ett eller flere "
-                        "organisasjonsnummer kunne ikke behandles."
-                    ),
+                    message="Ingen organisasjonsnummer ble behandlet.",
                     title="Advarsel",
                 )
+
             else:
-                job_dialog = self.create_dialog(
-                    variant="info",
-                    message="Jobben er ferdig.",
-                    title="Informasjon",
-                )
+                # ------------------------------------------------------------
+                # Ett orgnr og vellykket behandling
+                # ------------------------------------------------------------
+
+                if len(orgnr_list) == 1:
+                    orgnr = orgnr_list[0]
+
+                    job_dialog = self.create_dialog(
+                        variant="success",
+                        message=(
+                            f"Organisasjonsnummer {orgnr} er behandlet. "
+                            f"Variabelvelgeren er nå oppdatert til "
+                            f"{orgnr} og årgang {aar}."
+                        ),
+                        title="Suksess",
+                    )
+
+                # ------------------------------------------------------------
+                # Flere orgnr og alle vellykket
+                # ------------------------------------------------------------
+
+                else:
+                    job_dialog = self.create_dialog(
+                        variant="success",
+                        message="Alle organisasjonsnummer ble behandlet.",
+                        title="Suksess",
+                    )
+
+            # ================================================================
+            # Oppdater VariableSelector
+            # ================================================================
+
+            update_variableselector = (
+                len(orgnr_list) == 1
+                and len(results) == 1
+                and results[0]["status"] in {"success", "info"}
+            )
+
+            if update_variableselector:
+                variableselector_ident = orgnr_list[0]
+                variableselector_aar = aar
+                variableselector_foretak = orgnr_list[0]
+            else:
+                variableselector_ident = no_update
+                variableselector_aar = no_update
+                variableselector_foretak = no_update
+
+            # ================================================================
+            # Bygg resultatvisning
+            # ================================================================
 
             result_content = html.Div(
                 [
@@ -1723,7 +1773,13 @@ class NspekDashboard:
                 ]
             )
 
-            return result_content, ""
+            return (
+                variableselector_ident,
+                variableselector_aar,
+                variableselector_foretak,
+                result_content,
+                "",
+            )
 
         @callback(
             Output(

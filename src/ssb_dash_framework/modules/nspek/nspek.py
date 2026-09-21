@@ -516,6 +516,19 @@ def get_skjoennslignet(conn, sekvensnummer: int) -> pd.DataFrame:
 
     return df
 
+def get_konstruert(conn, sekvensnummer: int) -> pd.DataFrame:
+    """Fetch and return registration rows constructed for the specified sequence.
+
+    Example use: get_konstruert(self.conn, 2291859)
+    """
+    config = TYPE_REGNSKAP_TABLE["registrering"]
+
+    t = conn.table(config["table"], database=config["database"],)
+    filtered = (t.filter((t.sekvensnummer == sekvensnummer) & (t.kilde == "K")).select(["kilde"]))
+    df = filtered.execute()
+
+    return df
+
 
 def get_bof_database_path() -> Path:
     """Find the available BOF database."""
@@ -2097,6 +2110,15 @@ class Naeringsspesifikasjon:
                                         ),
                                         width=2,
                                     ),
+                                    dbc.Col(width=5),  # tom spacer
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Konstruert",
+                                            component_id="nspek-info-card-konstruert",
+                                            var_type="text",
+                                        ),
+                                        width=3,
+                                    ),
                                 ],
                                 className="nspek-info-cards gy-2",
                             ),
@@ -2650,6 +2672,37 @@ class Naeringsspesifikasjon:
             skjoennslignet = "Ja"
 
             return skjoennslignet
+
+        @callback(
+            Output(
+                component_id="nspek-info-card-konstruert",
+                component_property="value",
+            ),
+            Input("var-aar", "value"),
+            Input("var-ident", "value"),
+            Input("nspek-versjon-dropdown", "value"),
+        )
+        def create_info_cards_konstruert(
+            aar: str, orgnr_foretak: str, sekvensnummer: int
+        ) -> str:
+            """Returns whether the selected NSPEK version is constructed."""
+
+            if not aar or not orgnr_foretak or not sekvensnummer:
+                return ""
+
+            with get_nspek_connection() as conn:
+                if not has_data(conn, orgnr_foretak, aar):
+                    return ""
+
+                df = get_konstruert(
+                    conn=conn,
+                    sekvensnummer=sekvensnummer,
+                )
+
+            if df.empty:
+                return "Nei"
+
+            return "Ja"
 
         @callback(
             Output("nspek-balansedata-grid", "rowData"),
