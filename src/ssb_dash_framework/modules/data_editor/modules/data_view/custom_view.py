@@ -209,6 +209,7 @@ class DataViewCustom(DataEditorDataView):
 
     def layout(self):
         """Returns the layout of the module."""
+        print(self._layout)
         tables = self._layout.get("applies_to_tables") or self._layout.get("applies_to_table")
         if tables is None:
             self.applies_to_table = [self.settings.form_data_table]
@@ -225,7 +226,7 @@ class DataViewCustom(DataEditorDataView):
         else:
             self.applies_to_forms = list(forms)
 
-        self.created_layout = self.build_layout(self._layout)
+        self.created_layout = self.build_layout(self._layout["layout"])
         self.module_callbacks()
         super().__init__(
             applies_to_tables=self.applies_to_table,
@@ -240,6 +241,7 @@ class DataViewCustom(DataEditorDataView):
     @classmethod
     def from_yaml(cls, yaml_path):
         config = config_parser_yaml(yaml_path)
+        print(config)
         return cls.from_dict(config[0])
 
     @classmethod
