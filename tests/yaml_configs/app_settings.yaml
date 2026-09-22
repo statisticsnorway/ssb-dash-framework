@@ -7,7 +7,7 @@ app_settings:
   log_to_file: false
   variableselector: !include variableselector.yaml
   connection:
-    type: postgres
+    type: sqlite
     database_url: test
 modules:
   tabs:
