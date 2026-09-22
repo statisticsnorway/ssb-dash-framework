@@ -966,7 +966,7 @@ class NspekDashboard:
             color="kilde",
             markers=True,
             color_discrete_map={
-                "Konstruert": "#075745",
+                "Konstruert": "#3396D2",
                 "Mottatt fra SKE": "#1A9D49",
             },
             custom_data=["maaned_label"],
@@ -981,6 +981,7 @@ class NspekDashboard:
         )
         fig.update_layout(
             margin={"l": 10, "r": 10, "t": 30, "b": 75},
+            separators=", ",
             hovermode="closest",
             spikedistance=-1,
             legend={
@@ -1008,6 +1009,10 @@ class NspekDashboard:
                 "spikecolor": "#9272FC",
                 "spikethickness": 1,
                 "spikedash": "solid",
+                "ticks": "outside",
+                "ticklen": 5,
+                "tickwidth": 1,
+                "tickcolor": "#21383A",
             },
             yaxis={
                 "title": None,
@@ -1017,6 +1022,11 @@ class NspekDashboard:
                 "showline": True,
                 "linecolor": "#21383A",
                 "linewidth": 1,
+                "tickformat": ",",
+                "ticks": "outside",
+                "ticklen": 5,
+                "tickwidth": 1,
+                "tickcolor": "#21383A",
             },
             annotations=[
                 {
@@ -1052,8 +1062,8 @@ class NspekDashboard:
                     },
                 },
             ],
-            plot_bgcolor="white",
-            paper_bgcolor="white",
+            plot_bgcolor="rgba(0, 0, 0, 0)",
+            paper_bgcolor="rgba(0, 0, 0, 0)",
         )
 
         return fig
@@ -1064,12 +1074,20 @@ class NspekDashboard:
             x="kategori",
             y="antall",
             text="antall",
+            color_discrete_sequence=["#1A9D49"],
+        )
+
+        fig.update_traces(
+            textposition="outside",
+            width=0.1,
+            name="Antall registreringer",
+            showlegend=True,
         )
 
         fig.update_traces(textposition="outside")
         fig.update_layout(
             margin={"l": 10, "r": 20, "t": 20, "b": 50},
-            showlegend=False,
+            separators=", ",
             font={
                 "family": "Open Sans, Arial, sans-serif",
                 "size": 12,
@@ -1081,18 +1099,59 @@ class NspekDashboard:
                 "showline": True,
                 "linecolor": "#21383A",
                 "linewidth": 1,
+                "ticks": "outside",
+                "tickson": "boundaries",
             },
             yaxis={
-                "title": "Antall registreringer",
+                "title": None,
                 "showgrid": True,
                 "gridcolor": "#E6E6E6",
                 "gridwidth": 1,
                 "showline": True,
                 "linecolor": "#21383A",
                 "linewidth": 1,
+                "ticks": "outside",
+                "ticklen": 5,
+                "tickwidth": 1,
+                "tickcolor": "#21383A",
+                "tickformat": ",",
             },
-            plot_bgcolor="white",
-            paper_bgcolor="white",
+            annotations=[
+                {
+                    "text": "Antall",
+                    "xref": "paper",
+                    "yref": "paper",
+                    "x": 0,
+                    "y": 1,
+                    "xanchor": "left",
+                    "yanchor": "bottom",
+                    "xshift": -35,
+                    "showarrow": False,
+                    "font": {
+                        "family": "Open Sans, Arial, sans-serif",
+                        "size": 12,
+                        "color": "#21383A",
+                    },
+                },
+                {
+                    "text": "Kilde",
+                    "xref": "paper",
+                    "yref": "paper",
+                    "x": 1,
+                    "y": 0,
+                    "xanchor": "right",
+                    "yanchor": "top",
+                    "yshift": -20,
+                    "showarrow": False,
+                    "font": {
+                        "family": "Open Sans, Arial, sans-serif",
+                        "size": 12,
+                        "color": "#21383A",
+                    },
+                },
+            ],
+            plot_bgcolor="rgba(0, 0, 0, 0)",
+            paper_bgcolor="rgba(0, 0, 0, 0)",
         )
 
         return fig

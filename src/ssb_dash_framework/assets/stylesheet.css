@@ -2667,7 +2667,7 @@ REMOVE BOOTSTRAP ROUNDING
 }
 
 .dark-mode .ssb-card .card-icon {
-  color: var(--ssb-dark-green-light);
+  color: var(--sssb-dark-text);
 }
 
 .dark-mode .ssb-card:hover {
@@ -3321,6 +3321,47 @@ REMOVE BOOTSTRAP ROUNDING
 
 .dark-mode a:hover {
   color: #d0f0d2;
+}
+
+/* ============================================================
+   PLOTLY – DARK MODE
+   ============================================================ */
+
+/* Selve plottingområdet */
+.dark-mode .ssb-chart-card .js-plotly-plot .plotly .main-svg .bg {
+    fill: #303030 !important;
+}
+
+/* Plotly-tekst */
+.dark-mode .ssb-chart-card .js-plotly-plot .xaxislayer-above text,
+.dark-mode .ssb-chart-card .js-plotly-plot .yaxislayer-above text,
+.dark-mode .ssb-chart-card .js-plotly-plot .infolayer text,
+.dark-mode .ssb-chart-card .js-plotly-plot .legend text,
+.dark-mode .ssb-chart-card .js-plotly-plot .annotation text {
+    fill: #ffffff !important;
+}
+
+/* Akser */
+.dark-mode .ssb-chart-card .js-plotly-plot .xaxislayer-above path,
+.dark-mode .ssb-chart-card .js-plotly-plot .yaxislayer-above path,
+.dark-mode .ssb-chart-card .js-plotly-plot .xlines-above,
+.dark-mode .ssb-chart-card .js-plotly-plot .ylines-above {
+    stroke: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Gridlinjer */
+.dark-mode .ssb-chart-card .js-plotly-plot .gridlayer path {
+    stroke: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Nullinje */
+.dark-mode .ssb-chart-card .js-plotly-plot .zerolinelayer path {
+    stroke: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Focus/spike-linje */
+.dark-mode .ssb-chart-card .js-plotly-plot .spikeline {
+    stroke: rgba(255, 255, 255, 0.35) !important;
 }
 
 /* =========================
