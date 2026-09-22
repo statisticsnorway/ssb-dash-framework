@@ -88,7 +88,7 @@ class DataEditorInfoRow(ModuleABC):
                 for info_var in self.info_variables
             },
             inputs={
-                "ident": VariableSelector.get_refnr(Input),
+                "refnr": VariableSelector.get_refnr(Input),
                 "period": VariableSelector.get_timevar(Input),
                 "states": {
                     item.component_id: item
@@ -97,10 +97,10 @@ class DataEditorInfoRow(ModuleABC):
             },
         )
         def get_data_for_info_row_fields(
-            ident: str, period: str, states: dict[str, dict]
+            refnr: str, period: str, states: dict[str, dict]
         ) -> dict[str, str | int | float | bool | None]:
-            logger.debug(f"ident: {ident}\nperiod: {period}\nstates: {states}")
-            if not ident or not period or not states:
+            logger.debug(f"ident: {refnr}\nperiod: {period}\nstates: {states}")
+            if not refnr or not period or not states:
                 raise PreventUpdate
             info_values = {}
             vars_to_collect: list[InfoRowField] = []
@@ -113,7 +113,7 @@ class DataEditorInfoRow(ModuleABC):
 
             try:
                 field_data = self.fetcher.get_info_row_fields(
-                    self.settings, ident, period, vars_to_collect
+                    self.settings, refnr, period, vars_to_collect, states
                 )
                 info_values.update(field_data)
             except Exception as e:

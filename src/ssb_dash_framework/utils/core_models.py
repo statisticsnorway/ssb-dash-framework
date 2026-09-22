@@ -8,7 +8,7 @@ from ibis import _
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
 
-from .alert_handler import create_alert
+from ..utils import AlertHandler
 from .config_tools.connection import _get_connection_object
 from .config_tools.connection import get_connection
 
@@ -66,17 +66,9 @@ class UpdateSkjemamottak(BaseModel):
 
     def to_alert(self, success):
         if success:
-            return create_alert(
-                f"Oppdaterte {self.column} for {self.refnr} til '{self.value}'",
-                "success",
-                ephemeral=True,
-            )
+            AlertHandler.success(msg=f"Oppdaterte {self.column} for {self.refnr} til '{self.value}'", ephemeral=True)
         else:
-            return create_alert(
-                f"Feilet oppdatering av {self.column} for {self.refnr}",
-                "warning",
-                ephemeral=True,
-            )
+            AlertHandler.warning(msg=f"Feilet oppdatering av {self.column} for {self.refnr}", ephemeral=True)
 
     def update_ibis(self):
         if not isinstance(_get_connection_object(), ConnectionPool):
@@ -182,33 +174,26 @@ class UpdateSkjemadata(BaseModel):
 
         if datatype:
             if datatype == "float":
-                return create_alert(
-                    f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}': "
+                AlertHandler.warning(
+                    msg=f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}': "
                     f"Heltallsfelt kan ikke inneholde komma eller punktum (fikk '{self.value}').",
-                    "warning",
                     ephemeral=True,
-                    duration=10,
                 )
-            return create_alert(
-                f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}': Datatypen skal være {datatype}, ikke {type(self.value)}.",
-                "warning",
-                ephemeral=True,
-                duration=10,
-            )
+            else:
+                AlertHandler.warning(
+                    f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}': Datatypen skal være {datatype}, ikke {type(self.value)}.",
+                    ephemeral=True,
+                )
 
         if success:
-            return create_alert(
+            AlertHandler.success(
                 f"Ident '{self.ident}' oppdatert på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'",
-                "success",
-                ephemeral=True,
-                duration=8,
+                ephemeral=True
             )
         else:
-            return create_alert(
+            AlertHandler.warning(
                 f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'. Se logg for detaljer.",
-                "warning",
-                ephemeral=True,
-                duration=8,
+                ephemeral=True
             )
 
     def _get_feltsti(self, conn) -> str:
@@ -324,17 +309,20 @@ class UpdateSkjemadata(BaseModel):
             logger.info(
                 f"Inserted new row with variabel='{self.variable}' and value='{self.value}' into {self.table}."
             )
-            return self.to_alert(long, success=True)
+            self.to_alert(long, success=True)
+            return True
         except Exception as e:
             logger.error(f"INSERT feilet: {e}", exc_info=True)
-            return self.to_alert(long, success=False)
+            self.to_alert(long, success=False)
+            return False
 
-    def update_ibis(self, long):
+    def update_ibis(self, long) -> bool:
 
         with get_connection() as conn:
             datatype_check = self._check_datatype(conn)
             if datatype_check:
-                return self.to_alert(long, success=False, datatype=datatype_check)
+                self.to_alert(long, success=False, datatype=datatype_check)
+                return False
 
         update_query = f"""
             UPDATE {self.table}
@@ -355,6 +343,7 @@ class UpdateSkjemadata(BaseModel):
         else:
             update_query = update_query.strip() + f"\nAND ident = '{self.ident}'"
 
+        print(f"Trying to run update query: {update_query}")
         try:
             with get_connection() as conn:
                 result = conn.raw_sql(update_query)
@@ -366,14 +355,17 @@ class UpdateSkjemadata(BaseModel):
                         )
                         return self._insert_ibis(conn, long)
                     else:
-                        return self.to_alert(long, success=False)
+                        self.to_alert(long, success=False)
+                        return False
                 logger.info(
                     f"Successfully updated '{self.column}' from '{self.old_value}' to '{self.value}'"
                 )
-                return self.to_alert(long, success=True)
+                self.to_alert(long, success=True)
+                return True
         except Exception as e:
             logger.error(
                 f"Update feilet! Kunne ikke oppdatere {self.refnr} - '{self.variable if long else self.column} til '{self.value}'. Feilmelding: \n{e}",
                 exc_info=True,
             )
-            return self.to_alert(long, success=False)
+            self.to_alert(long, success=False)
+            return False
