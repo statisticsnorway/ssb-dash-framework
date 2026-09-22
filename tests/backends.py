@@ -69,12 +69,29 @@ def _postgres(tmp_dir: Path) -> Iterator[None]:
         _reset_connection_state()
 
 
+@contextmanager
+def _parquedit(tmp_dir: Path) -> Iterator[None]:
+    build_db.seed_parquedit()
+    connection.set_parquedit_connection()
+    try:
+        yield
+    finally:
+        _reset_connection_state()
+
+
+def _parquedit_skip_reason() -> str | None:
+    return "Parquedit is not available"
+
+
 BACKENDS: dict[str, BackendSpec] = {
     spec.name: spec
     for spec in (
         BackendSpec(name="sqlite", setup=_sqlite),
         BackendSpec(
             name="postgres", setup=_postgres, skip_reason=_postgres_skip_reason
+        ),
+        BackendSpec(
+            name="parquedit", setup=_parquedit, skip_reason=_parquedit_skip_reason
         ),
     )
 }

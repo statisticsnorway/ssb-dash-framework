@@ -53,6 +53,9 @@ def seed_postgres(database_url: str, testdata_dir: Path = TESTDATA_DIR) -> None:
         conn.commit()
 
 
+def seed_parquedit(): ...
+
+
 def build_in_memory_db(testdata_dir: Path = TESTDATA_DIR) -> sqlite3.Connection:
     """Create an in-memory SQLite database populated with the Altinn testdata.
 
