@@ -2584,13 +2584,17 @@ class Naeringsspesifikasjon:
             ),
             Input("var-ident", "value"),
             Input("var-aar", "value"),
+            Input("refresh-manager", "data"),
         )
         def create_info_cards_bof(
-            orgnr_foretak: str, aar: str
+            orgnr_foretak: str, aar: str, refresh_data
         ) -> tuple[str, str, str, str, str]:
             """Returns a tuple of strings with the values for info cards for the top of the bof accordion.
             These cards will hold bof information for the foretak.
             """
+            if refresh_data and refresh_data.get("status") == "invalid_search":
+                return ("", "", "", "", "", "", "", "", "", "", "")
+        
             if not orgnr_foretak or not aar:
                 raise PreventUpdate
 
@@ -3066,8 +3070,12 @@ class Naeringsspesifikasjon:
             Output("nspek-versjon-dropdown", "value"),
             Input("var-ident", "value"),
             Input("var-aar", "value"),
+            Input("refresh-manager", "data"),
         )
-        def load_versions(orgnr, aar):
+        def load_versions(orgnr, aar, refresh_data):
+            if refresh_data and refresh_data.get("status") == "invalid_search":
+                return [], None
+            
             if not orgnr or not aar:
                 raise PreventUpdate
 
@@ -3162,8 +3170,12 @@ class Naeringsspesifikasjon:
             Output("nspek-versjon-dropdown-compare", "value"),
             Input("var-ident", "value"),
             Input("var-aar", "value"),
+            Input("refresh-manager", "data"),
         )
-        def load_compare_options(orgnr, aar):
+        def load_compare_options(orgnr, aar, refresh_data):
+
+            if refresh_data and refresh_data.get("status") == "invalid_search":
+                return [], None
 
             if not orgnr or not aar:
                 raise PreventUpdate
