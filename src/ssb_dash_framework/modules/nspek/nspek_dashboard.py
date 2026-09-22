@@ -19,6 +19,7 @@ from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
+from dash.exceptions import PreventUpdate
 from dash_ag_grid import AgGrid
 from dash_iconify import DashIconify
 from ibis import _
@@ -808,10 +809,14 @@ class NspekDashboard:
                                 "infiniteInitialRowCount": 1,
                                 "rowBuffer": 0,
                                 "maxConcurrentDatasourceRequests": 1,
+                                "rowSelection": {
+                                    "mode": "singleRow",
+                                    "enableClickSelection": True,
+                                },
                             },
                             className="ag-theme-alpine ag-theme-ssb",
                             style={
-                                "height": "700px",
+                                "height": "746px",
                                 "width": "100%",
                             },
                         ),
@@ -2054,6 +2059,54 @@ class NspekDashboard:
                 distribution_figure,
                 distribution_table,
             )
+
+        @callback(
+            self.variableselector.get_output_object("ident"),
+            self.variableselector.get_output_object("aar"),
+            self.variableselector.get_output_object("foretak"),
+            Input("nspek-dashboard-constructed-grid", "selectedRows"),
+            Input("nspek-dashboard-ske-grid", "selectedRows"),
+            Input("nspek-dashboard-total-grid", "selectedRows"),
+            State("nspek-dashboard-aar", "value"),
+            prevent_initial_call="initial_duplicate",
+        )
+        def output_kpi_selection_to_varselector(
+            constructed_selected,
+            ske_selected,
+            total_selected,
+            aar,
+        ):
+            selected_rows = {
+                "nspek-dashboard-constructed-grid": constructed_selected,
+                "nspek-dashboard-ske-grid": ske_selected,
+                "nspek-dashboard-total-grid": total_selected,
+            }
+
+            selected = selected_rows.get(ctx.triggered_id)
+
+            if not selected:
+                raise PreventUpdate
+
+            if len(selected) > 1:
+                raise ValueError(
+                    "Forventet maksimalt én valgt rad."
+                )
+
+            row = selected[0]
+            orgnr = row.get("orgnr")
+
+            if not orgnr or not aar:
+                raise PreventUpdate
+
+            logger.debug(
+                "Oppdaterer VariableSelector fra KPI-grid: "
+                "orgnr=%s, aar=%s, sekvensnummer=%s",
+                orgnr,
+                aar,
+                row.get("sekvensnummer"),
+            )
+
+            return str(orgnr), str(aar), str(orgnr)
 
 
 class NspekDashboardTab(TabImplementation, NspekDashboard):
