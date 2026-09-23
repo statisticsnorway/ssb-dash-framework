@@ -24,7 +24,7 @@ class FormGetterCached:
     data: dict[str, CacheEntry] = {}
 
     @staticmethod
-    def get_table(refnr: str, settings: EditorSettings) -> Table:
+    def get_table(refnr: str, period: str, settings: EditorSettings) -> Table:
         """Materialize the whole refnr-filtered form in ONE query.
 
         The per-field ``default_getter`` re-filters this result once per editable
@@ -47,9 +47,12 @@ class FormGetterCached:
                     f"Column '{settings.refnr_col}' not in table "
                     f"'{settings.form_data_table}'. Available: {t.columns}"
                 )
-            df = t.filter(
-                t[settings.refnr_col] == refnr,
-            ).to_pandas()
+            period_filter = t[settings.period_col] == period
+            filters = [t[settings.refnr_col] == refnr] # ekstra filter for fetching når refnr ikkje er brukt (feks frå enhetsinfo)
+            if settings.refnr_col != "refnr":
+                filters.append(period_filter)
+            df = t.filter(filters).execute()
+
         # memtable preserves column names + dtypes; downstream filter/select run
         # in DuckDB, so they never touch the database again.
         return ibis.memtable(df)
@@ -72,18 +75,20 @@ class FormGetterCached:
         cls.data.pop(f"{table}::{refnr}", None)
 
     @classmethod
-    def get_form(cls, refnr: str, settings: EditorSettings) -> Table:
+    def get_form(cls, refnr: str, period: str, settings: EditorSettings) -> Table:
         cache_key = (
             f"{settings.form_data_table}::{refnr}"  # for tables not querying skjemadata
         )
         entry = cls.data.get(cache_key)
-
-        if (entry is None) or ((time.perf_counter() - entry.time_to_live) > 5.0):
-            table = FormGetterCached.get_table(refnr, settings)
+        if (entry is None) or ((time.perf_counter() - entry.time_to_live) > 20):
+            table = FormGetterCached.get_table(refnr, period, settings)
             cls.data[cache_key] = CacheEntry(
                 entry=table, time_to_live=time.perf_counter()
             )
             cls.clean_cache()
             return cls.data[cache_key].entry
+
+        # slide TTL on cache hit to prevent resetting when fetching from the same table
+        entry.time_to_live = time.perf_counter()
         cls.clean_cache()
         return entry.entry

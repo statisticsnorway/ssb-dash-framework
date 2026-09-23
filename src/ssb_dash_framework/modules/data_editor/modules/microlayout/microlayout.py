@@ -15,6 +15,7 @@ from ssb_dash_framework.utils.alert_handler import AlertHandler
 from .meta import MicrolayoutMeta
 from ...utils import EditorSettings
 from ...utils import EDITING_CODE_DROPDOWN
+from dash import no_update
 from .microlayout_components.models import Layout
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,16 @@ class MicroLayoutAIO(html.Div):
         logger.warning(
             "This module is under development and might receive larger and/or breaking changes."
         )
+
+        if isinstance(layout, dict):
+            override_kwargs = {}
+            for key in ["form_data_table", "field_name_col", "refnr_col", "ident_col", "field_value_col", "period_col"]:
+                if key in layout:
+                    override_kwargs[key] = layout[key]
+            
+            if override_kwargs:
+                settings = settings.model_copy(update=override_kwargs)
+
         # The below is just for the __str__ dunder
         self.settings = settings
         self._horizontal = horizontal
@@ -153,5 +164,6 @@ class MicroLayoutAIO(html.Div):
                     msg = f"Getting data for form field {field} failed with error: {e}"
                     logger.warning(msg)
                     AlertHandler.warning(msg)
+                    # field_values[id_] = no_update
 
             return field_values

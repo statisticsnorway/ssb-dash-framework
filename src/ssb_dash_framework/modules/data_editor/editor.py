@@ -93,16 +93,12 @@ class DataEditor:
                     )
                 view.set_settings(data_handler, settings, instance_id)
                 dataview_list.append(view.layout())
-
+        
         self.dataview_layouts = {}
         if dataview is not None:
             for view, layout_div in zip(dataview, dataview_list):
                 tables = getattr(view, "applies_to_tables") if hasattr(view, "applies_to_tables") else [settings.form_data_table]
-                # if not tables and hasattr(view, "applies_to_table"):
-                #     tables = view.applies_to_table if isinstance(view.applies_to_table, list) else [view.applies_to_table]
-                
                 forms = getattr(view, "applies_to_forms") if hasattr(view, "applies_to_forms") else settings.form_list
-
                 for t in tables:
                     for f in forms:
                         self.dataview_layouts[(t, f)] = layout_div
