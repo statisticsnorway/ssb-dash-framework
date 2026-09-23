@@ -3337,6 +3337,8 @@ REMOVE BOOTSTRAP ROUNDING
 .dark-mode .ssb-chart-card .js-plotly-plot .yaxislayer-above text,
 .dark-mode .ssb-chart-card .js-plotly-plot .infolayer text,
 .dark-mode .ssb-chart-card .js-plotly-plot .legend text,
+.dark-mode .ssb-chart-card .js-plotly-plot .bartext,
+.dark-mode .ssb-chart-card .js-plotly-plot .textpoint,
 .dark-mode .ssb-chart-card .js-plotly-plot .annotation text {
     fill: #ffffff !important;
 }

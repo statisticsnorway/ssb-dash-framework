@@ -160,6 +160,29 @@ KPI_CONFIG = {
     },
 }
 
+SSB_FIGURE_COLORS = [
+    "#1A9D49",
+    "#075745",
+    "#1D9DE2",
+    "#0F2080",
+    "#C78800",
+    "#471F00",
+    "#C775A7",
+    "#A3136C",
+    "#909090",
+]
+
+VIRKSOMHETSTYPE_LABELS = {
+    "oevrigSelskap": "Øvrig selskap",
+    "enkeltpersonforetak": "Enkeltpersonforetak",
+    "selskapMedDeltakerfastsetting": "Selskap med deltakerfastsetting",
+    "samvirkeforetak": "Samvirkeforetak",
+    "nokus": "NOKUS",
+    "bankOgFinansieringsforetak": "Bank og finansieringsforetak",
+    "livsforsikringsforetakOgPensjonskasse": "Livsforsikringsforetak og pensjonskasse",
+    "skadeforsikringsforetak": "Skadeforsikringsforetak",
+    "null": "Ukjent",
+}
 
 def get_nspek_kpi_modal_data(
     aar: int,
@@ -223,65 +246,6 @@ def get_nspek_kpi_modal_data(
 
     return df, int(count_row[0] or 0)
 
-def get_versions(conn, ident: str, aar: str) -> pd.DataFrame:
-    """Fetch and return pandas dataframe containing all sekvensnummer sorted by versjon_nr from nspek_core view v_registrering_versjon.
-
-    Example use: get_versions(conn, "979443137", "2024")
-    """
-    config = TYPE_REGNSKAP_TABLE["v_registrering_versjon"]
-
-    t = conn.table(config["table"], database=config["database"])
-
-    df = (
-        t.filter((_.orgnr == ident) & (_.aar == int(aar)))
-        .order_by(_.versjon_nr)
-        .select(_.sekvensnummer, _.versjon_nr, _.antall_versjoner, _.dato_mottatt)
-        .execute()
-    )
-
-    df["label"] = (
-        "v"
-        + df["versjon_nr"].astype(str)
-        + " – "
-        + pd.to_datetime(df["dato_mottatt"]).dt.strftime("%Y-%m-%d %H:%M")
-    )
-
-    return df
-
-
-def get_virksomhetsinfo(
-    conn, variables_to_fetch: list, ident: str, aar: str, sekvensnummer: int
-) -> pd.DataFrame:
-    """Fetch and return pandas dataframe containing virksomhetsinfo from nspek files for specified variables for a unit.
-
-    Example use: get_virksomhetsinfo(conn, virksomhetsinfo_variabler, "979443137", "2024", 2291859)
-    """
-    config = TYPE_REGNSKAP_TABLE["virksomhet"]
-
-    t = conn.table(config["table"], database=config["database"])
-    t = t.filter(_.sekvensnummer == sekvensnummer)
-    filtered = t.filter(t["felt"].isin(variables_to_fetch)).select(
-        ["felt", "char_verdi"]
-    )
-    df = filtered.execute()
-
-    return df
-
-
-def get_skjoennslignet(conn, sekvensnummer: int) -> pd.DataFrame:
-    """Fetch and return pandas dataframe containing virksomhetsinfo from nspek files for specified variables for a unit.
-
-    Example use: get_skjoennslignet(self.conn, 2291859)
-    """
-    config = TYPE_REGNSKAP_TABLE["enhet_opplysninger"]
-
-    t = conn.table(config["table"], database=config["database"])
-    t = t.filter(_.sekvensnummer == sekvensnummer)
-    filtered = t.filter(_.opplysning == "skjoennslignet").select(["opplysning"])
-    df = filtered.execute()
-
-    return df
-
 
 def get_bof_database_path() -> Path:
     """Find the available BOF database."""
@@ -318,28 +282,6 @@ def orgnr_exists_in_bof(orgnr: str) -> bool:
     except Exception as e:
         logger.error(f"BOF lookup feilet: {e}")
         return True
-
-
-def get_value(series) -> str:
-    """Return first value or empty string if no match."""
-    return "" if series.empty else str(series.iloc[0])
-
-
-def fetch_data_by_orgnr(
-    conn, regnskapstype: str, ident: str, aar: str, sekvensnummer: int
-) -> pd.DataFrame:
-    """Returns a pandas dataframe with all nspek values found in the specified regnskapstype for a unit/orgnr.
-
-    Example use: fetch_data_by_orgnr(conn, "resultatregnskap", "932598957", "2024", 2291859)
-    """
-    config = TYPE_REGNSKAP_TABLE[regnskapstype]
-
-    t = conn.table(config["table"], database=config["database"])
-    t = t.filter(_.sekvensnummer == sekvensnummer)
-    filtered = t.select(["felt", "belop"])
-    df = filtered.to_pandas()
-
-    return df
 
 
 def construct_sequence(
@@ -497,6 +439,35 @@ def get_nspek_development_data(aar: int) -> pd.DataFrame:
     return pd.DataFrame(
         rows,
         columns=["maaned", "konstruert", "ske"],
+    )
+
+
+def get_nspek_distribution_data(aar: int) -> pd.DataFrame:
+    """Return registration counts by virksomhetstype for the selected year."""
+
+    aar = int(aar)
+
+    with get_nspek_connection() as conn:
+        query = f"""
+            SELECT
+                virksomhetstype,
+                COUNT(*) AS antall
+            FROM nspek_core.mv_registrering_vtype
+            WHERE aar = {aar}
+            GROUP BY virksomhetstype
+            ORDER BY antall DESC
+        """
+
+        cursor = conn.raw_sql(query)
+
+        try:
+            rows = cursor.fetchall()
+        finally:
+            cursor.close()
+
+    return pd.DataFrame(
+        rows,
+        columns=["virksomhetstype", "antall"],
     )
 
 
@@ -928,6 +899,7 @@ class NspekDashboard:
             className=classes,
         )
 
+
     def create_development_figure(self, df: pd.DataFrame):
         long_df = df.melt(
             id_vars="maaned",
@@ -971,8 +943,8 @@ class NspekDashboard:
             color="kilde",
             markers=True,
             color_discrete_map={
-                "Konstruert": "#3396D2",
-                "Mottatt fra SKE": "#1A9D49",
+                "Mottatt fra SKE": SSB_FIGURE_COLORS[0],
+                "Konstruert": SSB_FIGURE_COLORS[1],
             },
             custom_data=["maaned_label"],
         )
@@ -989,14 +961,7 @@ class NspekDashboard:
             separators=", ",
             hovermode="closest",
             spikedistance=-1,
-            legend={
-                "orientation": "h",
-                "y": -0.20,
-                "yanchor": "top",
-                "x": 0,
-                "xanchor": "left",
-                "title": None,
-            },
+            legend={"title": "",},
             font={
                 "family": "Open Sans, Arial, sans-serif",
                 "size": 12,
@@ -1073,30 +1038,59 @@ class NspekDashboard:
 
         return fig
 
+
     def create_distribution_figure(self, df: pd.DataFrame):
+        figure_df = df.copy()
+
+        figure_df["virksomhetstype_label"] = (
+            figure_df["virksomhetstype"]
+            .map(VIRKSOMHETSTYPE_LABELS)
+            .fillna(figure_df["virksomhetstype"])
+        )
+
         fig = px.bar(
-            df,
-            x="kategori",
+            figure_df,
+            x="virksomhetstype",
             y="antall",
             text="antall",
-            color_discrete_sequence=["#1A9D49"],
+            color="virksomhetstype",
+            color_discrete_sequence=SSB_FIGURE_COLORS,
+            custom_data=["virksomhetstype_label"],
         )
 
         fig.update_traces(
             textposition="outside",
-            width=0.1,
-            name="Antall registreringer",
             showlegend=True,
+            hovertemplate=(
+                "<b>%{customdata[0]}</b><br>"
+                "Antall: %{y:,}"
+                "<extra></extra>"
+            ),
         )
 
-        fig.update_traces(textposition="outside")
+        # Bruk lesbare navn i legend
+        for trace in fig.data:
+            trace.name = VIRKSOMHETSTYPE_LABELS.get(
+                trace.name,
+                trace.name,
+            )
+
         fig.update_layout(
-            margin={"l": 10, "r": 20, "t": 20, "b": 50},
+            margin={
+                "l": 10,
+                "r": 20,
+                "t": 20,
+                "b": 100,
+            },
             separators=", ",
+            dragmode=False,
             font={
                 "family": "Open Sans, Arial, sans-serif",
                 "size": 12,
                 "color": "#21383A",
+            },
+            legend={
+                "title": {"text": "Virksomhetstype",},
             },
             xaxis={
                 "title": None,
@@ -1106,9 +1100,11 @@ class NspekDashboard:
                 "linewidth": 1,
                 "ticks": "outside",
                 "tickson": "boundaries",
+                "showticklabels": False,
             },
             yaxis={
                 "title": None,
+                "type": "log",
                 "showgrid": True,
                 "gridcolor": "#E6E6E6",
                 "gridwidth": 1,
@@ -1139,7 +1135,7 @@ class NspekDashboard:
                     },
                 },
                 {
-                    "text": "Kilde",
+                    "text": "Virksomhetstype",
                     "xref": "paper",
                     "yref": "paper",
                     "x": 1,
@@ -1160,6 +1156,7 @@ class NspekDashboard:
         )
 
         return fig
+
 
     def create_development_table(self, df: pd.DataFrame) -> html.Div:
         table_df = df.copy()
@@ -1209,9 +1206,16 @@ class NspekDashboard:
 
     def create_distribution_table(self, df: pd.DataFrame) -> html.Div:
         table_df = df.copy()
+
+        table_df["virksomhetstype"] = (
+            table_df["virksomhetstype"]
+            .map(VIRKSOMHETSTYPE_LABELS)
+            .fillna(table_df["virksomhetstype"])
+        )
+
         table_df = table_df.rename(
             columns={
-                "kategori": "Kategori",
+                "virksomhetstype": "Virksomhetstype",
                 "antall": "Antall",
             }
         )
@@ -1480,12 +1484,12 @@ class NspekDashboard:
                                 dbc.CardBody(
                                     [
                                         html.H5(
-                                            "Fordeling i innsamling",
+                                            "Fordeling virksomhetstype",
                                             className="ssb-chart-title",
                                         ),
                                         dcc.Tabs(
                                             id="nspek-dashboard-distribution-tabs",
-                                            value="table",
+                                            value="figure",
                                             children=[
                                                 dcc.Tab(
                                                     label="Vis som figur",
@@ -2019,23 +2023,11 @@ class NspekDashboard:
 
             kpis = get_nspek_kpis(aar)
             development_df = get_nspek_development_data(aar)
+            distribution_df = get_nspek_distribution_data(aar)
 
             total = kpis["antall_totalt"]
             ske = kpis["antall_ske"]
             konstruert = kpis["antall_konstruerte"]
-
-            distribution_df = pd.DataFrame(
-                [
-                    {
-                        "kategori": "Mottatt fra SKE",
-                        "antall": ske,
-                    },
-                    {
-                        "kategori": "Konstruert",
-                        "antall": konstruert,
-                    },
-                ]
-            )
 
             development_figure = self.create_development_figure(
                 development_df
