@@ -155,6 +155,10 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             prevent_initial_call=True,
         )
         def update_refnr(ident, period):
+            
+            if not ident:
+                raise PreventUpdate
+
             try:
                 refnr = self.fetcher.get_refnrs_by_period_ident(
                     self.settings, ident, period

@@ -38,8 +38,9 @@ class StandardDataHandler(FetcherMeta):
         self, setting: EditorSettings, container: FieldCallbackContainer, inputs: list
     ):
         refnr = inputs[0]
+        period = inputs[1]
 
-        t = self.cache.get_form(refnr, setting)
+        t = self.cache.get_form(refnr, period, setting)
         filters = [
             t[setting.refnr_col] == refnr,
             t[setting.field_name_col] == container.settings.variable,

@@ -4,6 +4,7 @@ import logging
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import Input
+from dash import State
 from dash import Output
 from dash import callback
 from dash import dcc
@@ -136,6 +137,7 @@ class DataViewCustom(DataEditorDataView):
         self,
         # settings: EditorSettings,
         layout: dict,
+        settings: dict | None = None,
         _from_config_file=False,
     ) -> None:
         """Initializes and registers the custom data view for selected tables and forms.
@@ -186,12 +188,19 @@ class DataViewCustom(DataEditorDataView):
                         f"Done converting:\n{json.dumps(layout['layout'], indent=2, ensure_ascii=False)}"
                     )
 
+                input_id = layout.get("ident_col")
+                refnr_col = layout.get("refnr_col", self.settings.refnr_col)
+                if input_id in ("var-ident", "ident") or refnr_col != "refnr":
+                    ref_input = VariableSelector.get_ident(Input)
+                else:
+                    ref_input = VariableSelector.get_refnr(Input)
+
                 microlayout = MicroLayoutAIO(
                     data_handler=self.fetcher,
                     settings=self.settings,
                     layout=layout,
                     instance_id=self.instance_id,
-                    inputs=[VariableSelector.get_refnr(Input)],
+                    inputs=[ref_input, VariableSelector.get_timevar(Input)],
                 )
                 components.append(microlayout)
             elif (layout["type"] == "CustomView") or (layout["type"] == "DataViewCustom"):
