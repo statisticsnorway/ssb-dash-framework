@@ -44,6 +44,9 @@ from .nspek import NaeringsspesifikasjonWindow
 from .nspek import NspekControls
 from .nspek import NspekControlViewTab
 from .nspek import NspekControlViewWindow
+from .nspek import NspekDashboard
+from .nspek import NspekDashboardTab
+from .nspek import NspekDashboardWindow
 from .parquet_editor import ParquetEditor
 from .parquet_editor import ParquetEditorChangelog
 from .parquet_editor import apply_edits
@@ -104,6 +107,9 @@ __all__ = [
     "NspekControlViewTab",
     "NspekControlViewWindow",
     "NspekControls",
+    "NspekDashboard",
+    "NspekDashboardTab",
+    "NspekDashboardWindow",
     "ParquetEditor",
     "ParquetEditorChangelog",
     "PimemorizerTab",

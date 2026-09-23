@@ -85,6 +85,7 @@ class NspekControls(ControlFrameworkBase):
                     kontrollid,
                     sekvensnummer,
                     orgnr as ident,
+                    aktiv,
                     utslag,
                     verdi,
                     org_form,

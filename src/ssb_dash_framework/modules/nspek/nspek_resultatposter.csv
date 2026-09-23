@@ -166,4 +166,17 @@ sumFinanskostnad,"SUM Finanskostnader",143
 8324,"For mye avsatt skatt fra forrige år",149
 sumSkattekostnad,"SUM Skattekostnader",150
 "",,
-aarsresultat,"SUM Årsresultat",162
+"","Resultatkomponent for IFRS foretak",151
+8901.1,"Endring i verdireguleringsreserve",152
+8901.2,"Aktuariell gevinst og tap på ytelsesplaner",153
+8901.3,"Andre inntekter og kostnader knyttet til foretak",154
+8901.4,"Netto gevinst og tap på egenkapitalinstrumenter",155
+8901.5,"Endring i virkelig verdi som skyldes egen kredittrisiko",156
+8902.1,"Omregningsdifferanser valuta",157
+8902.2,"Endring i virkelig verdi av sikringsinstrumentet ved kontantstrømsikring",158
+8902.3,"Netto gevinst og tap på finansielle eiendeler målt til virkelig",159
+8902.4,"Netto endring i kostnader ved sikring",160
+8909.1,"Skatt relatert til poster som ikke skal reklassifiseres",161
+8909.2,"Skatt relatert til poster som kan bli reklassifisert",162
+"",,
+aarsresultat,"SUM Årsresultat",163

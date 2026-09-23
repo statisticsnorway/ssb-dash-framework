@@ -37,6 +37,17 @@ from .nspek_utils import set_nspek_connection
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
 
+WRITE_ENABLED_DB_USERS = {
+    "nspek-developers@dapla-group-sa-p-ye.iam",
+    "strukt-naering-developers@dapla-group-sa-p-ye.iam",
+    "forskteknar-narin-developers@dapla-group-sa-p-ye.iam",
+    "speshelse-developers@dapla-group-sa-p-ye.iam",
+    "finmark-developers@dapla-group-sa-p-ye.iam",
+    "uh-tjenester-developers@dapla-group-sa-p-ye.iam",
+    "off-fin-developers@dapla-group-sa-p-ye.iam",
+    "skatt-naering-developers@dapla-group-sa-p-ye.iam",
+}
+
 virksomhetsinfo_variabler = [
     "virksomhetstype",
     "regeltypeForAarsregnskap",
@@ -70,23 +81,32 @@ RESULTAT_STRUCTURE = {
     "finansposter og skattekostnad": {
         "finansinntekter": (8000, 8099),
         "finanskostnader": (8100, 8299),
-        "skattekostnader": (8300, 8999),
+        "resultatkomponent for IFRS foretak": (8900, 8999),
+        "skattekostnader": (8300, 8899),
     },
 }
 
 NEGATIVE_ACCOUNTS = {
-    "1296",
-    "1298",
-    "1299",
     "2010",
     "2080",
-    "2095",
     "3300",
     "4995",
+    "6751",
     "6998",
     "7099",
+    "8322",
+    "8324",
 }
 
+def get_post_number(post: pd.Series) -> pd.Series:
+    """Returnerer den numeriske delen av postidentifikatoren."""
+    return pd.to_numeric(
+        post.astype(str).str.extract(
+            r"^(\d+(?:\.\d+)?)",
+            expand=False,
+        ),
+        errors="coerce",
+    )
 
 def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
     """Adds UI sum rows used for display aggregation in AG Grid.
@@ -100,9 +120,10 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
 
     df["post"] = df["post"].astype(str)
 
-    post_numeric = pd.to_numeric(df["post"], errors="coerce")
+    post_numeric = get_post_number(df["post"])
+
     df_numeric = df.loc[post_numeric.notna()].copy()
-    df_numeric["post_int"] = post_numeric.loc[post_numeric.notna()].astype(int)
+    df_numeric["post_int"] = (post_numeric.loc[post_numeric.notna()].astype(int))
 
     def apply_sign(row):
         return -1 if row["post"] in NEGATIVE_ACCOUNTS else 1
@@ -146,8 +167,8 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
 
         finansposter_og_skattekostnad = (
             ui_sum_rows["UI_SUM_8000_8099"]["verdi"]
-            + ui_sum_rows["UI_SUM_8100_8299"]["verdi"]
-            + ui_sum_rows["UI_SUM_8300_8999"]["verdi"]
+            - ui_sum_rows["UI_SUM_8100_8299"]["verdi"]
+            - ui_sum_rows["UI_SUM_8300_8899"]["verdi"]
         )
 
         ui_sum_rows["UI_SUM_3000_3999"] = {
@@ -170,9 +191,9 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
             "is_ui_sum": True,
         }
 
-        ui_sum_rows["UI_SUM_8000_8999"] = {
+        ui_sum_rows["UI_SUM_8000_8899"] = {
             "beskrivelse": "SUM forslag for finansposter og skattekostnad",
-            "post": "UI_SUM_8000_8999",
+            "post": "UI_SUM_8000_8899",
             "verdi": finansposter_og_skattekostnad,
             "verdi_compare": None,
             "diff": None,
@@ -185,7 +206,8 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
             - ui_sum_rows["UI_SUM_4000_7999"]["verdi"]
             + ui_sum_rows["UI_SUM_8000_8099"]["verdi"]
             - ui_sum_rows["UI_SUM_8100_8299"]["verdi"]
-            - ui_sum_rows["UI_SUM_8300_8999"]["verdi"]
+            - ui_sum_rows["UI_SUM_8300_8899"]["verdi"]
+            + ui_sum_rows["UI_SUM_8900_8999"]["verdi"]
         )
 
         ui_sum_rows["UI_SUM_3000_8999"] = {
@@ -248,9 +270,10 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
         "UI_SUM_4000_7999": "sumDriftskostnad",
         "UI_SUM_8000_8099": "sumFinansinntekt",
         "UI_SUM_8100_8299": "sumFinanskostnad",
-        "UI_SUM_8300_8999": "sumSkattekostnad",
+        "UI_SUM_8300_8899": "sumSkattekostnad",
         "": "sumSkattekostnad",
-        "UI_SUM_8000_8999": "sumSkattekostnad",
+        "UI_SUM_8000_8899": "sumSkattekostnad",
+        "UI_SUM_8900_8999": "8909.2",
         "UI_SUM_3000_8999": "aarsresultat",
     }
 
@@ -306,6 +329,13 @@ PETROLEUM_ORGNR = {
 }
 
 PETROLEUM_POSTS = {
+    "1101",
+    "1102",
+    "1103",
+    "1104",
+    "1470",
+    "2185",
+    "2470",
     "3001",
     "3002",
     "3003",
@@ -315,6 +345,41 @@ PETROLEUM_POSTS = {
     "3007",
     "3008",
     "3886",
+    "4001",
+    "4002",
+    "4003",
+    "4004",
+    "4007",
+    "4008",
+    "6001",
+    "6002",
+    "6004",
+    "6051",
+    "6052",
+    "6053",
+    "6054",
+    "6110",
+    "6120",
+    "6130",
+    "6140",
+    "6350",
+    "6750",
+    "6751",
+    "6752",
+    "7501"
+    "7502",
+    "7503",
+    "7650",
+    "7651",
+    "7701",
+    "7886",
+    "8054",
+    "8059",
+    "8075",
+    "8120",
+    "8154",
+    "8159",
+    "8175",
 }
 
 
@@ -366,6 +431,7 @@ def apply_blank_filter(df: pd.DataFrame, toggle_blank: list[str]) -> pd.DataFram
                 "Finansinntekter",
                 "Finanskostnader",
                 "Skattekostnader",
+                "Resultatkomponent for IFRS foretak",
             ]
         )
         | df["beskrivelse"].str.startswith("SUM", na=False)
@@ -457,6 +523,19 @@ def get_skjoennslignet(conn, sekvensnummer: int) -> pd.DataFrame:
     t = conn.table(config["table"], database=config["database"])
     t = t.filter(_.sekvensnummer == sekvensnummer)
     filtered = t.filter(_.opplysning == "skjoennslignet").select(["opplysning"])
+    df = filtered.execute()
+
+    return df
+
+def get_konstruert(conn, sekvensnummer: int) -> pd.DataFrame:
+    """Fetch and return registration rows constructed for the specified sequence.
+
+    Example use: get_konstruert(self.conn, 2291859)
+    """
+    config = TYPE_REGNSKAP_TABLE["registrering"]
+
+    t = conn.table(config["table"], database=config["database"],)
+    filtered = (t.filter((t.sekvensnummer == sekvensnummer) & (t.kilde == "K")).select(["kilde"]))
     df = filtered.execute()
 
     return df
@@ -644,7 +723,7 @@ def feltkommentar_ikon_column():
     }
 
 
-def build_column_defs(sekvens_compare=None):
+def build_column_defs(sekvens_compare=None, can_write=True,):
 
     columns = ["beskrivelse", "post", "verdi", "verdi_compare", "diff", "sekvensnummer"]
 
@@ -667,6 +746,8 @@ def build_column_defs(sekvens_compare=None):
         "Finansposter og skattekostnad",
         "SUM Finansposter og skattekostnad",
         "SUM forslag for finansposter og skattekostnad",
+        "Resultatkomponent for IFRS foretak",
+        "SUM forslag for resultatkomponent for IFRS foretak",
         "SUM Årsresultat",
         "SUM forslag for årsresultat",
     ]
@@ -721,7 +802,7 @@ def build_column_defs(sekvens_compare=None):
             "resizable": True,
             "filter": True,
             "hide": col == "sekvensnummer",
-            "editable": col == "verdi",
+            "editable": col == "verdi" and can_write,
             "width": (430 if col == "beskrivelse" else 90 if col == "post" else None),
             "flex": (None if col in ["beskrivelse", "post"] else 2),
             "valueFormatter": {
@@ -944,9 +1025,11 @@ def build_regnskap_dataframe(
         axis=1,
     )
 
-    # Vis kun numeriske poster i gridet
+    # Vis kun gyldige poster i gridet
     df["post"] = df["post"].where(
-        df["post"].astype(str).str.fullmatch(r"\d+"),
+        df["post"]
+        .astype(str)
+        .str.fullmatch(r"\d+(?:\.\d+)?(?:_[A-Za-z0-9]+)?"),
         "",
     )
 
@@ -1156,6 +1239,35 @@ def add_update_counts(conn, df):
     return df
 
 
+def get_constructed_sequences(
+    conn,
+    sekvensnummer: list[int],
+) -> set[int]:
+    """Returnerer sekvensnummer som inneholder konstruerte rader."""
+
+    if not sekvensnummer:
+        return set()
+
+    config = TYPE_REGNSKAP_TABLE["registrering"]
+
+    t = conn.table(
+        config["table"],
+        database=config["database"],
+    )
+
+    df = (
+        t.filter(
+            _.sekvensnummer.isin(sekvensnummer)
+            & (_.kilde == "K")
+        )
+        .select(_.sekvensnummer)
+        .distinct()
+        .execute()
+    )
+
+    return set(df["sekvensnummer"].tolist())
+
+
 def get_available_years(conn, ident: str) -> list[int]:
     """Return unique years available for the given orgnr from v_registrering_versjon."""
     config = TYPE_REGNSKAP_TABLE["v_registrering_versjon"]
@@ -1226,13 +1338,16 @@ def save_regnskap_value(
 
 
 def handle_regnskap_edit(
-    edited, alert_store, refresh_data, regnskapstype: str, refresh_key: str
+    edited, alert_store, refresh_data, regnskapstype: str, refresh_key: str, can_write: bool = True,
 ):
     """Central handler for nspek grid edits (balanse + resultat).
 
     Example use:
     handle_regnskap_edit(..., "balanseregnskap", "balanse")
     """
+    if not can_write:
+        raise PreventUpdate
+
     alert_store = alert_store or []
 
     row = edited[0]["data"]
@@ -1333,9 +1448,13 @@ class Naeringsspesifikasjon:
 
     def __init__(self, time_units: list[str], db_user: str | None) -> None:
         """Explanation of module."""
-        set_nspek_connection(
-            db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
+        self.db_user = (
+            db_user
+            if db_user
+            else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
         )
+        self.can_write = self.db_user in WRITE_ENABLED_DB_USERS
+        set_nspek_connection(self.db_user)
         self.module_number = Naeringsspesifikasjon._id_number
         self.module_name = self.__class__.__name__
         self.icon = DashIconify(icon="feather:book", width=24)
@@ -1416,12 +1535,21 @@ class Naeringsspesifikasjon:
         )
         return checkbox
 
-    def create_dialog(self, variant: str, title: str, message: str):
+    def create_dialog(
+        self,
+        variant: str,
+        title: str,
+        message: str,
+        close_button_id: str = "close-version-warning",
+    ):
         dialog = html.Div(
             className=f"ssb-dialog {variant} mt-2 mb-1",
             children=[
                 html.Div(
-                    DashIconify(icon=self._map_icon(variant), width=40),
+                    DashIconify(
+                        icon=self._map_icon(variant),
+                        width=40,
+                    ),
                     className="icon-panel",
                 ),
                 html.Div(
@@ -1433,12 +1561,13 @@ class Naeringsspesifikasjon:
                 ),
                 html.Button(
                     "✕",
-                    id="close-version-warning",
+                    id=close_button_id,
                     n_clicks=0,
                     className="dialog-close",
                 ),
             ],
         )
+
         return dialog
 
     def _map_icon(self, variant):
@@ -1598,6 +1727,16 @@ class Naeringsspesifikasjon:
                             style={"display": "none"},
                         ),
                         dcc.Store(id="nspek-version-warning-closed", data=False),
+                        html.Div(
+                            id="nspek-readonly-warning",
+                            children=self.create_dialog(
+                                variant="info",
+                                title="Kun lesetilgang",
+                                message="Du har kun lesetilgang til NSPEK.",
+                                close_button_id="close-readonly-warning",
+                            ),
+                            style={"display": "none"},
+                        ),
                         dbc.Modal(
                             [
                                 dbc.ModalHeader(
@@ -1689,6 +1828,7 @@ class Naeringsspesifikasjon:
                                 ),
                             ],
                             id="modal-editeringslogg",
+                            className = "ssb-modal",
                             is_open=False,
                             size="xl",
                             style={
@@ -1741,7 +1881,7 @@ class Naeringsspesifikasjon:
                                                 "field": "aktiv",
                                                 "headerName": "Aktiv",
                                                 "width": 90,
-                                                "editable": True,
+                                                "editable": self.can_write,
                                             },
                                         ],
                                         rowData=[],
@@ -1762,6 +1902,7 @@ class Naeringsspesifikasjon:
                                 ),
                             ],
                             id="modal-generell-kommentar-historikk",
+                            className="ssb-modal",
                             is_open=False,
                             size="xl",
                             style={
@@ -1829,6 +1970,7 @@ class Naeringsspesifikasjon:
                                             id="feltkommentar-modal-delete",
                                             color="danger",
                                             outline=True,
+                                            disabled=not self.can_write,
                                             style={"display": "none"},
                                             className="ssb-btn negative me-auto",
                                         ),
@@ -1842,8 +1984,8 @@ class Naeringsspesifikasjon:
                                             "Lagre",
                                             id="feltkommentar-modal-save",
                                             color="primary",
+                                            disabled=not self.can_write,
                                             className="ssb-btn primary-btn",
-                                            disabled=True,
                                         ),
                                     ]
                                 ),
@@ -2007,6 +2149,15 @@ class Naeringsspesifikasjon:
                                         ),
                                         width=2,
                                     ),
+                                    dbc.Col(width=5),  # tom spacer
+                                    dbc.Col(
+                                        self.create_info_card(
+                                            title="Konstruert",
+                                            component_id="nspek-info-card-konstruert",
+                                            var_type="text",
+                                        ),
+                                        width=3,
+                                    ),
                                 ],
                                 className="nspek-info-cards gy-2",
                             ),
@@ -2049,6 +2200,7 @@ class Naeringsspesifikasjon:
                                                             dbc.Button(
                                                                 "Lagre",
                                                                 id="btn-save-kommentar",
+                                                                disabled=not self.can_write,
                                                                 className="ssb-btn primary-btn",
                                                             ),
                                                             width="auto",
@@ -2118,7 +2270,7 @@ class Naeringsspesifikasjon:
                                                         {
                                                             "field": "aktiv",
                                                             "width": 70,
-                                                            "editable": True,
+                                                            "editable": self.can_write,
                                                         },
                                                     ],
                                                     rowData=[],
@@ -2308,6 +2460,7 @@ class Naeringsspesifikasjon:
                                     "Kjør kontroller",
                                     id="run-controls-btn",
                                     n_clicks=0,
+                                    disabled=not self.can_write,
                                     className="ssb-btn primary-btn mb-2",
                                 ),
                                 dcc.Loading(
@@ -2431,13 +2584,17 @@ class Naeringsspesifikasjon:
             ),
             Input("var-ident", "value"),
             Input("var-aar", "value"),
+            Input("refresh-manager", "data"),
         )
         def create_info_cards_bof(
-            orgnr_foretak: str, aar: str
+            orgnr_foretak: str, aar: str, refresh_data
         ) -> tuple[str, str, str, str, str]:
             """Returns a tuple of strings with the values for info cards for the top of the bof accordion.
             These cards will hold bof information for the foretak.
             """
+            if refresh_data and refresh_data.get("status") == "invalid_search":
+                return ("", "", "", "", "", "", "", "", "", "", "")
+        
             if not orgnr_foretak or not aar:
                 raise PreventUpdate
 
@@ -2562,6 +2719,37 @@ class Naeringsspesifikasjon:
             return skjoennslignet
 
         @callback(
+            Output(
+                component_id="nspek-info-card-konstruert",
+                component_property="value",
+            ),
+            Input("var-aar", "value"),
+            Input("var-ident", "value"),
+            Input("nspek-versjon-dropdown", "value"),
+        )
+        def create_info_cards_konstruert(
+            aar: str, orgnr_foretak: str, sekvensnummer: int
+        ) -> str:
+            """Returns whether the selected NSPEK version is constructed."""
+
+            if not aar or not orgnr_foretak or not sekvensnummer:
+                return ""
+
+            with get_nspek_connection() as conn:
+                if not has_data(conn, orgnr_foretak, aar):
+                    return ""
+
+                df = get_konstruert(
+                    conn=conn,
+                    sekvensnummer=sekvensnummer,
+                )
+
+            if df.empty:
+                return "Nei"
+
+            return "Ja"
+
+        @callback(
             Output("nspek-balansedata-grid", "rowData"),
             Output("nspek-balansedata-grid", "columnDefs"),
             Input("btn-hent-data", "n_clicks"),
@@ -2603,7 +2791,7 @@ class Naeringsspesifikasjon:
 
             row_data = df.to_dict("records")
 
-            column_defs = build_column_defs(sekvens_compare)
+            column_defs = build_column_defs(sekvens_compare, can_write=self.can_write)
 
             return row_data, column_defs
 
@@ -2649,7 +2837,7 @@ class Naeringsspesifikasjon:
 
             row_data = df.to_dict("records")
 
-            column_defs = build_column_defs(sekvens_compare)
+            column_defs = build_column_defs(sekvens_compare, can_write=self.can_write)
 
             return row_data, column_defs
 
@@ -2671,6 +2859,7 @@ class Naeringsspesifikasjon:
                 refresh_data,
                 regnskapstype="balanseregnskap",
                 refresh_key="balanse",
+                can_write=self.can_write,
             )
 
         @callback(
@@ -2691,6 +2880,7 @@ class Naeringsspesifikasjon:
                 refresh_data,
                 regnskapstype="resultatregnskap",
                 refresh_key="resultat",
+                can_write=self.can_write,
             )
 
         @callback(
@@ -2705,6 +2895,9 @@ class Naeringsspesifikasjon:
             prevent_initial_call=True,
         )
         def confirm_negative(_, pending, alert_store, refresh_data):
+            if not self.can_write:
+                raise PreventUpdate
+            
             if not pending:
                 raise PreventUpdate
 
@@ -2722,6 +2915,12 @@ class Naeringsspesifikasjon:
                         pending["sekvensnummer"],
                         pending["post"],
                         pending["value"],
+                    )
+
+                    run_controls_changed_fields_for_sekvensnummer(
+                        conn,
+                        pending["sekvensnummer"],
+                        changed_fields=[pending["post"]],
                     )
 
                 alert_store = [
@@ -2871,8 +3070,12 @@ class Naeringsspesifikasjon:
             Output("nspek-versjon-dropdown", "value"),
             Input("var-ident", "value"),
             Input("var-aar", "value"),
+            Input("refresh-manager", "data"),
         )
-        def load_versions(orgnr, aar):
+        def load_versions(orgnr, aar, refresh_data):
+            if refresh_data and refresh_data.get("status") == "invalid_search":
+                return [], None
+            
             if not orgnr or not aar:
                 raise PreventUpdate
 
@@ -2888,14 +3091,30 @@ class Naeringsspesifikasjon:
 
                 df = add_update_counts(conn, df)
 
-            df["label"] = df.apply(
-                lambda row: row["label"]
-                + (" (editert)" if row["antall_endringer"] > 0 else ""),
-                axis=1,
-            )
+                constructed_sequences = get_constructed_sequences(
+                    conn,
+                    df["sekvensnummer"].tolist(),
+                )
+
+                df["label"] = df.apply(
+                    lambda row: row["label"]
+                    + (
+                        " (konstruert)"
+                        if row["sekvensnummer"] in constructed_sequences
+                        else (
+                            " (editert)"
+                            if row["antall_endringer"] > 0
+                            else ""
+                        )
+                    ),
+                    axis=1,
+                )
 
             options = [
-                {"label": row["label"], "value": row["sekvensnummer"]}
+                {
+                    "label": row["label"],
+                    "value": row["sekvensnummer"],
+                }
                 for _, row in df.iterrows()
             ]
 
@@ -2951,8 +3170,12 @@ class Naeringsspesifikasjon:
             Output("nspek-versjon-dropdown-compare", "value"),
             Input("var-ident", "value"),
             Input("var-aar", "value"),
+            Input("refresh-manager", "data"),
         )
-        def load_compare_options(orgnr, aar):
+        def load_compare_options(orgnr, aar, refresh_data):
+
+            if refresh_data and refresh_data.get("status") == "invalid_search":
+                return [], None
 
             if not orgnr or not aar:
                 raise PreventUpdate
@@ -2975,9 +3198,22 @@ class Naeringsspesifikasjon:
                         df_current,
                     )
 
+                    constructed_sequences = get_constructed_sequences(
+                        conn,
+                        df_current["sekvensnummer"].tolist(),
+                    )
+
                     df_current["label"] = df_current.apply(
                         lambda row: row["label"]
-                        + (" (editert)" if row["antall_endringer"] > 0 else ""),
+                        + (
+                            " (konstruert)"
+                            if row["sekvensnummer"] in constructed_sequences
+                            else (
+                                " (editert)"
+                                if row["antall_endringer"] > 0
+                                else ""
+                            )
+                        ),
                         axis=1,
                     )
 
@@ -3153,6 +3389,8 @@ class Naeringsspesifikasjon:
             prevent_initial_call=True,
         )
         def save_kommentar(n_clicks, orgnr, kommentar, alert_store):
+            if not self.can_write:
+                raise PreventUpdate
 
             if not orgnr:
                 raise PreventUpdate
@@ -3230,6 +3468,8 @@ class Naeringsspesifikasjon:
         def save_feltkommentar(
             n_clicks, orgnr, felt, kommentar, alert_store, refresh_data
         ):
+            if not self.can_write:
+                raise PreventUpdate
 
             if not orgnr:
                 raise PreventUpdate
@@ -3373,6 +3613,8 @@ class Naeringsspesifikasjon:
         def toggle_feltkommentar_aktiv(
             edited, orgnr, alert_store, toggle_inactive, refresh_data
         ):
+            if not self.can_write:
+                raise PreventUpdate
 
             logger.debug(f"edited: {edited}\norgnr: {orgnr}\n")
 
@@ -3533,6 +3775,8 @@ class Naeringsspesifikasjon:
             prevent_initial_call=True,
         )
         def toggle_kommentar_aktiv(edited, orgnr, alert_store):
+            if not self.can_write:
+                raise PreventUpdate
 
             if not edited or not orgnr:
                 raise PreventUpdate
@@ -3649,6 +3893,8 @@ class Naeringsspesifikasjon:
                 ).to_dict("index")
 
                 if ctx.triggered_id == "run-controls-btn":
+                    if not self.can_write:
+                        raise PreventUpdate
                     run_all_controls_for_sekvensnummer(conn, int(sekvensnummer))
 
                 df = instance.get_current_kontrollutslag(
@@ -3815,6 +4061,8 @@ class Naeringsspesifikasjon:
             prevent_initial_call=True,
         )
         def toggle_feltkommentar_modal_save(text, store):
+            if not self.can_write:
+                return True
 
             if not store:
                 return True
@@ -3843,6 +4091,9 @@ class Naeringsspesifikasjon:
             refresh_data,
         ):
 
+            if not self.can_write:
+                raise PreventUpdate
+            
             if not store or not orgnr:
                 raise PreventUpdate
 
@@ -3944,6 +4195,8 @@ class Naeringsspesifikasjon:
             alert_store,
             refresh_data,
         ):
+            if not self.can_write:
+                raise PreventUpdate
 
             if not store or not orgnr:
                 raise PreventUpdate
@@ -4005,6 +4258,49 @@ class Naeringsspesifikasjon:
                     alert_store,
                     True,
                 )
+
+        @callback(
+            Output("nspek-readonly-warning", "style"),
+            Output("nspek-readonly-warning", "children"),
+            Input("nspek-balansedata-grid", "cellClicked"),
+            Input("nspek-resultatdata-grid", "cellClicked"),
+            Input("close-readonly-warning", "n_clicks"),
+            prevent_initial_call=True,
+        )
+        def toggle_readonly_warning(
+            balanse_cell,
+            resultat_cell,
+            close_clicks,
+        ):
+            if self.can_write:
+                raise PreventUpdate
+
+            # Lukk dialogen
+            if ctx.triggered_id == "close-readonly-warning":
+                return {"display": "none"}, ""
+
+            if ctx.triggered_id == "nspek-balansedata-grid":
+                cell = balanse_cell
+            elif ctx.triggered_id == "nspek-resultatdata-grid":
+                cell = resultat_cell
+            else:
+                raise PreventUpdate
+
+            if not cell or cell.get("colId") != "verdi":
+                raise PreventUpdate
+
+            return (
+                {"display": "flex"},
+                self.create_dialog(
+                    variant="info",
+                    title="Kun lesetilgang",
+                    message=(
+                        "Du har kun lesetilgang til NSPEK. "
+                        "Endringer kan derfor ikke lagres."
+                    ),
+                    close_button_id="close-readonly-warning",
+                ),
+            )
 
 
 class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
