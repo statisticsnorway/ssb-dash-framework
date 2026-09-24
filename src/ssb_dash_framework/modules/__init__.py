@@ -3,17 +3,11 @@
 from .aarsregnskap import Aarsregnskap
 from .aarsregnskap import AarsregnskapTab
 from .aarsregnskap import AarsregnskapWindow
-from .agg_dist_plotter import AggDistPlotter
-from .agg_dist_plotter import AggDistPlotterTab
-from .agg_dist_plotter import AggDistPlotterWindow
 from .altinn_control_view import AltinnControlViewTab
 from .altinn_control_view import AltinnControlViewWindow
 from .altinn_control_view import ControlView
 from .altinn_control_view import ControlViewTab
 from .altinn_control_view import ControlViewWindow
-from .altinn_data_capture import AltinnDataCapture
-from .altinn_data_capture import AltinnDataCaptureTab
-from .altinn_data_capture import AltinnDataCaptureWindow
 from .bofregistry import BofInformation
 from .bofregistry import BofInformationTab
 from .bofregistry import BofInformationWindow
@@ -29,15 +23,22 @@ from .building_blocks import FigureDisplayWindow
 from .building_blocks import MapDisplay
 from .building_blocks import MapDisplayTab
 from .building_blocks import MapDisplayWindow
-from .building_blocks import MicroLayoutAIO
 from .building_blocks import MultiModule
 from .building_blocks import MultiModuleTab
 from .building_blocks import MultiModuleWindow
-from .freesearch import FreeSearch
-from .freesearch import FreeSearchTab
-from .freesearch import FreeSearchWindow
-from .hb_method import HBMethod
-from .hb_method import HBMethodWindow
+from .data_editor import DataEditor
+from .data_editor import DataEditorHistory
+from .data_editor import DataEditorContactInfo
+from .data_editor import DataEditorInfoRow
+from .data_editor import DataEditorSidebarComment
+from .data_editor import DataEditorSidebarEditingStatus
+from .data_editor import DataEditorSupportTable
+from .data_editor import DataEditorSupportTables
+from .data_editor import DataEditorTable
+from .data_editor import DataEditorTableSelector
+from .data_editor import DataViewCustom
+from .data_editor import EditorSettings
+from .data_editor import StandardDataHandler
 from .nspek import Naeringsspesifikasjon
 from .nspek import NaeringsspesifikasjonTab
 from .nspek import NaeringsspesifikasjonWindow
@@ -54,23 +55,13 @@ from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
 from .skjemapdfviewer import SkjemapdfViewerTab
 from .skjemapdfviewer import SkjemapdfViewerWindow
-from .visualizationbuilder import VisualizationBuilder
-from .visualizationbuilder import VisualizationBuilderWindow
 
 __all__ = [
     "Aarsregnskap",
     "AarsregnskapTab",
     "AarsregnskapWindow",
-    "AggDistPlotter",
-    "AggDistPlotterTab",
-    "AggDistPlotterWindow",
     "AltinnControlViewTab",
     "AltinnControlViewWindow",
-    "AltinnDataCapture",
-    "AltinnDataCaptureTab",
-    "AltinnDataCaptureWindow",
-    "AltinnSkjemadataEditor",
-    "AltinnSupportTable",
     "BofInformation",
     "BofInformationTab",
     "BofInformationWindow",
@@ -80,21 +71,27 @@ __all__ = [
     "ControlView",
     "ControlViewTab",
     "ControlViewWindow",
+    "DataEditor",
+    "DataEditorHistory",
+    "DataEditorContactInfo",
+    "DataEditorInfoRow",
+    "DataEditorSidebarComment",
+    "DataEditorSidebarEditingStatus",
+    "DataEditorSupportTable",
+    "DataEditorSupportTables",
+    "DataEditorTable",
+    "DataEditorTableSelector",
+    "DataViewCustom",
     "EditingTable",
     "EditingTableTab",
     "EditingTableWindow",
+    "EditorSettings",
     "FigureDisplay",
     "FigureDisplayTab",
     "FigureDisplayWindow",
-    "FreeSearch",
-    "FreeSearchTab",
-    "FreeSearchWindow",
-    "HBMethod",
-    "HBMethodWindow",
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
-    "MicroLayoutAIO",
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",
@@ -110,8 +107,7 @@ __all__ = [
     "SkjemapdfViewer",
     "SkjemapdfViewerTab",
     "SkjemapdfViewerWindow",
-    "VisualizationBuilder",
-    "VisualizationBuilderWindow",
+    "StandardDataHandler",
     "apply_edits",
     "export_from_parqueteditor",
     "get_export_log_path",

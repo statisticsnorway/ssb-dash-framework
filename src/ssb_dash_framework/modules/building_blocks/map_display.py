@@ -46,7 +46,6 @@ class MapDisplay:
     def __init__(
         self,
         map_type: str,
-        aar_var: str,
         inputs: list[str],
         states: list[str],
         get_data_func: Callable[..., Any],
@@ -59,7 +58,6 @@ class MapDisplay:
 
         Args:
             map_type: The kind of map to be made, currently supports kommune and fylke.
-            aar_var: The name of your year variable in the variable selector.
             inputs: List the variables from the variable selector that should trigger an update to the map
             states: List the variables from the variable selector that should be used in the get_data_func, but not trigger an update to the map
             get_data_func: Function that when given aar_var, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
@@ -102,10 +100,7 @@ class MapDisplay:
         MapDisplay._id_number += 1
         self.icon = "🗺️"
         self.label = label if label else f"Kart {map_type}"
-        if aar_var in inputs or aar_var in states:
-            raise ValueError(
-                f"inputs or states cannot contain the same value as aar_var. {aar_var} will be used as input, so you do not need to add it as a separate input or state."
-            )
+        
         if map_type not in MapDisplay.supported_map_types:
             raise ValueError("Unsupported map type.")
         if map_type == "kommune":
@@ -124,9 +119,9 @@ class MapDisplay:
                 mapdisplay_default_clickdata  # Sets default if not overridden.
             )
         self.clickdata_func = clickdata_func
-        self.variableselector = VariableSelector(
-            selected_inputs=[aar_var, *inputs], selected_states=states
-        )
+
+        self.inputs = inputs
+        self.states = states
         self.is_valid()
         self.module_layout = self._create_layout()
         self.module_callbacks()
@@ -205,9 +200,13 @@ class MapDisplay:
     def module_callbacks(self) -> None:
         """Registers module callbacks."""
         dynamic_states = [
-            self.variableselector.get_all_inputs(),
-            self.variableselector.get_all_states(),
+            VariableSelector.get_timevar(Input)
         ]
+        for _input in self.inputs:
+            dynamic_states.append(VariableSelector.get_input(_input))
+        for _state in self.states:
+            dynamic_states.append(VariableSelector.get_state(_state))
+
 
         @callback(Output("map-figure", "figure"), *dynamic_states)  # type: ignore[misc]
         def update_map(*args: Any) -> go.Figure:
@@ -222,7 +221,7 @@ class MapDisplay:
             logger.debug(f"Connecting clickdata callback to {output_var}.")
 
             @callback(  # type: ignore[misc]
-                self.variableselector.get_output_object(output_var),
+                VariableSelector.get_output_object(output_var),
                 Input("map-figure", "clickData"),
                 prevent_initial_call=True,
             )
@@ -249,7 +248,6 @@ class MapDisplayTab(TabImplementation, MapDisplay):
     def __init__(
         self,
         map_type: str,
-        aar_var: str,
         inputs: list[str],
         states: list[str],
         get_data_func: Callable[..., Any],
@@ -262,10 +260,9 @@ class MapDisplayTab(TabImplementation, MapDisplay):
 
         Args:
             map_type: The kind of map to be made, currently supports komm_nr and fylke_nr.
-            aar_var: The name of your year variable in the variable selector.
             inputs: List the variables from the variable selector that should trigger an update to the map
             states: List the variables from the variable selector that should be used in the get_data_func, but not trigger an update to the map
-            get_data_func: Function that when given aar_var, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
+            get_data_func: Function that when given time-variable, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
             clickdata_func: A function to process the click data.
                 It should accept the click data as an argument and return a value to be sent to the output variable.
                 If None, no click data will be processed. Defaults to None.
@@ -300,7 +297,6 @@ class MapDisplayTab(TabImplementation, MapDisplay):
         MapDisplay.__init__(
             self,
             map_type,
-            aar_var=aar_var,
             inputs=inputs,
             states=states,
             get_data_func=get_data_func,
@@ -333,10 +329,9 @@ class MapDisplayWindow(WindowImplementation, MapDisplay):
 
         Args:
             map_type: The kind of map to be made, currently supports komm_nr and fylke_nr.
-            aar_var: The name of your year variable in the variable selector.
             inputs: List the variables from the variable selector that should trigger an update to the map
             states: List the variables from the variable selector that should be used in the get_data_func, but not trigger an update to the map
-            get_data_func: Function that when given aar_var, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
+            get_data_func: Function that when given time-variable, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
             clickdata_func: A function to process the click data.
                 It should accept the click data as an argument and return a value to be sent to the output variable.
                 If None, no click data will be processed. Defaults to None.
@@ -371,7 +366,6 @@ class MapDisplayWindow(WindowImplementation, MapDisplay):
         MapDisplay.__init__(
             self,
             map_type,
-            aar_var=aar_var,
             inputs=inputs,
             states=states,
             get_data_func=get_data_func,

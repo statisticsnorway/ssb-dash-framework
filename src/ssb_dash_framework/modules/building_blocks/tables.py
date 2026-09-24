@@ -11,13 +11,12 @@ from dash import callback
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
-from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
-from ...utils.alert_handler import create_alert
+from ...utils.alert_handler import AlertHandler
 from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -87,11 +86,9 @@ class EditingTable:
         else:
             self.number_format = number_format
 
-        self.variableselector = VariableSelector(
-            selected_inputs=inputs, selected_states=states
-        )
+        self.inputs = inputs
+        self.states = states
         self.get_data = get_data_func
-        self.get_data_args = [x for x in self.variableselector.selected_variables]
         self.update_table_func = update_table_func
 
         self.module_layout = self._create_layout()
@@ -162,10 +159,12 @@ class EditingTable:
         - Confirming edits (logging + updating table data) (`confirm_edit`).
         - Cancelling edits (reverting table to saved state) (`cancel_edit`).
         """
-        dynamic_states = [
-            self.variableselector.get_all_inputs(),
-            self.variableselector.get_all_states(),
-        ]
+        dynamic_states = []
+        for _input in self.inputs:
+            dynamic_states.append(VariableSelector.get_input(_input))
+        for _state in self.states:
+            dynamic_states.append(VariableSelector.get_state(_state))
+
 
         @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
@@ -209,7 +208,7 @@ class EditingTable:
                 self.output_varselector_name, str
             ):
                 output_objects = [
-                    self.variableselector.get_output_object(
+                    VariableSelector.get_output_object(
                         variable=self.output_varselector_name
                     )
                 ]
@@ -218,7 +217,7 @@ class EditingTable:
                 self.output_varselector_name, list
             ):
                 output_objects = [
-                    self.variableselector.get_output_object(variable=var)
+                    VariableSelector.get_output_object(variable=var)
                     for var in self.output_varselector_name
                 ]
                 output_columns = self.output
@@ -278,19 +277,16 @@ class EditingTable:
         logger.debug("Adding functionality for immediate edits.")
 
         @callback(  # type: ignore[misc]
-            Output("alert_store", "data", allow_duplicate=True),
             Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
-            State("alert_store", "data"),
             *dynamic_states,
             prevent_initial_call=True,
         )
         def make_edit(
             edited: list[dict[str, Any]],
-            error_log: list[dict[str, Any]],
             *dynamic_states: Any,
-        ) -> list[dict[str, Any]]:
+        ) -> None:
             logger.debug(
-                f"Args:\nedited: {edited}\nerror_log: {error_log}\ndynamic_states: {dynamic_states}"
+                f"Args:\nedited: {edited}\ndynamic_states: {dynamic_states}"
             )
             if not edited:
                 raise PreventUpdate
@@ -307,27 +303,14 @@ class EditingTable:
                 logger.info("Running update_table_func")
                 try:
                     self.update_table_func(edit, *dynamic_states)
-                    error_log = [
-                        create_alert(
-                            f"{variable} oppdatert fra {old_value} til {new_value}",
-                            "info",
-                            ephemeral=True,
-                        ),
-                        *error_log,
-                    ]
-
+                    AlertHandler.error(f"{variable} oppdatert fra {old_value} til {new_value}")
+                        
                 except Exception:
                     logger.error("Error updating table", exc_info=True)
-                    error_log = [
-                        create_alert(
-                            f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
-                            "error",
-                            ephemeral=True,
-                        ),
-                        *error_log,
-                    ]
+                    AlertHandler.error(f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!")
+
             logger.debug("Finished update")
-            return error_log
+
 
 
 class EditingTableTab(TabImplementation, EditingTable):

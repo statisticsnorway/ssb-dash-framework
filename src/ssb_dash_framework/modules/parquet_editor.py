@@ -118,9 +118,6 @@ class ParquetEditor:
         self.user = os.getenv("DAPLA_USER")
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
         self.id_vars = id_vars
-        self.variableselector = VariableSelector(
-            selected_inputs=id_vars, selected_states=[]
-        )
         self.file_path = data_source
         path = Path(data_source)
         self.log_filepath = get_log_path(data_source)
@@ -271,7 +268,7 @@ class ParquetEditor:
             Output(f"{self.module_number}-parqueteditor-table", "rowData"),
             Output(f"{self.module_number}-parqueteditor-table", "columnDefs"),
             Output(f"{self.module_number}-parqueteditor-table-data-store", "data"),
-            *self.variableselector.get_all_inputs(),
+            VariableSelector.get_input(self.id_vars),
         )
         def load_data_to_table(
             *args: Any,
@@ -298,7 +295,7 @@ class ParquetEditor:
 
             @callback(
                 Output(f"{self.module_number}-parqueteditor-table", "filterModel"),
-                *self.variableselector.get_all_callback_objects(),
+                VariableSelector.get_input(self.id_vars),
             )
             def filter_data(*args: list[str]) -> dict[Any, dict[str, Any]]:
                 logger.debug("Filtering data")
@@ -306,8 +303,8 @@ class ParquetEditor:
                 options = [
                     option.id
                     for option in [
-                        self.variableselector.get_option(selected_variable)
-                        for selected_variable in self.variableselector.selected_variables
+                        VariableSelector.get_option(selected_variable)
+                        for selected_variable in self.id_vars
                     ]
                 ]
                 possible_filters = dict(zip(options, args, strict=True))
@@ -362,7 +359,7 @@ class ParquetEditor:
             State(f"{self.module_number}-edit-comment", "value"),
             State("alert_store", "data"),
             State(f"{self.module_number}-parqueteditor-table-data-store", "data"),
-            *self.variableselector.get_all_inputs(),
+            VariableSelector.get_input(self.id_vars),
             prevent_initial_call=True,
         )
         def confirm_edit(
@@ -436,7 +433,7 @@ class ParquetEditor:
                 self.output_varselector_name, str
             ):
                 output_objects = [
-                    self.variableselector.get_output_object(
+                    VariableSelector.get_output_object(
                         variable=self.output_varselector_name
                     )
                 ]
@@ -445,7 +442,7 @@ class ParquetEditor:
                 self.output_varselector_name, list
             ):
                 output_objects = [
-                    self.variableselector.get_output_object(variable=var)
+                    VariableSelector.get_output_object(variable=var)
                     for var in self.output_varselector_name
                 ]
                 output_columns = self.output
@@ -567,10 +564,7 @@ class ParquetEditorChangelog:
         self.module_number = ParquetEditor._id_number
         self.module_name = self.__class__.__name__
         ParquetEditor._id_number += 1
-
-        self.variable_selector = VariableSelector(
-            selected_inputs=id_vars, selected_states=[]
-        )
+        self.id_vars = id_vars
         self.user = os.getenv("DAPLA_USER")
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
         path = Path(data_source)
@@ -593,7 +587,7 @@ class ParquetEditorChangelog:
 
         @callback(
             Output(f"{self.module_number}-parqueteditor-changelog", "value"),
-            *self.variable_selector.get_all_inputs(),
+            VariableSelector.get_input(self.id_vars),
         )
         def load_data_to_table(
             *args: Any,

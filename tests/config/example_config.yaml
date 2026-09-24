@@ -10,9 +10,7 @@ app_settings:
     type: postgres
     database_url: test
 modules:
-  dataeditor_components:
-    !include customview_skjemadata_hoved_ra-7357.yaml
   windows:
-    - type: FreeSearch
+    - type: Aarsregnskap
   tabs:
-    - type: DataEditor
+    - type: Aarsregnskap
