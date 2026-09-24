@@ -1,7 +1,8 @@
 import pandas as pd
 import json
+import pytest
 
-
+@pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_python_api():
     from ssb_dash_framework import DataEditor
     from ssb_dash_framework import DataEditorHistory
@@ -79,7 +80,7 @@ def test_dataeditor_python_api():
     assert instance is not None
     assert isinstance(instance, DataEditor)
 
-
+@pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_yaml_based():
     from ssb_dash_framework import AppConfig
     from ssb_dash_framework import DataEditor

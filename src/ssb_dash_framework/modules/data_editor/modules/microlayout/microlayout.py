@@ -4,6 +4,7 @@ from typing import Any
 
 from dash import Input
 from dash import State
+from dash import Output
 from dash import callback
 from dash import ctx
 from dash import html
@@ -15,6 +16,7 @@ from ssb_dash_framework.utils.alert_handler import AlertHandler
 from .meta import MicrolayoutMeta
 from ...utils import EditorSettings
 from ...utils import EDITING_CODE_DROPDOWN
+from dash import no_update
 from .microlayout_components.models import Layout
 
 logger = logging.getLogger(__name__)
@@ -41,6 +43,16 @@ class MicroLayoutAIO(html.Div):
         logger.warning(
             "This module is under development and might receive larger and/or breaking changes."
         )
+
+        if isinstance(layout, dict):
+            override_kwargs = {}
+            for key in ["form_data_table", "field_name_col", "refnr_col", "ident_col", "field_value_col", "period_col"]:
+                if key in layout:
+                    override_kwargs[key] = layout[key]
+            
+            if override_kwargs:
+                settings = settings.model_copy(update=override_kwargs)
+
         # The below is just for the __str__ dunder
         self.settings = settings
         self._horizontal = horizontal
@@ -78,10 +90,13 @@ class MicroLayoutAIO(html.Div):
                 }
 
             @callback(
+                output={item._id: Output({"comp_id": item._id, "aio": self.aio_id}, "value", allow_duplicate=True) for item in ids},
                 inputs={
                     "fields": {item._id: item.get_input(self.aio_id) for item in ids},
                     "refnr": VariableSelector.get_refnr(Input),
+                    "skjema": VariableSelector.get_state("altinnskjema"),
                     "ident": VariableSelector.get_ident(State),
+                    "period": VariableSelector.get_timevar(State),
                     "custom_inputs": input_states,
                     "editing_code": Input(
                         EDITING_CODE_DROPDOWN(instance_id), "value", allow_optional=True
@@ -92,47 +107,66 @@ class MicroLayoutAIO(html.Div):
             def handle_field_value_change(
                 fields: dict[str, Any],
                 refnr: str | None,
+                skjema: str | None,
                 ident: str | None,
+                period: str,
                 custom_inputs: list | None,
                 editing_code: str | None = None,
             ):
                 if not refnr or not ident or not custom_inputs:
                     raise PreventUpdate
-            
+
+                if isinstance(skjema, list):
+                    skjema = skjema[0]
+                print(f"refnr: {refnr}")
+                print(f"ident: {ident}")
+                print(f"skjema: {skjema}")
+
                 if ctx.triggered_id and isinstance(ctx.triggered_id, dict):
                     custom_ctx = callback_ctx.get(ctx.triggered_id["comp_id"])
                     value = fields.get(ctx.triggered_id["comp_id"])
                     if not custom_ctx or not value:
                         logger.debug(
-                            "Skippping form value update since triggered id was none or it didn't match any fields"
+                            "Skipping form value update since triggered id was none or it didn't match any fields"
                         )
                         raise PreventUpdate
 
+                    old_value = None
                     try:
                         old_value = data_handler.get_field(
                             self.settings, custom_ctx, custom_inputs
                         )
+                        print(f"Old value in handle_field_value_change: {old_value}")
+                        print(f"New value in handle_field_value_change: {value}")
                         if old_value != value:
                             data_handler.update_field_value(
                                 refnr,
+                                skjema,
                                 ident,
-                                value,
-                                old_value,
-                                self.settings,
-                                custom_ctx,
-                                custom_inputs,
-                                editing_code
+                                period=period,
+                                value=value,
+                                old_value=old_value,
+                                settings=self.settings,
+                                container=custom_ctx,
+                                inputs=custom_inputs,
+                                editing_code=editing_code
                             )
                             data_handler.update_form_status(refnr, "Under arbeid")
                         else:
                             logger.debug(
-                                "Skippping form value update since value was same as previous value"
+                                "Skipping form value update since value was same as previous value"
                             )
-                        raise PreventUpdate
+                    except PreventUpdate:
+                        raise
                     except Exception as e:
                         msg = f"Updating field value and updating form status for form field {custom_ctx.settings.variable} failed with error: {e}"
                         logger.warning(msg)
                         AlertHandler.warning(msg)
+                        triggered_id = ctx.triggered_id["comp_id"]
+                        return {
+                            id_: old_value if id_ == triggered_id else no_update
+                            for id_ in {item._id for item in ids}
+                        } # return old value if edit fails
 
         @callback(
             output={item._id: item.get_output(self.aio_id) for item in ids},
@@ -153,5 +187,6 @@ class MicroLayoutAIO(html.Div):
                     msg = f"Getting data for form field {field} failed with error: {e}"
                     logger.warning(msg)
                     AlertHandler.warning(msg)
+                    # field_values[id_] = no_update
 
             return field_values
