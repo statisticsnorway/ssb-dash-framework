@@ -234,7 +234,7 @@ class VariableSelector:
             return cast(T, cls.get_input(var)[0])
 
         elif _type is State:
-            return cast(T, cls.get_state(var))
+            return cast(T, cls.get_state(var)[0])
 
         elif _type is Output:
             return cast(T, cls.get_output_object(var))

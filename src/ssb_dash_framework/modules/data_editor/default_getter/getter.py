@@ -232,7 +232,9 @@ class StandardDataHandler(FetcherMeta):
     def update_field_value(
         self,
         refnr: str,
+        skjema: str | None,
         ident: str,
+        period: str,
         value: Any,
         old_value: Any,
         settings: EditorSettings,
@@ -241,10 +243,14 @@ class StandardDataHandler(FetcherMeta):
         editing_code: str | None,
     ) -> Any:
         long = settings.field_name_col == "variabel"
+
         update_form = UpdateSkjemadata(
             table=settings.form_data_table,
             identifier_column=settings.refnr_col,
+            skjema=skjema,
             refnr=refnr,
+            time_units=settings.period_col,
+            period=period,
             ident=ident,
             column=settings.field_value_col,
             value=value,

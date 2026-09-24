@@ -111,7 +111,16 @@ class DataEditor:
                     for f in forms:
                         self.dataview_layouts[(t, f)] = layout_div
 
-        initial_children = [dataview_list[0]] if len(dataview_list) else []
+        initial_children = []
+        if dataview_list:
+            starting_form = settings.form_list[0] if settings.form_list else None
+            starting_layout = None
+            if starting_form:
+                starting_layout = self.dataview_layouts.get((settings.starting_table, starting_form))
+            if starting_layout is None:
+                starting_layout = dataview_list[0]
+            initial_children = [starting_layout]
+
         if initial_children:
             setattr(initial_children[0], "style", {"display": "block"})
 
@@ -169,11 +178,17 @@ class DataEditor:
             
         @callback(
             Output(f"{self.module_name}-div", "children"),
-            State("dataeditortableselector", "value"),
+            Input("dataeditortableselector", "value"),
             VariableSelector.get_input("altinnskjema"),
             prevent_initial_call=True
         )
         def toggle_view_visibility(selected_table, selected_form):
+            if isinstance(selected_table, list):
+                selected_table = selected_table[0] if len(selected_table) > 0 else None
+            if isinstance(selected_form, list):
+                selected_form = selected_form[0] if len(selected_form) > 0 else None
+
+            logger.info(f"toggle_view_visibility: selected_table={selected_table}, selected_form={selected_form}")
             if not selected_table or not selected_form:
                 return []
             layout_div = self.dataview_layouts.get((selected_table, selected_form))

@@ -7,6 +7,7 @@ from dash import Output
 from dash import State
 from dash import callback
 from dash import html
+from dash import Patch
 from dash.exceptions import PreventUpdate
 from psycopg_pool import ConnectionPool
 
@@ -18,6 +19,7 @@ from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.connection import get_connection
 from .....utils.core_models import UpdateSkjemadata
+from .....utils.alert_handler import AlertHandler
 
 from ...utils import EditorSettings
 from .base import DataEditorDataView
@@ -112,6 +114,11 @@ class DataEditorTable(DataEditorDataView):
         )
         def read_table(selected_table: str, form, refnr, period):
             """Populate the table view with data."""
+            
+            print(f"read_table form: {form}")
+            if isinstance(form, list):
+                form = form[0] if form else None
+
             if selected_table not in self.applies_to_tables:
                 logger.info("Preventing update: table mismatch.")
                 raise PreventUpdate
@@ -155,17 +162,20 @@ class DataEditorTable(DataEditorDataView):
             return df.to_dict("records"), columndefs
 
         @callback(
-            Output("alert_store", component_property="data", allow_duplicate=True),
+            Output(f"{self.module_name}-{self.module_number}-aggrid", "rowData", allow_duplicate=True),
             Input(
                 f"{self.module_name}-{self.module_number}-aggrid", "cellValueChanged"
             ),
             State("dataeditortableselector", "value"),
             State(f"{self.module_name}-{self.module_number}-aggrid", "columnDefs"),
-            State("alert_store", "data"),
+            VariableSelector.get_timevar(State),
             prevent_initial_call=True,
         )
-        def update_table(edited, table: str, columndefs, alert_store):
+        def update_table(edited, table: str, columndefs, period):
             """Updates the data in the backend."""
+            if not edited or not table:
+                raise PreventUpdate
+
             logger.info("Attempting to update data.")
             columns = [col["field"] for col in columndefs]
             if "variabel" in columns and "verdi" in columns:
@@ -180,16 +190,28 @@ class DataEditorTable(DataEditorDataView):
                 long=long,
                 ident=edited[0]["data"]["ident"],
                 refnr=edited[0]["data"]["refnr"],
+                time_units=self.time_units.name,
+                period=edited[0]["data"]["refnr"],
                 column=edited[0]["colId"],
                 variable=variabel,
                 value=edited[0]["value"],
                 old_value=edited[0]["oldValue"],
+                skjema=edited[0]["data"].get("skjema"),
             )
             logger.info(update)
+
+            success = True
             if isinstance(_get_connection_object(), ConnectionPool):
                 logger.debug("Attempting to update using ibis logic.")
-                feedback = update.update_ibis(long)
-            return [feedback, *alert_store]
+                success = update.update_ibis(long)
+
+            if not success:
+                patch = Patch()
+                patch[edited[0]["rowIndex"]][edited[0]["colId"]] = edited[0]["oldValue"]
+                logger.warning(f"Reverted edited cell to {edited[0]['oldValue']}.")
+                return patch
+
+            raise PreventUpdate
 
         @callback(  # type: ignore[misc]
             VariableSelector.get_output_object("variabel"),
@@ -216,6 +238,7 @@ class DataEditorTable(DataEditorDataView):
                 variable = str(row_data[click["rowIndex"]]["variabel"])
                 if variable == statistikkvariabel:
                     raise PreventUpdate
+                AlertHandler.info(msg=f"Statistikkvariabel oppdatert til {variable}.", ephemeral=True)
                 return variable
 
             column = click.get("colId")  # wide format
@@ -225,4 +248,5 @@ class DataEditorTable(DataEditorDataView):
             if column in ("aar", "ident", "skjema", "refnr", "tabell"):
                 raise PreventUpdate
 
+            AlertHandler.info(msg=f"Statistikkvariabel oppdatert til {column}.", ephemeral=True)
             return str(column)

@@ -222,7 +222,9 @@ class AltinnFormParqueditHandler(FetcherMeta):
     def update_field_value(
         self,
         refnr: str,
+        skjema: str | None,
         ident: str,
+        period: str | None,
         value: Any,
         old_value: Any,
         settings: EditorSettings,
