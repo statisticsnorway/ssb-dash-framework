@@ -18,7 +18,9 @@ class MicrolayoutMeta[T](SidebarMeta):
     def update_field_value(
         self,
         refnr: str,
+        skjema: str | None,
         ident: str,
+        period: str,
         value: Any,
         old_value: Any,
         settings: T,

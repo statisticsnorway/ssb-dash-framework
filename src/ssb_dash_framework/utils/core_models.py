@@ -130,7 +130,8 @@ class UpdateSkjemadata(BaseModel):
         ident (str): Identity of unit being updated.
         identifier_column (str): Identifying column to refer to for updates. Usually refnr, ident for non-Altinn3 data.
         refnr (str): Reference number identifying the row.
-        time_units (dict): Time units with a dict, 'unit': 'value'. Needed if refnr is missing, to update correct row.
+        time_units (str): Time unit.
+        period (str): Time unit period to filter by.
         column (str): Column that will be updated.
         variable (str): Variable associated with the column. Note, this is identical to column if the table is not in the long format.
         value (Any): New value to write.
@@ -146,7 +147,8 @@ class UpdateSkjemadata(BaseModel):
     ident: str
     identifier_column: str = "refnr"
     refnr: str
-    time_units: None | dict = None
+    time_units: str | None = None
+    period: str | None = None
     column: str
     variable: str
     value: Any
@@ -160,11 +162,13 @@ class UpdateSkjemadata(BaseModel):
         return (
             "Update to apply:\n"
             f"  Table             : {self.table}\n"
+            f"  Skjema            : {self.skjema}\n"
             f"  Table Type        : {'long' if self.long else 'wide'}\n"
             f"  Ident             : {self.ident}\n"
             f"  Identifier column : {self.identifier_column}\n"
             f"  RefNr             : {self.refnr}\n"
             f"  Time Units        : {self.time_units}\n"
+            f"  Period            : {self.period}\n"
             f"  Column            : {self.column}\n"
             f"  Variable          : {self.variable}\n"
             f"  Value             : {self.old_value} -> {self.value}"
@@ -184,6 +188,7 @@ class UpdateSkjemadata(BaseModel):
                     f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}': Datatypen skal være {datatype}, ikke {type(self.value)}.",
                     ephemeral=True,
                 )
+            return
 
         if success:
             AlertHandler.success(
@@ -206,10 +211,10 @@ class UpdateSkjemadata(BaseModel):
         """
         df = conn.table(self.mapping_table)
         result = (
-            df.filter(_.aar == (self.time_units or {}).get("aar"))
-            .filter(_[self.mapping_match_column] == self.variable)
+            df.filter(df[self.time_units] == self.period)
+            .filter(df[self.mapping_match_column] == self.variable)
             .filter(_.skjema == self.skjema)
-            .select([self.mapping_result_column])
+            .select(df[self.mapping_result_column])
             .limit(1)
             .execute()
         )
@@ -217,7 +222,7 @@ class UpdateSkjemadata(BaseModel):
             logger.warning(
                 f"No {self.mapping_result_column} found for "
                 f"{self.mapping_match_column}='{self.variable}', "
-                f"aar='{(self.time_units or {}).get('aar')}'. Falling back to kortnavn."
+                f"{self.time_units}='{self.period}'. Falling back to kortnavn."
             )
             return self.variable
         return result[self.mapping_result_column].iloc[0]
@@ -236,7 +241,7 @@ class UpdateSkjemadata(BaseModel):
 
         t = conn.table("datatyper")
         datatype = (
-            t.filter(_.aar == (self.time_units or {}).get("aar"))
+            t.filter(t[self.time_units] == self.period)
             .filter(_.variabel == self.variable)
             .select(["datatype"])
             .execute()
@@ -272,11 +277,7 @@ class UpdateSkjemadata(BaseModel):
         if self.table.startswith("skjemadata"):
             feltsti: str = self._get_feltsti(conn)
             columns = {
-                **{
-                    unit: f"'{val}'"
-                    for unit, val in (self.time_units or {}).items()
-                    if val
-                },
+                f"{self.time_units}": f"'{self.period}'",
                 "skjema": f"'{self.skjema}'",
                 "ident": f"'{self.ident}'",
                 "refnr": f"'{self.refnr}'",
@@ -284,17 +285,15 @@ class UpdateSkjemadata(BaseModel):
                 "variabel": f"'{self.variable}'",
                 "verdi": f"'{self.value}'",
             }
+
+            print(f"columns: {columns}")
             insert_query = f"""
                 INSERT INTO core_skjemadata ({', '.join(columns.keys())})
                 VALUES ({', '.join(columns.values())})
             """
         elif self.table.startswith("saldoskjema"):
             columns = {
-                **{
-                    unit: f"'{val}'"
-                    for unit, val in (self.time_units or {}).items()
-                    if val
-                },
+                f"{self.time_units}": f"'{self.period}'",
                 "orgnr_foretak": f"'{self.ident}'",
                 "variabel": f"'{self.variable}'",
                 "verdi": f"'{self.value}'",
@@ -317,7 +316,7 @@ class UpdateSkjemadata(BaseModel):
             return False
 
     def update_ibis(self, long) -> bool:
-
+        print(self)
         with get_connection() as conn:
             datatype_check = self._check_datatype(conn)
             if datatype_check:
@@ -332,9 +331,7 @@ class UpdateSkjemadata(BaseModel):
         if self.identifier_column != "refnr" and self.time_units:
             time_filters = " ".join(
                 [
-                    f"AND {unit} = '{val}'"
-                    for unit, val in self.time_units.items()
-                    if val
+                    f"AND {self.time_units} = '{self.period}'"
                 ]
             )
             update_query = update_query.strip() + "\n" + time_filters
