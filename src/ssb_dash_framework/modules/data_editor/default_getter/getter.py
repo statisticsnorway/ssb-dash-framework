@@ -135,6 +135,7 @@ class StandardDataHandler(FetcherMeta):
         refnr: str,
         period: str,
         fields: list[InfoRowField],
+        states: dict[str, dict]
     ) -> dict[str, str | int | bool | float | None]:
         info_values = {}
         with get_connection(necessary_tables=["enhetsinfo"]) as conn:

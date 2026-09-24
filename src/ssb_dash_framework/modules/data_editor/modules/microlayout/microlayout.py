@@ -38,7 +38,7 @@ class MicroLayoutAIO(html.Div):
         inputs: list[Input] | dict[Any, Input] | None = None,
         states: list[State] | None = None,
         aio_id: str | None = None,
-        horizontal: bool = False
+        horizontal: bool = False,
     ) -> None:
         logger.warning(
             "This module is under development and might receive larger and/or breaking changes."
@@ -46,10 +46,17 @@ class MicroLayoutAIO(html.Div):
 
         if isinstance(layout, dict):
             override_kwargs = {}
-            for key in ["form_data_table", "field_name_col", "refnr_col", "ident_col", "field_value_col", "period_col"]:
+            for key in [
+                "form_data_table",
+                "field_name_col",
+                "refnr_col",
+                "ident_col",
+                "field_value_col",
+                "period_col",
+            ]:
                 if key in layout:
                     override_kwargs[key] = layout[key]
-            
+
             if override_kwargs:
                 settings = settings.model_copy(update=override_kwargs)
 
@@ -90,7 +97,14 @@ class MicroLayoutAIO(html.Div):
                 }
 
             @callback(
-                output={item._id: Output({"comp_id": item._id, "aio": self.aio_id}, "value", allow_duplicate=True) for item in ids},
+                output={
+                    item._id: Output(
+                        {"comp_id": item._id, "aio": self.aio_id},
+                        "value",
+                        allow_duplicate=True,
+                    )
+                    for item in ids
+                },
                 inputs={
                     "fields": {item._id: item.get_input(self.aio_id) for item in ids},
                     "refnr": VariableSelector.get_refnr(Input),
@@ -118,9 +132,9 @@ class MicroLayoutAIO(html.Div):
 
                 if isinstance(skjema, list):
                     skjema = skjema[0]
-                print(f"refnr: {refnr}")
-                print(f"ident: {ident}")
-                print(f"skjema: {skjema}")
+                logger.debug(f"refnr: {refnr}")
+                logger.debug(f"ident: {ident}")
+                logger.debug(f"skjema: {skjema}")
 
                 if ctx.triggered_id and isinstance(ctx.triggered_id, dict):
                     custom_ctx = callback_ctx.get(ctx.triggered_id["comp_id"])
@@ -136,8 +150,10 @@ class MicroLayoutAIO(html.Div):
                         old_value = data_handler.get_field(
                             self.settings, custom_ctx, custom_inputs
                         )
-                        print(f"Old value in handle_field_value_change: {old_value}")
-                        print(f"New value in handle_field_value_change: {value}")
+                        logger.debug(
+                            f"Old value in handle_field_value_change: {old_value}"
+                        )
+                        logger.debug(f"New value in handle_field_value_change: {value}")
                         if old_value != value:
                             data_handler.update_field_value(
                                 refnr,
@@ -149,7 +165,7 @@ class MicroLayoutAIO(html.Div):
                                 settings=self.settings,
                                 container=custom_ctx,
                                 inputs=custom_inputs,
-                                editing_code=editing_code
+                                editing_code=editing_code,
                             )
                             data_handler.update_form_status(refnr, "Under arbeid")
                         else:
@@ -157,7 +173,7 @@ class MicroLayoutAIO(html.Div):
                                 "Skipping form value update since value was same as previous value"
                             )
                     except PreventUpdate:
-                        raise
+                        raise PreventUpdate
                     except Exception as e:
                         msg = f"Updating field value and updating form status for form field {custom_ctx.settings.variable} failed with error: {e}"
                         logger.warning(msg)
@@ -166,13 +182,12 @@ class MicroLayoutAIO(html.Div):
                         return {
                             id_: old_value if id_ == triggered_id else no_update
                             for id_ in {item._id for item in ids}
-                        } # return old value if edit fails
+                        }  # return old value if edit fails
+                    return {item._id: no_update for item in ids}
 
         @callback(
             output={item._id: item.get_output(self.aio_id) for item in ids},
-            inputs={
-                "custom_inputs": inputs
-            },
+            inputs={"custom_inputs": inputs},
         )
         def handle_variable_selector_change(custom_inputs, style: dict | None = None):
 
