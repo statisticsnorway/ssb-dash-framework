@@ -84,19 +84,19 @@ class StandardDataHandler(FetcherMeta):
         # print("hei", refnr)
         with get_connection() as conn:
             t = conn.table("skjemamottak")
-            data = t.filter(_.refnr == refnr).to_pandas()
+            data = t.filter(_.refnr == refnr).execute()
 
         if data.empty:
             return None
 
         row = data.iloc[0]
 
-        status = "Ubehandlet"
-        if row["status"] == "ferdig":
-            status = "Ferdig"
-        if row["status"] == "under editering":
-            status = "Under arbeid"
-        return RefnrStatus(active=row["aktiv"], status=status)
+        # status = "Ubehandlet"
+        # if row["status"] == "ferdig":
+        #     status = "Ferdig"
+        # if row["status"] == "under editering":
+        #     status = "Under arbeid"
+        return RefnrStatus(active=row["aktiv"], status=row["status"])
 
     def get_refnrs_by_period_ident(
         self, settings: EditorSettings, ident: str, period: str
@@ -218,16 +218,18 @@ class StandardDataHandler(FetcherMeta):
 
     def update_form_reception_comment(self, refnr: str, comment: str) -> None:
         comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=comment)
-
+    
     def update_form_status(
         self,
         refnr: str,
         status_code: Literal["Under behandling", "Ferdig", "Ubehandlet"],
+        on_skjemadata_update: bool = False,
     ) -> None:
         update_to_apply = UpdateSkjemamottak(
             refnr=refnr,
             column="status",
             value=status_code,
+            on_skjemadata_update=on_skjemadata_update
         )
 
     def update_field_value(

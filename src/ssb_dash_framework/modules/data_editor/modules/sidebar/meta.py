@@ -25,11 +25,15 @@ class SidebarMeta[T](ABC):
 
     @abstractmethod
     def update_form_status(
-        self, refnr: str, status_code: Literal["Under arbeid", "Ferdig", "Ubehandlet"]
+        self,
+        refnr: str,
+        status_code: Literal["Under arbeid", "Ferdig", "Ubehandlet"],
+        on_skjemadata_update: bool = False,
     ) -> None: ...
 
     @abstractmethod
     def update_form_active_status(self, refnr: str, value: bool) -> None: ...
 
     @abstractmethod
-    def update_form_reception_comment(self, refnr: str, comment: str) -> None: ...
+    def update_form_reception_comment(self, refnr: str, value: str) -> None: ...
+

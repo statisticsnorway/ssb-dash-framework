@@ -64,18 +64,6 @@ class UpdateSkjemamottak(BaseModel):
             f"  on_skjemadata_update : {self.on_skjemadata_update}\n"
         )
 
-    def skjemamottak_to_alert(self, success):
-        if success:
-            AlertHandler.success(
-                msg=f"Oppdaterte {self.column} for {self.refnr} til '{self.value}'",
-                ephemeral=True,
-            )
-        else:
-            AlertHandler.warning(
-                msg=f"Feilet oppdatering av {self.column} for {self.refnr}",
-                ephemeral=True,
-            )
-
     def _current_status(self, conn) -> str:
         return (
             conn.table("skjemamottak")
@@ -86,8 +74,12 @@ class UpdateSkjemamottak(BaseModel):
             .item()
         )
 
+    def _sql_value(self) -> str:
+        return f"'{self.value}'"
+
     def update_ibis(self) -> bool:
         """Applies the update. Returns True if a row was changed, False if skipped."""
+
         with get_connection() as conn:
             if self.on_skjemadata_update:
                 current = self._current_status(conn)
@@ -100,29 +92,28 @@ class UpdateSkjemamottak(BaseModel):
 
             query = f"""
                 UPDATE skjemamottak
-                SET {self.column} = '{self.value}'
+                SET {self.column} = {self._sql_value()}
                 WHERE refnr = '{self.refnr}'
             """
+
             logger.debug(f"Running query: {query}")
             try:
                 conn.raw_sql(query)
-                logger.info(f"Oppdaterte '{self.column}' til '{self.value}'")
-                self.skjemamottak_to_alert(success=True)
                 return True
             except Exception as e:
-                logger.error(
-                    f"Status update failed for {self.refnr}: {e}", exc_info=True
-                )
-                self.skjemamottak_to_alert(success=False)
+                logger.debug(f"Update failed: {e}")
                 return False
 
 
 class UpdateSkjemamottakAktiv(UpdateSkjemamottak):
     value: bool
     column: Literal["aktiv"] = "aktiv"
-
+    
+    def _sql_value(self) -> str:
+        return "TRUE" if self.value else "FALSE"
 
 class UpdateSkjemamottakKommentar(UpdateSkjemamottak):
+    value: str
     column: Literal["kommentar"] = "kommentar"
 
 

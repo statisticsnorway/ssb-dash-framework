@@ -150,11 +150,11 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 raise PreventUpdate
 
             try:
-                self.fetcher.update_form_reception_comment(refnr, value)
-                comment_update = "Comment was updated successfully"
+                self.fetcher.update_form_reception_comment(refnr, value=value)
+                comment_update = f"Kommentaren for {refnr} er oppdatert."
                 logger.info(comment_update)
-                AlertHandler.info(comment_update)
+                AlertHandler.info(comment_update, ephemeral=True)
             except Exception as e:
-                error_msg = f"Comment failed to update with error: {e}"
+                error_msg = f"Oppdatering av kommentar feilet: {e}"
                 logger.info(error_msg)
-                AlertHandler.info(error_msg)
+                AlertHandler.info(error_msg, ephemeral=True)

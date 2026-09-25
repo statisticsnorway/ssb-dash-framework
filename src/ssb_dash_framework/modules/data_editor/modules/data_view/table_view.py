@@ -8,6 +8,7 @@ from dash import State
 from dash import callback
 from dash import html
 from dash import Patch
+from dash import no_update
 from dash.exceptions import PreventUpdate
 from psycopg_pool import ConnectionPool
 
@@ -211,7 +212,7 @@ class DataEditorTable(DataEditorDataView):
                 logger.warning(f"Reverted edited cell to {edited[0]['oldValue']}.")
                 return patch
 
-            raise PreventUpdate
+            return no_update
 
         @callback(  # type: ignore[misc]
             VariableSelector.get_output_object("variabel"),

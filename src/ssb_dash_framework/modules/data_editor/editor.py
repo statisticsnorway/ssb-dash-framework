@@ -180,7 +180,7 @@ class DataEditor:
             if isinstance(selected_form, list):
                 selected_form = selected_form[0] if len(selected_form) > 0 else None
 
-            logger.info(f"toggle_view_visibility: selected_table={selected_table}, selected_form={selected_form}")
+            print(f"toggle_view_visibility: selected_table={selected_table}, selected_form={selected_form}")
             if not selected_table or not selected_form:
                 return []
             layout_div = self.dataview_layouts.get((selected_table, selected_form))

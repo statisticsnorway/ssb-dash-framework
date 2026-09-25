@@ -5,7 +5,6 @@ from typing import Any
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 
-import tzlocal
 from dash import Input
 from dash import Output
 from dash import State
@@ -24,8 +23,6 @@ from ...utils import EDITING_CODE_DROPDOWN
 from .editing_sidebar_helper import DataEditorHelperSidebar
 
 logger = logging.getLogger(__name__)
-
-local_tz = tzlocal.get_localzone()
 
 
 @register_module()
@@ -249,17 +246,27 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             triggered_id = ctx.triggered_id
 
             if triggered_id == checkbox_id:
-                self.fetcher.update_form_active_status(refnr, bool(aktiv_status))
+                success  = self.fetcher.update_form_active_status(refnr, bool(aktiv_status))
+                label = "aktiv-status"
             elif triggered_id == radio_id:
-                self.fetcher.update_form_status(refnr, status_code)
+                success = self.fetcher.update_form_status(refnr, status_code, on_skjemadata_update=False)
+                label = "status"
             else:
                 raise PreventUpdate
 
-            message = "Updating form status was successfull"
-            logger.debug(message)
-            AlertHandler.success(message)
-
-            return time.time()
+            if success:
+                message = f"Oppdaterte {label} for {refnr}."
+                logger.debug(message)
+                AlertHandler.success(
+                    message,
+                    ephemeral=True,
+                )
+                return time.time()
+            else:
+                message = f"Kunne ikke oppdatere {label} for {refnr}."
+                logger.warning(message)
+                AlertHandler.warning(message)
+                return no_update
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-form-table", "rowData"),
@@ -280,6 +287,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             if ident is None:
                 raise PreventUpdate
 
+            data = None
             try:
                 data = self.fetcher.get_refnrs_by_period_ident(
                     self.settings, ident, time_units
@@ -295,7 +303,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 logger.warning(message)
                 AlertHandler.warning(message)
                 return no_update, no_update, no_update
-
+            print(f"data returned in view_refnrs_by_ident: {view_refnrs_by_ident}")
             return (
                 data.to_dict("records"),
                 [{"field": x, "headerName": x} for x in data.columns],
