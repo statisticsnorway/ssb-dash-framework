@@ -1,5 +1,4 @@
 """SSB Dash Framework."""
-
 from .config import AppConfig
 from .config import AppModules
 from .config import AppSettings
@@ -101,9 +100,12 @@ from .utils import set_connection
 from .utils import set_postgres_connection
 from .utils import set_sqlite_connection
 from .utils import sidebar_button
+from . import experimental
+
 # from .utils import th_error
 
 __all__ = [
+    "experimental",
     "Aarsregnskap",
     "AarsregnskapTab",
     "AarsregnskapWindow",
