@@ -3,7 +3,9 @@
 import logging
 from abc import ABC
 from abc import abstractmethod
+from typing import Any
 from typing import Literal
+from typing import Self
 
 import dash_bootstrap_components as dbc
 from dash import callback
@@ -22,7 +24,23 @@ logger = logging.getLogger(__name__)
 AsType = Literal["Tab", "Window"]
 
 
-class ModuleBase(ABC):
+class YamlLoadable(ABC):
+    @classmethod
+    def from_yaml(cls, *args: list[Any], **kwargs: dict[str, Any]):
+        """Base class for loading modules and other classes from a yaml config.
+
+        The method has a default implementation so you dont have to write it yourself, but the option
+        to overwrite it remains for complicated modules. For examples modules that need specific
+        class instances for __init__.
+        """
+        if "as_type" in kwargs:
+            kwargs.pop("as_type")
+        if "window_scrollable" in kwargs:
+            kwargs.pop("window_scrollable")
+        return cls(*args, **kwargs)
+
+
+class ModuleBase(YamlLoadable):
     """Base class defining the interface all modules in the framework must implement.
 
     A module is implemented either as a tab or as a window (modal). The implementation
@@ -53,8 +71,16 @@ class ModuleBase(ABC):
     module_name: str
     module_number: int
     module_id: str
-    module_layout: html.Div
+    module_layout: html.Div | dbc.Tab
     icon: str | Component
+
+    def __new__(cls, *args, **kwargs) -> Self:
+        if "module_name" not in cls.__dict__:
+            cls.module_name = cls.__name__
+        cls.module_number = ModuleBase._number
+        cls._number += 1
+        cls.module_id = f"{cls.module_name}-{cls.module_number}"
+        return super().__new__(cls)
 
     def __init__(
         self,
@@ -75,12 +101,6 @@ class ModuleBase(ABC):
         self.implemented_as: AsType | None = None
         self.window_scrollable = window_scrollable
 
-        if not hasattr(self, "module_name"):
-            self.module_name = self.__class__.__name__
-        self.module_number = ModuleBase._number
-        ModuleBase._number += 1
-        self.module_id = f"{self.module_name}-{self.module_number}"
-
         if not hasattr(self, "label"):
             raise AttributeError(
                 f"Class {self.__class__.__name__} must set a 'label' attribute before calling ModuleBase.__init__."
@@ -89,7 +109,7 @@ class ModuleBase(ABC):
             self.icon = ""
 
         if not hasattr(self, "module_layout"):
-            self.module_layout = self._create_layout()
+            self.module_layout = self._internal_layout()
         self.module_callbacks()
 
         if as_type is not None:
@@ -116,20 +136,23 @@ class ModuleBase(ABC):
             raise ValueError(
                 f"{self.module_id} is already implemented as '{self.implemented_as}' and cannot also be implemented as '{as_type}'."
             )
+        self.module_layout = self.layout()
         self.implemented_as = as_type
         if as_type == "Window":
             self._window_callbacks()
         logger.debug(f"Implementing {self.module_id} as {as_type}.")
 
     @abstractmethod
-    def _create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
         """Create the layout of the module itself, without tab/window wrapping."""
+        ...
 
     @abstractmethod
     def module_callbacks(self) -> None:
         """Define the callbacks belonging to the module itself."""
+        ...
 
-    def layout(self) -> dbc.Tab | html.Div:
+    def _internal_layout(self) -> dbc.Tab | html.Div:
         """Generate the layout for the module in the chosen implementation.
 
         Returns:
@@ -141,17 +164,7 @@ class ModuleBase(ABC):
             return self._tab_layout()
         if self.implemented_as == "Window":
             return self._window_layout()
-        return self.get_module_layout()
-
-    def get_module_layout(self) -> html.Div:
-        """Get the layout of the module.
-
-        Works as is, but can be overridden if needed.
-
-        Returns:
-            The layout of the module itself.
-        """
-        return self.module_layout
+        return self.layout()
 
     def _tab_layout(self) -> dbc.Tab:
         """Generate the layout for the module as a tab.
@@ -170,7 +183,7 @@ class ModuleBase(ABC):
         layout = dbc.Tab(
             html.Div(
                 className="tab-implementation",
-                children=self.get_module_layout(),
+                children=self.layout(),
             ),
             label=label_content,
         )
@@ -225,7 +238,7 @@ class ModuleBase(ABC):
                         dbc.ModalBody(
                             html.Div(
                                 className="window-implementation-modal-body dbc dbc-ag-grid",
-                                children=self.get_module_layout(),
+                                children=self.layout(),
                             )
                         ),
                     ],
@@ -306,7 +319,3 @@ class ModuleBase(ABC):
                 DashIconify(icon="feather:minimize-2", width=18),
                 "Minimer vindu",
             )
-    
-    
-
-    

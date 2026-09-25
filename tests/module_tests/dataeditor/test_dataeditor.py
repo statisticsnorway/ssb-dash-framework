@@ -2,7 +2,7 @@ import pandas as pd
 import json
 import pytest
 
-@pytest.mark.skip(reason="Work in progress")
+#@pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_python_api():
     from ssb_dash_framework import DataEditor
     from ssb_dash_framework import DataEditorHistory
@@ -15,7 +15,7 @@ def test_dataeditor_python_api():
     from ssb_dash_framework import VariableSelectorConfig
     from ssb_dash_framework.setup.variableselector.time_unit import TimeUnit
     from ssb_dash_framework.setup.variableselector.time_unit import TimeUnitType
-    DataEditor._module_count = 0  # Reset the count
+    DataEditor.module_number = 0  # Reset the count
 
     VariableSelectorConfig(
         refnr="refnr",
@@ -80,14 +80,14 @@ def test_dataeditor_python_api():
     assert instance is not None
     assert isinstance(instance, DataEditor)
 
-@pytest.mark.skip(reason="Work in progress")
+#@pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_yaml_based():
     from ssb_dash_framework import AppConfig
     from ssb_dash_framework import DataEditor
     from ssb_dash_framework import build_app_from_config
     from ssb_dash_framework import config_parser_yaml
 
-    DataEditor._module_count = 0  # Reset the count
+    DataEditor.module_number = 0  # Reset the count
 
     path = "tests/module_tests/dataeditor/dataeditor_test.yaml"
     if path.endswith(".yaml"):

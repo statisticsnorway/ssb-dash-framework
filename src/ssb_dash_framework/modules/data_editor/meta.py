@@ -9,10 +9,12 @@ from .modules.inforow.meta import InforowMeta
 from .modules.helper_buttons.meta import HelperButtonMeta
 from .modules.microlayout.meta import MicrolayoutMeta
 
+from ...utils.base_classes import YamlLoadable
 SettingsType = EditorSettings
 
 
 class FetcherMeta(
+    YamlLoadable,
     # SidebarMeta[SettingsType],
     InforowMeta[SettingsType],
     HelperButtonMeta,
@@ -20,7 +22,7 @@ class FetcherMeta(
 ): ...
 
 
-class ContextABC(ABC):
+class ContextABC(YamlLoadable):
     """Base class for defining a contexted module."""
 
     fetcher: FetcherMeta

@@ -1,6 +1,6 @@
 import inspect
 import os
-from typing import Any
+from typing import Any, Type
 from typing import Literal
 
 from pydantic import BaseModel
@@ -8,19 +8,16 @@ from pydantic import field_validator
 from pydantic import model_validator
 
 from ..setup.variableselector.set_variables import VariableSelectorConfig
-from ..utils.base_classes import ModuleBase
-from ..utils.implementations import TabImplementation
-from ..utils.implementations import WindowImplementation
-
+from ..utils.base_classes import YamlLoadable
 
 class RegisteredModule(BaseModel):
-    type: str
+    type: Type[YamlLoadable]
     as_tab: str | None
     as_window: str | None
     kwargs: list[str]
 
 
-_MODULE_REGISTRY: list[RegisteredModule] = list()
+_MODULE_REGISTRY: list[RegisteredModule] = []
 
 
 def get_module_registry():
@@ -31,7 +28,7 @@ def get_module_registry():
 def get_from_module_registry(module_name: str) -> RegisteredModule:
     """Gets a registered module from the registry."""
     global _MODULE_REGISTRY
-    hits = [module for module in _MODULE_REGISTRY if module.type == module_name]
+    hits = [module for module in _MODULE_REGISTRY if module.type.__name__ == module_name]
     if len(hits) < 1:
         for i in _MODULE_REGISTRY:
             print(i)
@@ -49,77 +46,21 @@ def register_module(as_tab: str | None = None, as_window: str | None = None):
     def decorator(module):
         registry = get_module_registry()
         if module.__name__ in [
-            registered_module.type for registered_module in registry
+            registered_module.type.__name__ for registered_module in registry
         ]:
             raise ValueError(f"Module '{module.__name__}' is already registered")
         model_signature = inspect.signature(module)
         registry.append(
             RegisteredModule(
-                type=module.__name__,
+                type=module,
                 as_tab=as_tab,
                 as_window=as_window,
                 kwargs=list(model_signature.parameters.keys()),
             )
         )
         return module
-
+    
     return decorator
-
-
-def register_implementation_modules():
-    tabs = {
-        base: cls
-        for cls in TabImplementation.__subclasses__()
-        for base in cls.__bases__
-        if base is not TabImplementation
-    }
-    windows = {
-        base: cls
-        for cls in WindowImplementation.__subclasses__()
-        for base in cls.__bases__
-        if base is not WindowImplementation
-    }
-    modules = list(set(tabs) | set(windows))
-    for module in modules:
-        if module.__name__ in [
-            registered_module.type for registered_module in get_module_registry()
-        ]:
-            raise ValueError(f"Module '{module.__name__}' is already registered")
-        model_signature = inspect.signature(module)
-        _MODULE_REGISTRY.append(
-            RegisteredModule(
-                type=module.__name__,
-                as_tab=tabs[module].__name__ if module in tabs else None,
-                as_window=windows[module].__name__ if module in windows else None,
-                kwargs=list(model_signature.parameters.keys()),
-            )
-        )
-
-
-def register_modulebase_modules():
-    """Register modules based on ModuleBase, which can be used both as a tab and as a window."""
-    for module in ModuleBase.__subclasses__():
-        if inspect.isabstract(module):
-            continue
-        if module.__name__ in [
-            registered_module.type for registered_module in get_module_registry()
-        ]:
-            raise ValueError(f"Module '{module.__name__}' is already registered")
-        model_signature = inspect.signature(module)
-        _MODULE_REGISTRY.append(
-            RegisteredModule(
-                type=module.__name__,
-                as_tab=module.__name__,
-                as_window=module.__name__,
-                kwargs=list(model_signature.parameters.keys()),
-            )
-        )
-
-
-def register_modules():
-    register_implementation_modules()
-    register_modulebase_modules()
-
 
 class AppSettings(BaseModel):
     """Maps 1-to-1 onto the arguments of app_setup()."""

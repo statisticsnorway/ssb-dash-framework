@@ -1,17 +1,16 @@
 import builtins
-import importlib
 import logging
 import os
 from typing import Literal
 
 from ..setup.app_setup import app_setup
 from ..setup.main_layout import main_layout
+from ..setup.variableselector.set_variables import VariableSelectorConfig
 from ..utils.base_classes import ModuleBase
 from .models import AppConfig
 from .models import AppModules
 from .models import AppSettings
 from .models import ModuleConfig
-from .models import VariableSelectorConfig
 from .models import get_from_module_registry
 from .yaml_parser import config_parser_yaml
 
@@ -58,8 +57,7 @@ def instantiate_module(
     else:
         class_name = validation_model.type
 
-    library = importlib.import_module("ssb_dash_framework")
-    cls = getattr(library, class_name, None)
+    cls = validation_model.type
     if cls is None:
         raise ValueError(f"No class named '{class_name}' found in ssb_dash_framework.")
 
@@ -68,7 +66,7 @@ def instantiate_module(
         and issubclass(cls, ModuleBase)
         and type in ("tab", "window")
     ):
-        return cls(as_type="Tab" if type == "tab" else "Window", **module.extra_kwargs)
+        return cls.from_yaml(**{"as_type":"Tab" if type == "tab" else "Window", **module.extra_kwargs})
 
     return cls(**module.extra_kwargs)
 
