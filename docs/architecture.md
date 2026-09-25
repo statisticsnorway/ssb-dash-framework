@@ -42,6 +42,8 @@ See explanation in docs/
 
 ## Module design
 
+Example in [demo/hello_world/hello_module.py](demo/hello_world/hello_module.py).
+
 ### Modules inherit from the common base class
 
 This sets up a lot of useful scaffolding for the module to be integrated into the app.
@@ -130,23 +132,6 @@ def test_yaml_MyModule() -> None:
 ### Recommended tests for a module
 
 In order to prevent accidentally introducing breaking changes, at a minimum modules should have tests to ensure that the public API does not change.
-
-```python
-from ssb_dash_framework import MyModule
-from ssb_dash_framework import MyModuleTab
-from ssb_dash_framework import MyModuleWindow
-
-
-def test_import_MyModule() -> None:
-    assert MyModule is not None, "MyModule is not importable"
-    assert MyModuleTab is not None, "MyModuleTab is not importable"
-    assert MyModuleWindow is not None, "MyModuleWindow is not importable"
-
-
-def test_instantiation() -> None:
-    MyModuleTab()
-    MyModuleWindow()
-```
 
 
 
