@@ -7,7 +7,7 @@ from dash import clientside_callback
 from dash import dcc
 from dash import html, callback
 from abc import abstractmethod, ABC
-from dash import callback, Input, Output, ctx
+from dash import callback, Input, Output, ctx, State
 from dash.exceptions import PreventUpdate
 from ssb_dash_framework import AlertHandler
 
@@ -48,10 +48,11 @@ class HelloModuleDataHandlerCat(ABC):
     """
 
     def get_message(self):
+        AlertHandler._add_alert("A cat has appeared!", color="success", ephemeral=True, position="center")
         return HelloModuleDataHandlerCat.cat
 
     def update_message(self, new_value):
-        AlertHandler.error("Oh no, the cat refuses to change!")
+        raise RuntimeError("Oh no, the cat refuses to move!")
 
 
 class HelloModule:
@@ -76,9 +77,13 @@ class HelloModule:
                 dbc.Row(
                     [
                         dbc.Button(
-                            "Update message",
+                            "Get currently stored message",
+                            id=f"{self.module_name}-{self.module_number}-get-button",
+                        ),
+                        dbc.Button(
+                            "Update stored message",
                             id=f"{self.module_name}-{self.module_number}-update-button",
-                        )
+                        ),
                     ]
                 ),
                 dbc.Row(
@@ -86,8 +91,7 @@ class HelloModule:
                         dbc.Col(
                             dbc.Textarea(
                                 id=f"{self.module_name}-{self.module_number}-message-holder",
-                                value=self.data_handler.get_message(),
-                                style={"height": "200px"}
+                                style={"height": "200px"},
                             )
                         )
                     ]
@@ -100,25 +104,45 @@ class HelloModule:
 
     def module_callbacks(self):
         message_id = f"{self.module_name}-{self.module_number}-message-holder"
+        get_id = f"{self.module_name}-{self.module_number}-get-button"
         refresh_id = f"{self.module_name}-{self.module_number}-update-button"
 
         @callback(
             Output(message_id, "value"),
+            Input(get_id, "n_clicks"),
             Input(refresh_id, "n_clicks"),
-            Input(message_id, "value"),
+            State(message_id, "value"),
             prevent_initial_call=True,
         )
-        def message_callback(n_clicks, new_message):
+        def message_callback(get, update, new_message):
+
+            if ctx.triggered_id == get_id:
+                try:
+                    to_return = self.data_handler.get_message()
+                    AlertHandler.success("Returning message", ephemeral=True)
+                except Exception as e:
+                    AlertHandler.error(
+                        f"Oh no! Something went wrong: {e}", ephemeral=True
+                    )
+                    raise PreventUpdate
 
             if ctx.triggered_id == refresh_id:
-                return self.data_handler.get_message()
+                try:
+                    current_message = self.data_handler.get_message()
 
-            if ctx.triggered_id == message_id:
-                current_message = self.data_handler.get_message()
+                    if current_message != new_message:
+                        self.data_handler.update_message(new_message)
+                        to_return = self.data_handler.get_message()
+                        AlertHandler.success(
+                            f"Message changed from {current_message} to {new_message}",
+                            ephemeral=True,
+                        )
+                    else:
+                        raise RuntimeError("No change made!")
+                except Exception as e:
+                    AlertHandler.error(
+                        f"Oh no! Something went wrong: {e}", ephemeral=True
+                    )
+                    raise PreventUpdate
 
-                if current_message != new_message:
-                    self.data_handler.update_message(new_message)
-
-                raise PreventUpdate
-
-            raise PreventUpdate
+            return to_return
