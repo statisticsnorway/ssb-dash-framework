@@ -1,3 +1,4 @@
+# TODO: Update this module
 import logging
 from abc import ABC
 from abc import abstractmethod
@@ -11,7 +12,6 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
-from eimerdb import EimerDBInstance
 from plotly.graph_objects import Figure
 
 from ssb_dash_framework.utils import conn_is_ibis
@@ -54,9 +54,9 @@ class AltinnDataCapture(ABC):
         Raises:
             TypeError: If database is invalid connection type.
         """
-        if not isinstance(database, EimerDBInstance) and not conn_is_ibis(database):
+        if not conn_is_ibis(database):
             raise TypeError(
-                f"The database object must be 'EimerDBInstance' or ibis connection. Received: {type(database)}"
+                f"The database object must be ibis connection. Received: {type(database)}"
             )
         self.module_number = AltinnDataCapture._id_number
         self.module_name = self.__class__.__name__
@@ -197,9 +197,9 @@ class AltinnDataCapture(ABC):
             self.variableselector.get_all_inputs(),
         ]
         if self.database_type == "altinn_default":
-            self.callbacks_eimerdb_default(dynamic_states)
+            self.callbacks(dynamic_states)
 
-    def callbacks_eimerdb_default(self, dynamic_states: list[Input]) -> None:
+    def callbacks(self, dynamic_states: list[Input]) -> None:
         """Defines the callbacks when using the altinn_default database type."""
 
         @callback(  # type: ignore[misc]
@@ -379,7 +379,7 @@ class AltinnDataCaptureWindow(WindowImplementation, AltinnDataCapture):
         label: str = "Datafangst",
         database_type: str | None = "altinn_default",
         database: object | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Initializes the AltinnDataCaptureWindow module."""
         AltinnDataCapture.__init__(

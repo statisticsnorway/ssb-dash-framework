@@ -12,16 +12,14 @@ from dash import callback_context as ctx
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
-from dash_iconify import DashIconify
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
-from eimerdb import EimerDBInstance
+from dash_iconify import DashIconify
 
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
 from ..utils.alert_handler import create_alert
-from ..utils.config_tools.connection import _get_connection_object
 from ..utils.config_tools.connection import get_connection
 from ..utils.module_validation import module_validator
 
@@ -222,8 +220,6 @@ class ControlView(ABC):
                 f"args: {args}"
             )
 
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                args = [int(arg) for arg in args]
             logger.debug(dict(zip(self.time_units, args, strict=False)))
             control_class_instance = self.control_dict[skjema](
                 time_units=self.time_units,

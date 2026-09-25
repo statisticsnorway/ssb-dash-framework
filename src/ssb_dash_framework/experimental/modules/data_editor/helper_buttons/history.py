@@ -1,6 +1,7 @@
 import logging
 
 import dash_ag_grid as dag
+import dash_bootstrap_components as dbc
 import pandas as pd
 import tzlocal
 from dash import Input
@@ -9,7 +10,6 @@ from dash import callback
 from dash import html
 from ibis import _
 from psycopg_pool import ConnectionPool
-import dash_bootstrap_components as dbc
 
 from ssb_dash_framework import VariableSelector
 from ssb_dash_framework.utils.config_tools.set_variables import get_refnr
@@ -128,35 +128,6 @@ class DataEditorHistory(DataEditorHelperButton):
                         for col in df.columns
                     ]
                     return df.to_dict("records"), columns
-            # elif isinstance(connection_object, EimerDBInstance):
-            #     try:
-            #         partition_args = dict(zip([x for x in get_time_units().keys()], args, strict=False))
-            #         df = connection_object.query_changes(
-            #             f"""SELECT * FROM {tabell}
-            #             WHERE refnr = '{refnr}'
-            #             ORDER BY datetime DESC
-            #             """,
-            #             partition_select=create_partition_select(
-            #                 desired_partitions=self.time_units,
-            #                 skjema=skjema,
-            #                 **partition_args,
-            #             ),
-            #         )
-            #         if df is None:
-            #             df = pd.DataFrame(columns=["ingen", "data"])
-            #         columns = [
-            #             {
-            #                 "headerName": col,
-            #                 "field": col,
-            #                 "filter": True,
-            #                 "resizable": True,
-            #             }
-            #             for col in df.columns
-            #         ]
-            #         return df.to_dict("records"), columns
-            #     except Exception as e:
-            #         logger.error(f"Error in historikktabell: {e}", exc_info=True)
-            #         return None, None
             else:
                 raise NotImplementedError(
                     f"Connection of type {type(connection_object)} is not currently supported."

@@ -1,16 +1,12 @@
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 from typing import Any
 from typing import Literal
 
 from dash.exceptions import PreventUpdate
-import ibis
 from ibis import _
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
-
-from ssb_dash_framework.setup.variableselector import VariableSelector
-from ssb_dash_framework.setup.variableselector import VariableSelectorOption
 
 from .alert_handler import create_alert
 from .config_tools.connection import _get_connection_object
@@ -28,10 +24,12 @@ def _is_valid_int(v: Any) -> bool | str:
         return True
     return False
 
+
 def _is_valid_bool(v: Any) -> bool:
     """Accepts 'true'/'false' (any case), and '1'/'0'."""
     s = str(v).strip().lower()
     return s in {"true", "false", "1", "0"}
+
 
 _VALIDATORS: dict[str, Callable[[Any], str | None]] = {
     "string": lambda v: True,
@@ -42,8 +40,7 @@ _VALIDATORS: dict[str, Callable[[Any], str | None]] = {
 
 
 class UpdateSkjemamottak(BaseModel):
-    """
-    Class to update editing status in table 'skjemamottak' for a refnr, runs after user edits 'status'.
+    """Class to update editing status in table 'skjemamottak' for a refnr, runs after user edits 'status'.
     Also runs after skjemadata edits (if on_skjemadata_update = True) for postgreSQL connections:
         - If status currently is 'Ubehandlet', it updates the status to 'Under arbeid'. Other statuses are ignored.
 
@@ -80,21 +77,6 @@ class UpdateSkjemamottak(BaseModel):
                 "warning",
                 ephemeral=True,
             )
-
-    def update_eimer(self):
-        query = f"""UPDATE skjemamottak SET {self.column} = '{self.value}' WHERE refnr = '{self.refnr}'"""
-        logger.debug(f"Running query: {query}")
-        try:
-            _get_connection_object().query(query)
-            logger.info(f"Oppdaterte {self.column} for {self.refnr}")
-            alert = self.to_alert(success=True)
-        except Exception as e:
-            logger.error(
-                f"Update feilet! Kunne ikke oppdatere {self.column} for {self.refnr}. Feilmelding: \n{e}",
-                exc_info=True,
-            )
-            alert = self.to_alert(success=False)
-        return alert
 
     def update_ibis(self):
         if not isinstance(_get_connection_object(), ConnectionPool):
@@ -201,12 +183,12 @@ class UpdateSkjemadata(BaseModel):
         if datatype:
             if datatype == "float":
                 return create_alert(
-                f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}': "
-                f"Heltallsfelt kan ikke inneholde komma eller punktum (fikk '{self.value}').",
-                "warning",
-                ephemeral=True,
-                duration=10,
-            )
+                    f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}': "
+                    f"Heltallsfelt kan ikke inneholde komma eller punktum (fikk '{self.value}').",
+                    "warning",
+                    ephemeral=True,
+                    duration=10,
+                )
             return create_alert(
                 f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}': Datatypen skal være {datatype}, ikke {type(self.value)}.",
                 "warning",
@@ -219,53 +201,15 @@ class UpdateSkjemadata(BaseModel):
                 f"Ident '{self.ident}' oppdatert på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'",
                 "success",
                 ephemeral=True,
-                duration=8
+                duration=8,
             )
         else:
             return create_alert(
                 f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'. Se logg for detaljer.",
                 "warning",
                 ephemeral=True,
-                duration=8
+                duration=8,
             )
-
-    def update_eimer(self, long):
-        query = f"SELECT * FROM {self.table} WHERE refnr = '{self.refnr}'"
-        if long:
-            query = query + f" AND variabel = '{self.variable}'"
-        check = _get_connection_object().query(query)
-        logger.debug(f"checking before update using query: {query}\nResults:\n{check}")
-        found_old_value = check[self.column].item()
-        if not found_old_value == self.old_value:
-            raise ValueError(
-                f"Old value found  does not match old value provided. Found '{found_old_value}', expected '{self.old_value}'.\nQuery used: {query}"
-            )
-        logger.info("Updating value")
-        if long:
-            query = f"""
-            UPDATE {self.table}
-            SET {self.column} = '{self.value}'
-            WHERE refnr = '{self.refnr}'
-            AND variabel = '{self.variable}'
-            """
-        else:
-            query = f"""
-            UPDATE {self.table}
-            SET {self.column} = '{self.value}'
-            WHERE refnr = '{self.refnr}'
-            """
-        try:
-            _get_connection_object().query(query)
-            logger.info(
-                f"Successfully updated '{self.column}' from '{self.old_value}' to '{self.value}'"
-            )
-            return self.to_alert(long, success=True)
-        except Exception as e:
-            logger.error(
-                f"Update feilet! Kunne ikke oppdatere {self.refnr} - '{self.variable if long else self.column} til '{self.value}'. Feilmelding: \n{e}",
-                exc_info=True,
-            )
-            return self.to_alert(long, success=False)
 
     def _get_feltsti(self, conn) -> str:
         """Looks up the long variable name from the mapping table.
@@ -294,8 +238,7 @@ class UpdateSkjemadata(BaseModel):
         return result[self.mapping_result_column].iloc[0]
 
     def _check_datatype(self, conn) -> str | None:
-        """
-        Fetches the expected datatype for `self.variable` and checks whether
+        """Fetches the expected datatype for `self.variable` and checks whether
         `self.value` could legitimately represent that datatype. Does not modify
         `self.value`. `None` is always considered valid (treated as "no value").
 
@@ -319,7 +262,9 @@ class UpdateSkjemadata(BaseModel):
 
         validator = _VALIDATORS.get(datatype)
         if validator is None:
-            logger.warning(f"Unknown datatype '{datatype}' for variable '{self.variable}'")
+            logger.warning(
+                f"Unknown datatype '{datatype}' for variable '{self.variable}'"
+            )
             return datatype
 
         result = validator(self.value)
@@ -330,11 +275,9 @@ class UpdateSkjemadata(BaseModel):
         return datatype
 
     def _insert_ibis(self, conn, long):
-        """
-        NØKU-specific function to insert data if the row doesn't exist in the postgreSQL database.
+        """NØKU-specific function to insert data if the row doesn't exist in the postgreSQL database.
         Because Altinn3-xml only returns data if the values are not None.
         """
-
         if not isinstance(_get_connection_object(), ConnectionPool):
             logger.debug(
                 "Insert failed. The connection object is not a valid postgreSQL object. This insert function was specifically made for NØKU and only works for tables starting with 'skjemadata', 'kildevalg', or 'saldoskjema'."

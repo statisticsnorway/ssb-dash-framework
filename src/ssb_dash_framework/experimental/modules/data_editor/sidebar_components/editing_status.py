@@ -1,9 +1,11 @@
 import logging
+import time
 from typing import Any
-from typing import Literal
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import ibis.selectors as s
+import tzlocal
 from dash import Input
 from dash import Output
 from dash import State
@@ -13,12 +15,8 @@ from dash import dcc
 from dash import html
 from dash import no_update
 from dash.exceptions import PreventUpdate
-import ibis.selectors as s
-from eimerdb import EimerDBInstance
 from ibis import _
 from psycopg_pool import ConnectionPool
-import tzlocal
-import time
 
 from ssb_dash_framework import VariableSelector
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
@@ -28,8 +26,8 @@ from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.connection import get_connection
 from .....utils.config_tools.set_variables import get_ident
 from .....utils.config_tools.set_variables import get_time_units
-from .....utils.core_models import UpdateSkjemamottakAktiv
 from .....utils.core_models import UpdateSkjemamottak
+from .....utils.core_models import UpdateSkjemamottakAktiv
 from ..core import DataEditorHelperSidebar
 
 logger = logging.getLogger(__name__)
@@ -104,7 +102,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         )
         return html.Div(
             [
-                dcc.Store(id=f"skjemamottak-status-signal"),
+                dcc.Store(id="skjemamottak-status-signal"),
                 form_selector,
                 dbc.Row("Editeringsstatus"),
                 dbc.Row(
@@ -233,10 +231,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             else:
                 raise PreventUpdate
 
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                feedback = update_to_apply.update_eimer()
-
-            elif isinstance(_get_connection_object(), ConnectionPool):
+            if isinstance(_get_connection_object(), ConnectionPool):
                 feedback = update_to_apply.update_ibis()
 
             else:
@@ -257,13 +252,6 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             """Populates a table showing all relevant received forms from the relevant 'ident'."""
             if ctx.triggered_id != f"{self.module_name}-{self.module_number}-button":
                 raise PreventUpdate
-            if isinstance(_get_connection_object(), EimerDBInstance):
-                args_before_timeunits = 1
-                N = len(get_time_units())
-                args = list(args)
-                args[args_before_timeunits : N + args_before_timeunits] = list(
-                    map(int, args[args_before_timeunits : N + args_before_timeunits])
-                )
 
             filterdict = create_filter_dict([get_ident(), *get_time_units()], [*args])
             with get_connection() as conn:

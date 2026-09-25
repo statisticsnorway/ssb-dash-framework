@@ -5,7 +5,6 @@ from typing import Any
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-from dash_iconify import DashIconify
 
 # import ibis
 from dash import callback
@@ -15,10 +14,10 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from dash_iconify import DashIconify
 
 from ssb_dash_framework import ControlFrameworkBase
 
-# from eimerdb import EimerDBInstance
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
@@ -86,9 +85,9 @@ class NspekControlView(ABC):
         """
         return html.Div(
             style={
-            "width": "100%",
-            "minWidth": "0",
-            "maxWidth": "1400px",
+                "width": "100%",
+                "minWidth": "0",
+                "maxWidth": "1400px",
             },
             children=[
                 dbc.Row(
@@ -270,11 +269,12 @@ class NspekControlView(ABC):
             Output("alert_store", "data", allow_duplicate=True),
             Input(f"{self.module_number}-kontroll-refresh", "n_clicks"),
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
+            State(f"{self.module_number}-kontroller", "selectedRows"),
             State("alert_store", "data"),
             *self.variableselector.get_all_inputs(),
             prevent_initial_call="initial_duplicate",
         )
-        def get_kontroller_overview(refresh, run, store, *args):
+        def get_kontroller_overview(refresh, run, selected_rows, store, *args):
 
             control_class = self.control_class
 
@@ -297,10 +297,15 @@ class NspekControlView(ABC):
 
             columns = self._create_column_defs(df)
 
+            if selected_rows:
+                selected = selected_rows
+            else:
+                selected = [df.iloc[0].to_dict()]
+
             return (
                 df.to_dict("records"),
                 columns,
-                [df.iloc[0].to_dict()],
+                selected,
                 [create_alert("Oppdatert", "info", ephemeral=True), *store],
             )
 
