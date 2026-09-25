@@ -12,7 +12,6 @@ from .figuredisplay import FigureDisplayWindow
 from .map_display import MapDisplay
 from .map_display import MapDisplayTab
 from .map_display import MapDisplayWindow
-from .microlayout import MicroLayoutAIO
 from .multimodule import MultiModule
 from .multimodule import MultiModuleTab
 from .multimodule import MultiModuleWindow
@@ -33,7 +32,6 @@ __all__ = [
     "MapDisplay",
     "MapDisplayTab",
     "MapDisplayWindow",
-    "MicroLayoutAIO",
     "MultiModule",
     "MultiModuleTab",
     "MultiModuleWindow",

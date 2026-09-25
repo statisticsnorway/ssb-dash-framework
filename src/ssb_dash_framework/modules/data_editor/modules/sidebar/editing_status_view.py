@@ -1,0 +1,330 @@
+import logging
+import time
+from typing import Any
+
+import dash_ag_grid as dag
+import dash_bootstrap_components as dbc
+
+import tzlocal
+from dash import Input
+from dash import Output
+from dash import State
+from dash import callback
+from dash import callback_context as ctx
+from dash import dcc
+from dash import html
+from dash import no_update
+from dash.exceptions import PreventUpdate
+
+from .....utils.alert_handler import AlertHandler
+from .....config.models import register_module
+from .....setup.variableselector import VariableSelector
+from ...utils import EDITING_CODE_DROPDOWN
+
+from .editing_sidebar_helper import DataEditorHelperSidebar
+
+logger = logging.getLogger(__name__)
+
+local_tz = tzlocal.get_localzone()
+
+
+@register_module()
+class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
+    """A sidebar module for inspecting and updating the status of the selected form by 'refnr'.
+
+    Contains functionality for:
+    - Viewing all forms sent from the same 'ident'.
+    - Setting its status. Whether the form is untouched, being processed or is reviewed.
+    - Setting whether or not the form is 'active'. In the case of a single 'ident' sending more than one form, this module lets you set a specific 'refnr' as inactive.
+    """
+
+    _id_number = 0
+
+    def __init__(self, status_options: list[dict[str, Any]] | None = None) -> None:
+        """Initializes and registers the module.
+
+        Args:
+            status_options: What kinds of status codes can be set on a form. Defaults to:
+                {"label": "Ubehandlet", "value": "UBEHANDLET"},
+                {"label": "Under arbeid", "value": "UNDER_ARBEID"},
+                {"label": "Ferdig", "value": "FERDIG"}
+        """
+        self.module_number = DataEditorSidebarEditingStatus._id_number
+        self.module_name = self.__class__.__name__
+        DataEditorSidebarEditingStatus._id_number += 1
+
+        self.status_options = (
+            status_options
+            if status_options
+            else [
+                {"label": "Ubehandlet", "value": "Ubehandlet"},
+                {"label": "Under arbeid", "value": "Under arbeid"},
+                {"label": "Ferdig", "value": "Ferdig"},
+            ]
+        )
+
+        self.module_callbacks()
+        super().__init__()
+
+    def _create_layout(self) -> html.Div:
+        form_selector = dbc.Modal(
+            [
+                dbc.ModalHeader("Innsendte skjemaer fra enheten"),
+                dbc.ModalBody(
+                    [
+                        dag.AgGrid(
+                            id=f"{self.module_name}-{self.module_number}-form-table",
+                            className="ag-theme-alpine ag-theme-ssb mb-2",
+                            columnSize="responsiveSizeToFit",
+                            dashGridOptions={"rowSelection": "single"},
+                        )
+                    ]
+                ),
+            ],
+            id=f"{self.module_name}-{self.module_number}-form-table-modal",
+            size="xl",
+        )
+        return html.Div(
+            [
+                dcc.Store(id="skjemamottak-status-signal"),
+                form_selector,
+                dbc.Row("Editeringsstatus"),
+                dbc.Row(
+                    "Viser skjema:",
+                    id=f"{self.module_name}-{self.module_number}-refnr-text-row",
+                ),
+                dbc.Row(
+                    dbc.Button(
+                        id=f"{self.module_name}-{self.module_number}-button",
+                        children="Se innsendinger",
+                        className="ssb-btn primary-btn",
+                    )
+                ),
+                dbc.Row(
+                    [
+                        dbc.Row("Status"),
+                        dbc.Row(
+                            dcc.RadioItems(
+                                id=f"{self.module_name}-{self.module_number}-radioitems",
+                                options=self.status_options,
+                                className="ssb-radio-buttons",
+                            )
+                        ),
+                        dbc.Row("Aktiv"),
+                        dbc.Row(
+                            html.Div(
+                                className="ssb-checkbox d-flex align-items-center",
+                                children=[
+                                    dcc.Checklist(
+                                        id=f"{self.module_name}-{self.module_number}-checkbox",
+                                        options=[{"label": "", "value": "Aktiv"}],
+                                    ),
+                                    html.Label("Ja", className="mb-1 ms-2"),
+                                ],
+                            )
+                        ),
+                        dbc.Row("Editeringskode", style={"margin-top": "10px"}),
+                        dcc.Dropdown(
+                            className="ssb-dropdown",
+                            searchable=False,
+                            id=EDITING_CODE_DROPDOWN(self.instance_id),
+                            style={"margin-top": "4px"},
+                            value="CONTACT",
+                            options=[
+                                {
+                                    "label": "Kontakt med oppgavegiver",
+                                    "value": "CONTACT",
+                                }
+                            ],
+                        ),
+                    ]
+                ),
+            ]
+        )
+
+    def module_callbacks(self) -> None:
+        """Registers the callbacks for the module."""
+
+        @callback(
+            VariableSelector.get_refnr(Output),
+            VariableSelector.get_output_object("altinnskjema"),
+            inputs={
+                "ident": VariableSelector.get_ident(Input),
+                "period": VariableSelector.get_timevar(Input),
+            },
+            prevent_initial_call=True,
+        )
+        def update_refnr(ident, period):
+            
+            if not ident:
+                raise PreventUpdate
+
+            try:
+                refnr = self.fetcher.get_refnrs_by_period_ident(
+                    self.settings, ident, period
+                )
+                if refnr is not None:
+                    skjema = refnr["skjema"].item()
+                    return refnr[self.settings.refnr_col].tolist()[0], skjema
+                else:
+                    return no_update, no_update
+
+            except Exception as e:
+                msg = f"Getting reference numbers for ident returned with an error: {e}"
+                logger.warning(msg)
+                AlertHandler.warning(msg)
+                return no_update, no_update
+
+        @callback(
+            Output(f"{self.module_name}-{self.module_number}-checkbox", "value"),
+            Output(f"{self.module_name}-{self.module_number}-radioitems", "value"),
+            Output(
+                f"{self.module_name}-{self.module_number}-refnr-text-row", "children"
+            ),
+            VariableSelector.get_refnr(Input),
+            Input("skjemamottak-status-signal", "data"),
+            State(f"{self.module_name}-{self.module_number}-checkbox", "value"),
+            State(f"{self.module_name}-{self.module_number}-radioitems", "value"),
+        )
+        def set_initial_status(refnr, status_signal, current_checkbox, current_radio):
+
+            if not refnr:
+                raise PreventUpdate
+
+            try:
+                data = self.fetcher.get_form_status(refnr)
+            except Exception as e:
+                logger.warning(
+                    f"Getting initial form status returned with an error: {e}"
+                )
+                AlertHandler.warning(
+                    f"Getting initial form status returned with an error: {e}"
+                )
+                return (
+                    no_update,
+                    no_update,
+                    f"Viser skjema: {refnr}",
+                )
+
+            if data is None:
+                AlertHandler.warning("Getting initial form status returned None")
+                return (
+                    no_update,
+                    no_update,
+                    f"Viser skjema: {refnr}",
+                )
+
+            new_checkbox = ["Aktiv"] if data.active else []
+            new_radio = data.status
+
+            checkbox_out = (
+                new_checkbox if new_checkbox != current_checkbox else no_update
+            )
+            radio_out = new_radio if new_radio != current_radio else no_update
+
+            AlertHandler.success("Getting initial form status was successful")
+
+            return (
+                checkbox_out,
+                radio_out,
+                f"Viser skjema: {refnr}",
+            )
+
+        checkbox_id = f"{self.module_name}-{self.module_number}-checkbox"
+        radio_id = f"{self.module_name}-{self.module_number}-radioitems"
+
+        @callback(
+            Output("skjemamottak-status-signal", "data", allow_duplicate=True),
+            Input(checkbox_id, "value"),
+            Input(radio_id, "value"),
+            VariableSelector.get_refnr(State),
+            prevent_initial_call=True,
+        )
+        def update_status(
+            aktiv_status,
+            status_code,
+            refnr,
+        ):
+
+            triggered_id = ctx.triggered_id
+
+            if triggered_id == checkbox_id:
+                self.fetcher.update_form_active_status(refnr, bool(aktiv_status))
+            elif triggered_id == radio_id:
+                self.fetcher.update_form_status(refnr, status_code)
+            else:
+                raise PreventUpdate
+
+            message = "Updating form status was successfull"
+            logger.debug(message)
+            AlertHandler.success(message)
+
+            return time.time()
+
+        @callback(
+            Output(f"{self.module_name}-{self.module_number}-form-table", "rowData"),
+            Output(f"{self.module_name}-{self.module_number}-form-table", "columnDefs"),
+            Output(
+                f"{self.module_name}-{self.module_number}-form-table-modal", "is_open"
+            ),
+            Input(f"{self.module_name}-{self.module_number}-button", "n_clicks"),
+            VariableSelector.get_ident(State),
+            VariableSelector.get_timevar(State),
+        )
+        def view_refnrs_by_ident(click: int | None, ident: str | None, time_units: str):
+            """Populates a table showing all relevant received forms from the relevant 'ident'."""
+
+            if ctx.triggered_id != f"{self.module_name}-{self.module_number}-button":
+                raise PreventUpdate
+                
+            if ident is None:
+                raise PreventUpdate
+
+            try:
+                data = self.fetcher.get_refnrs_by_period_ident(
+                    self.settings, ident, time_units
+                )
+            except Exception as e:
+                message = f"Getting all reference numbers by ident for a period failed with error: {e}"
+                logger.warning(message)
+                AlertHandler.warning(message)
+                return no_update, no_update, no_update
+
+            if data is None:
+                message = "Getting all reference numbers by ident for a period returned with None"
+                logger.warning(message)
+                AlertHandler.warning(message)
+                return no_update, no_update, no_update
+
+            return (
+                data.to_dict("records"),
+                [{"field": x, "headerName": x} for x in data.columns],
+                True,
+            )
+
+        @callback(
+            VariableSelector.get_refnr(Output),  # oppdater refnr
+            VariableSelector.get_output_object("altinnskjema"),  # oppdater altinnskjema
+            Input(
+                f"{self.module_name}-{self.module_number}-form-table", "selectedRows"
+            ),
+            VariableSelector.get_refnr(Input),
+            VariableSelector.get_input("altinnskjema"),
+            prevent_initial_call=True,
+        )
+        def selected_refnr(
+            selected_row: list[dict[str, Any]], current_refnr, current_altinnskjema
+        ):
+
+            logger.debug(f"Args:\nselected_row: {selected_row}")
+            if not selected_row:
+                logger.debug("Raised PreventUpdate")
+                raise PreventUpdate
+
+            refnr = selected_row[0]["refnr"]
+            skjema = selected_row[0]["skjema"]
+
+            return (
+                refnr if refnr != current_refnr else no_update,
+                skjema if skjema != current_altinnskjema else no_update,
+            )

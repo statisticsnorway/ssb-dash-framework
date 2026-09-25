@@ -9,6 +9,6 @@ app_settings:
     database_url: test
 modules:
   windows:
-    - type: FreeSearch
+    - type: Aarsregnskap
   tabs:
-    - type: DataEditor
+    - type: Aarsregnskap

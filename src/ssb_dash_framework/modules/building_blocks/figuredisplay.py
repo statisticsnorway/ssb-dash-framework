@@ -80,9 +80,9 @@ class FigureDisplay:
         self.label = label
         if states is None:
             states = []
-        self.variableselector = VariableSelector(
-            selected_inputs=inputs, selected_states=states
-        )
+
+        self.inputs = inputs
+        self.states = states
         self.figure_func = figure_func
         self.output = output
         self.clickdata_func = clickdata_func
@@ -116,10 +116,11 @@ class FigureDisplay:
 
     def module_callbacks(self) -> None:
         """Define the callbacks for the module."""
-        dynamic_states = [
-            self.variableselector.get_all_inputs(),
-            self.variableselector.get_all_states(),
-        ]
+        dynamic_states = []
+        for _input in self.inputs:
+            dynamic_states.append(VariableSelector.get_input(_input))
+        for _state in self.states:
+            dynamic_states.append(VariableSelector.get_state(_state))
 
         @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-figuredisplay", "figure"), *dynamic_states
@@ -143,7 +144,7 @@ class FigureDisplay:
         ):  # TODO Fix known limitation of only having a single output to the variable selector. Should be possible to return a list/tuple
 
             @callback(  # type: ignore[misc]
-                self.variableselector.get_output_object(variable=self.output),
+                VariableSelector.get_output_object(variable=self.output),
                 Input(f"{self.module_number}-figuredisplay", "clickData"),
                 prevent_initial_call=True,
             )
@@ -194,7 +195,8 @@ class FigureDisplayWindow(WindowImplementation, FigureDisplay):
         inputs: list[str],
         states: list[str] | None = None,
         output: str | None = None,
-        clickdata_func: Callable[..., Any] | None = None, **kwargs: Any
+        clickdata_func: Callable[..., Any] | None = None,
+        **kwargs: Any,
     ) -> None:
         """Initializes FigureDisplayWindow."""
         FigureDisplay.__init__(
