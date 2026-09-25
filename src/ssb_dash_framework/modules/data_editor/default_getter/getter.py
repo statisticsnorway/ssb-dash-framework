@@ -262,3 +262,5 @@ class StandardDataHandler(FetcherMeta):
             mapping_match_column=settings.mapping_match_column,
             mapping_result_column=settings.mapping_result_column,
         )
+
+        # self.cache.evict(refnr, settings.form_data_table) # needs evict so it's updated after edit

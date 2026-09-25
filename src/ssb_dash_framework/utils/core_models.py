@@ -64,52 +64,57 @@ class UpdateSkjemamottak(BaseModel):
             f"  on_skjemadata_update : {self.on_skjemadata_update}\n"
         )
 
-    def to_alert(self, success):
+    def skjemamottak_to_alert(self, success):
         if success:
-            AlertHandler.success(msg=f"Oppdaterte {self.column} for {self.refnr} til '{self.value}'", ephemeral=True)
+            AlertHandler.success(
+                msg=f"Oppdaterte {self.column} for {self.refnr} til '{self.value}'",
+                ephemeral=True,
+            )
         else:
-            AlertHandler.warning(msg=f"Feilet oppdatering av {self.column} for {self.refnr}", ephemeral=True)
-
-    def update_ibis(self):
-        if not isinstance(_get_connection_object(), ConnectionPool):
-            logger.debug(
-                "The connection object is not a valid postgreSQL object. This insert function was specifically made for NØKU and only works for tables starting with 'skjemadata', 'kildevalg', or 'saldoskjema'."
+            AlertHandler.warning(
+                msg=f"Feilet oppdatering av {self.column} for {self.refnr}",
+                ephemeral=True,
             )
-            raise PreventUpdate
 
-        if self.on_skjemadata_update:
-            with get_connection() as conn:
-                df = conn.table("skjemamottak")
-                result = (
-                    df.filter(_.refnr == self.refnr)
-                    .select(self.column)
-                    .limit(1)
-                    .execute()[self.column]
-                    .item()
-                )
+    def _current_status(self, conn) -> str:
+        return (
+            conn.table("skjemamottak")
+            .filter(_.refnr == self.refnr)
+            .select(self.column)
+            .limit(1)
+            .execute()[self.column]
+            .item()
+        )
 
-            if result != "Ubehandlet":
-                logger.debug(
-                    f"Skipping status update because current status is {result!r}"
-                )
-                raise PreventUpdate
+    def update_ibis(self) -> bool:
+        """Applies the update. Returns True if a row was changed, False if skipped."""
+        with get_connection() as conn:
+            if self.on_skjemadata_update:
+                current = self._current_status(conn)
+                logger.debug(f"Current status for {self.refnr}: {current!r}")
+                if current != "Ubehandlet":
+                    logger.debug(
+                        f"Skipping status update, current status is {current!r}"
+                    )
+                    return False
 
-        query = f"""
-            UPDATE skjemamottak
-            SET {self.column} = '{self.value}'
-            WHERE refnr = '{self.refnr}'
-        """
-        try:
-            with get_connection() as conn:
+            query = f"""
+                UPDATE skjemamottak
+                SET {self.column} = '{self.value}'
+                WHERE refnr = '{self.refnr}'
+            """
+            logger.debug(f"Running query: {query}")
+            try:
                 conn.raw_sql(query)
-            logger.info(f"Oppdaterte  '{self.column}' til '{self.value}'")
-            return self.to_alert(success=True)
-        except Exception as e:
-            logger.error(
-                f"Update feilet! Kunne ikke oppdatere {self.refnr} - '{self.column} til '{self.value}'. Feilmelding: \n{e}",
-                exc_info=True,
-            )
-            return self.to_alert(success=False)
+                logger.info(f"Oppdaterte '{self.column}' til '{self.value}'")
+                self.skjemamottak_to_alert(success=True)
+                return True
+            except Exception as e:
+                logger.error(
+                    f"Status update failed for {self.refnr}: {e}", exc_info=True
+                )
+                self.skjemamottak_to_alert(success=False)
+                return False
 
 
 class UpdateSkjemamottakAktiv(UpdateSkjemamottak):
@@ -192,13 +197,13 @@ class UpdateSkjemadata(BaseModel):
 
         if success:
             AlertHandler.success(
-                f"Ident '{self.ident}' oppdatert på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'",
-                ephemeral=True
+                f"Ident '{self.ident}' oppdatert på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'!",
+                ephemeral=True,
             )
         else:
             AlertHandler.warning(
                 f"Feilet oppdatering av ident '{self.ident}' på variabel '{self.variable if long else self.column}' fra '{self.old_value}' til '{self.value}'. Se logg for detaljer.",
-                ephemeral=True
+                ephemeral=True,
             )
 
     def _get_feltsti(self, conn) -> str:
@@ -218,6 +223,7 @@ class UpdateSkjemadata(BaseModel):
             .limit(1)
             .execute()
         )
+        print(f"Hentet feltsti: {result}")
         if result.empty:
             logger.warning(
                 f"No {self.mapping_result_column} found for "
@@ -249,15 +255,16 @@ class UpdateSkjemadata(BaseModel):
         datatype = datatype["datatype"].item() if len(datatype) > 0 else None
         if not datatype:
             return None
-
+        print(f"Hentet datatype: {datatype}")
         validator = _VALIDATORS.get(datatype)
         if validator is None:
             logger.warning(
                 f"Unknown datatype '{datatype}' for variable '{self.variable}'"
             )
             return datatype
-
         result = validator(self.value)
+        print(f"Hentet validert datatype: {result}")
+
         if result is True:
             return None
         if result == "float":
@@ -269,8 +276,9 @@ class UpdateSkjemadata(BaseModel):
         Because Altinn3-xml only returns data if the values are not None.
         """
         if not isinstance(_get_connection_object(), ConnectionPool):
-            logger.debug(
-                "Insert failed. The connection object is not a valid postgreSQL object. This insert function was specifically made for NØKU and only works for tables starting with 'skjemadata', 'kildevalg', or 'saldoskjema'."
+            logger.error(
+                "Insert failed. Not a valid postgreSQL connection. This insert function "
+                "only works for tables starting with 'skjemadata', 'kildevalg', or 'saldoskjema'."
             )
             raise PreventUpdate
 
@@ -302,8 +310,26 @@ class UpdateSkjemadata(BaseModel):
                 INSERT INTO saldoskjema ({', '.join(columns.keys())})
                 VALUES ({', '.join(columns.values())})
             """
+        elif self.table.startswith("enhetsinfo"):
+            columns = {
+                f"{self.time_units}": f"'{self.period}'",
+                "ident": f"'{self.ident}'",
+                "foretak": "NULL",
+                "enhets_type": "'FRTK'",
+                "variabel": f"'{self.variable}'",
+                "verdi": f"'{self.value}'",
+            }
+            insert_query = f"""
+                INSERT INTO enhetsinfo ({', '.join(columns.keys())})
+                VALUES ({', '.join(columns.values())})
+            """
+        else:
+            logger.error(f"No INSERT logic defined for table '{self.table}'.")
+            self.to_alert(long, success=False)
+            return False
 
         try:
+            print(f"insert query: {insert_query}")
             conn.raw_sql(insert_query)
             logger.info(
                 f"Inserted new row with variabel='{self.variable}' and value='{self.value}' into {self.table}."
@@ -323,18 +349,21 @@ class UpdateSkjemadata(BaseModel):
                 self.to_alert(long, success=False, datatype=datatype_check)
                 return False
 
+        identifier_value = self.refnr if self.identifier_column == "refnr" else self.ident
+        print(f"identifier_value: {identifier_value}")
         update_query = f"""
             UPDATE {self.table}
             SET {self.column} = '{self.value}'
-            WHERE {self.identifier_column} = '{self.refnr}'
+            WHERE {self.identifier_column} = '{identifier_value}'
         """
+
+        # guards for non-skjemadata tables like enhetsinfo & saldoskjema
         if self.identifier_column != "refnr" and self.time_units:
-            time_filters = " ".join(
-                [
-                    f"AND {self.time_units} = '{self.period}'"
-                ]
-            )
+            time_filters = " ".join([f"AND {self.time_units} = '{self.period}'"])
             update_query = update_query.strip() + "\n" + time_filters
+        if self.table.startswith("enhetsinfo"):
+            update_query = update_query.strip() + "\nAND enhets_type = 'FRTK' AND foretak IS NULL"
+        
         if long:
             update_query = update_query.strip() + f"\nAND variabel = '{self.variable}'"
         else:
@@ -345,8 +374,10 @@ class UpdateSkjemadata(BaseModel):
             with get_connection() as conn:
                 result = conn.raw_sql(update_query)
                 if result.rowcount == 0:
-                    if self.table.startswith(("skjemadata", "saldoskjema")):
-                        logger.warning(
+                    if self.table.startswith(
+                        ("skjemadata", "saldoskjema", "enhetsinfo")
+                    ):
+                        print(
                             f"UPDATE matched 0 rows for {self.identifier_column}='{self.refnr}', "
                             f"variabel='{self.variable}'. Attempting INSERT."
                         )
@@ -354,14 +385,15 @@ class UpdateSkjemadata(BaseModel):
                     else:
                         self.to_alert(long, success=False)
                         return False
-                logger.info(
+                print(
                     f"Successfully updated '{self.column}' from '{self.old_value}' to '{self.value}'"
                 )
                 self.to_alert(long, success=True)
                 return True
         except Exception as e:
             logger.error(
-                f"Update feilet! Kunne ikke oppdatere {self.refnr} - '{self.variable if long else self.column} til '{self.value}'. Feilmelding: \n{e}",
+                f"Update feilet! Kunne ikke oppdatere {self.refnr} - "
+                f"'{self.variable if long else self.column}' til '{self.value}'. Feilmelding:\n{e}",
                 exc_info=True,
             )
             self.to_alert(long, success=False)

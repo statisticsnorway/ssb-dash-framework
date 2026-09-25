@@ -139,12 +139,13 @@ class MicroLayoutAIO(html.Div):
                 if ctx.triggered_id and isinstance(ctx.triggered_id, dict):
                     custom_ctx = callback_ctx.get(ctx.triggered_id["comp_id"])
                     value = fields.get(ctx.triggered_id["comp_id"])
-                    if not custom_ctx or not value:
+
+                    if custom_ctx is None or value is None:
                         logger.debug(
                             "Skipping form value update since triggered id was none or it didn't match any fields"
                         )
                         raise PreventUpdate
-
+                    
                     old_value = None
                     try:
                         old_value = data_handler.get_field(
@@ -154,6 +155,8 @@ class MicroLayoutAIO(html.Div):
                             f"Old value in handle_field_value_change: {old_value}"
                         )
                         logger.debug(f"New value in handle_field_value_change: {value}")
+                        print(f"old value: {old_value}")
+                        print(f"new value: {value}")
                         if old_value != value:
                             data_handler.update_field_value(
                                 refnr,
@@ -167,17 +170,18 @@ class MicroLayoutAIO(html.Div):
                                 inputs=custom_inputs,
                                 editing_code=editing_code,
                             )
-                            data_handler.update_form_status(refnr, "Under arbeid")
+                            if self.settings.form_data_table.startswith("skjemadata"): # eller if refnr eller if skjema?
+                                data_handler.update_form_status(refnr, "Under arbeid")
                         else:
-                            logger.debug(
+                            print(
                                 "Skipping form value update since value was same as previous value"
                             )
                     except PreventUpdate:
                         raise PreventUpdate
                     except Exception as e:
                         msg = f"Updating field value and updating form status for form field {custom_ctx.settings.variable} failed with error: {e}"
-                        logger.warning(msg)
-                        AlertHandler.warning(msg)
+                        logger.error(msg)
+                        # AlertHandler.warning(msg)
                         triggered_id = ctx.triggered_id["comp_id"]
                         return {
                             id_: old_value if id_ == triggered_id else no_update
