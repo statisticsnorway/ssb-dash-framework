@@ -48,11 +48,10 @@ class HelloModuleDataHandlerCat(ABC):
     """
 
     def get_message(self):
-        AlertHandler._add_alert("A cat has appeared!", color="success", ephemeral=True, position="center")
         return HelloModuleDataHandlerCat.cat
 
     def update_message(self, new_value):
-        raise RuntimeError("Oh no, the cat refuses to move!")
+        raise RuntimeError("The cat refuses to move!")
 
 
 class HelloModule:
