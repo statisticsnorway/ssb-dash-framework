@@ -62,6 +62,7 @@ class ControlView(ModuleBase):
 
         self.control_dict = control_dict
         self.outputs = outputs
+        super().__init__()
 
 
     def create_layout(self) -> html.Div:
