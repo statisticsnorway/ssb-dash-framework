@@ -1,0 +1,117 @@
+- type: DataEditor
+  settings:
+    starting_table: skjemadata
+    form_data_table: skjemadata
+    form_list:
+      - RA-0187
+    period_col: iso_period
+    ident_col: ident
+    refnr_col: refnr
+    form_name_col: skjema
+    field_name_col: feltsti
+    field_value_col: verdi
+  data_handler:
+    - type: StandardDataHandler
+  inforow:
+  buttons:
+    - type: DataEditorHistory
+    - type: DataEditorSupportTables
+  sidebar:
+    - type: DataEditorSidebarEditingStatus
+    - type: DataEditorSidebarComment
+  dataview:
+    - type: DataEditorTable
+      settings:
+        starting_table: "skjemadata"
+        form_data_table: "skjemadata"
+        form_list:
+          - "RA-0187"
+        period_col: "iso_period"
+        ident_col: "ident"
+        refnr_col: "refnr"
+        form_name_col: "skjema"
+        field_name_col: "feltsti"
+        field_value_col: "verdi"
+    - type: DataViewCustom
+      settings:
+        layout:
+        - type: row
+          children:
+          - type: microlayout
+            label: Omsetning og driftskostnad
+            form_data_table: skjemadata_foretak
+            form_data_field_name_column: variabel
+            layout:
+              - type: row
+                children:
+                  - type: dropdown
+                    label: type (kildetype)
+                    variable: type
+                    options:
+                    - label: S
+                      value: S
+                    - label: N
+                      value: N
+                    - label: M
+                      value: M
+                    - label: R
+                      value: R
+                    - label: W
+                      value: W
+                    - label: Z
+                      value: Z
+                    - label: "1"
+                      value: "1"
+                    - label: "0"
+                      value: "0"
+                  - type: timeseries
+              - type: row
+                children:
+                  - type: col
+                    children:
+                      - type: dynamiclist
+              - type: row
+                children:
+                  - type: col
+                    children:
+                      - type: row
+                        children:
+                          - type: col
+                            children:
+                              - type: header
+                                label: "Fields"
+                                size: xs
+                              - type: input
+                                label: inntekt
+                                variable: inntekter
+                              - type: input
+                                label: kostnader
+                                variable: kostnader
+                              - type: input
+                                label: resultat
+                                variable: resultat
+                                readonly: true
+                              - type: calculated-field
+                                label: beregnet resultat
+                                ids:
+                                  inntekter: inntekter
+                                  kostnader: kostnader
+                                formula: "inntekter - kostnader"
+              - type: row
+                children:
+                  - type: col
+                    children:
+                      - type: row
+                        children:
+                          - type: col
+                            children:
+                              - type: checklist
+                                label: Solgte handelsvarer?
+                                variable: solgteHandelsvarerJaNei01
+                                options:
+                                  - label: Ja
+                                    value: "1"
+                              - type: textarea
+                                label: kommHandelsvare
+                                variable: kommHandelsvare
+                                readonly: true
