@@ -1,5 +1,6 @@
 import json
 import logging
+import copy
 
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
@@ -11,6 +12,7 @@ from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
 
+from .....modules.data_editor.utils import EditorSettings
 from .....config.models import register_module
 from .....config.yaml_parser import config_parser_yaml
 from .....setup.variableselector import VariableSelector
@@ -135,10 +137,9 @@ class DataViewCustom(DataEditorDataView):
 
     def __init__(
         self,
-        # settings: EditorSettings,
         layout: dict,
-        settings: dict | None = None,
-        _from_config_file=False,
+        _from_config_file: bool = False,
+        **kwargs,
     ) -> None:
         """Initializes and registers the custom data view for selected tables and forms.
 
@@ -146,13 +147,13 @@ class DataViewCustom(DataEditorDataView):
             applies_to_tables: A list of tables that the module should apply to.
             applies_to_forms: A list of forms that the module should apply to.
         """
-        self._from_config_file = _from_config_file
         self.module_number = DataViewCustom._id_number
         self.module_name = self.__class__.__name__
         DataViewCustom._id_number += 1
         self.divname = f"{self.module_name}-{self.module_number}"
-
+        self._extra_args = kwargs
         self._layout = layout
+        self._from_config_file = _from_config_file
 
     def build_layout(self, layout: dict | list) -> list:
         """Builds the layout for the custom view."""
@@ -221,6 +222,12 @@ class DataViewCustom(DataEditorDataView):
 
     def layout(self):
         """Returns the layout of the module."""
+        # Updates the global settings object with entries that the yaml file overwrites
+        # Useful for when you need to get data from a different table than in the rest of the app.
+        settings_entries = self.settings.model_dump()
+        settings_entries.update(self._extra_args)
+        updates_settings = EditorSettings.model_validate(settings_entries, extra="allow")
+
         if isinstance(self._layout, list):
             self._layout = {"layout": self._layout, "type": "CustomView"}
         tables = self._layout.get("applies_to_tables") or self._layout.get("applies_to_table")
@@ -240,7 +247,7 @@ class DataViewCustom(DataEditorDataView):
             self.applies_to_forms = list(forms)
 
         self.created_layout = self.build_layout(self._layout["layout"])
-        self.module_callbacks()
+
         super().__init__(
             applies_to_tables=self.applies_to_table,
             applies_to_forms=self.applies_to_forms,
@@ -253,10 +260,6 @@ class DataViewCustom(DataEditorDataView):
 
     @classmethod
     def from_yaml(cls, *args, **kwargs):
-        print(args, kwargs)
-        #custom_settings = kwargs.get("settings")
-        #assert custom_settings is not None
-        
         return cls(**kwargs)
 
     @classmethod
