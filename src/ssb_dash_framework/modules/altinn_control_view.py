@@ -1,7 +1,6 @@
 import logging
 import warnings
-from abc import ABC
-from abc import abstractmethod
+
 from typing import Any
 
 import dash_ag_grid as dag
@@ -15,12 +14,13 @@ from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 
+from ..config import register_module
 from ..setup.variableselector import VariableSelector
 from ..utils import TabImplementation
 from ..utils import WindowImplementation
+from ..utils import ModuleBase
 from ..utils.alert_handler import AlertHandler
 from ..utils.config_tools.connection import get_connection
-from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +34,9 @@ default_col_def = {
 }
 
 
-class ControlView(ABC):
+@register_module(as_tab="ControlView", as_window="ControlView")
+class ControlView(ModuleBase):
     """Provides a layout and functionality for a modal that offers a tabular view of the controls."""
-
-    _id_number: int = 0
 
     def __init__(
         self,
@@ -57,19 +56,13 @@ class ControlView(ABC):
         )
         if outputs is None:
             outputs = ["ident"]
-        self.module_number = ControlView._id_number
-        self.module_name = self.__class__.__name__
-        ControlView._id_number += 1
-
+        
         self.icon = DashIconify(icon="feather:alert-triangle", width=24)
         self.label = "Kontroll"
 
         self.control_dict = control_dict
         self.outputs = outputs
-        self.module_layout = self.create_layout()
 
-        self.module_callbacks()
-        module_validator(self)
 
     def create_layout(self) -> html.Div:
         """Generates the layout for the ControlView module.
@@ -137,7 +130,6 @@ class ControlView(ABC):
         )
         return layout
 
-    @abstractmethod
     def layout(self) -> html.Div:
         """Defines the layout for the ControlView module.
 
@@ -146,7 +138,7 @@ class ControlView(ABC):
         Returns:
             html.Div: A Dash HTML Div component representing the layout of the module.
         """
-        pass
+        return self.create_layout()
 
     def module_callbacks(self) -> None:
         """Registers Dash callbacks for the ControlView module."""
