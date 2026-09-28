@@ -17,6 +17,7 @@ from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 
+from ..config.yaml_parser import config_parser_yaml
 from .functions import sidebar_button
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,12 @@ AsType = Literal["Tab", "Window"]
 
 
 class YamlLoadable(ABC):
+    @classmethod
+    def from_yaml_path(cls, yaml_path: str):
+        """Method for reading a yaml file and parsing the contained module/layout"""
+        config = config_parser_yaml(yaml_path)
+        return cls.from_yaml(**config)
+
     @classmethod
     def from_yaml(cls, *args: Any, **kwargs: Any):
         """Base class for loading modules and other classes from a yaml config.
