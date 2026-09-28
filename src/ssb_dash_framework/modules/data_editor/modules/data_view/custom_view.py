@@ -253,14 +253,11 @@ class DataViewCustom(DataEditorDataView):
 
     @classmethod
     def from_yaml(cls, *args, **kwargs):
-        #config = config_parser_yaml(yaml_path)
         print(args, kwargs)
-        return cls(*args, **kwargs)
-
-    @classmethod
-    def from_yaml_path(cls, yaml_path: str):
-        config = config_parser_yaml(yaml_path)
-        return cls.from_yaml(**config)
+        #custom_settings = kwargs.get("settings")
+        #assert custom_settings is not None
+        
+        return cls(**kwargs)
 
     @classmethod
     def from_dict(cls, config_dict):
