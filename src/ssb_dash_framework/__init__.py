@@ -5,7 +5,7 @@ from .config import AppModules
 from .config import AppSettings
 from .config import ModuleConfig
 from .config import RegisteredModule
-from .config import VariableSelectorConfig
+#from .config import VariableSelectorConfig
 from .config import apply_app_settings
 from .config import build_app_from_config
 from .config import build_modules
@@ -72,6 +72,7 @@ from .modules import get_export_log_path
 from .modules import get_log_path
 from .setup import VariableSelector
 from .setup import VariableSelectorOption
+from .setup import VariableSelectorConfig
 from .setup import app_setup
 from .setup import main_layout
 from .setup import set_variables
