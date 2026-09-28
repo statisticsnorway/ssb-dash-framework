@@ -182,6 +182,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             Input("skjemamottak-status-signal", "data"),
             State(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             State(f"{self.module_name}-{self.module_number}-radioitems", "value"),
+            optional=True,
         )
         def set_initial_status(refnr, status_signal, current_checkbox, current_radio):
 
@@ -202,13 +203,13 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     no_update,
                     f"Viser skjema: {refnr}",
                 )
-
+            print(f"data: {data}")
             if data is None:
-                AlertHandler.warning("Getting initial form status returned None")
+                AlertHandler.warning("Henting av editeringsstatus returnerte 'None'.")
                 return (
-                    no_update,
-                    no_update,
-                    f"Viser skjema: {refnr}",
+                    [],
+                    None,
+                    "Skjema ikke funnet.",
                 )
 
             new_checkbox = ["Aktiv"] if data.active else []
@@ -219,7 +220,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             )
             radio_out = new_radio if new_radio != current_radio else no_update
 
-            AlertHandler.success("Getting initial form status was successful")
+            AlertHandler.success("Editeringsstatus hentet.")
 
             return (
                 checkbox_out,
@@ -284,10 +285,9 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             if ctx.triggered_id != f"{self.module_name}-{self.module_number}-button":
                 raise PreventUpdate
                 
-            if ident is None:
+            if ident is None or not ident:
                 raise PreventUpdate
 
-            data = None
             try:
                 data = self.fetcher.get_refnrs_by_period_ident(
                     self.settings, ident, time_units
@@ -298,12 +298,12 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 AlertHandler.warning(message)
                 return no_update, no_update, no_update
 
-            if data is None:
-                message = "Getting all reference numbers by ident for a period returned with None"
+            if data is None or data.empty:
+                message = "Henting av referansenummer for ident returnerte 'None'."
                 logger.warning(message)
                 AlertHandler.warning(message)
-                return no_update, no_update, no_update
-            print(f"data returned in view_refnrs_by_ident: {view_refnrs_by_ident}")
+                return [], [], True
+            print(f"data returned in view_refnrs_by_ident: {data}")
             return (
                 data.to_dict("records"),
                 [{"field": x, "headerName": x} for x in data.columns],
@@ -333,6 +333,6 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             skjema = selected_row[0]["skjema"]
 
             return (
-                refnr if refnr != current_refnr else no_update,
-                skjema if skjema != current_altinnskjema else no_update,
+                refnr if refnr != current_refnr else None,
+                skjema if skjema != current_altinnskjema else "",
             )

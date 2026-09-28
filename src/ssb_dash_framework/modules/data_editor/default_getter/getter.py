@@ -82,6 +82,7 @@ class StandardDataHandler(FetcherMeta):
         
     def get_form_status(self, refnr: str) -> RefnrStatus | None:
         # print("hei", refnr)
+        data = None
         with get_connection() as conn:
             t = conn.table("skjemamottak")
             data = t.filter(_.refnr == refnr).execute()
@@ -244,7 +245,7 @@ class StandardDataHandler(FetcherMeta):
         container: FieldCallbackContainer,
         inputs: list[Any] | dict[Any, Any],
         editing_code: str | None,
-    ) -> Any:
+    ) -> None:
         long = settings.field_name_col == "variabel"
 
         update_form = UpdateSkjemadata(

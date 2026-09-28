@@ -19,6 +19,7 @@ from ...utils import EditorSettings
 from ...utils import EDITING_CODE_DROPDOWN
 from dash import no_update
 from .microlayout_components.models import Layout
+from ssb_dash_framework.utils.core_models import FieldUpdateError
 
 
 logger = logging.getLogger(__name__)
@@ -124,6 +125,7 @@ class MicroLayoutAIO(html.Div):
                     ),
                 },
                 prevent_initial_call=True,
+                optional=True
             )
             def handle_field_value_change(
                 fields: dict[str, Any],
@@ -134,6 +136,7 @@ class MicroLayoutAIO(html.Div):
                 custom_inputs: list | None,
                 editing_code: str | None = None,
             ):
+
                 all_ids = {item._id for item in ids}
                 no_field_update = {id_: no_update for id_ in all_ids}
 
@@ -141,7 +144,7 @@ class MicroLayoutAIO(html.Div):
                     raise PreventUpdate
 
                 if isinstance(skjema, list):
-                    skjema = skjema[0]
+                    skjema = skjema[0] if skjema else None
                 logger.debug(f"refnr: {refnr}")
                 logger.debug(f"ident: {ident}")
                 logger.debug(f"skjema: {skjema}")
@@ -149,70 +152,82 @@ class MicroLayoutAIO(html.Div):
                 if not (ctx.triggered_id and isinstance(ctx.triggered_id, dict)):
                     raise PreventUpdate
 
-                custom_ctx = callback_ctx.get(ctx.triggered_id["comp_id"])
-                value = fields.get(ctx.triggered_id["comp_id"])
+                triggered_id = ctx.triggered_id["comp_id"]
+                custom_ctx = callback_ctx.get(triggered_id)
+                value = fields.get(triggered_id)
 
                 if custom_ctx is None or value is None:
                     logger.debug(
                         "Skipping form value update since triggered id was none or it didn't match any fields"
                     )
                     raise PreventUpdate
+                
+                def revert_upon_failed_edit(old_value):
+                    """Returns old value (prior to edit) to the frontend when an edit fails."""
+                    return {
+                            **{id_: old_value if id_ == triggered_id else no_update for id_ in all_ids},
+                            "status_signal": no_update,
+                        }
 
                 old_value = None
                 try:
                     old_value = data_handler.get_field(
                         self.settings, custom_ctx, custom_inputs
                     )
-                    logger.debug(f"Old value in handle_field_value_change: {old_value}")
-                    logger.debug(f"New value in handle_field_value_change: {value}")
+                    logger.debug(f"Old value: {old_value}, new value: {value}")
+                    
+                    if old_value == value:
+                        logger.debug("Skipping form value update since value was same as previous value")
+                        return {**no_field_update, "status_signal": no_update}
 
-                    if old_value != value:
-                        data_handler.update_field_value(
-                            refnr,
-                            skjema,
-                            ident,
-                            period=period,
-                            value=value,
-                            old_value=old_value,
-                            settings=self.settings,
-                            container=custom_ctx,
-                            inputs=custom_inputs,
-                            editing_code=editing_code,
-                        )
-                        status_signal = no_update
-                        if self.settings.form_data_table.startswith("skjemadata"):
-                            data_handler.update_form_status(
+                    # set up to raise FieldUpdateError on failure
+                    data_handler.update_field_value(
+                        refnr,
+                        skjema,
+                        ident,
+                        period=period,
+                        value=value,
+                        old_value=old_value,
+                        settings=self.settings,
+                        container=custom_ctx,
+                        inputs=custom_inputs,
+                        editing_code=editing_code,
+                    )
+                    status_signal = no_update
+                    if self.settings.form_data_table.startswith("skjemadata"):
+                        try:
+                            changed = data_handler.update_form_status( # sets status to "Under arbeid" only if it's currently "Ubehandlet"
                                 refnr, "Under arbeid", on_skjemadata_update=True
                             )
-                            status_signal = (
-                                time.time()
-                            ) 
-                    else:
-                        logger.debug(
-                            "Skipping form value update since value was same as previous value"
-                        )
-                        status_signal = no_update
-
+                            if changed:
+                                status_signal = (
+                                    time.time()
+                                ) 
+                        except Exception:
+                            logger.warning("Status bump failed after successful edit", exc_info=True)
                     return {**no_field_update, "status_signal": status_signal}
 
                 except PreventUpdate:
                     raise
+
+                except FieldUpdateError as e:
+                    logger.info(f"Field update rejected for {custom_ctx.settings.variable}: {e}")
+                    return revert_upon_failed_edit(old_value)
+                    
                 except Exception as e:
-                    msg = (
-                        f"Updating field value and updating form status for form field "
-                        f"{custom_ctx.settings.variable} failed with error: {e}"
+                    logger.error(
+                        f"Updating field {custom_ctx.settings.variable} failed unexpectedly: {e}",
+                        exc_info=True,
                     )
-                    logger.error(msg)
-                    AlertHandler.warning(msg)
-                    triggered_id = ctx.triggered_id["comp_id"]
-                    return {
-                        **{id_: old_value if id_ == triggered_id else no_update for id_ in all_ids},
-                        "status_signal": no_update,
-                    }
+                    AlertHandler.warning(
+                        f"Uventet feil ved oppdatering av {custom_ctx.settings.variable}: {e}"
+                    )
+                    return revert_upon_failed_edit(old_value)
 
         @callback(
             output={item._id: item.get_output(self.aio_id) for item in ids},
             inputs={"custom_inputs": inputs},
+            optional=True
         )
         def handle_variable_selector_change(custom_inputs, style: dict | None = None):
 
@@ -227,6 +242,6 @@ class MicroLayoutAIO(html.Div):
                     msg = f"Getting data for form field {field} failed with error: {e}"
                     logger.warning(msg)
                     AlertHandler.warning(msg)
-                    # field_values[id_] = no_update
+                    field_values[id_] = no_update
 
             return field_values

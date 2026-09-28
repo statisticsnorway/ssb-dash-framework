@@ -100,14 +100,12 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 AlertHandler.info(error_msg)
                 data = None
 
-            if data is None:
-                raise PreventUpdate
-
-            refnrs = data[self.settings.refnr_col].unique().tolist()
-
-            logger.debug(f"default_refnr: {refnr}\nrefnrs: {refnrs}")
-
-            return refnr, [{"label": x, "value": x} for x in refnrs]
+            if data is None or data.empty:
+                return None, []
+            else:
+                refnrs = data[self.settings.refnr_col].unique().tolist()
+                logger.debug(f"default_refnr: {refnr}\nrefnrs: {refnrs}")
+                return refnr, [{"label": x, "value": x} for x in refnrs]
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-comment-text", "value"),

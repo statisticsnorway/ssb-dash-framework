@@ -80,7 +80,7 @@ class FormGetterCached:
             f"{settings.form_data_table}::{refnr}"  # for tables not querying skjemadata
         )
         entry = cls.data.get(cache_key)
-        if (entry is None) or ((time.perf_counter() - entry.time_to_live) > 20):
+        if (entry is None) or ((time.perf_counter() - entry.time_to_live) > 15):
             table = FormGetterCached.get_table(refnr, period, settings)
             cls.data[cache_key] = CacheEntry(
                 entry=table, time_to_live=time.perf_counter()
