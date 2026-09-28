@@ -12,10 +12,9 @@ from dash import callback
 from dash import dcc
 from dash import html
 
+from ...config.models import register_module
+from ...utils.base_classes import ModuleBase
 from ...setup.variableselector import VariableSelector
-from ...utils import TabImplementation
-from ...utils import WindowImplementation
-from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +28,8 @@ def mapdisplay_default_clickdata(clickdata: dict[str, list[dict[str, Any]]]) -> 
     logger.info(f"Clickdata from map:\n{clickdata}")
     return str(clickdata["points"][0]["location"])
 
-
-class MapDisplay:
+@register_module()
+class MapDisplay(ModuleBase):
     """Module used for creating a map visualization.
 
     When supplied with a get_data_func that returns data grouped by a valid geography it creates a map figure with coloring showing the column 'value' on different geographical units.
@@ -40,7 +39,6 @@ class MapDisplay:
         You need read access to the bucket "areal-data-delt-kart-prod" in order to use this module as this is where it finds the shapefiles.
     """
 
-    _id_number: ClassVar[int] = 0
     supported_map_types: ClassVar[list[str]] = ["kommune", "fylke"]
 
     def __init__(
@@ -95,9 +93,7 @@ class MapDisplay:
                     ]
                 }
         """
-        self.module_number = MapDisplay._id_number
-        self.module_name = self.__class__.__name__
-        MapDisplay._id_number += 1
+
         self.icon = "🗺️"
         self.label = label if label else f"Kart {map_type}"
         
@@ -123,9 +119,6 @@ class MapDisplay:
         self.inputs = inputs
         self.states = states
         self.is_valid()
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
-        module_validator(self)
 
     def is_valid(self) -> None:
         """Does some validation checks for the module."""
@@ -240,138 +233,3 @@ class MapDisplay:
             logger.debug(
                 "No clickdata connection defined, will not create callback for it."
             )
-
-
-class MapDisplayTab(TabImplementation, MapDisplay):
-    """MapDisplay implemented as a Tab."""
-
-    def __init__(
-        self,
-        map_type: str,
-        inputs: list[str],
-        states: list[str],
-        get_data_func: Callable[..., Any],
-        clickdata_func: Callable[..., Any] | None = None,
-        output_var: str | None = None,
-        label: str | None = None,
-        colorscale: str = _DEFAULT_COLORSCALE,
-    ) -> None:
-        """Initialize the MapDisplayTab module.
-
-        Args:
-            map_type: The kind of map to be made, currently supports komm_nr and fylke_nr.
-            inputs: List the variables from the variable selector that should trigger an update to the map
-            states: List the variables from the variable selector that should be used in the get_data_func, but not trigger an update to the map
-            get_data_func: Function that when given time-variable, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
-            clickdata_func: A function to process the click data.
-                It should accept the click data as an argument and return a value to be sent to the output variable.
-                If None, no click data will be processed. Defaults to None.
-            output_var: Variable selector output for clickdata. Defaults to the same value as map_type.
-            label: Label for the button / tab for the module. Defaults to 'Kart {map_type}'
-            colorscale: Can be used to select another colorscale. See plotly documentation for options.
-
-        Note:
-            - The clickdata_func needs to process the click data and return a string value that will be sent to the output variable specified in the output argument.
-            - clickdata is a dictionary with the structure:
-                {
-                    "points": [
-                        {
-                        "curveNumber": 1,
-                        "pointNumber": 0,
-                        "pointIndex": 0,
-                        "x": 1,
-                        "y": 3,
-                        "bbox": {
-                            "x0": 189.35,
-                            "x1": 209.35,
-                            "y0": 1057.72,
-                            "y1": 1077.72
-                        },
-                        "customdata": [
-                            3
-                        ]
-                        }
-                    ]
-                }
-        """
-        MapDisplay.__init__(
-            self,
-            map_type,
-            inputs=inputs,
-            states=states,
-            get_data_func=get_data_func,
-            clickdata_func=clickdata_func,
-            output_var=output_var,
-            label=label,
-            colorscale=colorscale,
-        )
-        TabImplementation.__init__(
-            self,
-        )
-
-
-class MapDisplayWindow(WindowImplementation, MapDisplay):
-    """MapDisplay implemented as a Window."""
-
-    def __init__(
-        self,
-        map_type: str,
-        aar_var: str,
-        inputs: list[str],
-        states: list[str],
-        get_data_func: Callable[..., Any],
-        clickdata_func: Callable[..., Any] | None = None,
-        output_var: str | None = None,
-        label: str | None = None,
-        colorscale: str = _DEFAULT_COLORSCALE, **kwargs: Any
-    ) -> None:
-        """Initialize the MapDisplayWindow module.
-
-        Args:
-            map_type: The kind of map to be made, currently supports komm_nr and fylke_nr.
-            inputs: List the variables from the variable selector that should trigger an update to the map
-            states: List the variables from the variable selector that should be used in the get_data_func, but not trigger an update to the map
-            get_data_func: Function that when given time-variable, *inputs and *states as arguments returns a dataframe with a column with the same name as the map type and 'value' for the value.
-            clickdata_func: A function to process the click data.
-                It should accept the click data as an argument and return a value to be sent to the output variable.
-                If None, no click data will be processed. Defaults to None.
-            output_var: Variable selector output for clickdata. Defaults to the same value as map_type.
-            label: Label for the button / tab for the module. Defaults to 'Kart {map_type}'
-            colorscale: Can be used to select another colorscale. See plotly documentation for options.
-
-        Note:
-            - The clickdata_func needs to process the click data and return a string value that will be sent to the output variable specified in the output argument.
-            - clickdata is a dictionary with the structure:
-                {
-                    "points": [
-                        {
-                        "curveNumber": 1,
-                        "pointNumber": 0,
-                        "pointIndex": 0,
-                        "x": 1,
-                        "y": 3,
-                        "bbox": {
-                            "x0": 189.35,
-                            "x1": 209.35,
-                            "y0": 1057.72,
-                            "y1": 1077.72
-                        },
-                        "customdata": [
-                            3
-                        ]
-                        }
-                    ]
-                }
-        """
-        MapDisplay.__init__(
-            self,
-            map_type,
-            inputs=inputs,
-            states=states,
-            get_data_func=get_data_func,
-            clickdata_func=clickdata_func,
-            output_var=output_var,
-            label=label,
-            colorscale=_DEFAULT_COLORSCALE,
-        )
-        WindowImplementation.__init__(self, **kwargs)

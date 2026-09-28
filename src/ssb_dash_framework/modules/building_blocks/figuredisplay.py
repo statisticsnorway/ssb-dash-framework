@@ -88,7 +88,7 @@ class FigureDisplay(ModuleBase):
 
         super().__init__(as_type=as_type, **kwargs)
 
-    def _create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
         layout = html.Div(
             dcc.Graph(
                 id=f"{self.module_id}-figuredisplay",

@@ -1,8 +1,5 @@
 import base64
 import logging
-from abc import ABC
-from abc import abstractmethod
-from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import callback
@@ -12,15 +9,14 @@ from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 import gcsfs
 
+from ..config.models import register_module
+from ..utils.base_classes import ModuleBase
 from ..setup.variableselector import VariableSelector
-from ..utils import TabImplementation
-from ..utils import WindowImplementation
-from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
-
-class SkjemapdfViewer(ABC):
+@register_module()
+class SkjemapdfViewer(ModuleBase):
     """Module for displaying PDF forms in a tab."""
 
     def __init__(
@@ -35,12 +31,9 @@ class SkjemapdfViewer(ABC):
             pdf_folder_path: The path to the folder containing the PDF files.
         """
         self.label = "🗎 Skjema"
-        # self.variableselector = VariableSelector([form_identifier], [])
         self.pdf_folder_path = pdf_folder_path
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
+
         self.is_valid(form_identifier)
-        module_validator(self)
 
     def is_valid(self, form_identifier: str) -> None:
         """Validate the form identifier and PDF folder path.
@@ -60,7 +53,7 @@ class SkjemapdfViewer(ABC):
         if self.pdf_folder_path.endswith("/"):
             self.pdf_folder_path = self.pdf_folder_path[:-1]
 
-    def _create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
         """Generate the layout for the SkjemapdfViewer module.
 
         Returns:
@@ -96,16 +89,6 @@ class SkjemapdfViewer(ABC):
         logger.debug("Generated layout")
         return layout
 
-    @abstractmethod
-    def layout(self) -> html.Div:
-        """Define the layout for the FreeSearch module.
-
-        This is an abstract method that must be implemented by subclasses to define the module's layout.
-
-        Returns:
-            html.Div: A Dash HTML Div component representing the layout of the module.
-        """
-        pass
 
     def module_callbacks(self) -> None:
         """Register Dash callbacks for the SkjemapdfViewer module.
@@ -114,10 +97,6 @@ class SkjemapdfViewer(ABC):
             - The first callback updates the form identifier input field.
             - The second callback fetches and encodes the PDF file as a data URI for display in the iframe.
         """
-        # dynamic_states = [
-        #    self.variableselector.get_all_inputs(),
-        #    self.variableselector.get_all_states(),
-        # ]
 
         @callback(  # type: ignore[misc]
             Output("skjemapdf-input", "value"),
@@ -177,34 +156,3 @@ class SkjemapdfViewer(ABC):
         logger.debug("Generated callbacks")
 
 
-class SkjemapdfViewerTab(TabImplementation, SkjemapdfViewer):
-    """SkjemapdfViewerTab is an implementation of the SkjemapdfViewer module as a tab in a Dash application."""
-
-    def __init__(self, pdf_folder_path: str, form_identifier: str = "refnr") -> None:
-        """Initializes the SkjemapdfViewerTab class.
-
-        Args:
-            pdf_folder_path: The path to the folder containing PDF files.
-            form_identifier: The identifier for the form. This should be the VariableSelector value that matches the PDF file name.
-                Defaults to "refnr".
-        """
-        SkjemapdfViewer.__init__(self, form_identifier, pdf_folder_path)
-        TabImplementation.__init__(self)
-
-
-class SkjemapdfViewerWindow(WindowImplementation, SkjemapdfViewer):
-    """Implementation of the SkjemapdfViewer as a window."""
-
-    def __init__(
-        self, pdf_folder_path: str, form_identifier: str = "refnr", **kwargs: Any
-    ) -> None:
-        """Initialize the SkjemapdfViewerWindow class.
-
-        This class is a subclass of SkjemapdfViewer and is used to create a window for viewing PDF files.
-
-        Args:
-            pdf_folder_path: The path to the folder containing PDF files.
-            form_identifier: The identifier for the form. Defaults to "refnr".
-        """
-        SkjemapdfViewer.__init__(self, form_identifier, pdf_folder_path)
-        WindowImplementation.__init__(self, **kwargs)

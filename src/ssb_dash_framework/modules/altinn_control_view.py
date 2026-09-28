@@ -1,5 +1,4 @@
 import logging
-import warnings
 
 from typing import Any
 
@@ -16,8 +15,6 @@ from dash_iconify import DashIconify
 
 from ..config import register_module
 from ..setup.variableselector import VariableSelector
-from ..utils import TabImplementation
-from ..utils import WindowImplementation
 from ..utils import ModuleBase
 from ..utils.alert_handler import AlertHandler
 from ..utils.config_tools.connection import get_connection
@@ -383,70 +380,3 @@ class ControlView(ModuleBase):
                 raise ValueError(
                     f"Something is wrong with 'self.outputs'. Should be a list with at least one string inside of it. Is currently: {self.outputs}"
                 )
-
-
-class ControlViewTab(TabImplementation, ControlView):
-    """ControlView implemented as a tab."""
-
-    def __init__(
-        self,
-        control_dict: dict[str, Any],
-    ) -> None:
-        """Initializes the ControlViewTab module."""
-        ControlView.__init__(
-            self,
-            control_dict=control_dict,
-        )
-        TabImplementation.__init__(self)
-
-
-class ControlViewWindow(WindowImplementation, ControlView):
-    """ControlView implemented as a window."""
-
-    def __init__(
-        self,
-        control_dict: dict[str, Any],
-    ) -> None:
-        """Initializes the ControlViewWindow module."""
-        ControlView.__init__(
-            self,
-            control_dict=control_dict,
-        )
-        WindowImplementation.__init__(self)
-
-
-# Temporary
-class AltinnControlViewTab(TabImplementation, ControlView):
-    """ControlView implemented as a tab."""
-
-    def __init__(self, control_dict: dict[str, Any]) -> None:
-        """Initializes the ControlViewTab module."""
-        warnings.warn(
-            "AltinnControlViewTab is deprecated and will be removed in a future version. "
-            "Use ControlViewTab instead.",
-            FutureWarning,
-            stacklevel=2,
-        )
-        ControlView.__init__(
-            self,
-            control_dict=control_dict,
-        )
-        TabImplementation.__init__(self)
-
-
-class AltinnControlViewWindow(WindowImplementation, ControlView):
-    """ControlView implemented as a window."""
-
-    def __init__(self, control_dict: dict[str, Any], **kwargs: Any) -> None:
-        """Initializes the ControlViewWindow module."""
-        warnings.warn(
-            "AltinnControlViewWindow is deprecated and will be removed in a future version. "
-            "Use ControlViewWindow instead.",
-            FutureWarning,
-            stacklevel=2,
-        )
-        ControlView.__init__(
-            self,
-            control_dict=control_dict,
-        )
-        WindowImplementation.__init__(self, **kwargs)

@@ -1,7 +1,6 @@
 import base64
 import io
 import logging
-from typing import Any
 
 from PIL import Image
 from dash import callback, clientside_callback, dcc, html
@@ -16,8 +15,7 @@ import gcsfs
 from ..config import register_module
 from ..setup.variableselector import VariableSelector
 from ..setup.variableselector import TimeUnit
-from ..utils import ModuleBase, TabImplementation
-from ..utils import WindowImplementation
+from ..utils import ModuleBase
 from ..utils.alert_handler import AlertHandler
 
 logger = logging.getLogger(__name__)
@@ -358,20 +356,3 @@ class Aarsregnskap(ModuleBase):
             Input("tab-aarsregnskap-zoom-out", "n_clicks"),
         )
 
-
-class AarsregnskapTab(TabImplementation, Aarsregnskap):
-    """AarsregnskapTab is an implementation of the Aarsregnskap module as a tab in a Dash application."""
-
-    def __init__(self) -> None:
-        """Initializes the AarsregnskapTab class."""
-        Aarsregnskap.__init__(self)
-        TabImplementation.__init__(self)
-
-
-class AarsregnskapWindow(WindowImplementation, Aarsregnskap):
-    """AarsregnskapWindow is an implementation of the Aarsregnskap module as a window in a Dash application."""
-
-    def __init__(self, **kwargs: Any) -> None:
-        """Initializes the AarsregnskapWindow class."""
-        Aarsregnskap.__init__(self)
-        WindowImplementation.__init__(self, **kwargs)

@@ -13,9 +13,9 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 
+from ...config import register_module
+from ...utils import ModuleBase
 from ...setup.variableselector import VariableSelector
-from ...utils import TabImplementation
-from ...utils import WindowImplementation
 from ...utils.alert_handler import AlertHandler
 from ...utils.module_validation import module_validator
 
@@ -33,14 +33,13 @@ class EditingTableConfig(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
-class EditingTable:
+@register_module()
+class EditingTable(ModuleBase):
     """A reusable and flexible Dash component for editing tabular data.
 
     This component renders a Dash AgGrid table where the data is retrieved using a get_data function that takes *inputs and *states as *args.
     Optionally it can output clicked column values to the variable selector or update data using the dash ag grid attribute 'CellValueChanged'
     """
-
-    _id_number: int = 0
 
     def __init__(
         self,
@@ -71,9 +70,6 @@ class EditingTable:
             **kwargs: Additional keyword arguments for the Dash AgGrid component.
         """
         self.kwargs = kwargs
-        self.module_number = EditingTable._id_number
-        self.module_name = self.__class__.__name__
-        EditingTable._id_number += 1
 
         self.icon = "📒"
         self.label = label
@@ -91,11 +87,8 @@ class EditingTable:
         self.get_data = get_data_func
         self.update_table_func = update_table_func
 
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
         self._is_valid()
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
-        module_validator(self)
 
     def _is_valid(self) -> None:
         """Validate the component's configuration."""
@@ -310,96 +303,3 @@ class EditingTable:
                     AlertHandler.error(f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!")
 
             logger.debug("Finished update")
-
-
-
-class EditingTableTab(TabImplementation, EditingTable):
-    """EditingTable embedded in a tab container."""
-
-    def __init__(
-        self,
-        label: str,
-        inputs: list[str],
-        states: list[str],
-        get_data_func: Callable[..., Any],
-        update_table_func: Callable[..., Any] | None = None,
-        output: str | None = None,
-        output_varselector_name: str | None = None,
-        number_format: str | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize the EditingTableTab.
-
-        Args:
-            label: The label for the tab or component, used for display purposes.
-            inputs: A list of input variable names that will trigger callbacks.
-            states: A list of state variable names used that will not trigger callbacks, but can be provided as args.
-            get_data_func: A function that returns a pandas dataframe.
-            update_table_func: A function for updating data based on edits in the AgGrid.
-                Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values.
-            output: Identifier for the table, used for callbacks. Defaults to None.
-            output_varselector_name: Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
-                If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
-            number_format: A d3 format string for formatting numeric values in the table. Defaults to None.
-                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
-            **kwargs: Additional keyword arguments for the Dash AgGrid component.
-        """
-        EditingTable.__init__(
-            self,
-            label=label,
-            inputs=inputs,
-            states=states,
-            get_data_func=get_data_func,
-            update_table_func=update_table_func,
-            output=output,
-            output_varselector_name=output_varselector_name,
-            number_format=number_format,
-            **kwargs,
-        )
-        TabImplementation.__init__(self)
-
-
-class EditingTableWindow(WindowImplementation, EditingTable):
-    """A class to implement an EditingTable module inside a modal."""
-
-    def __init__(
-        self,
-        label: str,
-        inputs: list[str],
-        states: list[str],
-        get_data_func: Callable[..., Any],
-        update_table_func: Callable[..., Any] | None = None,
-        output: str | None = None,
-        output_varselector_name: str | None = None,
-        number_format: str | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize the EditingTableWindow.
-
-        Args:
-            label: The label for the tab or component, used for display purposes.
-            inputs: A list of input variable names that will trigger callbacks.
-            states: A list of state variable names used that will not trigger callbacks, but can be provided as args.
-            get_data_func: A function that returns a pandas dataframe.
-            update_table_func: A function for updating data based on edits in the AgGrid.
-                Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values.
-            output: Identifier for the table, used for callbacks. Defaults to None.
-            output_varselector_name: Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
-                If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
-            number_format: A d3 format string for formatting numeric values in the table. Defaults to None.
-                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
-            **kwargs: Additional keyword arguments for the Dash AgGrid component.
-        """
-        EditingTable.__init__(
-            self,
-            label=label,
-            inputs=inputs,
-            states=states,
-            get_data_func=get_data_func,
-            update_table_func=update_table_func,
-            output=output,
-            output_varselector_name=output_varselector_name,
-            number_format=number_format,
-            **kwargs,
-        )
-        WindowImplementation.__init__(self, **kwargs)

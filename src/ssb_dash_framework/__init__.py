@@ -18,19 +18,9 @@ from .config import run_app_from_config
 from .control import ControlFrameworkBase
 from .control import register_control
 from .modules import Aarsregnskap
-from .modules import AarsregnskapTab
-from .modules import AarsregnskapWindow
-from .modules import AltinnControlViewTab
-from .modules import AltinnControlViewWindow
 from .modules import BofInformation
-from .modules import BofInformationTab
-from .modules import BofInformationWindow
 from .modules import Canvas
-from .modules import CanvasTab
-from .modules import CanvasWindow
 from .modules import ControlView
-from .modules import ControlViewTab
-from .modules import ControlViewWindow
 from .modules import DataEditor
 from .modules import DataEditorContactInfo
 from .modules import DataEditorHistory
@@ -43,16 +33,10 @@ from .modules import DataEditorTable
 from .modules import DataEditorTableSelector
 from .modules import DataViewCustom
 from .modules import EditingTable
-from .modules import EditingTableTab
-from .modules import EditingTableWindow
 from .modules import EditorSettings
 from .modules import FigureDisplay
 from .modules import MapDisplay
-from .modules import MapDisplayTab
-from .modules import MapDisplayWindow
 from .modules import MultiModule
-from .modules import MultiModuleTab
-from .modules import MultiModuleWindow
 from .modules import Naeringsspesifikasjon
 from .modules import NaeringsspesifikasjonTab
 from .modules import NaeringsspesifikasjonWindow
@@ -63,8 +47,6 @@ from .modules import ParquetEditor
 from .modules import ParquetEditorChangelog
 from .modules import PimemorizerTab
 from .modules import SkjemapdfViewer
-from .modules import SkjemapdfViewerTab
-from .modules import SkjemapdfViewerWindow
 from .modules import StandardDataHandler
 from .modules import apply_edits
 from .modules import export_from_parqueteditor
@@ -103,24 +85,14 @@ from .utils import sidebar_button
 
 __all__ = [
     "Aarsregnskap",
-    "AarsregnskapTab",
-    "AarsregnskapWindow",
     "AlertHandler",
-    "AltinnControlViewTab",
-    "AltinnControlViewWindow",
     "AppConfig",
     "AppModules",
     "AppSettings",
     "BofInformation",
-    "BofInformationTab",
-    "BofInformationWindow",
     "Canvas",
-    "CanvasTab",
-    "CanvasWindow",
     "ControlFrameworkBase",
     "ControlView",
-    "ControlViewTab",
-    "ControlViewWindow",
     "DataEditor",
     "DataEditor",
     "DataEditorHistory",
@@ -137,22 +109,13 @@ __all__ = [
     "DebugInspector",
     "DemoDataCreator",
     "EditingTable",
-    "EditingTableTab",
-    "EditingTableWindow",
     "EditorSettings",
     "FigureDisplay",
     "MapDisplay",
-    "MapDisplayTab",
-    "MapDisplayWindow",
     "ModuleBase",
     "ModuleConfig",
     "MultiModule",
     "MultiModule",
-    "MultiModuleTab",
-    "MultiModuleTab",
-    "MultiModuleWindow",
-    "MultiModuleWindow",
-    "MultiModuleWindow",
     "Naeringsspesifikasjon",
     "NaeringsspesifikasjonTab",
     "NaeringsspesifikasjonWindow",
@@ -164,8 +127,6 @@ __all__ = [
     "PimemorizerTab",
     "RegisteredModule",
     "SkjemapdfViewer",
-    "SkjemapdfViewerTab",
-    "SkjemapdfViewerWindow",
     "StandardDataHandler",
     "TabImplementation",
     "VariableSelector",
