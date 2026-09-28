@@ -26,7 +26,7 @@ AsType = Literal["Tab", "Window"]
 
 class YamlLoadable(ABC):
     @classmethod
-    def from_yaml(cls, *args: list[Any], **kwargs: dict[str, Any]):
+    def from_yaml(cls, *args: Any, **kwargs: Any):
         """Base class for loading modules and other classes from a yaml config.
 
         The method has a default implementation so you dont have to write it yourself, but the option

@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Any
+from typing import Any, Type
 from typing import cast
 import uuid
 
@@ -19,6 +19,18 @@ from ...setup.variableselector import VariableSelector
 from ...utils.base_classes import ModuleBase
 
 logger = getLogger(__name__)
+
+
+def _parse_module[OutType](
+    out_type: Type[OutType], module_type: Any | None, **kwargs
+) -> OutType:
+    if module_type is None:
+        raise AttributeError("Yaml component needs to specify the type")
+    module = get_from_module_registry(module_type)
+    loaded_module = module.type.from_yaml(**kwargs)
+    if issubclass(type(loaded_module), out_type) is False:
+        raise ValueError(f"Loaded module {type(loaded_module)} is not a subclass of {out_type} which is exptected")
+    return cast(OutType, loaded_module)
 
 
 @register_module(as_tab="DataEditor")
@@ -160,21 +172,66 @@ class DataEditor(ModuleBase):
         return self._create_layout()
 
     @classmethod
-    def from_yaml(cls, *args: list[Any], **kwargs: dict[str, Any]):
+    def from_yaml(cls, *args: Any, **kwargs: dict | list | str | int):
         import pprint
 
         pprint.pprint(kwargs)
 
         handler_name = kwargs.get("data_handler")
-        assert isinstance(handler_name, str)
-        handler_module = get_from_module_registry(handler_name)
-        data_handler = handler_module.type.from_yaml()
-        assert issubclass(type(data_handler), FetcherMeta)
-        data_handler_verified = cast(FetcherMeta, data_handler)
+        data_handler_verified = _parse_module(
+                FetcherMeta, handler_name
+            )
+
         settings = kwargs.get("settings")
         settings_model = EditorSettings.model_validate(settings)
 
-        return cls(data_handler=data_handler_verified, settings=settings_model)
+        inforow = kwargs.get("inforow", {})
+
+        buttons: list[dict[str, Any]] | Any = kwargs.get("buttons", [])
+        assert isinstance(buttons, list)
+
+        parsed_buttons = []
+        for button in buttons:
+            button_type = button.get("type")
+            button_args = {k: v for k, v in button.items() if k != "type"}
+            button_item_verified = _parse_module(
+                ContextABC, button_type, **button_args
+            )
+            parsed_buttons.append(button_item_verified)
+        
+        sidebar: list[dict[str, Any]] | Any = kwargs.get("sidebar", [])
+        assert isinstance(sidebar, list)
+
+        sidebar_items = []
+        for item in sidebar:
+            item_type = item.get("type")
+            item_args = {k: v for k, v in item.items() if k != "type"}
+            item_verified = _parse_module(
+                ContextABC, item_type, **item_args
+            )
+            sidebar_items.append(item_verified)
+
+        dataview: list[dict[str, Any]] | Any = kwargs.get("dataview", [])
+        assert isinstance(dataview, list)
+
+        dataview_items = []
+        for item in dataview:
+            item_type = item.get("type")
+            item_args = {k: v for k, v in item.items() if k != "type"}
+            item_verified = _parse_module(
+                ContextABC, item_type, **item_args
+            )
+            dataview_items.append(item_verified)
+
+
+        return cls(
+            data_handler=data_handler_verified,
+            settings=settings_model,
+            inforow=inforow,
+            buttons=parsed_buttons,
+            sidebar=sidebar_items,
+            dataview=dataview_items
+        )
 
     def module_callbacks(self) -> None:
         """Registers the callbacks for the DataEditor."""
