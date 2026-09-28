@@ -30,7 +30,10 @@ class YamlLoadable(ABC):
     def from_yaml_path(cls, yaml_path: str):
         """Method for reading a yaml file and parsing the contained module/layout"""
         config = config_parser_yaml(yaml_path)
-        return cls.from_yaml(**config)
+        if isinstance(config, list):
+            return cls.from_yaml(*config)
+        else:
+            return cls.from_yaml(**config)
 
     @classmethod
     def from_yaml(cls, *args: Any, **kwargs: Any):
