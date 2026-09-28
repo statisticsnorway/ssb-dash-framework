@@ -1,0 +1,9 @@
+refnr: refnr
+ident: ident
+time_units:
+  name: aar
+  frequency: year
+grouping_variables:
+  - altinnskjema
+  - variabel
+  - foretak
