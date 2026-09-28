@@ -474,6 +474,7 @@ description = "Foreign Function Interface for Python calling C code."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
+markers = "platform_python_implementation != \"PyPy\" or implementation_name == \"pypy\""
 files = [
     {file = "cffi-2.1.1-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:baed1e86cc735622097354b9d1281406caf42ff42a886d29faa8e8d1630333be"},
     {file = "cffi-2.1.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:ca82be1a1d406ecfe1d25dc16cb33488e5a16bf4438c9fb590484ea29d92478b"},
@@ -4108,7 +4109,7 @@ description = "C parser in Python"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "implementation_name != \"PyPy\""
+markers = "platform_python_implementation != \"PyPy\" and implementation_name != \"PyPy\" or implementation_name == \"pypy\""
 files = [
     {file = "pycparser-3.0-py3-none-any.whl", hash = "sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992"},
     {file = "pycparser-3.0.tar.gz", hash = "sha256:600f49d217304a5902ac3c37e1281c9fe94e4d0489de643a9504c5cdfdfc6b29"},
@@ -4820,92 +4821,6 @@ files = [
     {file = "roman_numerals-4.1.0-py3-none-any.whl", hash = "sha256:647ba99caddc2cc1e55a51e4360689115551bf4476d90e8162cf8c345fe233c7"},
     {file = "roman_numerals-4.1.0.tar.gz", hash = "sha256:1af8b147eb1405d5839e78aeb93131690495fe9da5c91856cb33ad55a7f1e5b2"},
 ]
-
-[[package]]
-name = "rpy2"
-version = "3.6.5"
-description = "Python interface to the R language (embedded R)"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "rpy2-3.6.5-py3-none-any.whl", hash = "sha256:1e7a0572895e98f9c38c5ec6cee424503eb812cacfa3fe07fdb9d3b72e82ff76"},
-    {file = "rpy2-3.6.5.tar.gz", hash = "sha256:826fc0fabd71cca49b692fac9afc3815ea6c34935844aaefe424da5b76dd68e6"},
-]
-
-[package.dependencies]
-packaging = {version = "*", markers = "platform_system == \"Windows\""}
-rpy2-rinterface = ">=3.6.4"
-rpy2-robjects = ">=3.6.3"
-
-[package.extras]
-all = ["rpy2-rinterface[all]", "rpy2-robjects[all]"]
-doc = ["pygraphviz", "sphinx"]
-numpy = ["rpy2-rinterface[numpy]", "rpy2-robjects[numpy]"]
-pandas = ["rpy2-rinterface", "rpy2-robjects[pandas]"]
-test = ["rpy2-rinterface[test]", "rpy2-robjects[test]"]
-test-minimal = ["coverage", "pytest (>=8)", "pytest-cov"]
-types = ["mypy", "types-tzlocal"]
-
-[[package]]
-name = "rpy2-rinterface"
-version = "3.6.5"
-description = "Low-level interface from Python to the R."
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "rpy2_rinterface-3.6.5-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:94f78c16e32e719528ea8fa6ab482b6db3eb1aa2baff46a9feaa4d091bcb4ec4"},
-    {file = "rpy2_rinterface-3.6.5-cp310-cp310-win_amd64.whl", hash = "sha256:e812d5defffa2f34f7a5e246194e412865e8ea4e873b2541b36a6a0e83753b35"},
-    {file = "rpy2_rinterface-3.6.5-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:6704c3d74d6c2288c242ca31b8399c4db198742c6c3f0efb4ffc3da757ad6448"},
-    {file = "rpy2_rinterface-3.6.5-cp311-cp311-win_amd64.whl", hash = "sha256:d62746281d98d5b4e2890f85ff14a8fd06d245e282eeee60a8aa489ee5ece776"},
-    {file = "rpy2_rinterface-3.6.5-cp312-cp312-macosx_10_13_universal2.whl", hash = "sha256:f33b0973f33babb03daad7842baafd64a752dfa35f01918c9d2e5a8ae7dd5dce"},
-    {file = "rpy2_rinterface-3.6.5-cp312-cp312-win_amd64.whl", hash = "sha256:b26c80fdb35d802deb7d3a82a7f2e7a86ee3f20a6b8b51150fbdfcad6229ecfd"},
-    {file = "rpy2_rinterface-3.6.5-cp313-cp313-macosx_10_13_universal2.whl", hash = "sha256:b371681147c75d5d5c487ee55549c761340e8cc9ff5d061cb9f17d0067354d83"},
-    {file = "rpy2_rinterface-3.6.5-cp313-cp313-win_amd64.whl", hash = "sha256:a3cf72525ee281b0b46677598f18ac62a84f9157ff37c3e8b006a141c1703806"},
-    {file = "rpy2_rinterface-3.6.5-cp314-cp314-macosx_10_15_universal2.whl", hash = "sha256:f181d3d58148d5597d1ef37c2b3c97a95d643614adb7eeb390924db59435d9da"},
-    {file = "rpy2_rinterface-3.6.5-cp314-cp314-win_amd64.whl", hash = "sha256:7f0159c8af3d3cd3216dde62fe1027b59070e86b4c87599d5a6c6a6a25f594eb"},
-    {file = "rpy2_rinterface-3.6.5-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:6faa41bf5c1e75ae41cf9da8838d0dd86948cd317a303171dc7e40d7e77c80e4"},
-    {file = "rpy2_rinterface-3.6.5-cp39-cp39-win_amd64.whl", hash = "sha256:ab8f96007cb8aa2185ef1158cebae327d6fdb42072a767dc8721e777c8246e0d"},
-    {file = "rpy2_rinterface-3.6.5.tar.gz", hash = "sha256:9b3610ebbb9625a3c49dadfd9d4bafbc5f1eb412056d9406bcdb500d274d4198"},
-]
-
-[package.dependencies]
-cffi = ">=1.15.1"
-packaging = {version = "*", markers = "platform_system == \"Windows\""}
-
-[package.extras]
-all = ["coverage", "pytest (>=8)", "pytest-cov"]
-doc = ["ipykernel", "jupytext", "multipledispatch", "nbconvert", "pygraphviz", "sphinx"]
-test = ["coverage", "pytest (>=8)", "pytest-cov"]
-types = ["mypy", "packaging", "pandas-stubs", "types-Pygments", "types-tzlocal"]
-
-[[package]]
-name = "rpy2-robjects"
-version = "3.6.4"
-description = "Python interface to the R language (embedded R)"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "rpy2_robjects-3.6.4-py3-none-any.whl", hash = "sha256:9a5577ecd64e6433db27897250c8b6506c8fd0f32ec16b12f23ef8d4a032e53f"},
-    {file = "rpy2_robjects-3.6.4.tar.gz", hash = "sha256:9a32fe83a5ab253872fee17ef7dce561b26811672cfd27e96b8e3bcd38829d7c"},
-]
-
-[package.dependencies]
-jinja2 = "*"
-packaging = {version = "*", markers = "platform_system == \"Windows\""}
-rpy2-rinterface = ">=3.6.0"
-tzlocal = "*"
-
-[package.extras]
-all = ["ipython", "numpy (<1.26) ; python_version < \"3.9\"", "numpy (>=1.26) ; python_version >= \"3.9\"", "pandas (<3.0) ; python_version < \"3.10\"", "pandas (>=1.3.5,<3.0) ; python_version >= \"3.10\"", "pytest"]
-doc = ["ipykernel", "jupytext", "multipledispatch", "nbconvert", "numpy", "pandas", "pygraphviz", "sphinx"]
-numpy = ["numpy (<1.26) ; python_version < \"3.9\"", "numpy (>=1.26) ; python_version >= \"3.9\""]
-pandas = ["numpy (<1.26) ; python_version < \"3.9\"", "numpy (>=1.26) ; python_version >= \"3.9\"", "pandas (<3.0) ; python_version < \"3.10\"", "pandas (>=1.3.5,<3.0) ; python_version >= \"3.10\""]
-test = ["coverage", "ipython", "numpy (<1.26) ; python_version < \"3.9\"", "numpy (>=1.26) ; python_version >= \"3.9\"", "pandas (>=1.3.5) ; python_version >= \"3.10\"", "pandas ; python_version < \"3.10\"", "pytest", "pytest-cov"]
-test-minimal = ["coverage", "pytest (>=8)", "pytest-cov"]
-types = ["mypy", "packaging", "pandas-stubs", "types-Pygments", "types-tzlocal"]
 
 [[package]]
 name = "ruamel-yaml"
@@ -5699,25 +5614,6 @@ files = [
 ]
 
 [[package]]
-name = "tzlocal"
-version = "5.4.4"
-description = "tzinfo object for the local timezone"
-optional = false
-python-versions = ">=3.10"
-groups = ["main"]
-files = [
-    {file = "tzlocal-5.4.4-py3-none-any.whl", hash = "sha256:aae09f0126a8a86fa736be266eb4a471380d26a0de3bc14844e7821fee3e2a15"},
-    {file = "tzlocal-5.4.4.tar.gz", hash = "sha256:8dbb8660838688a7b6ba4fed31d18dedf842afb4d47ca050d6d891c2c15f3be4"},
-]
-
-[package.dependencies]
-tzdata = {version = "*", markers = "platform_system == \"Windows\""}
-
-[package.extras]
-devenv = ["zest.releaser"]
-testing = ["check_manifest", "pyroma", "pytest (>=4.3)", "pytest-cov", "pytest-mock (>=3.3)", "ruff"]
-
-[[package]]
 name = "urllib3"
 version = "2.7.0"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -6266,4 +6162,4 @@ type = ["pytest-mypy (>=1.0.1) ; platform_python_implementation != \"PyPy\""]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "fd5efbe825330d210cd2e3a7a48b94cd9fcc200c90e8647fca242186be902467"
+content-hash = "1cbe2f48b9af3f3eded75efc014a110f1f0cefedff78d162adc14d402ec93818"

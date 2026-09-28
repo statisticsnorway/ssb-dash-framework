@@ -16,7 +16,6 @@ Modules for use in the application, implmented as a view (tab/window) or directl
    Bofregistry <bofregistry>
    Control <control>
    Freesearch <freesearch>
-   Hb_method <hb_method>
    Pi_memorizer <pi_memorizer>
    Skjemapdfviewer <skjemapdfviewer>
    Visualizationbuilder <visualizationbuilder>
