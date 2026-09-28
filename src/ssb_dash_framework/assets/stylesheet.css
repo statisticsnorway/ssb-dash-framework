@@ -2484,8 +2484,8 @@ Dash override for ssb-text-area
   font-family: "Roboto", sans-serif !important;
 }
 
-.ag-theme-ssb .ag-row:nth-child(odd) {
-  background-color: #ecfeed;
+.ag-theme-ssb .ag-row-odd {
+    background-color: #ecfeed;
 }
 
 .ag-theme-ssb .ag-row {
@@ -4540,4 +4540,32 @@ so replicate it here using darkly's own CSS variables.
 
 .ssb-dialog-mini:last-child {
   margin-bottom: 0;
+}
+
+.nspek-kpi-modal .modal-dialog {
+    height: 96vh;
+}
+
+.nspek-kpi-modal .modal-content {
+    height: 100%;
+}
+
+.nspek-kpi-modal .modal-body {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.nspek-loading {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nspek-loading > div {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
 }

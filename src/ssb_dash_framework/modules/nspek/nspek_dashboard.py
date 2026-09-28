@@ -66,27 +66,31 @@ TYPE_REGNSKAP_TABLE = {
 
 KPI_CONFIG = {
     "constructed": {
-        "title": "Konstruert",
+        "title": "Konstruert av SSB",
         "card_id": "nspek-dashboard-constructed-card",
         "modal_id": "nspek-dashboard-constructed-modal",
         "grid_id": "nspek-dashboard-constructed-grid",
         "kilde": "K",
-        "description": (
-            "Viser registreringene som er konstruert av SSB, "
-            "inkludert organisasjonsnummer og tidspunkt for registrering."
-        ),
         "columns": [
             {
                 "field": "orgnr",
                 "headerName": "Organisasjonsnummer",
+                "filter": "agTextColumnFilter",
             },
             {
                 "field": "tidspunkt",
                 "headerName": "Tidspunkt",
+                "filter": "agDateColumnFilter",
             },
             {
                 "field": "sekvensnummer",
                 "headerName": "Sekvensnummer",
+                "filter": "agNumberColumnFilter",
+            },
+            {
+                "field": "antall_endringer",
+                "headerName": "Antall editeringer",
+                "filter": "agNumberColumnFilter",
             },
         ],
     },
@@ -96,28 +100,26 @@ KPI_CONFIG = {
         "modal_id": "nspek-dashboard-ske-modal",
         "grid_id": "nspek-dashboard-ske-grid",
         "kilde": "N",
-        "description": (
-            "Viser registreringene som er mottatt fra Skatteetaten (SKE), "
-            "inkludert organisasjonsnummer og tidspunkt for mottak."
-        ),
         "columns": [
             {
                 "field": "orgnr",
                 "headerName": "Organisasjonsnummer",
-                "filter": False,
-                "sortable": False,
+                "filter": "agTextColumnFilter",
             },
             {
                 "field": "tidspunkt",
                 "headerName": "Tidspunkt",
-                "filter": False,
-                "sortable": False,
+                "filter": "agDateColumnFilter",
             },
             {
                 "field": "sekvensnummer",
                 "headerName": "Sekvensnummer",
-                "filter": False,
-                "sortable": False,
+                "filter": "agNumberColumnFilter",
+            },
+            {
+                "field": "antall_endringer",
+                "headerName": "Antall editeringer",
+                "filter": "agNumberColumnFilter",
             },
         ],
     },
@@ -127,34 +129,31 @@ KPI_CONFIG = {
         "modal_id": "nspek-dashboard-total-modal",
         "grid_id": "nspek-dashboard-total-grid",
         "kilde": None,
-        "description": (
-            "Viser alle registreringene i populasjonen, "
-            "uavhengig av hvordan registreringen er opprettet."
-        ),
         "columns": [
             {
                 "field": "orgnr",
                 "headerName": "Organisasjonsnummer",
-                "filter": False,
-                "sortable": False,
+                "filter": "agTextColumnFilter",
             },
             {
                 "field": "tidspunkt",
                 "headerName": "Tidspunkt",
-                "filter": False,
-                "sortable": False,
+                "filter": "agDateColumnFilter",
             },
             {
                 "field": "kilde",
                 "headerName": "Kilde",
-                "filter": False,
-                "sortable": False,
+                "filter": "agTextColumnFilter",
             },
             {
                 "field": "sekvensnummer",
                 "headerName": "Sekvensnummer",
-                "filter": False,
-                "sortable": False,
+                "filter": "agNumberColumnFilter",
+            },
+            {
+                "field": "antall_endringer",
+                "headerName": "Antall editeringer",
+                "filter": "agNumberColumnFilter",
             },
         ],
     },
@@ -189,53 +188,254 @@ def get_nspek_kpi_modal_data(
     kilde: str | None = None,
     start_row: int = 0,
     end_row: int = 100,
+    sort_model: list[dict] | None = None,
+    filter_model: dict | None = None,
 ) -> tuple[pd.DataFrame, int]:
     """Return one page of KPI modal rows and the total row count."""
 
     aar = int(aar)
     start_row = max(int(start_row), 0)
     end_row = max(int(end_row), start_row)
+
     limit = max(end_row - start_row, 1)
 
-    kilde_filter = "" if kilde is None else f"AND kilde = '{kilde}'"
+    sort_model = sort_model or []
+    filter_model = filter_model or {}
+
+    # ------------------------------------------------------------------
+    # AG Grid field -> SQL expression
+    # ------------------------------------------------------------------
+
+    sort_columns = {
+        "orgnr": "r.orgnr",
+        "tidspunkt": "r.dato_mottatt",
+        "kilde": "r.kilde",
+        "sekvensnummer": "r.sekvensnummer",
+        "antall_endringer": "COALESCE(u.antall_endringer, 0)",
+    }
+
+    filter_columns = {
+        "orgnr": "r.orgnr",
+        "tidspunkt": "r.dato_mottatt",
+        "kilde": "r.kilde",
+        "sekvensnummer": "r.sekvensnummer",
+        "antall_endringer": "COALESCE(u.antall_endringer, 0)",
+    }
+
+    # ------------------------------------------------------------------
+    # Base WHERE
+    # ------------------------------------------------------------------
+
+    where_clauses = [
+        f"r.aar = {aar}",
+    ]
+
+    if kilde is not None:
+        kilde_escaped = kilde.replace("'", "''")
+        where_clauses.append(
+            f"r.kilde = '{kilde_escaped}'"
+        )
+
+    # ------------------------------------------------------------------
+    # AG Grid filtering
+    # ------------------------------------------------------------------
+
+    for field, filter_config in filter_model.items():
+        column = filter_columns.get(field)
+
+        if column is None:
+            continue
+
+        filter_type = filter_config.get("filterType")
+
+        # --------------------------------------------------------------
+        # Text filter
+        # --------------------------------------------------------------
+
+        if filter_type == "text":
+            filter_type_operator = filter_config.get("type", "contains")
+            filter_value = filter_config.get("filter")
+
+            if filter_value is None:
+                continue
+
+            value = str(filter_value).replace("'", "''")
+
+            if filter_type_operator == "equals":
+                where_clauses.append(
+                    f"{column} = '{value}'"
+                )
+
+            elif filter_type_operator == "notEqual":
+                where_clauses.append(
+                    f"{column} <> '{value}'"
+                )
+
+            elif filter_type_operator == "contains":
+                where_clauses.append(
+                    f"{column} ILIKE '%{value}%'"
+                )
+
+            elif filter_type_operator == "notContains":
+                where_clauses.append(
+                    f"{column} NOT ILIKE '%{value}%'"
+                )
+
+            elif filter_type_operator == "startsWith":
+                where_clauses.append(
+                    f"{column} ILIKE '{value}%'"
+                )
+
+            elif filter_type_operator == "endsWith":
+                where_clauses.append(
+                    f"{column} ILIKE '%{value}'"
+                )
+
+        # --------------------------------------------------------------
+        # Number filter
+        # --------------------------------------------------------------
+
+        elif filter_type == "number":
+            filter_type_operator = filter_config.get("type", "equals")
+            filter_value = filter_config.get("filter")
+
+            if filter_value is None:
+                continue
+
+            try:
+                value = float(filter_value)
+            except (TypeError, ValueError):
+                continue
+
+            if filter_type_operator == "equals":
+                where_clauses.append(
+                    f"{column} = {value}"
+                )
+
+            elif filter_type_operator == "notEqual":
+                where_clauses.append(
+                    f"{column} <> {value}"
+                )
+
+            elif filter_type_operator == "lessThan":
+                where_clauses.append(
+                    f"{column} < {value}"
+                )
+
+            elif filter_type_operator == "lessThanOrEqual":
+                where_clauses.append(
+                    f"{column} <= {value}"
+                )
+
+            elif filter_type_operator == "greaterThan":
+                where_clauses.append(
+                    f"{column} > {value}"
+                )
+
+            elif filter_type_operator == "greaterThanOrEqual":
+                where_clauses.append(
+                    f"{column} >= {value}"
+                )
+
+    where_sql = " AND ".join(where_clauses)
+
+    # ------------------------------------------------------------------
+    # AG Grid sorting
+    # ------------------------------------------------------------------
+
+    order_by = []
+
+    for sort in sort_model:
+        field = sort.get("colId")
+        direction = sort.get("sort")
+
+        column = sort_columns.get(field)
+
+        if column is None:
+            continue
+
+        if direction not in {"asc", "desc"}:
+            continue
+
+        order_by.append(
+            f"{column} {direction.upper()}"
+        )
+
+    # Always have a deterministic fallback sort.
+    if not order_by:
+        order_by = [
+            "r.dato_mottatt DESC",
+            "r.sekvensnummer DESC",
+        ]
+    else:
+        order_by.append("r.sekvensnummer DESC")
+
+    order_sql = ", ".join(order_by)
+
+    # ------------------------------------------------------------------
+    # Query
+    # ------------------------------------------------------------------
 
     with get_nspek_connection() as conn:
         query = f"""
             SELECT
-                orgnr,
-                dato_mottatt AS tidspunkt,
-                kilde,
-                sekvensnummer
-            FROM nspek_core.registrering
-            WHERE aar = {aar}
-              {kilde_filter}
-            ORDER BY dato_mottatt DESC, sekvensnummer DESC
+                r.orgnr,
+                r.dato_mottatt AS tidspunkt,
+                r.kilde,
+                r.sekvensnummer,
+                COALESCE(u.antall_endringer, 0) AS antall_endringer
+            FROM nspek_core.registrering AS r
+            LEFT JOIN nspek_core.v_update_counts AS u
+                ON r.sekvensnummer = u.sekvensnummer
+            WHERE {where_sql}
+            ORDER BY {order_sql}
             LIMIT {limit}
             OFFSET {start_row}
         """
 
         cursor = conn.raw_sql(query)
+
         try:
             rows = cursor.fetchall()
         finally:
             cursor.close()
 
+        # --------------------------------------------------------------
+        # Count query
+        #
+        # IMPORTANT:
+        # Use exactly the same filters as the data query, but without
+        # LIMIT/OFFSET.
+        # --------------------------------------------------------------
+
         count_query = f"""
             SELECT COUNT(*)
-            FROM nspek_core.registrering
-            WHERE aar = {aar}
-              {kilde_filter}
+            FROM nspek_core.registrering AS r
+            LEFT JOIN nspek_core.v_update_counts AS u
+                ON r.sekvensnummer = u.sekvensnummer
+            WHERE {where_sql}
         """
 
         cursor = conn.raw_sql(count_query)
+
         try:
             count_row = cursor.fetchone()
         finally:
             cursor.close()
 
+    # ------------------------------------------------------------------
+    # DataFrame
+    # ------------------------------------------------------------------
+
     df = pd.DataFrame(
         rows,
-        columns=["orgnr", "tidspunkt", "kilde", "sekvensnummer"],
+        columns=[
+            "orgnr",
+            "tidspunkt",
+            "kilde",
+            "sekvensnummer",
+            "antall_endringer",
+        ],
     )
 
     if not df.empty:
@@ -243,6 +443,15 @@ def get_nspek_kpi_modal_data(
             df["tidspunkt"],
             errors="coerce",
         ).dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        df["antall_endringer"] = (
+            pd.to_numeric(
+                df["antall_endringer"],
+                errors="coerce",
+            )
+            .fillna(0)
+            .astype(int)
+        )
 
     return df, int(count_row[0] or 0)
 
@@ -707,7 +916,6 @@ class NspekDashboard:
         title: str,
         grid_id: str,
         column_defs: list[dict],
-        description: str,
     ) -> dbc.Modal:
         """Create a modal containing KPI information and an AG Grid."""
 
@@ -728,70 +936,96 @@ class NspekDashboard:
                                 # Key figure
                                 dbc.Col(
                                     self.create_key_figure(
-                                        title="Antall registreringer",
+                                        title=f"Antall registreringer {title[0].lower()}{title[1:]}",
                                         component_id=count_id,
                                         size="large",
                                         icon="/proxy/8000/assets/test.svg",
                                         subtitle="foretak",
-                                        time_text="Valgt årgang",
+                                        time_text="2025",
+                                        time_id=f"{grid_id}-year",
                                     ),
-                                    md=8,
+                                    md=10,
                                 ),
 
-                                # Description + refresh button
+                                # Refresh button
                                 dbc.Col(
-                                    [
-                                        html.P(
-                                            description,
-                                            className="mb-0",
+                                    html.Div(
+                                        dbc.Button(
+                                            "Oppdater data",
+                                            id=refresh_button_id,
+                                            className="ssb-btn primary-btn",
+                                            style={"marginBottom": "30px"},
                                         ),
-                                        html.Div(
-                                            dbc.Button(
-                                                "Oppdater data",
-                                                id=refresh_button_id,
-                                                className="ssb-btn primary-btn",
-                                            ),
-                                            className="d-flex justify-content-end mt-auto",
-                                        ),
-                                    ],
-                                    md=4,
+                                        className="d-flex justify-content-end align-items-end h-100",
+                                    ),
+                                    md=2,
                                     className="d-flex flex-column",
                                 ),
                             ],
-                            className="mb-4 align-items-stretch",
+                            className="align-items-stretch",
                         ),
 
-                        AgGrid(
-                            id=grid_id,
-                            columnDefs=column_defs,
-                            defaultColDef={
-                                "sortable": False,
-                                "filter": False,
-                                "resizable": True,
-                            },
-                            columnSize="sizeToFit",
-                            rowModelType="infinite",
-                            dashGridOptions={
-                                "animateRows": False,
-                                "pagination": True,
-                                "paginationPageSize": 100,
-                                "cacheBlockSize": 100,
-                                "maxBlocksInCache": 5,
-                                "infiniteInitialRowCount": 1,
-                                "rowBuffer": 0,
-                                "maxConcurrentDatasourceRequests": 1,
-                                "rowSelection": {
-                                    "mode": "singleRow",
-                                    "enableClickSelection": True,
+                        html.Div(
+                            dcc.Loading(
+                                id=f"{grid_id}-loading",
+                                className="nspek-loading",
+                                type="default",
+                                color="#1a9d49",
+                                overlay_style={
+                                    "visibility": "visible",
+                                    "filter": "blur(2px)",
                                 },
-                            },
-                            className="ag-theme-alpine ag-theme-ssb",
+                                parent_style={
+                                    "height": "100%",
+                                    "width": "100%",
+                                    "minHeight": 0,
+                                },
+                                style={
+                                    "height": "100%",
+                                    "width": "100%",
+                                },
+                                children=[
+                                    AgGrid(
+                                        id=grid_id,
+                                        columnDefs=column_defs,
+                                        defaultColDef={
+                                            "sortable": True,
+                                            "filter": True,
+                                            "resizable": True,
+                                        },
+                                        columnSize="sizeToFit",
+                                        rowModelType="infinite",
+                                        dashGridOptions={
+                                            "animateRows": False,
+                                            "pagination": True,
+                                            "paginationPageSize": 100,
+                                            "cacheBlockSize": 100,
+                                            "maxBlocksInCache": 5,
+                                            "infiniteInitialRowCount": 1,
+                                            "rowBuffer": 0,
+                                            "maxConcurrentDatasourceRequests": 1,
+                                            "rowSelection": {
+                                                "mode": "singleRow",
+                                                "enableClickSelection": True,
+                                            },
+                                        },
+                                        className="ag-theme-ssb",
+                                        style={
+                                            "height": "100%",
+                                            "width": "100%",
+                                        },
+                                    ),
+                                ],
+                            ),
+                            className="flex-grow-1",
                             style={
-                                "height": "746px",
+                                "minHeight": 0,
                                 "width": "100%",
                             },
                         ),
                     ],
+                    className="d-flex flex-column h-100",
+                    style={"minHeight": 0,},
                 ),
 
                 dbc.ModalFooter(
@@ -803,10 +1037,10 @@ class NspekDashboard:
                 ),
             ],
             id=modal_id,
-            className="ssb-modal",
+            className="ssb-modal nspek-kpi-modal",
             size="xl",
             is_open=False,
-            scrollable=True,
+            scrollable=False,
         )
 
 
@@ -818,6 +1052,7 @@ class NspekDashboard:
         icon: str | None = None,
         subtitle: str | None = None,
         time_text: str | None = None,
+        time_id: str | None = None,
         green_box: bool = False,
     ) -> html.Div:
         """Create an SSB key figure component."""
@@ -838,6 +1073,7 @@ class NspekDashboard:
             content.append(
                 html.Div(
                     time_text,
+                    id=time_id,
                     className="kf-time",
                 )
             )
@@ -1352,7 +1588,6 @@ class NspekDashboard:
                             title=config["title"],
                             grid_id=config["grid_id"],
                             column_defs=config["columns"],
-                            description=config["description"],
                         )
                         for config in KPI_CONFIG.values()
                     ]
@@ -1919,6 +2154,9 @@ class NspekDashboard:
             Output("nspek-dashboard-total-grid-count", "children"),
             Output("nspek-dashboard-ske-grid-count", "children"),
             Output("nspek-dashboard-constructed-grid-count", "children"),
+            Output("nspek-dashboard-total-grid-year", "children"),
+            Output("nspek-dashboard-ske-grid-year", "children"),
+            Output("nspek-dashboard-constructed-grid-year", "children"),
             Input("nspek-dashboard-aar", "value"),
             Input("nspek-dashboard-refresh", "n_clicks"),
             Input("nspek-dashboard-total-grid-refresh", "n_clicks"),
@@ -1933,7 +2171,7 @@ class NspekDashboard:
             _constructed_refresh,
         ):
             if aar is None:
-                return "0", "0", "0"
+                return "0", "0", "0", "", "", ""
 
             kpis = get_nspek_kpis(aar)
 
@@ -1941,6 +2179,9 @@ class NspekDashboard:
                 f"{kpis['antall_totalt']:,}".replace(",", " "),
                 f"{kpis['antall_ske']:,}".replace(",", " "),
                 f"{kpis['antall_konstruerte']:,}".replace(",", " "),
+                f"{aar}",
+                f"{aar}",
+                f"{aar}",
             )
 
         @callback(
@@ -1950,15 +2191,23 @@ class NspekDashboard:
         )
         def load_total_kpi_rows(request, aar):
             if not request or aar is None:
-                return {"rowData": [], "rowCount": 0}
+                return {
+                    "rowData": [],
+                    "rowCount": 0,
+                }
 
             df, total_count = get_nspek_kpi_modal_data(
-                aar,
+                aar=aar,
                 start_row=request.get("startRow", 0),
                 end_row=request.get("endRow", 100),
+                sort_model=request.get("sortModel", []),
+                filter_model=request.get("filterModel", {}),
             )
 
-            return {"rowData": df.to_dict("records"), "rowCount": total_count}
+            return {
+                "rowData": df.to_dict("records"),
+                "rowCount": total_count,
+            }
 
         @callback(
             Output("nspek-dashboard-ske-grid", "getRowsResponse"),
@@ -1967,16 +2216,24 @@ class NspekDashboard:
         )
         def load_ske_kpi_rows(request, aar):
             if not request or aar is None:
-                return {"rowData": [], "rowCount": 0}
+                return {
+                    "rowData": [],
+                    "rowCount": 0,
+                }
 
             df, total_count = get_nspek_kpi_modal_data(
-                aar,
+                aar=aar,
                 kilde="N",
                 start_row=request.get("startRow", 0),
                 end_row=request.get("endRow", 100),
+                sort_model=request.get("sortModel", []),
+                filter_model=request.get("filterModel", {}),
             )
 
-            return {"rowData": df.to_dict("records"), "rowCount": total_count}
+            return {
+                "rowData": df.to_dict("records"),
+                "rowCount": total_count,
+            }
 
         @callback(
             Output("nspek-dashboard-constructed-grid", "getRowsResponse"),
@@ -1985,16 +2242,24 @@ class NspekDashboard:
         )
         def load_constructed_kpi_rows(request, aar):
             if not request or aar is None:
-                return {"rowData": [], "rowCount": 0}
+                return {
+                    "rowData": [],
+                    "rowCount": 0,
+                }
 
             df, total_count = get_nspek_kpi_modal_data(
-                aar,
+                aar=aar,
                 kilde="K",
                 start_row=request.get("startRow", 0),
                 end_row=request.get("endRow", 100),
+                sort_model=request.get("sortModel", []),
+                filter_model=request.get("filterModel", {}),
             )
 
-            return {"rowData": df.to_dict("records"), "rowCount": total_count}
+            return {
+                "rowData": df.to_dict("records"),
+                "rowCount": total_count,
+            }
 
         @callback(
             Output("nspek-dashboard-total-value", "children"),
