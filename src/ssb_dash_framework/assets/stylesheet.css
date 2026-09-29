@@ -1064,6 +1064,150 @@ ssb-dialog
 }
 
 /*
+ssb-glossary
+*/
+
+.ssb-glossary {
+  display: inline-block;
+  position: relative;
+}
+.ssb-glossary .glossary-button {
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  text-align: left;
+  background-image: linear-gradient(to right, #b6e8b8 50%, #fff 50%);
+  background-position: right bottom;
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  transition: all 0.5s ease-out;
+}
+.ssb-glossary .glossary-button .glossary-text-wrap {
+  border-bottom: 1px dotted #00824d;
+  display: inline;
+  line-height: inherit;
+}
+.ssb-glossary .glossary-button .glossary-logo {
+  color: #1a9d49;
+  margin: 2px;
+  transition: color 0.2s;
+  vertical-align: top;
+}
+.ssb-glossary .glossary-button:hover, .ssb-glossary .glossary-button:focus {
+  background-position: left bottom;
+}
+.ssb-glossary .glossary-button:hover .glossary-logo, .ssb-glossary .glossary-button:focus .glossary-logo {
+  color: #162327;
+}
+.ssb-glossary .glossary-button:hover .glossary-text-wrap, .ssb-glossary .glossary-button:focus .glossary-text-wrap {
+  border-bottom: none;
+}
+.ssb-glossary .glossary-button:focus {
+  outline: #9272fc solid 2px;
+  outline-offset: 2px;
+}
+.ssb-glossary .glossary-popup {
+  font-family: "Open Sans", sans-serif !important;
+  font-stretch: normal;
+  font-weight: normal;
+  animation: fadein 0.2s;
+  display: none;
+  font-size: 14px;
+  left: 50%;
+  margin-left: -135px;
+  opacity: 0;
+  position: absolute;
+  top: 34px;
+  transition: opacity 0.18s;
+  width: 270px;
+  z-index: 999;
+}
+.ssb-glossary .glossary-popup::after {
+  border-color: transparent transparent #274247;
+  border-style: solid;
+  border-width: 12px;
+  content: "";
+  left: 50%;
+  margin-left: -12px;
+  position: absolute;
+  top: -22px;
+}
+.ssb-glossary .glossary-popup.open {
+  display: inline-block;
+  opacity: 1;
+}
+.ssb-glossary .glossary-popup .content-box {
+  background: #274247;
+  color: #fff;
+  padding: 20px;
+  padding-top: 25px;
+  display: block;
+}
+.ssb-glossary .glossary-popup .content-box .glossary-closing {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  user-select: none;
+  width: 100%;
+}
+.ssb-glossary .glossary-popup .content-box .glossary-closing button {
+  all: unset;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 0 0.75rem;
+  height: 44px;
+}
+.ssb-glossary .glossary-popup .content-box .glossary-closing button:focus {
+  outline: #b6e8b8 5px auto;
+}
+.ssb-glossary .glossary-popup .content-box .glossary-closing button .icon {
+  color: #274247;
+  fill: #b6e8b8;
+  font-size: 16px;
+}
+.ssb-glossary .glossary-popup .content-box .glossary-closing button span {
+  line-height: 1.43;
+  margin-left: 2px;
+}
+.ssb-glossary .glossary-popup .content-box .info-text {
+  color: #fff;
+  font-size: 14px;
+}
+
+/*
+Dash override for ssb-glossary
+*/
+
+.ssb-glossary .glossary-popup .content-box .glossary-closing {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 0;
+  height: 44px;
+  width: 100%;
+  user-select: none;
+  color: #fff;
+}
+
+.ssb-glossary .glossary-popup .content-box .glossary-closing .icon circle {
+  fill: #b6e8b8;
+  stroke: #274247;
+}
+
+.ssb-glossary .glossary-popup .content-box .glossary-closing .icon path {
+  fill: none;
+  stroke: #274247;
+}
+
+/*
 Dash override for ssb-radio buttons
 */
 

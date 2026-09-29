@@ -15,6 +15,7 @@ from dash import callback
 from dash import ctx
 from dash import dcc
 from dash import html
+from dash import MATCH
 from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -71,6 +72,10 @@ KPI_CONFIG = {
         "modal_id": "nspek-dashboard-constructed-modal",
         "grid_id": "nspek-dashboard-constructed-grid",
         "kilde": "K",
+        "glossary_text": (
+            "Antall næringsspesifikasjoner som er konstruert av Statistisk Sentralbyrå "
+            "i NSPEK for den valgte årgangen."
+        ),
         "columns": [
             {
                 "field": "orgnr",
@@ -100,6 +105,10 @@ KPI_CONFIG = {
         "modal_id": "nspek-dashboard-ske-modal",
         "grid_id": "nspek-dashboard-ske-grid",
         "kilde": "N",
+        "glossary_text": (
+            "Antall næringsspesifikasjoner mottatt fra Skattetaten "
+            "i NSPEK for den valgte årgangen."
+        ),
         "columns": [
             {
                 "field": "orgnr",
@@ -129,6 +138,10 @@ KPI_CONFIG = {
         "modal_id": "nspek-dashboard-total-modal",
         "grid_id": "nspek-dashboard-total-grid",
         "kilde": None,
+        "glossary_text": (
+            "Totalt antall næringsspesifikasjoner i "
+            "NSPEK for den valgte årgangen."
+        ),
         "columns": [
             {
                 "field": "orgnr",
@@ -916,6 +929,7 @@ class NspekDashboard:
         title: str,
         grid_id: str,
         column_defs: list[dict],
+        glossary_text: str | None = None,
     ) -> dbc.Modal:
         """Create a modal containing KPI information and an AG Grid."""
 
@@ -936,13 +950,17 @@ class NspekDashboard:
                                 # Key figure
                                 dbc.Col(
                                     self.create_key_figure(
-                                        title=f"Antall registreringer {title[0].lower()}{title[1:]}",
+                                        title=(
+                                            f"Antall registreringer "
+                                            f"{title[0].lower()}{title[1:]}"
+                                        ),
                                         component_id=count_id,
                                         size="large",
                                         icon="/proxy/8000/assets/test.svg",
                                         subtitle="foretak",
-                                        time_text="2025",
+                                        time_text="",
                                         time_id=f"{grid_id}-year",
+                                        glossary_text=glossary_text,
                                     ),
                                     md=10,
                                 ),
@@ -956,7 +974,10 @@ class NspekDashboard:
                                             className="ssb-btn primary-btn",
                                             style={"marginBottom": "30px"},
                                         ),
-                                        className="d-flex justify-content-end align-items-end h-100",
+                                        className=(
+                                            "d-flex justify-content-end "
+                                            "align-items-end h-100"
+                                        ),
                                     ),
                                     md=2,
                                     className="d-flex flex-column",
@@ -970,7 +991,7 @@ class NspekDashboard:
                                 id=f"{grid_id}-loading",
                                 className="nspek-loading",
                                 type="default",
-                                color="#1a9d49",
+                                color="#00824D",
                                 overlay_style={
                                     "visibility": "visible",
                                     "filter": "blur(2px)",
@@ -1025,7 +1046,7 @@ class NspekDashboard:
                         ),
                     ],
                     className="d-flex flex-column h-100",
-                    style={"minHeight": 0,},
+                    style={"minHeight": 0},
                 ),
 
                 dbc.ModalFooter(
@@ -1053,6 +1074,7 @@ class NspekDashboard:
         subtitle: str | None = None,
         time_text: str | None = None,
         time_id: str | None = None,
+        glossary_text: str | None = None,
         green_box: bool = False,
     ) -> html.Div:
         """Create an SSB key figure component."""
@@ -1062,14 +1084,86 @@ class NspekDashboard:
         if green_box:
             classes += " green-box"
 
-        content = [
-            html.Span(
+        if glossary_text:
+            glossary_button_id = {
+                "type": "nspek-glossary-button",
+                "index": component_id,
+            }
+            glossary_close_id = {
+                "type": "nspek-glossary-close",
+                "index": component_id,
+            }
+            glossary_popup_id = {
+                "type": "nspek-glossary-popup",
+                "index": component_id,
+            }
+
+            title_component = html.Div(
+                [
+                    # Knapp som åpner glossary
+                    html.Button(
+                        [
+                            html.Div(
+                                title,
+                                className="glossary-text-wrap",
+                            ),
+                            html.Span(
+                                DashIconify(
+                                    icon="feather:book-open",
+                                    width=12,
+                                ),
+                                className="glossary-logo",
+                                **{"aria-hidden": "true"},
+                            ),
+                        ],
+                        id=glossary_button_id,
+                        className="glossary-button",
+                        type="button",
+                    ),
+
+                    # Glossary-popup
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.Span(
+                                        glossary_text,
+                                        className="info-text",
+                                    ),
+                                    html.Button(
+                                        [
+                                            DashIconify(
+                                                icon="feather:x-circle",
+                                                width=16,
+                                                className="icon",
+                                            ),
+                                            html.Span("Lukk"),
+                                        ],
+                                        id=glossary_close_id,
+                                        className="glossary-closing",
+                                        type="button",
+                                    ),
+                                ],
+                                className="content-box",
+                            ),
+                        ],
+                        id=glossary_popup_id,
+                        className="glossary-popup",
+                    ),
+                ],
+                className="ssb-glossary",
+            )
+        else:
+            title_component = html.Span(
                 title,
                 className="kf-title",
-            ),
+            )
+
+        content = [
+            title_component,
         ]
 
-        if time_text:
+        if time_text is not None:
             content.append(
                 html.Div(
                     time_text,
@@ -1506,7 +1600,6 @@ class NspekDashboard:
                                     children=[
                                         dcc.Loading(
                                             id="nspek-dashboard-construct-loading",
-                                            #type="circle",
                                             color="#00824D",
                                             overlay_style={
                                                 "visibility": "visible",
@@ -1588,6 +1681,7 @@ class NspekDashboard:
                             title=config["title"],
                             grid_id=config["grid_id"],
                             column_defs=config["columns"],
+                            glossary_text=config["glossary_text"],
                         )
                         for config in KPI_CONFIG.values()
                     ]
@@ -2364,6 +2458,34 @@ class NspekDashboard:
             )
 
             return str(orgnr), str(aar), str(orgnr)
+
+        @callback(
+            Output(
+                {"type": "nspek-glossary-popup", "index": MATCH},
+                "className",
+            ),
+            Input(
+                {"type": "nspek-glossary-button", "index": MATCH},
+                "n_clicks",
+            ),
+            Input(
+                {"type": "nspek-glossary-close", "index": MATCH},
+                "n_clicks",
+            ),
+            prevent_initial_call=True,
+        )
+        def toggle_glossary(open_clicks, close_clicks):
+            """Open or close an SSB glossary popup."""
+
+            triggered = ctx.triggered_id
+
+            if triggered is None:
+                return "glossary-popup"
+
+            if triggered["type"] == "nspek-glossary-button":
+                return "glossary-popup open"
+
+            return "glossary-popup"
 
 
 class NspekDashboardTab(TabImplementation, NspekDashboard):
