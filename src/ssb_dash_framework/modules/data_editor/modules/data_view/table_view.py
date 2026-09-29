@@ -78,7 +78,7 @@ class DataEditorTable(DataEditorDataView):
             f"  divname: {self.divname}\n"
         )
 
-    def _create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
         return html.Div(
             id=f"{self.divname}",
             style={"display": "none"},

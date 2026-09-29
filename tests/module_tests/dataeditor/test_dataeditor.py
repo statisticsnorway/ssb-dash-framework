@@ -72,7 +72,7 @@ def test_dataeditor_python_api():
             #     applies_to_forms=["RA-xxxx"],
             # ),
             DataViewCustom(
-                layout={"layout": {"type":"row","children":[]}},
+                layout=[{"type":"row","children":[]}],
             ),
         ],
     )
