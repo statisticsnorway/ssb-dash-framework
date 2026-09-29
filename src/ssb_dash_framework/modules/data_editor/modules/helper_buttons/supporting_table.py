@@ -31,8 +31,8 @@ class DataEditorSupportTable:
         self,
         label: str,
         get_data_func: Callable[..., pd.DataFrame],
-        inputs: list[str],
-        states: list[str] | None = None,
+        inputs: list[Any] | None = None,
+        states: list[Any] | None = None,
         pin_leftmost_column: bool = True,
         suffix_to_colour_grey: list[str] | None = None,
     ) -> None:

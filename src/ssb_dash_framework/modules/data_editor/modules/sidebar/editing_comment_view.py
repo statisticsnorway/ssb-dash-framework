@@ -39,7 +39,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
     def _create_layout(self) -> html.Div:
         return html.Div(
             [
-                dbc.Row("Intern kommentar"),
+                dbc.Row("Intern kommentar (skjema)"),
                 dbc.Row(
                     [
                         dbc.Col(
@@ -86,8 +86,13 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             refnr: str, ident, skjema: str, period
         ) -> tuple[str, list[dict[str, str]]]:
             """Collect relevant refnrs."""
-            if not refnr or not skjema or not ident:
+            if not ident:
                 raise PreventUpdate
+
+            if not refnr or not skjema:
+                return None, []
+
+            data = None
             try:
                 data = self.fetcher.get_refnrs_by_period_ident(
                     self.settings, ident, period
@@ -98,7 +103,6 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 )
                 logger.info(error_msg)
                 AlertHandler.info(error_msg)
-                data = None
 
             if data is None or data.empty:
                 return None, []
@@ -113,6 +117,9 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
         )
         def get_comment(refnr: str) -> str:
             """Gets the comment for the selected 'refnr'."""
+
+            if not refnr:
+                raise PreventUpdate
 
             try:
                 comment = self.fetcher.get_comment(refnr)
