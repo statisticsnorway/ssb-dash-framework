@@ -195,9 +195,7 @@ class DataViewCustom(DataEditorDataView):
                     inputs=inputs,
                 )
                 components.append(microlayout)
-            elif (layout["type"] == "CustomView") or (
-                layout["type"] == "DataViewCustom"
-            ):
+            elif layout["type"] == "DataViewCustom":
                 internal_layout = layout["layout"]
                 for item in internal_layout:
                     components.extend(self.build_layout(item))
