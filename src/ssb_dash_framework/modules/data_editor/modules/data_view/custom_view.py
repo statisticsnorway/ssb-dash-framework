@@ -173,7 +173,7 @@ class DataViewCustom(DataEditorDataView):
                 # Updates the global settings object with entries that the yaml file overwrites
                 # Useful for when you need to get data from a different table than in the rest of the app.
                 settings_entries = self.settings.model_dump()
-                settings_entries.update(self._extra_args)
+                settings_entries.update(layout)
                 updates_settings = EditorSettings.model_validate(
                     settings_entries, extra="allow"
                 )
