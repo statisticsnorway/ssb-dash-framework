@@ -83,15 +83,17 @@ If you find a module that sounds helpful for your case, you should be able to im
 
 As an example, a time series module should be based on a data model that is common for time series analysis so that anyone using this methodology can use the module with minimal effort.
 
-### Read operations should be database/backend agnostic
+### Read and write operations should be database/backend agnostic
 
-In order to achieve this, modules should implement a meta class that provides an interface that modules use for getting data required.
+Modules should implement a meta class that provides an interface that modules use for getting data required and updating if necessary.
+
+Updates should also be through a MetaDataHandler. As the different backends SSB uses have different ways of handling these. A standard implementation should always be provided that uses ssb-parquedit as it is the most common backend
 
 This mirrors the pattern shown in hello_module.py, where an abstract *MetaDataHandler class defines the data access contract (e.g. get_message/update_message) and concrete handlers implement it against a specific backend. A user can then swap the handler implementation to point at a different database or file format without changing the module itself.
 
-### Updates to data source should go through TODO: Document
+#### Default handlers whenever possible for documented data models
 
-
+There should be default datahandler implementations for datamodels documented in [docs/datamodels/README.md](datamodels/README.md).
 
 ### Modules must be configurable through yaml files
 
