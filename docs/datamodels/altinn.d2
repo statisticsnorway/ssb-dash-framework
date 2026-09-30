@@ -27,16 +27,16 @@ skjemamottak: {
   }
 
   iso_period: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
   start_date: timestamp
   end_date: timestamp
   skjema: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
   skjema_versjon: varchar
   ident: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
   refnr: varchar {
     constraint: primary_key
@@ -56,12 +56,14 @@ enhetsinfo: {
   }
 
   iso_period: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
   ident: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
-  variable: varchar
+  variable: varchar {
+    constraint: primary_key
+  }
   verdi: varchar
 }
 
@@ -74,18 +76,20 @@ skjemadata: {
   }
 
   iso_period: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
   skjema: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
   ident: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
   refnr: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
-  feltsti: varchar
+  feltsti: varchar {
+    constraint: primary_key
+  }
   feltnavn: varchar
   verdi: varchar
   alias: varchar
@@ -102,16 +106,16 @@ kontaktinfo: {
   }
 
   iso_period: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
   skjema: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
   ident: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
   refnr: varchar {
-    constraint: foreign_key
+    constraint: [primary_key; foreign_key]
   }
   kontaktperson: varchar
   epost: varchar
