@@ -6,7 +6,7 @@ Here you find documentation for each datamodel that ssb-dash-framework aims to s
 
 This is the default datamodel generated from ssb-altinn-form-tools.
 
-![Altinn database ERD](altinn_datamodel.svg)
+![Altinn database ERD](datamodels/altinn_datamodel.svg)
 
 # For maintainers
 

@@ -10,11 +10,15 @@ The simplest way to understand what we call the framework would be to look at th
 
 An essential part of how we structure the core functionality is to ensure it is possible to create independent modules that can be shared across applications. We cannot solve every problem forever, and for that reason we have structured our code towards enabling modular code. This makes it so that we can create modules that address common needs (like checking an entry in the BoF registry), while enabling the user to create their own modules to solve their more specific needs.
 
-## The different parts of the framework
+These modules can be built by inheriting from a common base class ModuleBase, which ensures a lot of the required attributes are set on every instance of the module.
+
+## Core components
+
+This is the framework part of the library.
 
 ### VariableSelector
 
-Simply put, the variable selector enables communication between modules without creating a dependency between modules. It is designed to be plug and play, so that you can freely pick and choose what modules to include in your own app. For a more thorough explanation, see the variableselector explanation.
+Simply put, the variable selector enables communication between modules without creating a dependency between modules. It is designed to be plug and play, so that you can freely pick and choose what modules to include in your own app.
 
 ### app_setup()
 
@@ -36,12 +40,6 @@ This function creates the layout for the app, which contains a few different par
 - A row of tabs at the top that contain modules
 
 This ensures all apps using this library have the same general look and layout, which makes it easier to create reusable components and modules. As long as a module is structured in a few particular ways, it will fit into an existing app. How to structure the module code is explained in its own document.
-
-### Implementations
-
-Inside the library you can also find some helpful classes that aid in implementing a module as a window/modal or a tab, or both. More details about this can be found in the module code explanation.
-
-Having consistent ways to display modules simplifies reuse and makes it simpler to create your own custom module and integrate it with the rest of the framework.
 
 ### AlertHandler
 
