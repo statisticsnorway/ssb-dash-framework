@@ -100,7 +100,7 @@ class DataEditorInfoRow(ModuleABC):
             refnr: str, period: str, states: dict[str, dict]
         ) -> dict[str, str | int | float | bool | None]:
             logger.debug(f"ident: {refnr}\nperiod: {period}\nstates: {states}")
-            if not refnr or not period or not states:
+            if not period or not states:
                 raise PreventUpdate
             info_values = {}
             vars_to_collect: list[InfoRowField] = []
@@ -120,7 +120,7 @@ class DataEditorInfoRow(ModuleABC):
                 error_msg = f"Get field for inforow failed with error: {e}"
                 logger.info(error_msg)
                 AlertHandler.warning(error_msg)
-                info_values.update({var.name: no_update for var in vars_to_collect})
+                info_values.update({var.name: "" for var in vars_to_collect})
 
             logger.debug(f"info_values: {info_values}")
             return info_values

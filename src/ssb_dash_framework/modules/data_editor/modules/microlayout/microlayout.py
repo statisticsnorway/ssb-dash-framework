@@ -21,7 +21,6 @@ from ...utils import EditorSettings
 from ...utils import EDITING_CODE_DROPDOWN
 from dash import no_update
 from .microlayout_components.models import Layout
-# from ssb_dash_framework.utils.core_models import FieldUpdateError
 
 logger = logging.getLogger(__name__)
 
@@ -153,10 +152,10 @@ class MicroLayoutAIO(html.Div):
             def handle_microlayout_callback(
                 fields: dict[str, Any],
                 custom_inputs: list | dict | None,
-                refnr: str | None,
+                refnr: str,
                 skjema: str | None,
                 ident: str | None,
-                period: str | None,
+                period: str,
                 editing_code: str | None = None,
             ):
                 all_ids = {item._id for item in ids}

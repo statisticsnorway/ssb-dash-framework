@@ -14,17 +14,6 @@ from ssb_dash_framework.modules.data_editor.modules.microlayout.microlayout impo
 
 logger = logging.getLogger(__name__)
 
-
-class FieldUpdateError(Exception):
-    """Base class for failed field updates. The user has already been alerted."""
-
-class InvalidValueError(FieldUpdateError):
-    """The value was rejected by validation. Nothing was written."""
-
-class UpdateFailedError(FieldUpdateError):
-    """The database write failed."""
-
-
 def _is_valid_int(v: Any) -> bool | str:
     """Valid only if the string content is a whole number with no decimal separator."""
     s = str(v).strip()
