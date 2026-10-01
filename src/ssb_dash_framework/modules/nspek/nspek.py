@@ -1296,6 +1296,9 @@ def validate_numeric_input(value: str) -> tuple[bool, str | None]:
 
     value = clean_whitespace(str(value))
 
+    # Normaliser Unicode minus til vanlig ASCII-minus
+    value = value.replace("−", "-")
+
     try:
         int(value)
     except ValueError:
@@ -1366,6 +1369,8 @@ def handle_regnskap_edit(
     sekvensnummer = row["sekvensnummer"]
 
     value = clean_whitespace(edited[0]["value"])
+    value = value.replace("−", "-")
+
     old_value = edited[0]["oldValue"]
 
     ok, error = validate_numeric_input(value)
