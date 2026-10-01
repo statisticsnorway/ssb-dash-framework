@@ -86,7 +86,6 @@ from .utils import TabImplementation
 from .utils import WindowImplementation
 from .utils import _get_connection_callable
 from .utils import _get_connection_object
-from .utils import _get_kostra_r
 from .utils import active_no_duplicates_refnr_list
 from .utils import conn_is_ibis
 from .utils import create_alert
@@ -94,13 +93,13 @@ from .utils import create_database
 from .utils import create_database_engine
 from .utils import enable_app_logging
 from .utils import get_connection
-from .utils import hb_method
 from .utils import ibis_filter_with_dict
 from .utils import module_validator
 from .utils import set_connection
 from .utils import set_postgres_connection
 from .utils import set_sqlite_connection
 from .utils import sidebar_button
+
 # from .utils import th_error
 
 __all__ = [
@@ -124,9 +123,8 @@ __all__ = [
     "ControlViewTab",
     "ControlViewWindow",
     "DataEditor",
-    "DataEditor",
-    "DataEditorHistory",
     "DataEditorContactInfo",
+    "DataEditorHistory",
     "DataEditorInfoRow",
     "DataEditorSidebarComment",
     "DataEditorSidebarEditingStatus",
@@ -134,7 +132,6 @@ __all__ = [
     "DataEditorSupportTables",
     "DataEditorTable",
     "DataEditorTableSelector",
-    "DataViewCustom",
     "DataViewCustom",
     "DebugInspector",
     "DemoDataCreator",
@@ -150,11 +147,7 @@ __all__ = [
     "MapDisplayWindow",
     "ModuleConfig",
     "MultiModule",
-    "MultiModule",
     "MultiModuleTab",
-    "MultiModuleTab",
-    "MultiModuleWindow",
-    "MultiModuleWindow",
     "MultiModuleWindow",
     "Naeringsspesifikasjon",
     "NaeringsspesifikasjonTab",
@@ -209,9 +202,6 @@ __all__ = [
     "set_sqlite_connection",
     "set_variables",
     "sidebar_button",
-    #    "hb_method",
-    #    "_get_kostra_r",
-    #    "th_error",
 ]
 
 register_modules()
