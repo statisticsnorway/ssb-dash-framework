@@ -1026,6 +1026,8 @@ def build_regnskap_dataframe(
     )
 
     # Vis kun gyldige poster i gridet
+    df["edit_post"] = df["post"]
+
     df["post"] = df["post"].where(
         df["post"]
         .astype(str)
@@ -1352,12 +1354,16 @@ def handle_regnskap_edit(
 
     row = edited[0]["data"]
 
-    if row.get("is_ui_sum") or not str(row.get("post", "")).strip():
+    if row.get("is_ui_sum"):
+        raise PreventUpdate
+
+    post = row.get("edit_post") or row.get("post")
+
+    if not str(post).strip():
         raise PreventUpdate
 
     ident = row["sekvensnummer"]
     sekvensnummer = row["sekvensnummer"]
-    post = row["post"]
 
     value = clean_whitespace(edited[0]["value"])
     old_value = edited[0]["oldValue"]
