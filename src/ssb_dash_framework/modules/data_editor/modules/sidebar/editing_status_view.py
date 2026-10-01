@@ -129,7 +129,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                             value="CONTACT",
                             options=[
                                 {
-                                    "label": "Kontakt med oppgavegiver",
+                                    "label": "",
                                     "value": "CONTACT",
                                 }
                             ],
