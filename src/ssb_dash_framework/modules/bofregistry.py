@@ -236,14 +236,14 @@ class BofInformation(ABC):
                     [
                         dbc.Col(
                             self.generate_card(
-                                "nace (SN) 2007",
+                                "sn07_1",
                                 "tab-bof_foretak-nace-sn07-card",
                                 "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "nace (SN) 2025",
+                                "sn2025_1",
                                 "tab-bof_foretak-nace-sn25-card",
                                 "text",
                             ),

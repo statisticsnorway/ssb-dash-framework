@@ -8,6 +8,7 @@ from dash import State
 from dash import callback
 from dash import html
 from dash import Patch
+from dash import no_update
 from dash.exceptions import PreventUpdate
 from psycopg_pool import ConnectionPool
 
@@ -20,6 +21,7 @@ from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.connection import get_connection
 from .....utils.core_models import UpdateSkjemadata
 from .....utils.alert_handler import AlertHandler
+from .....utils.core_models import FieldUpdateError
 
 from ...utils import EditorSettings
 from .base import DataEditorDataView
@@ -115,7 +117,6 @@ class DataEditorTable(DataEditorDataView):
         def read_table(selected_table: str, form, refnr, period):
             """Populate the table view with data."""
             
-            print(f"read_table form: {form}")
             if isinstance(form, list):
                 form = form[0] if form else None
 
@@ -185,13 +186,20 @@ class DataEditorTable(DataEditorDataView):
                 long = False
                 variabel = edited[0]["colId"]
 
+            def revert_upon_failed_edit(edited):
+                """Reverts the value of the edited cell. To be used when edits fail."""
+                patch = Patch()
+                patch[edited[0]["rowIndex"]][edited[0]["colId"]] = edited[0]["oldValue"]
+                logger.warning(f"Reverted edited cell to {edited[0]['oldValue']}.")
+                return patch
+
             update = UpdateSkjemadata(
                 table=table,
                 long=long,
                 ident=edited[0]["data"]["ident"],
                 refnr=edited[0]["data"]["refnr"],
                 time_units=self.time_units.name,
-                period=edited[0]["data"]["refnr"],
+                period=period,
                 column=edited[0]["colId"],
                 variable=variabel,
                 value=edited[0]["value"],
@@ -200,18 +208,19 @@ class DataEditorTable(DataEditorDataView):
             )
             logger.info(update)
 
-            success = True
-            if isinstance(_get_connection_object(), ConnectionPool):
-                logger.debug("Attempting to update using ibis logic.")
-                success = update.update_ibis(long)
+            try:
+                update.update_ibis(long)
 
-            if not success:
-                patch = Patch()
-                patch[edited[0]["rowIndex"]][edited[0]["colId"]] = edited[0]["oldValue"]
-                logger.warning(f"Reverted edited cell to {edited[0]['oldValue']}.")
-                return patch
+            except FieldUpdateError as e:
+                logger.warning(f"Edit rejected: {e}")
+                return revert_upon_failed_edit(edited)
 
-            raise PreventUpdate
+            except Exception as e:
+                logger.error(f"Unexpected error updating table: {e}", exc_info=True)
+                AlertHandler.warning(f"Uventet feil ved oppdatering: {e}")
+                return revert_upon_failed_edit(edited)
+
+            return no_update
 
         @callback(  # type: ignore[misc]
             VariableSelector.get_output_object("variabel"),

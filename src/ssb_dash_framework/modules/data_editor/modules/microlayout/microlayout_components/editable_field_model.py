@@ -20,7 +20,7 @@ class FieldCallbackContainer(BaseModel):
     parent_id: str
 
     def get_state(self, aio_id: str):
-        return State({"comp_id": self._id, "aio": aio_id}, "value")
+        return State({"comp_id": self._id, "aio": aio_id}, "value", allow_optional=True)
 
     def get_input(
         self,
