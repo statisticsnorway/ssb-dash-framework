@@ -3,6 +3,7 @@
 import logging
 from abc import ABC
 from abc import abstractmethod
+from itertools import count
 from typing import Any
 from typing import Literal
 from typing import Self
@@ -75,7 +76,7 @@ class ModuleBase(YamlLoadable):
         them unique across modules.
     """
 
-    _number: int = 0
+    _counter: count = count(start=0)
 
     label: str
     module_name: str
@@ -85,12 +86,11 @@ class ModuleBase(YamlLoadable):
     icon: str | Component
 
     def __new__(cls, *args, **kwargs) -> Self:
-        if "module_name" not in cls.__dict__:
-            cls.module_name = cls.__name__
-        cls.module_number = ModuleBase._number
-        ModuleBase._number += 1
-        cls.module_id = f"{cls.module_name}-{cls.module_number}"
-        return super().__new__(cls)
+        self = super().__new__(cls)
+        self.module_name = cls.__dict__.get("module_name", cls.__name__)
+        self.module_number = next(ModuleBase._counter)
+        self.module_id = f"{self.module_name}-{self.module_number}"
+        return self
 
     def __init__(
         self,
