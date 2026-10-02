@@ -88,7 +88,7 @@ class ModuleBase(YamlLoadable):
         if "module_name" not in cls.__dict__:
             cls.module_name = cls.__name__
         cls.module_number = ModuleBase._number
-        cls._number += 1
+        ModuleBase._number += 1
         cls.module_id = f"{cls.module_name}-{cls.module_number}"
         return super().__new__(cls)
 
