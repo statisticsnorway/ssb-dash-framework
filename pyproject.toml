@@ -2,94 +2,91 @@
 name = "ssb-dash-framework"
 version = "0.3.0a0"
 description = "SSB Dash Framework"
-authors = [{ name = "Magnus Theodor Engh", email = "dor@ssb.no" }]
-license = "GPL-3.0"
 readme = "README.md"
 requires-python = ">=3.12"
-dynamic = ["classifiers"]
-# TODO: fix rpy2 dependencies.
+license = "GPL-3.0"
+authors = [{ name = "Magnus Theodor Engh", email = "dor@ssb.no" }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+]  # TODO: fix rpy2 dependencies.
 # Note that rpy2, rpy2-rinterface and rpy2-robjects are temporarily locked to specific versions.
 dependencies = [
-    "click>=8.0.1",
-    "mpmath>=1.3.0", # Pimemorizer uses this
-    "orjson (>=3.10.16,<4.0.0)",
-    "ipykernel (>=6.29.5,<7.0.0)",
-    "geopandas (>=1.1.1,<2.0.0)",
-    "sqlalchemy (>=2.0.43,<3.0.0)",
-    "dash-bootstrap-components (>=2.0.4,<3.0.0)",
-    "dash-bootstrap-templates (>=2.1.0,<3.0.0)",
-    "ibis-framework[polars,postgres] (>=11.0.0)",
-    "pydantic (>=2.12.5,<3.0.0)",
-    "ssb-klass-python (>=1.0.6,<2.0.0)",
-    "psycopg[pool] (>=3.3.3,<4.0.0)",
-    "rpy2 (==3.6.5)",
-    "rpy2-rinterface (==3.6.5)",
-    "rpy2-robjects (==3.6.4)",
-    "ssb-poc-statlog-model (>=2.0.0,<3.0.0)",
-    "dash-iconify (>=0.1.2,<0.2.0)",
-    "pillow (>=12.2.0,<13.0.0)",
-    "pymupdf (>=1.27.2.3,<2.0.0.0)",
-    "pandas (>=2.3.0,<4.0.0)",
-    "duckdb (>=1.3.2,<2.0.0)",
-    "dash-ag-grid (>=35.2.0,<36.0.0)",
-    "dash (==4.1.0)",
-    "gcsfs (>=2026.8.0,<2027.0.0)",
-    "pendulum (>=3.2.0,<4.0.0)",
-    "ssb-parquedit (>=0.0.11,<0.0.12)",
+  "click>=8.0.1",
+  "dash-ag-grid (>=35.2.0,<36.0.0)",
+  "dash-bootstrap-components (>=2.0.4,<3.0.0)",
+  "dash-bootstrap-templates (>=2.1.0,<3.0.0)",
+  "dash-iconify (>=0.1.2,<0.2.0)",
+  "dash (==4.1.0)",
+  "duckdb (>=1.3.2,<2.0.0)",
+  "gcsfs (>=2026.8.0,<2027.0.0)",
+  "geopandas (>=1.1.1,<2.0.0)",
+  "ibis-framework[polars,postgres] (>=11.0.0)",
+  "ipykernel (>=6.29.5,<7.0.0)",
+  "mpmath>=1.3.0",  # Pimemorizer uses this
+  "orjson (>=3.10.16,<4.0.0)",
+  "pandas (>=2.3.0,<4.0.0)",
+  "pendulum (>=3.2.0,<4.0.0)",
+  "pillow (>=12.2.0,<13.0.0)",
+  "psycopg[pool] (>=3.3.3,<4.0.0)",
+  "pydantic (>=2.12.5,<3.0.0)",
+  "pymupdf (>=1.27.2.3,<2.0.0.0)",
+  "rpy2-rinterface (==3.6.5)",
+  "rpy2-robjects (==3.6.4)",
+  "rpy2 (==3.6.5)",
+  "sqlalchemy (>=2.0.43,<3.0.0)",
+  "ssb-klass-python (>=1.0.6,<2.0.0)",
+  "ssb-parquedit (>=0.0.11,<0.0.12)",
+  "ssb-poc-statlog-model (>=2.0.0,<3.0.0)",
 ]
 
 [project.urls]
+Changelog = "https://github.com/statisticsnorway/ssb-dash-framework/releases"
+documentation = "https://statisticsnorway.github.io/ssb-dash-framework"
 homepage = "https://github.com/statisticsnorway/ssb-dash-framework"
 repository = "https://github.com/statisticsnorway/ssb-dash-framework"
-documentation = "https://statisticsnorway.github.io/ssb-dash-framework"
-Changelog = "https://github.com/statisticsnorway/ssb-dash-framework/releases"
 
 [project.scripts]
 ssb-dash-framework = "ssb_dash_framework.__main__:main"
 
 [dependency-groups]
-lint = [
-    "black[jupyter]>=25.11.0",
-    "pre-commit>=4.4.0",
-    "pre-commit-hooks>=6.0.0",
-    "pydoclint>=0.8.3",
-    "ruff>=0.14.5",
-]
 doc = [
-    "furo>=2025.9.25",
-    "myst-parser>=4.0.1",
-    "sphinx>=8.2.3",
-    "sphinx-autobuild>=2025.8.25",
-    "sphinx-autodoc-typehints>=3.5.2",
-    "sphinx-click>=6.1.0",
+  "furo>=2025.9.25",
+  "myst-parser>=4.0.1",
+  "sphinx>=8.2.3",
+  "sphinx-autobuild>=2025.8.25",
+  "sphinx-autodoc-typehints>=3.5.2",
+  "sphinx-click>=6.1.0",
+]
+lint = [
+  "black[jupyter]>=25.11.0",
+  "pre-commit>=4.4.0",
+  "pre-commit-hooks>=6.0.0",
+  "pydoclint>=0.8.3",
+  "ruff>=0.14.5",
 ]
 
 # Type hint stubs should be placed in the dev dependency group
 dev = [
-    {include-group = "lint"},
-    {include-group = "doc"},
-    "coverage[toml]>=7.11.3",
-    "deptry>=0.24.0; python_version < '4.0'",
-    "mypy>=1.18.2",
-    "pygments>=2.19.0",
-    "pytest>=9.0.0",
-    "typeguard>=2.13.3",
-    "xdoctest[colors]>=1.3.0",
+  "coverage[toml]>=7.11.3",
+  "deptry>=0.24.0; python_version < '4.0'",
+  "mypy>=1.18.2",
+  "pygments>=2.19.0",
+  "pytest>=9.0.0",
+  "typeguard>=2.13.3",
+  "xdoctest[colors]>=1.3.0",
+  { include-group = "doc" },
+  { include-group = "lint" },
 ]
 
-[tool.poetry]
-classifiers = ["Development Status :: 4 - Beta"]
-requires-poetry = ">=2.3"
-
-# [tool.poetry.group.dev.dependencies]
-# pandas-stubs = ">=2.3.1"
-
-[tool.poetry.requires-plugins]
-poetry-plugin-export = ">=1.9"
-
-[tool.poetry.dependencies]
-[tool.pytest.ini_options]
-pythonpath = ["src"]
+[build-system]
+requires = ["uv_build>=0.11.0,<0.12.0"]
+build-backend = "uv_build"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
@@ -105,7 +102,7 @@ show_missing = true
 fail_under = 50
 
 [tool.deptry.per_rule_ignores]
-DEP001 = ["nox", "nox_poetry"]  # packages available by default
+DEP001 = ["nox"]  # packages available by default
 
 [tool.mypy]
 strict = true
@@ -124,6 +121,9 @@ check-yield-types = false
 allow-init-docstring = true
 quiet = true
 
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
 [tool.ruff]
 force-exclude = true  # Apply excludes to pre-commit
 show-fixes = true
@@ -131,36 +131,36 @@ src = ["src", "tests"]
 target-version = "py313"  # Minimum Python version supported
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
 extend-exclude = [
-    "__pycache__",
-    "old",
-    ".ipynb_checkpoints",
-    "noxfile.py",
-    "docs/sphinx/conf.py",
+  "__pycache__",
+  "old",
+  ".ipynb_checkpoints",
+  "noxfile.py",
+  "docs/sphinx/conf.py",
 ]
 
 # Ruff rules may be customized as desired: https://docs.astral.sh/ruff/rules/
 [tool.ruff.lint]
 select = [
-    "A",    # prevent using keywords that clobber python builtins
-    "ANN",  # check type annotations
-    "B",    # bugbear: security warnings
-    "D",    # documentation
-    "E",    # pycodestyle
-    "F",    # pyflakes
-    "ISC",  # implicit string concatenation
-    "I",    # sort imports
-    "UP",   # alert you when better syntax is available in your python version
-    "RUF",  # the ruff developer's own rules
+  "A",  # prevent using keywords that clobber python builtins
+  "ANN",  # check type annotations
+  "B",  # bugbear: security warnings
+  "D",  # documentation
+  "E",  # pycodestyle
+  "F",  # pyflakes
+  "ISC",  # implicit string concatenation
+  "I",  # sort imports
+  "UP",  # alert you when better syntax is available in your python version
+  "RUF",  # the ruff developer's own rules
 ]
 ignore = [
-    "ANN202", # Don't require return type annotation for private functions.
-    "ANN401", # Allow type annotation with type Any.
-    "D100",   # Supress undocumented-public-module. Only doc of public api required.
-    "FBT001", # Allow boolean positional arguments in a function.
-    "FBT002", # Allow boolean default positional arguments in a function.
-    "E402",   # Supress module-import-not-at-top-of-file, needed in jupyter notebooks.
-    "E501",   # Supress line-too-long warnings: trust black's judgement on this one.
-    "PLR2004", # Allow to compare with unnamed numerical constants.
+  "ANN202",  # Don't require return type annotation for private functions.
+  "ANN401",  # Allow type annotation with type Any.
+  "D100",  # Supress undocumented-public-module. Only doc of public api required.
+  "FBT001",  # Allow boolean positional arguments in a function.
+  "FBT002",  # Allow boolean default positional arguments in a function.
+  "E402",  # Supress module-import-not-at-top-of-file, needed in jupyter notebooks.
+  "E501",  # Supress line-too-long warnings: trust black's judgement on this one.
+  "PLR2004",  # Allow to compare with unnamed numerical constants.
 ]
 external = ["DOC"]  ## Avoiding removing any codes starting with `DOC` from any `# noqa` directives.
 
@@ -182,20 +182,19 @@ classmethod-decorators = ["classmethod", "validator", "root_validator", "pydanti
 [tool.ruff.lint.per-file-ignores]
 "*/__init__.py" = ["F401"]
 "**/tests/*" = [
-    "ANN001",  # type annotations don't add value for test functions
-    "ANN002",  # type annotations don't add value for test functions
-    "ANN003",  # type annotations don't add value for test functions
-    "ANN201",  # type annotations don't add value for test functions
-    "ANN204",  # type annotations don't add value for test functions
-    "ANN205",  # type annotations don't add value for test functions
-    "ANN206",  # type annotations don't add value for test functions
-    "D100",    # docstrings are overkill for test functions
-    "D101",
-    "D102",
-    "D103",
-    "S101",    # asserts are encouraged in pytest
+  "ANN001",  # type annotations don't add value for test functions
+  "ANN002",  # type annotations don't add value for test functions
+  "ANN003",  # type annotations don't add value for test functions
+  "ANN201",  # type annotations don't add value for test functions
+  "ANN204",  # type annotations don't add value for test functions
+  "ANN205",  # type annotations don't add value for test functions
+  "ANN206",  # type annotations don't add value for test functions
+  "D100",  # docstrings are overkill for test functions
+  "D101",
+  "D102",
+  "D103",
+  "S101",  # asserts are encouraged in pytest
 ]
 
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+exclude-newer = "7 days"
