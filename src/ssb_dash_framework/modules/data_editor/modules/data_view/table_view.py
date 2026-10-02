@@ -35,8 +35,10 @@ class DataEditorTable(DataEditorDataView):
         """Initializes a DataEditorTable for selected tables and forms.
 
         Args:
-            applies_to_tables: A list of tables that the module should apply to.
-            applies_to_forms: A list of forms that the module should apply to.
+            settings: Central configurations defining data tables, fields, and options.
+
+        Raises:
+            RuntimeError: If time_units, refnr, or ident are not defined in VariableSelector.
         """
         self.module_number = DataEditorTable._id_number
         self.module_name = self.__class__.__name__
@@ -77,6 +79,11 @@ class DataEditorTable(DataEditorDataView):
         )
 
     def layout(self) -> html.Div:
+        """Generates the AgGrid-based spreadsheet layout.
+
+        Returns:
+            A Dash Div element.
+        """
         return html.Div(
             id=f"{self.divname}",
             style={"display": "none"},
@@ -98,7 +105,7 @@ class DataEditorTable(DataEditorDataView):
         )
 
     def module_callbacks(self) -> None:
-        """Registers the necessary callbacks."""
+        """Registers callbacks to populate table data, update backend fields on cell editing, and update variables."""
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-aggrid", "rowData"),

@@ -35,6 +35,11 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
         super().__init__()
 
     def _create_layout(self) -> html.Div:
+        """Creates the internal comment sidebar form.
+
+        Returns:
+            A Dash Div element.
+        """
         return html.Div(
             [
                 dbc.Row("Intern kommentar"),
@@ -68,7 +73,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
         )
 
     def module_callbacks(self) -> None:
-        """Registers the callbacks for the module."""
+        """Registers callbacks to find refnrs, retrieve, and save comments."""
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-dropdown-refnr", "value"),

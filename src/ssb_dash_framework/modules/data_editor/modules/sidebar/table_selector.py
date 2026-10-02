@@ -14,12 +14,11 @@ class DataEditorTableSelector(DataEditorHelperSidebar):
         """Initializes the table selector component.
 
         Args:
-            starting_table: Sets the default value of the DataEditorTableSelector dropdown.
-            table_list: Optional override to default list of tables. Defaults to getting all tables starting with the prefix 'skjemadata_'.
+            form_data_tables: A list of tables in the database to select from.
+            starting_table: Sets the default table value to display first.
 
         Raises:
-            NotImplementedError: if another instance of DataEditorTableSelector is already running. Current implementation does not support multiple of the DataEditorTableSelector module.
-            ValueError: If starting table does not exist in table_list.
+            ValueError: If starting_table is not found in form_data_tables.
         """
         self.module_name = self.__class__.__name__
         DataEditorTableSelector._id_number += 1
@@ -35,7 +34,11 @@ class DataEditorTableSelector(DataEditorHelperSidebar):
         self.starting_table = starting_table
 
     def _create_layout(self) -> html.Div:
-        """Creates the component."""
+        """Creates the dropdown table selector component.
+
+        Returns:
+            A Dash Div containing the label and dropdown component.
+        """
         return html.Div(
             [
                 dbc.Label("Tabellvelger"),
@@ -51,11 +54,15 @@ class DataEditorTableSelector(DataEditorHelperSidebar):
         )
 
     def layout(self) -> html.Div:
-        """Returns the layout containing the component."""
+        """Returns the layout containing the component.
+
+        Returns:
+            A Dash Div element.
+        """
         return self._create_layout()
 
     def module_callbacks(
         self,
     ) -> None:  # TODO Add a way to connect selected table to variable selector?
-        """Registers callbacks. Currently no callbacks required from the module itself."""
+        """Registers callbacks. Currently no callbacks are required."""
         pass

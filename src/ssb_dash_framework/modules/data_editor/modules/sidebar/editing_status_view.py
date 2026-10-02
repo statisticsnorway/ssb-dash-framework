@@ -65,6 +65,11 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         super().__init__()
 
     def _create_layout(self) -> html.Div:
+        """Creates the status management layout including status selector radio items and active checklist.
+
+        Returns:
+            A Dash Div element.
+        """
         form_selector = dbc.Modal(
             [
                 dbc.ModalHeader("Innsendte skjemaer fra enheten"),
@@ -141,7 +146,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         )
 
     def module_callbacks(self) -> None:
-        """Registers the callbacks for the module."""
+        """Registers callbacks to set and update form status, activity, and related submission forms."""
 
         @callback(
             VariableSelector.get_refnr(Output),
