@@ -44,14 +44,23 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Get uv version from constraints
+        id: uv-version
+        shell: pwsh
+        run: |
+          $UV_VERSION = (Get-Content .github/workflows/constraints.txt | Where-Object { $_ -match '^uv==' } | ForEach-Object { ($_ -split '==')[1] })
+          echo "version=$UV_VERSION" >> $env:GITHUB_OUTPUT
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
+        with:
+          enable-cache: true
+          version: ${{ steps.uv-version.outputs.version }}
+          python-version: ${{ matrix.python }}
+
       - name: Mark Git directory as safe # Needed for pre-commit checks in container
         run: |
           git config --global --add safe.directory $GITHUB_WORKSPACE
-
-      - name: Set up Python ${{ matrix.python }}
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
-        with:
-          python-version: ${{ matrix.python }}
 
       - name: Compute pre-commit cache key
         if: matrix.session == 'pre-commit'
