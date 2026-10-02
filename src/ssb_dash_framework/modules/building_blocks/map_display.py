@@ -12,7 +12,6 @@ from dash import callback
 from dash import dcc
 from dash import html
 
-from ...config.models import register_module
 from ...utils.base_classes import ModuleBase
 from ...setup.variableselector import VariableSelector
 
@@ -28,7 +27,6 @@ def mapdisplay_default_clickdata(clickdata: dict[str, list[dict[str, Any]]]) -> 
     logger.info(f"Clickdata from map:\n{clickdata}")
     return str(clickdata["points"][0]["location"])
 
-@register_module()
 class MapDisplay(ModuleBase):
     """Module used for creating a map visualization.
 

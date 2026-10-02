@@ -2,13 +2,11 @@ import logging
 
 from dash import html
 
-from ...config import register_module
 from ...utils import ModuleBase
 
 
 logger = logging.getLogger(__name__)
 
-@register_module()
 class Canvas(ModuleBase):
     """The Canvas module is a base class that simplifies adding your own unique view to the framework.
 
