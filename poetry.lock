@@ -1738,7 +1738,7 @@ google-api-core = {version = ">=2.28.0,<3.0.0", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0"
 grpc-google-iam-v1 = ">=0.14.2,<1.0.0"
 grpcio = [
-    {version = ">=1.59.0,<2.0.0", markers = "python_version < \"3.14\""},
+    {version = ">=1.59.0,<2.0.0"},
     {version = ">=1.75.1,<2.0.0", markers = "python_version >= \"3.14\""},
 ]
 proto-plus = ">=1.26.1,<2.0.0"
@@ -6162,4 +6162,4 @@ type = ["pytest-mypy (>=1.0.1) ; platform_python_implementation != \"PyPy\""]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "1cbe2f48b9af3f3eded75efc014a110f1f0cefedff78d162adc14d402ec93818"
+content-hash = "7be68ba6d20265ab779e6554aa8ea4ab28d453171e634bd0a93d76558de247b1"
