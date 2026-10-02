@@ -8,7 +8,6 @@ from dash import html
 from dash import callback, Input, Output
 
 from ...config.models import get_from_module_registry
-from ...config.models import register_module
 
 from .meta import ContextABC
 from .meta import FetcherMeta
@@ -35,7 +34,6 @@ def _parse_module[OutType](
     return cast(OutType, loaded_module)
 
 
-@register_module(as_tab="DataEditor")
 class DataEditor(ModuleBase):
     def __init__(
         self,

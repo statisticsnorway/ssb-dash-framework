@@ -7,13 +7,11 @@ from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 
-from ...config.models import register_module
 from ...utils import ModuleBase
 
 logger = logging.getLogger(__name__)
 
 
-@register_module()
 class MultiModule(ModuleBase):
     """Generic class for switching between modules with a label and module_layout.
 

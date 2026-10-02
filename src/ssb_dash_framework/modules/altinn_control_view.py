@@ -13,7 +13,6 @@ from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 
-from ..config import register_module
 from ..setup.variableselector import VariableSelector
 from ..utils import ModuleBase
 from ..utils.alert_handler import AlertHandler
@@ -31,7 +30,6 @@ default_col_def = {
 }
 
 
-@register_module(as_tab="ControlView", as_window="ControlView")
 class ControlView(ModuleBase):
     """Provides a layout and functionality for a modal that offers a tabular view of the controls."""
 
