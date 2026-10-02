@@ -14,6 +14,8 @@ jobs:
   tests:
     name: ${{ matrix.session }} ${{ matrix.python }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    container:
+      image: ghcr.io/statisticsnorway/docker-rpython-base:latest
     strategy:
       fail-fast: false
       matrix:
