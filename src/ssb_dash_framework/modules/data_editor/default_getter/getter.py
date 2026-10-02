@@ -4,8 +4,7 @@ from typing import Any, Literal
 from dash import no_update
 import ibis.selectors as s
 import pandas as pd
-from ....config.models import register_module
-from ssb_dash_framework.modules.data_editor.modules.helper_buttons.meta import ContactInfo
+from ..modules.helper_buttons.meta import ContactInfo
 import tzlocal
 from ibis import _
 from pandas import Series
@@ -27,7 +26,6 @@ from .form_cache import FormGetterCached
 logger = logging.getLogger(__name__)
 local_tz = tzlocal.get_localzone()
 
-@register_module()
 class StandardDataHandler(FetcherMeta):
 
     def __init__(self) -> None:

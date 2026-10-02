@@ -17,7 +17,6 @@ from dash import no_update
 from dash.exceptions import PreventUpdate
 
 from .....utils.alert_handler import AlertHandler
-from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from ...utils import EDITING_CODE_DROPDOWN
 
@@ -28,7 +27,6 @@ logger = logging.getLogger(__name__)
 local_tz = tzlocal.get_localzone()
 
 
-@register_module()
 class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
     """A sidebar module for inspecting and updating the status of the selected form by 'refnr'.
 

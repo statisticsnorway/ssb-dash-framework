@@ -8,7 +8,7 @@ from .modules.inforow.meta import InforowMeta
 from .modules.helper_buttons.meta import HelperButtonMeta
 from .modules.microlayout.meta import MicrolayoutMeta
 
-from ...utils.base_classes import YamlLoadable
+from ...config.models import YamlLoadable
 
 SettingsType = EditorSettings
 

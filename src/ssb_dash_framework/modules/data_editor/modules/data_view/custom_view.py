@@ -11,7 +11,6 @@ from dash import html
 from dash.exceptions import PreventUpdate
 
 from .....modules.data_editor.utils import EditorSettings
-from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from ..microlayout.microlayout import MicroLayoutAIO
 from .base import DataEditorDataView
@@ -158,7 +157,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@register_module()
 class DataViewCustom(DataEditorDataView):
     """DataView with a very flexible layout made to be tailored to specific needs."""
 
@@ -228,6 +226,20 @@ class DataViewCustom(DataEditorDataView):
 
                 if len(inputs) == 0:
                     inputs.append(VariableSelector.get_refnr(Input))
+
+                input_id = layout.get("ident_col")
+                refnr_col = layout.get("refnr_col", self.settings.refnr_col)
+                if input_id in ("var-ident", "ident") or refnr_col != "refnr":
+                    ref_input = VariableSelector.get_ident(Input)
+                else:
+                    ref_input = VariableSelector.get_refnr(Input)
+
+                input_id = layout.get("ident_col")
+                refnr_col = layout.get("refnr_col", self.settings.refnr_col)
+                if input_id in ("var-ident", "ident") or refnr_col != "refnr":
+                    ref_input = VariableSelector.get_ident(Input)
+                else:
+                    ref_input = VariableSelector.get_refnr(Input)
 
                 microlayout = MicroLayoutAIO(
                     data_handler=self.fetcher,

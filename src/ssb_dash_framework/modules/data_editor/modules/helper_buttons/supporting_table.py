@@ -15,13 +15,11 @@ from dash.exceptions import PreventUpdate
 
 from ssb_dash_framework.setup import VariableSelector
 
-from .....config.models import register_module
 from .editor_helper_button import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)
 
 
-# @register_module()
 class DataEditorSupportTable:
     """Class for adding a supporting context or reference table to the DataEditor.
 
@@ -122,7 +120,6 @@ class DataEditorSupportTable:
         )
 
 
-@register_module()
 class DataEditorSupportTables(DataEditorHelperButton):
     """Module providing a collection of supporting reference tables inside a modal.
 

@@ -1,0 +1,148 @@
+direction: right
+
+enheter: {
+  shape: sql_table
+
+  id: int {
+    constraint: primary_key
+  }
+
+  iso_period: varchar {
+    constraint: primary_key
+  }
+  skjema: varchar {
+    constraint: primary_key
+  }
+  ident: varchar {
+    constraint: primary_key
+  }
+}
+
+
+skjemamottak: {
+  shape: sql_table
+
+  id: int {
+    constraint: primary_key
+  }
+
+  iso_period: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  start_date: timestamp
+  end_date: timestamp
+  skjema: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  skjema_versjon: varchar
+  ident: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  refnr: varchar {
+    constraint: primary_key
+  }
+  kommentar: varchar
+  dato_mottatt: timestamp
+  status: varchar
+  aktiv: boolean
+}
+
+
+enhetsinfo: {
+  shape: sql_table
+
+  id: int {
+    constraint: primary_key
+  }
+
+  iso_period: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  ident: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  variable: varchar {
+    constraint: primary_key
+  }
+  verdi: varchar
+}
+
+
+skjemadata: {
+  shape: sql_table
+
+  id: int {
+    constraint: primary_key
+  }
+
+  iso_period: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  skjema: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  ident: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  refnr: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  feltsti: varchar {
+    constraint: primary_key
+  }
+  feltnavn: varchar
+  verdi: varchar
+  alias: varchar
+  dybde: int
+  indeks: int
+}
+
+
+kontaktinfo: {
+  shape: sql_table
+
+  id: int {
+    constraint: primary_key
+  }
+
+  iso_period: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  skjema: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  ident: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  refnr: varchar {
+    constraint: [primary_key; foreign_key]
+  }
+  kontaktperson: varchar
+  epost: varchar
+  telefon: varchar
+  bekreftet_kontaktinfo: varchar
+  kommentar_kontaktinfo: varchar
+  kommentar_krevende: varchar
+}
+
+
+# Enheter -> Enhetsinfo
+enheter.iso_period -> enhetsinfo.iso_period
+enheter.ident -> enhetsinfo.ident
+
+# Enheter -> Skjemamottak
+enheter.iso_period -> skjemamottak.iso_period
+enheter.skjema -> skjemamottak.skjema
+enheter.ident -> skjemamottak.ident
+
+# Skjemamottak -> Skjemadata
+skjemamottak.iso_period -> skjemadata.iso_period
+skjemamottak.skjema -> skjemadata.skjema
+skjemamottak.ident -> skjemadata.ident
+skjemamottak.refnr -> skjemadata.refnr
+
+# Skjemamottak -> Kontaktinfo
+skjemamottak.iso_period -> kontaktinfo.iso_period
+skjemamottak.skjema -> kontaktinfo.skjema
+skjemamottak.ident -> kontaktinfo.ident
+skjemamottak.refnr -> kontaktinfo.refnr

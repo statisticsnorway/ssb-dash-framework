@@ -98,8 +98,8 @@ An explanation of how gitflow works can be found here: https://www.atlassian.com
 
 ## License
 
-Distributed under the terms of the [GNU license][license],
-_SSB Sirius Dash_ is free and open source software.
+Distributed under the terms of the [MIT license][license],
+_SSB Dash Framework_ is free and open source software.
 
 ## Issues
 

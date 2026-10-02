@@ -1,11 +1,11 @@
 """SSB Dash Framework."""
 
+from . import experimental
 from .config import AppConfig
 from .config import AppModules
 from .config import AppSettings
 from .config import ModuleConfig
 from .config import RegisteredModule
-#from .config import VariableSelectorConfig
 from .config import apply_app_settings
 from .config import build_app_from_config
 from .config import build_modules
@@ -13,7 +13,6 @@ from .config import config_parser_yaml
 from .config import get_from_module_registry
 from .config import get_module_registry
 from .config import instantiate_module
-from .config import register_module
 from .config import run_app_from_config
 from .control import ControlFrameworkBase
 from .control import register_control
@@ -53,8 +52,8 @@ from .modules import export_from_parqueteditor
 from .modules import get_export_log_path
 from .modules import get_log_path
 from .setup import VariableSelector
-from .setup import VariableSelectorOption
 from .setup import VariableSelectorConfig
+from .setup import VariableSelectorOption
 from .setup import app_setup
 from .setup import main_layout
 from .setup import set_variables
@@ -66,7 +65,6 @@ from .utils import TabImplementation
 from .utils import WindowImplementation
 from .utils import _get_connection_callable
 from .utils import _get_connection_object
-from .utils import _get_kostra_r
 from .utils import active_no_duplicates_refnr_list
 from .utils import conn_is_ibis
 from .utils import create_alert
@@ -74,13 +72,13 @@ from .utils import create_database
 from .utils import create_database_engine
 from .utils import enable_app_logging
 from .utils import get_connection
-from .utils import hb_method
 from .utils import ibis_filter_with_dict
 from .utils import module_validator
 from .utils import set_connection
 from .utils import set_postgres_connection
 from .utils import set_sqlite_connection
 from .utils import sidebar_button
+
 # from .utils import th_error
 
 __all__ = [
@@ -94,9 +92,8 @@ __all__ = [
     "ControlFrameworkBase",
     "ControlView",
     "DataEditor",
-    "DataEditor",
-    "DataEditorHistory",
     "DataEditorContactInfo",
+    "DataEditorHistory",
     "DataEditorInfoRow",
     "DataEditorSidebarComment",
     "DataEditorSidebarEditingStatus",
@@ -104,7 +101,6 @@ __all__ = [
     "DataEditorSupportTables",
     "DataEditorTable",
     "DataEditorTableSelector",
-    "DataViewCustom",
     "DataViewCustom",
     "DebugInspector",
     "DemoDataCreator",
@@ -114,7 +110,6 @@ __all__ = [
     "MapDisplay",
     "ModuleBase",
     "ModuleConfig",
-    "MultiModule",
     "MultiModule",
     "Naeringsspesifikasjon",
     "NaeringsspesifikasjonTab",
@@ -147,6 +142,7 @@ __all__ = [
     "create_database",
     "create_database_engine",
     "enable_app_logging",
+    "experimental",
     "export_from_parqueteditor",
     "get_connection",
     "get_export_log_path",
@@ -158,15 +154,10 @@ __all__ = [
     "main_layout",
     "module_validator",
     "register_control",
-    "register_module",
     "run_app_from_config",
     "set_connection",
     "set_postgres_connection",
     "set_sqlite_connection",
     "set_variables",
     "sidebar_button",
-    #    "hb_method",
-    #    "_get_kostra_r",
-    #    "th_error",
 ]
-

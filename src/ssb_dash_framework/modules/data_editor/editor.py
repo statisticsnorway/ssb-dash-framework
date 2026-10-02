@@ -8,7 +8,6 @@ from dash import html
 from dash import callback, Input, Output
 
 from ...config.models import get_from_module_registry
-from ...config.models import register_module
 
 from .meta import ContextABC
 from .meta import FetcherMeta
@@ -49,7 +48,6 @@ def _parse_module[OutType](
     return cast(OutType, loaded_module)
 
 
-@register_module(as_tab="DataEditor")
 class DataEditor(ModuleBase):
     """The main micro-editing module that orchestrates layout, sidebars, and custom forms.
 
@@ -124,7 +122,7 @@ class DataEditor(ModuleBase):
             for view in dataview:
                 view.set_settings(data_handler, settings, instance_id)
                 dataview_list.append(view.layout())
-
+        
         self.dataview_layouts = {}
         if dataview is not None:
             for view, layout_div in zip(dataview, dataview_list):

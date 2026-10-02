@@ -1,7 +1,7 @@
 # Contributor Guide
 
 Thank you for your interest in improving this project.
-This project is open-source under the [GNU license] and
+This project is open-source under the [MIT license] and
 welcomes contributions in the form of bug reports, feature requests, and pull requests.
 
 Here is a list of important resources for contributors:
@@ -147,7 +147,7 @@ and/or steps to reproduce the issue.
 
 Request features on the [Issue Tracker].
 
-[GNU license]: https://opensource.org/license/gpl-3-0
+[mit license]: https://opensource.org/licenses/MIT
 [source code]: https://github.com/statisticsnorway/ssb-dash-framework
 [Docs folder]: https://github.com/statisticsnorway/ssb-dash-framework/tree/main/docs
 [documentation]: https://statisticsnorway.github.io/ssb-dash-framework

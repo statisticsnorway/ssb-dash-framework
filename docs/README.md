@@ -1,10 +1,14 @@
 ## The structure of the documentation
 
-The documentation is divided into four folders. Most documentation will be in english.
-- *norsk*: This folder contains documentation for SSB internally. It is intended to be used for beginners and will be limited in the amount of topics covered. The focus is on on-boarding.
-- *tutorials*: This folder contains tutorials for the different packages. The tutorials are intended to be used as a starting point for new users. They are not intended to be exhaustive, but rather to give an overview of the package and its capabilities.
-- *how-to*: This folder contains how-tos for the different packages. The how-tos are intended to be used as a reference for more advanced users. They are not intended to be exhaustive, but show some pratical examples of how to solve some problems.
-- *explanations*: This folder contains explanations of the different packages. The explanations are intended to be used as a reference for more advanced users. They are intended to be focused on the overarching principles of the package and the thinking that lead up to its current shape.
+The source of truth for architecture and design decisions can be found in [docs/architecture.md](architecture.md).
+
+For supported datamodels see [docs/datamodels.md](datamodels.md)
+
+For examples of how to build and configure apps, look in the [demo folder](../demo/).
+
+For tips, tricks and unsupported/unintended ways to manipulate the functionality of an app, you can consult the [docs/arcane_compendium.md](arcane_compendium.md).
+
+The *norsk* folder contains documentation for SSB internally. It is intended to be used for beginners and will be limited in the amount of topics covered. The focus is on on-boarding.
 
 You can find the reference documentation in the docstrings, and as a part of the github pages.
 

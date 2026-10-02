@@ -12,7 +12,6 @@ from dash import html
 from dash.exceptions import PreventUpdate
 
 from .....utils.alert_handler import AlertHandler
-from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 
 from .editing_sidebar_helper import DataEditorHelperSidebar
@@ -20,7 +19,6 @@ from .editing_sidebar_helper import DataEditorHelperSidebar
 logger = logging.getLogger(__name__)
 
 
-@register_module()
 class DataEditorSidebarComment(DataEditorHelperSidebar):
     """Sidebar component for showing a field comment."""
 

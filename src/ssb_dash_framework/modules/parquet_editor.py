@@ -24,8 +24,6 @@ from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 
 from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
-from ..utils.module_validation import module_validator
-from ..config.models import register_module
 from ..utils.base_classes import ModuleBase
 
 logger = logging.getLogger(__name__)
@@ -52,9 +50,6 @@ def check_for_bucket_path(path: str | Path) -> None:
         )
 
 
-@register_module(
-    as_tab="ParquetEditor",
-)
 class ParquetEditor(ModuleBase):
     """Simple module with the sole purpose of editing a parquet file.
 
@@ -536,9 +531,6 @@ class ParquetEditor(ModuleBase):
         return changelog_entry
 
 
-@register_module(
-    as_tab="ParquetEditorChangelog",
-)
 class ParquetEditorChangelog(ModuleBase):
     """Simple module with the sole purpose of showing the changes made using ParquetEditor.
 
