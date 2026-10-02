@@ -1711,6 +1711,38 @@ class Naeringsspesifikasjon:
                         dbc.Row(
                             [
                                 dbc.Col(
+                                    self.create_info_card(
+                                        title="Navn",
+                                        component_id="bof-info-card-navn",
+                                        var_type="text",
+                                    ),
+                                    width=4,
+                                ),
+                                dbc.Col(
+                                    self.create_info_card(
+                                        title="Orgform",
+                                        component_id="bof-info-card-organisasjonsform",
+                                        var_type="text",
+                                    ),
+                                    width=1,
+                                ),
+                                dbc.Col(
+                                    self.create_info_card(
+                                        title="Statuskode",
+                                        component_id="bof-info-card-statuskode",
+                                        var_type="text",
+                                    ),
+                                    width=1,
+                                ),
+                                dbc.Col(
+                                    self.create_info_card(
+                                        title="Næringskode SN25",
+                                        component_id="bof-info-card-naringskode25",
+                                        var_type="text",
+                                    ),
+                                    width=2,
+                                ),
+                                dbc.Col(
                                     dbc.Button(
                                         "Oppdater data",
                                         id="btn-hent-data",
@@ -1718,7 +1750,6 @@ class Naeringsspesifikasjon:
                                     ),
                                     width=2,
                                 ),
-                                dbc.Col(width=2),  # tom spacer
                                 dbc.Col(
                                     dbc.Button(
                                         "Editeringslogg",
@@ -2017,38 +2048,6 @@ class Naeringsspesifikasjon:
                                 children=[
                                     dbc.Col(
                                         self.create_info_card(
-                                            title="Organisasjonsnummer",
-                                            component_id="bof-info-card-organisasjonsnummer",
-                                            var_type="text",
-                                        ),
-                                        width=2,
-                                    ),
-                                    dbc.Col(
-                                        self.create_info_card(
-                                            title="Navn",
-                                            component_id="bof-info-card-navn",
-                                            var_type="text",
-                                        ),
-                                        width=4,
-                                    ),
-                                    dbc.Col(
-                                        self.create_info_card(
-                                            title="Orgform",
-                                            component_id="bof-info-card-organisasjonsform",
-                                            var_type="text",
-                                        ),
-                                        width=2,
-                                    ),
-                                    dbc.Col(
-                                        self.create_info_card(
-                                            title="Næringskode SN25",
-                                            component_id="bof-info-card-naringskode25",
-                                            var_type="text",
-                                        ),
-                                        width=2,
-                                    ),
-                                    dbc.Col(
-                                        self.create_info_card(
                                             title="Næringskode SN07",
                                             component_id="bof-info-card-naringskode07",
                                             var_type="text",
@@ -2067,14 +2066,6 @@ class Naeringsspesifikasjon:
                                         self.create_info_card(
                                             title="Kommune",
                                             component_id="bof-info-card-kommunekode",
-                                            var_type="text",
-                                        ),
-                                        width=2,
-                                    ),
-                                    dbc.Col(
-                                        self.create_info_card(
-                                            title="Statuskode",
-                                            component_id="bof-info-card-statuskode",
                                             var_type="text",
                                         ),
                                         width=2,
@@ -2371,6 +2362,7 @@ class Naeringsspesifikasjon:
                                 dcc.Loading(
                                     id="Resultatregnskap-loading",
                                     type="default",
+                                    color="#00824D",
                                     overlay_style={
                                         "visibility": "visible",
                                         "filter": "blur(2px)",
@@ -2431,6 +2423,7 @@ class Naeringsspesifikasjon:
                                 dcc.Loading(
                                     id="Balanseregnskap-loading",
                                     type="default",
+                                    color="#00824D",
                                     overlay_style={
                                         "visibility": "visible",
                                         "filter": "blur(2px)",
@@ -2477,6 +2470,7 @@ class Naeringsspesifikasjon:
                                 dcc.Loading(
                                     id="kontrollutslag-loading",
                                     type="default",
+                                    color="#00824D",
                                     overlay_style={
                                         "visibility": "visible",
                                         "filter": "blur(2px)",
@@ -2566,10 +2560,6 @@ class Naeringsspesifikasjon:
         """Defines the callbacks for the Naeringsspesifikasjon module."""
 
         @callback(
-            Output(
-                component_id="bof-info-card-organisasjonsnummer",
-                component_property="value",
-            ),
             Output(component_id="bof-info-card-navn", component_property="value"),
             Output(
                 component_id="bof-info-card-organisasjonsform",
@@ -2604,7 +2594,7 @@ class Naeringsspesifikasjon:
             These cards will hold bof information for the foretak.
             """
             if refresh_data and refresh_data.get("status") == "invalid_search":
-                return ("", "", "", "", "", "", "", "", "", "", "")
+                return ("", "", "", "", "", "", "", "", "", "")
         
             if not orgnr_foretak or not aar:
                 raise PreventUpdate
@@ -2612,9 +2602,8 @@ class Naeringsspesifikasjon:
             df = get_bofinfo(ident=orgnr_foretak, aar=aar)
 
             if df.empty:
-                return ("", "", "", "", "", "", "", "", "", "", "")
+                return ("", "", "", "", "", "", "", "", "", "")
 
-            orgnr = get_value(df["orgnr"])
             navn = get_value(df["navn"])
             org_form = get_value(df["org_form"])
             sn2025_1 = get_value(df["sn2025_1"])
@@ -2627,7 +2616,6 @@ class Naeringsspesifikasjon:
             undersektor_2014 = get_value(df["undersektor_2014"])
 
             return (
-                orgnr,
                 navn,
                 org_form,
                 sn2025_1,

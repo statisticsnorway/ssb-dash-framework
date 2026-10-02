@@ -97,6 +97,11 @@ KPI_CONFIG = {
                 "headerName": "Antall editeringer",
                 "filter": "agNumberColumnFilter",
             },
+            {
+                "field": "antall_kontrollutslag",
+                "headerName": "Antall kontrollutslag",
+                "filter": "agNumberColumnFilter",
+            },
         ],
     },
     "ske": {
@@ -128,6 +133,11 @@ KPI_CONFIG = {
             {
                 "field": "antall_endringer",
                 "headerName": "Antall editeringer",
+                "filter": "agNumberColumnFilter",
+            },
+            {
+                "field": "antall_kontrollutslag",
+                "headerName": "Antall kontrollutslag",
                 "filter": "agNumberColumnFilter",
             },
         ],
@@ -166,6 +176,11 @@ KPI_CONFIG = {
             {
                 "field": "antall_endringer",
                 "headerName": "Antall editeringer",
+                "filter": "agNumberColumnFilter",
+            },
+            {
+                "field": "antall_kontrollutslag",
+                "headerName": "Antall kontrollutslag",
                 "filter": "agNumberColumnFilter",
             },
         ],
@@ -225,6 +240,7 @@ def get_nspek_kpi_modal_data(
         "kilde": "r.kilde",
         "sekvensnummer": "r.sekvensnummer",
         "antall_endringer": "COALESCE(u.antall_endringer, 0)",
+        "antall_kontrollutslag": "COALESCE(k.antall_kontrollutslag, 0)",
     }
 
     filter_columns = {
@@ -233,6 +249,7 @@ def get_nspek_kpi_modal_data(
         "kilde": "r.kilde",
         "sekvensnummer": "r.sekvensnummer",
         "antall_endringer": "COALESCE(u.antall_endringer, 0)",
+        "antall_kontrollutslag": "COALESCE(k.antall_kontrollutslag, 0)",
     }
 
     # ------------------------------------------------------------------
@@ -396,10 +413,23 @@ def get_nspek_kpi_modal_data(
                 r.dato_mottatt AS tidspunkt,
                 r.kilde,
                 r.sekvensnummer,
-                COALESCE(u.antall_endringer, 0) AS antall_endringer
+                COALESCE(u.antall_endringer, 0) AS antall_endringer,
+                COALESCE(k.antall_kontrollutslag, 0) AS antall_kontrollutslag
             FROM nspek_core.registrering AS r
+
             LEFT JOIN nspek_core.v_update_counts AS u
                 ON r.sekvensnummer = u.sekvensnummer
+
+            LEFT JOIN (
+                SELECT
+                    sekvensnummer,
+                    COUNT(*) AS antall_kontrollutslag
+                FROM nspek_core.kontrollutslag
+                WHERE utslag = TRUE
+                GROUP BY sekvensnummer
+            ) AS k
+                ON r.sekvensnummer = k.sekvensnummer
+
             WHERE {where_sql}
             ORDER BY {order_sql}
             LIMIT {limit}
@@ -424,8 +454,20 @@ def get_nspek_kpi_modal_data(
         count_query = f"""
             SELECT COUNT(*)
             FROM nspek_core.registrering AS r
+
             LEFT JOIN nspek_core.v_update_counts AS u
                 ON r.sekvensnummer = u.sekvensnummer
+
+            LEFT JOIN (
+                SELECT
+                    sekvensnummer,
+                    COUNT(*) AS antall_kontrollutslag
+                FROM nspek_core.kontrollutslag
+                WHERE utslag = TRUE
+                GROUP BY sekvensnummer
+            ) AS k
+                ON r.sekvensnummer = k.sekvensnummer
+
             WHERE {where_sql}
         """
 
@@ -448,6 +490,7 @@ def get_nspek_kpi_modal_data(
             "kilde",
             "sekvensnummer",
             "antall_endringer",
+            "antall_kontrollutslag",
         ],
     )
 
@@ -460,6 +503,15 @@ def get_nspek_kpi_modal_data(
         df["antall_endringer"] = (
             pd.to_numeric(
                 df["antall_endringer"],
+                errors="coerce",
+            )
+            .fillna(0)
+            .astype(int)
+        )
+
+        df["antall_kontrollutslag"] = (
+            pd.to_numeric(
+                df["antall_kontrollutslag"],
                 errors="coerce",
             )
             .fillna(0)
