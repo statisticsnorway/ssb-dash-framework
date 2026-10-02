@@ -9,6 +9,7 @@ import dash_bootstrap_components as dbc
 # import ibis
 from dash import callback
 from dash import callback_context as ctx
+from dash import dcc
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -18,6 +19,7 @@ from dash_iconify import DashIconify
 
 from ssb_dash_framework import ControlFrameworkBase
 
+# from eimerdb import EimerDBInstance
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
@@ -87,7 +89,7 @@ class NspekControlView(ABC):
             style={
                 "width": "100%",
                 "minWidth": "0",
-                "maxWidth": "1400px",
+                #"maxWidth": "1600px",
             },
             children=[
                 dbc.Row(
@@ -114,37 +116,61 @@ class NspekControlView(ABC):
                     className="g-2 mb-2",
                 ),
                 dbc.Row(
-                    dbc.Col(
-                        dag.AgGrid(
-                            id=f"{self.module_number}-kontroller",
-                            defaultColDef=default_col_def,
-                            className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            dashGridOptions={
-                                "rowSelection": "single",
-                                "rowHeight": 30,
-                            },
-                            style={"height": "500px"},
-                        ),
-                        style={"flexShrink": 0},
-                        width=12,
+                    dcc.Loading(
+                        id=f"{self.module_number}-kontroller-loading",
+                        type="default",
+                        color="#00824D",
+                        overlay_style={
+                            "visibility": "visible",
+                            "filter": "blur(2px)",
+                        },
+                        children=[
+                            dbc.Col(
+                                dag.AgGrid(
+                                    id=f"{self.module_number}-kontroller",
+                                    defaultColDef=default_col_def,
+                                    className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
+                                    dashGridOptions={
+                                        "rowSelection": "single",
+                                        "rowHeight": 30,
+                                        "loading": False,
+                                    },
+                                    style={"height": "500px"},
+                                ),
+                                style={"flexShrink": 0},
+                                width=12,
+                            ),
+                        ],
                     ),
                 ),
                 html.Hr(),
                 dbc.Row(
-                    dbc.Col(
-                        dag.AgGrid(
-                            id=f"{self.module_number}-kontrollutslag",
-                            defaultColDef=default_col_def,
-                            className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            dashGridOptions={
-                                "pagination": True,
-                                "rowSelection": "single",
-                                "rowHeight": 30,
-                            },
-                            style={"height": "500px"},
-                        ),
-                        width=12,
-                    )
+                    dcc.Loading(
+                        id=f"{self.module_number}-kontrollutslag-loading",
+                        type="default",
+                        color="#00824D",
+                        overlay_style={
+                            "visibility": "visible",
+                            "filter": "blur(2px)",
+                        },
+                        children=[
+                            dbc.Col(
+                                dag.AgGrid(
+                                    id=f"{self.module_number}-kontrollutslag",
+                                    defaultColDef=default_col_def,
+                                    className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
+                                    dashGridOptions={
+                                        "pagination": True,
+                                        "rowSelection": "single",
+                                        "rowHeight": 30,
+                                        "loading": False,
+                                    },
+                                    style={"height": "500px"},
+                                ),
+                                width=12,
+                            ),
+                        ],
+                    ),
                 ),
             ],
         )
@@ -158,6 +184,7 @@ class NspekControlView(ABC):
             "aar": 100,
             "tema": 100,
             "sist_kjoert": 140,
+            "aktiv": 100,
             "utslag": 80,
             "verdi": 160,
             "kontrollid": 220,
@@ -181,6 +208,7 @@ class NspekControlView(ABC):
             "sekvensnummer": "Sekvens",
             "ident": "Orgnr",
             "utslag": "Utslag",
+            "aktiv": "Aktiv",
             "verdi": "Avvik",
             "org_form": "Orgform",
             "sn2025_1": "SN2025",
@@ -312,11 +340,12 @@ class NspekControlView(ABC):
         @callback(
             Output(f"{self.module_number}-kontrollutslag", "rowData"),
             Output(f"{self.module_number}-kontrollutslag", "columnDefs"),
+            Output(f"{self.module_number}-kontrollutslag", "filterModel"),
             Input(f"{self.module_number}-kontroller", "selectedRows"),
+            State(f"{self.module_number}-kontrollutslag", "filterModel"),
             prevent_initial_call=True,
         )
-        def get_kontrollutslag(selected):
-
+        def get_kontrollutslag(selected, current_filter_model):
             if not selected:
                 raise PreventUpdate
 
@@ -336,13 +365,27 @@ class NspekControlView(ABC):
             )
 
             if df is None or df.empty:
-                return [], []
+                return [], [], {}
 
             df["foretak"] = df["ident"]
 
             columns = self._create_column_defs(df)
 
-            return df.to_dict("records"), columns
+            if not current_filter_model:
+                filter_model = {
+                    "aktiv": {
+                        "filterType": "boolean",
+                        "type": "true",
+                    }
+                }
+            else:
+                filter_model = current_filter_model
+
+            return (
+                df.to_dict("records"),
+                columns,
+                filter_model,
+            )
 
         @callback(
             *[

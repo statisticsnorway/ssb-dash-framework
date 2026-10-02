@@ -10,6 +10,9 @@ from .nspek_control_engine import run_controls_changed_fields_for_sekvensnummer
 from .nspek_control_view import NspekControlViewTab
 from .nspek_control_view import NspekControlViewWindow
 from .nspek_controls import NspekControls
+from .nspek_dashboard import NspekDashboard
+from .nspek_dashboard import NspekDashboardTab
+from .nspek_dashboard import NspekDashboardWindow
 from .nspek_utils import get_nspek_connection
 from .nspek_utils import set_nspek_connection
 
@@ -21,6 +24,9 @@ __all__ = [
     "NspekControlViewTab",
     "NspekControlViewWindow",
     "NspekControls",
+    "NspekDashboard",
+    "NspekDashboardTab",
+    "NspekDashboardWindow",
     "get_controls_for_field",
     "get_nspek_connection",
     "get_rule_by_id",

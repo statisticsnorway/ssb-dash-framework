@@ -21,6 +21,10 @@ TYPE_REGNSKAP_TABLE = {
         "database": "nspek_core",
         "table": "v_registrering_versjon",
     },
+    "virksomhet": {
+        "database": "virksomhet",
+        "table": "tema_virksomhet",
+    },
     "v_update_counts": {
         "database": "nspek_core",
         "table": "v_update_counts",
@@ -42,6 +46,7 @@ KONTROLLUTSLAG_COLUMNS = [
     "orgnr",
     "utslag",
     "verdi",
+    "aktiv",
     "org_form",
     "sn2025_1",
     "sn07_1",
@@ -49,16 +54,34 @@ KONTROLLUTSLAG_COLUMNS = [
     "undersektor_2014",
 ]
 
+EXCLUDED_VIRKSOMHETSTYPER = {
+    "bankOgFinansieringsforetak",
+    "livsforsikringsforetakOgPensjonskasse",
+    "skadeforsikringsforetak",
+}
 
-def get_active_versions(conn, aar: int) -> pd.DataFrame:
-    print("Henter aktive versjoner")
+def get_versions(
+    conn,
+    aar: int,
+    orgnr: str | None = None,
+) -> pd.DataFrame:
+    print("Henter alle versjoner")
 
     config = TYPE_REGNSKAP_TABLE["v_registrering_versjon"]
 
-    t_versions = conn.table(config["table"], database=config["database"])
+    t_versions = conn.table(
+        config["table"],
+        database=config["database"],
+    )
+
+    version_filter = _.aar == aar
+
+    if orgnr is not None:
+        version_filter = version_filter & (_.orgnr == orgnr)
 
     df_versions = (
-        t_versions.filter(_.aar == aar)
+        t_versions
+        .filter(version_filter)
         .order_by(_.versjon_nr)
         .select(
             _.orgnr,
@@ -71,21 +94,92 @@ def get_active_versions(conn, aar: int) -> pd.DataFrame:
         .execute()
     )
 
+    print(f"Fant {len(df_versions)} versjoner")
+
+    return df_versions
+
+
+def filter_scope_by_virksomhetstype(
+    conn: BaseBackend,
+    scope_df: pd.DataFrame,
+) -> pd.DataFrame:
+    if scope_df.empty:
+        return scope_df
+
+    config = TYPE_REGNSKAP_TABLE["virksomhet"]
+
+    t_virksomhet = conn.table(
+        config["table"],
+        database=config["database"],
+    )
+
+    sekvensnumre = scope_df["sekvensnummer"].tolist()
+
+    excluded = (
+        t_virksomhet
+        .filter(
+            (_.sekvensnummer.isin(sekvensnumre))
+            & (_.felt == "virksomhetstype")
+            & (_.char_verdi.isin(EXCLUDED_VIRKSOMHETSTYPER))
+        )
+        .select(_.sekvensnummer)
+        .distinct()
+        .execute()
+    )
+
+    if excluded.empty:
+        return scope_df
+
+    excluded_sekvensnumre = set(
+        excluded["sekvensnummer"].tolist()
+    )
+
+    return scope_df[
+        ~scope_df["sekvensnummer"].isin(excluded_sekvensnumre)
+    ].copy()
+
+
+def get_active_versions(
+    conn,
+    df_versions: pd.DataFrame,
+) -> pd.DataFrame:
+    if df_versions.empty:
+        return df_versions
+
     config = TYPE_REGNSKAP_TABLE["v_update_counts"]
 
-    t_updates: Any = conn.table(config["table"], database=config["database"])
+    t_updates: Any = conn.table(
+        config["table"],
+        database=config["database"],
+    )
 
-    df_updates = t_updates.filter(
-        _.sekvensnummer.isin(df_versions["sekvensnummer"].tolist())
-    ).execute()
+    df_updates = (
+        t_updates
+        .filter(
+            _.sekvensnummer.isin(
+                df_versions["sekvensnummer"].tolist()
+            )
+        )
+        .execute()
+    )
 
-    df_versions = df_versions.merge(df_updates, on="sekvensnummer", how="left")
+    df_versions = df_versions.merge(
+        df_updates,
+        on="sekvensnummer",
+        how="left",
+    )
 
-    df_versions["antall_endringer"] = df_versions["antall_endringer"].fillna(0)
-    df_versions["har_endringer"] = df_versions["antall_endringer"] > 0
+    df_versions["antall_endringer"] = (
+        df_versions["antall_endringer"].fillna(0)
+    )
+
+    df_versions["har_endringer"] = (
+        df_versions["antall_endringer"] > 0
+    )
 
     df_active = (
-        df_versions.sort_values(
+        df_versions
+        .sort_values(
             ["orgnr", "aar", "har_endringer", "dato_mottatt"],
             ascending=[True, True, False, False],
         )
@@ -96,7 +190,6 @@ def get_active_versions(conn, aar: int) -> pd.DataFrame:
     print(f"Fant {len(df_active)} aktive versjoner")
 
     return df_active
-
 
 def get_scope_for_sekvensnummer(conn, sekvensnummer: int) -> pd.DataFrame:
 
@@ -114,6 +207,33 @@ def get_scope_for_sekvensnummer(conn, sekvensnummer: int) -> pd.DataFrame:
         .execute()
     )
 
+def add_active_status(
+    df_kontrollutslag: pd.DataFrame,
+    df_active_versions: pd.DataFrame,
+) -> pd.DataFrame:
+    if df_kontrollutslag.empty:
+        return df_kontrollutslag
+
+    active_keys = df_active_versions[
+        ["orgnr", "aar", "sekvensnummer"]
+    ].copy()
+
+    active_keys["aktiv"] = True
+
+    df_kontrollutslag = df_kontrollutslag.merge(
+        active_keys,
+        on=["orgnr", "aar", "sekvensnummer"],
+        how="left",
+    )
+
+    df_kontrollutslag["aktiv"] = (
+        df_kontrollutslag["aktiv"]
+        .astype("boolean")
+        .fillna(False)
+        .astype(bool)
+    )
+
+    return df_kontrollutslag
 
 def get_regnskaps_data(
     conn, scope_df: pd.DataFrame, regnskapstype: str
@@ -416,6 +536,8 @@ def save_full_control_db(
 def save_incremental_control_db(
     conn: BaseBackend,
     sekvensnummer: int,
+    orgnr: str,
+    aar: int,
     kontrollids: list[str],
     df_kontrollutslag: pd.DataFrame,
 ):
@@ -424,6 +546,7 @@ def save_incremental_control_db(
         return
 
     kontrollids_sql = ",".join(sql_value(x) for x in kontrollids)
+
     try:
         conn.raw_sql("BEGIN;")
 
@@ -433,13 +556,20 @@ def save_incremental_control_db(
             AND kontrollid IN ({kontrollids_sql})
             """)
 
+        conn.raw_sql(f"""
+            UPDATE nspek_core.kontrollutslag
+            SET aktiv = FALSE
+            WHERE orgnr = {sql_value(orgnr)}
+            AND aar = {aar}
+            """)
+
         if df_kontrollutslag.empty:
             conn.raw_sql("COMMIT;")
             return
 
         df_kontrollutslag = enrich_with_bof(
             df_kontrollutslag,
-            int(df_kontrollutslag["aar"].iloc[0]),
+            aar,
         )
 
         insert_batches(
@@ -558,12 +688,15 @@ def run_controls_for_changed_fields(
 
 def run_all_controls_for_year(conn: BaseBackend, aar: int) -> None:
 
-    scope_df = get_active_versions(conn, aar)
+    scope_df = get_versions(conn, aar)
+    scope_df = filter_scope_by_virksomhetstype(conn, scope_df)
 
     df_resultat = get_regnskaps_data(conn, scope_df, "resultatregnskap")
     df_balanse = get_regnskaps_data(conn, scope_df, "balanseregnskap")
 
     df_kontrollutslag = run_all_controls(df_resultat, df_balanse)
+    df_active_versions = get_active_versions(conn, df_versions=scope_df)
+    df_kontrollutslag = add_active_status(df_kontrollutslag, df_active_versions)
     df_kontroller = make_kontroller_df(aar)
 
     save_full_control_db(conn, aar, df_kontroller, df_kontrollutslag)
@@ -575,18 +708,29 @@ def run_all_controls_for_sekvensnummer(
 
     scope_df = get_scope_for_sekvensnummer(conn, sekvensnummer)
 
+    if scope_df.empty:
+        return pd.DataFrame()
+
+    scope_df = filter_scope_by_virksomhetstype(conn, scope_df)
+
+    if scope_df.empty:
+        return pd.DataFrame()
+
+    aar = int(scope_df["aar"].iloc[0])
+    orgnr = scope_df["orgnr"].iloc[0]
+
+
     kontrollids = [rule["kontrollid"] for rule in CONTROL_RULES]
 
-    df_resultat = get_regnskaps_data(
-        conn,
-        scope_df,
-        "resultatregnskap",
-    )
+    df_resultat = get_regnskaps_data(conn, scope_df,"resultatregnskap",)
     df_balanse = get_regnskaps_data(conn, scope_df, "balanseregnskap")
 
     df_kontrollutslag = run_all_controls(df_resultat, df_balanse)
+    df_versions = get_versions(conn, aar=aar, orgnr=orgnr)
+    df_active_versions = get_active_versions(conn, df_versions)
+    df_kontrollutslag = add_active_status(df_kontrollutslag, df_active_versions)
 
-    save_incremental_control_db(conn, sekvensnummer, kontrollids, df_kontrollutslag)
+    save_incremental_control_db(conn, sekvensnummer, orgnr, aar, kontrollids, df_kontrollutslag)
 
     return df_kontrollutslag
 
@@ -597,11 +741,25 @@ def run_controls_changed_fields_for_sekvensnummer(
 
     scope_df = get_scope_for_sekvensnummer(conn, sekvensnummer)
 
+    if scope_df.empty:
+        return
+
+    scope_df = filter_scope_by_virksomhetstype(conn, scope_df)
+
+    if scope_df.empty:
+        return pd.DataFrame()
+
+    aar = int(scope_df["aar"].iloc[0])
+    orgnr = scope_df["orgnr"].iloc[0]
+
     df_resultat = get_regnskaps_data(conn, scope_df, "resultatregnskap")
     df_balanse = get_regnskaps_data(conn, scope_df, "balanseregnskap")
     df_kontrollutslag = run_controls_for_changed_fields(
         changed_fields, df_resultat, df_balanse
     )
+    df_versions = get_versions(conn, aar=aar, orgnr=orgnr)
+    df_active_versions = get_active_versions(conn, df_versions)
+    df_kontrollutslag = add_active_status(df_kontrollutslag, df_active_versions)
 
     kontrollids = set()
 
@@ -609,5 +767,5 @@ def run_controls_changed_fields_for_sekvensnummer(
         kontrollids.update(get_controls_for_field(field))
 
     save_incremental_control_db(
-        conn, sekvensnummer, sorted(kontrollids), df_kontrollutslag
+        conn, sekvensnummer, orgnr, aar, sorted(kontrollids), df_kontrollutslag
     )
