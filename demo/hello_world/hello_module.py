@@ -2,6 +2,7 @@
 
 from abc import ABC
 from abc import abstractmethod
+from typing import Any
 from typing import ClassVar
 
 import dash_bootstrap_components as dbc
@@ -10,6 +11,8 @@ from dash import Output
 from dash import State
 from dash import callback
 from dash import ctx
+from dash import html
+from dash.exceptions import PreventUpdate
 
 from ssb_dash_framework import AlertHandler
 from ssb_dash_framework import ModuleBase
@@ -19,21 +22,26 @@ from ssb_dash_framework import VariableSelector
 
 
 class HelloModuleMetaDataHandler(ABC):
+    """Abstract base class for handling metadata of the HelloModule."""
 
     @abstractmethod
-    def get_message(self, refnr):
-        pass
+    def get_message(self, refnr: str) -> str:
+        """Retrieve the message for the given reference number."""
+        ...
 
     @abstractmethod
-    def update_message(self, refnr, new_value):
-        pass
+    def update_message(self, refnr: str, new_value: str) -> str:
+        """Update the message for the given reference number."""
+        ...
 
     @abstractmethod
-    def on_failure(self):
-        pass
+    def on_failure(self) -> Any:
+        """Handle failure scenario."""
+        ...
 
 
 class HelloModuleDataHandlerDefault(HelloModuleMetaDataHandler):
+    """Default implementation of the HelloModuleMetaDataHandler."""
 
     current_message: ClassVar[dict[str, str]] = {
         "1": "Hello world!",
@@ -41,27 +49,33 @@ class HelloModuleDataHandlerDefault(HelloModuleMetaDataHandler):
     }
 
     def __init__(self) -> None:
+        """Initialize the default data handler."""
         super().__init__()
 
-    def get_message(self, refnr):
+    def get_message(self, refnr: str) -> str:
+        """Retrieve the message for the given reference number."""
         if not refnr:
             raise ValueError(
                 f"refnr cannot be none, put one of '{list(self.current_message.keys())}' in the variable selector!"
             )
         return HelloModuleDataHandlerDefault.current_message[refnr]
 
-    def update_message(self, refnr, new_value):
+    def update_message(self, refnr: str, new_value: str) -> str:
+        """Update the message for the given reference number by modifying the classvar."""
         if not refnr:
             raise ValueError(
                 f"refnr cannot be none, put one of '{list(self.current_message.keys())}' in the variable selector!"
             )
         HelloModuleDataHandlerDefault.current_message[refnr] = new_value
+        return HelloModuleDataHandlerDefault.current_message[refnr]
 
-    def on_failure(self):
+    def on_failure(self) -> str:
+        """Handle failure scenario by providing an error message."""
         return "An error happened, check the App-logg window for more information."
 
 
 class HelloModuleDataHandlerCat(HelloModuleMetaDataHandler):
+    """Implementation of the HelloModuleMetaDataHandler that always returns a cat ASCII art."""
 
     cat = r"""
           |\__/,|   (`\
@@ -69,61 +83,66 @@ class HelloModuleDataHandlerCat(HelloModuleMetaDataHandler):
         -(((---(((--------
     """
 
-    def get_message(self, refnr):
+    def get_message(self, refnr: str) -> str:
+        """Retrieve the cat ASCII art regardless of the reference number."""
         return HelloModuleDataHandlerCat.cat
 
-    def update_message(self, refnr, new_value):
+    def update_message(self, refnr: str, new_value: str) -> str:
+        """Attempting to update the message will always fail with a RuntimeError because the cat is stubborn."""
         raise RuntimeError("The cat refuses to move!")
 
-    def on_failure(self):
+    def on_failure(self) -> str:
+        """Return the cat ASCII art in case of failure."""
         return HelloModuleDataHandlerCat.cat
 
 
 class HelloModule(ModuleBase):
+    """Implementation of the HelloModule that interacts with a data handler to manage messages."""
 
-    def __init__(self, label, data_handler: HelloModuleMetaDataHandler) -> None:
-        print(self.module_id)
+    def __init__(self, label: str, data_handler: HelloModuleMetaDataHandler) -> None:
+        """Initialize the HelloModule with a label and a data handler."""
         self.label = label
-
         self.icon = ":)"
-
         self.data_handler = data_handler
-
         super().__init__()
-        print(self.module_id)
 
     def _create_layout(self):
-        return dbc.Container(
-            [
-                dbc.Row(
-                    [
-                        dbc.Button(
-                            "Get currently stored message",
-                            id=f"{self.module_id}-get-button",
-                        ),
-                        dbc.Button(
-                            "Update stored message",
-                            id=f"{self.module_id}-update-button",
-                        ),
-                    ]
-                ),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            dbc.Textarea(
-                                id=f"{self.module_id}-message-holder",
-                                style={"height": "200px"},
+        """Create the layout for the HelloModule."""
+        return html.Div(
+            dbc.Container(
+                [
+                    dbc.Row(
+                        [
+                            dbc.Button(
+                                "Get currently stored message",
+                                id=f"{self.module_id}-get-button",
+                            ),
+                            dbc.Button(
+                                "Update stored message",
+                                id=f"{self.module_id}-update-button",
+                            ),
+                        ]
+                    ),
+                    dbc.Row(
+                        [
+                            dbc.Col(
+                                dbc.Textarea(
+                                    id=f"{self.module_id}-message-holder",
+                                    style={"height": "200px"},
+                                )
                             )
-                        )
-                    ]
-                ),
-            ]
+                        ]
+                    ),
+                ]
+            )
         )
 
-    def layout(self):
+    def layout(self) -> html.Div:
+        """Return the layout for the HelloModule."""
         return self._create_layout()
 
-    def module_callbacks(self):
+    def module_callbacks(self) -> None:
+        """Define the callbacks for the HelloModule."""
         message_id = f"{self.module_id}-message-holder"
         get_id = f"{self.module_id}-get-button"
         update_id = f"{self.module_id}-update-button"
@@ -136,7 +155,10 @@ class HelloModule(ModuleBase):
             State(message_id, "value"),
             prevent_initial_call=True,
         )
-        def message_callback(refnr, get, update, textbox_content):
+        def message_callback(
+            refnr: str, get: int, update: int, textbox_content: str
+        ) -> str:
+            """Callback function to handle message retrieval and updates."""
             if ctx.triggered_id == get_id:
                 try:
                     to_return = self.data_handler.get_message(refnr)
@@ -147,7 +169,7 @@ class HelloModule(ModuleBase):
                     )
                     to_return = self.data_handler.on_failure()
 
-            if ctx.triggered_id == update_id:
+            elif ctx.triggered_id == update_id:
                 try:
                     current_message = self.data_handler.get_message(refnr)
 
@@ -165,5 +187,7 @@ class HelloModule(ModuleBase):
                         f"Oh no! Something went wrong: {e}\n", ephemeral=True
                     )
                     to_return = self.data_handler.on_failure()
+            else:
+                raise PreventUpdate
 
             return to_return
