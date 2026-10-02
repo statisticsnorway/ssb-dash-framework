@@ -93,7 +93,7 @@ This mirrors the pattern shown in hello_module.py, where an abstract *MetaDataHa
 
 #### Default handlers whenever possible for documented data models
 
-There should be default datahandler implementations for datamodels documented in [docs/datamodels/README.md](datamodels/README.md).
+There should be default datahandler implementations for datamodels documented in [docs/datamodels/README.md](datamodels.md).
 
 ### Modules must be configurable through yaml files
 
