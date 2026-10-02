@@ -4,8 +4,19 @@ version = "0.3.0a0"
 description = "SSB Dash Framework"
 readme = "README.md"
 requires-python = ">=3.12"
-license = "GPL-3.0"
+license = "MIT"
 authors = [{ name = "Magnus Theodor Engh", email = "dor@ssb.no" }]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Development Status :: 4 - Beta",
+  "Typing :: Typed",
+]
+
 dependencies = [
   "click>=8.0.1",
   "dash-ag-grid (>=35.2.0,<36.0.0)",
@@ -32,7 +43,6 @@ dependencies = [
   "ssb-poc-statlog-model (>=2.0.0,<3.0.0)",
   "tzlocal (>=5.4.4,<6.0.0)",
 ]
-dynamic = ["classifiers"]
 
 [project.urls]
 Changelog = "https://github.com/statisticsnorway/ssb-dash-framework/releases"
@@ -74,8 +84,8 @@ dev = [
 ]
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.11.0,<0.12.0"]
+build-backend = "uv_build"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
@@ -91,7 +101,7 @@ show_missing = true
 fail_under = 50
 
 [tool.deptry.per_rule_ignores]
-DEP001 = ["nox", "nox_poetry"]  # packages available by default
+DEP001 = ["nox"]  # packages available by default
 
 [tool.mypy]
 strict = true
@@ -100,18 +110,6 @@ pretty = true
 show_column_numbers = true
 show_error_context = true
 ignore_missing_imports = true
-
-[tool.poetry]
-classifiers = ["Development Status :: 4 - Beta"]
-requires-poetry = ">=2.3"
-
-# [tool.poetry.group.dev.dependencies]
-# pandas-stubs = ">=2.3.1"
-
-[tool.poetry.requires-plugins]
-poetry-plugin-export = ">=1.9"
-
-[tool.poetry.dependencies]
 
 [tool.pydoclint]
 style = "google"
@@ -196,3 +194,6 @@ classmethod-decorators = ["classmethod", "validator", "root_validator", "pydanti
   "D103",
   "S101",  # asserts are encouraged in pytest
 ]
+
+[tool.uv]
+exclude-newer = "7 days"

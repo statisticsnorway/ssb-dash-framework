@@ -1,5 +1,5 @@
 {
-  "_commit": "57b7b713c78245687a1d5421aba8bf01bead2245",
+  "_commit": "1c9b1b37c1391b0e5dc64457f0a5b0e3dba24fb4",
   "_copy_without_render": [
     "*.rst_t"
   ],
@@ -13,12 +13,12 @@
   "copyright_owner": "Statistics Norway",
   "copyright_year": "2025",
   "department_number": "",
-  "dependency_manager_tool": "poetry",
+  "dependency_manager_tool": "uv",
   "development_status": "Development Status :: 4 - Beta",
   "email": "dor@ssb.no",
   "friendly_name": "SSB Dash Framework",
   "github_organization": "statisticsnorway",
-  "license": "GPL-3.0",
+  "license": "MIT",
   "package_name": "ssb_dash_framework",
   "project_name": "ssb-dash-framework",
   "version": "0.0.0"
