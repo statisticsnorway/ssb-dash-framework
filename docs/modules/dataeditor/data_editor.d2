@@ -1,0 +1,322 @@
+# DataEditor Internals & Architecture UML in D2
+
+direction: right
+
+# System Entry & Context Flow
+VariableSelector: "VariableSelector\n(Central State Manager)" {
+  shape: rectangle
+  style.fill: "#eef"
+}
+
+DataEditor: "DataEditor\n(Main Orchestrator Module)" {
+  shape: class
+  fields: [
+    "instance_id: str (UUID)"
+    "settings: EditorSettings"
+    "data_handler: FetcherMeta"
+    "info_view_row: DataEditorInfoRow"
+    "sidebar: list[ModuleABC]"
+    "helper_row: list[ModuleABC]"
+    "dataview: list[DataEditorDataView]"
+  ]
+  methods: [
+    "from_yaml(cls, ...)"
+    "layout() -> dbc.Container"
+    "module_callbacks()"
+    "toggle_view_visibility(selected_table, selected_form)"
+  ]
+  style.fill: "#cef"
+}
+
+VariableSelector -> DataEditor: "triggers\ncallbacks" {
+  style.stroke-dash: 5
+}
+
+# EditorSettings class
+EditorSettings: "EditorSettings\n(Pydantic Configuration)" {
+  shape: class
+  fields: [
+    "starting_table: str"
+    "form_data_table: str"
+    "form_list: list[str]"
+    "period_col: str"
+    "ident_col: str"
+    "refnr_col: str"
+    "form_name_col: str"
+    "field_name_col: str"
+    "field_value_col: str"
+  ]
+  style.fill: "#fcf"
+}
+
+DataEditor -> EditorSettings: "validates &\nholds"
+
+# Metadata / Abstract classes
+DataEditor_meta: "Metadata & Base Classes" {
+  YamlLoadable: "YamlLoadable" {
+    shape: class
+  }
+  ContextABC: "ContextABC" {
+    shape: class
+    fields: [
+      "fetcher: FetcherMeta"
+      "settings: EditorSettings"
+      "instance_id: str"
+    ]
+    methods: [
+      "set_settings(fetcher, settings, instance_id)"
+    ]
+  }
+  ModuleABC: "ModuleABC" {
+    shape: class
+    methods: [
+      "layout() -> html.Div"
+      "module_callbacks()"
+    ]
+  }
+
+  YamlLoadable <- ContextABC: "inherits"
+  ContextABC <- ModuleABC: "inherits"
+}
+
+DataEditor_meta.ContextABC <- DataEditor: "recursively calls\nset_settings() on children"
+
+# Modules package container
+modules: "Sub-Modules" {
+  style.fill: "#f8f9fa"
+
+  # Sidebar components
+  sidebar: "Sidebar Modules" {
+    DataEditorHelperSidebar: "DataEditorHelperSidebar\n(Base class)" {
+      shape: class
+    }
+    DataEditorTableSelector: "DataEditorTableSelector\n(Dropdown for selecting tables)" {
+      shape: class
+    }
+    DataEditorSidebarComment: "DataEditorSidebarComment\n(Intern kommentar)" {
+      shape: class
+      methods: [
+        "find_refnrs()"
+        "get_comment(refnr)"
+        "update_output(save_click, value, refnr)"
+      ]
+    }
+    DataEditorSidebarEditingStatus: "DataEditorSidebarEditingStatus\n(Status and Active flags)" {
+      shape: class
+      methods: [
+        "update_refnr(ident, period)"
+        "set_initial_status(refnr)"
+        "update_status(aktiv, status, refnr)"
+        "view_refnrs_by_ident(click, ident)"
+      ]
+    }
+
+    DataEditorHelperSidebar <- DataEditorTableSelector: "inherits"
+    DataEditorHelperSidebar <- DataEditorSidebarComment: "inherits"
+    DataEditorHelperSidebar <- DataEditorSidebarEditingStatus: "inherits"
+  }
+
+  # Helper buttons
+  helpers: "Helper Buttons (Modal triggers)" {
+    DataEditorHelperButton: "DataEditorHelperButton\n(Base class)" {
+      shape: class
+      fields: [
+        "modal_body: html.Div"
+        "label: str"
+      ]
+      methods: [
+        "layout() -> html.Div"
+        "button_callbacks()"
+      ]
+    }
+    DataEditorContactInfo: "DataEditorContactInfo\n(Contact Info Modal)" {
+      shape: class
+      methods: [
+        "create_info_cards_kontaktinfo(refnr)"
+      ]
+    }
+    DataEditorHistory: "DataEditorHistory\n(Audit history timeline)" {
+      shape: class
+      methods: [
+        "update_history_view(is_open, insert_toggle, refnr)"
+      ]
+    }
+    DataEditorSupportTables: "DataEditorSupportTables\n(Tabs containing reference grids)" {
+      shape: class
+    }
+    DataEditorSupportTable: "DataEditorSupportTable\n(A single AgGrid tab)" {
+      shape: class
+      methods: [
+        "load_support_table_data()"
+      ]
+    }
+
+    DataEditorHelperButton <- DataEditorContactInfo: "inherits"
+    DataEditorHelperButton <- DataEditorHistory: "inherits"
+    DataEditorHelperButton <- DataEditorSupportTables: "inherits"
+    DataEditorSupportTables -> DataEditorSupportTable: "displays tabs of"
+  }
+
+  # Info Row
+  inforow: "DataEditorInfoRow" {
+    shape: class
+    fields: [
+      "info_variables: list[InfoRowField]"
+    ]
+    methods: [
+      "layout() -> dbc.Row"
+      "get_data_for_info_row_fields(refnr, period, states)"
+    ]
+  }
+}
+
+DataEditor -> modules.inforow: "contains"
+DataEditor -> modules.sidebar: "contains list of"
+DataEditor -> modules.helpers: "contains list of"
+
+# Data Views package container
+dataviews: "Data Views" {
+  style.fill: "#f3fdf3"
+
+  DataEditorDataView: "DataEditorDataView\n(Base Class)" {
+    shape: class
+    fields: [
+      "applies_to_tables: list[str]"
+      "applies_to_forms: list[str]"
+    ]
+  }
+
+  # Table View
+  DataEditorTable: "DataEditorTable\n(Standard Spreadsheet Editor)" {
+    shape: class
+    fields: [
+      "uneditable_columns: set[str]"
+    ]
+    methods: [
+      "read_table(selected_table, form, refnr, period)"
+      "update_table(edited, table, columndefs, period)"
+      "send_variabel_to_variableselector(click, row_data)"
+    ]
+  }
+
+  # Custom View
+  DataViewCustom: "DataViewCustom\n(Config-driven Dynamic Layout)" {
+    shape: class
+    fields: [
+      "_layout: list"
+    ]
+    methods: [
+      "build_layout(layout) -> list"
+      "layout() -> html.Div"
+    ]
+  }
+
+  DataEditorDataView <- DataEditorTable: "inherits"
+  DataEditorDataView <- DataViewCustom: "inherits"
+}
+
+DataEditor -> dataviews: "delegates main panels to"
+
+# MicroLayout Engine
+microlayout_engine: "MicroLayout Engine\n(AIO & Form Nodes)" {
+  style.fill: "#fffbf2"
+
+  MicroLayoutAIO: "MicroLayoutAIO\n(All-In-One Form Component)" {
+    shape: class
+    fields: [
+      "aio_id: str"
+      "_model: Layout"
+    ]
+    methods: [
+      "handle_field_value_change()"
+      "handle_variable_selector_change()"
+    ]
+  }
+
+  Layout: "Layout\n(Config Parser)" {
+    shape: class
+    fields: [
+      "nodes: list[Node]"
+    ]
+    methods: [
+      "build(fetcher, settings) -> tuple[layout, ids]"
+    ]
+  }
+
+  Node: "Node (Union / BaseNode)" {
+    shape: class
+    fields: [
+      "type: str (row, col, input, dropdown, checklist, etc.)"
+    ]
+    methods: [
+      "create(options: CreateArguments) -> tuple"
+    ]
+  }
+
+  FieldCallbackContainer: "FieldCallbackContainer" {
+    shape: class
+    fields: [
+      "settings: EditableField"
+      "parent_id: str"
+    ]
+    methods: [
+      "get_input(aio_id)"
+      "get_output(aio_id)"
+      "get_state(aio_id)"
+    ]
+  }
+
+  MicroLayoutAIO -> Layout: "instantiates"
+  Layout -> Node: "contains trees of"
+  Node -> FieldCallbackContainer: "returns on create()"
+  MicroLayoutAIO -> FieldCallbackContainer: "binds callbacks to"
+}
+
+dataviews.DataViewCustom -> microlayout_engine.MicroLayoutAIO: "instantiates\nfor type: microlayout"
+
+# Persistence & Data Layer
+persistence_layer: "Persistence / Database Interface" {
+  style.fill: "#fff0f0"
+
+  FetcherMeta: "FetcherMeta\n(Unified DB Interface)" {
+    shape: class
+  }
+
+  StandardDataHandler: "StandardDataHandler\n(Ibis/Postgres Backend)" {
+    shape: class
+    fields: [
+      "cache: FormGetterCached"
+    ]
+    methods: [
+      "get_field(settings, container, inputs)"
+      "update_field_value(...)"
+      "get_comment(refnr)"
+      "get_form_status(refnr)"
+      "get_refnrs_by_period_ident(settings, ident, period)"
+      "get_info_row_fields(settings, refnr, period, fields, states)"
+      "update_form_status(refnr, status)"
+      "update_form_active_status(refnr, value)"
+      "update_form_reception_comment(refnr, comment)"
+    ]
+  }
+
+  FormGetterCached: "FormGetterCached\n(In-memory dataset cache)" {
+    shape: class
+    methods: [
+      "get_form(refnr, period, settings)"
+    ]
+  }
+
+  FetcherMeta <- StandardDataHandler: "implements"
+  StandardDataHandler -> FormGetterCached: "delegates reads to"
+}
+
+# Connections from modules and views to Persistence
+DataEditor_meta.ContextABC -> persistence_layer.FetcherMeta: "references"
+modules.sidebar.DataEditorSidebarComment -> persistence_layer.FetcherMeta: "reads/writes comments"
+modules.sidebar.DataEditorSidebarEditingStatus -> persistence_layer.FetcherMeta: "reads/writes status"
+modules.inforow -> persistence_layer.FetcherMeta: "queries metadata"
+modules.helpers.DataEditorContactInfo -> persistence_layer.FetcherMeta: "reads contact card"
+modules.helpers.DataEditorHistory -> persistence_layer.FetcherMeta: "reads history trail"
+microlayout_engine.MicroLayoutAIO -> persistence_layer.FetcherMeta: "reads/writes individual fields"
+dataviews.DataEditorTable -> persistence_layer.FetcherMeta: "queries entire datasets"

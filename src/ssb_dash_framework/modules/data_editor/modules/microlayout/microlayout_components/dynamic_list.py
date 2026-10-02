@@ -16,6 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 class DynamicListEditor(html.Div):
+    """All-in-One Component representing a dynamic data spreadsheet list for sub-elements.
+
+    This component displays and syncs a table of dynamic repeating entries matched by
+    wildcard search patterns.
+    """
+
     def __init__(
         self,
         fetcher: MicrolayoutMeta,
@@ -24,6 +30,15 @@ class DynamicListEditor(html.Div):
         _id: str | None = None,
         **kwargs,
     ):
+        """Initializes the DynamicListEditor component.
+
+        Args:
+            fetcher: The query and database handler.
+            settings: Active editor configuration settings.
+            wildcard: Slashed path search pattern (e.g. `/sub_units/*`).
+            _id: Optional explicit UUID string.
+            **kwargs: Additional parameters passed to the html.Div superclass.
+        """
         if _id is None:
             _id = str(uuid.uuid4())
 

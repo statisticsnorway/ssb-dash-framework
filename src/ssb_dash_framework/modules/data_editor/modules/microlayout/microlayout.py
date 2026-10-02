@@ -40,6 +40,18 @@ class MicroLayoutAIO(html.Div):
         aio_id: str | None = None,
         horizontal: bool = False,
     ) -> None:
+        """Initializes the MicroLayout All-In-One (AIO) component.
+
+        Args:
+            layout: A validated Layout object, dictionary, or a nested list definition.
+            settings: Active editor configuration settings.
+            data_handler: Persistence interface implementing MicrolayoutMeta.
+            instance_id: Optional unique identifier for the parent page instance.
+            inputs: List or mapping of Dash Input components to wire into field triggers.
+            states: Optional list of state items.
+            aio_id: Optional explicit UUID string to isolate component identifiers.
+            horizontal: Optional boolean to display items in a flex row.
+        """
         logger.warning(
             "This module is under development and might receive larger and/or breaking changes."
         )

@@ -35,7 +35,14 @@ class DataEditorHelperButton(ContextABC):
         self.button_callbacks()
 
     def layout(self) -> html.Div:
-        """Returns the layout of the module."""
+        """Returns the standard modal trigger layout with button and indicator.
+
+        Returns:
+            A Dash Div element.
+
+        Raises:
+            AttributeError: If `modal_body` attribute has not been defined by a subclass.
+        """
         if not hasattr(self, "modal_body"):
             raise AttributeError("Lacking 'modal_body' attribute.")
         return html.Div(
@@ -69,7 +76,7 @@ class DataEditorHelperButton(ContextABC):
         )
 
     def button_callbacks(self) -> None:
-        """Registers the callbacks for the DataEditor Support Tables module."""
+        """Registers the default toggle callbacks to open/close the modal window."""
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-modal", "is_open"),

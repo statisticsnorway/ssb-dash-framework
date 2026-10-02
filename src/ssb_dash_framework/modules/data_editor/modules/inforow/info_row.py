@@ -58,6 +58,11 @@ class DataEditorInfoRow(ModuleABC):
         self.module_callbacks()
 
     def _create_layout(self) -> dbc.Row:  # pyright: ignore
+        """Creates the row of metadata cards.
+
+        Returns:
+            A Dash Bootstrap Row containing the card widgets.
+        """
         info_fields = []
         for info_var in self.info_variables:
             info_fields.append(
@@ -76,11 +81,15 @@ class DataEditorInfoRow(ModuleABC):
         )
 
     def layout(self) -> dbc.Row:  # pyright: ignore
-        """Returns the module layout."""
+        """Returns the layout of the module.
+
+        Returns:
+            A Dash Bootstrap Row.
+        """
         return self._create_layout()
 
     def module_callbacks(self) -> None:
-        """Registers callbacks for the module."""
+        """Registers callbacks to dynamically populate the card fields based on state."""
 
         @callback(
             output={
