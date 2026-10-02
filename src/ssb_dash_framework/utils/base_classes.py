@@ -1,8 +1,8 @@
 """Contains the common base class defining the interface shared by all modules."""
 
 import logging
-from abc import ABC
 from abc import abstractmethod
+from itertools import count
 from typing import Any
 from typing import Literal
 from typing import Self
@@ -17,38 +17,12 @@ from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 
-from ..config.yaml_parser import config_parser_yaml
+from ..config.models import YamlLoadable
 from .functions import sidebar_button
 
 logger = logging.getLogger(__name__)
 
 AsType = Literal["Tab", "Window"]
-
-
-class YamlLoadable(ABC):
-    @classmethod
-    def from_yaml_path(cls, yaml_path: str):
-        """Method for reading a yaml file and parsing the contained module/layout"""
-        config = config_parser_yaml(yaml_path)
-        if isinstance(config, list):
-            return cls.from_yaml(*config)
-        else:
-            return cls.from_yaml(**config)
-
-    @classmethod
-    def from_yaml(cls, *args: Any, **kwargs: Any):
-        """Base class for loading modules and other classes from a yaml config.
-
-        The method has a default implementation so you dont have to write it yourself, but the option
-        to overwrite it remains for complicated modules. For examples modules that need specific
-        class instances for __init__.
-        """
-        if "as_type" in kwargs:
-            kwargs.pop("as_type")
-        if "window_scrollable" in kwargs:
-            kwargs.pop("window_scrollable")
-        return cls(*args, **kwargs)
-
 
 class ModuleBase(YamlLoadable):
     """Base class defining the interface all modules in the framework must implement.
@@ -75,7 +49,7 @@ class ModuleBase(YamlLoadable):
         them unique across modules.
     """
 
-    _number: int = 0
+    _counter: count = count(start=0)
 
     label: str
     module_name: str
@@ -85,12 +59,11 @@ class ModuleBase(YamlLoadable):
     icon: str | Component
 
     def __new__(cls, *args, **kwargs) -> Self:
-        if "module_name" not in cls.__dict__:
-            cls.module_name = cls.__name__
-        cls.module_number = ModuleBase._number
-        cls._number += 1
-        cls.module_id = f"{cls.module_name}-{cls.module_number}"
-        return super().__new__(cls)
+        self = super().__new__(cls)
+        self.module_name = cls.__dict__.get("module_name", cls.__name__)
+        self.module_number = next(ModuleBase._counter)
+        self.module_id = f"{self.module_name}-{self.module_number}"
+        return self
 
     def __init__(
         self,

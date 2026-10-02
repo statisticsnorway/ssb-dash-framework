@@ -1,11 +1,11 @@
 """SSB Dash Framework."""
 
+from . import experimental
 from .config import AppConfig
 from .config import AppModules
 from .config import AppSettings
 from .config import ModuleConfig
 from .config import RegisteredModule
-#from .config import VariableSelectorConfig
 from .config import apply_app_settings
 from .config import build_app_from_config
 from .config import build_modules
@@ -13,7 +13,6 @@ from .config import config_parser_yaml
 from .config import get_from_module_registry
 from .config import get_module_registry
 from .config import instantiate_module
-from .config import register_module
 from .config import run_app_from_config
 from .control import ControlFrameworkBase
 from .control import register_control
@@ -53,8 +52,8 @@ from .modules import export_from_parqueteditor
 from .modules import get_export_log_path
 from .modules import get_log_path
 from .setup import VariableSelector
-from .setup import VariableSelectorOption
 from .setup import VariableSelectorConfig
+from .setup import VariableSelectorOption
 from .setup import app_setup
 from .setup import main_layout
 from .setup import set_variables
@@ -112,7 +111,6 @@ __all__ = [
     "ModuleBase",
     "ModuleConfig",
     "MultiModule",
-    "MultiModule",
     "Naeringsspesifikasjon",
     "NaeringsspesifikasjonTab",
     "NaeringsspesifikasjonWindow",
@@ -144,6 +142,7 @@ __all__ = [
     "create_database",
     "create_database_engine",
     "enable_app_logging",
+    "experimental",
     "export_from_parqueteditor",
     "get_connection",
     "get_export_log_path",
@@ -155,7 +154,6 @@ __all__ = [
     "main_layout",
     "module_validator",
     "register_control",
-    "register_module",
     "run_app_from_config",
     "set_connection",
     "set_postgres_connection",
@@ -163,4 +161,3 @@ __all__ = [
     "set_variables",
     "sidebar_button",
 ]
-

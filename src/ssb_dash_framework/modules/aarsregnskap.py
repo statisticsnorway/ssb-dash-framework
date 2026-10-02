@@ -12,7 +12,6 @@ import dash_bootstrap_components as dbc
 from dash_iconify import DashIconify
 import gcsfs
 
-from ..config import register_module
 from ..setup.variableselector import VariableSelector
 from ..setup.variableselector import TimeUnit
 from ..utils import ModuleBase
@@ -20,7 +19,6 @@ from ..utils.alert_handler import AlertHandler
 
 logger = logging.getLogger(__name__)
 
-@register_module(as_tab="Aarsregnskap", as_window="Aarsregnskap")
 class Aarsregnskap(ModuleBase):
     """Module for displaying annual financial statements (Årsregnskap).
 

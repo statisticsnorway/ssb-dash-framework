@@ -46,27 +46,28 @@ def instantiate_module(
 
     validation_model = get_from_module_registry(module.type)
 
-    if type == "tab":
-        if not validation_model.as_tab:
-            raise ValueError(f"{module.type} is not available as a tab.")
-        class_name = validation_model.as_tab
-    elif type == "window":
-        if not validation_model.as_window:
-            raise ValueError(f"{module.type} is not available as a window.")
-        class_name = validation_model.as_window
-    else:
-        class_name = validation_model.type
-
     cls = validation_model.type
+    class_name = cls.__name__
     if cls is None:
-        raise ValueError(f"No class named '{class_name}' found in ssb_dash_framework.")
+        logger.warning(
+            f"No class named '{class_name}' found in ssb_dash_framework.\nChecking ssb_dash_framework.experimental"
+        )
+
+        experimental = importlib.import_module("ssb_dash_framework.experimental")
+        cls = getattr(experimental, class_name, None)
+        if cls is None:
+            raise ValueError(
+                f"No class named '{class_name}' found in ssb_dash_framework."
+            )
 
     if (
         isinstance(cls, builtins.type)
         and issubclass(cls, ModuleBase)
         and type in ("tab", "window")
     ):
-        return cls.from_yaml(**{"as_type":"Tab" if type == "tab" else "Window", **module.extra_kwargs})
+        return cls.from_yaml(
+            **{"as_type": "Tab" if type == "tab" else "Window", **module.extra_kwargs}
+        )
 
     return cls(**module.extra_kwargs)
 

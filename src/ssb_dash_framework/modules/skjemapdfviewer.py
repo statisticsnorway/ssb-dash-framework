@@ -9,13 +9,11 @@ from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 import gcsfs
 
-from ..config.models import register_module
 from ..utils.base_classes import ModuleBase
 from ..setup.variableselector import VariableSelector
 
 logger = logging.getLogger(__name__)
 
-@register_module()
 class SkjemapdfViewer(ModuleBase):
     """Module for displaying PDF forms in a tab."""
 

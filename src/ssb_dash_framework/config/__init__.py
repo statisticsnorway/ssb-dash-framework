@@ -10,7 +10,6 @@ from .models import ModuleConfig
 from .models import RegisteredModule
 from .models import get_from_module_registry
 from .models import get_module_registry
-from .models import register_module
 from .yaml_parser import config_parser_yaml
 
 __all__ = [
@@ -26,6 +25,5 @@ __all__ = [
     "get_from_module_registry",
     "get_module_registry",
     "instantiate_module",
-    "register_module",
     "run_app_from_config",
 ]

@@ -13,31 +13,10 @@ While it is not supposed to work like this, it is possible to connect a callback
 This can be achieved by creating your own custom callbacks to the variables added in the variable selector panel. The example below reacts to the ident field and updates either the foretak or bedrift field depending on whether or not ident exists as a orgnr_foretak in the data.
 
 ```python
-from ssb_dash_framework import set_variables
-from ssb_dash_framework import VariableSelector
-
-set_variables(
-    [
-        *perioder,
-        "ident",
-        "foretak",
-        "bedrift",
-        "statistikkvariabel",
-        "altinnskjema",
-        "valgt_tabell",
-        "refnr",
-    ]
-)
-
-hacky_varselector = VariableSelector(
-    selected_inputs = ["ident"],
-    selected_states = ["foretak", "bedrift"]
-)
-
 @callback(
-    hacky_varselector.get_output_object("foretak"),
-    hacky_varselector.get_output_object("bedrift"),
-    hacky_varselector.get_input("ident"),
+    VariableSelector.get_output_object("foretak"),
+    VariableSelector.get_output_object("bedrift"),
+    VariableSelector.get_input("ident"),
     prevent_initial_call = True
 )
 def update_from_ident(ident):

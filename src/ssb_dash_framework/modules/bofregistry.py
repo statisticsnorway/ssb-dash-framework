@@ -1,8 +1,6 @@
 # pyright: reportCallIssue=false
 # pyright: reportGeneralTypeIssues=false
 # pyright: reportArgumentType=false
-from abc import ABC
-from abc import abstractmethod
 import logging
 import sqlite3
 from typing import Any
@@ -19,10 +17,8 @@ import dash_bootstrap_components as dbc
 from dash_iconify import DashIconify
 import pandas as pd
 
-from ..config.models import register_module
 from ..setup.variableselector import VariableSelector
 from ..utils import AlertHandler, ModuleBase
-from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +95,6 @@ def ssb_bedrift_modal() -> dbc.Modal:
     return ssb_bedrift_modal
 
 
-@register_module()
 class BofInformation(ModuleBase):
     """Module for displaying and managing information from BoF.
 
