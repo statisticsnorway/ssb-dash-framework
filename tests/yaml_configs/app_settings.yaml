@@ -1,0 +1,14 @@
+app_settings:
+  port: 8000
+  # service_prefix: None
+  # stylesheet: None
+  enable_logging: false
+  logging_level: warning
+  log_to_file: false
+  variableselector: !include variableselector.yaml
+  connection:
+    type: sqlite
+    database_url: test
+modules:
+  tabs:
+    !include modules/dataeditor.yaml

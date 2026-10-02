@@ -4,23 +4,11 @@ import os
 import shlex
 import shutil
 import sys
-import tempfile
 from pathlib import Path
 from textwrap import dedent
 
 import nox
-
-try:
-    from nox_poetry import Session
-    from nox_poetry import session
-except ImportError:
-    message = f"""\
-    Nox failed to import the 'nox-poetry' package.
-
-    Please install it using the following command:
-
-    {sys.executable} -m pip install nox-poetry"""
-    raise SystemExit(dedent(message)) from None
+from nox import Session
 
 package = "ssb_dash_framework"
 python_versions = ["3.13", "3.12", "3.14"]
@@ -34,26 +22,33 @@ nox.options.sessions = (
     "xdoctest",
     "docs-build",
 )
+nox.options.default_venv_backend = "uv"
+session = nox.session
 
 
-def install_poetry_groups(session: Session, *groups: str) -> None:
-    """Install dependencies from poetry groups, pinned to poetry.lock
-
-    Using this as a workaround until this PR is merged in:
-    https://github.com/cjolowicz/nox-poetry/pull/1080
-    """
-    with tempfile.TemporaryDirectory() as tempdir:
-        requirements_path = os.path.join(tempdir, "requirements.txt")
-        session.run(
-            "poetry",
-            "export",
-            *[f"--only={group}" for group in groups],
-            "--format=requirements.txt",
-            "--without-hashes",
-            f"--output={requirements_path}",
-            external=True,
-        )
-        session.install("-r", requirements_path)
+def install_with_uv(
+    session: Session,
+    *,
+    only_groups: list[str] | None = None,
+    all_extras: bool = False,
+    locked: bool = True,
+) -> None:
+    """Install packages using uv, pinned to uv.lock."""
+    cmd = ["uv", "sync"]
+    if locked:
+        cmd.append("--locked")
+    if only_groups:
+        groups = only_groups or []  # if only_groups is None or empty, groups becomes []
+        for group in groups:
+            cmd.extend(["--only-group", group])
+    if all_extras:
+        cmd.append("--all-extras")
+    cmd.append(
+        f"--python={session.virtualenv.location}"
+    )  # Target the nox venv's Python interpreter
+    session.run_install(
+        *cmd, env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location}
+    )
 
 
 def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
@@ -119,7 +114,9 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
             continue
 
         lines = text.splitlines()
-        hook.write_text(insert_header_in_hook(headers, lines))
+        hook.write_text(
+            insert_header_in_hook(headers, lines)
+        )  # NOSONAR - Safe because hardcoded local directory, and not user-controlled input.
 
 
 def is_bindir_in_text(bindirs: list[str], text: str) -> bool:
@@ -164,8 +161,7 @@ def precommit(session: Session) -> None:
 def mypy(session: Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or ["src", "tests"]
-    session.install(".")
-    install_poetry_groups(session, "dev")
+    install_with_uv(session)
     session.run("mypy", *args)
     if not session.posargs:
         session.run("mypy", f"--python-executable={sys.executable}", "noxfile.py")
@@ -174,8 +170,7 @@ def mypy(session: Session) -> None:
 @session(python=python_versions_for_test)
 def tests(session: Session) -> None:
     """Run the test suite."""
-    session.install(".")
-    install_poetry_groups(session, "dev")
+    install_with_uv(session)
     try:
         session.run(
             "coverage",
@@ -196,7 +191,7 @@ def tests(session: Session) -> None:
 def coverage(session: Session) -> None:
     """Produce the coverage report."""
     args = session.posargs or ["report", "--skip-empty"]
-    install_poetry_groups(session, "dev")
+    install_with_uv(session)
     if not session.posargs and any(Path().glob(".coverage.*")):
         session.run("coverage", "combine")
 
@@ -206,8 +201,7 @@ def coverage(session: Session) -> None:
 @session(python=python_versions[0])
 def typeguard(session: Session) -> None:
     """Runtime type checking using Typeguard."""
-    session.install(".")
-    install_poetry_groups(session, "dev")
+    install_with_uv(session)
     session.run("pytest", f"--typeguard-packages={package}", *session.posargs)
 
 
@@ -221,8 +215,7 @@ def xdoctest(session: Session) -> None:
         if "FORCE_COLOR" in os.environ:
             args.append("--colored=1")
 
-    session.install(".")
-    install_poetry_groups(session, "dev")
+    install_with_uv(session)
     session.run("python", "-m", "xdoctest", *args)
 
 
@@ -233,8 +226,7 @@ def docs_build(session: Session) -> None:
     if not session.posargs and "FORCE_COLOR" in os.environ:
         args.insert(0, "--color")
 
-    session.install(".")
-    install_poetry_groups(session, "doc")
+    install_with_uv(session, only_groups=["doc"])
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
@@ -247,8 +239,7 @@ def docs_build(session: Session) -> None:
 def docs(session: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]
-    session.install(".")
-    install_poetry_groups(session, "doc")
+    install_with_uv(session, only_groups=["doc"])
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():

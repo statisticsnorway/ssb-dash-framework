@@ -2,7 +2,7 @@ import pandas as pd
 import json
 import pytest
 
-@pytest.mark.skip(reason="Work in progress")
+#@pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_python_api():
     from ssb_dash_framework import DataEditor
     from ssb_dash_framework import DataEditorHistory
@@ -15,7 +15,7 @@ def test_dataeditor_python_api():
     from ssb_dash_framework import VariableSelectorConfig
     from ssb_dash_framework.setup.variableselector.time_unit import TimeUnit
     from ssb_dash_framework.setup.variableselector.time_unit import TimeUnitType
-    DataEditor._module_count = 0  # Reset the count
+    DataEditor.module_number = 0  # Reset the count
 
     VariableSelectorConfig(
         refnr="refnr",
@@ -72,7 +72,7 @@ def test_dataeditor_python_api():
             #     applies_to_forms=["RA-xxxx"],
             # ),
             DataViewCustom(
-                layout={"layout": {"type":"row","children":[]}},
+                layout=[{"type":"row","children":[]}],
             ),
         ],
     )
@@ -80,14 +80,14 @@ def test_dataeditor_python_api():
     assert instance is not None
     assert isinstance(instance, DataEditor)
 
-@pytest.mark.skip(reason="Work in progress")
+#@pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_yaml_based():
     from ssb_dash_framework import AppConfig
     from ssb_dash_framework import DataEditor
     from ssb_dash_framework import build_app_from_config
     from ssb_dash_framework import config_parser_yaml
 
-    DataEditor._module_count = 0  # Reset the count
+    DataEditor.module_number = 0  # Reset the count
 
     path = "tests/module_tests/dataeditor/dataeditor_test.yaml"
     if path.endswith(".yaml"):
@@ -101,3 +101,45 @@ def test_dataeditor_yaml_based():
 
     assert instance is not None
     assert isinstance(instance, DataEditor)
+
+#@pytest.mark.skip(reason="Work in progress")
+def test_dataeditor_yaml_settings_override():
+    """Test to assert that overriding EditorSettings variable in the microlayout yaml-definition works"""
+    from ssb_dash_framework import DataEditor
+    from ssb_dash_framework import DataViewCustom
+    from ssb_dash_framework import EditorSettings
+    from ssb_dash_framework import VariableSelector
+    from ssb_dash_framework import StandardDataHandler
+    VariableSelector.get_refnr = lambda x: x # pyright: ignore
+    original = EditorSettings.model_validate
+    @classmethod
+    def custom_validate(cls, *args, **kwargs):
+        data = args[0]
+        if data["form_data_table"] == "ny":
+            assert data["field_name_col"] == "feltstier"
+            assert data["field_value_col"] == "verdier"
+        else:
+            assert data["field_name_col"] == "feltsti"
+            assert data["field_value_col"] == "verdi"
+        return original(*args, **kwargs)
+
+    EditorSettings.model_validate = custom_validate # pyright: ignore
+    DataEditor.module_number = 0  # Reset the count
+
+    path = "tests/module_tests/dataeditor/override.yaml"
+    instance = DataViewCustom.from_yaml_path(path)
+    instance.fetcher = StandardDataHandler()
+    instance.instance_id= "None"
+    instance.settings = EditorSettings(
+        starting_table="skjemadata",
+        form_data_table="skjemadata",
+        form_list=["RA-0187"],
+        period_col="iso_period",
+        ident_col="ident",
+        refnr_col="refnr",
+        form_name_col="skjema",
+        field_name_col="feltsti",
+        field_value_col="verdi",
+    )
+    layout = instance.layout()
+    assert layout is not None

@@ -1,4 +1,3 @@
-from abc import ABC
 from abc import abstractmethod
 
 from dash import html
@@ -9,10 +8,13 @@ from .modules.inforow.meta import InforowMeta
 from .modules.helper_buttons.meta import HelperButtonMeta
 from .modules.microlayout.meta import MicrolayoutMeta
 
+from ...utils.base_classes import YamlLoadable
+
 SettingsType = EditorSettings
 
 
 class FetcherMeta(
+    YamlLoadable,
     # SidebarMeta[SettingsType],
     InforowMeta[SettingsType],
     HelperButtonMeta,
@@ -20,7 +22,7 @@ class FetcherMeta(
 ): ...
 
 
-class ContextABC(ABC):
+class ContextABC(YamlLoadable):
     """Base class for defining a contexted module."""
 
     fetcher: FetcherMeta
@@ -39,15 +41,11 @@ class ModuleABC(ContextABC):
     """Base class for defining a helper sidebar component."""
 
     @abstractmethod
-    def _create_layout(self) -> html.Div:
-        """Creates the layout for the module."""
-        pass
-
     def layout(self) -> html.Div:
         """Returns the layout of the module."""
-        return self._create_layout()
+        ...
 
     @abstractmethod
     def module_callbacks(self) -> None:
         """Registers callbacks for the module."""
-        pass
+        ...

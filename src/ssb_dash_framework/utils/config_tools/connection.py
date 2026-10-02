@@ -157,3 +157,6 @@ def set_postgres_connection(
             yield Backend.from_connection(raw_conn)
 
     set_connection(_wrap_ibis_postgres)
+
+
+def set_parquedit_connection(): ...

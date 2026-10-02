@@ -1,16 +1,11 @@
 from unittest.mock import patch
 
 from ssb_dash_framework import BofInformation
-from ssb_dash_framework import BofInformationTab
-from ssb_dash_framework import BofInformationWindow
-from ssb_dash_framework import VariableSelectorOption, VariableSelector
+from ssb_dash_framework import VariableSelectorOption
 
 
 def test_import() -> None:
     assert BofInformation is not None
-    assert BofInformationTab is not None
-    assert BofInformationWindow is not None
-
 
 def test_base_class() -> None:
     from dash import html
@@ -30,18 +25,3 @@ def test_base_class() -> None:
         test_implementation()
 
 
-def test_tab() -> None:
-    VariableSelectorOption("foretak")
-    VariableSelector.get_input("foretak")
-    with patch.object(
-        BofInformation, "_check_connection", lambda self: None
-    ):  # This replaces the _check_connection method in the base class
-        BofInformationTab()
-
-
-def test_window() -> None:
-    VariableSelectorOption("foretak")
-    with patch.object(
-        BofInformation, "_check_connection", lambda self: None
-    ):  # This replaces the _check_connection method in the base class
-        BofInformationWindow()

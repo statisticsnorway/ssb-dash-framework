@@ -7,21 +7,20 @@ from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 
-from ...utils import TabImplementation
-from ...utils import WindowImplementation
-from ...utils.module_validation import module_validator
+from ...config.models import register_module
+from ...utils import ModuleBase
 
 logger = logging.getLogger(__name__)
 
 
-class MultiModule:
+@register_module()
+class MultiModule(ModuleBase):
     """Generic class for switching between modules with a label and module_layout.
 
     If you have several modules, for an example several tables or figures, and you want them to take up less tabs/window button spaces, you can use this module.
     They keep the same functionality, but can be contained inside a single module instead of taking up extra space.
     """
 
-    _id_number = 0
 
     def __init__(self, label: str, module_list: list[Any]) -> None:
         """Initialize the MultiModule.
@@ -39,14 +38,8 @@ class MultiModule:
         self.icon = "📚"
         self.label = label
         self.module_list = module_list
-        self.module_number = MultiModule._id_number
-        self.module_name = self.__class__.__name__
-        MultiModule._id_number += 1
 
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
         self._is_valid()
-        module_validator(self)
 
     def _is_valid(self) -> None:
         if not isinstance(self.label, str):
@@ -63,10 +56,10 @@ class MultiModule:
                     f"Module {module} must have 'label' and 'module_layout' attributes"
                 )
 
-    def _create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
         module_divs = [
             html.Div(
-                module.module_layout,
+                self.module_layout,
                 className="multimodule-content",
                 id=f"{self.module_number}-multimodule-module-{i}",
                 style={"display": "block" if i == 0 else "none"},
@@ -96,16 +89,6 @@ class MultiModule:
         logger.debug("Generated layout.")
         return layout
 
-    def layout(self) -> html.Div:
-        """Define the layout for the MultiModule module.
-
-        Because this module can be used as a a component in other modules, it needs to have a layout method that is not abstract.
-        For implementations as tab or window, this method should still be overridden.
-
-        Returns:
-            html.Div: A Dash HTML Div component representing the layout of the module to be displayed directly.
-        """
-        return self.module_layout
 
     def module_callbacks(self) -> None:
         """Define the callbacks for the MultiModule module."""
@@ -124,32 +107,3 @@ class MultiModule:
                 for i in range(len(self.module_list))
             ]
 
-
-class MultiModuleTab(TabImplementation, MultiModule):
-    """MultiModule implemented as a Tab."""
-
-    def __init__(self, label: str, module_list: list[Any]) -> None:
-        """Initialize the MultiModuleTab.
-
-        Args:
-            label: The label for the MultiModuleTab.
-            module_list: A list of modules to switch between. Each module should have
-        """
-        MultiModule.__init__(self, label=label, module_list=module_list)
-        TabImplementation.__init__(
-            self,
-        )
-
-
-class MultiModuleWindow(WindowImplementation, MultiModule):
-    """MultiModule implemented as a Window."""
-
-    def __init__(self, label: str, module_list: list[Any], **kwargs: Any) -> None:
-        """Initialize the MultiModuleWindow.
-
-        Args:
-            label: The label for the MultiModuleWindow.
-            module_list: A list of modules to switch between. Each module should have
-        """
-        MultiModule.__init__(self, label=label, module_list=module_list)
-        WindowImplementation.__init__(self, **kwargs)
