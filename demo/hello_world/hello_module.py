@@ -1,15 +1,18 @@
 """This serves as an example of a module."""
 
+from abc import ABC
+from abc import abstractmethod
+
 import dash_bootstrap_components as dbc
 from dash import Input
 from dash import Output
-from dash import clientside_callback
-from dash import dcc
-from dash import html, callback
-from abc import abstractmethod, ABC
-from dash import callback, Input, Output, ctx, State
+from dash import State
+from dash import callback
+from dash import ctx
 from dash.exceptions import PreventUpdate
+
 from ssb_dash_framework import AlertHandler
+from ssb_dash_framework import ModuleBase
 
 # from ..utils.
 
@@ -25,7 +28,7 @@ class HelloModuleMetaDataHandler(ABC):
         pass
 
 
-class HelloModuleDataHandlerDefault(ABC):
+class HelloModuleDataHandlerDefault(HelloModuleMetaDataHandler):
 
     current_message = "Hello world!"
 
@@ -39,7 +42,7 @@ class HelloModuleDataHandlerDefault(ABC):
         HelloModuleDataHandlerDefault.current_message = new_value
 
 
-class HelloModuleDataHandlerCat(ABC):
+class HelloModuleDataHandlerCat(HelloModuleMetaDataHandler):
 
     cat = r"""
           |\__/,|   (`\
@@ -54,14 +57,14 @@ class HelloModuleDataHandlerCat(ABC):
         raise RuntimeError("The cat refuses to move!")
 
 
-class HelloModule:
+class HelloModule(ModuleBase):
     _id_number = 0
 
     def __init__(self, label, data_handler: HelloModuleMetaDataHandler) -> None:
-        self.module_number = HelloModule._id_number
-        self.module_name = self.__class__.__name__
-        HelloModule._id_number += 1
+        print(self.module_number)
+        print(self.module_name)
 
+        print(self.module_id)
         self.label = label
 
         self.icon = ":)"
@@ -70,6 +73,8 @@ class HelloModule:
 
         self.module_callbacks()
 
+        super().__init__()
+
     def _create_layout(self):
         return dbc.Container(
             [
@@ -77,11 +82,11 @@ class HelloModule:
                     [
                         dbc.Button(
                             "Get currently stored message",
-                            id=f"{self.module_name}-{self.module_number}-get-button",
+                            id=f"{self.module_id}-get-button",
                         ),
                         dbc.Button(
                             "Update stored message",
-                            id=f"{self.module_name}-{self.module_number}-update-button",
+                            id=f"{self.module_id}-update-button",
                         ),
                     ]
                 ),
@@ -89,7 +94,7 @@ class HelloModule:
                     [
                         dbc.Col(
                             dbc.Textarea(
-                                id=f"{self.module_name}-{self.module_number}-message-holder",
+                                id=f"{self.module_id}-message-holder",
                                 style={"height": "200px"},
                             )
                         )
