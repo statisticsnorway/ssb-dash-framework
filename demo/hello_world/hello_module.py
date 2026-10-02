@@ -81,7 +81,7 @@ class HelloModuleDataHandlerCat(HelloModuleMetaDataHandler):
 class HelloModule(ModuleBase):
 
     def __init__(self, label, data_handler: HelloModuleMetaDataHandler) -> None:
-
+        print(self.module_id)
         self.label = label
 
         self.icon = ":)"
@@ -89,6 +89,8 @@ class HelloModule(ModuleBase):
         self.data_handler = data_handler
 
         super().__init__()
+        print(self.module_id)
+
 
     def _create_layout(self):
         return dbc.Container(
@@ -135,7 +137,6 @@ class HelloModule(ModuleBase):
             prevent_initial_call=True,
         )
         def message_callback(refnr, get, update, textbox_content):
-
             if ctx.triggered_id == get_id:
                 try:
                     to_return = self.data_handler.get_message(refnr)

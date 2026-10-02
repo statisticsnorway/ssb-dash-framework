@@ -1,13 +1,14 @@
 import os
+from ssb_dash_framework import app_setup, main_layout, VariableSelectorConfig
+from hello_module import (
+    HelloModule,
+    HelloModuleDataHandlerDefault,
+    HelloModuleDataHandlerCat,
+)
 
-from hello_module import HelloModule
-from hello_module import HelloModuleDataHandlerDefault
-
-from ssb_dash_framework import VariableSelectorConfig
-from ssb_dash_framework import app_setup
-from ssb_dash_framework import main_layout
-
-VariableSelectorConfig(refnr="Refnr")
+VariableSelectorConfig(
+    refnr="Refnr"
+)
 
 port = 8070
 service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
@@ -20,7 +21,7 @@ tab_list.append(
     HelloModule(label="Default", data_handler=HelloModuleDataHandlerDefault())
 )
 
-# tab_list.append(HelloModule(label="Cat", data_handler=HelloModuleDataHandlerCat()))
+tab_list.append(HelloModule(label="Cat", data_handler=HelloModuleDataHandlerCat()))
 
 window_list = []
 
