@@ -1,31 +1,13 @@
 """Modules for use in the application, implmented as a view (tab/window) or directly with a custom layout implementation."""
 
 from .aarsregnskap import Aarsregnskap
-from .aarsregnskap import AarsregnskapTab
-from .aarsregnskap import AarsregnskapWindow
-from .altinn_control_view import AltinnControlViewTab
-from .altinn_control_view import AltinnControlViewWindow
 from .altinn_control_view import ControlView
-from .altinn_control_view import ControlViewTab
-from .altinn_control_view import ControlViewWindow
 from .bofregistry import BofInformation
-from .bofregistry import BofInformationTab
-from .bofregistry import BofInformationWindow
 from .building_blocks import Canvas
-from .building_blocks import CanvasTab
-from .building_blocks import CanvasWindow
 from .building_blocks import EditingTable
-from .building_blocks import EditingTableTab
-from .building_blocks import EditingTableWindow
 from .building_blocks import FigureDisplay
-from .building_blocks import FigureDisplayTab
-from .building_blocks import FigureDisplayWindow
 from .building_blocks import MapDisplay
-from .building_blocks import MapDisplayTab
-from .building_blocks import MapDisplayWindow
 from .building_blocks import MultiModule
-from .building_blocks import MultiModuleTab
-from .building_blocks import MultiModuleWindow
 from .data_editor import DataEditor
 from .data_editor import DataEditorHistory
 from .data_editor import DataEditorContactInfo
@@ -53,24 +35,12 @@ from .parquet_editor import get_export_log_path
 from .parquet_editor import get_log_path
 from .pi_memorizer import PimemorizerTab
 from .skjemapdfviewer import SkjemapdfViewer
-from .skjemapdfviewer import SkjemapdfViewerTab
-from .skjemapdfviewer import SkjemapdfViewerWindow
 
 __all__ = [
     "Aarsregnskap",
-    "AarsregnskapTab",
-    "AarsregnskapWindow",
-    "AltinnControlViewTab",
-    "AltinnControlViewWindow",
     "BofInformation",
-    "BofInformationTab",
-    "BofInformationWindow",
     "Canvas",
-    "CanvasTab",
-    "CanvasWindow",
     "ControlView",
-    "ControlViewTab",
-    "ControlViewWindow",
     "DataEditor",
     "DataEditorHistory",
     "DataEditorContactInfo",
@@ -83,18 +53,10 @@ __all__ = [
     "DataEditorTableSelector",
     "DataViewCustom",
     "EditingTable",
-    "EditingTableTab",
-    "EditingTableWindow",
     "EditorSettings",
     "FigureDisplay",
-    "FigureDisplayTab",
-    "FigureDisplayWindow",
     "MapDisplay",
-    "MapDisplayTab",
-    "MapDisplayWindow",
     "MultiModule",
-    "MultiModuleTab",
-    "MultiModuleWindow",
     "Naeringsspesifikasjon",
     "NaeringsspesifikasjonTab",
     "NaeringsspesifikasjonWindow",
@@ -105,8 +67,6 @@ __all__ = [
     "ParquetEditorChangelog",
     "PimemorizerTab",
     "SkjemapdfViewer",
-    "SkjemapdfViewerTab",
-    "SkjemapdfViewerWindow",
     "StandardDataHandler",
     "apply_edits",
     "export_from_parqueteditor",
