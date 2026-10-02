@@ -194,6 +194,13 @@ class DataViewCustom(DataEditorDataView):
                 else:
                     ref_input = VariableSelector.get_refnr(Input)
 
+                input_id = layout.get("ident_col")
+                refnr_col = layout.get("refnr_col", self.settings.refnr_col)
+                if input_id in ("var-ident", "ident") or refnr_col != "refnr":
+                    ref_input = VariableSelector.get_ident(Input)
+                else:
+                    ref_input = VariableSelector.get_refnr(Input)
+
                 microlayout = MicroLayoutAIO(
                     data_handler=self.fetcher,
                     settings=updates_settings,
