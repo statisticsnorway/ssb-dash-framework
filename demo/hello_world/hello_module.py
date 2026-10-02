@@ -2,6 +2,7 @@
 
 from abc import ABC
 from abc import abstractmethod
+from typing import ClassVar
 
 import dash_bootstrap_components as dbc
 from dash import Input
@@ -34,7 +35,7 @@ class HelloModuleMetaDataHandler(ABC):
 
 class HelloModuleDataHandlerDefault(HelloModuleMetaDataHandler):
 
-    current_message: dict[str, str] = {
+    current_message: ClassVar[dict[str, str]] = {
         "1": "Hello world!",
         "2": "Hello universe!",
     }
@@ -90,7 +91,6 @@ class HelloModule(ModuleBase):
 
         super().__init__()
         print(self.module_id)
-
 
     def _create_layout(self):
         return dbc.Container(
