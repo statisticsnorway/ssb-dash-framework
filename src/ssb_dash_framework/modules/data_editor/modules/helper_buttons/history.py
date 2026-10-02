@@ -9,14 +9,12 @@ from dash import Output
 from dash import callback
 from dash import html
 
-from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.alert_handler import AlertHandler
 from .editor_helper_button import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)
 
-@register_module()
 class DataEditorHistory(DataEditorHelperButton):
     """This module provides supporting tables for the DataEditor.
 

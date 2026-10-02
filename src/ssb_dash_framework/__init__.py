@@ -13,7 +13,6 @@ from .config import config_parser_yaml
 from .config import get_from_module_registry
 from .config import get_module_registry
 from .config import instantiate_module
-from .config import register_module
 from .config import run_app_from_config
 from .control import ControlFrameworkBase
 from .control import register_control
@@ -155,7 +154,6 @@ __all__ = [
     "main_layout",
     "module_validator",
     "register_control",
-    "register_module",
     "run_app_from_config",
     "set_connection",
     "set_postgres_connection",

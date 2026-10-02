@@ -11,7 +11,6 @@ from dash import html
 from dash.exceptions import PreventUpdate
 
 from .....modules.data_editor.utils import EditorSettings
-from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from ..microlayout.microlayout import MicroLayoutAIO
 from .base import DataEditorDataView
@@ -126,7 +125,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@register_module()
 class DataViewCustom(DataEditorDataView):
     """DataView with a very flexible layout made to be tailored to specific needs."""
 

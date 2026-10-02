@@ -13,11 +13,9 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.exceptions import PreventUpdate
 
-from ...config import register_module
 from ...utils import ModuleBase
 from ...setup.variableselector import VariableSelector
 from ...utils.alert_handler import AlertHandler
-from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +31,6 @@ class EditingTableConfig(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
-@register_module()
 class EditingTable(ModuleBase):
     """A reusable and flexible Dash component for editing tabular data.
 
