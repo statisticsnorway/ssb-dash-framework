@@ -3,10 +3,10 @@ revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version == '3.14.*' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -3267,53 +3267,6 @@ wheels = [
 ]
 
 [[package]]
-name = "rpy2"
-version = "3.6.5"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "packaging", marker = "sys_platform == 'win32'" },
-    { name = "rpy2-rinterface" },
-    { name = "rpy2-robjects" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/78/df/cc3b6c7e2723ae168c752c5d6586952fc0001169ed9d3d40d8b1915a0033/rpy2-3.6.5.tar.gz", hash = "sha256:826fc0fabd71cca49b692fac9afc3815ea6c34935844aaefe424da5b76dd68e6", size = 53464, upload-time = "2026-03-04T17:59:04.835Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/fb/dc260495aefaf8b8e05918fcb8ba142bd95007542d1e6f4fe362919ffdcd/rpy2-3.6.5-py3-none-any.whl", hash = "sha256:1e7a0572895e98f9c38c5ec6cee424503eb812cacfa3fe07fdb9d3b72e82ff76", size = 9911, upload-time = "2026-03-04T17:59:03.643Z" },
-]
-
-[[package]]
-name = "rpy2-rinterface"
-version = "3.6.5"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cffi" },
-    { name = "packaging", marker = "sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/7d/b0f9930dd34ccf5ed6bf88f880350df247b9c0f31b45d087c475c3aa44e0/rpy2_rinterface-3.6.5.tar.gz", hash = "sha256:9b3610ebbb9625a3c49dadfd9d4bafbc5f1eb412056d9406bcdb500d274d4198", size = 81142, upload-time = "2026-03-19T20:41:20.187Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/30/6b1a5b98eed70a0a18e87b8008e1106b99458a56db428ef35375fad0fb66/rpy2_rinterface-3.6.5-cp312-cp312-macosx_10_13_universal2.whl", hash = "sha256:f33b0973f33babb03daad7842baafd64a752dfa35f01918c9d2e5a8ae7dd5dce", size = 175852, upload-time = "2026-03-19T20:41:09.975Z" },
-    { url = "https://files.pythonhosted.org/packages/ec/7d/682b34be3a2e0a29b0f351f0373917d0f2dad11934f64bc9b1c7b29f0dfa/rpy2_rinterface-3.6.5-cp312-cp312-win_amd64.whl", hash = "sha256:b26c80fdb35d802deb7d3a82a7f2e7a86ee3f20a6b8b51150fbdfcad6229ecfd", size = 176574, upload-time = "2026-03-19T20:41:11.234Z" },
-    { url = "https://files.pythonhosted.org/packages/6a/d7/4c66a0828908e34462392838417d20a432acace0f7d5d2bb1547094886f2/rpy2_rinterface-3.6.5-cp313-cp313-macosx_10_13_universal2.whl", hash = "sha256:b371681147c75d5d5c487ee55549c761340e8cc9ff5d061cb9f17d0067354d83", size = 175851, upload-time = "2026-03-19T20:41:12.659Z" },
-    { url = "https://files.pythonhosted.org/packages/aa/3b/b915f42f8ad06e8026b1f095594fc8b69302e1695f3b5822e47ca576d11b/rpy2_rinterface-3.6.5-cp313-cp313-win_amd64.whl", hash = "sha256:a3cf72525ee281b0b46677598f18ac62a84f9157ff37c3e8b006a141c1703806", size = 176569, upload-time = "2026-03-19T20:41:14.109Z" },
-    { url = "https://files.pythonhosted.org/packages/ab/89/2ed03cb5d44319325977ef2a2d1bcfc7e62dd69fff346c24a5586d383c5c/rpy2_rinterface-3.6.5-cp314-cp314-macosx_10_15_universal2.whl", hash = "sha256:f181d3d58148d5597d1ef37c2b3c97a95d643614adb7eeb390924db59435d9da", size = 176614, upload-time = "2026-03-19T20:41:15.501Z" },
-    { url = "https://files.pythonhosted.org/packages/ff/ea/3a003561a354d6b917cc5058c3ad4b42ea0a5a092b391fa7a5fd8f4ac0da/rpy2_rinterface-3.6.5-cp314-cp314-win_amd64.whl", hash = "sha256:7f0159c8af3d3cd3216dde62fe1027b59070e86b4c87599d5a6c6a6a25f594eb", size = 179075, upload-time = "2026-03-19T20:41:16.556Z" },
-]
-
-[[package]]
-name = "rpy2-robjects"
-version = "3.6.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "jinja2" },
-    { name = "packaging", marker = "sys_platform == 'win32'" },
-    { name = "rpy2-rinterface" },
-    { name = "tzlocal" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/fc/74/0f34831ac08d759b35f5b6f9573bd2bcdd9820fdc8bf003492f721960258/rpy2_robjects-3.6.4.tar.gz", hash = "sha256:9a32fe83a5ab253872fee17ef7dce561b26811672cfd27e96b8e3bcd38829d7c", size = 105886, upload-time = "2026-03-19T20:41:31.078Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ed/f9/668407e3cca22dc6f2fe1c19de5c1132d87fd1b0e2aafb35ca0ae9376fb3/rpy2_robjects-3.6.4-py3-none-any.whl", hash = "sha256:9a5577ecd64e6433db27897250c8b6506c8fd0f32ec16b12f23ef8d4a032e53f", size = 125879, upload-time = "2026-03-19T20:41:29.535Z" },
-]
-
-[[package]]
 name = "ruamel-yaml"
 version = "0.19.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3676,13 +3629,11 @@ dependencies = [
     { name = "psycopg", extra = ["pool"] },
     { name = "pydantic" },
     { name = "pymupdf" },
-    { name = "rpy2" },
-    { name = "rpy2-rinterface" },
-    { name = "rpy2-robjects" },
     { name = "sqlalchemy" },
     { name = "ssb-klass-python" },
     { name = "ssb-parquedit" },
     { name = "ssb-poc-statlog-model" },
+    { name = "tzlocal" },
 ]
 
 [package.dev-dependencies]
@@ -3743,13 +3694,11 @@ requires-dist = [
     { name = "psycopg", extras = ["pool"], specifier = ">=3.3.3,<4.0.0" },
     { name = "pydantic", specifier = ">=2.12.5,<3.0.0" },
     { name = "pymupdf", specifier = ">=1.27.2.3,<2.0.0.0" },
-    { name = "rpy2", specifier = "==3.6.5" },
-    { name = "rpy2-rinterface", specifier = "==3.6.5" },
-    { name = "rpy2-robjects", specifier = "==3.6.4" },
     { name = "sqlalchemy", specifier = ">=2.0.43,<3.0.0" },
     { name = "ssb-klass-python", specifier = ">=1.0.6,<2.0.0" },
     { name = "ssb-parquedit", specifier = ">=0.0.11,<0.0.12" },
     { name = "ssb-poc-statlog-model", specifier = ">=2.0.0,<3.0.0" },
+    { name = "tzlocal", specifier = ">=5.4.4,<6.0.0" },
 ]
 
 [package.metadata.requires-dev]
