@@ -4,15 +4,16 @@ version = "0.3.0a0"
 description = "SSB Dash Framework"
 readme = "README.md"
 requires-python = ">=3.12"
-license = "GPL-3.0"
+license = "MIT"
 authors = [{ name = "Magnus Theodor Engh", email = "dor@ssb.no" }]
 classifiers = [
-  "Development Status :: 4 - Beta",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Development Status :: 4 - Beta",
   "Typing :: Typed",
 ]
 
