@@ -20,8 +20,6 @@ from ...setup.variableselector import VariableSelector
 from ...utils.implementations import TabImplementation
 from ...utils.implementations import WindowImplementation
 from ...utils.module_validation import module_validator
-from ...utils.r_helpers import _get_kostra_r
-from ...utils.r_helpers import hb_method
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +71,7 @@ class HBMethod:
         self.module_layout = self._create_layout()
         self.module_callbacks()
         module_validator(self)
-        _get_kostra_r()
+        # _get_kostra_r()
 
     def get_default_parameter_values(self) -> None:
         """Gets the default parameter values."""
@@ -94,15 +92,15 @@ class HBMethod:
         _t_0 = time_cols[0]
         _t_1 = time_cols[1]
 
-        data = hb_method(
-            data=data,
-            p_c=self.pc,
-            p_u=self.pu,
-            p_a=self.pa,
-            id_field_name=self.ident,
-            x_1_field_name=_t_0,
-            x_2_field_name=_t_1,
-        ).sort_values(by=["maxX"])
+        # data = hb_method(
+        #     data=data,
+        #     p_c=self.pc,
+        #     p_u=self.pu,
+        #     p_a=self.pa,
+        #     id_field_name=self.ident,
+        #     x_1_field_name=_t_0,
+        #     x_2_field_name=_t_1,
+        # ).sort_values(by=["maxX"])
         logger.debug("HB calculation done successfully.")
         x = data["maxX"]
         y = data["ratio"]
@@ -389,7 +387,7 @@ class HBMethodWindow(WindowImplementation, HBMethod):
         time_units: list[str],
         varselector_variable: str = "statistikkvariabel",
         output: str = "ident",
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Initializes the HB method module.
 
@@ -406,7 +404,4 @@ class HBMethodWindow(WindowImplementation, HBMethod):
             varselector_variable=varselector_variable,
             output=output,
         )
-        WindowImplementation.__init__(
-            self,
-            **kwargs
-        )
+        WindowImplementation.__init__(self, **kwargs)

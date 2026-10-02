@@ -93,7 +93,7 @@ class DataEditor(ModuleBase):
             for view in dataview:
                 view.set_settings(data_handler, settings, instance_id)
                 dataview_list.append(view.layout())
-
+        
         self.dataview_layouts = {}
         if dataview is not None:
             for view, layout_div in zip(dataview, dataview_list):
