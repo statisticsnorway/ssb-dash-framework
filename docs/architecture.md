@@ -28,6 +28,8 @@ The VariableSelector class coordinates all modules in an app and sets up states 
 
 VariableSelector provides functionality for connecting callbacks to shared states.
 
+It is configured using VariableSelectorConfig and can be configured either through python api or a yaml file.
+
 ### In-development features and modules exists in experimental/
 
 The experimental/ folder exists in order to be able to beta-test features and modules.
@@ -59,6 +61,10 @@ The self.module_id attribute is always the classname of the module + module numb
 #### Custom plugin modules are supported
 
 As long as modules are created as a class inheriting from ModuleBase it is simple to integrate into an existing app by instantiating it as any other module.
+
+The base class provides a template and ensures that required attributes and methods are present and registers the module.
+
+Custom modules can exist anywhere as long as it is importable in the .py file that runs the app.
 
 ### Modules must not depend on other modules
 
