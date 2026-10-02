@@ -42,6 +42,7 @@ dependencies = [
   "ssb-parquedit (>=0.0.11,<0.0.12)",
   "ssb-poc-statlog-model (>=2.0.0,<3.0.0)",
   "tzlocal (>=5.4.4,<6.0.0)",
+  "psycopg-binary>=3.3.6",
 ]
 
 [project.urls]

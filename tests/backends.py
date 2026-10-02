@@ -15,8 +15,7 @@ from dataclasses import field
 from pathlib import Path
 
 from ssb_dash_framework.utils.config_tools import connection
-
-from .testdata.altinn import build_db
+from ssb_dash_framework_testdata.altinn import build_db
 
 POSTGRES_URL_ENV = "TEST_POSTGRES_URL"
 

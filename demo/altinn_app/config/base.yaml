@@ -1,0 +1,196 @@
+app_settings:
+  port: 8000
+  stylesheet: lumen
+  enable_logging: false
+  logging_level: warning
+  log_to_file: false
+  variableselector:
+    refnr: refnr
+    ident: ident
+    # RA-0187 is monthly ("2026-01") and RA-0745 is yearly ("2024"), but the
+    # period is only ever string-matched, so one shared time unit serves both.
+    time_units:
+      name: periode
+      frequency: month
+    grouping_variables:
+      - altinnskjema
+modules: # Here you can add more modules and tailor your app to your needs.
+  tabs:
+    - type: DataEditor
+      settings:
+        starting_table: skjemadata
+        form_data_table: skjemadata
+        form_list:
+          - RA-0187
+          - RA-0745
+        period_col: iso_period
+        ident_col: ident
+        refnr_col: refnr
+        form_name_col: skjema
+        field_name_col: feltsti
+        field_value_col: verdi
+      data_handler: StandardDataHandler
+      inforow:
+        orgnr: {"source": "variableselector", "variable_name": "ident"}
+        skjema: {"source": "variableselector", "variable_name": "altinnskjema"}
+      buttons:
+        - type: DataEditorHistory
+        - type: DataEditorSupportTables
+      sidebar:
+        # DataEditor.enable_table_selector never builds this, but the dataview
+        # switching callback listens to it, so it has to be added by hand.
+        - type: DataEditorTableSelector
+          form_data_tables:
+            - skjemadata
+          starting_table: skjemadata
+        - type: DataEditorSidebarEditingStatus
+        - type: DataEditorSidebarComment
+      dataview:
+        - type: DataViewCustom
+          applies_to_forms:
+            - RA-0187
+          applies_to_tables:
+            - skjemadata
+          layout:
+            - type: row
+              children:
+                - type: col
+                  children:
+                    - type: microlayout
+                      label: Omsetning i varehandelen
+                      field_name_col: "feltsti"
+                      field_value_col: "verdi"
+                      inputs:
+                        - refnr
+                        - periode
+                      layout:
+                        - type: header
+                          label: Omsetning i varehandelen
+                          size: md
+                        - type: row
+                          children:
+                            - type: col
+                              children:
+                                - type: input
+                                  label: Omsetning i perioden (kr)
+                                  id: omsVirksomhetPerioden
+                                  variable: "/omsVirksomhetPerioden"
+                                - type: input
+                                  label: Omsetning forrige periode
+                                  id: oms_fr
+                                  variable: "/omsForrigePerPrefill"
+                                - type: calculated-field
+                                  label: Endring i omsetning
+                                  ids:
+                                    oms: omsVirksomhetPerioden
+                                    oms_fr: oms_fr
+                                  expression: "Math.round(oms - oms_fr)"
+                            - type: col
+                              children:
+                                - type: input
+                                  label: Antall ansatte
+                                  variable: "/antallAnsatte"
+                        - type: header
+                          label: Kommentar
+                          size: sm
+                        - type: textarea
+                          label: Kommentar fra oppgavegiver
+                          variable: "/kommentarSkjema"
+
+        - type: DataViewCustom
+          applies_to_forms:
+            - RA-0745
+          applies_to_tables:
+            - skjemadata
+          layout:
+            - type: row
+              children:
+                - type: col
+                  children:
+                    - type: microlayout
+                      label: Gjødsling på eng
+                      field_name_col: "feltsti"
+                      field_value_col: "verdi"
+                      inputs:
+                        - refnr
+                        - periode
+                      layout:
+                        - type: header
+                          label: Gjødsling på eng
+                          size: md
+                        - type: row
+                          children:
+                            - type: col
+                              children:
+                                - type: input
+                                  label: Prefill areal (dekar)
+                                  variable: "/prefillAreal"
+                                - type: input
+                                  label: Prefill vekstnavn
+                                  variable: "/prefillVekstNavn"
+                                - type: input
+                                  label: Prefill vekstnummer
+                                  variable: "/prefillVekstNummer"
+                            - type: col
+                              children:
+                                - type: input
+                                  label: Arbeidet med ny eng (ja/nei)
+                                  variable: "/NyEngArbJaNei"
+                                - type: input
+                                  label: Areal ny eng (dekar)
+                                  variable: "/NyEngArbAreal"
+                                - type: input
+                                  label: Areal spredd husdyrgjødsel (dekar)
+                                  variable: "/EtaEngHusdyrGjodsAreal"
+                            - type: col
+                              children:
+                                - type: input
+                                  label: Valgte spredeutstyr (koder)
+                                  variable: "/NyEngSpredUts"
+                                - type: input
+                                  label: Valgte husdyrgjødseltyper (koder)
+                                  variable: "/NyEngHusdyrGjods"
+
+                        - type: header
+                          label: Spredeutstyr
+                          size: sm
+                        # Wildcards are passed to SQL ILIKE, so use % and not *.
+                        - type: dynamic-list
+                          label: Spredeutstyr og spredd mengde
+                          variable: "/NyEngSpredUtsGroup/%"
+
+                        - type: header
+                          label: Mineralgjødsel
+                          size: sm
+                        - type: dynamic-list
+                          label: Mineralgjødsel og antall gjødslinger
+                          variable: "/NyEngMineralGjodsGroup/%"
+
+                        - type: header
+                          label: Husdyrgjødsel
+                          size: sm
+                        - type: row
+                          children:
+                            - type: col
+                              children:
+                                - type: input
+                                  label: Husdyrgjødsel kode
+                                  variable: "/NyEngHusdyrGjodsGroup/6/NyEngHusdyrGjodsID"
+                                - type: input
+                                  label: Husdyrgjødsel navn
+                                  variable: "/NyEngHusdyrGjodsGroup/6/NyEngHusdyrGjodsNavn"
+                                - type: input
+                                  label: Antall gjødslinger
+                                  variable: "/NyEngHusdyrGjodsGroup/6/NyEngHusdyrAntallGjods"
+                        # Only the nested gjødslinger: a /NyEngHusdyrGjodsGroup/% pattern
+                        # would also match the three fields above and make the grid sparse.
+                        - type: dynamic-list
+                          label: Gjødslinger per årstid
+                          variable: "/NyEngHusdyrGjodsGroup/%/NyEngHusdyrGjodslinger/%"
+
+                        - type: header
+                          label: Kommentar
+                          size: sm
+                        - type: textarea
+                          label: Kommentar fra oppgavegiver
+                          variable: "/EngKommentar"
