@@ -31,7 +31,12 @@ class DataEditorHistory(DataEditorHelperButton):
         applies_to_tables: list[str] | None = None,
         applies_to_forms: list[str] | None = None,
     ) -> None:
-        """Initializes the DataEditorEditorSupportTables module."""
+        """Initializes the DataEditorHistory module.
+
+        Args:
+            applies_to_tables: Optional override listing applicable database tables.
+            applies_to_forms: Optional override listing applicable questionnaire forms.
+        """
         self.module_number = DataEditorHistory._id_number
         self.module_name = self.__class__.__name__
 
@@ -42,6 +47,11 @@ class DataEditorHistory(DataEditorHelperButton):
         self.module_callbacks()
 
     def _create_modal_body(self) -> html.Div:
+        """Creates the history viewer modal panel with toggle switches and AgGrid data table.
+
+        Returns:
+            A Dash Div element.
+        """
         return html.Div(
             [
                 html.Div(
@@ -72,6 +82,7 @@ class DataEditorHistory(DataEditorHelperButton):
         )
 
     def module_callbacks(self):
+        """Registers callbacks to update and retrieve audit history records on target units."""
         @callback(
             Output(f"{self.module_name}-{self.module_number}-table", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-table", "columnDefs"),

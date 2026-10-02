@@ -36,6 +36,11 @@ GRAPH_COLORS = [
 
 
 class TimeseriesAio(html.Div):
+    """All-in-One component displaying historical field trends as charts or tables.
+
+    Toggleable between a Plotly line chart and an AgGrid dataset showing prior values.
+    """
+
     def __init__(
         self,
         variables: str | list[str],
@@ -46,6 +51,17 @@ class TimeseriesAio(html.Div):
         _id: str | None = None,
         **kwargs,
     ):
+        """Initializes the TimeseriesAio component.
+
+        Args:
+            variables: Target field path(s) to graph/table.
+            num_periods: Number of prior periods of historical data to retrieve.
+            settings: Active editor configuration settings.
+            fetcher: Query and database handler.
+            width: Chart canvas width in pixels.
+            _id: Optional explicit UUID string.
+            **kwargs: Additional parameters passed to the html.Div superclass.
+        """
         if _id is None:
             internal_id = str(uuid.uuid4())
         else:

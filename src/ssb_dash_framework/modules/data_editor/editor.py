@@ -24,6 +24,20 @@ logger = getLogger(__name__)
 def _parse_module[OutType](
     out_type: Type[OutType], module_type: Any | None, **kwargs
 ) -> OutType:
+    """Parses and validates a module class against a registered name.
+
+    Args:
+        out_type: The expected class subclass to validate against.
+        module_type: The registered module name or class type.
+        **kwargs: Keyword arguments passed to configure the parsed class.
+
+    Returns:
+        An instance of OutType.
+
+    Raises:
+        AttributeError: If module_type is None.
+        ValueError: If the resolved class is not a subclass of out_type.
+    """
     if module_type is None:
         raise AttributeError("Yaml component needs to specify the type")
     module = get_from_module_registry(module_type)
@@ -37,6 +51,12 @@ def _parse_module[OutType](
 
 @register_module(as_tab="DataEditor")
 class DataEditor(ModuleBase):
+    """The main micro-editing module that orchestrates layout, sidebars, and custom forms.
+
+    This component acts as a high-level Tab containing metadata cards (InfoRow),
+    action helper modals, comments fields, tracking panels, and spreadsheets.
+    """
+
     def __init__(
         self,
         settings: EditorSettings,
@@ -47,6 +67,17 @@ class DataEditor(ModuleBase):
         dataview: list[ModuleABC] | None = None,
         enable_table_selector: bool = True,
     ) -> None:
+        """Initializes the DataEditor orchestrator.
+
+        Args:
+            settings: Central configuration for columns, tables, and form options.
+            data_handler: Query and persistence handler implementing FetcherMeta.
+            inforow: Variable mapping configuration for the metadata display row.
+            buttons: List of helper buttons/modals shown above the main content view.
+            sidebar: List of interactive sidebar widgets shown in the left column.
+            dataview: List of views (e.g. DataEditorTable or DataViewCustom) for standard or customized forms.
+            enable_table_selector: Optional flag to toggle the data source selector.
+        """
 
         instance_id = str(uuid.uuid4())
 
@@ -134,7 +165,11 @@ class DataEditor(ModuleBase):
         super().__init__(as_type="Tab")
 
     def _create_layout(self) -> dbc.Container:  # pyright: ignore
-        """Creates the layout for the DataEditor module."""
+        """Creates the standard dual-column Bootstrap container layout.
+
+        Returns:
+            A Dash Bootstrap Container.
+        """
         return dbc.Container(
             [
                 dbc.Row(
@@ -170,11 +205,24 @@ class DataEditor(ModuleBase):
         )
 
     def layout(self) -> dbc.Container:  # pyright: ignore
-        """Generates the layout for the DataEditor."""
+        """Generates and returns the layout of the DataEditor tab.
+
+        Returns:
+            A Dash Bootstrap Container.
+        """
         return self._create_layout()
 
     @classmethod
     def from_yaml(cls, *args: Any, **kwargs: dict | list | str | int):
+        """Configures and instantiates the DataEditor module dynamically from a configuration dict/yaml.
+
+        Args:
+            *args: Positional arguments.
+            **kwargs: Configuration properties mapped to constructor arguments.
+
+        Returns:
+            An instance of DataEditor.
+        """
         handler_name = kwargs.get("data_handler")
         data_handler_verified = _parse_module(FetcherMeta, handler_name)
 
@@ -223,7 +271,7 @@ class DataEditor(ModuleBase):
         )
 
     def module_callbacks(self) -> None:
-        """Registers the callbacks for the DataEditor."""
+        """Registers interactive Dash callbacks for toggling dynamic form views."""
 
         if not self.dataview or not self.main_view:
             return

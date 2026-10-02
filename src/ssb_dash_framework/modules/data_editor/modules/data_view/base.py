@@ -34,7 +34,11 @@ class DataEditorDataView(ContextABC):
 
     @abstractmethod
     def layout(self) -> html.Div:
-        """Returns the layout of the module."""
+        """Returns the layout of the module.
+
+        Returns:
+            A Dash Div element.
+        """
         ...
 
     @abstractmethod

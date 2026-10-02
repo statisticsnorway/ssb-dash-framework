@@ -400,6 +400,8 @@ The D2 diagram outlines several critical layers:
 4. **The MicroLayout Form Engine (`MicroLayoutAIO`)**: The heart of config-driven layouts. It validates shapes using Pydantic, generates isolated `aio_id` namespaces, auto-wires Javascript-based math callbacks, and dynamically binds blur-listeners.
 5. **The Persistence/Database Access Layer (`StandardDataHandler`)**: Implements `FetcherMeta` to wrap all database execution. Integrates `FormGetterCached` to cache datasets on-the-fly and processes `UpdateSkjemadata` models.
 
+<img src="./data_editor.svg" height="auto" alt="Description">
+
 ### Rendering the UML Diagram
 
 To compile this D2 specification into a visual SVG or PNG diagram, run:

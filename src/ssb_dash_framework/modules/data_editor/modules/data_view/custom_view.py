@@ -20,9 +20,19 @@ logger = logging.getLogger(__name__)
 
 
 class DataViewCustomFigure:
+    """Custom graphic figure module for displaying custom figures/graphs in custom views."""
+
     _id_number = 0
 
     def __init__(self, label, figure_func, applies_to_tables, applies_to_forms) -> None:
+        """Initializes the DataViewCustomFigure module.
+
+        Args:
+            label: Visual label describing the figure.
+            figure_func: Function generating and returning the Plotly figure object.
+            applies_to_tables: List of applicable database tables.
+            applies_to_forms: List of applicable questionnaire form IDs.
+        """
         self.module_number = DataViewCustomFigure._id_number
         self.module_name = self.__class__.__name__
         DataViewCustomFigure._id_number += 1
@@ -33,6 +43,11 @@ class DataViewCustomFigure:
         self.module_callbacks()
 
     def content(self):
+        """Generates the layout content for the custom figure.
+
+        Returns:
+            A Dash Div containing the label and dcc.Graph.
+        """
         return html.Div(
             children=[
                 self.label,
@@ -41,6 +56,7 @@ class DataViewCustomFigure:
         )
 
     def module_callbacks(self) -> None:
+        """Registers callbacks to refresh the custom figure when reference state changes."""
         @callback(
             Output(f"{self.module_name}-{self.module_number}-figure", "figure"),
             Input("dataeditortableselector", "value"),
@@ -69,7 +85,17 @@ class DataViewCustomFigure:
 
 
 class DataViewCustomTable:
+    """Custom tabular reference module for displaying custom AgGrids in custom views."""
+
     def __init__(self, label, table_func, applies_to_tables, applies_to_forms) -> None:
+        """Initializes the DataViewCustomTable module.
+
+        Args:
+            label: Visual label describing the reference table.
+            table_func: Function returning a pandas DataFrame to show.
+            applies_to_tables: List of applicable database tables.
+            applies_to_forms: List of applicable questionnaire form IDs.
+        """
         self.module_number = DataViewCustomFigure._id_number
         self.module_name = self.__class__.__name__
         DataViewCustomFigure._id_number += 1
@@ -80,6 +106,11 @@ class DataViewCustomTable:
         self.module_callbacks()
 
     def content(self):
+        """Generates the layout content for the custom reference table.
+
+        Returns:
+            A Dash Div containing the label and dag.AgGrid.
+        """
         return html.Div(
             [
                 self.label,
@@ -91,6 +122,7 @@ class DataViewCustomTable:
         )
 
     def module_callbacks(self) -> None:
+        """Registers callbacks to refresh and load AgGrid records on context changes."""
         @callback(
             Output(f"{self.module_name}-{self.module_number}-table", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-table", "columnDefs"),
@@ -153,7 +185,17 @@ class DataViewCustom(DataEditorDataView):
         self._from_config_file = _from_config_file
 
     def build_layout(self, layout: dict | list) -> list:
-        """Builds the layout for the custom view."""
+        """Builds the visual layout components from config nodes.
+
+        Args:
+            layout: A layout node dictionary or list of nodes.
+
+        Returns:
+            A list of instantiated Dash components.
+
+        Raises:
+            ValueError: If node type is not a row, col, microlayout, or DataViewCustom.
+        """
         components = []
         # guard against strings and other primitives
         if not isinstance(layout, (dict, list)):
@@ -207,7 +249,14 @@ class DataViewCustom(DataEditorDataView):
         return components
 
     def layout(self) -> html.Div:
-        """Returns the layout of the module."""
+        """Returns the layout of the module.
+
+        Returns:
+            A Dash Div element.
+
+        Raises:
+            ValueError: If layout is not a list.
+        """
         if isinstance(self._layout, list) is False:
             raise ValueError(
                 f"Layout for DataViewCustom is expected to be a list, recieved: {type(self._layout)} - {self._layout}"
@@ -238,10 +287,27 @@ class DataViewCustom(DataEditorDataView):
 
     @classmethod
     def from_yaml(cls, *args, **kwargs):
+        """Configures and instantiates the custom view dynamically from configuration dictionary properties.
+
+        Args:
+            *args: Positional arguments.
+            **kwargs: Configuration dictionary properties.
+
+        Returns:
+            An instance of DataViewCustom.
+        """
         return cls(*args, _from_config_file=True, **kwargs)
 
     @classmethod
     def from_dict(cls, config_dict):
+        """Configures and instantiates the custom view dynamically from a configuration dictionary.
+
+        Args:
+            config_dict: Dictionary representing the layout configuration.
+
+        Returns:
+            An instance of DataViewCustom.
+        """
         logger.info(f"Initializing class '{cls.__name__}' from dict object")
         logger.debug(config_dict)
 
@@ -296,6 +362,16 @@ class DataViewCustom(DataEditorDataView):
 def convert_node(
     node: dict | list, applies_to_tables=None, applies_to_forms=None
 ) -> dict | list:
+    """Recursively converts or updates properties within a layout node config tree.
+
+    Args:
+        node: Target dictionary or list node.
+        applies_to_tables: List of applicable tables.
+        applies_to_forms: List of applicable forms.
+
+    Returns:
+        The converted node structure.
+    """
     logger.debug(
         f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
     )
