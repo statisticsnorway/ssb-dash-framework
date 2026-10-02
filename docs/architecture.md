@@ -22,6 +22,12 @@ In order to reduce chances of breaking changes all classes, functions and so on 
 
 This makes sure that the package structure can be re-arranged later without requiring
 
+### Variable selector is responsible for configuring shared states for the app
+
+The VariableSelector class coordinates all modules in an app and sets up states such as time period (_time_unit), unique identifier (_refnr), unit identifier (_ident), secondary identifiers (_secondary_idents) and variables to use for filtering and aggregation (_grouping_variables).
+
+VariableSelector provides functionality for connecting callbacks to shared states.
+
 ### In-development features and modules exists in experimental/
 
 The experimental/ folder exists in order to be able to beta-test features and modules.
@@ -36,19 +42,23 @@ In order to make sure a user understands when something is in-development or exp
 
 This ensures that using an experimental feature/module requires an *explicit opt-in*.
 
-### Custom plugin modules is supported
-
-See explanation in docs/
-
 ## Module design
+
+Modules in ssb-dash-framework are designed to be independent of each other and built upon a common base class to simplify development and maintenance, and reduce boilerplate.
 
 Example in [demo/hello_world/hello_module.py](demo/hello_world/hello_module.py).
 
-### Modules inherit from the common base class
+### Modules inherit from the common base class ModuleBase
 
 This sets up a lot of useful scaffolding for the module to be integrated into the app.
 
-Not required for custom modules imported from outside of the library.
+ModuleBase sets up auto-numbering of modules and provides the self.module_id attribute to be used for setting id's for the html components in layouts. This prevents duplicate id's even if a module is instantiated several times without introducing unneccessary complexity.
+
+The self.module_id attribute is always the classname of the module + module number at instantiation time. This ensures a deterministic id for modules if their order is unchanged.
+
+#### Custom plugin modules are supported
+
+As long as modules are created as a class inheriting from ModuleBase it is simple to integrate into an existing app by instantiating it as any other module.
 
 ### Modules must not depend on other modules
 
@@ -90,6 +100,17 @@ Modules should implement a meta class that provides an interface that modules us
 Updates should also be through a MetaDataHandler. As the different backends SSB uses have different ways of handling these. A standard implementation should always be provided that uses ssb-parquedit as it is the most common backend
 
 This mirrors the pattern shown in hello_module.py, where an abstract *MetaDataHandler class defines the data access contract (e.g. get_message/update_message) and concrete handlers implement it against a specific backend. A user can then swap the handler implementation to point at a different database or file format without changing the module itself.
+
+#### Backend agnostic read operations
+
+Read operations should use the ibis package and connect to the datasource using get_connection. This centralizes connection handling after the user has called set_connection() or any of its provided backend specific implementations. This ensures that fetching logic is consistent across different backends.
+
+```python
+with get_connection() as conn:
+    t = conn.table("table_name")
+    # Query logic here
+    t.to_pandas() # either return the table contents to a pandas dataframe
+```
 
 #### Default handlers whenever possible for documented data models
 
