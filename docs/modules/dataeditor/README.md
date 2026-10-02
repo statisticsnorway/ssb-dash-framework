@@ -20,6 +20,7 @@ This document serves as both a **Getting Started Guide** for new users and an **
    - [Decoupled Communication (VariableSelector Integration)](#decoupled-communication)
    - [The Data Access Layer (StandardDataHandler)](#the-data-access-layer)
    - [The MicroLayout Engine (Pydantic, AIO, Callbacks)](#the-microlayout-engine)
+4. [Internal Architecture & UML Diagram](#4-internal-architecture--uml-diagram)
 
 ---
 
@@ -383,3 +384,26 @@ How does a JSON/YAML configuration list get translated into functional Dash comp
    - It instantiates a `FieldCallbackContainer` containing the specific field metadata.
    - It registers a dynamic Dash callback listening to changes (`n_blur` on inputs, or `value` changes on dropdowns).
    - When triggered, these callbacks feed changes directly into the `StandardDataHandler` which commits them, completing the end-to-end data flow seamlessly.
+
+---
+
+## 4. Internal Architecture & UML Diagram
+
+To provide a complete map of how the classes, data wrappers, and dynamic layouts coordinate internally, we have authored a detailed **D2 UML Diagram** in [data_editor.d2](./data_editor.d2).
+
+### Architectural Relationships Map
+
+The D2 diagram outlines several critical layers:
+1. **The Core Orchestration Module (`DataEditor`)**: Houses configurations, manages sub-layouts, and connects to the global `VariableSelector` to trigger updates on active context adjustments (such as switching target organizations or periods).
+2. **Sub-Modules and Helper Panels**: Holds the layout and callback behavior for contextual widgets like metadata cards (`DataEditorInfoRow`), comments management (`DataEditorSidebarComment`), status toggles (`DataEditorSidebarEditingStatus`), and helper modals (`DataEditorContactInfo`, `DataEditorHistory`, `DataEditorSupportTables`).
+3. **The Data Views Grid (`DataEditorTable` & `DataViewCustom`)**: Standard spreadsheet mode coordinates edits directly via SQL wrappers, while custom layouts read tree-like configurations to draw beautiful questionnaire interfaces.
+4. **The MicroLayout Form Engine (`MicroLayoutAIO`)**: The heart of config-driven layouts. It validates shapes using Pydantic, generates isolated `aio_id` namespaces, auto-wires Javascript-based math callbacks, and dynamically binds blur-listeners.
+5. **The Persistence/Database Access Layer (`StandardDataHandler`)**: Implements `FetcherMeta` to wrap all database execution. Integrates `FormGetterCached` to cache datasets on-the-fly and processes `UpdateSkjemadata` models.
+
+### Rendering the UML Diagram
+
+To compile this D2 specification into a visual SVG or PNG diagram, run:
+```bash
+d2 docs/modules/dataeditor/data_editor.d2 docs/modules/dataeditor/data_editor_uml.svg
+```
+Or you can paste the contents of `data_editor.d2` into any D2 playground/viewer (e.g., [https://play.d2lang.com/](https://play.d2lang.com/)).
