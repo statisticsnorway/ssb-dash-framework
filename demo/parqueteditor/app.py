@@ -4,7 +4,7 @@ import plotly.express as px
 from plotly.graph_objs._figure import Figure
 
 from ssb_dash_framework import AppConfig
-from ssb_dash_framework import FigureDisplayWindow
+from ssb_dash_framework import FigureDisplay
 from ssb_dash_framework import apply_edits
 from ssb_dash_framework import build_app_from_config
 from ssb_dash_framework import config_parser_yaml
@@ -32,7 +32,7 @@ def make_bars(aar: str, orgnr: str) -> Figure:
 
 
 window_list.append(
-    FigureDisplayWindow(
+    FigureDisplay(  # Implemented as a window because it is appended to window_list
         label="Inntekter og utgifter",
         # Note that the list in 'inputs' is telling the module to 'listen' to the
         # fields listed as outputs from the ParquetEditor in the yaml file

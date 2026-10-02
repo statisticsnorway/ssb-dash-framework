@@ -1,33 +1,27 @@
-from abc import ABC
-from abc import abstractmethod
 import base64
 import io
 import logging
-from typing import ClassVar
-from typing import Any
 
 from PIL import Image
 from dash import callback, clientside_callback, dcc, html
 from dash import ClientsideFunction
-from dash.dependencies import Input, State
+from dash.dependencies import Input
 from dash.dependencies import Output
-from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash_iconify import DashIconify
 import gcsfs
 
+from ..config import register_module
 from ..setup.variableselector import VariableSelector
 from ..setup.variableselector import TimeUnit
-from ..utils import TabImplementation
-from ..utils import WindowImplementation
+from ..utils import ModuleBase
 from ..utils.alert_handler import AlertHandler
-from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
-
-class Aarsregnskap(ABC):
+@register_module(as_tab="Aarsregnskap", as_window="Aarsregnskap")
+class Aarsregnskap(ModuleBase):
     """Module for displaying annual financial statements (Årsregnskap).
 
     Attributes:
@@ -38,12 +32,6 @@ class Aarsregnskap(ABC):
         module_layout: The UI layout object returned by ``_create_layout()``.
     """
 
-    _id_number: ClassVar[int] = 0
-    module_number: int
-    module_name: str
-    label: str
-    icon: str | Component
-    module_layout: html.Div
 
     def __init__(
         self,
@@ -53,15 +41,10 @@ class Aarsregnskap(ABC):
         Sets up the label, validates required variables, and initializes the
         layout and callbacks for the module.
         """
-        self.module_number = Aarsregnskap._id_number
-        self.module_name = self.__class__.__name__
-        Aarsregnskap._id_number += 1
         self.label = "Årsregnskap"
         self.icon = DashIconify(icon="feather:file-text", width=24)
         self._is_valid()
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
-        module_validator(self)
+        super().__init__()
 
     def _is_valid(self) -> None:
         """Validates the presence of required variables in VariableSelector.
@@ -80,7 +63,7 @@ class Aarsregnskap(ABC):
                 "var-foretak not found in the VariableSelector. Please add 'foretak' to the variableselector-config"
             )
 
-    def _create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
         """Generates the layout for the Årsregnskap module.
 
         Returns:
@@ -193,17 +176,6 @@ class Aarsregnskap(ABC):
         )
         logger.debug("Generated layout")
         return layout
-
-    @abstractmethod
-    def layout(self) -> html.Div:
-        """Define the layout for the Aarsregnskap module.
-
-        This is an abstract method that must be implemented by subclasses to define the module's layout.
-
-        Returns:
-            html.Div: A Dash HTML Div component representing the layout of the module.
-        """
-        pass
 
     def module_callbacks(self) -> None:
         """Registers Dash callbacks for the Årsregnskap module."""
@@ -384,20 +356,3 @@ class Aarsregnskap(ABC):
             Input("tab-aarsregnskap-zoom-out", "n_clicks"),
         )
 
-
-class AarsregnskapTab(TabImplementation, Aarsregnskap):
-    """AarsregnskapTab is an implementation of the Aarsregnskap module as a tab in a Dash application."""
-
-    def __init__(self) -> None:
-        """Initializes the AarsregnskapTab class."""
-        Aarsregnskap.__init__(self)
-        TabImplementation.__init__(self)
-
-
-class AarsregnskapWindow(WindowImplementation, Aarsregnskap):
-    """AarsregnskapWindow is an implementation of the Aarsregnskap module as a window in a Dash application."""
-
-    def __init__(self, **kwargs: Any) -> None:
-        """Initializes the AarsregnskapWindow class."""
-        Aarsregnskap.__init__(self)
-        WindowImplementation.__init__(self, **kwargs)

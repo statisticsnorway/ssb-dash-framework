@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from dash import html
 
 from ...meta import ContextABC
 
@@ -32,15 +33,11 @@ class DataEditorDataView(ContextABC):
                 )
 
     @abstractmethod
-    def _create_layout(self) -> None:
-        """Abstract method for creating the module layout."""
-        pass
-
-    def layout(self) -> None:
-        """Returns the module layout."""
-        return self._create_layout()
+    def layout(self) -> html.Div:
+        """Returns the layout of the module."""
+        ...
 
     @abstractmethod
     def module_callbacks(self) -> None:
-        """Abstract method to register callbacks."""
-        pass
+        """Registers callbacks for the module."""
+        ...

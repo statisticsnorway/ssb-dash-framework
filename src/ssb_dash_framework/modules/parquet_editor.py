@@ -26,6 +26,7 @@ from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
 from ..utils.module_validation import module_validator
 from ..config.models import register_module
+from ..utils.base_classes import ModuleBase
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +51,11 @@ def check_for_bucket_path(path: str | Path) -> None:
             "Due to differences in how files in '/buckets/...' behave compared to files in the cloud buckets this functionality is currently limited to only work with paths that starts with '/buckets/'."
         )
 
+
 @register_module(
     as_tab="ParquetEditor",
 )
-class ParquetEditor:
+class ParquetEditor(ModuleBase):
     """Simple module with the sole purpose of editing a parquet file.
 
     Accomplishes this functionality by writing a processlog in a json lines file and recording any edits in this jsonl file.
@@ -71,8 +73,6 @@ class ParquetEditor:
         The process log is automatically created in the correct folder structure and is named after your parquet file.
     """
 
-    _id_number: int = 0
-
     def __init__(
         self,
         statistics_name: str,
@@ -84,6 +84,7 @@ class ParquetEditor:
         output_varselector_name: str | list[str] | None = None,
         allow_risky_column_names: bool = False,
         height: str = "400px",  # Default value of AgGrid
+        **kwargs,
     ) -> None:
         """Initializes the module and makes a few validation checks before moving on.
 
@@ -98,9 +99,6 @@ class ParquetEditor:
             allow_risky_column_names: Controls whether or not ParquetEditor allows potentially bug-inducing column names. Defaults to False.
             height: AgGrid defaults to 400px height. This argument allows us to specify other params for height.
         """
-        self.module_number = ParquetEditor._id_number
-        self.module_name = self.__class__.__name__
-        ParquetEditor._id_number += 1
         self.icon = "✏️"  # TODO: Make visible
         self.allow_risky_column_names = allow_risky_column_names
         self._height = height
@@ -126,10 +124,9 @@ class ParquetEditor:
 
         self.log_filepath.parent.mkdir(parents=True, exist_ok=True)
 
-        self.module_layout = self._create_layout()
         self._is_valid()
-        module_validator(self)
-        self.module_callbacks()
+
+        super().__init__()
 
     def _is_valid(self) -> None:
         if not isinstance(self.id_vars, list):
@@ -160,7 +157,7 @@ class ParquetEditor:
         _column_name_check(df, allow_risky_column_names=self.allow_risky_column_names)
         return df
 
-    def _create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
         reason_modal = [
             dcc.Store(id=f"{self.module_number}-pending-edit"),
             dbc.Modal(
@@ -256,10 +253,6 @@ class ParquetEditor:
                 "height": self._height
             },  # This is an exception. Styles should be in stylesheet.css
         )
-
-    def layout(self) -> html.Div:
-        """Creates the layout for the module."""
-        return html.Div(self.module_layout)
 
     def module_callbacks(self) -> None:
         """Sets up the callbacks for the module."""
@@ -542,17 +535,16 @@ class ParquetEditor:
         ChangeDataLog.model_validate(changelog_entry)
         return changelog_entry
 
+
 @register_module(
     as_tab="ParquetEditorChangelog",
 )
-class ParquetEditorChangelog:
+class ParquetEditorChangelog(ModuleBase):
     """Simple module with the sole purpose of showing the changes made using ParquetEditor.
 
     Notes:
         The process log is automatically created in the correct folder structure and is named after your parquet file.
     """
-
-    _id_number: int = 0
 
     def __init__(self, id_vars: list[str], data_source: str) -> None:
         """Initializes the module and makes a few validation checks before moving on.
@@ -561,9 +553,6 @@ class ParquetEditorChangelog:
             id_vars: A list of columns that together form a unique identifier for a single row in your data.
             data_source: The path to the parquet file you want to find the changelog for.
         """
-        self.module_number = ParquetEditor._id_number
-        self.module_name = self.__class__.__name__
-        ParquetEditor._id_number += 1
         self.id_vars = id_vars
         self.user = os.getenv("DAPLA_USER")
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
@@ -571,11 +560,9 @@ class ParquetEditorChangelog:
         self.log_filepath = get_log_path(data_source)
         self.label = "Changes - " + path.stem
 
-        self.module_layout = self._create_layout()
-        module_validator(self)
-        self.module_callbacks()
+        super().__init__("Tab")
 
-    def _create_layout(self) -> dcc.Textarea:
+    def layout(self) -> dcc.Textarea:
         return dcc.Textarea(
             id=f"{self.module_number}-parqueteditor-changelog",
             style={"width": "100%", "height": "80vh"},
@@ -595,10 +582,6 @@ class ParquetEditorChangelog:
             data = log_as_text(self.log_filepath)
 
             return str(data)
-
-    def layout(self) -> html.Div:
-        """Creates the layout for the module."""
-        return html.Div(self.module_layout)
 
 
 def get_log_path(parquet_path: str | Path) -> Path:

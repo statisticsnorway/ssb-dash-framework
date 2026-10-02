@@ -19,10 +19,9 @@ import dash_bootstrap_components as dbc
 from dash_iconify import DashIconify
 import pandas as pd
 
+from ..config.models import register_module
 from ..setup.variableselector import VariableSelector
-from ..utils import TabImplementation
-from ..utils import WindowImplementation
-from ..utils import AlertHandler
+from ..utils import AlertHandler, ModuleBase
 from ..utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
@@ -100,7 +99,8 @@ def ssb_bedrift_modal() -> dbc.Modal:
     return ssb_bedrift_modal
 
 
-class BofInformation(ABC):
+@register_module()
+class BofInformation(ModuleBase):
     """Module for displaying and managing information from BoF.
 
     This component:
@@ -109,7 +109,6 @@ class BofInformation(ABC):
     - The sqlite files can be accessed from the oracle-hns shared bucket from the vof team.
     """
 
-    _id_number: int = 0
 
     def __init__(
         self,
@@ -122,9 +121,7 @@ class BofInformation(ABC):
             label: The label for the tab, displayed as "BoF Foretak".
             variableselector_foretak_name: The name of the variable selector that holds the foretak number, default is "foretak".
         """
-        self.module_number = BofInformation._id_number
-        self.module_name = self.__class__.__name__
-        BofInformation._id_number += 1
+
         self.icon = DashIconify(icon="feather:archive", width=24)
 
         if label is None:
@@ -135,10 +132,9 @@ class BofInformation(ABC):
         if not isinstance(variableselector_foretak_name, str):
             raise TypeError(f"Type for 'variableselector_foretak_name' must be 'str. Received: '{type(variableselector_foretak_name)}'")
         self.inputs = [variableselector_foretak_name]
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
+
         self._is_valid()
-        module_validator(self)
+
 
     def _is_valid(self) -> None:
         self._check_connection()
@@ -196,7 +192,7 @@ class BofInformation(ABC):
             ],
         )
 
-    def _create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
         """Generate the layout for the BoF Foretak tab."""
         layout = html.Div(
             className="bofregistry",
@@ -368,16 +364,6 @@ class BofInformation(ABC):
         logger.debug("Generated layout")
         return layout
 
-    @abstractmethod
-    def layout(self) -> html.Div | dbc.Tab:
-        """Define the layout for the BofInformation module.
-
-        This is an abstract method that must be implemented by subclasses to define the module's layout.
-
-        Returns:
-            html.Div | dbc.Tab: A Dash HTML Div component representing the layout of the module or a dbc.Tab to be displayed directly.
-        """
-        pass
 
     def module_callbacks(self) -> None:
         """Register Dash callbacks for the BoF Foretak tab.
@@ -611,41 +597,3 @@ class BofInformation(ABC):
 
         logger.debug("Generated callbacks")
 
-
-class BofInformationTab(TabImplementation, BofInformation):
-    """A class to implement a bof information module as a tab."""
-
-    def __init__(
-        self, label: str | None = None, variableselector_foretak_name: str | None = None
-    ) -> None:
-        """Initialize the BofInformationTab.
-
-        This class is used to create a tab to put in the tab_list.
-        """
-        BofInformation.__init__(
-            self,
-            label=label,
-            variableselector_foretak_name=variableselector_foretak_name,
-        )
-        TabImplementation.__init__(self)
-
-
-class BofInformationWindow(WindowImplementation, BofInformation):
-    """A class to implement a bof information module as a window."""
-
-    def __init__(
-        self,
-        label: str | None = None,
-        variableselector_foretak_name: str | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize the BofInformationTab.
-
-        This class is used to create a tab to put in the tab_list.
-        """
-        BofInformation.__init__(
-            self,
-            label=label,
-            variableselector_foretak_name=variableselector_foretak_name,
-        )
-        WindowImplementation.__init__(self, **kwargs)

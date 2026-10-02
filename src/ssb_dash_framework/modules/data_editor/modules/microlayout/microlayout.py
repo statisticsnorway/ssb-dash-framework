@@ -44,22 +44,6 @@ class MicroLayoutAIO(html.Div):
             "This module is under development and might receive larger and/or breaking changes."
         )
 
-        if isinstance(layout, dict):
-            override_kwargs = {}
-            for key in [
-                "form_data_table",
-                "field_name_col",
-                "refnr_col",
-                "ident_col",
-                "field_value_col",
-                "period_col",
-            ]:
-                if key in layout:
-                    override_kwargs[key] = layout[key]
-
-            if override_kwargs:
-                settings = settings.model_copy(update=override_kwargs)
-
         # The below is just for the __str__ dunder
         self.settings = settings
         self._horizontal = horizontal
@@ -81,7 +65,7 @@ class MicroLayoutAIO(html.Div):
 
         layout, ids = model.build(data_handler, settings)
         super().__init__(
-            layout, id=f"{self.aio_id}-klass", style=styles  # pyright: ignore
+            layout, id=f"{self.aio_id}-microlayout", style=styles  # pyright: ignore
         )
 
         callback_ctx = {item._id: item for item in ids}

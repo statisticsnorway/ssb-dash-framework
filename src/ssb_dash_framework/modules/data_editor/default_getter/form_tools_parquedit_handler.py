@@ -68,9 +68,7 @@ class AltinnFormParqueditHandler(FetcherMeta):
         return pd.DataFrame()
 
     def get_contact_info(self, refnr: str) -> ContactInfo:
-        data = pd.DataFrame()
-        row_data = data.to_dict(orient="records")[0]
-        return ContactInfo.model_validate(row_data)
+        return ContactInfo.empty()
 
     def get_form_status(self, refnr: str) -> RefnrStatus | None:
         # print("hei", refnr)
