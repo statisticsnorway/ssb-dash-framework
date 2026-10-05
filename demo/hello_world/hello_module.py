@@ -103,6 +103,11 @@ class HelloModule(ModuleBase):
         """Initialize the HelloModule with a label and a data handler."""
         self.label = label
         self.icon = ":)"
+        if not issubclass(data_handler.__class__, HelloModuleMetaDataHandler):
+            raise TypeError(
+                "data_handler must be a subclass of HelloModuleMetaDataHandler. Received: "
+                f"{data_handler.__class__.__name__}"
+            )
         self.data_handler = data_handler
         super().__init__()
 
