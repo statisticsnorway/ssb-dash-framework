@@ -1,12 +1,16 @@
+from collections.abc import Callable
 from collections.abc import Generator
+from contextlib import ExitStack
 from pathlib import Path
 
 import pytest
+from dash import Dash
 
 from ssb_dash_framework import VariableSelector
 from ssb_dash_framework import config_parser_yaml
 
 from .backends import BACKENDS
+from .live_server import serve_dash_app
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -55,6 +59,21 @@ def db_backend(
 def config_yaml():
     yaml_file = Path(__file__).parent / "config" / "example_config.yaml"
     return config_parser_yaml(yaml_file)
+
+
+@pytest.fixture
+def dash_server() -> Generator[Callable[[Dash], str]]:
+    """Factory that serves Dash apps and returns their base URLs.
+
+    Every app started through the factory is shut down when the test ends.
+    To share one running app across several tests, use
+    `tests.live_server.serve_dash_app` in a module- or session-scoped fixture.
+
+    Yields:
+        Callable[[Dash], str]: Starts the given app and returns its base URL.
+    """
+    with ExitStack() as stack:
+        yield lambda app: stack.enter_context(serve_dash_app(app))
 
 
 @pytest.fixture(autouse=True)
