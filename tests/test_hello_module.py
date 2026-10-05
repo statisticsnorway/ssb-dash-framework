@@ -113,6 +113,9 @@ def test_hello_module(page: Page, hello_url: str) -> None:
     Verifies that the layout is built and rendered by Dash in a real browser.
     """
     page.goto(hello_url)
-    page.pause()
-    expect(page.get_by_text("Get currently stored message")).to_be_attached()
-    expect(page.get_by_text("Update stored message")).to_be_attached()
+    # page.pause()
+    expect(page.get_by_text("Vis variabler")).to_be_attached()
+    expect(page.get_by_text("App-logg")).to_be_attached()
+    page.get_by_text("App-logg").click()
+    # expect(page.get_by_text("Get currently stored message")).to_be_attached()
+    # expect(page.get_by_text("Update stored message")).to_be_attached()
