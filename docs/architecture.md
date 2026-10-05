@@ -129,3 +129,5 @@ Being able to use yaml files for config makes configuration less verbose and mor
 In addition, having yaml as the configuration source makes it easier to migrate configs if breaking changes can't be avoided.
 
 Note: inheritance from the base class makes this simple to implement, and parsing is handled centrally by config_parser_yaml so modules don't need to write their own yaml-loading logic.
+
+## Recommended test suite
