@@ -98,6 +98,8 @@ and are written using the [pytest] testing framework.
 
 ## How to submit changes
 
+Start be reading `docs/architecture.md`.
+
 Open a [pull request] to submit changes to this project.
 
 Your pull request needs to meet the following guidelines for acceptance:
