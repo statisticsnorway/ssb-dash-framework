@@ -220,7 +220,7 @@ A reusable and flexible Dash component for editing tabular data.
 | `inputs` | `list[str]` | required | A list of input variable names that will trigger callbacks. |
 | `states` | `list[str]` | required | A list of state variable names used that will not trigger callbacks, but can be provided as args. |
 | `get_data_func` | `Callable[..., Any]` | required | A function that returns a pandas dataframe. |
-| `update_table_func` | `Optional[Callable[..., Any]]` | `None` | A function for updating data based on edits in the AgGrid. Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values. |
+| `update_table_func` | `Callable[..., Any] \| None` | `None` | A function for updating data based on edits in the AgGrid. Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values. |
 | `output` | `str \| list[str] \| None` | `None` | Identifier for the table, used for callbacks. Defaults to None. |
 | `output_varselector_name` | `str \| list[str] \| None` | `None` | Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None. If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`. |
 | `number_format` | `str \| None` | `None` | A d3 format string for formatting numeric values in the table. Defaults to None. If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')". |

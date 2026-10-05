@@ -17,7 +17,13 @@ import re
 import sys
 from collections.abc import Iterator
 from pathlib import Path
+from types import UnionType
 from typing import Any
+from typing import ForwardRef
+from typing import Literal
+from typing import Union
+from typing import get_args
+from typing import get_origin
 
 from pydantic import BaseModel
 
@@ -232,13 +238,31 @@ def format_annotation(annotation: Any) -> str:
     """
     if annotation is inspect.Parameter.empty:
         return ""
-    if isinstance(annotation, str):
-        text = annotation
-    elif isinstance(annotation, type):
-        text = annotation.__qualname__
-    else:
-        text = inspect.formatannotation(annotation)
-    return re.sub(r"\b(?:\w+\.)+(\w+)", r"\1", text)
+    # Built manually since typing reprs differ between Python versions (e.g. Optional in 3.14).
+    if annotation is None or annotation is type(None):
+        return "None"
+    if annotation is Ellipsis:
+        return "..."
+    if annotation is Any:
+        return "Any"
+    if isinstance(annotation, list):
+        return f"[{', '.join(format_annotation(arg) for arg in annotation)}]"
+    origin = get_origin(annotation)
+    args = get_args(annotation)
+    if origin in (Union, UnionType):
+        return " | ".join(format_annotation(arg) for arg in args)
+    if origin is Literal:
+        return f"Literal[{', '.join(repr(arg) for arg in args)}]"
+    if origin is not None:
+        name = getattr(origin, "__qualname__", None) or str(origin)
+        if not args:
+            return name
+        return f"{name}[{', '.join(format_annotation(arg) for arg in args)}]"
+    if isinstance(annotation, type):
+        return annotation.__qualname__
+    if isinstance(annotation, ForwardRef):
+        annotation = annotation.__forward_arg__
+    return re.sub(r"\b(?:\w+\.)+(\w+)", r"\1", str(annotation))
 
 
 def format_default(value: Any) -> str:
