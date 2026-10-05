@@ -1,8 +1,8 @@
 app_settings:
   port: 8000
   stylesheet: lumen
-  enable_logging: false
-  logging_level: warning
+  enable_logging: true
+  logging_level: debug
   log_to_file: false
   variableselector:
     refnr: refnr
