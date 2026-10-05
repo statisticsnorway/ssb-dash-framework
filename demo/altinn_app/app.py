@@ -54,7 +54,15 @@ window_list.append(
 
 # From here the app is built and started, no need to change anything below this point
 
-app.layout = main_layout(window_list=window_list, tab_list=tab_list)
+app.layout = main_layout(
+    window_list=window_list,
+    tab_list=tab_list,
+    default_values={
+        "periode": "2026-01",
+        "ident": "12111111",
+        "altinnskjema": "RA-0187",
+    },
+)
 
 app.run(
     debug=True,
