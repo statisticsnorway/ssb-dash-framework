@@ -3,7 +3,6 @@
 import logging
 from abc import abstractmethod
 from itertools import count
-from typing import Any
 from typing import Literal
 from typing import Self
 
@@ -23,6 +22,7 @@ from .functions import sidebar_button
 logger = logging.getLogger(__name__)
 
 AsType = Literal["Tab", "Window"]
+
 
 class ModuleBase(YamlLoadable):
     """Base class defining the interface all modules in the framework must implement.
@@ -144,9 +144,12 @@ class ModuleBase(YamlLoadable):
             module is used as a building block inside another module.
         """
         if self.implemented_as == "Tab":
+            logger.debug(f"Generating tab layout for {self.module_id}.")
             return self._tab_layout()
         if self.implemented_as == "Window":
+            logger.debug(f"Generating window layout for {self.module_id}.")
             return self._window_layout()
+        logger.debug(f"Generating default layout for {self.module_id}.")
         return self.layout()
 
     def _tab_layout(self) -> dbc.Tab:
