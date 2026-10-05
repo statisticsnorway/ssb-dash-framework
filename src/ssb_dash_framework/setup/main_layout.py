@@ -59,14 +59,16 @@ def main_layout(
         )
     variable_selector = VariableSelector(
         default_values=default_values,
-        selected_states=variable_list, selected_inputs=[]#, default_values=default_values
+        selected_states=variable_list,
+        selected_inputs=[],  # , default_values=default_values
     )  # Because inputs and states don't matter in main_layout, everything is put into the VariableSelector as states. Every module defines its own VariableSelector that sets up interactions. This is to simplify it for the user while maintaining flexibility.
 
     window_modules = []
     for module in window_list:
         if isinstance(module, ModuleBase):
             module.set_implementation("Window")
-        window_modules.append(module.layout())
+            print(module, module.implemented_as)
+        window_modules.append(module._internal_layout())
     alerthandler = AlertHandler()
     window_modules_list = [alerthandler.layout(), *window_modules]
 
@@ -113,7 +115,7 @@ def main_layout(
             continue
         if isinstance(tab, ModuleBase):
             tab.set_implementation("Tab")
-        tab_layout = tab.layout()
+        tab_layout = tab._internal_layout()
         selected_tab_list.append(
             tab_layout
             if isinstance(tab_layout, dbc.Tab)
