@@ -26,9 +26,6 @@ set_sqlite_connection(str(db_path))
 
 yaml_content = config_parser_yaml("demo/altinn_app/config/base.yaml")
 config = AppConfig(**yaml_content)
-# AppSettings defaults service_prefix to "/", which is truthy, so the app would ask
-# the browser for /proxy/8000/... even off JupyterHub, where nothing serves that path.
-config.app_settings.service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "")
 app, tab_list, window_list = build_app_from_config(config)
 
 # Or If you prefer using python to add modules, you can do so below this
