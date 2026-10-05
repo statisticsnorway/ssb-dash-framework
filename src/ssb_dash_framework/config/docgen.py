@@ -124,10 +124,15 @@ def import_all_modules() -> None:
             logger.warning(f"Skipping '{info.name}', import failed: {e!r}")
 
 
+def _in_package(module_name: str) -> bool:
+    return module_name == PACKAGE.__name__ or module_name.startswith(
+        f"{PACKAGE.__name__}."
+    )
+
+
 def _package_modules() -> Iterator[Any]:
-    prefix = f"{PACKAGE.__name__}."
     for name, module in sorted(sys.modules.items()):
-        if module is not None and (name == PACKAGE.__name__ or name.startswith(prefix)):
+        if module is not None and _in_package(name):
             yield module
 
 
@@ -141,11 +146,16 @@ def collect_classes() -> list[type]:
     found: set[type] = {registered.type for registered in get_module_registry()}
     for module in _package_modules():
         for _, obj in inspect.getmembers(module, inspect.isclass):
-            if obj.__module__.startswith(PACKAGE.__name__) and "from_yaml" in vars(obj):
+            if _in_package(obj.__module__) and "from_yaml" in vars(obj):
                 found.add(obj)
     found.discard(YamlLoadable)
+    # The registry also holds classes defined outside the package, e.g. in tests.
     return sorted(
-        (cls for cls in found if not inspect.isabstract(cls)),
+        (
+            cls
+            for cls in found
+            if not inspect.isabstract(cls) and _in_package(cls.__module__)
+        ),
         key=lambda cls: (cls.__module__, cls.__name__),
     )
 
