@@ -77,8 +77,9 @@ class TabImplementation:
             The layout containing the module layout.
         """
         if self.icon:
+            # dcc.Tabs requires every item in a list label to be a component, not a str.
             label_content = (
-                [self.icon, " ", self.label]
+                f"{self.icon} {self.label}"
                 if isinstance(self.icon, str)
                 else [self.icon, html.Span(self.label, className="ms-2")]
             )
