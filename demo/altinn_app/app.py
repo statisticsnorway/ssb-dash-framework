@@ -55,9 +55,10 @@ app.layout = main_layout(
     window_list=window_list,
     tab_list=tab_list,
     default_values={
-        "periode": "2026-01",
-        "ident": "12111111",
-        "altinnskjema": "RA-0187",
+        "periode": "2026",
+        "ident": "ATF2134661",
+        "altinnskjema": "RA-0745",
+        "refnr": "b250f49e78cb"
     },
 )
 

@@ -21,8 +21,8 @@ modules: # Here you can add more modules and tailor your app to your needs.
         starting_table: skjemadata
         form_data_table: skjemadata
         form_list:
-          - RA-0187
           - RA-0745
+          - RA-0187
         period_col: iso_period
         ident_col: ident
         refnr_col: refnr
@@ -46,57 +46,6 @@ modules: # Here you can add more modules and tailor your app to your needs.
         - type: DataEditorSidebarEditingStatus
         - type: DataEditorSidebarComment
       dataview:
-        - type: DataViewCustom
-          applies_to_forms:
-            - RA-0187
-          applies_to_tables:
-            - skjemadata
-          layout:
-            - type: row
-              children:
-                - type: col
-                  children:
-                    - type: microlayout
-                      label: Omsetning i varehandelen
-                      field_name_col: "feltsti"
-                      field_value_col: "verdi"
-                      inputs:
-                        - refnr
-                        - periode
-                      layout:
-                        - type: header
-                          label: Omsetning i varehandelen
-                          size: md
-                        - type: row
-                          children:
-                            - type: col
-                              children:
-                                - type: input
-                                  label: Omsetning i perioden (kr)
-                                  id: omsVirksomhetPerioden
-                                  variable: "/omsVirksomhetPerioden"
-                                - type: input
-                                  label: Omsetning forrige periode
-                                  id: oms_fr
-                                  variable: "/omsForrigePerPrefill"
-                                - type: calculated-field
-                                  label: Endring i omsetning
-                                  ids:
-                                    oms: omsVirksomhetPerioden
-                                    oms_fr: oms_fr
-                                  expression: "Math.round(oms - oms_fr)"
-                            - type: col
-                              children:
-                                - type: input
-                                  label: Antall ansatte
-                                  variable: "/antallAnsatte"
-                        - type: header
-                          label: Kommentar
-                          size: sm
-                        - type: textarea
-                          label: Kommentar fra oppgavegiver
-                          variable: "/kommentarSkjema"
-
         - type: DataViewCustom
           applies_to_forms:
             - RA-0745
@@ -194,3 +143,53 @@ modules: # Here you can add more modules and tailor your app to your needs.
                         - type: textarea
                           label: Kommentar fra oppgavegiver
                           variable: "/EngKommentar"
+        - type: DataViewCustom
+          applies_to_forms:
+            - RA-0187
+          applies_to_tables:
+            - skjemadata
+          layout:
+            - type: row
+              children:
+                - type: col
+                  children:
+                    - type: microlayout
+                      label: Omsetning i varehandelen
+                      field_name_col: "feltsti"
+                      field_value_col: "verdi"
+                      inputs:
+                        - refnr
+                        - periode
+                      layout:
+                        - type: header
+                          label: Omsetning i varehandelen
+                          size: md
+                        - type: row
+                          children:
+                            - type: col
+                              children:
+                                - type: input
+                                  label: Omsetning i perioden (kr)
+                                  id: omsVirksomhetPerioden
+                                  variable: "/omsVirksomhetPerioden"
+                                - type: input
+                                  label: Omsetning forrige periode
+                                  id: oms_fr
+                                  variable: "/omsForrigePerPrefill"
+                                - type: calculated-field
+                                  label: Endring i omsetning
+                                  ids:
+                                    oms: omsVirksomhetPerioden
+                                    oms_fr: oms_fr
+                                  expression: "Math.round(oms - oms_fr)"
+                            - type: col
+                              children:
+                                - type: input
+                                  label: Antall ansatte
+                                  variable: "/antallAnsatte"
+                        - type: header
+                          label: Kommentar
+                          size: sm
+                        - type: textarea
+                          label: Kommentar fra oppgavegiver
+                          variable: "/kommentarSkjema"
