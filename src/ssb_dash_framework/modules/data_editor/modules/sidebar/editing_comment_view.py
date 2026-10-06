@@ -106,7 +106,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             if data is None:
                 raise PreventUpdate
 
-            refnrs = data[self.settings.refnr_col].unique().tolist()
+            refnrs =  {entry.refnr for entry in data}
 
             logger.debug(f"default_refnr: {refnr}\nrefnrs: {refnrs}")
 

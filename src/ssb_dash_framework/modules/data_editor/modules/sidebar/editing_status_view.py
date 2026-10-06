@@ -167,8 +167,8 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     self.settings, ident, period
                 )
                 if refnr is not None:
-                    skjema = refnr["skjema"].item()
-                    return refnr[self.settings.refnr_col].tolist()[0], skjema
+                    skjema = refnr[0].skjema
+                    return refnr[0].refnr, skjema
                 else:
                     return no_update, no_update
 
@@ -217,7 +217,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     f"Viser skjema: {refnr}",
                 )
 
-            new_checkbox = ["Aktiv"] if data.active else []
+            new_checkbox = ["Aktiv"] if data.aktiv else []
             new_radio = data.status
 
             checkbox_out = (
@@ -299,9 +299,14 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 AlertHandler.warning(message)
                 return no_update, no_update, no_update
 
+            entries = [entry.model_dump() for entry in data]
+            keys = []
+            for entry in entries:
+                keys.extend(entry.keys())
+
             return (
-                data.to_dict("records"),
-                [{"field": x, "headerName": x} for x in data.columns],
+                entries,
+                [{"field": x, "headerName": x} for x in set(keys)],
                 True,
             )
 

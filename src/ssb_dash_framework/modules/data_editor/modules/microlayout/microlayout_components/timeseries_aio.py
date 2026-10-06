@@ -186,10 +186,11 @@ class TimeseriesAio(html.Div):
             for i in temp_variables:
                 y_axis = []
                 for item in sorted_series:
-                    if isinstance(item[i], str):
-                        y_axis.append(int(item[i]))
+                    item_data = item.get(i)
+                    if isinstance(item_data, str):
+                        y_axis.append(int(item_data))
                     else:
-                        y_axis.append(item[i])
+                        y_axis.append(item_data)
 
                 patch_obj["data"].append(
                     go.Scatter(
