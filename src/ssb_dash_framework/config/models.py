@@ -1,14 +1,16 @@
 import inspect
 import os
-from typing import Any, Type
-from typing import Literal
 from abc import ABC
+from typing import Any
+from typing import Literal
 
 from pydantic import BaseModel
 from pydantic import field_validator
 from pydantic import model_validator
-from .yaml_parser import config_parser_yaml
+
 from ..setup.variableselector.set_variables import VariableSelectorConfig
+from .yaml_parser import config_parser_yaml
+
 
 class YamlLoadable(ABC):
     def __init_subclass__(cls) -> None:
@@ -40,7 +42,7 @@ class YamlLoadable(ABC):
 
 
 class RegisteredModule(BaseModel):
-    type: Type[YamlLoadable]
+    type: type[YamlLoadable]
     as_tab: str | None
     as_window: str | None
     kwargs: list[str]
@@ -57,7 +59,9 @@ def get_module_registry():
 def get_from_module_registry(module_name: str) -> RegisteredModule:
     """Gets a registered module from the registry."""
     global _MODULE_REGISTRY
-    hits = [module for module in _MODULE_REGISTRY if module.type.__name__ == module_name]
+    hits = [
+        module for module in _MODULE_REGISTRY if module.type.__name__ == module_name
+    ]
     if len(hits) < 1:
         for i in _MODULE_REGISTRY:
             print(i)
@@ -65,6 +69,7 @@ def get_from_module_registry(module_name: str) -> RegisteredModule:
     if len(hits) > 1:
         raise ValueError(f"Several modules found for name '{module_name}': {hits}")
     return hits[0]
+
 
 def _register_module(module):
     registry = get_module_registry()
@@ -83,11 +88,14 @@ def _register_module(module):
     )
     return module
 
+
 class AppSettings(BaseModel):
     """Maps 1-to-1 onto the arguments of app_setup()."""
 
     port: int
-    service_prefix: str = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
+    service_prefix: str = (
+        os.getenv("DAPLA_ENVIRONMENT") and os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
+    ) or ""
     stylesheet: str = "darkly"
     enable_logging: bool = True
     logging_level: Literal["debug", "info", "warning", "error", "critical"] = "info"

@@ -159,8 +159,9 @@ class ModuleBase(YamlLoadable):
             The tab containing the module layout.
         """
         if self.icon:
-            label_content: list[Component | str] | str = (
-                [self.icon, " ", self.label]
+            # dcc.Tabs requires every item in a list label to be a component, not a str.
+            label_content: list[Component] | str = (
+                f"{self.icon} {self.label}"
                 if isinstance(self.icon, str)
                 else [self.icon, html.Span(self.label, className="ms-2")]
             )
