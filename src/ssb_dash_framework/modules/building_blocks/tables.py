@@ -87,6 +87,8 @@ class EditingTable(ModuleBase):
         self._is_valid()
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
 
+        super().__init__(**kwargs)
+
     def _is_valid(self) -> None:
         """Validate the component's configuration."""
         if not isinstance(self.label, str):

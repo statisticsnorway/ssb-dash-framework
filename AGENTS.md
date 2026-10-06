@@ -4,10 +4,11 @@ Guidance for AI coding agents working in this repository.
 
 ## Start here
 
-Before changing any code, read these two files in order:
+Before changing any code, read these three files in order:
 
 1. [`docs/architecture.md`](docs/architecture.md): how the framework is structured and how the pieces fit together.
-2. [`CONTRIBUTING.md`](CONTRIBUTING.md): dev environment setup, testing, and PR requirements.
+2. [`docs/framework_overview.md`](docs/framework_overview.md): Overview of how the core components in the framework fit together.
+3. [`CONTRIBUTING.md`](CONTRIBUTING.md): dev environment setup, testing, and PR requirements.
 
 If your task conflicts with something in either file, stop and ask rather than guessing. Do not duplicate their content here; they are the source of truth.
 
