@@ -4,6 +4,8 @@ The source of truth for architecture and design decisions can be found in [docs/
 
 For supported datamodels see [docs/datamodels.md](datamodels.md)
 
+For all classes that can be configured through yaml, and their arguments, see [docs/yaml_reference.md](yaml_reference.md). This file is auto-generated with `python -m ssb_dash_framework.config.docgen`.
+
 For examples of how to build and configure apps, look in the [demo folder](../demo/).
 
 For tips, tricks and unsupported/unintended ways to manipulate the functionality of an app, you can consult the [docs/arcane_compendium.md](arcane_compendium.md).
