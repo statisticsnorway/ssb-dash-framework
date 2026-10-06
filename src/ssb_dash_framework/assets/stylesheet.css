@@ -2446,6 +2446,7 @@ Implementations
   width: 100%;
   height: 94vh;
   display: flex;
+  overflow-y: auto;
 }
 
 .window-implementation-modal-body {
