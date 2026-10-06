@@ -16,6 +16,11 @@ class RefnrStatus(BaseModel):
     active: bool
     status: Literal["Under arbeid", "Ferdig", "Ubehandlet"]
 
+class RefnrStatusExtended(RefnrStatus):
+    skjema: str
+    dato_mottatt: str
+    refnr: str
+    kommentar: str
 
 class SidebarMeta[T](ABC):
     """Metadata interface defining database interaction capabilities for sidebar modules."""
@@ -35,7 +40,7 @@ class SidebarMeta[T](ABC):
     @abstractmethod
     def get_refnrs_by_period_ident(
         self, settings: T, ident: str, period: str
-    ) -> pd.DataFrame | None:
+    ) -> list[RefnrStatusExtended] | None:
         """Retrieves all submission reference numbers for a given respondent and period.
 
         Args:
@@ -44,7 +49,7 @@ class SidebarMeta[T](ABC):
             period: Statistical period.
 
         Returns:
-            A pandas DataFrame containing submission records or None.
+            A list containing submission records or None.
         """
         ...
 

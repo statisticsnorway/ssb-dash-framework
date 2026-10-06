@@ -20,7 +20,7 @@ from ..modules.microlayout.microlayout_components.editable_field_model import (
     FieldCallbackContainer,
 )
 from ..utils import EditorSettings
-from ..modules.sidebar.meta import RefnrStatus
+from ..modules.sidebar.meta import RefnrStatus, RefnrStatusExtended
 from .form_cache import FormGetterCached
 
 logger = logging.getLogger(__name__)
@@ -99,7 +99,7 @@ class StandardDataHandler(FetcherMeta):
 
     def get_refnrs_by_period_ident(
         self, settings: EditorSettings, ident: str, period: str
-    ) -> pd.DataFrame:
+    ) -> list[RefnrStatusExtended]:
 
         with get_connection() as conn:
             t = conn.table("skjemamottak")
@@ -126,7 +126,11 @@ class StandardDataHandler(FetcherMeta):
             # .dt.strftime("%Y-%m-%d %H:%M:%S")
             # )
         # print(data)
-        return data
+        assert isinstance(data, pd.DataFrame)
+
+        entries = data.to_dict(orient="records")
+
+        return [RefnrStatusExtended.model_validate(entry) for entry in entries]
 
     def get_info_row_fields(
         self,
