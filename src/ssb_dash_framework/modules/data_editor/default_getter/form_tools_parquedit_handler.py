@@ -108,8 +108,11 @@ class AltinnFormParqueditHandler(FetcherMeta):
                     "kommentar",
                     "aktiv",
                 )
+                .rename({"editert": "status"})
                 .to_pandas()
             )
+
+        data = data.rename(columns={"editert": "status"})
         entries = data.to_dict(orient="records")
 
         return [RefnrStatusExtended.model_validate(entry) for entry in entries]

@@ -117,7 +117,8 @@ class StandardDataHandler(FetcherMeta):
                     "kommentar",
                     "aktiv",
                 )
-                .execute()
+                #.rename({"editert": "status"})
+                .to_pandas()
             )
             # data["dato_mottatt"] = (
             # data["dato_mottatt"]
@@ -125,8 +126,8 @@ class StandardDataHandler(FetcherMeta):
             # .dt.tz_localize(None)
             # .dt.strftime("%Y-%m-%d %H:%M:%S")
             # )
-        # print(data)
-        assert isinstance(data, pd.DataFrame)
+
+        data = data.rename(columns={"editert": "status"})
 
         entries = data.to_dict(orient="records")
 

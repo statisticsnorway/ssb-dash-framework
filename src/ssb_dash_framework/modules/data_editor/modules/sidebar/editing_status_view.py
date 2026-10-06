@@ -217,7 +217,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     f"Viser skjema: {refnr}",
                 )
 
-            new_checkbox = ["Aktiv"] if data.active else []
+            new_checkbox = ["Aktiv"] if data.aktiv else []
             new_radio = data.status
 
             checkbox_out = (

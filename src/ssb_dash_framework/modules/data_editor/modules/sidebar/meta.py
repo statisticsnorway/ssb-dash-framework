@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
 from typing import Literal
-
+from datetime import datetime
 from pydantic import BaseModel
 
 import pandas as pd
@@ -13,12 +13,12 @@ class RefnrStatus(BaseModel):
         active: Boolean flag indicating if this submission is active.
         status: The working state of the form.
     """
-    active: bool
+    aktiv: bool
     status: Literal["Under arbeid", "Ferdig", "Ubehandlet"]
 
 class RefnrStatusExtended(RefnrStatus):
     skjema: str
-    dato_mottatt: str
+    dato_mottatt: datetime
     refnr: str
     kommentar: str
 
