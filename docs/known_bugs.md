@@ -187,24 +187,3 @@ def get_contact_info(self, refnr: str) -> ContactInfo:
 **Demo workaround:** the contact-info button is left out of the `buttons:` list.
 
 ---
-
-## 8. `service_prefix` always injects a `/proxy/<port>/` path
-
-**Where:** [app_setup.py](../src/ssb_dash_framework/setup/app_setup.py#L93)
-
-```python
-requests_pathname_prefix=(
-    f"{service_prefix}proxy/{port}/" if service_prefix else None
-),
-```
-
-`AppSettings.service_prefix` defaults to `os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")`, and
-`"/"` is truthy, so even outside JupyterHub the app asks the browser for
-`/proxy/<port>/_dash-component-suites/...`. Nothing serves that path locally, so the page
-loads to `DashRenderer is not defined` and never renders.
-
-**Possible fix:** only apply the proxy prefix when the JupyterHub environment variable is
-actually set, rather than treating the `"/"` default as "use a proxy".
-
-**Demo workaround:** none in the committed demo. To open it on a normal workstation, set
-`service_prefix: ""` in `app_settings`.
