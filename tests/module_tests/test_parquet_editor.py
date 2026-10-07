@@ -1,6 +1,8 @@
 import json
 import os
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pandas as pd
@@ -78,11 +80,15 @@ def test_get_log_path():
 @pytest.mark.parametrize(
     "records", [[], [{"id": 1, "value": 10}, {"id": 2, "value": 20}]]
 )
-def test_load_data_to_table_serializes_once(tmp_path, monkeypatch, records):
-    callbacks = {}
+def test_load_data_to_table_serializes_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, records: list[dict[str, int]]
+) -> None:
+    callbacks: dict[str, Callable[..., Any]] = {}
 
-    def capture_callback(*args, **kwargs):
-        def register(function):
+    def capture_callback(
+        *args: Any, **kwargs: Any
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+        def register(function: Callable[..., Any]) -> Callable[..., Any]:
             callbacks[function.__name__] = function
             return function
 
