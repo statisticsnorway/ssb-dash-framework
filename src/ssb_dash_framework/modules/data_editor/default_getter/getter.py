@@ -83,7 +83,6 @@ class StandardDataHandler(FetcherMeta):
                 .limit(1)
                 .to_pandas()
             )
-            print(data)
 
         row_data = data.replace({np.nan: None}).to_dict(orient="records")[0]
         return ContactInfo.model_validate(row_data)
