@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
 from typing import Literal
-
+from datetime import datetime
 from pydantic import BaseModel
 
 import pandas as pd
@@ -13,9 +13,14 @@ class RefnrStatus(BaseModel):
         active: Boolean flag indicating if this submission is active.
         status: The working state of the form.
     """
-    active: bool
+    aktiv: bool
     status: Literal["Under arbeid", "Ferdig", "Ubehandlet"]
 
+class RefnrStatusExtended(RefnrStatus):
+    skjema: str
+    dato_mottatt: datetime
+    refnr: str
+    kommentar: str
 
 class SidebarMeta[T](ABC):
     """Metadata interface defining database interaction capabilities for sidebar modules."""
@@ -35,7 +40,7 @@ class SidebarMeta[T](ABC):
     @abstractmethod
     def get_refnrs_by_period_ident(
         self, settings: T, ident: str, period: str
-    ) -> pd.DataFrame | None:
+    ) -> list[RefnrStatusExtended] | None:
         """Retrieves all submission reference numbers for a given respondent and period.
 
         Args:
@@ -44,7 +49,7 @@ class SidebarMeta[T](ABC):
             period: Statistical period.
 
         Returns:
-            A pandas DataFrame containing submission records or None.
+            A list containing submission records or None.
         """
         ...
 
