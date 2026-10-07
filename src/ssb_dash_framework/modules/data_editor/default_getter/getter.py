@@ -95,7 +95,7 @@ class StandardDataHandler(FetcherMeta):
             status = "Ferdig"
         if row["status"] == "under editering":
             status = "Under arbeid"
-        return RefnrStatus(active=row["aktiv"], status=status)
+        return RefnrStatus(aktiv=row["aktiv"], status=status)
 
     def get_refnrs_by_period_ident(
         self, settings: EditorSettings, ident: str, period: str
