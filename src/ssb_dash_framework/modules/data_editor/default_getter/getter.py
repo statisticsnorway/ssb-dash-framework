@@ -196,7 +196,7 @@ class StandardDataHandler(FetcherMeta):
                 id_cols=settings.period_col,
                 names_from=settings.field_name_col,
                 values_from=settings.field_value_col,
-            ).execute()
+            ).to_pandas()
         return data.to_dict(orient="records")
 
     def get_dynamic_list(
