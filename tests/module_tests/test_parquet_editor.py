@@ -1,16 +1,18 @@
 import json
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
 from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 
 from ssb_dash_framework import ParquetEditor
+from ssb_dash_framework import VariableSelectorOption
 from ssb_dash_framework import export_from_parqueteditor
 from ssb_dash_framework import get_export_log_path
 from ssb_dash_framework import get_log_path
-from ssb_dash_framework import VariableSelectorOption
+
 
 @pytest.fixture(autouse=True)
 def disable_bucket_check(monkeypatch):
@@ -71,6 +73,47 @@ def test_get_log_path():
     }
     for given_input, expected in cases.items():
         assert str(get_log_path(given_input)) == expected
+
+
+@pytest.mark.parametrize(
+    "records", [[], [{"id": 1, "value": 10}, {"id": 2, "value": 20}]]
+)
+def test_load_data_to_table_serializes_once(tmp_path, monkeypatch, records):
+    callbacks = {}
+
+    def capture_callback(*args, **kwargs):
+        def register(function):
+            callbacks[function.__name__] = function
+            return function
+
+        return register
+
+    monkeypatch.setattr(
+        "ssb_dash_framework.modules.parquet_editor.callback", capture_callback
+    )
+    data_source = tmp_path / "inndata" / "source.parquet"
+    data_source.parent.mkdir()
+    pd.DataFrame(records, columns=["id", "value"]).to_parquet(data_source)
+    VariableSelectorOption("id")
+    ParquetEditor(
+        statistics_name="Test",
+        id_vars=["id"],
+        data_source=data_source.as_posix(),
+        data_period="2024",
+    )
+
+    with patch.object(
+        pd.DataFrame, "to_dict", autospec=True, side_effect=pd.DataFrame.to_dict
+    ) as to_dict:
+        row_data, columns, stored_data = callbacks["load_data_to_table"](None)
+
+    assert row_data == records
+    assert stored_data == records
+    assert columns == [
+        {"headerName": "id", "field": "id", "editable": False},
+        {"headerName": "value", "field": "value", "editable": True},
+    ]
+    assert to_dict.call_count == 1
 
 
 def test_get_export_log_path():
