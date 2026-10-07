@@ -4,6 +4,7 @@ from typing import Any, Literal
 from dash import no_update
 import ibis.selectors as s
 import pandas as pd
+import numpy as np
 from ..modules.helper_buttons.meta import ContactInfo
 import tzlocal
 from ibis import _
@@ -75,8 +76,16 @@ class StandardDataHandler(FetcherMeta):
         return pd.DataFrame()
 
     def get_contact_info(self, refnr: str) -> ContactInfo:
-        data = pd.DataFrame()
-        row_data = data.to_dict(orient="records")[0]
+        with get_connection() as conn:
+            s = conn.table("kontaktinfo")
+            data = (
+                s.filter(_.refnr == refnr)
+                .limit(1)
+                .to_pandas()
+            )
+            print(data)
+
+        row_data = data.replace({np.nan: None}).to_dict(orient="records")[0]
         return ContactInfo.model_validate(row_data)
         
     def get_form_status(self, refnr: str) -> RefnrStatus | None:
