@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -11,6 +12,8 @@ from ssb_dash_framework import export_from_parqueteditor
 from ssb_dash_framework import get_export_log_path
 from ssb_dash_framework import get_log_path
 from ssb_dash_framework import VariableSelectorOption
+from ssb_dash_framework.modules import parquet_editor as parquet_editor_module
+
 
 @pytest.fixture(autouse=True)
 def disable_bucket_check(monkeypatch):
@@ -197,3 +200,45 @@ def test_export_from_parqueteditor_existing_processlog(parquet_with_log):
             data_target=data_target,
             force_overwrite=False,
         )
+
+
+def test_load_data_to_table_shares_single_records_conversion(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """RowData and the data-store output must share one to_dict() conversion.
+
+    Regression test for https://github.com/statisticsnorway/ssb-dash-framework/issues/339:
+    the callback used to call data.to_dict(orient="records") twice, which is
+    the most time-consuming part of the callback.
+    """
+    captured: dict[str, Any] = {}
+
+    def spy_callback(*dargs: Any, **dkwargs: Any) -> Any:
+        def decorator(fn: Any) -> Any:
+            captured[fn.__name__] = fn
+            return fn
+
+        return decorator
+
+    monkeypatch.setattr(parquet_editor_module, "callback", spy_callback)
+    monkeypatch.setattr(
+        parquet_editor_module, "get_log_path", lambda p: tmp_path / "fake-log.jsonl"
+    )
+
+    df = pd.DataFrame({"id": [1, 2], "value": [10, 20]})
+    editor = ParquetEditor(
+        statistics_name="Test",
+        id_vars=[],
+        data_source="/buckets/test/inndata/source.parquet",
+        data_period="2024",
+    )
+    monkeypatch.setattr(editor, "get_data", lambda: df)
+    editor.module_callbacks()
+
+    row_data, columns, store_data = captured["load_data_to_table"]()
+
+    assert row_data == [{"id": 1, "value": 10}, {"id": 2, "value": 20}]
+    assert [c["field"] for c in columns] == ["id", "value"]
+    assert store_data == row_data
+    # Both outputs must be the same object: a single conversion, not two.
+    assert store_data is row_data
