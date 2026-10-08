@@ -58,14 +58,14 @@ app.layout = main_layout(
         "periode": "2026",
         "ident": "ATF2134661",
         "altinnskjema": "RA-0745",
-        "refnr": "b250f49e78cb"
+        "refnr": "b250f49e78cb",
     },
 )
-
-app.run(
-    debug=True,
-    port=config.app_settings.port,
-    jupyter_server_url=os.getenv("JUPYTERHUB_HTTP_REFERER", None),
-    jupyter_mode="tab",
-    threaded=False,
-)
+if __name__ == "__main__":
+    app.run(
+        debug=False,
+        port=config.app_settings.port,
+        jupyter_server_url=os.getenv("JUPYTERHUB_HTTP_REFERER", None),
+        jupyter_mode="tab",
+        threaded=False,
+    )
