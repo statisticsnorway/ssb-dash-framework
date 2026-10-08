@@ -1,13 +1,13 @@
-import pandas as pd
 import json
-import pytest
+
+import pandas as pd
 
 
 # @pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_python_api():
     from ssb_dash_framework import DataEditor
-    from ssb_dash_framework import DataEditorHistory
     from ssb_dash_framework import DataEditorContactInfo
+    from ssb_dash_framework import DataEditorHistory
     from ssb_dash_framework import DataEditorSidebarComment
     from ssb_dash_framework import DataEditorSidebarEditingStatus
     from ssb_dash_framework import DataViewCustom
@@ -79,7 +79,8 @@ def test_dataeditor_python_api():
     assert instance is not None
     assert isinstance(instance, DataEditor)
 
-#@pytest.mark.skip(reason="Work in progress")
+
+# @pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_yaml_based():
     from ssb_dash_framework import AppConfig
     from ssb_dash_framework import DataEditor
@@ -88,7 +89,7 @@ def test_dataeditor_yaml_based():
 
     DataEditor.module_number = 0  # Reset the count
 
-    path = "tests/module_tests/dataeditor/dataeditor_test.yaml"
+    path = "tests/unittests/module_tests/dataeditor/dataeditor_test.yaml"
     if path.endswith(".yaml"):
         yaml_content = config_parser_yaml(path)
 
@@ -101,16 +102,19 @@ def test_dataeditor_yaml_based():
     assert instance is not None
     assert isinstance(instance, DataEditor)
 
-#@pytest.mark.skip(reason="Work in progress")
+
+# @pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_yaml_settings_override():
     """Test to assert that overriding EditorSettings variable in the microlayout yaml-definition works"""
     from ssb_dash_framework import DataEditor
     from ssb_dash_framework import DataViewCustom
     from ssb_dash_framework import EditorSettings
-    from ssb_dash_framework import VariableSelector
     from ssb_dash_framework import StandardDataHandler
-    VariableSelector.get_refnr = lambda x: x # pyright: ignore
+    from ssb_dash_framework import VariableSelector
+
+    VariableSelector.get_refnr = lambda x: x  # pyright: ignore
     original = EditorSettings.model_validate
+
     @classmethod
     def custom_validate(cls, *args, **kwargs):
         data = args[0]
@@ -122,13 +126,13 @@ def test_dataeditor_yaml_settings_override():
             assert data["field_value_col"] == "verdi"
         return original(*args, **kwargs)
 
-    EditorSettings.model_validate = custom_validate # pyright: ignore
+    EditorSettings.model_validate = custom_validate  # pyright: ignore
     DataEditor.module_number = 0  # Reset the count
 
-    path = "tests/module_tests/dataeditor/override.yaml"
+    path = "tests/unittests/module_tests/dataeditor/override.yaml"
     instance = DataViewCustom.from_yaml_path(path)
     instance.fetcher = StandardDataHandler()
-    instance.instance_id= "None"
+    instance.instance_id = "None"
     instance.settings = EditorSettings(
         starting_table="skjemadata",
         form_data_table="skjemadata",

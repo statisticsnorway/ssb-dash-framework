@@ -11,9 +11,11 @@ from ssb_dash_framework import main_layout
 VariableSelectorConfig(refnr="Refnr")
 
 port = 8070
-service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
+service_prefix = (
+    os.getenv("DAPLA_ENVIRONMENT") and os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
+) or ""
 domain = os.getenv("JUPYTERHUB_HTTP_REFERER", None)
-app = app_setup(port, service_prefix, "lumen", logging_level="debug", log_to_file=True)
+app = app_setup(port, service_prefix, "lumen", logging_level="debug", log_to_file=False)
 
 tab_list = []
 
@@ -28,4 +30,4 @@ window_list = []
 app.layout = main_layout(window_list, tab_list)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=port, jupyter_server_url=domain, jupyter_mode="tab")
+    app.run(debug=False, port=port, jupyter_server_url=domain, jupyter_mode="tab")

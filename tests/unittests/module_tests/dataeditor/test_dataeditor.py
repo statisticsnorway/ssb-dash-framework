@@ -1,27 +1,19 @@
 from typing import cast
 
-from ssb_dash_framework.modules.data_editor.modules.inforow.info_row_model import (
-    InfoRowField,
-)
-from ssb_dash_framework.modules.data_editor.modules.microlayout.microlayout_components.editable_field_model import (
-    EditableField,
-)
-
-
 import pytest
 
-from ssb_dash_framework import (
-    EditorSettings,
-    StandardDataHandler,
-    _get_connection_object,
-)
+from ssb_dash_framework import EditorSettings
+from ssb_dash_framework import StandardDataHandler
+from ssb_dash_framework import _get_connection_object
 from ssb_dash_framework.modules.data_editor import FetcherMeta
-from ssb_dash_framework.modules.data_editor.modules.microlayout.microlayout_components.editable_field_model import (
-    EditableField,
-    FieldCallbackContainer,
-)
 from ssb_dash_framework.modules.data_editor.default_getter.form_tools_parquedit_handler import (
     AltinnFormParqueditHandler,
+)
+from ssb_dash_framework.modules.data_editor.modules.microlayout.microlayout_components.editable_field_model import (
+    EditableField,
+)
+from ssb_dash_framework.modules.data_editor.modules.microlayout.microlayout_components.editable_field_model import (
+    FieldCallbackContainer,
 )
 
 
@@ -215,7 +207,7 @@ def test_standard_data_handler_updates_parquedit(subtests: pytest.Subtests):
         )
         assert new_val is not None
         assert new_val == new_value
-        
+
     with subtests.test(property="update_form_active_status"):
         new_value = False
         handler.update_form_active_status(REFNR, value=new_value)
