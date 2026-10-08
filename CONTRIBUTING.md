@@ -93,8 +93,30 @@ For example, invoke the unit test suite like this:
 nox --session=tests
 ```
 
-Unit tests are located in the _tests_ directory,
+Unit tests are located in the _tests/unittests_ directory,
 and are written using the [pytest] testing framework.
+A bare `pytest` only collects these.
+
+### End-to-end tests for the demos
+
+The E2E suite in _tests/e2e_ starts every demo app and checks in a real browser
+(Playwright/Chromium) that it loads without errors. It runs on Linux and is not part
+of the default `nox` run:
+
+```console
+uvx nox --session=e2e
+```
+
+Every demo must live at `demo/<demo_name>/app.py` (exactly that file name, one per
+folder) and call `app.run(..., debug=False)`. A new demo that follows this layout is
+tested automatically; no harness changes are needed.
+
+Demo-specific steps, skips or tolerated known bugs go in an optional hook file,
+`tests/e2e/hooks/<demo_name>.py`. A hook whose name does not match a demo fails
+collection. See [tests/e2e/README.md](tests/e2e/README.md) for the hook reference.
+
+Demo ports are fixed, so do not run the E2E suite in parallel (no `pytest-xdist`,
+no two simultaneous runs).
 
 ## How to submit changes
 

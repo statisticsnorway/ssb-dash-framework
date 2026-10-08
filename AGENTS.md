@@ -17,7 +17,7 @@ If your task conflicts with something in either file, stop and ask rather than g
 `ssb-dash-framework` is a production Python library for building Dash apps for data editing; preserve downstream compatibility. See README.md for the project overview and user installation.
 
 - Source: `src/ssb_dash_framework/`
-- Tests: `tests/`
+- Tests: `tests/unittests/` (unit), `tests/e2e/` (browser smoke tests for every demo)
 - Demo apps: `demo/`
 - Docs: `docs/` (published at https://statisticsnorway.github.io/ssb-dash-framework/)
 
@@ -30,6 +30,7 @@ uv sync                                     # install with dev dependencies
 uvx nox                                     # run the full suite (tests, linting, etc.)
 uvx nox --list-sessions                     # list available sessions
 uvx nox --session=tests                     # unit tests only
+uvx nox --session=e2e                       # demo smoke tests in a browser (Linux)
 uvx nox --session=pre-commit -- install     # install pre-commit hooks
 ```
 
@@ -37,10 +38,10 @@ Always run `uvx nox --sessions=tests` before declaring a task done. The suite mu
 
 ## Rules
 
-- **Test suite is described in docs/architecture.md.** Attempt to follow the recommended test suite. Add tests to `tests/` (pytest).
+- **Test suite is described in docs/architecture.md.** Attempt to follow the recommended test suite. Add tests to `tests/unittests/` (pytest).
 - **Update docs** in `docs/` when you add or change functionality, except `docs/architecture.md`.
 - **Never edit `docs/architecture.md`** unless explicitly instructed. If your change makes it inaccurate, say so in your final summary instead.
-- **Keep demos working.** If you change a public API or module, check that the apps in `demo/` still run and update them if needed.
+- **Keep demos working.** If you change a public API or module, check that the apps in `demo/` still run (`uvx nox --session=e2e`) and update them if needed. Demos must live at `demo/<name>/app.py`; demo-specific test steps go in `tests/e2e/hooks/<name>.py`, never in the generic harness.
 - **Follow existing conventions.** Formatting and linting are enforced by pre-commit (Ruff, Black, and others in `.pre-commit-config.yaml`). Don't fight the configured tooling or edit its config to make a check pass.
 - **Treat public API changes carefully.** Downstream apps depend on this library. Avoid breaking changes; if one is unavoidable, flag it clearly in your summary so it can go into the release's migration notes.
 - **Don't add dependencies** without asking. If one is needed, explain why.
