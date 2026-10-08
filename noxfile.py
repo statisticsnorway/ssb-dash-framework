@@ -180,7 +180,7 @@ def tests(session: Session) -> None:
             "pytest",
             "-o",
             "pythonpath=",
-            *session.posargs,
+            *(session.posargs or ["tests/unittests"]),
         )
     finally:
         if session.interactive:

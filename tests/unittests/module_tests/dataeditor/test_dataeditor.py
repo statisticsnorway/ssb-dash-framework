@@ -89,7 +89,7 @@ def test_dataeditor_yaml_based():
 
     DataEditor.module_number = 0  # Reset the count
 
-    path = "tests/module_tests/dataeditor/dataeditor_test.yaml"
+    path = "tests/unittests/module_tests/dataeditor/dataeditor_test.yaml"
     if path.endswith(".yaml"):
         yaml_content = config_parser_yaml(path)
 
@@ -126,7 +126,7 @@ def test_dataeditor_yaml_settings_override():
     EditorSettings.model_validate = custom_validate # pyright: ignore
     DataEditor.module_number = 0  # Reset the count
 
-    path = "tests/module_tests/dataeditor/override.yaml"
+    path = "tests/unittests/module_tests/dataeditor/override.yaml"
     instance = DataViewCustom.from_yaml_path(path)
     instance.fetcher = StandardDataHandler()
     instance.instance_id= "None"

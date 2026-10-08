@@ -123,6 +123,7 @@ quiet = true
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+testpaths = ["tests/unittests"]
 
 [tool.ruff]
 force-exclude = true  # Apply excludes to pre-commit
