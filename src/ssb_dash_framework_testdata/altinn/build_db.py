@@ -3,6 +3,8 @@
 import sqlite3
 from pathlib import Path
 
+from ssb_dash_framework import get_connection
+
 TESTDATA_DIR = Path(__file__).parent
 
 DATA_FILES = (
@@ -53,7 +55,28 @@ def seed_postgres(database_url: str, testdata_dir: Path = TESTDATA_DIR) -> None:
         conn.commit()
 
 
-def seed_parquedit(): ...
+def seed_parquedit(test_dir: Path, testdata_dir: Path = TESTDATA_DIR): 
+    import json
+    from ssb_dash_framework.utils.config_tools.connection import _create_test_connnection_parquedit
+    #from ...ssb_dash_framework.utils.config_tools.connection import _create_test_connnection_parquedit
+    conn = _create_test_connnection_parquedit(test_dir)
+    raw_conn = conn._get_connection().raw
+    #conn.create_table
+    product_name = "test_obj"
+    tag_info = json.dumps(
+        {
+            "product_name": product_name,
+            "user_defined_id": [],
+        }
+    )
+    for script in _scripts("schema_parquedit.sql", testdata_dir):
+        #print(script)
+        raw_conn.execute(script).commit()
+        #raw_conn.execute(f"COMMENT ON TABLE {table_name} IS '{tag_info}';")
+    raw_conn.execute(f"COMMENT ON TABLE skjemadata IS '{tag_info}';")
+    raw_conn.execute(f"COMMENT ON TABLE skjemamottak IS '{tag_info}';")
+    #with get_connection() as conn:
+        
 
 
 def build_in_memory_db(testdata_dir: Path = TESTDATA_DIR) -> sqlite3.Connection:

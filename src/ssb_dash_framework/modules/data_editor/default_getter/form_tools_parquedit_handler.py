@@ -32,20 +32,43 @@ class AltinnFormParqueditHandler(StandardDataHandler):
             self.conn.edit(
                 "skjemamottak",
                 rowid,
-                {"status": value},
+                {"aktiv": value},
                 change_event_reason="REVIEW",
                 change_comment="Status på skjema endret manuelt",
             )
 
     def update_form_reception_comment(self, refnr: str, comment: str) -> None:
-        pass
+        formdata: pd.DataFrame = self.conn.view(
+            "skjemamottak", f"refnr = '{refnr}'", limit=1
+        )
+        if formdata.shape[1] != 0:
+            rowid = formdata.iloc[0, :]["rowid"]
+            self.conn.edit(
+                "skjemamottak",
+                rowid,
+                {"kommentar": comment},
+                change_event_reason="REVIEW",
+                change_comment="Status på skjema endret manuelt",
+            )
 
     def update_form_status(
         self,
         refnr: str,
         status_code: Literal["Under behandling", "Ferdig", "Ubehandlet"],
     ) -> None:
-        pass
+        formdata: pd.DataFrame = self.conn.view(
+            "skjemamottak", f"refnr = '{refnr}'", limit=1
+        )
+
+        if formdata.shape[1] != 0:
+            rowid = formdata.iloc[0, :]["rowid"]
+            self.conn.edit(
+                "skjemamottak",
+                rowid,
+                {"status": status_code},
+                change_event_reason="REVIEW",
+                change_comment="Status på skjema endret manuelt",
+            )
 
     def update_field_value(
         self,
@@ -62,4 +85,21 @@ class AltinnFormParqueditHandler(StandardDataHandler):
     ) -> Any:
         if container.settings.type == "checklist":
             value = ",".join(value)
-        pass
+        if editing_code is None:
+            raise ValueError("editing_code cannot be None")
+        settings.field_name_col
+        formdata: pd.DataFrame = self.conn.view(
+            "skjemadata",
+            f"{settings.refnr_col} = '{refnr}' AND {settings.period_col} = '{period}' AND {settings.field_name_col} = '{container.settings.variable}'",
+            limit=1,
+        )
+
+        if formdata.shape[1] != 0:
+            rowid = formdata.iloc[0, :]["rowid"]
+            self.conn.edit(
+                "skjemadata",
+                rowid,
+                {settings.field_value_col: value},
+                change_event_reason=editing_code,
+                change_comment="Status på skjema endret manuelt",
+            )
