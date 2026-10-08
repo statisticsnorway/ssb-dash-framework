@@ -29,6 +29,36 @@ the job fails.
 Demo ports are hard-coded, so the suite must not run in parallel: `pytest-xdist` and two
 simultaneous runs are not supported.
 
+## Watching the browser
+
+The tests run headless by default. To see what happens, open a visible browser window and
+slow every Playwright action down (milliseconds per action):
+
+```console
+uv run pytest tests/e2e --headed --slowmo 500 -k hello_world
+```
+
+`-k` picks a single demo by its id. Through nox, pass the test path too, because arguments
+after `--` replace the session defaults:
+
+```console
+uvx nox --session=e2e -- tests/e2e --headed --slowmo 500 -k hello_world
+```
+
+To step through a test one action at a time in the Playwright Inspector, set `PWDEBUG=1`:
+
+```console
+PWDEBUG=1 uv run pytest tests/e2e -k hello_world
+```
+
+Notes:
+
+- Headed mode needs a display, such as a Linux desktop or WSL2 with WSLg. Remote terminals
+  like JupyterLab usually have none; use the trace viewer on a failing run there instead.
+- The per-demo time budget (`STARTUP_TIMEOUT + TEST_TIMEOUT`) still applies, so a long
+  Inspector session or a very large `--slowmo` will be aborted. Raise `TEST_TIMEOUT` in the
+  demo's hook temporarily if you need more time.
+
 ## Adding a new demo
 
 Create `demo/my_demo/app.py` and call `app.run(..., debug=False)`. Nothing else is needed: the
