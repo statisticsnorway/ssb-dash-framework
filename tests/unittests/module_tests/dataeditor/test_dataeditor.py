@@ -9,6 +9,7 @@ from ssb_dash_framework.modules.data_editor import FetcherMeta
 from ssb_dash_framework.modules.data_editor.default_getter.form_tools_parquedit_handler import (
     AltinnFormParqueditHandler,
 )
+from ssb_dash_framework.modules.data_editor.modules.inforow.info_row_model import InfoRowField
 from ssb_dash_framework.modules.data_editor.modules.microlayout.microlayout_components.editable_field_model import (
     EditableField,
 )
