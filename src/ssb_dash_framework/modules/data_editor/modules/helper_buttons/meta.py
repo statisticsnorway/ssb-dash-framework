@@ -21,12 +21,12 @@ class ContactInfo(BaseModel):
     """
     ident: str
     skjema: str
-    kontaktperson: str
-    epost: str
-    telefon: str
-    bekreftet_kontaktinfo: str
-    kommentar_kontaktinfo: str
-    kommentar_krevende: str
+    kontaktperson: str | None
+    epost: str | None
+    telefon: str | None
+    bekreftet_kontaktinfo: str | None
+    kommentar_kontaktinfo: str | None
+    kommentar_krevende: str | None
 
     @classmethod
     def empty(cls) -> "ContactInfo":
@@ -34,12 +34,12 @@ class ContactInfo(BaseModel):
         return cls(
             ident="",
             skjema="",
-            kontaktperson="",
-            epost="",
-            telefon="",
-            bekreftet_kontaktinfo="",
-            kommentar_kontaktinfo="",
-            kommentar_krevende="",
+            kontaktperson=None,
+            epost=None,
+            telefon=None,
+            bekreftet_kontaktinfo=None,
+            kommentar_kontaktinfo=None,
+            kommentar_krevende=None,
         )
 
 class HelperButtonMeta(ABC):

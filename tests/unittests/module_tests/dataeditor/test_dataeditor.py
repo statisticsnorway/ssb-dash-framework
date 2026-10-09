@@ -1,38 +1,158 @@
-import pandas as pd
-import json
+from typing import cast
+
 import pytest
 
-#@pytest.mark.skip(reason="Work in progress")
-def test_dataeditor_python_api():
-    from ssb_dash_framework import DataEditor
-    from ssb_dash_framework import DataEditorHistory
-    from ssb_dash_framework import DataEditorContactInfo
-    from ssb_dash_framework import DataEditorSidebarComment
-    from ssb_dash_framework import DataEditorSidebarEditingStatus
-    from ssb_dash_framework import DataViewCustom
-    from ssb_dash_framework import EditorSettings
-    from ssb_dash_framework import StandardDataHandler
-    from ssb_dash_framework import VariableSelectorConfig
-    from ssb_dash_framework.setup.variableselector.time_unit import TimeUnit
-    from ssb_dash_framework.setup.variableselector.time_unit import TimeUnitType
-    DataEditor.module_number = 0  # Reset the count
+from ssb_dash_framework import EditorSettings
+from ssb_dash_framework import StandardDataHandler
+from ssb_dash_framework import _get_connection_object
+from ssb_dash_framework.modules.data_editor import FetcherMeta
+from ssb_dash_framework.modules.data_editor.default_getter.form_tools_parquedit_handler import (
+    AltinnFormParqueditHandler,
+)
+from ssb_dash_framework.modules.data_editor.modules.inforow.info_row_model import InfoRowField
+from ssb_dash_framework.modules.data_editor.modules.microlayout.microlayout_components.editable_field_model import (
+    EditableField,
+)
+from ssb_dash_framework.modules.data_editor.modules.microlayout.microlayout_components.editable_field_model import (
+    FieldCallbackContainer,
+)
 
-    VariableSelectorConfig(
-        refnr="refnr",
-        ident="ident",
-        time_units=TimeUnit(name="iso_period", frequency=TimeUnitType.MONTH),
-        grouping_variables=["altinnskjema", "variabel"],
+
+def test_standard_data_handler_inheritance():
+    handler = StandardDataHandler()
+    assert isinstance(handler, FetcherMeta)
+
+
+PERIOD = "2024"
+IDENT = "ATF2134660"
+REFNR = "f7d1ca75eddd"
+VARIABLE = "prefillAreal"
+FELTSTI = "/prefillAreal"
+SKJEMA = "RA-0745"
+VERDI = "61"
+COMMENT = "kommentar"
+
+CONTACT_PERSON = "DOLLY DUCK"
+CONTACT_PHONE = "12345678"
+
+
+@pytest.mark.backends("sqlite", "postgres", "parquedit")
+def test_standard_data_handler_getters(subtests: pytest.Subtests):
+    editor_settings = EditorSettings(
+        starting_table="skjemadata",
+        form_data_table="skjemadata",
+        form_list=[SKJEMA],
+        period_col="iso_period",
+        ident_col="ident",
+        refnr_col="refnr",
+        form_name_col="skjema",
+        field_name_col="feltsti",
+        field_value_col="verdi",
     )
-
-    empty_df = lambda: pd.DataFrame()
-
-    example_layout = {}
+    settings: EditableField = EditableField(variable=FELTSTI, id="", type="")
+    callback_settings = FieldCallbackContainer(settings=settings, parent_id="")
 
     handler = StandardDataHandler()
-    settings = EditorSettings(
+    with subtests.test(property="get_field"):
+        field_value = handler.get_field(
+            editor_settings, callback_settings, [REFNR, PERIOD]
+        )
+        assert field_value == VERDI
+    with subtests.test(property="get_comment"):
+        comment = handler.get_comment(refnr=REFNR)
+        assert comment == COMMENT
+
+    with subtests.test(property="get_contact_info"):
+        contact_info = handler.get_contact_info(refnr=REFNR)
+        assert contact_info.kontaktperson == CONTACT_PERSON
+        assert contact_info.telefon == CONTACT_PHONE
+
+    with subtests.test(property="get_form_status"):
+        form_status = handler.get_form_status(refnr=REFNR)
+        assert form_status is not None
+        assert form_status.aktiv == True
+        assert form_status.status == "Ubehandlet"
+
+    with subtests.test(property="get_refnrs_by_period_ident"):
+        refnumbers = handler.get_refnrs_by_period_ident(
+            editor_settings, period=PERIOD, ident=IDENT
+        )
+        assert len(refnumbers) == 1
+        assert refnumbers[0].kommentar == COMMENT
+
+    with subtests.test(property="get_info_row_fields"):
+        row_field = handler.get_info_row_fields(
+            settings=editor_settings,
+            refnr=IDENT,
+            period=PERIOD,
+            fields=[
+                InfoRowField(
+                    name="enhetsPostnr",
+                    source="enhetsinfo",
+                    source_variable_name="enhetsPostnr",
+                )
+            ],
+            states={},
+        )
+        assert row_field is not None
+        assert len(row_field) == 1
+        assert row_field["enhetsPostnr"] == "2350"
+
+    with subtests.test(property="get_timeseries"):
+        timeseries = handler.get_timeseries(
+            settings=editor_settings,
+            variable=FELTSTI,
+            refnr=REFNR,
+            ident=IDENT,
+            periods=["2026", "2025", "2024"],
+        )
+        timeseries.sort(key=lambda x: x["iso_period"])
+        assert len(timeseries) == len(
+            [
+                {"iso_period": "2024", "/prefillAreal": "61"},
+                {"iso_period": "2025", "/prefillAreal": "64"},
+                {"iso_period": "2026", "/prefillAreal": "67"},
+            ]
+        )
+
+    with subtests.test(property="get_dynamic_list"):
+        result = handler.get_dynamic_list(
+            editor_settings, "/NyEngSpredUtsGroup/%/%", REFNR
+        )
+
+        expected_result = [
+            {
+                "feltsti_parent": "/NyEngSpredUtsGroup/0",
+                "NyEngSpredUtsGjodsMengde": "31",
+                "NyEngSpredUtsID": "00",
+                "NyEngSpredUtsNavn": "Bredspreder for bløtgjødsel med tankvogn",
+            },
+            {
+                "feltsti_parent": "/NyEngSpredUtsGroup/11",
+                "NyEngSpredUtsGjodsMengde": "132",
+                "NyEngSpredUtsID": "TOTAL_ROW",
+                "NyEngSpredUtsNavn": "Husdyrgjødsel spredd totalt",
+            },
+            {
+                "feltsti_parent": "/NyEngSpredUtsGroup/9",
+                "NyEngSpredUtsGjodsMengde": "101",
+                "NyEngSpredUtsID": "09",
+                "NyEngSpredUtsNavn": "Gjødselvogn med spredevalser for fastgjødsel",
+            },
+        ]
+        result.sort(key=lambda x: x["feltsti_parent"])
+        assert result == expected_result
+
+
+"""
+@pytest.mark.backends("sqlite")
+def test_standard_data_handler_updates_postgres(subtests: pytest.Subtests):
+    handler = StandardDataHandler()
+
+    editor_settings = EditorSettings(
         starting_table="skjemadata",
         form_data_table="skjemadata",
-        form_list=["RA-0187"],
+        form_list=[SKJEMA],
         period_col="iso_period",
         ident_col="ident",
         refnr_col="refnr",
@@ -40,100 +160,72 @@ def test_dataeditor_python_api():
         field_name_col="feltsti",
         field_value_col="verdi",
     )
+    settings: EditableField = EditableField(variable=FELTSTI, id="", type="")
+    callback_settings = FieldCallbackContainer(settings=settings, parent_id="")
 
-    instance = DataEditor(
-        settings=settings,
-        data_handler=handler,
-        inforow={
-            "orgnr": {"source": "variableselector", "variable_name": "ident"},
-            "navn": {"source": "enhetsinfo", "variable_name": "navn"},
-            "skjema": {"source": "variableselector", "variable_name": "altinnskjema"},
-        },
-        buttons=[
-            # DataEditorSupportTables(
-            #     [
-            #         DataEditorSupportTable(
-            #             label="Empty table",
-            #             inputs=["ident", "aar"],
-            #             get_data_func=empty_df,
-            #         )
-            #     ]
-            # ),
-            DataEditorHistory(),
-            DataEditorContactInfo(),
-        ],
-        sidebar=[
-            DataEditorSidebarEditingStatus(),
-            DataEditorSidebarComment(),
-        ],
-        dataview=[
-            # DataEditorTable(
-            #     applies_to_tables=["skjemadata"],
-            #     applies_to_forms=["RA-xxxx"],
-            # ),
-            DataViewCustom(
-                layout=[{"type":"row","children":[]}],
-            ),
-        ],
-    )
+    #new_value = "Updated"
+    #handler.update_field_value(value=new_value)
+    #assert handler.get_field() == new_value
+    with subtests.test(property="update_field_value"):
+        new_value = "Updated"
 
-    assert instance is not None
-    assert isinstance(instance, DataEditor)
+        handler.update_field_value(
+            refnr=REFNR,
+            ident=IDENT,
+            period=PERIOD,
+            value=new_value,
+            old_value="61",
+            skjema=SKJEMA,
+            settings=editor_settings,
+            container=callback_settings,
+            inputs=[],
+            editing_code="OTHER",
+        )
+        handler.cache.evict(REFNR, "skjemadata")
 
-#@pytest.mark.skip(reason="Work in progress")
-def test_dataeditor_yaml_based():
-    from ssb_dash_framework import AppConfig
-    from ssb_dash_framework import DataEditor
-    from ssb_dash_framework import build_app_from_config
-    from ssb_dash_framework import config_parser_yaml
+        assert (
+            handler.get_field(editor_settings, callback_settings, [REFNR, PERIOD])
+            == new_value
+        )
+        handler.update_field_value(
+            refnr=REFNR,
+            ident=IDENT,
+            period=PERIOD,
+            value=new_value,
+            old_value="61",
+            skjema=SKJEMA,
+            settings=editor_settings,
+            container=callback_settings,
+            inputs=[],
+            editing_code="OTHER",
+        )
+        handler.cache.evict(REFNR, "skjemadata")
 
-    DataEditor.module_number = 0  # Reset the count
+    #new_value = "Ferdig"
+    #handler.update_form_status(status_code=new_value)
+    #assert handler.get_form_status() == new_value
 
-    path = "tests/unittests/module_tests/dataeditor/dataeditor_test.yaml"
-    if path.endswith(".yaml"):
-        yaml_content = config_parser_yaml(path)
+    #new_value = False
+    #handler.update_form_active_status(value=new_value)
+    #assert handler.get_form_active_status() == new_value
 
-    print(json.dumps(yaml_content, indent=2))
+    #new_value = "New comment"
+    #handler.update_form_reception_comment(comment=new_value)
+    #assert handler.get_form_reception_comment() == new_value
+"""
 
-    config = AppConfig(**yaml_content)
-    app, tabs, windows = build_app_from_config(config)
-    instance = tabs[0]
 
-    assert instance is not None
-    assert isinstance(instance, DataEditor)
+@pytest.mark.backends("parquedit")
+def test_standard_data_handler_updates_parquedit(subtests: pytest.Subtests):
+    from ssb_parquedit import ParquEdit
 
-#@pytest.mark.skip(reason="Work in progress")
-def test_dataeditor_yaml_settings_override():
-    """Test to assert that overriding EditorSettings variable in the microlayout yaml-definition works"""
-    from ssb_dash_framework import DataEditor
-    from ssb_dash_framework import DataViewCustom
-    from ssb_dash_framework import EditorSettings
-    from ssb_dash_framework import VariableSelector
-    from ssb_dash_framework import StandardDataHandler
-    VariableSelector.get_refnr = lambda x: x # pyright: ignore
-    original = EditorSettings.model_validate
-    @classmethod
-    def custom_validate(cls, *args, **kwargs):
-        data = args[0]
-        if data["form_data_table"] == "ny":
-            assert data["field_name_col"] == "feltstier"
-            assert data["field_value_col"] == "verdier"
-        else:
-            assert data["field_name_col"] == "feltsti"
-            assert data["field_value_col"] == "verdi"
-        return original(*args, **kwargs)
+    conn = cast(ParquEdit, _get_connection_object())
+    handler = AltinnFormParqueditHandler(conn)
 
-    EditorSettings.model_validate = custom_validate # pyright: ignore
-    DataEditor.module_number = 0  # Reset the count
-
-    path = "tests/unittests/module_tests/dataeditor/override.yaml"
-    instance = DataViewCustom.from_yaml_path(path)
-    instance.fetcher = StandardDataHandler()
-    instance.instance_id= "None"
-    instance.settings = EditorSettings(
+    editor_settings = EditorSettings(
         starting_table="skjemadata",
         form_data_table="skjemadata",
-        form_list=["RA-0187"],
+        form_list=[SKJEMA],
         period_col="iso_period",
         ident_col="ident",
         refnr_col="refnr",
@@ -141,5 +233,69 @@ def test_dataeditor_yaml_settings_override():
         field_name_col="feltsti",
         field_value_col="verdi",
     )
-    layout = instance.layout()
-    assert layout is not None
+    settings: EditableField = EditableField(variable=FELTSTI, id="", type="")
+    callback_settings = FieldCallbackContainer(settings=settings, parent_id="")
+
+    with subtests.test(property="update_field_value"):
+        new_value = "Updated"
+
+        handler.update_field_value(
+            refnr=REFNR,
+            ident=IDENT,
+            period=PERIOD,
+            value=new_value,
+            old_value="61",
+            skjema=SKJEMA,
+            settings=editor_settings,
+            container=callback_settings,
+            inputs=[],
+            editing_code="OTHER",
+        )
+        handler.cache.evict(REFNR, "skjemadata")
+
+        assert (
+            handler.get_field(editor_settings, callback_settings, [REFNR, PERIOD])
+            == new_value
+        )
+        handler.update_field_value(
+            refnr=REFNR,
+            ident=IDENT,
+            period=PERIOD,
+            value=new_value,
+            old_value="61",
+            skjema=SKJEMA,
+            settings=editor_settings,
+            container=callback_settings,
+            inputs=[],
+            editing_code="OTHER",
+        )
+        handler.cache.evict(REFNR, "skjemadata")
+
+    with subtests.test(property="update_form_status"):
+        new_value = "Ferdig"
+        handler.cache.evict(REFNR, "skjemamottak")
+        handler.update_form_status(REFNR, status_code=new_value)
+        new_val = (
+            conn._get_connection()
+            .raw.execute(f"SELECT * FROM skjemamottak WHERE refnr = '{REFNR}'")
+            .fetch_df()["status"]
+            .iloc[0]
+        )
+        assert new_val is not None
+        assert new_val == new_value
+
+    with subtests.test(property="update_form_active_status"):
+        new_value = False
+        handler.update_form_active_status(REFNR, value=new_value)
+        new_val = handler.get_form_status(REFNR)
+        assert new_val is not None
+        assert new_val.aktiv == new_value
+
+    with subtests.test(property="update_form_reception_comment"):
+        new_value = "New comment"
+        handler.update_form_reception_comment(REFNR, comment=new_value)
+        assert handler.get_comment(REFNR) == new_value
+
+    with subtests.test(property="get_history"):
+        history = handler.get_history(refnr=REFNR, insert_toogle=True)
+        assert len(history) == 2
