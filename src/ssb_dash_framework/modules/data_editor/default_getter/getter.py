@@ -158,7 +158,7 @@ class StandardDataHandler(FetcherMeta):
                     t[settings.ident_col] == refnr, t[settings.period_col] == period
                 )
                 data = (
-                    t.filter(_.variabel == info_var.source_variable_name)
+                    t.filter(_.variable == info_var.source_variable_name)
                     .limit(1)
                     .execute()
                 )
@@ -209,11 +209,10 @@ class StandardDataHandler(FetcherMeta):
             t = conn.table(settings.form_data_table)
             temp_filter = t.filter(
                 t[settings.refnr_col] == refnr,
-                # t["feltnavn"] == "NyEngAnnetGjodsID",
                 t[settings.field_name_col].ilike(wildcard),
-            )  # .pivot_wider(id_cols="indeks", names_from="feltnavn", values_from="verdi")
+            ) 
 
-            data = temp_filter.execute()
+            data = temp_filter.to_pandas()
             fieldname_parent = f"{settings.field_name_col}_parent"
             data[fieldname_parent] = data[settings.field_name_col].str.rsplit("/", n=1)
             data[fieldname_parent] = data[fieldname_parent].str[0]
@@ -227,9 +226,11 @@ class StandardDataHandler(FetcherMeta):
 
     def update_form_active_status(self, refnr: str, value: bool) -> None:
         update_to_apply = UpdateSkjemamottakAktiv(refnr=refnr, value=bool(value))
+        update_to_apply.update_ibis()
 
     def update_form_reception_comment(self, refnr: str, comment: str) -> None:
         comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=comment)
+        comment_update.update_ibis()
 
     def update_form_status(
         self,
@@ -241,6 +242,7 @@ class StandardDataHandler(FetcherMeta):
             column="status",
             value=status_code,
         )
+        update_to_apply.update_ibis()
 
     def update_field_value(
         self,
@@ -274,3 +276,4 @@ class StandardDataHandler(FetcherMeta):
             mapping_match_column=settings.mapping_match_column,
             mapping_result_column=settings.mapping_result_column,
         )
+        update_form.update_ibis(True)

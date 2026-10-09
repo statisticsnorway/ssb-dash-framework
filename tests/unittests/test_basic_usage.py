@@ -24,5 +24,5 @@ def test_main_layout() -> None:
 def test_app_setup() -> None:
     port = 8070
     service_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
-    app = app_setup(port, service_prefix, "superhero")
+    app = app_setup(port, service_prefix, "superhero", enable_logging=False)
     assert isinstance(app, Dash)

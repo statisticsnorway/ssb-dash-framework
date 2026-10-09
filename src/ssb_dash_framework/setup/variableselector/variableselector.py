@@ -216,7 +216,7 @@ class VariableSelector:
             retrieved_option = cls.get_option(
                 search_term=var, search_target=search_target
             )
-            states.append(Input(retrieved_option.id, "value"))
+            states.append(State(retrieved_option.id, "value"))
         return states
 
     @classmethod
@@ -261,6 +261,8 @@ class VariableSelector:
         Output,
     )](cls, _type: type[Input | State | Output]) -> T:
         refnr = cls._refnr
+        if refnr is None:
+            raise RuntimeError("Refnr var is not set")
         return cls._match_type(refnr, _type=_type)
 
     @classmethod
@@ -270,6 +272,8 @@ class VariableSelector:
         Output,
     )](cls, _type: type[Input | State | Output]) -> T:
         ident = cls._ident
+        if ident is None:
+            raise RuntimeError("Ident var is not set")
         return cls._match_type(ident, _type=_type)
 
     @classmethod

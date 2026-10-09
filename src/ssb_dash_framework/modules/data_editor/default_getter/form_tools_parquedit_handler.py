@@ -23,6 +23,9 @@ class AltinnFormParqueditHandler(StandardDataHandler):
         self.conn = conn
         super().__init__()
 
+    def get_history(self, refnr: str, insert_toogle: bool) -> pd.DataFrame:
+        return self.conn.get_edits("skjemadata")
+
     def update_form_active_status(self, refnr: str, value: bool) -> None:
         formdata: pd.DataFrame = self.conn.view(
             "skjemamottak", f"refnr = '{refnr}'", limit=1

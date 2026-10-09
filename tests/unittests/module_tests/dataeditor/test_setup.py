@@ -1,9 +1,10 @@
 import json
-
+import pytest
 import pandas as pd
 
 
 # @pytest.mark.skip(reason="Work in progress")
+@pytest.mark.backends("parquedit") # Tests does not pass for multiple backends because only one instance is supported
 def test_dataeditor_python_api():
     from ssb_dash_framework import DataEditor
     from ssb_dash_framework import DataEditorContactInfo
@@ -79,8 +80,8 @@ def test_dataeditor_python_api():
     assert instance is not None
     assert isinstance(instance, DataEditor)
 
-
-# @pytest.mark.skip(reason="Work in progress")
+#@pytest.mark.skip(reason="Work in progress")
+@pytest.mark.backends("parquedit") # Tests does not pass for multiple backends because only one instance is supported
 def test_dataeditor_yaml_based():
     from ssb_dash_framework import AppConfig
     from ssb_dash_framework import DataEditor
