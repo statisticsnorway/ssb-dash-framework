@@ -3,6 +3,7 @@
 import logging
 from abc import abstractmethod
 from itertools import count
+from typing import Any
 from typing import Literal
 from typing import Self
 
@@ -33,10 +34,9 @@ class ModuleBase(YamlLoadable):
     `window_list`. `layout` returns the layout matching the chosen implementation.
 
     Attributes:
-        _number: Class variable counting instantiated modules. Used to give each module a unique `module_id`.
         label: The label shown in the tab or on the sidebar button of the window.
         module_name: The name of the module, defaults to the class name.
-        module_number: The value of `_number` at the time the module was instantiated.
+        module_number: The value of the class-wide instance counter at the time the module was instantiated.
         module_id: Unique id for the module, combining `module_name` and `module_number`.
         module_layout: The layout of the module itself, without tab/window wrapping.
         implemented_as: Either "Tab", "Window" or None if it has not been decided yet.
@@ -56,9 +56,14 @@ class ModuleBase(YamlLoadable):
     module_number: int
     module_id: str
     module_layout: html.Div | dbc.Tab
+    implemented_as: AsType | None
     icon: str | Component
 
-    def __new__(cls, *args, **kwargs) -> Self:
+    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
+        """Create a new instance of the module and assign it a unique module_id.
+
+        Note: This happens before the `__init__` method is called so that these attributes are available in the `__init__` method and any other instance methods.
+        """
         self = super().__new__(cls)
         self.module_name = cls.__dict__.get("module_name", cls.__name__)
         self.module_number = next(ModuleBase._counter)
@@ -81,7 +86,7 @@ class ModuleBase(YamlLoadable):
         Raises:
             AttributeError: If `label` is not set before calling this method.
         """
-        self.implemented_as: AsType | None = None
+        self.implemented_as = None
         self.window_scrollable = window_scrollable
 
         if not hasattr(self, "label"):
@@ -97,6 +102,24 @@ class ModuleBase(YamlLoadable):
 
         if as_type is not None:
             self.set_implementation(as_type)
+
+    def _is_valid(self) -> None:
+        """Check if the module has all required attributes set.
+
+        Raises:
+            AttributeError: If any required attribute is missing.
+            TypeError: If `label` is not a string.
+        """
+        if not hasattr(self, "label"):
+            raise AttributeError(
+                f"Class {self.__class__.__name__} must set a 'label' attribute."
+            )
+        if not isinstance(self.label, str):
+            raise TypeError(
+                f"Class {self.__class__.__name__} attribute 'label' must be a string. Received: {self.label}"
+            )
+        if not hasattr(self, "icon"):
+            self.icon = ""
 
     def set_implementation(self, as_type: AsType) -> None:
         """Decide whether the module is implemented as a tab or as a window.

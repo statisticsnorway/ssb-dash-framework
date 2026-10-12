@@ -7,7 +7,7 @@
 -- Each form has 3 units that are present in every period.
 
 -- RA-0187: 3 units x 12 periods
-INSERT INTO enheter (iso_period, ident, skjema) VALUES
+INSERT INTO enheter (iso_periode, ident, skjema) VALUES
     ('2026-01', '12111111', 'RA-0187'),
     ('2026-01', '12222222', 'RA-0187'),
     ('2026-01', '12333333', 'RA-0187'),
@@ -46,7 +46,7 @@ INSERT INTO enheter (iso_period, ident, skjema) VALUES
     ('2026-12', '12333333', 'RA-0187');
 
 -- RA-0745: 3 units x 3 periods
-INSERT INTO enheter (iso_period, ident, skjema) VALUES
+INSERT INTO enheter (iso_periode, ident, skjema) VALUES
     ('2024', 'ATF2134660', 'RA-0745'),
     ('2024', 'ATF2134661', 'RA-0745'),
     ('2024', 'ATF2134662', 'RA-0745'),

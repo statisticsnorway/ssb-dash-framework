@@ -44,11 +44,11 @@ window_list.append(
 # From here the app is built and started, no need to change anything below this point
 
 app.layout = main_layout(window_list=window_list, tab_list=tab_list)
-
-app.run(
-    debug=True,
-    port=config.app_settings.port,
-    jupyter_server_url=os.getenv("JUPYTERHUB_HTTP_REFERER", None),
-    jupyter_mode="tab",
-    threaded=False,
-)
+if __name__ == "__main__":
+    app.run(
+        debug=False,
+        port=config.app_settings.port,
+        jupyter_server_url=os.getenv("JUPYTERHUB_HTTP_REFERER", None),
+        jupyter_mode="tab",
+        threaded=False,
+    )

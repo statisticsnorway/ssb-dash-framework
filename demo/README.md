@@ -29,3 +29,5 @@ Their `variable` is a SQL `LIKE` pattern, so wildcards are written as `%` and no
 
 Note that ident `12111111` in `2026-01` has two submissions and will fail to load; see
 [docs/known_bugs.md](../docs/known_bugs.md) for that and other rough edges this demo exposes.
+
+## For contributors
