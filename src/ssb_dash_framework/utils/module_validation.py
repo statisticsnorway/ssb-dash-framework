@@ -39,8 +39,6 @@ def module_validator(module_class: Any) -> None:
         - It is highly recommended to add this function in the `__init__` method of your module class.
         - This validation works best if used in combination with a test that makes sure the class can be instantiated.
     """
-    if not hasattr(module_class, "_id_number"):
-        raise AttributeError("Missing _id_number classvar")
     if not hasattr(module_class, "module_number"):
         raise AttributeError(
             f"Class {module_class} must have a 'module_number' attribute."

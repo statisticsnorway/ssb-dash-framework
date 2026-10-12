@@ -4,35 +4,16 @@ The purpose of this type of module is to enable the user to create their own cus
 """
 
 from .canvas import Canvas
-from .canvas import CanvasTab
-from .canvas import CanvasWindow
 from .figuredisplay import FigureDisplay
-from .figuredisplay import FigureDisplayTab
-from .figuredisplay import FigureDisplayWindow
 from .map_display import MapDisplay
-from .map_display import MapDisplayTab
-from .map_display import MapDisplayWindow
 from .multimodule import MultiModule
-from .multimodule import MultiModuleTab
-from .multimodule import MultiModuleWindow
 from .tables import EditingTable
-from .tables import EditingTableTab
-from .tables import EditingTableWindow
+
 
 __all__ = [
     "Canvas",
-    "CanvasTab",
-    "CanvasWindow",
     "EditingTable",
-    "EditingTableTab",
-    "EditingTableWindow",
     "FigureDisplay",
-    "FigureDisplayTab",
-    "FigureDisplayWindow",
     "MapDisplay",
-    "MapDisplayTab",
-    "MapDisplayWindow",
     "MultiModule",
-    "MultiModuleTab",
-    "MultiModuleWindow",
 ]

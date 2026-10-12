@@ -32,6 +32,8 @@ class TabModule(Protocol):
         """This method should return the layout of the module inside a tab."""
         ...
 
+    def _internal_layout(self): ...
+
 
 class TabImplementation:
     """A mixin class to implement a module inside a tab.
@@ -75,8 +77,9 @@ class TabImplementation:
             The layout containing the module layout.
         """
         if self.icon:
+            # dcc.Tabs requires every item in a list label to be a component, not a str.
             label_content = (
-                [self.icon, " ", self.label]
+                f"{self.icon} {self.label}"
                 if isinstance(self.icon, str)
                 else [self.icon, html.Span(self.label, className="ms-2")]
             )
@@ -121,6 +124,8 @@ class WindowModule(Protocol):
         """This method should return the layout of the module inside a window."""
         ...
 
+    def _internal_layout(self): ...
+
 
 class WindowImplementation:
     """A mixin class to implement a module inside a modal.
@@ -163,7 +168,9 @@ class WindowImplementation:
         if not hasattr(self, "icon"):
             self.icon = ""
 
-        self.window_scrollable = window_scrollable if window_scrollable is not None else True
+        self.window_scrollable = (
+            window_scrollable if window_scrollable is not None else True
+        )
         self._window_n = WindowImplementation._window_number
         self.window_callbacks()
         WindowImplementation._window_number += 1
@@ -225,7 +232,7 @@ class WindowImplementation:
                         ),
                     ],
                     id=f"{self._window_n}-{self.module_name}-modal",
-                    className ="ssb-modal",
+                    className="ssb-modal",
                     size="xl",
                     fullscreen="xxl-down",
                     scrollable=self.window_scrollable,

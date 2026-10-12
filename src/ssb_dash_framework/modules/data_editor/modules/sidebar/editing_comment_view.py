@@ -12,7 +12,6 @@ from dash import html
 from dash.exceptions import PreventUpdate
 
 from .....utils.alert_handler import AlertHandler
-from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 
 from .editing_sidebar_helper import DataEditorHelperSidebar
@@ -20,7 +19,6 @@ from .editing_sidebar_helper import DataEditorHelperSidebar
 logger = logging.getLogger(__name__)
 
 
-@register_module()
 class DataEditorSidebarComment(DataEditorHelperSidebar):
     """Sidebar component for showing a field comment."""
 
@@ -37,6 +35,11 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
         super().__init__()
 
     def _create_layout(self) -> html.Div:
+        """Creates the internal comment sidebar form.
+
+        Returns:
+            A Dash Div element.
+        """
         return html.Div(
             [
                 dbc.Row("Intern kommentar (skjema)"),
@@ -70,7 +73,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
         )
 
     def module_callbacks(self) -> None:
-        """Registers the callbacks for the module."""
+        """Registers callbacks to find refnrs, retrieve, and save comments."""
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-dropdown-refnr", "value"),
@@ -92,9 +95,9 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             if not refnr or not skjema:
                 return None, []
 
-            data = None
+            entries = None
             try:
-                data = self.fetcher.get_refnrs_by_period_ident(
+                entries = self.fetcher.get_refnrs_by_period_ident(
                     self.settings, ident, period
                 )
             except Exception as e:
@@ -104,12 +107,12 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 logger.info(error_msg)
                 AlertHandler.info(error_msg)
 
-            if data is None or data.empty:
+            if not entries:
                 return None, []
-            else:
-                refnrs = data[self.settings.refnr_col].unique().tolist()
-                logger.debug(f"default_refnr: {refnr}\nrefnrs: {refnrs}")
-                return refnr, [{"label": x, "value": x} for x in refnrs]
+                
+            refnrs = list(dict.fromkeys(entry.refnr for entry in entries))
+            logger.debug(f"default_refnr: {refnr}\nrefnrs: {refnrs}")
+            return refnr, [{"label": x, "value": x} for x in refnrs]
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-comment-text", "value"),

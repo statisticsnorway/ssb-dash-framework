@@ -16,7 +16,6 @@ from dash import no_update
 from dash.exceptions import PreventUpdate
 
 from .....utils.alert_handler import AlertHandler
-from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from ...utils import EDITING_CODE_DROPDOWN
 
@@ -24,8 +23,15 @@ from .editing_sidebar_helper import DataEditorHelperSidebar
 
 logger = logging.getLogger(__name__)
 
+_REFNR_COLUMN_ORDER = [
+    "skjema",
+    "dato_mottatt",
+    "refnr",
+    "status",
+    "kommentar",
+    "aktiv",
+]
 
-@register_module()
 class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
     """A sidebar module for inspecting and updating the status of the selected form by 'refnr'.
 
@@ -64,6 +70,11 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         super().__init__()
 
     def _create_layout(self) -> html.Div:
+        """Creates the status management layout including status selector radio items and active checklist.
+
+        Returns:
+            A Dash Div element.
+        """
         form_selector = dbc.Modal(
             [
                 dbc.ModalHeader("Innsendte skjemaer fra enheten"),
@@ -140,7 +151,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
         )
 
     def module_callbacks(self) -> None:
-        """Registers the callbacks for the module."""
+        """Registers callbacks to set and update form status, activity, and related submission forms."""
 
         @callback(
             VariableSelector.get_refnr(Output),
@@ -157,29 +168,30 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 raise PreventUpdate
 
             try:
-                refnr = self.fetcher.get_refnrs_by_period_ident(
+                entries = self.fetcher.get_refnrs_by_period_ident(
                     self.settings, ident, period
                 )
-                print(f"refnr in update_refnr: {refnr}")
+
             except Exception as e:
                 msg = f"Getting reference numbers for ident returned with an error: {e}"
                 logger.warning(msg)
                 AlertHandler.warning(msg)
                 return no_update, no_update
 
-            if refnr is None or refnr.empty:
+            if not entries:
                 return "", ""
 
-            skjema = refnr[
-                "skjema"
-            ]  # nøku can have two different RA-nummer from the same ident
-            if len(refnr) > 1:
+            skjemaer = list(dict.fromkeys(entry.skjema for entry in entries))  # nøku can have two different RA-nummer from the same ident
+
+            if len(skjemaer) > 1:
                 AlertHandler.info(
-                    f"Flere enn ett RA-skjema funnet for {ident}: {', '.join(skjema.tolist())}. "
+                    f"Flere enn ett RA-skjema funnet for {ident}: {', '.join(skjemaer)}. "
                     f"Velg det du vil se på i menyen under 'Se innsendinger'.",
                     ephemeral=True,
                 )
-            return refnr[self.settings.refnr_col].tolist()[0], skjema.iloc[0]
+
+            first = entries[0]
+            return first.refnr, first.skjema
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-checkbox", "value"),
@@ -221,7 +233,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     "Skjema ikke funnet.",
                 )
 
-            new_checkbox = ["Aktiv"] if data.active else []
+            new_checkbox = ["Aktiv"] if data.aktiv else []
             new_radio = data.status
 
             checkbox_out = (
@@ -313,15 +325,21 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 AlertHandler.warning(message)
                 return no_update, no_update, no_update
 
-            if data is None or data.empty:
+            if not data:
                 message = "Henting av referansenummer for ident returnerte 'None'."
                 logger.warning(message)
                 AlertHandler.warning(message)
                 return [], [], True
+                
             print(f"data returned in view_refnrs_by_ident: {data}")
+            entries = [entry.model_dump() for entry in data]
+            present = dict.fromkeys(key for entry in entries for key in entry)
+            ordered = [c for c in _REFNR_COLUMN_ORDER if c in present]
+            ordered += [c for c in present if c not in _REFNR_COLUMN_ORDER]
+
             return (
-                data.to_dict("records"),
-                [{"field": x, "headerName": x} for x in data.columns],
+                entries,
+                [{"field": x, "headerName": x} for x in ordered],
                 True,
             )
 

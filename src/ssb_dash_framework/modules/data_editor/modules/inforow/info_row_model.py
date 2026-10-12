@@ -2,7 +2,13 @@ from pydantic import BaseModel
 
 
 class InfoRowField(BaseModel):
-    """Model for a info field in the DataEditorInfoRow module."""
+    """Model representing an informational metadata card field in the InfoRow.
+
+    Attributes:
+        name: Header label displaying the property name (e.g. "Name" or "Org. Nr.").
+        source: Auxiliary database table to query (e.g. "enhetsinfo") or "variableselector".
+        source_variable_name: The column or variable key name inside the source table.
+    """
 
     name: str
     source: str

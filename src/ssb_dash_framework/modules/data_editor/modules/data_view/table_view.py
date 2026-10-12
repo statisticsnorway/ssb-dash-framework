@@ -15,7 +15,6 @@ from psycopg_pool import ConnectionPool
 from ssb_dash_framework.utils.core_query_functions import create_filter_dict
 from ssb_dash_framework.utils.core_query_functions import ibis_filter_with_dict
 
-from .....config.models import register_module
 from .....setup.variableselector import VariableSelector
 from .....utils.config_tools.connection import _get_connection_object
 from .....utils.config_tools.connection import get_connection
@@ -29,7 +28,6 @@ from .base import DataEditorDataView
 logger = logging.getLogger(__name__)
 
 
-@register_module()
 class DataEditorTable(DataEditorDataView):
     """Requires table selector."""
 
@@ -39,8 +37,10 @@ class DataEditorTable(DataEditorDataView):
         """Initializes a DataEditorTable for selected tables and forms.
 
         Args:
-            applies_to_tables: A list of tables that the module should apply to.
-            applies_to_forms: A list of forms that the module should apply to.
+            settings: Central configurations defining data tables, fields, and options.
+
+        Raises:
+            RuntimeError: If time_units, refnr, or ident are not defined in VariableSelector.
         """
         self.module_number = DataEditorTable._id_number
         self.module_name = self.__class__.__name__
@@ -80,7 +80,12 @@ class DataEditorTable(DataEditorDataView):
             f"  divname: {self.divname}\n"
         )
 
-    def _create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
+        """Generates the AgGrid-based spreadsheet layout.
+
+        Returns:
+            A Dash Div element.
+        """
         return html.Div(
             id=f"{self.divname}",
             style={"display": "none"},
@@ -102,7 +107,7 @@ class DataEditorTable(DataEditorDataView):
         )
 
     def module_callbacks(self) -> None:
-        """Registers the necessary callbacks."""
+        """Registers callbacks to populate table data, update backend fields on cell editing, and update variables."""
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-aggrid", "rowData"),

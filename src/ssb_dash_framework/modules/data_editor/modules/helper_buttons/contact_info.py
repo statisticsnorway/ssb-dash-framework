@@ -52,6 +52,17 @@ class DataEditorContactInfo(DataEditorHelperButton):
         var_type: str | int,
         style: dict | None = None,
     ):
+        """Creates a standard readonly information card component.
+
+        Args:
+            title: Label of the card.
+            component_id: ID of the input element.
+            var_type: Type of the input element (e.g. "text").
+            style: Optional CSS dictionary properties.
+
+        Returns:
+            A Dash Div element.
+        """
         card_info = html.Div(
             className="ssb-input",
             children=[
@@ -72,6 +83,11 @@ class DataEditorContactInfo(DataEditorHelperButton):
         return card_info
 
     def _create_modal_body(self) -> html.Div:
+        """Generates the static layout structure for contact info displays.
+
+        Returns:
+            A Dash Div element containing rows and cols of contact fields.
+        """
         return html.Div(
             html.Div(
                 [
@@ -188,6 +204,7 @@ class DataEditorContactInfo(DataEditorHelperButton):
         )
 
     def module_callbacks(self):
+        """Registers callbacks to dynamically populate contact cards and indicator icons."""
 
         @callback(
             Output(

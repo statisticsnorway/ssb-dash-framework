@@ -24,8 +24,7 @@ from ibis import _
 from pandas.core.frame import DataFrame
 
 from ...setup.variableselector import VariableSelector
-from ...utils import TabImplementation
-from ...utils import WindowImplementation
+from ...utils import ModuleBase
 from ...utils.alert_handler import create_alert
 from ...utils.module_validation import module_validator
 from .nspek_control_engine import run_all_controls_for_sekvensnummer
@@ -1321,23 +1320,21 @@ def handle_regnskap_edit(
     return alert_store, refresh_data, False, None, no_update
 
 
-class Naeringsspesifikasjon:
+class Naeringsspesifikasjon(ModuleBase):
     """The Naeringsspesifikasjon module lets you view the nspek/naeringsspesifikasjon for a specified foretak (var-ident)."""
 
-    _id_number: ClassVar[int] = 0
     _required_variables: ClassVar[list[str]] = (
         [  # Used for validating that the variable selector has the required variables set. These are hard-coded in the module_callbacks.
             "foretak",
         ]
     )
 
-    def __init__(self, time_units: list[str], db_user: str | None) -> None:
+    def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
         """Explanation of module."""
         set_nspek_connection(
             db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
         )
-        self.module_number = Naeringsspesifikasjon._id_number
-        self.module_name = self.__class__.__name__
+
         self.icon = DashIconify(icon="feather:book", width=24)
         self.label = "NSPEK"
 
@@ -1350,8 +1347,7 @@ class Naeringsspesifikasjon:
         ]
         logger.debug("TIME UNITS %s", self.time_units)
 
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
+        super().__init__()
         module_validator(self)
 
     def _is_valid(self) -> None:
@@ -1522,7 +1518,7 @@ class Naeringsspesifikasjon:
             ]
         }
 
-    def _create_layout(self):
+    def layout(self):
         layout = html.Div(
             [
                 dcc.Store(id="refresh-manager", data={}),
@@ -4006,22 +4002,3 @@ class Naeringsspesifikasjon:
                     True,
                 )
 
-
-class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
-    """NaeringsspesifikasjonTab is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
-
-    def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
-        """Initializes the NaeringsspesifikasjonTab class."""
-        Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
-        TabImplementation.__init__(self)
-
-
-class NaeringsspesifikasjonWindow(WindowImplementation, Naeringsspesifikasjon):
-    """NaeringsspesifikasjonWindow is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
-
-    def __init__(
-        self, time_units: list[str], db_user: str | None = None, **kwargs: Any
-    ) -> None:
-        """Initializes the NaeringsspesifikasjonWindow class."""
-        Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
-        WindowImplementation.__init__(self, **kwargs)

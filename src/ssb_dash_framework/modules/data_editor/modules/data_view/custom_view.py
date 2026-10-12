@@ -1,4 +1,3 @@
-import json
 import logging
 
 import dash_ag_grid as dag
@@ -11,8 +10,7 @@ from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
 
-from .....config.models import register_module
-from .....config.yaml_parser import config_parser_yaml
+from .....modules.data_editor.utils import EditorSettings
 from .....setup.variableselector import VariableSelector
 from ..microlayout.microlayout import MicroLayoutAIO
 from .base import DataEditorDataView
@@ -21,9 +19,19 @@ logger = logging.getLogger(__name__)
 
 
 class DataViewCustomFigure:
+    """Custom graphic figure module for displaying custom figures/graphs in custom views."""
+
     _id_number = 0
 
     def __init__(self, label, figure_func, applies_to_tables, applies_to_forms) -> None:
+        """Initializes the DataViewCustomFigure module.
+
+        Args:
+            label: Visual label describing the figure.
+            figure_func: Function generating and returning the Plotly figure object.
+            applies_to_tables: List of applicable database tables.
+            applies_to_forms: List of applicable questionnaire form IDs.
+        """
         self.module_number = DataViewCustomFigure._id_number
         self.module_name = self.__class__.__name__
         DataViewCustomFigure._id_number += 1
@@ -34,6 +42,11 @@ class DataViewCustomFigure:
         self.module_callbacks()
 
     def content(self):
+        """Generates the layout content for the custom figure.
+
+        Returns:
+            A Dash Div containing the label and dcc.Graph.
+        """
         return html.Div(
             children=[
                 self.label,
@@ -42,6 +55,7 @@ class DataViewCustomFigure:
         )
 
     def module_callbacks(self) -> None:
+        """Registers callbacks to refresh the custom figure when reference state changes."""
         @callback(
             Output(f"{self.module_name}-{self.module_number}-figure", "figure"),
             Input("dataeditortableselector", "value"),
@@ -70,7 +84,17 @@ class DataViewCustomFigure:
 
 
 class DataViewCustomTable:
+    """Custom tabular reference module for displaying custom AgGrids in custom views."""
+
     def __init__(self, label, table_func, applies_to_tables, applies_to_forms) -> None:
+        """Initializes the DataViewCustomTable module.
+
+        Args:
+            label: Visual label describing the reference table.
+            table_func: Function returning a pandas DataFrame to show.
+            applies_to_tables: List of applicable database tables.
+            applies_to_forms: List of applicable questionnaire form IDs.
+        """
         self.module_number = DataViewCustomFigure._id_number
         self.module_name = self.__class__.__name__
         DataViewCustomFigure._id_number += 1
@@ -81,6 +105,11 @@ class DataViewCustomTable:
         self.module_callbacks()
 
     def content(self):
+        """Generates the layout content for the custom reference table.
+
+        Returns:
+            A Dash Div containing the label and dag.AgGrid.
+        """
         return html.Div(
             [
                 self.label,
@@ -92,6 +121,7 @@ class DataViewCustomTable:
         )
 
     def module_callbacks(self) -> None:
+        """Registers callbacks to refresh and load AgGrid records on context changes."""
         @callback(
             Output(f"{self.module_name}-{self.module_number}-table", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-table", "columnDefs"),
@@ -127,7 +157,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@register_module()
 class DataViewCustom(DataEditorDataView):
     """DataView with a very flexible layout made to be tailored to specific needs."""
 
@@ -135,10 +164,9 @@ class DataViewCustom(DataEditorDataView):
 
     def __init__(
         self,
-        # settings: EditorSettings,
-        layout: dict,
-        settings: dict | None = None,
-        _from_config_file=False,
+        layout: list,
+        _from_config_file: bool = False,
+        **kwargs,
     ) -> None:
         """Initializes and registers the custom data view for selected tables and forms.
 
@@ -146,16 +174,26 @@ class DataViewCustom(DataEditorDataView):
             applies_to_tables: A list of tables that the module should apply to.
             applies_to_forms: A list of forms that the module should apply to.
         """
-        self._from_config_file = _from_config_file
         self.module_number = DataViewCustom._id_number
         self.module_name = self.__class__.__name__
         DataViewCustom._id_number += 1
         self.divname = f"{self.module_name}-{self.module_number}"
-
+        self._extra_args = kwargs
         self._layout = layout
+        self._from_config_file = _from_config_file
 
     def build_layout(self, layout: dict | list) -> list:
-        """Builds the layout for the custom view."""
+        """Builds the visual layout components from config nodes.
+
+        Args:
+            layout: A layout node dictionary or list of nodes.
+
+        Returns:
+            A list of instantiated Dash components.
+
+        Raises:
+            ValueError: If node type is not a row, col, microlayout, or DataViewCustom.
+        """
         components = []
         # guard against strings and other primitives
         if not isinstance(layout, (dict, list)):
@@ -171,23 +209,30 @@ class DataViewCustom(DataEditorDataView):
                 components.append(dbc.Row(self.build_layout(layout["children"])))
             elif layout["type"] == "col":
                 components.append(dbc.Col(self.build_layout(layout["children"])))
-
             elif layout["type"] == "microlayout":
-                if self._from_config_file:
-                    logger.debug(
-                        "Converting 'layout' from config file structure to Microlayout compatible Layout object."
-                    )
-                    converted = convert_node(
-                        layout["layout"],
-                        applies_to_tables=self.applies_to_table,
-                        applies_to_forms=self.applies_to_forms,
-                    )
-                    layout["layout"] = (
-                        converted if isinstance(converted, list) else [converted]
-                    )
-                    logger.debug(
-                        f"Done converting:\n{json.dumps(layout['layout'], indent=2, ensure_ascii=False)}"
-                    )
+                # Updates the global settings object with entries that the yaml file overwrites
+                # Useful for when you need to get data from a different table than in the rest of the app.
+                settings_entries = self.settings.model_dump()
+                settings_entries.update(layout)
+                updates_settings = EditorSettings.model_validate(
+                    settings_entries, extra="allow"
+                )
+
+                inputs = []
+                layout_inputs = layout.get("inputs", [])
+                assert isinstance(layout_inputs, list)
+                for item in layout_inputs:
+                    inputs.extend(VariableSelector.get_input(item))
+
+                if len(inputs) == 0:
+                    inputs.append(VariableSelector.get_refnr(Input))
+
+                input_id = layout.get("ident_col")
+                refnr_col = layout.get("refnr_col", self.settings.refnr_col)
+                if input_id in ("var-ident", "ident") or refnr_col != "refnr":
+                    ref_input = VariableSelector.get_ident(Input)
+                else:
+                    ref_input = VariableSelector.get_refnr(Input)
 
                 input_id = layout.get("ident_col")
                 refnr_col = layout.get("refnr_col", self.settings.refnr_col)
@@ -198,12 +243,16 @@ class DataViewCustom(DataEditorDataView):
 
                 microlayout = MicroLayoutAIO(
                     data_handler=self.fetcher,
-                    settings=self.settings,
+                    settings=updates_settings,
                     layout=layout,
                     instance_id=self.instance_id,
-                    inputs=[ref_input, VariableSelector.get_timevar(Input)],
+                    inputs=inputs,
                 )
                 components.append(microlayout)
+            elif layout["type"] == "DataViewCustom":
+                internal_layout = layout["layout"]
+                for item in internal_layout:
+                    components.extend(self.build_layout(item))
             else:
                 raise ValueError(
                     f"Value for 'type' must be a valid component. Found type '{layout['type']}'"
@@ -211,48 +260,66 @@ class DataViewCustom(DataEditorDataView):
 
         return components
 
-    def _create_layout(self) -> html.Div:
-        return html.Div(
-            id=self.divname, children=self.created_layout, style={"display": "none"}
+    def layout(self) -> html.Div:
+        """Returns the layout of the module.
+
+        Returns:
+            A Dash Div element.
+
+        Raises:
+            ValueError: If layout is not a list.
+        """
+        if isinstance(self._layout, list) is False:
+            raise ValueError(
+                f"Layout for DataViewCustom is expected to be a list, recieved: {type(self._layout)} - {self._layout}"
+            )
+
+        tables = self._extra_args.get(
+            "applies_to_tables", [self.settings.form_data_table]
         )
+        forms = self._extra_args.get("applies_to_forms", self.settings.form_list)
+        assert isinstance(tables, list)
+        assert isinstance(forms, list)
 
-    def layout(self):
-        """Returns the layout of the module."""
-        tables = self._layout.get("applies_to_tables") or self._layout.get("applies_to_table")
-        if tables is None:
-            self.applies_to_table = [self.settings.form_data_table]
-        elif isinstance(tables, str):
-            self.applies_to_table = [tables]
-        else:
-            self.applies_to_table = list(tables)
+        created_layout = []
+        for item in self._layout:
+            created_layout.extend(self.build_layout(item))
 
-        forms = self._layout.get("applies_to_forms")
-        if forms is None:
-            self.applies_to_forms = self.settings.form_list
-        elif isinstance(forms, str):
-            self.applies_to_forms = [forms]
-        else:
-            self.applies_to_forms = list(forms)
-
-        self.created_layout = self.build_layout(self._layout["layout"])
-        self.module_callbacks()
         super().__init__(
-            applies_to_tables=self.applies_to_table,
-            applies_to_forms=self.applies_to_forms,
+            applies_to_tables=tables,
+            applies_to_forms=forms,
         )
-        return self._create_layout()
+        return html.Div(
+            id=self.divname, children=created_layout, style={"display": "none"}
+        )
 
     def module_callbacks(self) -> None:
         """Registers the module callbacks."""
         pass
 
     @classmethod
-    def from_yaml(cls, yaml_path):
-        config = config_parser_yaml(yaml_path)
-        return cls.from_dict(config[0])
+    def from_yaml(cls, *args, **kwargs):
+        """Configures and instantiates the custom view dynamically from configuration dictionary properties.
+
+        Args:
+            *args: Positional arguments.
+            **kwargs: Configuration dictionary properties.
+
+        Returns:
+            An instance of DataViewCustom.
+        """
+        return cls(*args, _from_config_file=True, **kwargs)
 
     @classmethod
     def from_dict(cls, config_dict):
+        """Configures and instantiates the custom view dynamically from a configuration dictionary.
+
+        Args:
+            config_dict: Dictionary representing the layout configuration.
+
+        Returns:
+            An instance of DataViewCustom.
+        """
         logger.info(f"Initializing class '{cls.__name__}' from dict object")
         logger.debug(config_dict)
 
@@ -268,7 +335,7 @@ class DataViewCustom(DataEditorDataView):
         lines = [
             f"DataViewCustom #{self.module_number}",
             f"  divname:            {self.divname}",
-            f"  applies_to_tables:  {self.applies_to_table}",
+            f"  applies_to_tables:  {self.applies_to_tables}",
             f"  applies_to_forms:   {self.applies_to_forms}",
             # f"  components:         {len(self.created_layout)} top-level component(s)",
             "",
@@ -307,6 +374,16 @@ class DataViewCustom(DataEditorDataView):
 def convert_node(
     node: dict | list, applies_to_tables=None, applies_to_forms=None
 ) -> dict | list:
+    """Recursively converts or updates properties within a layout node config tree.
+
+    Args:
+        node: Target dictionary or list node.
+        applies_to_tables: List of applicable tables.
+        applies_to_forms: List of applicable forms.
+
+    Returns:
+        The converted node structure.
+    """
     logger.debug(
         f"node: {node}\ntables: {applies_to_tables}\nforms: {applies_to_forms}"
     )

@@ -1,0 +1,33 @@
+type: DataViewCustom
+layout:
+  - type: row
+    children:
+      - type: col
+        children:
+          - type: microlayout
+            label: Internett_salg
+            applies_to_table: skjemadata
+            applies_to_forms:
+              - RA-0187
+              - RA-0745
+            field_name_col: "feltsti"
+            field_value_col: "verdi"
+            layout:
+              - type: header
+                label: Omsetning i Varehandelen
+                size: md
+  - type: col
+    children:
+    - type: microlayout
+      label: Internett_salg
+      applies_to_table: skjemadata
+      applies_to_forms:
+        - RA-0187
+      field_name_col: "feltstier"
+      field_value_col: "verdier"
+      form_data_table: "ny"
+      layout:
+        - type: header
+          label: Omsetning i Varehandelen
+          size: md
+        - type: row

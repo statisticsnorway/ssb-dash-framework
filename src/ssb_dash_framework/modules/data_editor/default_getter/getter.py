@@ -4,7 +4,7 @@ from typing import Any, Literal
 from dash import no_update
 import ibis.selectors as s
 import pandas as pd
-from ssb_dash_framework.modules.data_editor.modules.helper_buttons.meta import ContactInfo
+from ..modules.helper_buttons.meta import ContactInfo
 import tzlocal
 from ibis import _
 from pandas import Series
@@ -20,12 +20,11 @@ from ..modules.microlayout.microlayout_components.editable_field_model import (
     FieldCallbackContainer,
 )
 from ..utils import EditorSettings
-from ..modules.sidebar.meta import RefnrStatus
+from ..modules.sidebar.meta import RefnrStatus, RefnrStatusExtended
 from .form_cache import FormGetterCached
 
 logger = logging.getLogger(__name__)
 local_tz = tzlocal.get_localzone()
-
 
 class StandardDataHandler(FetcherMeta):
 
@@ -101,7 +100,7 @@ class StandardDataHandler(FetcherMeta):
 
     def get_refnrs_by_period_ident(
         self, settings: EditorSettings, ident: str, period: str
-    ) -> pd.DataFrame:
+    ) -> list[RefnrStatusExtended]:
 
         with get_connection() as conn:
             t = conn.table("skjemamottak")
@@ -119,6 +118,7 @@ class StandardDataHandler(FetcherMeta):
                     "kommentar",
                     "aktiv",
                 )
+                #.rename({"editert": "status"})
                 .execute()
             )
             # data["dato_mottatt"] = (
@@ -127,8 +127,12 @@ class StandardDataHandler(FetcherMeta):
             # .dt.tz_localize(None)
             # .dt.strftime("%Y-%m-%d %H:%M:%S")
             # )
-        # print(data)
-        return data
+
+        data = data.rename(columns={"editert": "status"})
+
+        entries = data.to_dict(orient="records")
+
+        return [RefnrStatusExtended.model_validate(entry) for entry in entries]
 
     def get_info_row_fields(
         self,

@@ -260,6 +260,14 @@ class TimeseriesView(ValueNode):
     switchable: bool = Field(default=True)
 
     def create(self, options: CreateArguments) -> tuple:
+        """Creates the visual Plotly/AgGrid trend component.
+
+        Args:
+            options: Constructor properties containing settings and fetchers.
+
+        Returns:
+            A tuple containing the compiled TimeseriesAio element and None.
+        """
         internal_id = str(uuid.uuid4())
 
         return (
@@ -283,6 +291,14 @@ class DynamicListView(ValueNode):
     switchable: bool = Field(default=True)
 
     def create(self, options: CreateArguments) -> tuple:
+        """Creates the dynamic list spreadsheet manager component.
+
+        Args:
+            options: Constructor properties containing settings and fetchers.
+
+        Returns:
+            A tuple containing the DynamicListEditor element and None.
+        """
         internal_id = str(uuid.uuid4())
 
         return (
@@ -306,6 +322,14 @@ class CalculatedField(ValueNode):
     # constants: dict[str, str] = Field(default_factory=dict)
 
     def create(self, options: CreateArguments) -> tuple[html.Div, None]:
+        """Creates the clientside calculated field with auto-wired Javascript math logic.
+
+        Args:
+            options: Constructor properties containing settings and fetchers.
+
+        Returns:
+            A tuple containing the readonly Input component Div and None.
+        """
         # self.create_callback()
         fn_template = string.Template(
             """
@@ -607,7 +631,20 @@ def _flatten_ids(
 
 
 class Layout:
+    """Configuration parser and compiler converting lists of node configurations to Dash forms.
+
+    Attributes:
+        nodes: Tree-like list of validated Node Pydantic configuration items.
+        aio_id: Unique UUID string isolating the generated fields.
+    """
+
     def __init__(self, data: list, aio_id: str) -> None:
+        """Initializes the Layout from raw layout list config.
+
+        Args:
+            data: Tree list representation of rows, cols, and inputs.
+            aio_id: Isolated namespace UUID.
+        """
         parsed_nodes: list[Node] = NodeListAdapter.validate_python(data)
         self.nodes = parsed_nodes
         self.aio_id = aio_id
@@ -615,6 +652,15 @@ class Layout:
     def build(
         self, fetcher: MicrolayoutMeta, settings: EditorSettings
     ) -> tuple[list[Any], Sequence[FieldCallbackContainer]]:
+        """Builds and compiles all children nodes into actual visual layout widgets.
+
+        Args:
+            fetcher: Database query handler.
+            settings: Active editor configuration settings.
+
+        Returns:
+            A tuple containing the list of built Dash widgets and collected FieldCallbackContainers.
+        """
         layout_list = []
         ids = []
         options = CreateArguments(

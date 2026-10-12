@@ -1,5 +1,6 @@
 import inspect
 import os
+from abc import ABC
 from typing import Any
 from typing import Literal
 
@@ -8,18 +9,46 @@ from pydantic import field_validator
 from pydantic import model_validator
 
 from ..setup.variableselector.set_variables import VariableSelectorConfig
-from ..utils.implementations import TabImplementation
-from ..utils.implementations import WindowImplementation
+from .yaml_parser import config_parser_yaml
+
+
+class YamlLoadable(ABC):
+    def __init_subclass__(cls) -> None:
+        _register_module(cls)
+        return super().__init_subclass__()
+
+    @classmethod
+    def from_yaml_path(cls, yaml_path: str):
+        """Method for reading a yaml file and parsing the contained module/layout"""
+        config = config_parser_yaml(yaml_path)
+        if isinstance(config, list):
+            return cls.from_yaml(*config)
+        else:
+            return cls.from_yaml(**config)
+
+    @classmethod
+    def from_yaml(cls, *args: Any, **kwargs: Any):
+        """Base class for loading modules and other classes from a yaml config.
+
+        The method has a default implementation so you dont have to write it yourself, but the option
+        to overwrite it remains for complicated modules. For examples modules that need specific
+        class instances for __init__.
+        """
+        if "as_type" in kwargs:
+            kwargs.pop("as_type")
+        if "window_scrollable" in kwargs:
+            kwargs.pop("window_scrollable")
+        return cls(*args, **kwargs)
 
 
 class RegisteredModule(BaseModel):
-    type: str
+    type: type[YamlLoadable]
     as_tab: str | None
     as_window: str | None
     kwargs: list[str]
 
 
-_MODULE_REGISTRY: list[RegisteredModule] = list()
+_MODULE_REGISTRY: list[RegisteredModule] = []
 
 
 def get_module_registry():
@@ -30,7 +59,9 @@ def get_module_registry():
 def get_from_module_registry(module_name: str) -> RegisteredModule:
     """Gets a registered module from the registry."""
     global _MODULE_REGISTRY
-    hits = [module for module in _MODULE_REGISTRY if module.type == module_name]
+    hits = [
+        module for module in _MODULE_REGISTRY if module.type.__name__ == module_name
+    ]
     if len(hits) < 1:
         for i in _MODULE_REGISTRY:
             print(i)
@@ -40,70 +71,31 @@ def get_from_module_registry(module_name: str) -> RegisteredModule:
     return hits[0]
 
 
-def register_module(as_tab: str | None = None, as_window: str | None = None):
-    # TODO: consider gathering all modules to be registered to a list, and then registering after
-    # running 'register_implementation_modules()' to prevent unnecessary manual registering.
-    """Decorator for registering a module that does not use TabImplementation or WindowImplementation."""
-
-    def decorator(module):
-        registry = get_module_registry()
-        if module.__name__ in [
-            registered_module.type for registered_module in registry
-        ]:
-            raise ValueError(f"Module '{module.__name__}' is already registered")
-        model_signature = inspect.signature(module)
-        registry.append(
-            RegisteredModule(
-                type=module.__name__,
-                as_tab=as_tab,
-                as_window=as_window,
-                kwargs=list(model_signature.parameters.keys()),
-            )
+def _register_module(module):
+    registry = get_module_registry()
+    if module.__name__ in [
+        registered_module.type.__name__ for registered_module in registry
+    ]:
+        raise ValueError(f"Module '{module.__name__}' is already registered")
+    model_signature = inspect.signature(module)
+    registry.append(
+        RegisteredModule(
+            type=module,
+            as_tab=None,
+            as_window=None,
+            kwargs=list(model_signature.parameters.keys()),
         )
-        return module
-
-    return decorator
-
-
-def register_implementation_modules():
-    tabs = {
-        base: cls
-        for cls in TabImplementation.__subclasses__()
-        for base in cls.__bases__
-        if base is not TabImplementation
-    }
-    windows = {
-        base: cls
-        for cls in WindowImplementation.__subclasses__()
-        for base in cls.__bases__
-        if base is not WindowImplementation
-    }
-    modules = list(set(tabs) | set(windows))
-    for module in modules:
-        if module.__name__ in [
-            registered_module.type for registered_module in get_module_registry()
-        ]:
-            raise ValueError(f"Module '{module.__name__}' is already registered")
-        model_signature = inspect.signature(module)
-        _MODULE_REGISTRY.append(
-            RegisteredModule(
-                type=module.__name__,
-                as_tab=tabs[module].__name__ if module in tabs else None,
-                as_window=windows[module].__name__ if module in windows else None,
-                kwargs=list(model_signature.parameters.keys()),
-            )
-        )
-
-
-def register_modules():
-    register_implementation_modules()
+    )
+    return module
 
 
 class AppSettings(BaseModel):
     """Maps 1-to-1 onto the arguments of app_setup()."""
 
     port: int
-    service_prefix: str = os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
+    service_prefix: str = (
+        os.getenv("DAPLA_ENVIRONMENT") and os.getenv("JUPYTERHUB_SERVICE_PREFIX", "/")
+    ) or ""
     stylesheet: str = "darkly"
     enable_logging: bool = True
     logging_level: Literal["debug", "info", "warning", "error", "critical"] = "info"
