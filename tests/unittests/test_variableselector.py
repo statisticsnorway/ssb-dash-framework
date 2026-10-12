@@ -1,9 +1,9 @@
 from dash import Input
 from dash import State
 
+from ssb_dash_framework import VariableSelectorConfig
 from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.setup.variableselector import VariableSelectorOption
-from ssb_dash_framework import VariableSelectorConfig
 from ssb_dash_framework.setup.variableselector.time_unit import TimeUnit
 from ssb_dash_framework.setup.variableselector.time_unit import TimeUnitType
 
@@ -54,10 +54,12 @@ def test_get_all_states_options_order() -> None:
     VariableSelectorConfig(
         refnr="refnr",
         ident="ident",
-        time_units=TimeUnit(name="iso_period", frequency=TimeUnitType.MONTH),
+        time_units=TimeUnit(name="iso_periode", frequency=TimeUnitType.MONTH),
         grouping_variables=["altinnskjema", "variabel"],
     )
-    expected_order = VariableSelector.get_state(["iso_period", "ident", "refnr", "altinnskjema", "variabel"])
+    expected_order = VariableSelector.get_state(
+        ["iso_periode", "ident", "refnr", "altinnskjema", "variabel"]
+    )
 
     actual = VariableSelector.get_all_states()
     assert (
@@ -77,18 +79,18 @@ def test_get_input_state() -> None:
     VariableSelectorOption("kvartal")
 
     for variable in variables:
-        assert VariableSelector.get_input(variable, "title") == [Input(
-            f"var-{variable}", "value"
-        )]
-        assert VariableSelector.get_input(f"var-{variable}", "id") == [Input(
-            f"var-{variable}", "value"
-        )]
-        assert VariableSelector.get_state(variable, "title") == [State(
-            f"var-{variable}", "value"
-        )]
-        assert VariableSelector.get_state(f"var-{variable}", "id") == [State(
-            f"var-{variable}", "value"
-        )]
+        assert VariableSelector.get_input(variable, "title") == [
+            Input(f"var-{variable}", "value")
+        ]
+        assert VariableSelector.get_input(f"var-{variable}", "id") == [
+            Input(f"var-{variable}", "value")
+        ]
+        assert VariableSelector.get_state(variable, "title") == [
+            State(f"var-{variable}", "value")
+        ]
+        assert VariableSelector.get_state(f"var-{variable}", "id") == [
+            State(f"var-{variable}", "value")
+        ]
 
 
 def test_custom_title() -> None:

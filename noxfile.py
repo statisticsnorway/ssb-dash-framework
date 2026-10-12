@@ -30,6 +30,7 @@ def install_with_uv(
     session: Session,
     *,
     only_groups: list[str] | None = None,
+    groups: list[str] | None = None,
     all_extras: bool = False,
     locked: bool = True,
 ) -> None:
@@ -41,6 +42,8 @@ def install_with_uv(
         groups = only_groups or []  # if only_groups is None or empty, groups becomes []
         for group in groups:
             cmd.extend(["--only-group", group])
+    for group in groups or []:
+        cmd.extend(["--group", group])
     if all_extras:
         cmd.append("--all-extras")
     cmd.append(
@@ -161,7 +164,7 @@ def precommit(session: Session) -> None:
 def mypy(session: Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or ["src", "tests"]
-    install_with_uv(session)
+    install_with_uv(session, groups=["e2e"])
     session.run("mypy", *args)
     if not session.posargs:
         session.run("mypy", f"--python-executable={sys.executable}", "noxfile.py")
@@ -180,11 +183,35 @@ def tests(session: Session) -> None:
             "pytest",
             "-o",
             "pythonpath=",
-            *session.posargs,
+            *(session.posargs or ["tests/unittests"]),
         )
     finally:
         if session.interactive:
             session.notify("coverage", posargs=[])
+
+
+@session(python=python_versions[0])
+def e2e(session: Session) -> None:
+    """Run the Playwright smoke tests against every demo app."""
+    install_with_uv(session, groups=["e2e"])
+    install_args = ["playwright", "install", "chromium"]
+    if os.environ.get("CI"):
+        install_args.append("--with-deps")
+    session.run(*install_args)
+    session.run(
+        "pytest",
+        "-o",
+        "pythonpath=",
+        *(
+            session.posargs
+            or [
+                "tests/e2e",
+                "--tracing=retain-on-failure",
+                "--screenshot=only-on-failure",
+                "--output=test-results/e2e",
+            ]
+        ),
+    )
 
 
 @session(python=python_versions[0])
