@@ -23,7 +23,7 @@ modules: # Here you can add more modules and tailor your app to your needs.
         form_list:
           - RA-0745
           - RA-0187
-        period_col: iso_period
+        period_col: iso_periode
         ident_col: ident
         refnr_col: refnr
         form_name_col: skjema

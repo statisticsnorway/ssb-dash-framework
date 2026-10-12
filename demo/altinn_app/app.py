@@ -35,7 +35,7 @@ app, tab_list, window_list = build_app_from_config(config)
 def get_enheter_data(*args, **kwargs):
     with get_connection() as conn:
         t = conn.table("enheter")
-        return t.select(["iso_period", "skjema", "ident"]).to_pandas()
+        return t.select(["iso_periode", "skjema", "ident"]).to_pandas()
 
 
 window_list.append(
@@ -44,7 +44,7 @@ window_list.append(
         inputs=["periode"],
         states=[],
         get_data_func=get_enheter_data,
-        output=["iso_period", "skjema", "ident"],
+        output=["iso_periode", "skjema", "ident"],
         output_varselector_name=["periode", "altinnskjema", "ident"],
     )
 )

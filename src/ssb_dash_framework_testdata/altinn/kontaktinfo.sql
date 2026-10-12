@@ -7,7 +7,7 @@
 -- Each form has 3 units that are present in every period.
 
 -- RA-0187: one row per active submission
-INSERT INTO kontaktinfo (iso_period, skjema, ident, refnr, kontaktperson, epost, telefon, bekreftet_kontaktinfo, kommentar_kontaktinfo, kommentar_krevende) VALUES
+INSERT INTO kontaktinfo (iso_periode, skjema, ident, refnr, kontaktperson, epost, telefon, bekreftet_kontaktinfo, kommentar_kontaktinfo, kommentar_krevende) VALUES
     ('2026-01', 'RA-0187', '12111111', '1043f5eb9897', 'NNAMREIB DRANOEL O', 'dranoel.nnamreib@ssb.no', '99889988', '1', NULL, NULL),
     ('2026-01', 'RA-0187', '12222222', '0e91287fe6da', 'GRETE GRØNN', 'grete.gronn@example.no', '40404040', '1', NULL, NULL),
     ('2026-01', 'RA-0187', '12333333', '2ec970116695', 'NILS NORDAVIND', NULL, '41414141', '1', NULL, NULL),
@@ -46,7 +46,7 @@ INSERT INTO kontaktinfo (iso_period, skjema, ident, refnr, kontaktperson, epost,
     ('2026-12', 'RA-0187', '12333333', 'f27caa26b082', 'NILS NORDAVIND', NULL, '41414141', '1', NULL, NULL);
 
 -- RA-0745: one row per active submission
-INSERT INTO kontaktinfo (iso_period, skjema, ident, refnr, kontaktperson, epost, telefon, bekreftet_kontaktinfo, kommentar_kontaktinfo, kommentar_krevende) VALUES
+INSERT INTO kontaktinfo (iso_periode, skjema, ident, refnr, kontaktperson, epost, telefon, bekreftet_kontaktinfo, kommentar_kontaktinfo, kommentar_krevende) VALUES
     ('2024', 'RA-0745', 'ATF2134660', 'f7d1ca75eddd', 'DOLLY DUCK', NULL, '12345678', '1', NULL, NULL),
     ('2024', 'RA-0745', 'ATF2134661', 'bbd0615e340c', 'SOLVEIG SOL', 'solveig.sol@example.no', '90909090', '1', NULL, NULL),
     ('2024', 'RA-0745', 'ATF2134662', '9d11f653e144', 'VEGARD VESTRE', 'vegard.vestre@example.no', '91919191', '1', NULL, NULL),

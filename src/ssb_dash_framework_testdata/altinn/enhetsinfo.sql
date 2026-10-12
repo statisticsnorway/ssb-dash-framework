@@ -1,5 +1,5 @@
 -- Testdata for the `enhetsinfo` table (INSERT statements only).
--- Long-format unit metadata: one row per (period, unit, variable).
+-- Long-format unit metadata: one row per (period, unit, variabel).
 -- The table is created by schema_sqlite.sql / schema_postgres.sql; `id` is
 -- omitted so new rows can be appended without renumbering.
 --
@@ -7,7 +7,7 @@
 -- Each form has 3 units that are present in every period.
 
 -- RA-0187 / 12111111 (PER MORTEN HOLDINGS AS)
-INSERT INTO enhetsinfo (iso_period, ident, variable, verdi) VALUES
+INSERT INTO enhetsinfo (iso_periode, ident, variabel, verdi) VALUES
     ('2026-01', '12111111', 'enhetsIdent', '12111111'),
     ('2026-01', '12111111', 'enhetsType', 'BEDR'),
     ('2026-01', '12111111', 'enhetsOrgNr', '111222111'),
@@ -106,7 +106,7 @@ INSERT INTO enhetsinfo (iso_period, ident, variable, verdi) VALUES
     ('2026-12', '12111111', 'enhetsAvdeling', 'AVD SKATTEFNUSK');
 
 -- RA-0187 / 12222222 (GRETE SIN GRØNNSAKSHAGE AS)
-INSERT INTO enhetsinfo (iso_period, ident, variable, verdi) VALUES
+INSERT INTO enhetsinfo (iso_periode, ident, variabel, verdi) VALUES
     ('2026-01', '12222222', 'enhetsIdent', '12222222'),
     ('2026-01', '12222222', 'enhetsType', 'BEDR'),
     ('2026-01', '12222222', 'enhetsOrgNr', '111222222'),
@@ -205,7 +205,7 @@ INSERT INTO enhetsinfo (iso_period, ident, variable, verdi) VALUES
     ('2026-12', '12222222', 'enhetsAvdeling', 'AVD DRIVHUS');
 
 -- RA-0187 / 12333333 (NORDLYS OG NORDAVIND ANS)
-INSERT INTO enhetsinfo (iso_period, ident, variable, verdi) VALUES
+INSERT INTO enhetsinfo (iso_periode, ident, variabel, verdi) VALUES
     ('2026-01', '12333333', 'enhetsIdent', '12333333'),
     ('2026-01', '12333333', 'enhetsType', 'FRTK'),
     ('2026-01', '12333333', 'enhetsOrgNr', '111222333'),
@@ -304,7 +304,7 @@ INSERT INTO enhetsinfo (iso_period, ident, variable, verdi) VALUES
     ('2026-12', '12333333', 'enhetsAvdeling', NULL);
 
 -- RA-0745 / ATF2134660 (KVITSØY OG RØST REVISJON)
-INSERT INTO enhetsinfo (iso_period, ident, variable, verdi) VALUES
+INSERT INTO enhetsinfo (iso_periode, ident, variabel, verdi) VALUES
     ('2024', 'ATF2134660', 'enhetsIdent', 'ATF2134660'),
     ('2024', 'ATF2134660', 'enhetsType', 'FRTK'),
     ('2024', 'ATF2134660', 'enhetsOrgNr', '910346601'),
@@ -331,7 +331,7 @@ INSERT INTO enhetsinfo (iso_period, ident, variable, verdi) VALUES
     ('2026', 'ATF2134660', 'enhetsAvdeling', NULL);
 
 -- RA-0745 / ATF2134661 (SOLSIDEN GÅRD OG BEITE)
-INSERT INTO enhetsinfo (iso_period, ident, variable, verdi) VALUES
+INSERT INTO enhetsinfo (iso_periode, ident, variabel, verdi) VALUES
     ('2024', 'ATF2134661', 'enhetsIdent', 'ATF2134661'),
     ('2024', 'ATF2134661', 'enhetsType', 'BEDR'),
     ('2024', 'ATF2134661', 'enhetsOrgNr', '910346602'),
@@ -358,7 +358,7 @@ INSERT INTO enhetsinfo (iso_period, ident, variable, verdi) VALUES
     ('2026', 'ATF2134661', 'enhetsAvdeling', 'AVD ENG');
 
 -- RA-0745 / ATF2134662 (VESTRE FJØS OG ÅKER SA)
-INSERT INTO enhetsinfo (iso_period, ident, variable, verdi) VALUES
+INSERT INTO enhetsinfo (iso_periode, ident, variabel, verdi) VALUES
     ('2024', 'ATF2134662', 'enhetsIdent', 'ATF2134662'),
     ('2024', 'ATF2134662', 'enhetsType', 'BEDR'),
     ('2024', 'ATF2134662', 'enhetsOrgNr', '910346603'),
