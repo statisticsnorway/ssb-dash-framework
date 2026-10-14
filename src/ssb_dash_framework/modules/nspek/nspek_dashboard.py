@@ -771,8 +771,6 @@ class NspekDashboard(ModuleBase):
         logger.debug("TIME UNITS %s", self.time_units)
 
         super().__init__()
-        
-        module_validator(self)
 
     def _is_valid(self) -> None:
         for var in NspekDashboard._required_variables:
