@@ -38,8 +38,8 @@ from .modules import MapDisplay
 from .modules import MultiModule
 from .modules import Naeringsspesifikasjon
 from .modules import NspekControls
-from .modules import NspekControlViewTab
-from .modules import NspekControlViewWindow
+from .modules import NspekControlView
+from .modules import NspekDashboard
 from .modules import ParquetEditor
 from .modules import ParquetEditorChangelog
 from .modules import PimemorizerTab
@@ -112,6 +112,7 @@ __all__ = [
     "NspekControlViewTab",
     "NspekControlViewWindow",
     "NspekControls",
+    "NspekDashboard",
     "ParquetEditor",
     "ParquetEditorChangelog",
     "PimemorizerTab",
