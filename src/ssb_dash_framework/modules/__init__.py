@@ -23,11 +23,8 @@ from .data_editor import EditorSettings
 from .data_editor import StandardDataHandler
 from .nspek import Naeringsspesifikasjon
 from .nspek import NspekControls
-from .nspek import NspekControlViewTab
-from .nspek import NspekControlViewWindow
+from .nspek import NspekControlView
 from .nspek import NspekDashboard
-from .nspek import NspekDashboardTab
-from .nspek import NspekDashboardWindow
 from .parquet_editor import ParquetEditor
 from .parquet_editor import ParquetEditorChangelog
 from .parquet_editor import apply_edits
@@ -63,8 +60,6 @@ __all__ = [
     "NspekControlViewWindow",
     "NspekControls",
     "NspekDashboard",
-    "NspekDashboardTab",
-    "NspekDashboardWindow",
     "ParquetEditor",
     "ParquetEditorChangelog",
     "PimemorizerTab",

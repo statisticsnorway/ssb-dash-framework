@@ -27,8 +27,7 @@ from ibis import _
 from pandas.core.frame import DataFrame
 
 from ...setup.variableselector import VariableSelector
-from ...utils import TabImplementation
-from ...utils import WindowImplementation
+from ...utils import ModuleBase
 from ...utils.alert_handler import create_alert
 from ...utils.module_validation import module_validator
 from .nspek_utils import get_nspek_connection
@@ -745,7 +744,7 @@ def get_nspek_distribution_data(aar: int) -> pd.DataFrame:
     )
 
 
-class NspekDashboard:
+class NspekDashboard(ModuleBase):
     """The Naeringsspesifikasjon module lets you view the nspek/naeringsspesifikasjon for a specified foretak (var-ident)."""
 
     _id_number: ClassVar[int] = 0
@@ -755,13 +754,11 @@ class NspekDashboard:
         ]
     )
 
-    def __init__(self, time_units: list[str], db_user: str | None) -> None:
+    def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
         """Explanation of module."""
         #set_nspek_connection(
         #    db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
         #)
-        self.module_number = NspekDashboard._id_number
-        self.module_name = self.__class__.__name__
         self.icon = DashIconify(icon="feather:activity", width=24)
         self.label = "NSPEK Status"
 
@@ -774,8 +771,8 @@ class NspekDashboard:
         ]
         logger.debug("TIME UNITS %s", self.time_units)
 
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
+        super().__init__()
+        
         module_validator(self)
 
     def _is_valid(self) -> None:
@@ -1614,7 +1611,7 @@ class NspekDashboard:
         return html.Div(table, className="ssb-table-wrapper")
 
 
-    def _create_layout(self):
+    def layout(self):
         return html.Div(
             [
                 dbc.Modal(
@@ -2538,29 +2535,3 @@ class NspekDashboard:
                 return "glossary-popup open"
 
             return "glossary-popup"
-
-
-class NspekDashboardTab(TabImplementation, NspekDashboard):
-    """NaeringsspesifikasjonTab is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
-
-    def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
-        """Initializes the NaeringsspesifikasjonTab class."""
-        NspekDashboard.__init__(self, time_units=time_units, db_user=db_user)
-        TabImplementation.__init__(self)
-
-    def _internal_layout(self):
-        return self.layout()
-
-
-class NspekDashboardWindow(WindowImplementation, NspekDashboard):
-    """NaeringsspesifikasjonWindow is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
-
-    def __init__(
-        self, time_units: list[str], db_user: str | None = None, **kwargs: Any
-    ) -> None:
-        """Initializes the NaeringsspesifikasjonWindow class."""
-        NspekDashboard.__init__(self, time_units=time_units, db_user=db_user)
-        WindowImplementation.__init__(self, **kwargs)
-
-    def _internal_layout(self):
-        return self.layout()

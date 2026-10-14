@@ -1,6 +1,4 @@
 import logging
-from abc import ABC
-from abc import abstractmethod
 from typing import Any
 
 import dash_ag_grid as dag
@@ -21,8 +19,7 @@ from ssb_dash_framework import ControlFrameworkBase
 
 # from eimerdb import EimerDBInstance
 from ...setup.variableselector import VariableSelector
-from ...utils import TabImplementation
-from ...utils import WindowImplementation
+from ...utils import ModuleBase
 from ...utils.alert_handler import create_alert
 
 logger = logging.getLogger(__name__)
@@ -36,12 +33,10 @@ default_col_def = {
 }
 
 
-class NspekControlView(ABC):
+class NspekControlView(ModuleBase):
     """Nspek variant av ControlView - tett på original implementasjon,
     men med control_class og uten hard dependency på altinnskjema.
     """
-
-    _id_number: int = 0
 
     def __init__(
         self,
@@ -56,9 +51,6 @@ class NspekControlView(ABC):
 
         if outputs is None:
             outputs = ["ident", "foretak", "aar"]
-        self.module_number = NspekControlView._id_number
-        self.module_name = self.__class__.__name__
-        NspekControlView._id_number += 1
 
         self.icon = DashIconify(icon="feather:activity", width=24)
         self.label = "NSPEK Kontroll"
@@ -66,7 +58,6 @@ class NspekControlView(ABC):
         self.control_class = control_class
         self.outputs = outputs
         # self._is_valid()
-        self.module_layout = self.create_layout()
         self.variableselector = VariableSelector(
             selected_inputs=time_units,
             selected_states=[],
@@ -75,10 +66,9 @@ class NspekControlView(ABC):
             self.variableselector.get_option(x).id.removeprefix("var-")
             for x in time_units
         ]
-        self.module_callbacks()
-        module_validator(self)
+        super().__init__()
 
-    def create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
         """Generates the layout for the ControlView module.
 
         Returns:
@@ -251,17 +241,6 @@ class NspekControlView(ABC):
 
         return columns
 
-    @abstractmethod
-    def layout(self) -> html.Div:
-        """Defines the layout for the NspekControlView module.
-
-        This is an abstract method that must be implemented by subclasses to define the module's layout.
-
-        Returns:
-            html.Div: A Dash HTML Div component representing the layout of the module.
-        """
-        pass
-
     def module_callbacks(self) -> None:
 
         @callback(
@@ -414,37 +393,3 @@ class NspekControlView(ABC):
                 raise ValueError(
                     f"Something is wrong with 'self.outputs'. Should be a list with at least one string inside of it. Is currently: {self.outputs}"
                 )
-
-
-class NspekControlViewTab(TabImplementation, NspekControlView):
-    def __init__(
-        self, time_units: list[str], control_class: type[ControlFrameworkBase]
-    ):
-        NspekControlView.__init__(
-            self,
-            time_units=time_units,
-            control_class=control_class,
-        )
-        TabImplementation.__init__(self)
-
-    def _internal_layout(self):
-        return self.layout()
-
-
-class NspekControlViewWindow(WindowImplementation, NspekControlView):
-    def __init__(
-        self,
-        time_units: list[str],
-        control_class: type[ControlFrameworkBase],
-        **kwargs: Any,
-    ):
-
-        NspekControlView.__init__(
-            self,
-            time_units=time_units,
-            control_class=control_class,
-        )
-        WindowImplementation.__init__(self, **kwargs)
-
-    def _internal_layout(self):
-        return self.layout()

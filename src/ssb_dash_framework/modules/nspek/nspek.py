@@ -1461,7 +1461,8 @@ class Naeringsspesifikasjon(ModuleBase):
             if db_user
             else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
         )
-
+        self.can_write = self.db_user in WRITE_ENABLED_DB_USERS
+        set_nspek_connection(self.db_user)
         self.icon = DashIconify(icon="feather:book", width=24)
         self.label = "NSPEK"
 
