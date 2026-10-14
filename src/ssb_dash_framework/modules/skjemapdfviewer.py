@@ -11,7 +11,6 @@ import gcsfs
 
 from ..utils.base_classes import ModuleBase
 from ..setup.variableselector import VariableSelector
-from ssb_dash_framework.utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +33,8 @@ class SkjemapdfViewer(ModuleBase):
 
         self.is_valid(form_identifier)
 
+        super().__init__()
+
     def is_valid(self, form_identifier: str) -> None:
         """Validate the form identifier and PDF folder path.
 
@@ -53,7 +54,6 @@ class SkjemapdfViewer(ModuleBase):
             self.pdf_folder_path = self.pdf_folder_path[:-1]
             
         super().__init__()
-        module_validator(self)
 
     def layout(self) -> html.Div:
         """Generate the layout for the SkjemapdfViewer module.

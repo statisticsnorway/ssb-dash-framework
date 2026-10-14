@@ -16,7 +16,6 @@ from ..setup.variableselector import VariableSelector
 from ..setup.variableselector import TimeUnit
 from ..utils import ModuleBase
 from ..utils.alert_handler import AlertHandler
-from ssb_dash_framework.utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +43,7 @@ class Aarsregnskap(ModuleBase):
         self.icon = DashIconify(icon="feather:file-text", width=24)
         self._is_valid()
         super().__init__()
-        module_validator(self)
+
 
     def _is_valid(self) -> None:
         """Validates the presence of required variables in VariableSelector.

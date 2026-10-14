@@ -26,7 +26,6 @@ from pandas.core.frame import DataFrame
 from ...setup.variableselector import VariableSelector
 from ...utils import ModuleBase
 from ...utils.alert_handler import create_alert
-from ...utils.module_validation import module_validator
 from .nspek_control_engine import run_all_controls_for_sekvensnummer
 from .nspek_control_engine import run_controls_changed_fields_for_sekvensnummer
 from .nspek_controls import NspekControls
@@ -1348,7 +1347,6 @@ class Naeringsspesifikasjon(ModuleBase):
         logger.debug("TIME UNITS %s", self.time_units)
 
         super().__init__()
-        module_validator(self)
 
     def _is_valid(self) -> None:
         for var in Naeringsspesifikasjon._required_variables:

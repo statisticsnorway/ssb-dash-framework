@@ -17,7 +17,6 @@ from dash_iconify import DashIconify
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
 from ...utils import get_connection
-from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +51,6 @@ class FreeSearch(ABC):
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
-        module_validator(self)
 
     def _create_layout(self) -> html.Div:
         """Generate the default layout for the FreeSearch module.

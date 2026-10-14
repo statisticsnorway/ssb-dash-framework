@@ -19,7 +19,6 @@ import pandas as pd
 
 from ..setup.variableselector import VariableSelector
 from ..utils import AlertHandler, ModuleBase
-from ssb_dash_framework.utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -128,11 +127,11 @@ class BofInformation(ModuleBase):
         if not isinstance(variableselector_foretak_name, str):
             raise TypeError(f"Type for 'variableselector_foretak_name' must be 'str. Received: '{type(variableselector_foretak_name)}'")
         self.inputs = [variableselector_foretak_name]
-
+        
         self._is_valid()
-
+        
         super().__init__()
-        module_validator(self)
+
 
 
     def _is_valid(self) -> None:
