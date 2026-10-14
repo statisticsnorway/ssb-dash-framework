@@ -11,14 +11,11 @@ from dash import callback
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
-from dash.dependencies import State
 from dash.exceptions import PreventUpdate
 
+from ...utils import ModuleBase
 from ...setup.variableselector import VariableSelector
-from ...utils import TabImplementation
-from ...utils import WindowImplementation
-from ...utils.alert_handler import create_alert
-from ...utils.module_validation import module_validator
+from ...utils.alert_handler import AlertHandler
 
 logger = logging.getLogger(__name__)
 
@@ -34,14 +31,12 @@ class EditingTableConfig(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
-class EditingTable:
+class EditingTable(ModuleBase):
     """A reusable and flexible Dash component for editing tabular data.
 
     This component renders a Dash AgGrid table where the data is retrieved using a get_data function that takes *inputs and *states as *args.
     Optionally it can output clicked column values to the variable selector or update data using the dash ag grid attribute 'CellValueChanged'
     """
-
-    _id_number: int = 0
 
     def __init__(
         self,
@@ -72,9 +67,6 @@ class EditingTable:
             **kwargs: Additional keyword arguments for the Dash AgGrid component.
         """
         self.kwargs = kwargs
-        self.module_number = EditingTable._id_number
-        self.module_name = self.__class__.__name__
-        EditingTable._id_number += 1
 
         self.icon = "📒"
         self.label = label
@@ -87,18 +79,15 @@ class EditingTable:
         else:
             self.number_format = number_format
 
-        self.variableselector = VariableSelector(
-            selected_inputs=inputs, selected_states=states
-        )
+        self.inputs = inputs
+        self.states = states
         self.get_data = get_data_func
-        self.get_data_args = [x for x in self.variableselector.selected_variables]
         self.update_table_func = update_table_func
 
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
         self._is_valid()
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
-        module_validator(self)
+
+        super().__init__(**kwargs)
 
     def _is_valid(self) -> None:
         """Validate the component's configuration."""
@@ -162,10 +151,12 @@ class EditingTable:
         - Confirming edits (logging + updating table data) (`confirm_edit`).
         - Cancelling edits (reverting table to saved state) (`cancel_edit`).
         """
-        dynamic_states = [
-            self.variableselector.get_all_inputs(),
-            self.variableselector.get_all_states(),
-        ]
+        dynamic_states = []
+        for _input in self.inputs:
+            dynamic_states.append(VariableSelector.get_input(_input))
+        for _state in self.states:
+            dynamic_states.append(VariableSelector.get_state(_state))
+
 
         @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-tabelleditering-table1", "rowData"),
@@ -209,7 +200,7 @@ class EditingTable:
                 self.output_varselector_name, str
             ):
                 output_objects = [
-                    self.variableselector.get_output_object(
+                    VariableSelector.get_output_object(
                         variable=self.output_varselector_name
                     )
                 ]
@@ -218,7 +209,7 @@ class EditingTable:
                 self.output_varselector_name, list
             ):
                 output_objects = [
-                    self.variableselector.get_output_object(variable=var)
+                    VariableSelector.get_output_object(variable=var)
                     for var in self.output_varselector_name
                 ]
                 output_columns = self.output
@@ -278,19 +269,16 @@ class EditingTable:
         logger.debug("Adding functionality for immediate edits.")
 
         @callback(  # type: ignore[misc]
-            Output("alert_store", "data", allow_duplicate=True),
             Input(f"{self.module_number}-tabelleditering-table1", "cellValueChanged"),
-            State("alert_store", "data"),
             *dynamic_states,
             prevent_initial_call=True,
         )
         def make_edit(
             edited: list[dict[str, Any]],
-            error_log: list[dict[str, Any]],
             *dynamic_states: Any,
-        ) -> list[dict[str, Any]]:
+        ) -> None:
             logger.debug(
-                f"Args:\nedited: {edited}\nerror_log: {error_log}\ndynamic_states: {dynamic_states}"
+                f"Args:\nedited: {edited}\ndynamic_states: {dynamic_states}"
             )
             if not edited:
                 raise PreventUpdate
@@ -307,116 +295,10 @@ class EditingTable:
                 logger.info("Running update_table_func")
                 try:
                     self.update_table_func(edit, *dynamic_states)
-                    error_log = [
-                        create_alert(
-                            f"{variable} oppdatert fra {old_value} til {new_value}",
-                            "info",
-                            ephemeral=True,
-                        ),
-                        *error_log,
-                    ]
-
+                    AlertHandler.error(f"{variable} oppdatert fra {old_value} til {new_value}")
+                        
                 except Exception:
                     logger.error("Error updating table", exc_info=True)
-                    error_log = [
-                        create_alert(
-                            f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!",
-                            "error",
-                            ephemeral=True,
-                        ),
-                        *error_log,
-                    ]
+                    AlertHandler.error(f"Oppdatering av {variable} fra {old_value} til {new_value} feilet!")
+
             logger.debug("Finished update")
-            return error_log
-
-
-class EditingTableTab(TabImplementation, EditingTable):
-    """EditingTable embedded in a tab container."""
-
-    def __init__(
-        self,
-        label: str,
-        inputs: list[str],
-        states: list[str],
-        get_data_func: Callable[..., Any],
-        update_table_func: Callable[..., Any] | None = None,
-        output: str | None = None,
-        output_varselector_name: str | None = None,
-        number_format: str | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize the EditingTableTab.
-
-        Args:
-            label: The label for the tab or component, used for display purposes.
-            inputs: A list of input variable names that will trigger callbacks.
-            states: A list of state variable names used that will not trigger callbacks, but can be provided as args.
-            get_data_func: A function that returns a pandas dataframe.
-            update_table_func: A function for updating data based on edits in the AgGrid.
-                Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values.
-            output: Identifier for the table, used for callbacks. Defaults to None.
-            output_varselector_name: Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
-                If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
-            number_format: A d3 format string for formatting numeric values in the table. Defaults to None.
-                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
-            **kwargs: Additional keyword arguments for the Dash AgGrid component.
-        """
-        EditingTable.__init__(
-            self,
-            label=label,
-            inputs=inputs,
-            states=states,
-            get_data_func=get_data_func,
-            update_table_func=update_table_func,
-            output=output,
-            output_varselector_name=output_varselector_name,
-            number_format=number_format,
-            **kwargs,
-        )
-        TabImplementation.__init__(self)
-
-
-class EditingTableWindow(WindowImplementation, EditingTable):
-    """A class to implement an EditingTable module inside a modal."""
-
-    def __init__(
-        self,
-        label: str,
-        inputs: list[str],
-        states: list[str],
-        get_data_func: Callable[..., Any],
-        update_table_func: Callable[..., Any] | None = None,
-        output: str | None = None,
-        output_varselector_name: str | None = None,
-        number_format: str | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize the EditingTableWindow.
-
-        Args:
-            label: The label for the tab or component, used for display purposes.
-            inputs: A list of input variable names that will trigger callbacks.
-            states: A list of state variable names used that will not trigger callbacks, but can be provided as args.
-            get_data_func: A function that returns a pandas dataframe.
-            update_table_func: A function for updating data based on edits in the AgGrid.
-                Note, the update_table_func is provided with the dict from cellValueChanged[0] from the Dash AgGrid in addition the inputs and states values.
-            output: Identifier for the table, used for callbacks. Defaults to None.
-            output_varselector_name: Identifier for the variable selector. If list, make sure it is in the same order as output. Defaults to None.
-                If `output` is provided but `output_varselector_name` is not, it will default to the value of `output`.
-            number_format: A d3 format string for formatting numeric values in the table. Defaults to None.
-                If None, it will default to "d3.format(',.1f')(params.value).replace(/,/g, ' ')".
-            **kwargs: Additional keyword arguments for the Dash AgGrid component.
-        """
-        EditingTable.__init__(
-            self,
-            label=label,
-            inputs=inputs,
-            states=states,
-            get_data_func=get_data_func,
-            update_table_func=update_table_func,
-            output=output,
-            output_varselector_name=output_varselector_name,
-            number_format=number_format,
-            **kwargs,
-        )
-        WindowImplementation.__init__(self, **kwargs)

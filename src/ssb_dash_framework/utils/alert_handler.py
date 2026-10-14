@@ -2,9 +2,10 @@ import datetime
 import logging
 import time
 from typing import Any
+import copy
 
 import dash_bootstrap_components as dbc
-from dash import ALL
+from dash import ALL, Patch, set_props
 from dash import Input
 from dash import Output
 from dash import State
@@ -32,7 +33,7 @@ _DEFAULT_ICONS = {
 
 def create_alert(
     message: str,
-    color: str | None = "info",
+    color: str = "info",
     ephemeral: bool | None = False,
     position: str | None = "bottom-left",
     duration: int | None = 5,
@@ -89,6 +90,39 @@ class AlertHandler:
             return alert_log
     """
 
+    #_queue = []
+
+    @classmethod
+    def _add_alert(
+        cls,
+        msg: str,
+        color: str,
+        ephemeral: bool | None = False,
+        position: str | None = "bottom-left",
+        duration: int | None = 5,
+        icon: str | None = None,
+    ):
+        alert = create_alert(msg, color, ephemeral, position, duration, icon)
+        patch_obj = Patch()
+        patch_obj.append(alert)
+        set_props("alert_store", {"data": patch_obj})
+
+    @classmethod
+    def success(cls, msg: str, ephemeral: bool | None = False):
+        cls._add_alert(msg, "success", ephemeral=ephemeral)
+
+    @classmethod
+    def warning(cls, msg: str, ephemeral: bool | None = True):
+        cls._add_alert(msg, "warning", ephemeral=ephemeral)
+    
+    @classmethod
+    def error(cls, msg: str, ephemeral: bool | None = True):
+        cls._add_alert(msg, "warning", ephemeral=ephemeral)
+
+    @classmethod
+    def info(cls, msg: str, ephemeral: bool | None = False):
+        cls._add_alert(msg, "info", ephemeral=ephemeral)
+
     def __init__(self) -> None:
         """Initializes the AlertHandler instance.
 
@@ -126,6 +160,7 @@ class AlertHandler:
                     id="alert-container-top-right",
                     className="alert-container top-right",
                 ),
+                dcc.Interval(id="alert_pusher_to_store", interval=1000, n_intervals=0),
                 dcc.Interval(
                     id="alert_ephemeral_interval", interval=1000, n_intervals=0
                 ),  # Unsure of performance, check if maybe it should update less often.
@@ -200,6 +235,15 @@ class AlertHandler:
         Notes:
             - Alerts must be added to each callback to ensure proper functionality.
         """
+
+        #@callback(  # type: ignore[misc]
+        #    Output("alert_store", "data"), Input("alert_pusher_to_store", "n_intervals")
+        #)
+        #def push_local_queue(_n_intervals):
+        #    new_messages = self._drain()
+        #    patch_obj = Patch()
+        #    patch_obj.extend(new_messages)
+        #    return patch_obj
 
         @callback(  # type: ignore[misc]
             Output("alerts_modal", "is_open"),
@@ -372,11 +416,11 @@ class AlertHandler:
             Output("alert-container-bottom-left", "children"),
             Output("alert-container-center", "children"),
             Output("alert-container-top-right", "children"),
-            Input("alert_ephemeral_interval", "n_intervals"),
-            State("alert_store", "data"),
+            #Input("alert_ephemeral_interval", "n_intervals"),
+            Input("alert_store", "data"),
         )
         def display_ephemeral_alerts(
-            _: int, alerts: list[dict[str, Any]]
+            alerts: list[dict[str, Any]]
         ) -> tuple[list, list, list]:
             """Displays ephemeral alerts for 5 seconds.
 
@@ -418,6 +462,7 @@ class AlertHandler:
                             className="dialog-content",
                         ),
                     ],
+                    duration=a.get("duration", 6) * 1000,
                     dismissable=False,
                     className=f"ssb-dialog {a['color']} alert-toast {'alert-dying' if dying else ''}",
                 )

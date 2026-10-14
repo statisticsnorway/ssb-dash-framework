@@ -1,11 +1,11 @@
 """SSB Dash Framework."""
 
+from . import experimental
 from .config import AppConfig
 from .config import AppModules
 from .config import AppSettings
 from .config import ModuleConfig
 from .config import RegisteredModule
-from .config import VariableSelectorConfig
 from .config import apply_app_settings
 from .config import build_app_from_config
 from .config import build_modules
@@ -13,52 +13,29 @@ from .config import config_parser_yaml
 from .config import get_from_module_registry
 from .config import get_module_registry
 from .config import instantiate_module
-from .config import register_implementation_modules
-from .config import register_module
-from .config import register_modules
 from .config import run_app_from_config
 from .control import ControlFrameworkBase
 from .control import register_control
-from .experimental.modules.data_editor.core import DataEditor
-from .experimental.modules.data_editor.data_view.data_view_custom import DataViewCustom
 from .modules import Aarsregnskap
-from .modules import AarsregnskapTab
-from .modules import AarsregnskapWindow
-from .modules import AggDistPlotter
-from .modules import AggDistPlotterTab
-from .modules import AggDistPlotterWindow
-from .modules import AltinnControlViewTab
-from .modules import AltinnControlViewWindow
-from .modules import AltinnDataCapture
-from .modules import AltinnDataCaptureTab
-from .modules import AltinnDataCaptureWindow
 from .modules import BofInformation
-from .modules import BofInformationTab
-from .modules import BofInformationWindow
 from .modules import Canvas
-from .modules import CanvasTab
-from .modules import CanvasWindow
 from .modules import ControlView
-from .modules import ControlViewTab
-from .modules import ControlViewWindow
+from .modules import DataEditor
+from .modules import DataEditorContactInfo
+from .modules import DataEditorHistory
+from .modules import DataEditorInfoRow
+from .modules import DataEditorSidebarComment
+from .modules import DataEditorSidebarEditingStatus
+from .modules import DataEditorSupportTable
+from .modules import DataEditorSupportTables
+from .modules import DataEditorTable
+from .modules import DataEditorTableSelector
+from .modules import DataViewCustom
 from .modules import EditingTable
-from .modules import EditingTableTab
-from .modules import EditingTableWindow
+from .modules import EditorSettings
 from .modules import FigureDisplay
-from .modules import FigureDisplayTab
-from .modules import FigureDisplayWindow
-from .modules import FreeSearch
-from .modules import FreeSearchTab
-from .modules import FreeSearchWindow
-from .modules import HBMethod
-from .modules import HBMethodWindow
 from .modules import MapDisplay
-from .modules import MapDisplayTab
-from .modules import MapDisplayWindow
-from .modules import MicroLayoutAIO
 from .modules import MultiModule
-from .modules import MultiModuleTab
-from .modules import MultiModuleWindow
 from .modules import Naeringsspesifikasjon
 from .modules import NaeringsspesifikasjonTab
 from .modules import NaeringsspesifikasjonWindow
@@ -72,15 +49,13 @@ from .modules import ParquetEditor
 from .modules import ParquetEditorChangelog
 from .modules import PimemorizerTab
 from .modules import SkjemapdfViewer
-from .modules import SkjemapdfViewerTab
-from .modules import SkjemapdfViewerWindow
-from .modules import VisualizationBuilder
-from .modules import VisualizationBuilderWindow
+from .modules import StandardDataHandler
 from .modules import apply_edits
 from .modules import export_from_parqueteditor
 from .modules import get_export_log_path
 from .modules import get_log_path
 from .setup import VariableSelector
+from .setup import VariableSelectorConfig
 from .setup import VariableSelectorOption
 from .setup import app_setup
 from .setup import main_layout
@@ -88,11 +63,11 @@ from .setup import set_variables
 from .utils import AlertHandler
 from .utils import DebugInspector
 from .utils import DemoDataCreator
+from .utils import ModuleBase
 from .utils import TabImplementation
 from .utils import WindowImplementation
 from .utils import _get_connection_callable
 from .utils import _get_connection_object
-from .utils import _get_kostra_r
 from .utils import active_no_duplicates_refnr_list
 from .utils import conn_is_ibis
 from .utils import create_alert
@@ -100,7 +75,6 @@ from .utils import create_database
 from .utils import create_database_engine
 from .utils import enable_app_logging
 from .utils import get_connection
-from .utils import hb_method
 from .utils import ibis_filter_with_dict
 from .utils import module_validator
 from .utils import set_connection
@@ -112,57 +86,34 @@ from .utils import sidebar_button
 
 __all__ = [
     "Aarsregnskap",
-    "AarsregnskapTab",
-    "AarsregnskapWindow",
-    "AggDistPlotter",
-    "AggDistPlotterTab",
-    "AggDistPlotterWindow",
     "AlertHandler",
-    "AltinnControlViewTab",
-    "AltinnControlViewWindow",
-    "AltinnDataCapture",
-    "AltinnDataCaptureTab",
-    "AltinnDataCaptureWindow",
     "AppConfig",
     "AppModules",
     "AppSettings",
     "BofInformation",
-    "BofInformationTab",
-    "BofInformationWindow",
     "Canvas",
-    "CanvasTab",
-    "CanvasWindow",
     "ControlFrameworkBase",
     "ControlView",
-    "ControlViewTab",
-    "ControlViewWindow",
     "DataEditor",
+    "DataEditorContactInfo",
+    "DataEditorHistory",
+    "DataEditorInfoRow",
+    "DataEditorSidebarComment",
+    "DataEditorSidebarEditingStatus",
+    "DataEditorSupportTable",
+    "DataEditorSupportTables",
+    "DataEditorTable",
+    "DataEditorTableSelector",
     "DataViewCustom",
     "DebugInspector",
     "DemoDataCreator",
     "EditingTable",
-    "EditingTableTab",
-    "EditingTableWindow",
+    "EditorSettings",
     "FigureDisplay",
-    "FigureDisplayTab",
-    "FigureDisplayWindow",
-    "FreeSearch",
-    "FreeSearchTab",
-    "FreeSearchWindow",
-    "HBMethod",
-    "HBMethodWindow",
     "MapDisplay",
-    "MapDisplayTab",
-    "MapDisplayWindow",
-    "MicroLayoutAIO",
+    "ModuleBase",
     "ModuleConfig",
     "MultiModule",
-    "MultiModule",
-    "MultiModuleTab",
-    "MultiModuleTab",
-    "MultiModuleWindow",
-    "MultiModuleWindow",
-    "MultiModuleWindow",
     "Naeringsspesifikasjon",
     "NaeringsspesifikasjonTab",
     "NaeringsspesifikasjonWindow",
@@ -177,14 +128,11 @@ __all__ = [
     "PimemorizerTab",
     "RegisteredModule",
     "SkjemapdfViewer",
-    "SkjemapdfViewerTab",
-    "SkjemapdfViewerWindow",
+    "StandardDataHandler",
     "TabImplementation",
     "VariableSelector",
     "VariableSelectorConfig",
     "VariableSelectorOption",
-    "VisualizationBuilder",
-    "VisualizationBuilderWindow",
     "WindowImplementation",
     "_get_connection_callable",
     "_get_connection_object",
@@ -200,6 +148,7 @@ __all__ = [
     "create_database",
     "create_database_engine",
     "enable_app_logging",
+    "experimental",
     "export_from_parqueteditor",
     "get_connection",
     "get_export_log_path",
@@ -211,18 +160,10 @@ __all__ = [
     "main_layout",
     "module_validator",
     "register_control",
-    "register_implementation_modules",
-    "register_module",
-    "register_modules",
     "run_app_from_config",
     "set_connection",
     "set_postgres_connection",
     "set_sqlite_connection",
     "set_variables",
     "sidebar_button",
-    #    "hb_method",
-    #    "_get_kostra_r",
-    #    "th_error",
 ]
-
-register_modules()

@@ -7,7 +7,7 @@ def _build_yaml_loader(base_path: Path) -> type:
     class CustomLoader(yaml.SafeLoader):
         pass
 
-    def include_constructor(loader, node):
+    def include_constructor(loader: CustomLoader, node):
         include_path = Path(loader.construct_scalar(node))
         if not include_path.is_absolute():
             include_path = base_path / include_path
@@ -19,6 +19,6 @@ def _build_yaml_loader(base_path: Path) -> type:
 
 
 def config_parser_yaml(path: str) -> dict:
-    path = Path(path)
+    path_obj = Path(path)
     with open(path) as f:
-        return yaml.load(f, Loader=_build_yaml_loader(path.parent))
+        return yaml.load(f, Loader=_build_yaml_loader(path_obj.parent))

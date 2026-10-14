@@ -7,7 +7,8 @@ app_settings:
   variableselector:
     ident: orgnr
     time_units:
-      aar: 1
+      name: aar
+      frequency: year
 modules: # Here you can add more modules and tailor your app to your needs.
   tabs:
     - type: ParquetEditor

@@ -1,0 +1,43 @@
+from ssb_dash_framework import EditingTable
+
+def test_import() -> None:
+    assert EditingTable is not None
+
+
+def test_base_class() -> None:
+    EditingTable(
+        label="test",
+        inputs=[],
+        states=[],
+        get_data_func=lambda x: x,
+    )
+
+
+
+def test_get_update_data_calls() -> None:
+    def get_data() -> str:
+        return "Success"
+
+    def update_data() -> str:
+        return "Successfull update"
+
+    table = EditingTable(  # Test without defining update function.
+        label="test",
+        inputs=[],
+        states=[],
+        get_data_func=get_data,
+    )
+
+    assert table.get_data() == "Success", "Error when getting data from function."
+
+    table = EditingTable(
+        label="test",
+        inputs=[],
+        states=[],
+        get_data_func=get_data,
+        update_table_func=update_data,
+    )
+
+    assert table.get_data() == "Success", "Error when getting data from function."
+    assert table.update_table_func is not None
+    assert table.update_table_func() == "Successfull update"

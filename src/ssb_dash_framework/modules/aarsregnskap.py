@@ -1,32 +1,25 @@
-from abc import ABC
-from abc import abstractmethod
 import base64
 import io
 import logging
-from typing import ClassVar
-from typing import Any
 
 from PIL import Image
 from dash import callback, clientside_callback, dcc, html
 from dash import ClientsideFunction
-from dash.dependencies import Input, State
+from dash.dependencies import Input
 from dash.dependencies import Output
-from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash_iconify import DashIconify
 import gcsfs
 
 from ..setup.variableselector import VariableSelector
-from ..utils import TabImplementation
-from ..utils import WindowImplementation
-from ..utils.alert_handler import create_alert
-from ..utils.module_validation import module_validator
+from ..setup.variableselector import TimeUnit
+from ..utils import ModuleBase
+from ..utils.alert_handler import AlertHandler
 
 logger = logging.getLogger(__name__)
 
-
-class Aarsregnskap(ABC):
+class Aarsregnskap(ModuleBase):
     """Module for displaying annual financial statements (Årsregnskap).
 
     Attributes:
@@ -37,12 +30,6 @@ class Aarsregnskap(ABC):
         module_layout: The UI layout object returned by ``_create_layout()``.
     """
 
-    _id_number: ClassVar[int] = 0
-    module_number: int
-    module_name: str
-    label: str
-    icon: str | Component
-    module_layout: html.Div
 
     def __init__(
         self,
@@ -52,15 +39,10 @@ class Aarsregnskap(ABC):
         Sets up the label, validates required variables, and initializes the
         layout and callbacks for the module.
         """
-        self.module_number = Aarsregnskap._id_number
-        self.module_name = self.__class__.__name__
-        Aarsregnskap._id_number += 1
         self.label = "Årsregnskap"
         self.icon = DashIconify(icon="feather:file-text", width=24)
         self._is_valid()
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
-        module_validator(self)
+        super().__init__()
 
     def _is_valid(self) -> None:
         """Validates the presence of required variables in VariableSelector.
@@ -69,10 +51,6 @@ class Aarsregnskap(ABC):
             ValueError: If required variables ('var-aar' or 'var-foretak') are
                 not found in the VariableSelector.
         """
-        if "var-aar" not in [x.id for x in VariableSelector._variableselectoroptions]:
-            raise ValueError(
-                "var-aar not found in the VariableSelector. Please add it using '''VariableSelectorOption('aar')'''"
-            )
         if (
             "var-foretak"
             not in [  # TODO: Make it possible to define a separate value for fetching årsregnskap? Or keep it locked to foretak?
@@ -80,10 +58,10 @@ class Aarsregnskap(ABC):
             ]
         ):
             raise ValueError(
-                "var-foretak not found in the VariableSelector. Please add it using '''VariableSelectorOption('foretak')'''"
+                "var-foretak not found in the VariableSelector. Please add 'foretak' to the variableselector-config"
             )
 
-    def _create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
         """Generates the layout for the Årsregnskap module.
 
         Returns:
@@ -197,25 +175,14 @@ class Aarsregnskap(ABC):
         logger.debug("Generated layout")
         return layout
 
-    @abstractmethod
-    def layout(self) -> html.Div:
-        """Define the layout for the Aarsregnskap module.
-
-        This is an abstract method that must be implemented by subclasses to define the module's layout.
-
-        Returns:
-            html.Div: A Dash HTML Div component representing the layout of the module.
-        """
-        pass
-
     def module_callbacks(self) -> None:
         """Registers Dash callbacks for the Årsregnskap module."""
 
         @callback(  # type: ignore[misc]
             Output("tab-aarsregnskap-input-aar", "value"),
-            Input("var-aar", "value"),
+            VariableSelector.get_timevar(Input),
         )
-        def update_aar(aar: int) -> int:
+        def update_aar(period: str | None) -> int:
             """Update the year input field based on the selected year.
 
             Args:
@@ -224,6 +191,15 @@ class Aarsregnskap(ABC):
             Returns:
                 The updated year value.
             """
+            frequency = VariableSelector._time_unit
+            if frequency is None:
+                raise PreventUpdate
+
+            if period is None:
+                raise PreventUpdate
+
+            selected_period = TimeUnit.parse(frequency, period)
+            aar = selected_period.dt.year
             logger.debug(f"Args:\naar: {aar}\n")
             return aar
 
@@ -250,13 +226,11 @@ class Aarsregnskap(ABC):
             Output("tab-aarsregnskap-img-container", "style"),
             Output("tab-aarsregnskap-zoom-controls", "style"),
             Output("tab-aarsregnskap-brreg-link", "href"),
-            Output("alert_store", "data", allow_duplicate=True),
             Input("tab-aarsregnskap-input-aar", "value"),
             Input("tab-aarsregnskap-input-orgnr", "value"),
-            State("alert_store", "data"),
             prevent_initial_call="initial_duplicate",
         )
-        def update_pdf_source(aar: int, orgnr: str, alert_store):
+        def update_pdf_source(aar: int, orgnr: str):
             """Fetch and encode the PDF source based on the year and organization number.
             If PDF cannot be found, it fetches the TIF-file instead (if it exists), and styles it like a PDF.
             Returns an alert to the user if neither can be found.
@@ -318,8 +292,7 @@ class Aarsregnskap(ABC):
                     show_iframe,
                     hide_div,
                     {"display": "none"},
-                    brreg_link,
-                    [],
+                    brreg_link
                 )
 
             except FileNotFoundError:
@@ -358,20 +331,13 @@ class Aarsregnskap(ABC):
                     hide_iframe,
                     show_div,
                     {"display": "block"},
-                    brreg_link,
-                    [],
+                    brreg_link
                 )
             except FileNotFoundError:
                 logger.debug("TIF not found either")
-                alert_store = [
-                    create_alert(
-                        message=f"Hverken PDF eller TIF av årsregnskapet funnet for årgang {aar}!",
-                        color="warning",
-                        duration=8,
-                        ephemeral=True,
-                    ),
-                    *alert_store,
-                ]
+                AlertHandler.warning(
+                    f"Hverken PDF eller TIF av årsregnskapet funnet for årgang {aar}!"
+                )
                 return (
                     None,
                     [],
@@ -379,7 +345,6 @@ class Aarsregnskap(ABC):
                     hide_div,
                     {"display": "none"},
                     brreg_link,
-                    alert_store,
                 )
 
         clientside_callback(
@@ -389,20 +354,3 @@ class Aarsregnskap(ABC):
             Input("tab-aarsregnskap-zoom-out", "n_clicks"),
         )
 
-
-class AarsregnskapTab(TabImplementation, Aarsregnskap):
-    """AarsregnskapTab is an implementation of the Aarsregnskap module as a tab in a Dash application."""
-
-    def __init__(self) -> None:
-        """Initializes the AarsregnskapTab class."""
-        Aarsregnskap.__init__(self)
-        TabImplementation.__init__(self)
-
-
-class AarsregnskapWindow(WindowImplementation, Aarsregnskap):
-    """AarsregnskapWindow is an implementation of the Aarsregnskap module as a window in a Dash application."""
-
-    def __init__(self, **kwargs: Any) -> None:
-        """Initializes the AarsregnskapWindow class."""
-        Aarsregnskap.__init__(self)
-        WindowImplementation.__init__(self, **kwargs)

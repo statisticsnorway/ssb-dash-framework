@@ -24,8 +24,7 @@ from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 
 from ..setup.variableselector import VariableSelector
 from ..utils.alert_handler import create_alert
-from ..utils.module_validation import module_validator
-from ..config.models import register_module
+from ..utils.base_classes import ModuleBase
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +49,8 @@ def check_for_bucket_path(path: str | Path) -> None:
             "Due to differences in how files in '/buckets/...' behave compared to files in the cloud buckets this functionality is currently limited to only work with paths that starts with '/buckets/'."
         )
 
-@register_module(
-    as_tab="ParquetEditor",
-)
-class ParquetEditor:
+
+class ParquetEditor(ModuleBase):
     """Simple module with the sole purpose of editing a parquet file.
 
     Accomplishes this functionality by writing a processlog in a json lines file and recording any edits in this jsonl file.
@@ -71,8 +68,6 @@ class ParquetEditor:
         The process log is automatically created in the correct folder structure and is named after your parquet file.
     """
 
-    _id_number: int = 0
-
     def __init__(
         self,
         statistics_name: str,
@@ -84,6 +79,7 @@ class ParquetEditor:
         output_varselector_name: str | list[str] | None = None,
         allow_risky_column_names: bool = False,
         height: str = "400px",  # Default value of AgGrid
+        **kwargs,
     ) -> None:
         """Initializes the module and makes a few validation checks before moving on.
 
@@ -98,9 +94,6 @@ class ParquetEditor:
             allow_risky_column_names: Controls whether or not ParquetEditor allows potentially bug-inducing column names. Defaults to False.
             height: AgGrid defaults to 400px height. This argument allows us to specify other params for height.
         """
-        self.module_number = ParquetEditor._id_number
-        self.module_name = self.__class__.__name__
-        ParquetEditor._id_number += 1
         self.icon = "✏️"  # TODO: Make visible
         self.allow_risky_column_names = allow_risky_column_names
         self._height = height
@@ -118,9 +111,6 @@ class ParquetEditor:
         self.user = os.getenv("DAPLA_USER")
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
         self.id_vars = id_vars
-        self.variableselector = VariableSelector(
-            selected_inputs=id_vars, selected_states=[]
-        )
         self.file_path = data_source
         path = Path(data_source)
         self.log_filepath = get_log_path(data_source)
@@ -129,10 +119,9 @@ class ParquetEditor:
 
         self.log_filepath.parent.mkdir(parents=True, exist_ok=True)
 
-        self.module_layout = self._create_layout()
         self._is_valid()
-        module_validator(self)
-        self.module_callbacks()
+
+        super().__init__()
 
     def _is_valid(self) -> None:
         if not isinstance(self.id_vars, list):
@@ -163,7 +152,7 @@ class ParquetEditor:
         _column_name_check(df, allow_risky_column_names=self.allow_risky_column_names)
         return df
 
-    def _create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
         reason_modal = [
             dcc.Store(id=f"{self.module_number}-pending-edit"),
             dbc.Modal(
@@ -260,10 +249,6 @@ class ParquetEditor:
             },  # This is an exception. Styles should be in stylesheet.css
         )
 
-    def layout(self) -> html.Div:
-        """Creates the layout for the module."""
-        return html.Div(self.module_layout)
-
     def module_callbacks(self) -> None:
         """Sets up the callbacks for the module."""
 
@@ -271,7 +256,7 @@ class ParquetEditor:
             Output(f"{self.module_number}-parqueteditor-table", "rowData"),
             Output(f"{self.module_number}-parqueteditor-table", "columnDefs"),
             Output(f"{self.module_number}-parqueteditor-table-data-store", "data"),
-            *self.variableselector.get_all_inputs(),
+            VariableSelector.get_input(self.id_vars),
         )
         def load_data_to_table(
             *args: Any,
@@ -298,7 +283,7 @@ class ParquetEditor:
 
             @callback(
                 Output(f"{self.module_number}-parqueteditor-table", "filterModel"),
-                *self.variableselector.get_all_callback_objects(),
+                VariableSelector.get_input(self.id_vars),
             )
             def filter_data(*args: list[str]) -> dict[Any, dict[str, Any]]:
                 logger.debug("Filtering data")
@@ -306,8 +291,8 @@ class ParquetEditor:
                 options = [
                     option.id
                     for option in [
-                        self.variableselector.get_option(selected_variable)
-                        for selected_variable in self.variableselector.selected_variables
+                        VariableSelector.get_option(selected_variable)
+                        for selected_variable in self.id_vars
                     ]
                 ]
                 possible_filters = dict(zip(options, args, strict=True))
@@ -362,7 +347,7 @@ class ParquetEditor:
             State(f"{self.module_number}-edit-comment", "value"),
             State("alert_store", "data"),
             State(f"{self.module_number}-parqueteditor-table-data-store", "data"),
-            *self.variableselector.get_all_inputs(),
+            VariableSelector.get_input(self.id_vars),
             prevent_initial_call=True,
         )
         def confirm_edit(
@@ -436,7 +421,7 @@ class ParquetEditor:
                 self.output_varselector_name, str
             ):
                 output_objects = [
-                    self.variableselector.get_output_object(
+                    VariableSelector.get_output_object(
                         variable=self.output_varselector_name
                     )
                 ]
@@ -445,7 +430,7 @@ class ParquetEditor:
                 self.output_varselector_name, list
             ):
                 output_objects = [
-                    self.variableselector.get_output_object(variable=var)
+                    VariableSelector.get_output_object(variable=var)
                     for var in self.output_varselector_name
                 ]
                 output_columns = self.output
@@ -545,17 +530,13 @@ class ParquetEditor:
         ChangeDataLog.model_validate(changelog_entry)
         return changelog_entry
 
-@register_module(
-    as_tab="ParquetEditorChangelog",
-)
-class ParquetEditorChangelog:
+
+class ParquetEditorChangelog(ModuleBase):
     """Simple module with the sole purpose of showing the changes made using ParquetEditor.
 
     Notes:
         The process log is automatically created in the correct folder structure and is named after your parquet file.
     """
-
-    _id_number: int = 0
 
     def __init__(self, id_vars: list[str], data_source: str) -> None:
         """Initializes the module and makes a few validation checks before moving on.
@@ -564,24 +545,16 @@ class ParquetEditorChangelog:
             id_vars: A list of columns that together form a unique identifier for a single row in your data.
             data_source: The path to the parquet file you want to find the changelog for.
         """
-        self.module_number = ParquetEditor._id_number
-        self.module_name = self.__class__.__name__
-        ParquetEditor._id_number += 1
-
-        self.variable_selector = VariableSelector(
-            selected_inputs=id_vars, selected_states=[]
-        )
+        self.id_vars = id_vars
         self.user = os.getenv("DAPLA_USER")
         self.tz = zoneinfo.ZoneInfo("Europe/Oslo")
         path = Path(data_source)
         self.log_filepath = get_log_path(data_source)
         self.label = "Changes - " + path.stem
 
-        self.module_layout = self._create_layout()
-        module_validator(self)
-        self.module_callbacks()
+        super().__init__("Tab")
 
-    def _create_layout(self) -> dcc.Textarea:
+    def layout(self) -> dcc.Textarea:
         return dcc.Textarea(
             id=f"{self.module_number}-parqueteditor-changelog",
             style={"width": "100%", "height": "80vh"},
@@ -593,7 +566,7 @@ class ParquetEditorChangelog:
 
         @callback(
             Output(f"{self.module_number}-parqueteditor-changelog", "value"),
-            *self.variable_selector.get_all_inputs(),
+            VariableSelector.get_input(self.id_vars),
         )
         def load_data_to_table(
             *args: Any,
@@ -601,10 +574,6 @@ class ParquetEditorChangelog:
             data = log_as_text(self.log_filepath)
 
             return str(data)
-
-    def layout(self) -> html.Div:
-        """Creates the layout for the module."""
-        return html.Div(self.module_layout)
 
 
 def get_log_path(parquet_path: str | Path) -> Path:

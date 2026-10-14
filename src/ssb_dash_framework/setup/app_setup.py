@@ -95,6 +95,7 @@ def app_setup(
         ),
         external_stylesheets=[theme_map[stylesheet], dbc_css, dbc.icons.BOOTSTRAP],
         assets_folder="../assets",
+        suppress_callback_exceptions=True,
     )
 
     @callback(  # type: ignore[misc]
