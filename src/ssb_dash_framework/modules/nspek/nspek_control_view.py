@@ -78,7 +78,7 @@ class NspekControlView(ModuleBase):
             style={
                 "width": "100%",
                 "minWidth": "0",
-                #"maxWidth": "1600px",
+                # "maxWidth": "1600px",
             },
             children=[
                 dbc.Row(

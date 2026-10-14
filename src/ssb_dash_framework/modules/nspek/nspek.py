@@ -3,7 +3,6 @@ import os
 import re
 import time
 from pathlib import Path
-from typing import Any
 from typing import ClassVar
 
 import dash_bootstrap_components as dbc
@@ -96,6 +95,7 @@ NEGATIVE_ACCOUNTS = {
     "8324",
 }
 
+
 def get_post_number(post: pd.Series) -> pd.Series:
     """Returnerer den numeriske delen av postidentifikatoren."""
     return pd.to_numeric(
@@ -105,6 +105,7 @@ def get_post_number(post: pd.Series) -> pd.Series:
         ),
         errors="coerce",
     )
+
 
 def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
     """Adds UI sum rows used for display aggregation in AG Grid.
@@ -121,7 +122,7 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
     post_numeric = get_post_number(df["post"])
 
     df_numeric = df.loc[post_numeric.notna()].copy()
-    df_numeric["post_int"] = (post_numeric.loc[post_numeric.notna()].astype(int))
+    df_numeric["post_int"] = post_numeric.loc[post_numeric.notna()].astype(int)
 
     def apply_sign(row):
         return -1 if row["post"] in NEGATIVE_ACCOUNTS else 1
@@ -364,8 +365,7 @@ PETROLEUM_POSTS = {
     "6750",
     "6751",
     "6752",
-    "7501"
-    "7502",
+    "7501" "7502",
     "7503",
     "7650",
     "7651",
@@ -525,6 +525,7 @@ def get_skjoennslignet(conn, sekvensnummer: int) -> pd.DataFrame:
 
     return df
 
+
 def get_konstruert(conn, sekvensnummer: int) -> pd.DataFrame:
     """Fetch and return registration rows constructed for the specified sequence.
 
@@ -532,8 +533,13 @@ def get_konstruert(conn, sekvensnummer: int) -> pd.DataFrame:
     """
     config = TYPE_REGNSKAP_TABLE["registrering"]
 
-    t = conn.table(config["table"], database=config["database"],)
-    filtered = (t.filter((t.sekvensnummer == sekvensnummer) & (t.kilde == "K")).select(["kilde"]))
+    t = conn.table(
+        config["table"],
+        database=config["database"],
+    )
+    filtered = t.filter((t.sekvensnummer == sekvensnummer) & (t.kilde == "K")).select(
+        ["kilde"]
+    )
     df = filtered.execute()
 
     return df
@@ -721,7 +727,10 @@ def feltkommentar_ikon_column():
     }
 
 
-def build_column_defs(sekvens_compare=None, can_write=True,):
+def build_column_defs(
+    sekvens_compare=None,
+    can_write=True,
+):
 
     columns = ["beskrivelse", "post", "verdi", "verdi_compare", "diff", "sekvensnummer"]
 
@@ -1027,9 +1036,7 @@ def build_regnskap_dataframe(
     df["edit_post"] = df["post"]
 
     df["post"] = df["post"].where(
-        df["post"]
-        .astype(str)
-        .str.fullmatch(r"\d+(?:\.\d+)?(?:_[A-Za-z0-9]+)?"),
+        df["post"].astype(str).str.fullmatch(r"\d+(?:\.\d+)?(?:_[A-Za-z0-9]+)?"),
         "",
     )
 
@@ -1244,7 +1251,6 @@ def get_constructed_sequences(
     sekvensnummer: list[int],
 ) -> set[int]:
     """Returnerer sekvensnummer som inneholder konstruerte rader."""
-
     if not sekvensnummer:
         return set()
 
@@ -1256,10 +1262,7 @@ def get_constructed_sequences(
     )
 
     df = (
-        t.filter(
-            _.sekvensnummer.isin(sekvensnummer)
-            & (_.kilde == "K")
-        )
+        t.filter(_.sekvensnummer.isin(sekvensnummer) & (_.kilde == "K"))
         .select(_.sekvensnummer)
         .distinct()
         .execute()
@@ -1341,7 +1344,12 @@ def save_regnskap_value(
 
 
 def handle_regnskap_edit(
-    edited, alert_store, refresh_data, regnskapstype: str, refresh_key: str, can_write: bool = True,
+    edited,
+    alert_store,
+    refresh_data,
+    regnskapstype: str,
+    refresh_key: str,
+    can_write: bool = True,
 ):
     """Central handler for nspek grid edits (balanse + resultat).
 
@@ -1457,9 +1465,7 @@ class Naeringsspesifikasjon(ModuleBase):
     def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
         """Explanation of module."""
         self.db_user = (
-            db_user
-            if db_user
-            else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
+            db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
         )
         self.can_write = self.db_user in WRITE_ENABLED_DB_USERS
         set_nspek_connection(self.db_user)
@@ -1863,7 +1869,7 @@ class Naeringsspesifikasjon(ModuleBase):
                                 ),
                             ],
                             id="modal-editeringslogg",
-                            className = "ssb-modal",
+                            className="ssb-modal",
                             is_open=False,
                             size="xl",
                             style={
@@ -2588,7 +2594,7 @@ class Naeringsspesifikasjon(ModuleBase):
             """
             if refresh_data and refresh_data.get("status") == "invalid_search":
                 return ("", "", "", "", "", "", "", "", "", "")
-        
+
             if not orgnr_foretak or not aar:
                 raise PreventUpdate
 
@@ -2723,7 +2729,6 @@ class Naeringsspesifikasjon(ModuleBase):
             aar: str, orgnr_foretak: str, sekvensnummer: int
         ) -> str:
             """Returns whether the selected NSPEK version is constructed."""
-
             if not aar or not orgnr_foretak or not sekvensnummer:
                 return ""
 
@@ -2889,7 +2894,7 @@ class Naeringsspesifikasjon(ModuleBase):
         def confirm_negative(_, pending, alert_store, refresh_data):
             if not self.can_write:
                 raise PreventUpdate
-            
+
             if not pending:
                 raise PreventUpdate
 
@@ -3067,7 +3072,7 @@ class Naeringsspesifikasjon(ModuleBase):
         def load_versions(orgnr, aar, refresh_data):
             if refresh_data and refresh_data.get("status") == "invalid_search":
                 return [], None
-            
+
             if not orgnr or not aar:
                 raise PreventUpdate
 
@@ -3093,11 +3098,7 @@ class Naeringsspesifikasjon(ModuleBase):
                     + (
                         " (konstruert)"
                         if row["sekvensnummer"] in constructed_sequences
-                        else (
-                            " (editert)"
-                            if row["antall_endringer"] > 0
-                            else ""
-                        )
+                        else (" (editert)" if row["antall_endringer"] > 0 else "")
                     ),
                     axis=1,
                 )
@@ -3200,11 +3201,7 @@ class Naeringsspesifikasjon(ModuleBase):
                         + (
                             " (konstruert)"
                             if row["sekvensnummer"] in constructed_sequences
-                            else (
-                                " (editert)"
-                                if row["antall_endringer"] > 0
-                                else ""
-                            )
+                            else (" (editert)" if row["antall_endringer"] > 0 else "")
                         ),
                         axis=1,
                     )
@@ -4085,7 +4082,7 @@ class Naeringsspesifikasjon(ModuleBase):
 
             if not self.can_write:
                 raise PreventUpdate
-            
+
             if not store or not orgnr:
                 raise PreventUpdate
 
@@ -4250,4 +4247,3 @@ class Naeringsspesifikasjon(ModuleBase):
                     alert_store,
                     True,
                 )
-

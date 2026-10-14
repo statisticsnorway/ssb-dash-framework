@@ -1,21 +1,19 @@
 import logging
-import os
 import re
 import time
 from pathlib import Path
-from typing import Any
 from typing import ClassVar
-import plotly.express as px
-import plotly.graph_objects as go
 
 import dash_bootstrap_components as dbc
 import ibis
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from dash import MATCH
 from dash import callback
 from dash import ctx
 from dash import dcc
 from dash import html
-from dash import MATCH
 from dash import no_update
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -24,13 +22,12 @@ from dash.exceptions import PreventUpdate
 from dash_ag_grid import AgGrid
 from dash_iconify import DashIconify
 from ibis import _
-from pandas.core.frame import DataFrame
 
 from ...setup.variableselector import VariableSelector
 from ...utils import ModuleBase
-from ...utils.alert_handler import create_alert
 from .nspek_utils import get_nspek_connection
-#from .nspek_utils import set_nspek_connection
+
+# from .nspek_utils import set_nspek_connection
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
@@ -147,8 +144,7 @@ KPI_CONFIG = {
         "grid_id": "nspek-dashboard-total-grid",
         "kilde": None,
         "glossary_text": (
-            "Totalt antall næringsspesifikasjoner i "
-            "NSPEK for den valgte årgangen."
+            "Totalt antall næringsspesifikasjoner i " "NSPEK for den valgte årgangen."
         ),
         "columns": [
             {
@@ -209,6 +205,7 @@ VIRKSOMHETSTYPE_LABELS = {
     "null": "Ukjent",
 }
 
+
 def get_nspek_kpi_modal_data(
     aar: int,
     kilde: str | None = None,
@@ -218,7 +215,6 @@ def get_nspek_kpi_modal_data(
     filter_model: dict | None = None,
 ) -> tuple[pd.DataFrame, int]:
     """Return one page of KPI modal rows and the total row count."""
-
     aar = int(aar)
     start_row = max(int(start_row), 0)
     end_row = max(int(end_row), start_row)
@@ -260,9 +256,7 @@ def get_nspek_kpi_modal_data(
 
     if kilde is not None:
         kilde_escaped = kilde.replace("'", "''")
-        where_clauses.append(
-            f"r.kilde = '{kilde_escaped}'"
-        )
+        where_clauses.append(f"r.kilde = '{kilde_escaped}'")
 
     # ------------------------------------------------------------------
     # AG Grid filtering
@@ -290,34 +284,22 @@ def get_nspek_kpi_modal_data(
             value = str(filter_value).replace("'", "''")
 
             if filter_type_operator == "equals":
-                where_clauses.append(
-                    f"{column} = '{value}'"
-                )
+                where_clauses.append(f"{column} = '{value}'")
 
             elif filter_type_operator == "notEqual":
-                where_clauses.append(
-                    f"{column} <> '{value}'"
-                )
+                where_clauses.append(f"{column} <> '{value}'")
 
             elif filter_type_operator == "contains":
-                where_clauses.append(
-                    f"{column} ILIKE '%{value}%'"
-                )
+                where_clauses.append(f"{column} ILIKE '%{value}%'")
 
             elif filter_type_operator == "notContains":
-                where_clauses.append(
-                    f"{column} NOT ILIKE '%{value}%'"
-                )
+                where_clauses.append(f"{column} NOT ILIKE '%{value}%'")
 
             elif filter_type_operator == "startsWith":
-                where_clauses.append(
-                    f"{column} ILIKE '{value}%'"
-                )
+                where_clauses.append(f"{column} ILIKE '{value}%'")
 
             elif filter_type_operator == "endsWith":
-                where_clauses.append(
-                    f"{column} ILIKE '%{value}'"
-                )
+                where_clauses.append(f"{column} ILIKE '%{value}'")
 
         # --------------------------------------------------------------
         # Number filter
@@ -336,34 +318,22 @@ def get_nspek_kpi_modal_data(
                 continue
 
             if filter_type_operator == "equals":
-                where_clauses.append(
-                    f"{column} = {value}"
-                )
+                where_clauses.append(f"{column} = {value}")
 
             elif filter_type_operator == "notEqual":
-                where_clauses.append(
-                    f"{column} <> {value}"
-                )
+                where_clauses.append(f"{column} <> {value}")
 
             elif filter_type_operator == "lessThan":
-                where_clauses.append(
-                    f"{column} < {value}"
-                )
+                where_clauses.append(f"{column} < {value}")
 
             elif filter_type_operator == "lessThanOrEqual":
-                where_clauses.append(
-                    f"{column} <= {value}"
-                )
+                where_clauses.append(f"{column} <= {value}")
 
             elif filter_type_operator == "greaterThan":
-                where_clauses.append(
-                    f"{column} > {value}"
-                )
+                where_clauses.append(f"{column} > {value}")
 
             elif filter_type_operator == "greaterThanOrEqual":
-                where_clauses.append(
-                    f"{column} >= {value}"
-                )
+                where_clauses.append(f"{column} >= {value}")
 
     where_sql = " AND ".join(where_clauses)
 
@@ -385,9 +355,7 @@ def get_nspek_kpi_modal_data(
         if direction not in {"asc", "desc"}:
             continue
 
-        order_by.append(
-            f"{column} {direction.upper()}"
-        )
+        order_by.append(f"{column} {direction.upper()}")
 
     # Always have a deterministic fallback sort.
     if not order_by:
@@ -561,7 +529,6 @@ def construct_sequence(
     aar: int,
 ) -> dict[str, str | int]:
     """Check for existing NSPEK registration and construct if needed."""
-
     orgnr = str(orgnr).strip()
     aar = int(aar)
 
@@ -649,15 +616,13 @@ def construct_sequence(
             "status": "warning",
             "orgnr": orgnr,
             "message": (
-                "Det oppstod en feil ved konstruksjon "
-                "av næringsspesifikasjonen."
+                "Det oppstod en feil ved konstruksjon " "av næringsspesifikasjonen."
             ),
         }
 
 
 def get_nspek_kpis(aar: int) -> dict[str, int]:
     """Return KPI values for NSPEK registrations."""
-
     aar = int(aar)
 
     with get_nspek_connection() as conn:
@@ -686,7 +651,6 @@ def get_nspek_kpis(aar: int) -> dict[str, int]:
 
 def get_nspek_development_data(aar: int) -> pd.DataFrame:
     """Return monthly NSPEK registration counts for the selected year."""
-
     aar = int(aar)
 
     with get_nspek_connection() as conn:
@@ -716,7 +680,6 @@ def get_nspek_development_data(aar: int) -> pd.DataFrame:
 
 def get_nspek_distribution_data(aar: int) -> pd.DataFrame:
     """Return registration counts by virksomhetstype for the selected year."""
-
     aar = int(aar)
 
     with get_nspek_connection() as conn:
@@ -755,9 +718,9 @@ class NspekDashboard(ModuleBase):
 
     def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
         """Explanation of module."""
-        #set_nspek_connection(
+        # set_nspek_connection(
         #    db_user if db_user else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
-        #)
+        # )
         self.icon = DashIconify(icon="feather:activity", width=24)
         self.label = "NSPEK Status"
 
@@ -921,7 +884,6 @@ class NspekDashboard(ModuleBase):
         card_id: str | None = None,
     ) -> html.Div:
         """Create a dashboard KPI card using the SSB card component."""
-
         content = [
             html.Div(
                 DashIconify(
@@ -944,10 +906,7 @@ class NspekDashboard(ModuleBase):
             content.append(
                 html.Span(
                     description,
-                    className=(
-                        "ssb-text-wrapper "
-                        "nspek-dashboard-kpi-description"
-                    ),
+                    className=("ssb-text-wrapper " "nspek-dashboard-kpi-description"),
                 )
             )
 
@@ -968,7 +927,6 @@ class NspekDashboard(ModuleBase):
             className="ssb-card nspek-dashboard-kpi-card",
         )
 
-
     def create_kpi_modal(
         self,
         modal_id: str,
@@ -978,7 +936,6 @@ class NspekDashboard(ModuleBase):
         glossary_text: str | None = None,
     ) -> dbc.Modal:
         """Create a modal containing KPI information and an AG Grid."""
-
         refresh_button_id = f"{grid_id}-refresh"
         count_id = f"{grid_id}-count"
         close_button_id = f"{modal_id}-close"
@@ -988,7 +945,6 @@ class NspekDashboard(ModuleBase):
                 dbc.ModalHeader(
                     dbc.ModalTitle(title),
                 ),
-
                 dbc.ModalBody(
                     [
                         dbc.Row(
@@ -1010,7 +966,6 @@ class NspekDashboard(ModuleBase):
                                     ),
                                     md=10,
                                 ),
-
                                 # Refresh button
                                 dbc.Col(
                                     html.Div(
@@ -1031,7 +986,6 @@ class NspekDashboard(ModuleBase):
                             ],
                             className="align-items-stretch",
                         ),
-
                         html.Div(
                             dcc.Loading(
                                 id=f"{grid_id}-loading",
@@ -1094,7 +1048,6 @@ class NspekDashboard(ModuleBase):
                     className="d-flex flex-column h-100",
                     style={"minHeight": 0},
                 ),
-
                 dbc.ModalFooter(
                     dbc.Button(
                         "Lukk",
@@ -1110,7 +1063,6 @@ class NspekDashboard(ModuleBase):
             scrollable=False,
         )
 
-
     def create_key_figure(
         self,
         title: str,
@@ -1124,7 +1076,6 @@ class NspekDashboard(ModuleBase):
         green_box: bool = False,
     ) -> html.Div:
         """Create an SSB key figure component."""
-
         classes = f"ssb-key-figures {size}"
 
         if green_box:
@@ -1166,7 +1117,6 @@ class NspekDashboard(ModuleBase):
                         className="glossary-button",
                         type="button",
                     ),
-
                     # Glossary-popup
                     html.Div(
                         [
@@ -1266,15 +1216,12 @@ class NspekDashboard(ModuleBase):
                 )
             )
 
-        children.append(
-            html.Div(content)
-        )
+        children.append(html.Div(content))
 
         return html.Div(
             children,
             className=classes,
         )
-
 
     def create_development_figure(self, df: pd.DataFrame):
         long_df = df.melt(
@@ -1291,8 +1238,7 @@ class NspekDashboard(ModuleBase):
         long_df["kilde"] = long_df["kilde"].map(labels)
 
         long_df["maaned_label"] = (
-            pd.to_datetime(long_df["maaned"])
-            .dt.month.map(
+            pd.to_datetime(long_df["maaned"]).dt.month.map(
                 {
                     1: "Januar",
                     2: "Februar",
@@ -1328,8 +1274,7 @@ class NspekDashboard(ModuleBase):
         fig.update_traces(
             marker=dict(size=8),
             hovertemplate=(
-                "<b>%{customdata[0]}</b><br>"
-                "%{fullData.name}: %{y}<extra></extra>"
+                "<b>%{customdata[0]}</b><br>" "%{fullData.name}: %{y}<extra></extra>"
             ),
         )
         fig.update_layout(
@@ -1337,7 +1282,9 @@ class NspekDashboard(ModuleBase):
             separators=", ",
             hovermode="closest",
             spikedistance=-1,
-            legend={"title": "",},
+            legend={
+                "title": "",
+            },
             font={
                 "family": "Open Sans, Arial, sans-serif",
                 "size": 12,
@@ -1414,7 +1361,6 @@ class NspekDashboard(ModuleBase):
 
         return fig
 
-
     def create_distribution_figure(self, df: pd.DataFrame):
         figure_df = df.copy()
 
@@ -1438,9 +1384,7 @@ class NspekDashboard(ModuleBase):
             textposition="outside",
             showlegend=True,
             hovertemplate=(
-                "<b>%{customdata[0]}</b><br>"
-                "Antall: %{y:,}"
-                "<extra></extra>"
+                "<b>%{customdata[0]}</b><br>" "Antall: %{y:,}" "<extra></extra>"
             ),
         )
 
@@ -1466,7 +1410,9 @@ class NspekDashboard(ModuleBase):
                 "color": "#21383A",
             },
             legend={
-                "title": {"text": "Virksomhetstype",},
+                "title": {
+                    "text": "Virksomhetstype",
+                },
             },
             xaxis={
                 "title": None,
@@ -1533,7 +1479,6 @@ class NspekDashboard(ModuleBase):
 
         return fig
 
-
     def create_development_table(self, df: pd.DataFrame) -> html.Div:
         table_df = df.copy()
 
@@ -1556,9 +1501,7 @@ class NspekDashboard(ModuleBase):
             dato = pd.to_datetime(table_df["maaned"])
 
             table_df["maaned"] = (
-                dato.dt.month.map(maaneder)
-                + " "
-                + dato.dt.year.astype(str)
+                dato.dt.month.map(maaneder) + " " + dato.dt.year.astype(str)
             )
 
         table_df = table_df.rename(
@@ -1607,15 +1550,12 @@ class NspekDashboard(ModuleBase):
 
         return html.Div(table, className="ssb-table-wrapper")
 
-
     def layout(self):
         return html.Div(
             [
                 dbc.Modal(
                     [
-                        dbc.ModalHeader(
-                            dbc.ModalTitle("Konstruer sekvens")
-                        ),
+                        dbc.ModalHeader(dbc.ModalTitle("Konstruer sekvens")),
                         dbc.ModalBody(
                             [
                                 dbc.Row(
@@ -1635,12 +1575,10 @@ class NspekDashboard(ModuleBase):
                                     ],
                                     className="mb-3",
                                 ),
-
                                 html.Div(
                                     "Skriv inn ett eller flere organisasjonsnummer, ett per linje.",
                                     className="nspek-construct-result-label",
                                 ),
-
                                 html.Div(
                                     className="ssb-text-area",
                                     children=[
@@ -1677,7 +1615,6 @@ class NspekDashboard(ModuleBase):
                                         ),
                                     ],
                                 ),
-
                                 html.Small(
                                     (
                                         "Du kan også lime inn en liste med organisasjonsnummer. "
@@ -1685,7 +1622,6 @@ class NspekDashboard(ModuleBase):
                                     ),
                                     className="text-muted",
                                 ),
-
                                 html.Div(
                                     id="nspek-dashboard-construct-result",
                                     className="mt-3 nspek-construct-result-container",
@@ -1732,11 +1668,9 @@ class NspekDashboard(ModuleBase):
                         for config in KPI_CONFIG.values()
                     ]
                 ),
-
                 # ============================================================
                 # SSB CARDS
                 # ============================================================
-
                 dbc.Row(
                     [
                         dbc.Col(
@@ -1804,11 +1738,9 @@ class NspekDashboard(ModuleBase):
                     ],
                     className="g-3 mb-5",
                 ),
-                
                 # ============================================================
                 # GRAFER
                 # ============================================================
-
                 dbc.Row(
                     [
                         dbc.Col(
@@ -1819,7 +1751,6 @@ class NspekDashboard(ModuleBase):
                                             "Utvikling i innsamling",
                                             className="ssb-chart-title",
                                         ),
-
                                         html.Div(
                                             dcc.Tabs(
                                                 id="nspek-dashboard-development-tabs",
@@ -1831,7 +1762,9 @@ class NspekDashboard(ModuleBase):
                                                         children=[
                                                             dcc.Graph(
                                                                 id="nspek-dashboard-development-graph",
-                                                                config={"displayModeBar": False},
+                                                                config={
+                                                                    "displayModeBar": False
+                                                                },
                                                             )
                                                         ],
                                                     ),
@@ -1872,7 +1805,9 @@ class NspekDashboard(ModuleBase):
                                                     children=[
                                                         dcc.Graph(
                                                             id="nspek-dashboard-distribution-graph",
-                                                            config={"displayModeBar": False},
+                                                            config={
+                                                                "displayModeBar": False
+                                                            },
                                                         )
                                                     ],
                                                 ),
@@ -1887,7 +1822,7 @@ class NspekDashboard(ModuleBase):
                                                 ),
                                             ],
                                             className="ssb-chart-tabs",
-                                        )
+                                        ),
                                     ]
                                 ),
                                 className="h-100 ssb-chart-card",
@@ -1897,7 +1832,6 @@ class NspekDashboard(ModuleBase):
                     ],
                     className="g-3 mb-5",
                 ),
-
             ],
             style={
                 "width": "100%",
@@ -1906,7 +1840,6 @@ class NspekDashboard(ModuleBase):
             },
             className="nspek-dashboard-container",
         )
-
 
     def module_callbacks(self) -> None:
         """Defines the callbacks for the Naeringsspesifikasjon module."""
@@ -2038,9 +1971,7 @@ class NspekDashboard(ModuleBase):
 
             orgnr_list = list(
                 dict.fromkeys(
-                    orgnr.strip()
-                    for orgnr in orgnr_text.splitlines()
-                    if orgnr.strip()
+                    orgnr.strip() for orgnr in orgnr_text.splitlines() if orgnr.strip()
                 )
             )
 
@@ -2119,8 +2050,7 @@ class NspekDashboard(ModuleBase):
             # ================================================================
 
             has_success = any(
-                result["status"] in {"success", "info"}
-                for result in results
+                result["status"] in {"success", "info"} for result in results
             )
 
             if not has_success:
@@ -2188,18 +2118,14 @@ class NspekDashboard(ModuleBase):
                         "Status for jobben",
                         className="nspek-construct-result-label",
                     ),
-
                     job_dialog,
-
                     # --------------------------------------------------------
                     # Status per organisasjonsnummer
                     # --------------------------------------------------------
-
                     html.Div(
                         "Status per organisasjonsnummer",
                         className="nspek-construct-result-label mt-2",
                     ),
-
                     *[
                         self.create_mini_dialog(
                             variant=result["status"],
@@ -2239,11 +2165,7 @@ class NspekDashboard(ModuleBase):
             ),
         )
         def update_construct_button_disabled(aar, orgnr_text):
-            return (
-                aar is None
-                or not orgnr_text
-                or not orgnr_text.strip()
-            )
+            return aar is None or not orgnr_text or not orgnr_text.strip()
 
         @callback(
             Output("nspek-dashboard-total-modal", "is_open"),
@@ -2434,18 +2356,10 @@ class NspekDashboard(ModuleBase):
             ske = kpis["antall_ske"]
             konstruert = kpis["antall_konstruerte"]
 
-            development_figure = self.create_development_figure(
-                development_df
-            )
-            development_table = self.create_development_table(
-                development_df
-            )
-            distribution_figure = self.create_distribution_figure(
-                distribution_df
-            )
-            distribution_table = self.create_distribution_table(
-                distribution_df
-            )
+            development_figure = self.create_development_figure(development_df)
+            development_table = self.create_development_table(development_df)
+            distribution_figure = self.create_distribution_figure(distribution_df)
+            distribution_table = self.create_distribution_table(distribution_df)
 
             return (
                 f"{total:,}".replace(",", " "),
@@ -2485,9 +2399,7 @@ class NspekDashboard(ModuleBase):
                 raise PreventUpdate
 
             if len(selected) > 1:
-                raise ValueError(
-                    "Forventet maksimalt én valgt rad."
-                )
+                raise ValueError("Forventet maksimalt én valgt rad.")
 
             row = selected[0]
             orgnr = row.get("orgnr")
@@ -2522,7 +2434,6 @@ class NspekDashboard(ModuleBase):
         )
         def toggle_glossary(open_clicks, close_clicks):
             """Open or close an SSB glossary popup."""
-
             triggered = ctx.triggered_id
 
             if triggered is None:

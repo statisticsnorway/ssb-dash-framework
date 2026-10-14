@@ -9,8 +9,8 @@ from .building_blocks import FigureDisplay
 from .building_blocks import MapDisplay
 from .building_blocks import MultiModule
 from .data_editor import DataEditor
-from .data_editor import DataEditorHistory
 from .data_editor import DataEditorContactInfo
+from .data_editor import DataEditorHistory
 from .data_editor import DataEditorInfoRow
 from .data_editor import DataEditorSidebarComment
 from .data_editor import DataEditorSidebarEditingStatus
@@ -40,8 +40,8 @@ __all__ = [
     "Canvas",
     "ControlView",
     "DataEditor",
-    "DataEditorHistory",
     "DataEditorContactInfo",
+    "DataEditorHistory",
     "DataEditorInfoRow",
     "DataEditorSidebarComment",
     "DataEditorSidebarEditingStatus",
