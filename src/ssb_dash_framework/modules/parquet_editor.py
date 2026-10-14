@@ -20,6 +20,8 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+from pandas.api.types import is_float_dtype
+from pandas.api.types import is_integer_dtype
 from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 
 from ..setup.variableselector import VariableSelector
@@ -78,6 +80,8 @@ class ParquetEditor(ModuleBase):
         output: str | list[str] | None = None,
         output_varselector_name: str | list[str] | None = None,
         allow_risky_column_names: bool = False,
+        allow_integer: bool = False,
+        allow_float: bool = False,
         height: str = "400px",  # Default value of AgGrid
         **kwargs,
     ) -> None:
@@ -92,10 +96,14 @@ class ParquetEditor(ModuleBase):
             output: Columns in your dataframe that should be clickable to output to the variable selector panel.
             output_varselector_name: If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples.
             allow_risky_column_names: Controls whether or not ParquetEditor allows potentially bug-inducing column names. Defaults to False.
+            allow_integer: Toggles whether or not columns with integer datatype are allowed as id_vars. This is a somewhat risky choice so be aware it can cause issues. Defaults to False.
+            allow_float: Toggles whether or not columns with float datatype are allowed as id_vars. This is a risky choice so be aware it can cause issues. Defaults to False.
             height: AgGrid defaults to 400px height. This argument allows us to specify other params for height.
         """
         self.icon = "✏️"  # TODO: Make visible
         self.allow_risky_column_names = allow_risky_column_names
+        self.allow_integer = allow_integer
+        self.allow_float = allow_float
         self._height = height
 
         check_for_bucket_path(data_source)
@@ -149,6 +157,12 @@ class ParquetEditor(ModuleBase):
             df = pd.read_parquet(self.file_path)
         _raise_if_duplicates(df, self.id_vars)
         _raise_if_index_wrong(df)
+        _id_variable_type_check(
+            df,
+            self.id_vars,
+            allow_integer=self.allow_integer,
+            allow_float=self.allow_float,
+        )
         _column_name_check(df, allow_risky_column_names=self.allow_risky_column_names)
         return df
 
@@ -620,7 +634,7 @@ def get_export_log_path(target_path: Path) -> Path:
     except StopIteration as e:
         logger.debug(f"Encountered error: {e}")
         raise ValueError(
-            f"Path does not contain a valid data_state: {target_path}"
+            f"Path does not contain a valid data_state: {target_path}.\nExpected to find one of: {DATA_STATES}"
         ) from e
 
     bucket_root = Path(*parts[:data_state_idx])
@@ -819,14 +833,62 @@ def _column_name_check(
             )
 
 
+def _id_variable_type_check(
+    df: pd.DataFrame,
+    id_vars: list[str] | set[str],
+    allow_integer: bool = False,
+    allow_float: bool = False,
+) -> None:
+    """Function for securing that id_vars used are reliable.
+
+    Args:
+        df: Dataframe to check.
+        id_vars: A list of columns that together form a unique identifier for a single row in your data.
+        allow_integer: Toggles whether or not columns with integer datatype are allowed as id_vars. This is a somewhat risky choice so be aware it can cause issues. Defaults to False.
+        allow_float: Toggles whether or not columns with float datatype are allowed as id_vars. This is a risky choice so be aware it can cause issues. Defaults to False.
+
+    Raises:
+        TypeError: If datatype for an id_vars column is float or integer, and that datatype is not explicitly set to being allowed.
+
+    Notes:
+        Note that this function allows you to override its safeguard, but doing so is risky.
+        Integers are fine in most cases, but float as an id_vars datatype should be avoided due to difficulties applying changes and ensuring decimals stay identical.
+    """
+    for col in id_vars:
+        logger.debug(f"Checking dtype for '{col}'")
+        dtype = df[col].dtype
+        logger.debug(f"Dtype for '{col}': {dtype}")
+        if is_float_dtype(dtype):
+            if not allow_float:
+                raise TypeError(f"Column '{col}' is float but floats are not allowed")
+            else:
+                logger.warning(
+                    f"Column '{col}' is float which can cause issues when trying to apply the changelog."
+                )
+        if is_integer_dtype(dtype):
+            if not allow_integer:
+                raise TypeError(
+                    f"Column '{col}' is integer but integers are not allowed"
+                )
+            else:
+                logger.warning(
+                    f"Column '{col}' is integer which can cause issues when trying to apply the changelog."
+                )
+
+
 def apply_edits(
-    parquet_path: str | Path, allow_risky_column_names: bool = False
+    parquet_path: str | Path,
+    allow_risky_column_names: bool = False,
+    allow_integer: bool = False,
+    allow_float: bool = False,
 ) -> pd.DataFrame:
     """Applies edits from the jsonl log to a parquet file.
 
     Args:
         parquet_path: The file path for the parquet file.
         allow_risky_column_names: Controls whether or not the function allows potentially bug-inducing column names. Defaults to False.
+        allow_integer: Toggles whether or not columns with integer datatype are allowed as id_vars. This is a somewhat risky choice so be aware it can cause issues. Defaults to False.
+        allow_float: Toggles whether or not columns with float datatype are allowed as id_vars. This is a risky choice so be aware it can cause issues. Defaults to False.
 
     Returns:
         A pd.DataFrame with updated data.
@@ -847,6 +909,7 @@ def apply_edits(
     logger.debug(f"id_vars deduced from processlog: {id_vars}")
     _raise_if_duplicates(data, id_vars)
     _raise_if_index_wrong(data)
+    _id_variable_type_check(data, id_vars, allow_integer, allow_float)
     _column_name_check(data, allow_risky_column_names=allow_risky_column_names)
     return data
 
@@ -856,6 +919,8 @@ def export_from_parqueteditor(
     data_target: str,
     force_overwrite: bool = False,
     allow_risky_column_names: bool = False,
+    allow_integer: bool = False,
+    allow_float: bool = False,
 ) -> None:
     """Export edited data from parquet editor.
 
@@ -868,6 +933,8 @@ def export_from_parqueteditor(
         data_target: Path where the exported file will be written
         force_overwrite: If True, overwrites existing parquet and jsonl files when exporting. Defaults to False.
         allow_risky_column_names: Controls whether or not the function allows potentially bug-inducing column names. Defaults to False.
+        allow_integer: Toggles whether or not columns with integer datatype are allowed as id_vars. This is a somewhat risky choice so be aware it can cause issues. Defaults to False.
+        allow_float: Toggles whether or not columns with float datatype are allowed as id_vars. This is a risky choice so be aware it can cause issues. Defaults to False.
 
     Raises:
         FileNotFoundError: if no log file is found.
@@ -906,7 +973,10 @@ def export_from_parqueteditor(
             "Use force_overwrite=True to overwrite."
         )
     updated_data = apply_edits(
-        data_source, allow_risky_column_names=allow_risky_column_names
+        data_source,
+        allow_risky_column_names=allow_risky_column_names,
+        allow_integer=allow_integer,
+        allow_float=allow_float,
     )
     updated_data.to_parquet(data_target)
     print(
