@@ -45,9 +45,8 @@ class StandardDataHandler(FetcherMeta):
             t[setting.field_name_col] == container.settings.variable,
         ]
 
-        res: Series | Any = t.filter(filters).select(setting.field_value_col).execute()
+        res = t.filter(filters).select(setting.field_value_col).to_pandas()
         logger.debug(f"Returning:\n{res}")
-
         if res.empty:
             return None
         if len(res) > 1:  # catch potential duplicates
@@ -91,7 +90,7 @@ class StandardDataHandler(FetcherMeta):
 
         row = data.iloc[0]
 
-        return RefnrStatus(active=row["aktiv"], status=row["status"])
+        return RefnrStatus(aktiv=row["aktiv"], status=row["status"])
 
     def get_refnrs_by_period_ident(
         self, settings: EditorSettings, ident: str, period: str
@@ -113,7 +112,7 @@ class StandardDataHandler(FetcherMeta):
                     "kommentar",
                     "aktiv",
                 )
-                .execute()
+                .to_pandas()
             )
             # data["dato_mottatt"] = (
             # data["dato_mottatt"]
@@ -183,7 +182,7 @@ class StandardDataHandler(FetcherMeta):
                 id_cols=settings.period_col,
                 names_from=settings.field_name_col,
                 values_from=settings.field_value_col,
-            ).execute()
+            ).to_pandas()
         return data.to_dict(orient="records")
 
     def get_dynamic_list(
@@ -200,7 +199,7 @@ class StandardDataHandler(FetcherMeta):
                 t[settings.field_name_col].ilike(wildcard),
             )  # .pivot_wider(id_cols="indeks", names_from="feltnavn", values_from="verdi")
 
-            data = temp_filter.execute()
+            data = temp_filter.to_pandas()
             fieldname_parent = f"{settings.field_name_col}_parent"
             data[fieldname_parent] = data[settings.field_name_col].str.rsplit("/", n=1)
             data[fieldname_parent] = data[fieldname_parent].str[0]
