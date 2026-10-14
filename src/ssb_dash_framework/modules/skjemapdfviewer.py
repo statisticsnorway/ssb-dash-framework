@@ -33,6 +33,8 @@ class SkjemapdfViewer(ModuleBase):
 
         self.is_valid(form_identifier)
 
+        super().__init__()
+
     def is_valid(self, form_identifier: str) -> None:
         """Validate the form identifier and PDF folder path.
 

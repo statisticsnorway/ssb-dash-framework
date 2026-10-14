@@ -129,6 +129,8 @@ class BofInformation(ModuleBase):
         self.inputs = [variableselector_foretak_name]
 
         self._is_valid()
+        
+        super().__init__()
 
 
     def _is_valid(self) -> None:
