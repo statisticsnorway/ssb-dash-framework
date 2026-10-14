@@ -23,7 +23,6 @@ from .debugger_modal import DebugInspector
 from .functions import sidebar_button
 from .implementations import TabImplementation
 from .implementations import WindowImplementation
-from .module_validation import module_validator
 
 __all__ = [
     "AlertHandler",
@@ -43,7 +42,6 @@ __all__ = [
     "enable_app_logging",
     "get_connection",
     "ibis_filter_with_dict",
-    "module_validator",
     "set_connection",
     "set_postgres_connection",
     "set_sqlite_connection",

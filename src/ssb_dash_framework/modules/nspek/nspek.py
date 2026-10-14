@@ -27,7 +27,6 @@ from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
 from ...utils.alert_handler import create_alert
-from ...utils.module_validation import module_validator
 from .nspek_control_engine import run_all_controls_for_sekvensnummer
 from .nspek_control_engine import run_controls_changed_fields_for_sekvensnummer
 from .nspek_controls import NspekControls
@@ -1352,7 +1351,6 @@ class Naeringsspesifikasjon:
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
-        module_validator(self)
 
     def _is_valid(self) -> None:
         for var in Naeringsspesifikasjon._required_variables:
