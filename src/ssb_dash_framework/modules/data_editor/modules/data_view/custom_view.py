@@ -226,6 +226,7 @@ class DataViewCustom(DataEditorDataView):
 
                 if len(inputs) == 0:
                     inputs.append(VariableSelector.get_refnr(Input))
+                    inputs.append(VariableSelector.get_timevar(Input))
 
                 input_id = layout.get("ident_col")
                 refnr_col = layout.get("refnr_col", self.settings.refnr_col)

@@ -44,6 +44,7 @@ class Aarsregnskap(ModuleBase):
         self._is_valid()
         super().__init__()
 
+
     def _is_valid(self) -> None:
         """Validates the presence of required variables in VariableSelector.
 

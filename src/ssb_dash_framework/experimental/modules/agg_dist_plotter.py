@@ -22,7 +22,6 @@ from ...utils import TabImplementation
 from ...utils import WindowImplementation
 from ...utils import active_no_duplicates_refnr_list
 from ...utils import get_connection
-from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +92,6 @@ class AggDistPlotter(ABC):
         self.module_layout = self._create_layout()
         self.module_callbacks()
         self._is_valid()
-        module_validator(self)
 
     def _is_valid(self) -> None:
         for var in AggDistPlotter._required_variables:

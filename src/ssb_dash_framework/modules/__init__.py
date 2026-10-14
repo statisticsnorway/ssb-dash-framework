@@ -22,8 +22,6 @@ from .data_editor import DataViewCustom
 from .data_editor import EditorSettings
 from .data_editor import StandardDataHandler
 from .nspek import Naeringsspesifikasjon
-from .nspek import NaeringsspesifikasjonTab
-from .nspek import NaeringsspesifikasjonWindow
 from .nspek import NspekControls
 from .nspek import NspekControlViewTab
 from .nspek import NspekControlViewWindow
@@ -58,8 +56,6 @@ __all__ = [
     "MapDisplay",
     "MultiModule",
     "Naeringsspesifikasjon",
-    "NaeringsspesifikasjonTab",
-    "NaeringsspesifikasjonWindow",
     "NspekControlViewTab",
     "NspekControlViewWindow",
     "NspekControls",

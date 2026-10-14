@@ -15,13 +15,14 @@ class EditorSettings(BaseModel):
         ident_col: Column name representing respondent identifiers (e.g. "ident").
         field_value_col: Column containing form field values (e.g. "verdi").
         field_name_col: Column containing form field name paths (e.g. "feltsti").
-        period_col: Column representing statistical period (e.g. "iso_period").
+        period_col: Column representing statistical period (e.g. "iso_periode").
         mapping_table: Table used for mapping variables. Defaults to "mapping_variabelnavn".
         mapping_match_column: Match column in mapping table. Defaults to "variabel".
         mapping_result_column: Result column in mapping table. Defaults to "feltsti".
         table_selector_id: Custom Dash ID for the table dropdown selector.
         form_selector_id: Custom Dash ID for the form dropdown selector.
     """
+
     starting_table: str
     form_data_table: str
     form_list: list[str]

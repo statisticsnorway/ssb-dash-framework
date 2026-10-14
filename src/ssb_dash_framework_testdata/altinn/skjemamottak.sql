@@ -7,7 +7,7 @@
 -- Each form has 3 units that are present in every period.
 
 -- RA-0187: one active submission per unit and period (plus one inactive, superseded submission for 12111111 in 2026-01)
-INSERT INTO skjemamottak (iso_period, start_date, end_date, skjema, skjema_versjon, ident, refnr, kommentar, dato_mottatt, status, aktiv) VALUES
+INSERT INTO skjemamottak (iso_periode, start_dato, slutt_dato, skjema, skjema_versjon, ident, refnr, kommentar, dato_mottatt, status, aktiv) VALUES
     ('2026-01', '2026-01-01 00:00:00.000000', '2026-01-31 23:59:59.999999', 'RA-0187', '1.8.1', '12111111', '6bac48976d75', '', '2026-01-15 09:00:00.000000', 'Ferdig', FALSE),
     ('2026-01', '2026-01-01 00:00:00.000000', '2026-01-31 23:59:59.999999', 'RA-0187', '1.8.2', '12111111', '1043f5eb9897', '', '2026-01-20 08:20:11.530597', 'Under arbeid', TRUE),
     ('2026-01', '2026-01-01 00:00:00.000000', '2026-01-31 23:59:59.999999', 'RA-0187', '1.8.2', '12222222', '0e91287fe6da', '', '2026-01-21 08:21:11.530597', 'Ferdig', TRUE),
@@ -47,8 +47,8 @@ INSERT INTO skjemamottak (iso_period, start_date, end_date, skjema, skjema_versj
     ('2026-12', '2026-12-01 00:00:00.000000', '2026-12-31 23:59:59.999999', 'RA-0187', '1.8.2', '12333333', 'f27caa26b082', '', '2026-12-22 08:22:11.530597', 'Ferdig', TRUE);
 
 -- RA-0745: one active submission per unit and period
-INSERT INTO skjemamottak (iso_period, start_date, end_date, skjema, skjema_versjon, ident, refnr, kommentar, dato_mottatt, status, aktiv) VALUES
-    ('2024', '2024-01-01 00:00:00.000000', '2024-12-31 23:59:59.999999', 'RA-0745', '1.8.15', 'ATF2134660', 'f7d1ca75eddd', 'kommentar', '2024-12-15 09:20:44.066594', 'Under arbeid', TRUE),
+INSERT INTO skjemamottak (iso_periode, start_dato, slutt_dato, skjema, skjema_versjon, ident, refnr, kommentar, dato_mottatt, status, aktiv) VALUES
+    ('2024', '2024-01-01 00:00:00.000000', '2024-12-31 23:59:59.999999', 'RA-0745', '1.8.15', 'ATF2134660', 'f7d1ca75eddd', '', '2024-12-15 09:20:44.066594', 'Under arbeid', TRUE),
     ('2024', '2024-01-01 00:00:00.000000', '2024-12-31 23:59:59.999999', 'RA-0745', '1.8.15', 'ATF2134661', 'bbd0615e340c', '', '2024-12-16 09:21:44.066594', 'Ferdig', TRUE),
     ('2024', '2024-01-01 00:00:00.000000', '2024-12-31 23:59:59.999999', 'RA-0745', '1.8.15', 'ATF2134662', '9d11f653e144', '', '2024-12-17 09:22:44.066594', 'Ny', TRUE),
     ('2025', '2025-01-01 00:00:00.000000', '2025-12-31 23:59:59.999999', 'RA-0745', '1.8.15', 'ATF2134660', '73e114ac6b8f', '', '2025-12-15 09:20:44.066594', 'Ferdig', TRUE),

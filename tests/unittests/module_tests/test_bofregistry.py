@@ -16,14 +16,4 @@ def test_base_class() -> None:
     with patch.object(
         BofInformation, "_check_connection", lambda self: None
     ):  # This replaces the _check_connection method in the base class
-
-        class test_implementation(BofInformation):
-            def __init__(self) -> None:
-                super().__init__()
-
-            def layout(self) -> html.Div:
-                return self.module_layout
-
-        test_implementation()
-
-
+        BofInformation()

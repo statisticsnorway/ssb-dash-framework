@@ -19,7 +19,6 @@ from dash.exceptions import PreventUpdate
 from ...setup.variableselector import VariableSelector
 from ...utils.implementations import TabImplementation
 from ...utils.implementations import WindowImplementation
-from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +69,6 @@ class HBMethod:
 
         self.module_layout = self._create_layout()
         self.module_callbacks()
-        module_validator(self)
         # _get_kostra_r()
 
     def get_default_parameter_values(self) -> None:

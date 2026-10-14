@@ -46,9 +46,8 @@ class StandardDataHandler(FetcherMeta):
             t[setting.field_name_col] == container.settings.variable,
         ]
 
-        res: Series | Any = t.filter(filters).select(setting.field_value_col).execute()
+        res = t.filter(filters).select(setting.field_value_col).to_pandas()
         logger.debug(f"Returning:\n{res}")
-
         if res.empty:
             return None
         if len(res) > 1:  # catch potential duplicates
@@ -89,21 +88,17 @@ class StandardDataHandler(FetcherMeta):
         
     def get_form_status(self, refnr: str) -> RefnrStatus | None:
         # print("hei", refnr)
+        data = None
         with get_connection() as conn:
             t = conn.table("skjemamottak")
-            data = t.filter(_.refnr == refnr).to_pandas()
+            data = t.filter(_.refnr == refnr).execute()
 
         if data.empty:
             return None
 
         row = data.iloc[0]
 
-        status = "Ubehandlet"
-        if row["status"] == "ferdig":
-            status = "Ferdig"
-        if row["status"] == "under editering":
-            status = "Under arbeid"
-        return RefnrStatus(aktiv=row["aktiv"], status=status)
+        return RefnrStatus(aktiv=row["aktiv"], status=row["status"])
 
     def get_refnrs_by_period_ident(
         self, settings: EditorSettings, ident: str, period: str
@@ -125,7 +120,6 @@ class StandardDataHandler(FetcherMeta):
                     "kommentar",
                     "aktiv",
                 )
-                #.rename({"editert": "status"})
                 .to_pandas()
             )
             # data["dato_mottatt"] = (
@@ -236,11 +230,13 @@ class StandardDataHandler(FetcherMeta):
         self,
         refnr: str,
         status_code: Literal["Under behandling", "Ferdig", "Ubehandlet"],
+        on_skjemadata_update: bool = False,
     ) -> None:
         update_to_apply = UpdateSkjemamottak(
             refnr=refnr,
             column="status",
             value=status_code,
+            on_skjemadata_update=on_skjemadata_update
         )
         update_to_apply.update_ibis()
 
@@ -256,7 +252,7 @@ class StandardDataHandler(FetcherMeta):
         container: FieldCallbackContainer,
         inputs: list[Any] | dict[Any, Any],
         editing_code: str | None,
-    ) -> Any:
+    ) -> None:
         long = settings.field_name_col == "variabel"
 
         update_form = UpdateSkjemadata(
