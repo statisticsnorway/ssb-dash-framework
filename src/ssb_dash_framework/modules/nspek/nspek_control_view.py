@@ -24,7 +24,6 @@ from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
 from ...utils.alert_handler import create_alert
-from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 

@@ -24,10 +24,8 @@ from ibis import _
 from pandas.core.frame import DataFrame
 
 from ...setup.variableselector import VariableSelector
-from ...utils import TabImplementation
-from ...utils import WindowImplementation
+from ...utils import ModuleBase
 from ...utils.alert_handler import create_alert
-from ...utils.module_validation import module_validator
 from .nspek_control_engine import run_all_controls_for_sekvensnummer
 from .nspek_control_engine import run_controls_changed_fields_for_sekvensnummer
 from .nspek_controls import NspekControls
@@ -1447,27 +1445,23 @@ def handle_regnskap_edit(
     return alert_store, refresh_data, False, None, no_update
 
 
-class Naeringsspesifikasjon:
+class Naeringsspesifikasjon(ModuleBase):
     """The Naeringsspesifikasjon module lets you view the nspek/naeringsspesifikasjon for a specified foretak (var-ident)."""
 
-    _id_number: ClassVar[int] = 0
     _required_variables: ClassVar[list[str]] = (
         [  # Used for validating that the variable selector has the required variables set. These are hard-coded in the module_callbacks.
             "foretak",
         ]
     )
 
-    def __init__(self, time_units: list[str], db_user: str | None) -> None:
+    def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
         """Explanation of module."""
         self.db_user = (
             db_user
             if db_user
             else "strukt-naering-developers@dapla-group-sa-p-ye.iam"
         )
-        self.can_write = self.db_user in WRITE_ENABLED_DB_USERS
-        set_nspek_connection(self.db_user)
-        self.module_number = Naeringsspesifikasjon._id_number
-        self.module_name = self.__class__.__name__
+
         self.icon = DashIconify(icon="feather:book", width=24)
         self.label = "NSPEK"
 
@@ -1480,9 +1474,7 @@ class Naeringsspesifikasjon:
         ]
         logger.debug("TIME UNITS %s", self.time_units)
 
-        self.module_layout = self._create_layout()
-        self.module_callbacks()
-        module_validator(self)
+        super().__init__()
 
     def _is_valid(self) -> None:
         for var in Naeringsspesifikasjon._required_variables:
@@ -1662,7 +1654,7 @@ class Naeringsspesifikasjon:
             ]
         }
 
-    def _create_layout(self):
+    def layout(self):
         layout = html.Div(
             [
                 dcc.Store(id="refresh-manager", data={}),
@@ -4258,71 +4250,3 @@ class Naeringsspesifikasjon:
                     True,
                 )
 
-        @callback(
-            Output("nspek-readonly-warning", "style"),
-            Output("nspek-readonly-warning", "children"),
-            Input("nspek-balansedata-grid", "cellClicked"),
-            Input("nspek-resultatdata-grid", "cellClicked"),
-            Input("close-readonly-warning", "n_clicks"),
-            prevent_initial_call=True,
-        )
-        def toggle_readonly_warning(
-            balanse_cell,
-            resultat_cell,
-            close_clicks,
-        ):
-            if self.can_write:
-                raise PreventUpdate
-
-            # Lukk dialogen
-            if ctx.triggered_id == "close-readonly-warning":
-                return {"display": "none"}, ""
-
-            if ctx.triggered_id == "nspek-balansedata-grid":
-                cell = balanse_cell
-            elif ctx.triggered_id == "nspek-resultatdata-grid":
-                cell = resultat_cell
-            else:
-                raise PreventUpdate
-
-            if not cell or cell.get("colId") != "verdi":
-                raise PreventUpdate
-
-            return (
-                {"display": "flex"},
-                self.create_dialog(
-                    variant="info",
-                    title="Kun lesetilgang",
-                    message=(
-                        "Du har kun lesetilgang til NSPEK. "
-                        "Endringer kan derfor ikke lagres."
-                    ),
-                    close_button_id="close-readonly-warning",
-                ),
-            )
-
-
-class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
-    """NaeringsspesifikasjonTab is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
-
-    def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
-        """Initializes the NaeringsspesifikasjonTab class."""
-        Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
-        TabImplementation.__init__(self)
-
-    def _internal_layout(self):
-        return self.layout()
-
-
-class NaeringsspesifikasjonWindow(WindowImplementation, Naeringsspesifikasjon):
-    """NaeringsspesifikasjonWindow is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
-
-    def __init__(
-        self, time_units: list[str], db_user: str | None = None, **kwargs: Any
-    ) -> None:
-        """Initializes the NaeringsspesifikasjonWindow class."""
-        Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
-        WindowImplementation.__init__(self, **kwargs)
-
-    def _internal_layout(self):
-        return self.layout()

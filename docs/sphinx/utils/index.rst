@@ -13,6 +13,5 @@ Module containing utility and helper functions shared between components in the 
    Debugger_modal <debugger_modal>
    Functions <functions>
    Implementations <implementations>
-   Module_validation <module_validation>
    Prosesslogg <prosesslogg>
    R_helpers <r_helpers>

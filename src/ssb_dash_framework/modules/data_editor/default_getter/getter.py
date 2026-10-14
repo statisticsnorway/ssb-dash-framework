@@ -45,9 +45,8 @@ class StandardDataHandler(FetcherMeta):
             t[setting.field_name_col] == container.settings.variable,
         ]
 
-        res: Series | Any = t.filter(filters).select(setting.field_value_col).execute()
+        res = t.filter(filters).select(setting.field_value_col).to_pandas()
         logger.debug(f"Returning:\n{res}")
-
         if res.empty:
             return None
         if len(res) > 1:  # catch potential duplicates
@@ -81,21 +80,17 @@ class StandardDataHandler(FetcherMeta):
         
     def get_form_status(self, refnr: str) -> RefnrStatus | None:
         # print("hei", refnr)
+        data = None
         with get_connection() as conn:
             t = conn.table("skjemamottak")
-            data = t.filter(_.refnr == refnr).to_pandas()
+            data = t.filter(_.refnr == refnr).execute()
 
         if data.empty:
             return None
 
         row = data.iloc[0]
 
-        status = "Ubehandlet"
-        if row["status"] == "ferdig":
-            status = "Ferdig"
-        if row["status"] == "under editering":
-            status = "Under arbeid"
-        return RefnrStatus(active=row["aktiv"], status=status)
+        return RefnrStatus(aktiv=row["aktiv"], status=row["status"])
 
     def get_refnrs_by_period_ident(
         self, settings: EditorSettings, ident: str, period: str
@@ -117,7 +112,6 @@ class StandardDataHandler(FetcherMeta):
                     "kommentar",
                     "aktiv",
                 )
-                #.rename({"editert": "status"})
                 .to_pandas()
             )
             # data["dato_mottatt"] = (
@@ -188,7 +182,7 @@ class StandardDataHandler(FetcherMeta):
                 id_cols=settings.period_col,
                 names_from=settings.field_name_col,
                 values_from=settings.field_value_col,
-            ).execute()
+            ).to_pandas()
         return data.to_dict(orient="records")
 
     def get_dynamic_list(
@@ -205,7 +199,7 @@ class StandardDataHandler(FetcherMeta):
                 t[settings.field_name_col].ilike(wildcard),
             )  # .pivot_wider(id_cols="indeks", names_from="feltnavn", values_from="verdi")
 
-            data = temp_filter.execute()
+            data = temp_filter.to_pandas()
             fieldname_parent = f"{settings.field_name_col}_parent"
             data[fieldname_parent] = data[settings.field_name_col].str.rsplit("/", n=1)
             data[fieldname_parent] = data[fieldname_parent].str[0]
@@ -222,16 +216,18 @@ class StandardDataHandler(FetcherMeta):
 
     def update_form_reception_comment(self, refnr: str, comment: str) -> None:
         comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=comment)
-
+    
     def update_form_status(
         self,
         refnr: str,
         status_code: Literal["Under behandling", "Ferdig", "Ubehandlet"],
+        on_skjemadata_update: bool = False,
     ) -> None:
         update_to_apply = UpdateSkjemamottak(
             refnr=refnr,
             column="status",
             value=status_code,
+            on_skjemadata_update=on_skjemadata_update
         )
 
     def update_field_value(
@@ -246,7 +242,7 @@ class StandardDataHandler(FetcherMeta):
         container: FieldCallbackContainer,
         inputs: list[Any] | dict[Any, Any],
         editing_code: str | None,
-    ) -> Any:
+    ) -> None:
         long = settings.field_name_col == "variabel"
 
         update_form = UpdateSkjemadata(
@@ -266,3 +262,5 @@ class StandardDataHandler(FetcherMeta):
             mapping_match_column=settings.mapping_match_column,
             mapping_result_column=settings.mapping_result_column,
         )
+
+        # self.cache.evict(refnr, settings.form_data_table) # needs evict so it's updated after edit

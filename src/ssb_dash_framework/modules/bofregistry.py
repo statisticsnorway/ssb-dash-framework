@@ -127,8 +127,11 @@ class BofInformation(ModuleBase):
         if not isinstance(variableselector_foretak_name, str):
             raise TypeError(f"Type for 'variableselector_foretak_name' must be 'str. Received: '{type(variableselector_foretak_name)}'")
         self.inputs = [variableselector_foretak_name]
-
+        
         self._is_valid()
+        
+        super().__init__()
+
 
 
     def _is_valid(self) -> None:
@@ -227,14 +230,14 @@ class BofInformation(ModuleBase):
                     [
                         dbc.Col(
                             self.generate_card(
-                                "nace (SN) 2007",
+                                "sn07_1",
                                 "tab-bof_foretak-nace-sn07-card",
                                 "text",
                             ),
                         ),
                         dbc.Col(
                             self.generate_card(
-                                "nace (SN) 2025",
+                                "sn2025_1",
                                 "tab-bof_foretak-nace-sn25-card",
                                 "text",
                             ),

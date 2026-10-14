@@ -42,7 +42,7 @@ class FieldCallbackContainer(BaseModel):
         Returns:
             A Dash State dependency.
         """
-        return State({"comp_id": self._id, "aio": aio_id}, "value")
+        return State({"comp_id": self._id, "aio": aio_id}, "value", allow_optional=True)
 
     def get_input(
         self,

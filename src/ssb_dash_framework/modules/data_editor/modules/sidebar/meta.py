@@ -10,7 +10,7 @@ class RefnrStatus(BaseModel):
     """Model describing the status of a form reference number submission.
 
     Attributes:
-        active: Boolean flag indicating if this submission is active.
+        aktiv: Boolean flag indicating if this submission is active.
         status: The working state of the form.
     """
     aktiv: bool
@@ -67,8 +67,11 @@ class SidebarMeta[T](ABC):
 
     @abstractmethod
     def update_form_status(
-        self, refnr: str, status_code: Literal["Under arbeid", "Ferdig", "Ubehandlet"]
-    ) -> None:
+        self,
+        refnr: str,
+        status_code: Literal["Under arbeid", "Ferdig", "Ubehandlet"],
+        on_skjemadata_update: bool = False,
+    ) -> bool:
         """Updates the processing status of a form.
 
         Args:
@@ -78,7 +81,7 @@ class SidebarMeta[T](ABC):
         ...
 
     @abstractmethod
-    def update_form_active_status(self, refnr: str, value: bool) -> None:
+    def update_form_active_status(self, refnr: str, value: bool) -> bool:
         """Updates the active flag of a form submission.
 
         Args:

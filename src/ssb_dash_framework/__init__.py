@@ -37,8 +37,6 @@ from .modules import FigureDisplay
 from .modules import MapDisplay
 from .modules import MultiModule
 from .modules import Naeringsspesifikasjon
-from .modules import NaeringsspesifikasjonTab
-from .modules import NaeringsspesifikasjonWindow
 from .modules import NspekControls
 from .modules import NspekControlViewTab
 from .modules import NspekControlViewWindow
@@ -76,7 +74,6 @@ from .utils import create_database_engine
 from .utils import enable_app_logging
 from .utils import get_connection
 from .utils import ibis_filter_with_dict
-from .utils import module_validator
 from .utils import set_connection
 from .utils import set_postgres_connection
 from .utils import set_sqlite_connection
@@ -115,8 +112,6 @@ __all__ = [
     "ModuleConfig",
     "MultiModule",
     "Naeringsspesifikasjon",
-    "NaeringsspesifikasjonTab",
-    "NaeringsspesifikasjonWindow",
     "NspekControlViewTab",
     "NspekControlViewWindow",
     "NspekControls",
@@ -158,7 +153,6 @@ __all__ = [
     "ibis_filter_with_dict",
     "instantiate_module",
     "main_layout",
-    "module_validator",
     "register_control",
     "run_app_from_config",
     "set_connection",

@@ -42,7 +42,7 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
         """
         return html.Div(
             [
-                dbc.Row("Intern kommentar"),
+                dbc.Row("Intern kommentar (skjema)"),
                 dbc.Row(
                     [
                         dbc.Col(
@@ -89,10 +89,15 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
             refnr: str, ident, skjema: str, period
         ) -> tuple[str, list[dict[str, str]]]:
             """Collect relevant refnrs."""
-            if not refnr or not skjema or not ident:
+            if not ident:
                 raise PreventUpdate
+
+            if not refnr or not skjema:
+                return None, []
+
+            entries = None
             try:
-                data = self.fetcher.get_refnrs_by_period_ident(
+                entries = self.fetcher.get_refnrs_by_period_ident(
                     self.settings, ident, period
                 )
             except Exception as e:
@@ -101,15 +106,12 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 )
                 logger.info(error_msg)
                 AlertHandler.info(error_msg)
-                data = None
 
-            if data is None:
-                raise PreventUpdate
-
-            refnrs =  {entry.refnr for entry in data}
-
+            if not entries:
+                return None, []
+                
+            refnrs = list(dict.fromkeys(entry.refnr for entry in entries))
             logger.debug(f"default_refnr: {refnr}\nrefnrs: {refnrs}")
-
             return refnr, [{"label": x, "value": x} for x in refnrs]
 
         @callback(
@@ -118,6 +120,9 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
         )
         def get_comment(refnr: str) -> str:
             """Gets the comment for the selected 'refnr'."""
+
+            if not refnr:
+                raise PreventUpdate
 
             try:
                 comment = self.fetcher.get_comment(refnr)
@@ -153,11 +158,11 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
                 raise PreventUpdate
 
             try:
-                self.fetcher.update_form_reception_comment(refnr, value)
-                comment_update = "Comment was updated successfully"
+                self.fetcher.update_form_reception_comment(refnr, value=value)
+                comment_update = f"Kommentaren for {refnr} er oppdatert."
                 logger.info(comment_update)
-                AlertHandler.info(comment_update)
+                AlertHandler.info(comment_update, ephemeral=True)
             except Exception as e:
-                error_msg = f"Comment failed to update with error: {e}"
+                error_msg = f"Oppdatering av kommentar feilet: {e}"
                 logger.info(error_msg)
-                AlertHandler.info(error_msg)
+                AlertHandler.info(error_msg, ephemeral=True)

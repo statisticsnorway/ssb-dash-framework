@@ -19,7 +19,6 @@ from ssb_dash_framework.utils import conn_is_ibis
 from ...setup.variableselector import VariableSelector
 from ...utils import TabImplementation
 from ...utils import WindowImplementation
-from ...utils.module_validation import module_validator
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +79,6 @@ class AltinnDataCapture(ABC):
         ]
         self.is_valid()
         self.module_callbacks()
-        module_validator(self)
 
     def is_valid(self) -> None:
         """Checks if the module is valid.

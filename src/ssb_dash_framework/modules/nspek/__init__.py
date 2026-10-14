@@ -1,6 +1,4 @@
 from .nspek import Naeringsspesifikasjon
-from .nspek import NaeringsspesifikasjonTab
-from .nspek import NaeringsspesifikasjonWindow
 from .nspek_control_config import CONTROL_RULES
 from .nspek_control_config import get_controls_for_field
 from .nspek_control_config import get_rule_by_id
@@ -19,8 +17,6 @@ from .nspek_utils import set_nspek_connection
 __all__ = [
     "CONTROL_RULES",
     "Naeringsspesifikasjon",
-    "NaeringsspesifikasjonTab",
-    "NaeringsspesifikasjonWindow",
     "NspekControlViewTab",
     "NspekControlViewWindow",
     "NspekControls",
