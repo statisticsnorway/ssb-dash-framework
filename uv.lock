@@ -14,7 +14,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-10-01T08:13:19.582373779Z"
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P7D"
 
 [[package]]
@@ -872,7 +872,7 @@ dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "packaging" },
     { name = "requirements-parser" },
-    { name = "tomli", marker = "python_full_version < '3.15'" },
+    { name = "tomli", marker = "python_full_version < '3.15' or python_full_version >= '4'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b8/b2/50ccc99362ae7757342978b7ecb3b98e47fade721fd617d74db1948ec3a1/deptry-0.25.1.tar.gz", hash = "sha256:45c8cd982c85cd4faae573ddff6920de7eec735336db6973f26a765ae7950f7d", size = 509748, upload-time = "2026-03-18T23:22:18.139Z" }
 wheels = [
@@ -2406,7 +2406,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "ptyprocess" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
@@ -3903,7 +3903,7 @@ requires-dist = [
     { name = "pymupdf", specifier = ">=1.27.2.3,<2.0.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.43,<3.0.0" },
     { name = "ssb-klass-python", specifier = ">=1.0.6,<2.0.0" },
-    { name = "ssb-parquedit", specifier = ">=0.0.11,<0.0.12" },
+    { name = "ssb-parquedit", specifier = ">=0.0.11,<0.1.2" },
     { name = "ssb-poc-statlog-model", specifier = ">=2.0.0,<3.0.0" },
     { name = "tzlocal", specifier = ">=5.4.4,<6.0.0" },
 ]

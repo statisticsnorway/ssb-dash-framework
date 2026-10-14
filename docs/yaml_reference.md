@@ -77,6 +77,7 @@ constructor arguments listed.
 - [DataEditorSidebarComment](#dataeditorsidebarcomment)
 - [DataEditorSidebarEditingStatus](#dataeditorsidebareditingstatus)
 - [DataEditorTableSelector](#dataeditortableselector)
+- [Naeringsspesifikasjon](#naeringsspesifikasjon)
 - [ParquetEditor](#parqueteditor)
 - [ParquetEditorChangelog](#parqueteditorchangelog)
 - [SkjemapdfViewer](#skjemapdfviewer)
@@ -437,6 +438,22 @@ Default module to select datasource table to show data for.
 - type: DataEditorTableSelector
   form_data_tables: <form_data_tables>
   starting_table: <starting_table>
+```
+
+## Naeringsspesifikasjon
+
+Import path: `ssb_dash_framework.modules.nspek.nspek.Naeringsspesifikasjon`
+
+The Naeringsspesifikasjon module lets you view the nspek/naeringsspesifikasjon for a specified foretak (var-ident).
+
+| Argument | Type | Default | Description |
+| --- | --- | --- | --- |
+| `time_units` | `list[str]` | required |  |
+| `db_user` | `str \| None` | `None` |  |
+
+```yaml
+- type: Naeringsspesifikasjon
+  time_units: <time_units>
 ```
 
 ## ParquetEditor

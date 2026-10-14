@@ -72,15 +72,20 @@ class FormGetterCached:
         materialized snapshot, an un-evicted entry would serve stale values for up
         to the ``get_form`` TTL after an edit.
         """
-        cls.data.pop(f"{table}::{refnr}", None)
+        prefix = f"{table}::{refnr}"
+        keys_to_remove = [
+            k for k in cls.data if k == prefix or k.startswith(prefix + "::")
+        ]
+        for k in keys_to_remove:
+            cls.data.pop(k, None)
 
     @classmethod
     def get_form(cls, refnr: str, period: str, settings: EditorSettings) -> Table:
         cache_key = (
-            f"{settings.form_data_table}::{refnr}"  # for tables not querying skjemadata
+            f"{settings.form_data_table}::{refnr}::{period}"  # for tables not querying skjemadata
         )
         entry = cls.data.get(cache_key)
-        if (entry is None) or ((time.perf_counter() - entry.time_to_live) > 20):
+        if (entry is None) or ((time.perf_counter() - entry.time_to_live) > 15):
             table = FormGetterCached.get_table(refnr, period, settings)
             cls.data[cache_key] = CacheEntry(
                 entry=table, time_to_live=time.perf_counter()

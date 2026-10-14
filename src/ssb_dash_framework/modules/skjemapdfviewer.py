@@ -52,6 +52,8 @@ class SkjemapdfViewer(ModuleBase):
             )
         if self.pdf_folder_path.endswith("/"):
             self.pdf_folder_path = self.pdf_folder_path[:-1]
+            
+        super().__init__()
 
     def layout(self) -> html.Div:
         """Generate the layout for the SkjemapdfViewer module.

@@ -37,8 +37,6 @@ from .modules import FigureDisplay
 from .modules import MapDisplay
 from .modules import MultiModule
 from .modules import Naeringsspesifikasjon
-from .modules import NaeringsspesifikasjonTab
-from .modules import NaeringsspesifikasjonWindow
 from .modules import NspekControls
 from .modules import NspekControlViewTab
 from .modules import NspekControlViewWindow
@@ -111,8 +109,6 @@ __all__ = [
     "ModuleConfig",
     "MultiModule",
     "Naeringsspesifikasjon",
-    "NaeringsspesifikasjonTab",
-    "NaeringsspesifikasjonWindow",
     "NspekControlViewTab",
     "NspekControlViewWindow",
     "NspekControls",

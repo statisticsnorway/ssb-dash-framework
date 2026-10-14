@@ -1,6 +1,7 @@
 import json
 
 import pandas as pd
+from ssb_dash_framework.setup.variableselector import TimeUnit, TimeUnitType
 
 
 # @pytest.mark.skip(reason="Work in progress")
@@ -116,6 +117,7 @@ def test_dataeditor_yaml_settings_override():
     from ssb_dash_framework import VariableSelector
 
     VariableSelector.get_refnr = lambda x: x  # pyright: ignore
+    VariableSelector.get_timevar = lambda x: x  # pyright: ignore
     original = EditorSettings.model_validate
 
     @classmethod
