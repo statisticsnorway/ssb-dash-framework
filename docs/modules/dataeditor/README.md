@@ -61,7 +61,7 @@ from ssb_dash_framework.setup.variableselector.time_unit import TimeUnit, TimeUn
 VariableSelectorConfig(
     refnr="refnr",
     ident="ident",
-    time_units=TimeUnit(name="iso_period", frequency=TimeUnitType.MONTH),
+    time_units=TimeUnit(name="iso_periode", frequency=TimeUnitType.MONTH),
     grouping_variables=["altinnskjema", "variabel"],
 )
 
@@ -70,7 +70,7 @@ settings = EditorSettings(
     starting_table="skjemadata",
     form_data_table="skjemadata",
     form_list=["RA-0187"],
-    period_col="iso_period",
+    period_col="iso_periode",
     ident_col="ident",
     refnr_col="refnr",
     form_name_col="skjema",
@@ -162,7 +162,7 @@ modules:
         form_data_table: skjemadata
         form_list:
           - RA-0187
-        period_col: iso_period
+        period_col: iso_periode
         ident_col: ident
         refnr_col: refnr
         form_name_col: skjema
@@ -279,7 +279,7 @@ To understand how the `DataEditor` fits within the broader SSB Dash Framework, w
 |   |  - refnr (reference number)                                   |   |
 |   |  - ident (organization identification)                        |   |
 |   |  - altinnskjema (selected form)                               |   |
-|   |  - iso_period (selected statistical period)                  |   |
+|   |  - iso_periode (selected statistical period)                 |   |
 |   +-----------------------------------------------+---------------+   |
 |                                                   |                   |
 |                                                   v triggers callbacks|
@@ -345,7 +345,7 @@ An instantiated `DataEditor` is divided into four major UI panels:
 
 ### Decoupled Communication
 
-Modules in the SSB Dash Framework do not call each other directly. Instead, they rely on the **`VariableSelector`** to manage active contextual state (such as the selected company `ident`, statistical period `iso_period`, or active questionnaire identifier `altinnskjema`).
+Modules in the SSB Dash Framework do not call each other directly. Instead, they rely on the **`VariableSelector`** to manage active contextual state (such as the selected company `ident`, statistical period `iso_periode`, or active questionnaire identifier `altinnskjema`).
 
 When a user switches units or periods in the global dropdowns:
 1. The `VariableSelector` updates its global reactive attributes.

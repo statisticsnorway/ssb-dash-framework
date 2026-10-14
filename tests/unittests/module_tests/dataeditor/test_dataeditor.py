@@ -1,12 +1,13 @@
-import pandas as pd
 import json
-import pytest
 
-#@pytest.mark.skip(reason="Work in progress")
+import pandas as pd
+
+
+# @pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_python_api():
     from ssb_dash_framework import DataEditor
-    from ssb_dash_framework import DataEditorHistory
     from ssb_dash_framework import DataEditorContactInfo
+    from ssb_dash_framework import DataEditorHistory
     from ssb_dash_framework import DataEditorSidebarComment
     from ssb_dash_framework import DataEditorSidebarEditingStatus
     from ssb_dash_framework import DataViewCustom
@@ -15,12 +16,13 @@ def test_dataeditor_python_api():
     from ssb_dash_framework import VariableSelectorConfig
     from ssb_dash_framework.setup.variableselector.time_unit import TimeUnit
     from ssb_dash_framework.setup.variableselector.time_unit import TimeUnitType
+
     DataEditor.module_number = 0  # Reset the count
 
     VariableSelectorConfig(
         refnr="refnr",
         ident="ident",
-        time_units=TimeUnit(name="iso_period", frequency=TimeUnitType.MONTH),
+        time_units=TimeUnit(name="iso_periode", frequency=TimeUnitType.MONTH),
         grouping_variables=["altinnskjema", "variabel"],
     )
 
@@ -33,7 +35,7 @@ def test_dataeditor_python_api():
         starting_table="skjemadata",
         form_data_table="skjemadata",
         form_list=["RA-0187"],
-        period_col="iso_period",
+        period_col="iso_periode",
         ident_col="ident",
         refnr_col="refnr",
         form_name_col="skjema",
@@ -72,7 +74,7 @@ def test_dataeditor_python_api():
             #     applies_to_forms=["RA-xxxx"],
             # ),
             DataViewCustom(
-                layout=[{"type":"row","children":[]}],
+                layout=[{"type": "row", "children": []}],
             ),
         ],
     )
@@ -80,7 +82,8 @@ def test_dataeditor_python_api():
     assert instance is not None
     assert isinstance(instance, DataEditor)
 
-#@pytest.mark.skip(reason="Work in progress")
+
+# @pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_yaml_based():
     from ssb_dash_framework import AppConfig
     from ssb_dash_framework import DataEditor
@@ -102,16 +105,19 @@ def test_dataeditor_yaml_based():
     assert instance is not None
     assert isinstance(instance, DataEditor)
 
-#@pytest.mark.skip(reason="Work in progress")
+
+# @pytest.mark.skip(reason="Work in progress")
 def test_dataeditor_yaml_settings_override():
     """Test to assert that overriding EditorSettings variable in the microlayout yaml-definition works"""
     from ssb_dash_framework import DataEditor
     from ssb_dash_framework import DataViewCustom
     from ssb_dash_framework import EditorSettings
-    from ssb_dash_framework import VariableSelector
     from ssb_dash_framework import StandardDataHandler
-    VariableSelector.get_refnr = lambda x: x # pyright: ignore
+    from ssb_dash_framework import VariableSelector
+
+    VariableSelector.get_refnr = lambda x: x  # pyright: ignore
     original = EditorSettings.model_validate
+
     @classmethod
     def custom_validate(cls, *args, **kwargs):
         data = args[0]
@@ -123,18 +129,18 @@ def test_dataeditor_yaml_settings_override():
             assert data["field_value_col"] == "verdi"
         return original(*args, **kwargs)
 
-    EditorSettings.model_validate = custom_validate # pyright: ignore
+    EditorSettings.model_validate = custom_validate  # pyright: ignore
     DataEditor.module_number = 0  # Reset the count
 
     path = "tests/unittests/module_tests/dataeditor/override.yaml"
     instance = DataViewCustom.from_yaml_path(path)
     instance.fetcher = StandardDataHandler()
-    instance.instance_id= "None"
+    instance.instance_id = "None"
     instance.settings = EditorSettings(
         starting_table="skjemadata",
         form_data_table="skjemadata",
         form_list=["RA-0187"],
-        period_col="iso_period",
+        period_col="iso_periode",
         ident_col="ident",
         refnr_col="refnr",
         form_name_col="skjema",

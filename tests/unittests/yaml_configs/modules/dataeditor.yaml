@@ -4,7 +4,7 @@
     form_data_table: skjemadata
     form_list:
       - RA-0187
-    period_col: iso_period
+    period_col: iso_periode
     ident_col: ident
     refnr_col: refnr
     form_name_col: skjema
@@ -26,7 +26,7 @@
         form_data_table: "skjemadata"
         form_list:
           - "RA-0187"
-        period_col: "iso_period"
+        period_col: "iso_periode"
         ident_col: "ident"
         refnr_col: "refnr"
         form_name_col: "skjema"

@@ -11,18 +11,18 @@ This is the default datamodel generated from ssb-altinn-form-tools. It is design
 | Variable                | Description |
 | ----------------------- | ----------- |
 | `id`                    | Unique row number |
-| `iso_period`            | Period variable in iso-format |
+| `iso_periode`           | Period variable in ISO format |
 | `skjema`                | Altinn form number (RA-number) |
 | `ident`                 | Primary identifier |
-| `start_date`            | Start date for the period |
-| `end_date`              | End date for the period |
+| `start_dato`            | Start date for the period |
+| `slutt_dato`            | End date for the period |
 | `skjema_versjon`        | Version of Altinn form |
 | `refnr`                 | Unique reference for specific data delivery |
 | `kommentar`             | Comment from the form sender |
 | `dato_mottatt`          | Date form was received |
 | `status`                | Editing status |
 | `aktiv`                 | If the delivery is active or should be disregarded |
-| `variable`              | Which variable the value is for |
+| `variabel`              | Which variable the value is for |
 | `verdi`                 | The value of the variable |
 | `feltsti`               | Path to the variable in the original nested xml file |
 | `feltnavn`              | Name of the variable field in the xml file |
