@@ -3903,7 +3903,7 @@ requires-dist = [
     { name = "pymupdf", specifier = ">=1.27.2.3,<2.0.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.43,<3.0.0" },
     { name = "ssb-klass-python", specifier = ">=1.0.6,<2.0.0" },
-    { name = "ssb-parquedit", specifier = ">=0.0.11,<0.1.2" },
+    { name = "ssb-parquedit", specifier = ">=0.0.11,<0.2.0" },
     { name = "ssb-poc-statlog-model", specifier = ">=2.0.0,<3.0.0" },
     { name = "tzlocal", specifier = ">=5.4.4,<6.0.0" },
 ]
