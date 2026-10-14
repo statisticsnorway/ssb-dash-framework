@@ -91,11 +91,6 @@ class StandardDataHandler(FetcherMeta):
 
         row = data.iloc[0]
 
-        # status = "Ubehandlet"
-        # if row["status"] == "ferdig":
-        #     status = "Ferdig"
-        # if row["status"] == "under editering":
-        #     status = "Under arbeid"
         return RefnrStatus(active=row["aktiv"], status=row["status"])
 
     def get_refnrs_by_period_ident(
@@ -118,7 +113,6 @@ class StandardDataHandler(FetcherMeta):
                     "kommentar",
                     "aktiv",
                 )
-                #.rename({"editert": "status"})
                 .execute()
             )
             # data["dato_mottatt"] = (
