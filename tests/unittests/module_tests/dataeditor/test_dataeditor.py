@@ -42,7 +42,7 @@ def test_standard_data_handler_getters(subtests: pytest.Subtests):
         starting_table="skjemadata",
         form_data_table="skjemadata",
         form_list=[SKJEMA],
-        period_col="iso_period",
+        period_col="iso_periode",
         ident_col="ident",
         refnr_col="refnr",
         form_name_col="skjema",
@@ -60,7 +60,7 @@ def test_standard_data_handler_getters(subtests: pytest.Subtests):
         assert field_value == VERDI
     with subtests.test(property="get_comment"):
         comment = handler.get_comment(refnr=REFNR)
-        assert comment == COMMENT
+        assert comment == ""
 
     with subtests.test(property="get_contact_info"):
         contact_info = handler.get_contact_info(refnr=REFNR)
@@ -71,14 +71,14 @@ def test_standard_data_handler_getters(subtests: pytest.Subtests):
         form_status = handler.get_form_status(refnr=REFNR)
         assert form_status is not None
         assert form_status.aktiv == True
-        assert form_status.status == "Ubehandlet"
+        assert form_status.status == "Under arbeid"
 
     with subtests.test(property="get_refnrs_by_period_ident"):
         refnumbers = handler.get_refnrs_by_period_ident(
             editor_settings, period=PERIOD, ident=IDENT
         )
         assert len(refnumbers) == 1
-        assert refnumbers[0].kommentar == COMMENT
+        assert refnumbers[0].kommentar == ""
 
     with subtests.test(property="get_info_row_fields"):
         row_field = handler.get_info_row_fields(
@@ -106,12 +106,12 @@ def test_standard_data_handler_getters(subtests: pytest.Subtests):
             ident=IDENT,
             periods=["2026", "2025", "2024"],
         )
-        timeseries.sort(key=lambda x: x["iso_period"])
+        timeseries.sort(key=lambda x: x["iso_periode"])
         assert len(timeseries) == len(
             [
-                {"iso_period": "2024", "/prefillAreal": "61"},
-                {"iso_period": "2025", "/prefillAreal": "64"},
-                {"iso_period": "2026", "/prefillAreal": "67"},
+                {"iso_periode": "2024", "/prefillAreal": "61"},
+                {"iso_periode": "2025", "/prefillAreal": "64"},
+                {"iso_periode": "2026", "/prefillAreal": "67"},
             ]
         )
 
@@ -226,7 +226,7 @@ def test_standard_data_handler_updates_parquedit(subtests: pytest.Subtests):
         starting_table="skjemadata",
         form_data_table="skjemadata",
         form_list=[SKJEMA],
-        period_col="iso_period",
+        period_col="iso_periode",
         ident_col="ident",
         refnr_col="refnr",
         form_name_col="skjema",

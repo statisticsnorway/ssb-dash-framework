@@ -152,7 +152,7 @@ class StandardDataHandler(FetcherMeta):
                     t[settings.ident_col] == refnr, t[settings.period_col] == period
                 )
                 data = (
-                    t.filter(_.variable == info_var.source_variable_name)
+                    t.filter(_.variabel == info_var.source_variable_name)
                     .limit(1)
                     .execute()
                 )

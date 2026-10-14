@@ -112,8 +112,10 @@ def test_dataeditor_yaml_settings_override():
     from ssb_dash_framework import EditorSettings
     from ssb_dash_framework import StandardDataHandler
     from ssb_dash_framework import VariableSelector
+    from dash import Input
 
     VariableSelector.get_refnr = lambda x: x  # pyright: ignore
+    VariableSelector.get_timevar = lambda x: Input("", "")  # pyright: ignore
     original = EditorSettings.model_validate
 
     @classmethod
