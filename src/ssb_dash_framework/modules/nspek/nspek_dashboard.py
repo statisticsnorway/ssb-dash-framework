@@ -29,7 +29,6 @@ from pandas.core.frame import DataFrame
 from ...setup.variableselector import VariableSelector
 from ...utils import ModuleBase
 from ...utils.alert_handler import create_alert
-from ...utils.module_validation import module_validator
 from .nspek_utils import get_nspek_connection
 #from .nspek_utils import set_nspek_connection
 
