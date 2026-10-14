@@ -8,7 +8,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_driftsinntekt",
         "tema": "Resultat",
         "kategori": "H",
-        "skildring": "Driftsinntekt stemmer ikke",
+        "skildring": "Rapportert sum driftsinntekt stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "sumDriftsinntekt",
         "threshold": 1000,
         "terms": [
@@ -47,7 +47,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_driftskostnad",
         "tema": "Resultat",
         "kategori": "H",
-        "skildring": "Driftskostnad stemmer ikke",
+        "skildring": "Rapportert sum driftskostnad stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "sumDriftskostnad",
         "threshold": 1000,
         "terms": [
@@ -140,7 +140,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_finansinntekt",
         "tema": "Resultat",
         "kategori": "H",
-        "skildring": "Finansinntekt stemmer ikke",
+        "skildring": "Rapportert sum finansinntekt stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "sumFinansinntekt",
         "threshold": 1000,
         "terms": [
@@ -162,7 +162,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_finanskostnad",
         "tema": "Resultat",
         "kategori": "H",
-        "skildring": "Finanskostnad stemmer ikke",
+        "skildring": "Rapportert sum finanskostnad  stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "sumFinanskostnad",
         "threshold": 1000,
         "terms": [
@@ -184,7 +184,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_skattekostnad",
         "tema": "Resultat",
         "kategori": "H",
-        "skildring": "Skattekostnad stemmer ikke",
+        "skildring": "Rapportert sum skattekostnad stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "sumSkattekostnad",
         "threshold": 1000,
         "terms": [
@@ -199,7 +199,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_aarsresultat",
         "tema": "Resultat",
         "kategori": "H",
-        "skildring": "Årsresultat stemmer ikke",
+        "skildring": "Rapportert årsresultat stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "aarsresultat",
         "threshold": 1000,
         "terms": [
@@ -228,7 +228,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_anleggsmidler",
         "tema": "Balanse",
         "kategori": "H",
-        "skildring": "Anleggsmidler stemmer ikke",
+        "skildring": "Rapportert sum anleggsmidler stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "sumBalanseverdiForAnleggsmiddel",
         "threshold": 1000,
         "terms": [
@@ -277,7 +277,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_omloepsmidler",
         "tema": "Balanse",
         "kategori": "H",
-        "skildring": "Omløpsmidler stemmer ikke",
+        "skildring": "Rapportert sum omløpsmidler stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "sumBalanseverdiForOmloepsmiddel",
         "threshold": 1000,
         "terms": [
@@ -307,7 +307,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_eiendeler",
         "tema": "Balanse",
         "kategori": "H",
-        "skildring": "Eiendeler stemmer ikke",
+        "skildring": "Rapportert sum eiendeler stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "sumBalanseverdiForEiendel",
         "threshold": 1000,
         "terms": [
@@ -319,7 +319,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_egenkapital",
         "tema": "Balanse",
         "kategori": "H",
-        "skildring": "Egenkapital stemmer ikke",
+        "skildring": "Rapportert sum egenkapital stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "sumEgenkapital",
         "threshold": 1000,
         "terms": [
@@ -346,7 +346,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_langsiktig_gjeld",
         "tema": "Balanse",
         "kategori": "H",
-        "skildring": "Langsiktig gjeld stemmer ikke",
+        "skildring": "Rapportert sum langsiktig gjeld stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "sumLangsiktigGjeld",
         "threshold": 1000,
         "terms": [
@@ -369,7 +369,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_kortsiktig_gjeld",
         "tema": "Balanse",
         "kategori": "H",
-        "skildring": "Kortsiktig gjeld stemmer ikke",
+        "skildring": "Rapportert sum kortsiktig gjeld stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "sumKortsiktigGjeld",
         "threshold": 1000,
         "terms": [
@@ -402,7 +402,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_gjeld_og_egenkapital",
         "tema": "Balanse",
         "kategori": "H",
-        "skildring": "Gjeld og egenkapital stemmer ikke",
+        "skildring": "Rapportert sum gjeld og egenkapital stemmer ikke med beregnet sum av tilhørende poster.",
         "lhs": "sumGjeldOgEgenkapital",
         "threshold": 1000,
         "terms": [
@@ -415,7 +415,7 @@ CONTROL_RULES = [
         "kontrollid": "kontroll_ubalanse",
         "tema": "Balanse",
         "kategori": "H",
-        "skildring": "Balanse stemmer ikke",
+        "skildring": "Sum eiendeler stemmer ikke med sum egenkapital og gjeld.",
         "lhs": "sumGjeldOgEgenkapital",
         "threshold": 1000,
         "terms": [
