@@ -22,6 +22,9 @@ This is the framework part of the library.
 
 Simply put, the variable selector enables communication between modules without creating a dependency between modules. It is designed to be plug and play, so that you can freely pick and choose what modules to include in your own app.
 
+See [Connecting modules with VariableSelector](framework_core/variableselector.md)
+for app configuration and module callback examples.
+
 ### app_setup()
 
 This function configures the Dash application, enables logging and sets the theme of the application.

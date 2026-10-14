@@ -1,8 +1,9 @@
-# Known bugs found while building the Altinn demo
+# Known bugs
 
-These were found while wiring up [demo/altinn_app](../demo/altinn_app) against the
-`ssb_dash_framework_testdata` Altinn tables. Each entry notes where the demo works around
-the problem, so the workaround can be removed once the bug is fixed.
+Entries 1-7 were found while wiring up [demo/altinn_app](../demo/altinn_app) against
+the `ssb_dash_framework_testdata` Altinn tables. Entries note demo workarounds where
+applicable, so they can be removed once the bug is fixed. Further framework issues
+are recorded below.
 
 ---
 
@@ -187,3 +188,27 @@ def get_contact_info(self, refnr: str) -> ContactInfo:
 **Demo workaround:** the contact-info button is left out of the `buttons:` list.
 
 ---
+
+## 8. `VariableSelector.get_state` returns `Input` instead of `State`
+
+**Where:** [variableselector.py](../src/ssb_dash_framework/setup/variableselector/variableselector.py),
+`get_state()` and `_match_type()`.
+
+`get_state()` is annotated to return `list[State]`, but appends
+`Input(retrieved_option.id, "value")`. As a result, role helpers such as
+`VariableSelector.get_refnr(State)` also return an `Input`.
+
+**Impact:** changing a shared selection can trigger a callback that intended only
+to read that selection when another input fires. In
+[hello_module.py](../demo/hello_world/hello_module.py), changing the reference
+number can invoke `message_callback`, but its button-specific `ctx.triggered_id`
+checks fall through to `PreventUpdate`.
+
+**Possible fix:** construct `State` in `get_state()` and add regression tests
+asserting the concrete dependency type for both named and role-based helpers.
+Dependency equality checks alone do not verify Input versus State.
+
+**Demo workaround:** none for the dependency type; the callback's existing
+button checks prevent message retrieval or updates on a reference-number change.
+See the [VariableSelector guide](framework_core/variableselector.md) for intended
+Input/State semantics.

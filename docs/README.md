@@ -8,6 +8,9 @@ For all classes that can be configured through yaml, and their arguments, see [d
 
 For examples of how to build and configure apps, look in the [demo folder](../demo/).
 
+For shared selections and communication between modules, see
+[Connecting modules with VariableSelector](framework_core/variableselector.md).
+
 For tips, tricks and unsupported/unintended ways to manipulate the functionality of an app, you can consult the [docs/arcane_compendium.md](arcane_compendium.md).
 
 The *norsk* folder contains documentation for SSB internally. It is intended to be used for beginners and will be limited in the amount of topics covered. The focus is on on-boarding.
