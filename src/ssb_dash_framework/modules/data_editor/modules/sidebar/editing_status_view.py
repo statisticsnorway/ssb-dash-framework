@@ -224,7 +224,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     no_update,
                     f"Viser skjema: {refnr}",
                 )
-            print(f"data: {data}")
+
             if data is None:
                 AlertHandler.warning("Henting av editeringsstatus returnerte 'None'.")
                 return (
@@ -331,7 +331,6 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 AlertHandler.warning(message)
                 return [], [], True
                 
-            print(f"data returned in view_refnrs_by_ident: {data}")
             entries = [entry.model_dump() for entry in data]
             present = dict.fromkeys(key for entry in entries for key in entry)
             ordered = [c for c in _REFNR_COLUMN_ORDER if c in present]
@@ -364,8 +363,6 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
 
             refnr = selected_row[0]["refnr"]
             skjema = selected_row[0]["skjema"]
-            print(f"refnr: {refnr}")
-            print(f"skjema: {skjema}")
 
             return (
                 refnr if refnr != current_refnr else "",

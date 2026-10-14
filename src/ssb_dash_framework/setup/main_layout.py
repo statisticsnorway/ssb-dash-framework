@@ -67,7 +67,7 @@ def main_layout(
     for module in window_list:
         if isinstance(module, ModuleBase):
             module.set_implementation("Window")
-            print(module, module.implemented_as)
+            logger.debug(module, module.implemented_as)
         window_modules.append(module._internal_layout())
     alerthandler = AlertHandler()
     window_modules_list = [alerthandler.layout(), *window_modules]

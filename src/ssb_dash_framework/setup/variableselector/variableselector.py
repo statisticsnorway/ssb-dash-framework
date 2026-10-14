@@ -447,7 +447,7 @@ class VariableSelector:
             default_values = self.default_values
         layout = []
         for variable in self._variableselectoroptions:
-            print(variable)
+            logger.debug(variable)
             option = self.get_option(variable.title)
             card = self._create_variable_card(
                 text=option.title,

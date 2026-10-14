@@ -73,8 +73,8 @@ class MicroLayoutAIO(html.Div):
         self.settings = settings
         self._horizontal = horizontal
         inputs = [] if inputs is None else inputs
-        # The above is just for the __str__ dunder
         self.aio_id = aio_id or str(uuid.uuid4())
+        
         if isinstance(layout, Layout):
             model = layout
         elif isinstance(layout, dict):
@@ -90,18 +90,11 @@ class MicroLayoutAIO(html.Div):
 
         layout, ids = model.build(data_handler, settings)
 
-        if layout is None:
-            layout_children = []
-        elif isinstance(layout, list):
-            layout_children = list(layout)
-        else:
-            layout_children = [layout]
-
         local_store = dcc.Store(id={"type": "status-signal", "aio": self.aio_id})
-        layout_children.append(local_store)
+        layout.append(local_store)
 
         super().__init__(
-            layout_children, id=f"{self.aio_id}-microlayout", style=styles  # pyright: ignore
+            layout, id=f"{self.aio_id}-microlayout", style=styles  # pyright: ignore
         )
 
         callback_ctx = {item._id: item for item in ids}
@@ -179,9 +172,6 @@ class MicroLayoutAIO(html.Div):
 
                     if isinstance(skjema, list):
                         skjema = skjema[0] if skjema else None
-                    print(f"refnr: {refnr}")
-                    print(f"ident: {ident}")
-                    print(f"skjema: {skjema}")
 
                     triggered_id = ctx.triggered_id["comp_id"]
                     custom_ctx = callback_ctx.get(triggered_id)
