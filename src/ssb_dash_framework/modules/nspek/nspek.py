@@ -4310,6 +4310,9 @@ class NaeringsspesifikasjonTab(TabImplementation, Naeringsspesifikasjon):
         Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
         TabImplementation.__init__(self)
 
+    def _internal_layout(self):
+        return self.layout()
+
 
 class NaeringsspesifikasjonWindow(WindowImplementation, Naeringsspesifikasjon):
     """NaeringsspesifikasjonWindow is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
@@ -4320,3 +4323,6 @@ class NaeringsspesifikasjonWindow(WindowImplementation, Naeringsspesifikasjon):
         """Initializes the NaeringsspesifikasjonWindow class."""
         Naeringsspesifikasjon.__init__(self, time_units=time_units, db_user=db_user)
         WindowImplementation.__init__(self, **kwargs)
+
+    def _internal_layout(self):
+        return self.layout()

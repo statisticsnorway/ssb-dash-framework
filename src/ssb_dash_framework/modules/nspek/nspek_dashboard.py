@@ -2177,7 +2177,7 @@ class NspekDashboard:
 
             if update_variableselector:
                 variableselector_ident = orgnr_list[0]
-                variableselector_aar = aar
+                variableselector_aar = str(aar)
                 variableselector_foretak = orgnr_list[0]
             else:
                 variableselector_ident = no_update
@@ -2548,6 +2548,9 @@ class NspekDashboardTab(TabImplementation, NspekDashboard):
         NspekDashboard.__init__(self, time_units=time_units, db_user=db_user)
         TabImplementation.__init__(self)
 
+    def _internal_layout(self):
+        return self.layout()
+
 
 class NspekDashboardWindow(WindowImplementation, NspekDashboard):
     """NaeringsspesifikasjonWindow is an implementation of the Naeringsspesifikasjon module as a tab in a Dash application."""
@@ -2558,3 +2561,6 @@ class NspekDashboardWindow(WindowImplementation, NspekDashboard):
         """Initializes the NaeringsspesifikasjonWindow class."""
         NspekDashboard.__init__(self, time_units=time_units, db_user=db_user)
         WindowImplementation.__init__(self, **kwargs)
+
+    def _internal_layout(self):
+        return self.layout()

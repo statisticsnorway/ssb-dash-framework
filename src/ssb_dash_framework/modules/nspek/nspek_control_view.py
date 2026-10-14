@@ -267,7 +267,7 @@ class NspekControlView(ABC):
 
         @callback(
             Output(f"{self.module_number}-kontroll-var", "children"),
-            *self.variableselector.get_all_inputs(),
+            *self.variableselector.get_input(self.time_units),
         )
         def show_vars(*args):
             return f"valgte variabler: {dict(zip(self.time_units, args, strict=False))}"
@@ -299,7 +299,7 @@ class NspekControlView(ABC):
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
             State(f"{self.module_number}-kontroller", "selectedRows"),
             State("alert_store", "data"),
-            *self.variableselector.get_all_inputs(),
+            *self.variableselector.get_input(self.time_units),
             prevent_initial_call="initial_duplicate",
         )
         def get_kontroller_overview(refresh, run, selected_rows, store, *args):
@@ -428,6 +428,9 @@ class NspekControlViewTab(TabImplementation, NspekControlView):
         )
         TabImplementation.__init__(self)
 
+    def _internal_layout(self):
+        return self.layout()
+
 
 class NspekControlViewWindow(WindowImplementation, NspekControlView):
     def __init__(
@@ -443,3 +446,6 @@ class NspekControlViewWindow(WindowImplementation, NspekControlView):
             control_class=control_class,
         )
         WindowImplementation.__init__(self, **kwargs)
+
+    def _internal_layout(self):
+        return self.layout()
