@@ -78,6 +78,8 @@ constructor arguments listed.
 - [DataEditorSidebarEditingStatus](#dataeditorsidebareditingstatus)
 - [DataEditorTableSelector](#dataeditortableselector)
 - [Naeringsspesifikasjon](#naeringsspesifikasjon)
+- [NspekControlView](#nspekcontrolview)
+- [NspekDashboard](#nspekdashboard)
 - [ParquetEditor](#parqueteditor)
 - [ParquetEditorChangelog](#parqueteditorchangelog)
 - [SkjemapdfViewer](#skjemapdfviewer)
@@ -453,6 +455,40 @@ The Naeringsspesifikasjon module lets you view the nspek/naeringsspesifikasjon f
 
 ```yaml
 - type: Naeringsspesifikasjon
+  time_units: <time_units>
+```
+
+## NspekControlView
+
+Import path: `ssb_dash_framework.modules.nspek.nspek_control_view.NspekControlView`
+
+Nspek variant av ControlView - tett på original implementasjon, men med control_class og uten hard dependency på altinnskjema.
+
+| Argument | Type | Default | Description |
+| --- | --- | --- | --- |
+| `time_units` | `list[str]` | required |  |
+| `control_class` | `type[ControlFrameworkBase]` | required |  |
+| `outputs` | `list[str] \| None` | `None` |  |
+
+```yaml
+- type: NspekControlView
+  time_units: <time_units>
+  control_class: <control_class>
+```
+
+## NspekDashboard
+
+Import path: `ssb_dash_framework.modules.nspek.nspek_dashboard.NspekDashboard`
+
+The Naeringsspesifikasjon module lets you view the nspek/naeringsspesifikasjon for a specified foretak (var-ident).
+
+| Argument | Type | Default | Description |
+| --- | --- | --- | --- |
+| `time_units` | `list[str]` | required |  |
+| `db_user` | `str \| None` | `None` |  |
+
+```yaml
+- type: NspekDashboard
   time_units: <time_units>
 ```
 

@@ -110,7 +110,7 @@ sumLangsiktigGjeld,"SUM Langsiktig gjeld",106
 2330,"Derivater",110
 2380,"Kortsiktig gjeld til banker og andre kredittinstitusjoner",111
 2400,"Gjeld til leverandører",113
-2460,"Gjeld til selskap i samme konsern",114
+2460,"Leverandørgjeld til selskap i samme konsern",114
 2470,"Mindereuttak av petroleumsprodukter",115
 2500,"Betalbar skatt, ikke fastsatt",117
 2510,"Betalbar skatt, fastsatt",118
