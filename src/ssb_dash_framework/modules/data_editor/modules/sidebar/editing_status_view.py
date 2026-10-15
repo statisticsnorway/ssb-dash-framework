@@ -188,6 +188,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     f"Flere enn ett RA-skjema funnet for {ident}: {', '.join(skjemaer)}. "
                     f"Velg det du vil se på i menyen under 'Se innsendinger'.",
                     ephemeral=True,
+                    duration=10
                 )
 
             first = entries[0]

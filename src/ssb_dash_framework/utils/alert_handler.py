@@ -108,20 +108,20 @@ class AlertHandler:
         set_props("alert_store", {"data": patch_obj})
 
     @classmethod
-    def success(cls, msg: str, ephemeral: bool | None = False):
-        cls._add_alert(msg, "success", ephemeral=ephemeral)
+    def success(cls, msg: str, ephemeral: bool | None = False, duration: int | None = 5):
+        cls._add_alert(msg, "success", ephemeral=ephemeral, duration=duration)
 
     @classmethod
-    def warning(cls, msg: str, ephemeral: bool | None = True):
-        cls._add_alert(msg, "warning", ephemeral=ephemeral)
+    def warning(cls, msg: str, ephemeral: bool | None = True, duration: int | None = 5):
+        cls._add_alert(msg, "warning", ephemeral=ephemeral, duration=duration)
     
     @classmethod
-    def error(cls, msg: str, ephemeral: bool | None = True):
-        cls._add_alert(msg, "warning", ephemeral=ephemeral)
+    def error(cls, msg: str, ephemeral: bool | None = True, duration: int | None = 5):
+        cls._add_alert(msg, "warning", ephemeral=ephemeral, duration=duration)
 
     @classmethod
-    def info(cls, msg: str, ephemeral: bool | None = False):
-        cls._add_alert(msg, "info", ephemeral=ephemeral)
+    def info(cls, msg: str, ephemeral: bool | None = False, duration: int | None = 5):
+        cls._add_alert(msg, "info", ephemeral=ephemeral, duration=duration)
 
     def __init__(self) -> None:
         """Initializes the AlertHandler instance.
