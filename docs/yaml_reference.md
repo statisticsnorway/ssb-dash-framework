@@ -64,6 +64,7 @@ constructor arguments listed.
 - [MapDisplay](#mapdisplay)
 - [MultiModule](#multimodule)
 - [EditingTable](#editingtable)
+- [AltinnFormParqueditHandler](#altinnformparquedithandler)
 - [StandardDataHandler](#standarddatahandler)
 - [DataEditor](#dataeditor)
 - [ContextABC](#contextabc)
@@ -236,6 +237,19 @@ Additional keyword arguments are accepted.
   inputs: <inputs>
   states: <states>
   get_data_func: <get_data_func>
+```
+
+## AltinnFormParqueditHandler
+
+Import path: `ssb_dash_framework.modules.data_editor.default_getter.form_tools_parquedit_handler.AltinnFormParqueditHandler`
+
+| Argument | Type | Default | Description |
+| --- | --- | --- | --- |
+| `conn` | `ParquEdit` | required |  |
+
+```yaml
+- type: AltinnFormParqueditHandler
+  conn: <conn>
 ```
 
 ## StandardDataHandler
