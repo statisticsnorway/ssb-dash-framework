@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 PACKAGE = ssb_dash_framework
 OUTPUT_RELATIVE_PATH = Path("docs") / "yaml_reference.md"
-REGENERATE_COMMAND = "python -m ssb_dash_framework.config.docgen"
+REGENERATE_COMMAND = "uv run src/ssb_dash_framework/config/docgen.py"
 
 # Removed by YamlLoadable.from_yaml, the placement in the config decides these.
 DEFAULT_FROM_YAML_IGNORED_ARGS = {"as_type", "window_scrollable"}

@@ -70,8 +70,9 @@ def _postgres(tmp_dir: Path) -> Iterator[None]:
 
 @contextmanager
 def _parquedit(tmp_dir: Path) -> Iterator[None]:
-    build_db.seed_parquedit()
-    connection.set_parquedit_connection()
+
+    connection.set_parquedit_connection(tmp_dir)
+    build_db.seed_parquedit(tmp_dir)
     try:
         yield
     finally:
@@ -90,7 +91,7 @@ BACKENDS: dict[str, BackendSpec] = {
             name="postgres", setup=_postgres, skip_reason=_postgres_skip_reason
         ),
         BackendSpec(
-            name="parquedit", setup=_parquedit, skip_reason=_parquedit_skip_reason
+            name="parquedit", setup=_parquedit  # , skip_reason=_parquedit_skip_reason
         ),
     )
 }

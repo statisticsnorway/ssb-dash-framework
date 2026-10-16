@@ -4,6 +4,7 @@ from typing import Any, Literal
 from dash import no_update
 import ibis.selectors as s
 import pandas as pd
+import numpy as np
 from ..modules.helper_buttons.meta import ContactInfo
 import tzlocal
 from ibis import _
@@ -74,8 +75,15 @@ class StandardDataHandler(FetcherMeta):
         return pd.DataFrame()
 
     def get_contact_info(self, refnr: str) -> ContactInfo:
-        data = pd.DataFrame()
-        row_data = data.to_dict(orient="records")[0]
+        with get_connection() as conn:
+            s = conn.table("kontaktinfo")
+            data = (
+                s.filter(_.refnr == refnr)
+                .limit(1)
+                .to_pandas()
+            )
+
+        row_data = data.replace({np.nan: None}).to_dict(orient="records")[0]
         return ContactInfo.model_validate(row_data)
         
     def get_form_status(self, refnr: str) -> RefnrStatus | None:
@@ -195,9 +203,8 @@ class StandardDataHandler(FetcherMeta):
             t = conn.table(settings.form_data_table)
             temp_filter = t.filter(
                 t[settings.refnr_col] == refnr,
-                # t["feltnavn"] == "NyEngAnnetGjodsID",
                 t[settings.field_name_col].ilike(wildcard),
-            )  # .pivot_wider(id_cols="indeks", names_from="feltnavn", values_from="verdi")
+            ) 
 
             data = temp_filter.to_pandas()
             fieldname_parent = f"{settings.field_name_col}_parent"
@@ -213,10 +220,12 @@ class StandardDataHandler(FetcherMeta):
 
     def update_form_active_status(self, refnr: str, value: bool) -> None:
         update_to_apply = UpdateSkjemamottakAktiv(refnr=refnr, value=bool(value))
+        update_to_apply.update_ibis()
 
     def update_form_reception_comment(self, refnr: str, comment: str) -> None:
         comment_update = UpdateSkjemamottakKommentar(refnr=refnr, value=comment)
-    
+        comment_update.update_ibis()
+
     def update_form_status(
         self,
         refnr: str,
@@ -229,6 +238,7 @@ class StandardDataHandler(FetcherMeta):
             value=status_code,
             on_skjemadata_update=on_skjemadata_update
         )
+        update_to_apply.update_ibis()
 
     def update_field_value(
         self,
@@ -262,5 +272,4 @@ class StandardDataHandler(FetcherMeta):
             mapping_match_column=settings.mapping_match_column,
             mapping_result_column=settings.mapping_result_column,
         )
-
-        # self.cache.evict(refnr, settings.form_data_table) # needs evict so it's updated after edit
+        update_form.update_ibis(True)
