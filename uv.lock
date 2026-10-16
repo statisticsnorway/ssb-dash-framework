@@ -3808,7 +3808,7 @@ wheels = [
 
 [[package]]
 name = "ssb-dash-framework"
-version = "0.3.0a0"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
