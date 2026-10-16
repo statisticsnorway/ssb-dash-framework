@@ -273,10 +273,11 @@ class ParquetEditor(ModuleBase):
                 }
                 for col in data.columns
             ]
+            records = data.to_dict(orient="records")
             return (
-                data.to_dict(orient="records"),
+                records,
                 columns,
-                data.to_dict(orient="records"),
+                records,
             )
 
         if self.varselector_filtering:
