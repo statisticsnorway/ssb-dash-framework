@@ -14,7 +14,11 @@ from ssb_dash_framework import main_layout
 # No need to change this part of the .py file
 # If you want to include more modules, you can update the app.yaml file
 
-yaml_content = config_parser_yaml("demo/parqueteditor/app.yaml")
+yaml_content = config_parser_yaml(
+    "app.yaml"
+    if os.getenv("DAPLA_SERVICE", None) == "JUPYTERLAB"
+    else "demo/parqueteditor/app.yaml"
+)
 config = AppConfig(**yaml_content)
 app, tab_list, window_list = build_app_from_config(config)
 
