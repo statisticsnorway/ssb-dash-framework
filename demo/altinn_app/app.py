@@ -20,11 +20,16 @@ db_path.unlink(missing_ok=True)
 build_db.seed_sqlite(db_path)
 set_sqlite_connection(str(db_path))
 
+
 # Here the base of the app is built from the supplied yaml config file
 # No need to change this part of the .py file
 # If you want to include more modules, you can update the app.yaml file
 
-yaml_content = config_parser_yaml("demo/altinn_app/config/base.yaml")
+yaml_content = config_parser_yaml(
+    "config/base.yaml"
+    if os.getenv("DAPLA_SERVICE", None) == "JUPYTERLAB"
+    else "demo/altinn_app/config/base.yaml"
+)
 config = AppConfig(**yaml_content)
 app, tab_list, window_list = build_app_from_config(config)
 
