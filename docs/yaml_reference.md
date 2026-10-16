@@ -52,7 +52,7 @@ before calling the constructor, and define their own `from_yaml`. This is noted 
 the class section below, and the expected structure may differ from the
 constructor arguments listed.
 
-<!-- Auto-generated. Do not edit, regenerate with `python -m ssb_dash_framework.config.docgen`. -->
+<!-- Auto-generated. Do not edit, regenerate with `uv run src/ssb_dash_framework/config/docgen.py`. -->
 
 ## Contents
 
