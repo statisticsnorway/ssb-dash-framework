@@ -14,7 +14,7 @@
   "copyright_year": "2025",
   "department_number": "",
   "dependency_manager_tool": "uv",
-  "development_status": "Development Status :: 4 - Beta",
+  "development_status": "Development Status :: 5 - Production/Stable",
   "email": "dor@ssb.no",
   "friendly_name": "SSB Dash Framework",
   "github_organization": "statisticsnorway",

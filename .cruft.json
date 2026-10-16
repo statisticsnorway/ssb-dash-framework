@@ -14,7 +14,7 @@
       "github_organization": "statisticsnorway",
       "version": "0.0.0",
       "license": "MIT",
-      "development_status": "Development Status :: 4 - Beta",
+      "development_status": "Development Status :: 5 - Production/Stable",
       "code_quality_level": "Medium",
       "dependency_manager_tool": "uv",
       "department_number": "",
