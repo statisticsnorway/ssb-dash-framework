@@ -9,8 +9,8 @@ from .building_blocks import FigureDisplay
 from .building_blocks import MapDisplay
 from .building_blocks import MultiModule
 from .data_editor import DataEditor
-from .data_editor import DataEditorHistory
 from .data_editor import DataEditorContactInfo
+from .data_editor import DataEditorHistory
 from .data_editor import DataEditorInfoRow
 from .data_editor import DataEditorSidebarComment
 from .data_editor import DataEditorSidebarEditingStatus
@@ -23,8 +23,8 @@ from .data_editor import EditorSettings
 from .data_editor import StandardDataHandler
 from .nspek import Naeringsspesifikasjon
 from .nspek import NspekControls
-from .nspek import NspekControlViewTab
-from .nspek import NspekControlViewWindow
+from .nspek import NspekControlView
+from .nspek import NspekDashboard
 from .parquet_editor import ParquetEditor
 from .parquet_editor import ParquetEditorChangelog
 from .parquet_editor import apply_edits
@@ -40,8 +40,8 @@ __all__ = [
     "Canvas",
     "ControlView",
     "DataEditor",
-    "DataEditorHistory",
     "DataEditorContactInfo",
+    "DataEditorHistory",
     "DataEditorInfoRow",
     "DataEditorSidebarComment",
     "DataEditorSidebarEditingStatus",
@@ -59,6 +59,7 @@ __all__ = [
     "NspekControlViewTab",
     "NspekControlViewWindow",
     "NspekControls",
+    "NspekDashboard",
     "ParquetEditor",
     "ParquetEditorChangelog",
     "PimemorizerTab",

@@ -255,9 +255,6 @@ class DataEditorContactInfo(DataEditorHelperButton):
             """Returns a tuple of strings with the values for info cards for the kontaktinfo module in DataEditor.
             These cards will hold kontaktinfo foretak.
             """
-            if not refnr:
-                raise PreventUpdate
-
             try:
                 info: ContactInfo = self.fetcher.get_contact_info(
                     refnr

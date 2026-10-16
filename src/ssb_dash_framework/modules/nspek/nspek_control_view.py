@@ -1,6 +1,4 @@
 import logging
-from abc import ABC
-from abc import abstractmethod
 from typing import Any
 
 import dash_ag_grid as dag
@@ -9,6 +7,7 @@ import dash_bootstrap_components as dbc
 # import ibis
 from dash import callback
 from dash import callback_context as ctx
+from dash import dcc
 from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -18,9 +17,9 @@ from dash_iconify import DashIconify
 
 from ssb_dash_framework import ControlFrameworkBase
 
+# from eimerdb import EimerDBInstance
 from ...setup.variableselector import VariableSelector
-from ...utils import TabImplementation
-from ...utils import WindowImplementation
+from ...utils import ModuleBase
 from ...utils.alert_handler import create_alert
 
 logger = logging.getLogger(__name__)
@@ -34,12 +33,10 @@ default_col_def = {
 }
 
 
-class NspekControlView(ABC):
+class NspekControlView(ModuleBase):
     """Nspek variant av ControlView - tett på original implementasjon,
     men med control_class og uten hard dependency på altinnskjema.
     """
-
-    _id_number: int = 0
 
     def __init__(
         self,
@@ -54,9 +51,6 @@ class NspekControlView(ABC):
 
         if outputs is None:
             outputs = ["ident", "foretak", "aar"]
-        self.module_number = NspekControlView._id_number
-        self.module_name = self.__class__.__name__
-        NspekControlView._id_number += 1
 
         self.icon = DashIconify(icon="feather:activity", width=24)
         self.label = "NSPEK Kontroll"
@@ -64,7 +58,6 @@ class NspekControlView(ABC):
         self.control_class = control_class
         self.outputs = outputs
         # self._is_valid()
-        self.module_layout = self.create_layout()
         self.variableselector = VariableSelector(
             selected_inputs=time_units,
             selected_states=[],
@@ -73,10 +66,9 @@ class NspekControlView(ABC):
             self.variableselector.get_option(x).id.removeprefix("var-")
             for x in time_units
         ]
-        self.module_callbacks()
-        module_validator(self)
+        super().__init__()
 
-    def create_layout(self) -> html.Div:
+    def layout(self) -> html.Div:
         """Generates the layout for the ControlView module.
 
         Returns:
@@ -86,7 +78,7 @@ class NspekControlView(ABC):
             style={
                 "width": "100%",
                 "minWidth": "0",
-                "maxWidth": "1400px",
+                # "maxWidth": "1600px",
             },
             children=[
                 dbc.Row(
@@ -113,37 +105,61 @@ class NspekControlView(ABC):
                     className="g-2 mb-2",
                 ),
                 dbc.Row(
-                    dbc.Col(
-                        dag.AgGrid(
-                            id=f"{self.module_number}-kontroller",
-                            defaultColDef=default_col_def,
-                            className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            dashGridOptions={
-                                "rowSelection": "single",
-                                "rowHeight": 30,
-                            },
-                            style={"height": "500px"},
-                        ),
-                        style={"flexShrink": 0},
-                        width=12,
+                    dcc.Loading(
+                        id=f"{self.module_number}-kontroller-loading",
+                        type="default",
+                        color="#00824D",
+                        overlay_style={
+                            "visibility": "visible",
+                            "filter": "blur(2px)",
+                        },
+                        children=[
+                            dbc.Col(
+                                dag.AgGrid(
+                                    id=f"{self.module_number}-kontroller",
+                                    defaultColDef=default_col_def,
+                                    className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
+                                    dashGridOptions={
+                                        "rowSelection": "single",
+                                        "rowHeight": 30,
+                                        "loading": False,
+                                    },
+                                    style={"height": "500px"},
+                                ),
+                                style={"flexShrink": 0},
+                                width=12,
+                            ),
+                        ],
                     ),
                 ),
                 html.Hr(),
                 dbc.Row(
-                    dbc.Col(
-                        dag.AgGrid(
-                            id=f"{self.module_number}-kontrollutslag",
-                            defaultColDef=default_col_def,
-                            className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                            dashGridOptions={
-                                "pagination": True,
-                                "rowSelection": "single",
-                                "rowHeight": 30,
-                            },
-                            style={"height": "500px"},
-                        ),
-                        width=12,
-                    )
+                    dcc.Loading(
+                        id=f"{self.module_number}-kontrollutslag-loading",
+                        type="default",
+                        color="#00824D",
+                        overlay_style={
+                            "visibility": "visible",
+                            "filter": "blur(2px)",
+                        },
+                        children=[
+                            dbc.Col(
+                                dag.AgGrid(
+                                    id=f"{self.module_number}-kontrollutslag",
+                                    defaultColDef=default_col_def,
+                                    className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
+                                    dashGridOptions={
+                                        "pagination": True,
+                                        "rowSelection": "single",
+                                        "rowHeight": 30,
+                                        "loading": False,
+                                    },
+                                    style={"height": "500px"},
+                                ),
+                                width=12,
+                            ),
+                        ],
+                    ),
                 ),
             ],
         )
@@ -157,6 +173,7 @@ class NspekControlView(ABC):
             "aar": 100,
             "tema": 100,
             "sist_kjoert": 140,
+            "aktiv": 100,
             "utslag": 80,
             "verdi": 160,
             "kontrollid": 220,
@@ -180,6 +197,7 @@ class NspekControlView(ABC):
             "sekvensnummer": "Sekvens",
             "ident": "Orgnr",
             "utslag": "Utslag",
+            "aktiv": "Aktiv",
             "verdi": "Avvik",
             "org_form": "Orgform",
             "sn2025_1": "SN2025",
@@ -223,22 +241,11 @@ class NspekControlView(ABC):
 
         return columns
 
-    @abstractmethod
-    def layout(self) -> html.Div:
-        """Defines the layout for the NspekControlView module.
-
-        This is an abstract method that must be implemented by subclasses to define the module's layout.
-
-        Returns:
-            html.Div: A Dash HTML Div component representing the layout of the module.
-        """
-        pass
-
     def module_callbacks(self) -> None:
 
         @callback(
             Output(f"{self.module_number}-kontroll-var", "children"),
-            *self.variableselector.get_all_inputs(),
+            *self.variableselector.get_input(self.time_units),
         )
         def show_vars(*args):
             return f"valgte variabler: {dict(zip(self.time_units, args, strict=False))}"
@@ -270,7 +277,7 @@ class NspekControlView(ABC):
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
             State(f"{self.module_number}-kontroller", "selectedRows"),
             State("alert_store", "data"),
-            *self.variableselector.get_all_inputs(),
+            *self.variableselector.get_input(self.time_units),
             prevent_initial_call="initial_duplicate",
         )
         def get_kontroller_overview(refresh, run, selected_rows, store, *args):
@@ -311,11 +318,12 @@ class NspekControlView(ABC):
         @callback(
             Output(f"{self.module_number}-kontrollutslag", "rowData"),
             Output(f"{self.module_number}-kontrollutslag", "columnDefs"),
+            Output(f"{self.module_number}-kontrollutslag", "filterModel"),
             Input(f"{self.module_number}-kontroller", "selectedRows"),
+            State(f"{self.module_number}-kontrollutslag", "filterModel"),
             prevent_initial_call=True,
         )
-        def get_kontrollutslag(selected):
-
+        def get_kontrollutslag(selected, current_filter_model):
             if not selected:
                 raise PreventUpdate
 
@@ -335,13 +343,27 @@ class NspekControlView(ABC):
             )
 
             if df is None or df.empty:
-                return [], []
+                return [], [], {}
 
             df["foretak"] = df["ident"]
 
             columns = self._create_column_defs(df)
 
-            return df.to_dict("records"), columns
+            if not current_filter_model:
+                filter_model = {
+                    "aktiv": {
+                        "filterType": "boolean",
+                        "type": "true",
+                    }
+                }
+            else:
+                filter_model = current_filter_model
+
+            return (
+                df.to_dict("records"),
+                columns,
+                filter_model,
+            )
 
         @callback(
             *[
@@ -371,31 +393,3 @@ class NspekControlView(ABC):
                 raise ValueError(
                     f"Something is wrong with 'self.outputs'. Should be a list with at least one string inside of it. Is currently: {self.outputs}"
                 )
-
-
-class NspekControlViewTab(TabImplementation, NspekControlView):
-    def __init__(
-        self, time_units: list[str], control_class: type[ControlFrameworkBase]
-    ):
-        NspekControlView.__init__(
-            self,
-            time_units=time_units,
-            control_class=control_class,
-        )
-        TabImplementation.__init__(self)
-
-
-class NspekControlViewWindow(WindowImplementation, NspekControlView):
-    def __init__(
-        self,
-        time_units: list[str],
-        control_class: type[ControlFrameworkBase],
-        **kwargs: Any,
-    ):
-
-        NspekControlView.__init__(
-            self,
-            time_units=time_units,
-            control_class=control_class,
-        )
-        WindowImplementation.__init__(self, **kwargs)
