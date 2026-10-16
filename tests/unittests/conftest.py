@@ -20,6 +20,14 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
 
 
+def pytest_configure(config: pytest.Config) -> None:
+    """Registers the `backends` marker."""
+    config.addinivalue_line(
+        "markers",
+        "backends(*names): run the test only for the named database backends.",
+    )
+
+
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """Parametrizes every test over the selected database backends."""
     if "db_backend" in metafunc.fixturenames:
@@ -49,6 +57,21 @@ def db_backend(
         pytest.skip(f"{spec.name} backend unavailable: {reason}")
     with spec.setup(tmp_path_factory.mktemp(spec.name)):
         yield spec.name
+
+
+@pytest.fixture(autouse=True)
+def _restrict_to_marked_backends(
+    request: pytest.FixtureRequest, db_backend: str
+) -> None:
+    """Skips tests marked with `backends(...)` when the active backend is not listed.
+
+    Args:
+        request: The pytest fixture request.
+        db_backend: The name of the active backend.
+    """
+    marker = request.node.get_closest_marker("backends")
+    if marker and db_backend not in marker.args:
+        pytest.skip(f"Only runs for backends: {', '.join(marker.args)}")
 
 
 @pytest.fixture

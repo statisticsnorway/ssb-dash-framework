@@ -3,11 +3,12 @@ from collections.abc import Callable
 from collections.abc import Iterator
 from contextlib import AbstractContextManager
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
 
 import ibis
 from ibis.backends import BaseBackend
-from ibis.backends.postgres import Backend
+
 from psycopg import Connection
 from psycopg_pool import ConnectionPool
 
@@ -121,6 +122,8 @@ def set_postgres_connection(
             to ``psycopg_pool.ConnectionPool``; defaults to ``None`` (no-op), so existing
             callers are unaffected.
     """
+    from ibis.backends.postgres import Backend
+
     global _IS_POOLED, _CONNECTION, _CONNECTION_CALLABLE
     _IS_POOLED = True
 
@@ -159,4 +162,50 @@ def set_postgres_connection(
     set_connection(_wrap_ibis_postgres)
 
 
-def set_parquedit_connection(): ...
+def _create_test_connnection_parquedit(test_dir_path: Path):
+    from ssb_parquedit.connection import DuckDBConnection
+    import ssb_parquedit
+    from ssb_parquedit.local import LocalDuckDBConnection
+
+    class CustomConnection(DuckDBConnection):
+        def __init__(self, db_config: dict[str, str]) -> None:
+            test_dir_path.joinpath("data").mkdir(exist_ok=True, parents=True)
+            self._conn = LocalDuckDBConnection(str(test_dir_path.joinpath("data")))
+
+    test_dir_path = test_dir_path.joinpath("parquedit_data")
+    test_dir_path.mkdir(parents=True, exist_ok=True)
+    db_config = {
+        # Keep this alias in sync with LocalDuckDBConnection ATTACH AS name.
+        "catalog_name": "test_catalog",
+        "metadata_schema": "main",
+        "data_path": str(test_dir_path),
+        "dbname": "testdb",
+        "dbuser": "test",
+    }
+
+    class CustomParquedit(ssb_parquedit.ParquEdit):
+        def _get_connection(self) -> DuckDBConnection:
+            return CustomConnection(db_config)
+
+    conn = CustomParquedit()
+    conn._db_config = db_config
+    return conn
+
+
+def set_parquedit_connection(test_dir_path: Path | None = None):
+    global _CONNECTION
+    from ibis.backends.duckdb import Backend
+    import ssb_parquedit
+
+    if test_dir_path is not None:
+        conn = _create_test_connnection_parquedit(test_dir_path)
+    else:
+        conn = ssb_parquedit.ParquEdit()
+    _CONNECTION = conn
+    
+    @contextmanager
+    def _wrap_ibis_postgres(*args: Any, **kwargs: Any) -> Iterator[BaseBackend]:
+        with conn as raw_conn:
+            yield Backend.from_connection(raw_conn._get_connection().raw)
+
+    set_connection(_wrap_ibis_postgres)

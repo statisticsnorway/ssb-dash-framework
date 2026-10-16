@@ -130,4 +130,6 @@ In addition, having yaml as the configuration source makes it easier to migrate 
 
 Note: inheritance from the base class makes this simple to implement, and parsing is handled centrally by config_parser_yaml so modules don't need to write their own yaml-loading logic.
 
+Note: Even if the module does not inherit from ModuleBase, it must inherit from YamlLoadable to ensure it is documented correctly.
+
 ## Recommended test suite

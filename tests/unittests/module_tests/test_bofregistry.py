@@ -1,4 +1,5 @@
 from unittest.mock import patch
+import pytest 
 
 from ssb_dash_framework import BofInformation
 from ssb_dash_framework import VariableSelectorOption
@@ -7,6 +8,7 @@ from ssb_dash_framework import VariableSelectorOption
 def test_import() -> None:
     assert BofInformation is not None
 
+@pytest.mark.backends("parquedit")
 def test_base_class() -> None:
     from dash import html
 
