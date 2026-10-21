@@ -4378,9 +4378,13 @@ Tables
 ParquetEditor
 */
 
-[id$="-parqueteditor-table"] {
+.parqueteditor-table {
   height: 100% !important;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
 }
+
 
 /*
 Dark mode — ag-grid table overrides

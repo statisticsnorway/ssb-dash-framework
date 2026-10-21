@@ -244,6 +244,7 @@ class ParquetEditor(ModuleBase):
                     persisted_props=["filterModel"],
                 ),
             ],
+            className="parqueteditor-table",
             style={
                 "height": self._height
             },  # This is an exception. Styles should be in stylesheet.css
