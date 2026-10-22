@@ -522,7 +522,7 @@ Simple module with the sole purpose of editing a parquet file.
 | `output` | `str \| list[str] \| None` | `None` | Columns in your dataframe that should be clickable to output to the variable selector panel. |
 | `output_varselector_name` | `str \| list[str] \| None` | `None` | If your dataframe column names do not match the names in the variable selector, this can be used to map columns names to variable selector names. See examples. |
 | `allow_risky_column_names` | `bool` | `False` | Controls whether or not ParquetEditor allows potentially bug-inducing column names. Defaults to False. |
-| `height` | `str` | `'400px'` | AgGrid defaults to 400px height. This argument allows us to specify other params for height. |
+| `height` | `str \| None` | `None` | AgGrid defaults to None. This argument allows us to specify other params for height. |
 
 Additional keyword arguments are accepted.
 
