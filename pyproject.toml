@@ -1,6 +1,6 @@
 [project]
 name = "ssb-dash-framework"
-version = "1.0.0"
+version = "1.0.1"
 description = "SSB Dash Framework"
 readme = "README.md"
 requires-python = ">=3.12"
