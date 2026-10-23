@@ -21,14 +21,14 @@ dependencies = [
   "click>=8.0.1",
   "dash-ag-grid (>=35.2.0,<36.0.0)",
   "dash-bootstrap-components (>=2.0.4,<3.0.0)",
-  "dash-bootstrap-templates (>=2.1.0,<3.0.0)",
+  "dash-bootstrap-templates>=2.1.0,<3.0.2",
   "dash-iconify (>=0.1.2,<0.2.0)",
-  "dash (==4.1.0)",
+  "dash==4.4.1",
   "duckdb (>=1.3.2,<2.0.0)",
   "gcsfs (>=2026.8.0,<2027.0.0)",
   "geopandas (>=1.1.1,<2.0.0)",
   "ibis-framework[polars,postgres] (>=11.0.0)",
-  "ipykernel (>=6.29.5,<7.0.0)",
+  "ipykernel>=6.29.5,<7.4.1",
   "mpmath>=1.3.0",  # Pimemorizer uses this
   "orjson (>=3.10.16,<4.0.0)",
   "pandas (>=2.3.0,<4.0.0)",
@@ -202,5 +202,5 @@ classmethod-decorators = ["classmethod", "validator", "root_validator", "pydanti
   "S101",  # asserts are encouraged in pytest
 ]
 
-# [tool.uv]
-# exclude-newer = "7 days"
+[tool.uv]
+exclude-newer = "7 days"
