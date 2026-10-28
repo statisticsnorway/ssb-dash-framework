@@ -2400,7 +2400,7 @@ class Naeringsspesifikasjon(ModuleBase):
             ),
             create_desktop_window(
                 module_id="editeringslogg",
-                icon="📝",
+                icon = DashIconify(icon="feather:eye", width=24),
                 title=html.Span(
                     "Editeringslogg",
                     id="modal-editeringslogg-title",
@@ -2504,7 +2504,7 @@ class Naeringsspesifikasjon(ModuleBase):
             ),
             create_desktop_window(
                 module_id="generell-kommentar-historikk",
-                icon="🗒️",
+                icon = DashIconify(icon="feather:message-square", width=24),
                 title=html.Span(
                     "Generell kommentar - historikk",
                     id="modal-generell-kommentar-historikk-title",

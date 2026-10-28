@@ -42,7 +42,7 @@ class Aarsregnskap(ModuleBase):
         self.label = "Årsregnskap"
         self.icon = DashIconify(icon="feather:file-text", width=24)
         self._is_valid()
-        super().__init__()
+        super().__init__(desktop_window=True)
 
 
     def _is_valid(self) -> None:

@@ -3920,6 +3920,17 @@ Aarsregnskap
   text-align: center;
 }
 
+.desktop-window #tab-aarsregnskap-img-container {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.desktop-window #tab-aarsregnskap-zoom-controls {
+    width: 100%;
+    margin-left: 0;
+    box-sizing: border-box;
+}
+
 /*
 AggDistPlotter
 */
