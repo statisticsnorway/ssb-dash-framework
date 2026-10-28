@@ -3546,10 +3546,16 @@ Main layout
 */
 
 .main-layout {
-  height: 100vh;
-  overflow: auto;
+  height: 99vh;
+  overflow: hidden;
   display: grid;
   grid-template-columns: 5% 95%;
+  box-sizing: border-box;
+  transition: height 0.15s ease;
+}
+
+.main-layout.taskbar-visible {
+  height: calc(99vh - 50px);
 }
 
 .main-layout-notifications-container {
@@ -3561,6 +3567,10 @@ Main layout
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .main-layout-offcanvas-variable-selector {
@@ -4378,13 +4388,9 @@ Tables
 ParquetEditor
 */
 
-.parqueteditor-table {
-  flex: 1 1 auto;
-  width: 100%;
-  min-width: 0;
-  height: 100%;
+[id$="-parqueteditor-table"] {
+  height: 100% !important;
 }
-
 
 /*
 Dark mode — ag-grid table overrides
@@ -4716,4 +4722,534 @@ so replicate it here using darkly's own CSS variables.
     display: flex !important;
     align-items: center;
     justify-content: center;
+}
+
+
+/* =========================================================
+   SSB DASH DESKTOP WINDOWS
+   ========================================================= */
+
+.desktop-window {
+  position: fixed;
+  top: 8vh;
+  left: 12vw;
+  z-index: 1050;
+
+  display: flex;
+  flex-direction: column;
+
+  width: min(1200px, 76vw);
+  height: min(1400px, 78vh);
+  min-width: 320px;
+  min-height: 220px;
+
+  overflow: visible;
+  border: 1px solid #274247;
+  border-radius: 0;
+  box-shadow: 0 8px 24px rgba(22, 35, 39, 0.25);
+
+  background-color: #ffffff;
+  color: #162327;
+  font-family: "Open Sans", sans-serif;
+}
+
+/* Maksimert vindu */
+
+.desktop-window.maximized {
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0;
+}
+
+.desktop-window.maximized .desktop-window-resize-handle {
+  display: none;
+}
+
+/* =========================================================
+   TITLEBAR
+   ========================================================= */
+
+.desktop-window .desktop-window-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  min-height: 48px;
+  padding: 8px 16px;
+  flex-shrink: 0;
+
+  border: none;
+  border-bottom: 1px solid #274247;
+  border-radius: 0;
+
+  background-color: #00824d;
+  color: #ffffff;
+
+  cursor: move;
+  user-select: none;
+}
+
+.desktop-window .desktop-window-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  min-width: 0;
+  overflow: hidden;
+
+  font-family: "Roboto", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.desktop-window .modal-title-text {
+  overflow: hidden;
+  margin: 0;
+
+  color: #ffffff !important;
+  font-family: "Roboto", sans-serif !important;
+  font-size: 20px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desktop-window .modal-title-icon {
+  flex-shrink: 0;
+  margin: 0;
+
+  color: #ffffff !important;
+  font-family: "Roboto", sans-serif !important;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   WINDOW CONTROLS
+   ========================================================= */
+
+.desktop-window .desktop-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.desktop-window .desktop-window-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 0;
+  background: transparent;
+
+  color: #ffffff !important;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.desktop-window .desktop-window-control svg {
+  color: #ffffff !important;
+}
+
+.desktop-window .desktop-window-control:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Vis riktig ikon basert på vinduets tilstand */
+
+.desktop-window .window-restore-icon {
+  display: none;
+}
+
+.desktop-window.maximized .window-maximize-icon {
+  display: none;
+}
+
+.desktop-window.maximized .window-restore-icon {
+  display: inline-block;
+}
+
+/* =========================================================
+   WINDOW BODY
+   ========================================================= */
+
+.desktop-window .desktop-window-body {
+  display: flex;
+  flex: 1 1 auto;
+
+  width: 100%;
+  min-height: 0;
+  overflow: auto;
+
+  padding: 24px;
+
+  background-color: #ffffff;
+  color: #162327;
+  font-family: "Open Sans", sans-serif;
+}
+
+/* =========================================================
+   RESIZE HANDLES
+   ========================================================= */
+
+.desktop-window-resize-handle {
+  position: absolute;
+  z-index: 2;
+}
+
+.resize-n,
+.resize-s {
+  right: 8px;
+  left: 8px;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.resize-n {
+  top: -3px;
+}
+
+.resize-s {
+  bottom: -3px;
+}
+
+.resize-e,
+.resize-w {
+  top: 8px;
+  bottom: 8px;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+.resize-e {
+  right: -3px;
+}
+
+.resize-w {
+  left: -3px;
+}
+
+.resize-ne,
+.resize-nw,
+.resize-se,
+.resize-sw {
+  width: 12px;
+  height: 12px;
+}
+
+.resize-ne {
+  top: -4px;
+  right: -4px;
+  cursor: nesw-resize;
+}
+
+.resize-nw {
+  top: -4px;
+  left: -4px;
+  cursor: nwse-resize;
+}
+
+.resize-se {
+  right: -4px;
+  bottom: -4px;
+  cursor: nwse-resize;
+}
+
+.resize-sw {
+  bottom: -4px;
+  left: -4px;
+  cursor: nesw-resize;
+}
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+.dark-mode .desktop-window {
+  border-color: var(--ssb-dark-border, rgba(255, 255, 255, 0.15));
+  background-color: var(--ssb-dark-bg, #222222);
+  color: var(--ssb-dark-text, #ffffff);
+}
+
+.dark-mode .desktop-window .desktop-window-titlebar {
+  border-bottom-color: var(--ssb-dark-border, rgba(255, 255, 255, 0.15));
+  background-color: var(--ssb-dark-green, #00824d);
+  color: var(--ssb-dark-text, #ffffff);
+}
+
+.dark-mode .desktop-window .desktop-window-title,
+.dark-mode .desktop-window .modal-title-text,
+.dark-mode .desktop-window .modal-title-icon,
+.dark-mode .desktop-window .desktop-window-control,
+.dark-mode .desktop-window .desktop-window-control svg {
+  color: var(--ssb-dark-text, #ffffff) !important;
+}
+
+.dark-mode .desktop-window .desktop-window-body {
+  background-color: var(--ssb-dark-bg-secondary, #303030);
+  color: var(--ssb-dark-text, #ffffff);
+}
+
+.dark-mode .desktop-window .desktop-window-control:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+
+
+/* =========================================================
+   DESKTOP TASKBAR
+   ========================================================= */
+
+.desktop-taskbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2000;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  padding: 5px 12px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  border-top: 1px solid #006b40;
+  background-color: #00824d;
+  color: #ffffff;
+}
+
+.desktop-taskbar:empty {
+  display: none;
+}
+
+
+/* ---------------------------------------------------------
+   TASKBAR BUTTONS
+   --------------------------------------------------------- */
+
+.desktop-taskbar-button {
+  position: relative;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+
+  flex: 0 0 180px;
+  width: 180px;
+  min-width: 0;
+  height: 32px;
+  padding: 4px 30px 4px 12px;
+
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 0;
+  background-color: transparent;
+  color: #ffffff;
+
+  cursor: pointer;
+  font-family: "Open Sans", sans-serif;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.desktop-taskbar-button > svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: inherit;
+}
+
+.desktop-taskbar-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* Hover og aktivt vindu */
+
+.desktop-taskbar-button:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+.desktop-taskbar-button.active {
+  border-bottom: 3px solid #ffffff;
+  background-color: rgba(0, 0, 0, 0.12);
+}
+
+
+/* ---------------------------------------------------------
+   LUKKEKNAPP
+   --------------------------------------------------------- */
+
+.desktop-taskbar-close {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  transform: translateY(-50%);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+  height: 22px;
+  padding: 0;
+
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+
+  cursor: pointer;
+  font-family: sans-serif;
+  font-size: 18px;
+  line-height: 1;
+
+  opacity: 0;
+  pointer-events: none;
+}
+
+.desktop-taskbar-button:hover .desktop-taskbar-close,
+.desktop-taskbar-button:focus-within .desktop-taskbar-close {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.desktop-taskbar-close:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+
+/* ---------------------------------------------------------
+   KOMPAKT MODUS: IKONER UTEN TEKST
+   --------------------------------------------------------- */
+
+.desktop-taskbar.compact .desktop-taskbar-button {
+  flex-basis: 42px;
+  width: 42px;
+  padding: 4px;
+  justify-content: center;
+}
+
+.desktop-taskbar.compact .desktop-taskbar-label {
+  display: none;
+}
+
+.desktop-taskbar.compact .desktop-taskbar-close {
+  top: 0;
+  right: 0;
+  transform: none;
+
+  width: 15px;
+  height: 15px;
+
+  background-color: #006b40;
+  font-size: 14px;
+}
+
+.desktop-taskbar.compact .desktop-taskbar-button > svg {
+  width: 18px;
+  height: 18px;
+}
+
+
+/* ---------------------------------------------------------
+   DARK MODE
+   --------------------------------------------------------- */
+
+.dark-mode .desktop-taskbar {
+  border-top-color: var(--ssb-dark-border, rgba(255, 255, 255, 0.15));
+  background-color: var(--ssb-dark-bg, #222222);
+  color: var(--ssb-dark-text, #ffffff);
+}
+
+.dark-mode .desktop-taskbar-button {
+  border-color: var(--ssb-dark-border, rgba(255, 255, 255, 0.15));
+  color: var(--ssb-dark-text, #ffffff);
+}
+
+.dark-mode .desktop-taskbar-button:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.dark-mode .desktop-taskbar-button.active {
+  border-bottom: 3px solid #00a86b;
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.dark-mode .desktop-taskbar-close:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+.dark-mode .desktop-taskbar.compact .desktop-taskbar-close {
+  background-color: #333333;
+}
+
+
+.desktop-window.maximized {
+  top: 0 !important;
+  left: var(--desktop-workarea-left, 0px) !important;
+  width: calc(100vw - var(--desktop-workarea-left, 0px)) !important;
+  height: calc(100vh - var(--desktop-taskbar-height, 0px)) !important;
+}
+
+.desktop-snap-preview {
+  position: fixed;
+  z-index: 1900;
+  pointer-events: none;
+  box-sizing: border-box;
+  background: rgba(0, 130, 77, 0.18);
+  border: 2px solid #00824d;
+  border-radius: 2px;
+  transition:
+    left 100ms ease,
+    top 100ms ease,
+    width 100ms ease,
+    height 100ms ease;
+}
+
+.dark-mode .desktop-snap-preview {
+  background: rgba(0, 168, 107, 0.22);
+  border-color: #00a86b;
+}
+
+/* Bootstrap-modal skal ligge over desktop-vinduer. */
+.modal {
+  z-index: 3000 !important;
+}
+
+.modal-backdrop {
+  z-index: 2990 !important;
+}
+
+/* Modaler som åpnes fra et desktop-vindu. */
+.modal.desktop-window-modal .modal-dialog {
+  position: fixed;
+  margin: 0;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) !important;
+
+  width: calc(100% - 2rem);
+  max-width: 1140px;
 }
