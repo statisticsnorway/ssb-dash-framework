@@ -187,7 +187,7 @@ class ControlView(ModuleBase):
 
             logger.debug({time_unit_variable: period})
             control_class_instance = self.control_dict[skjema](
-                time_units=time_unit_variable,
+                time_units=[time_unit_variable],
                 applies_to_subset={"skjema": [skjema], time_unit_variable: period},
             )
             if (
