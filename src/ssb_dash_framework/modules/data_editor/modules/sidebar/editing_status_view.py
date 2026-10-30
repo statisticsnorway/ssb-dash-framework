@@ -32,6 +32,7 @@ _REFNR_COLUMN_ORDER = [
     "aktiv",
 ]
 
+
 class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
     """A sidebar module for inspecting and updating the status of the selected form by 'refnr'.
 
@@ -82,6 +83,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     [
                         dag.AgGrid(
                             id=f"{self.module_name}-{self.module_number}-form-table",
+                            defaultColDef={"filter": True},
                             className="ag-theme-alpine ag-theme-ssb mb-2",
                             columnSize="responsiveSizeToFit",
                             dashGridOptions={"rowSelection": "single"},
@@ -181,14 +183,16 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             if not entries:
                 return "", ""
 
-            skjemaer = list(dict.fromkeys(entry.skjema for entry in entries))  # nøku can have two different RA-nummer from the same ident
+            skjemaer = list(
+                dict.fromkeys(entry.skjema for entry in entries)
+            )  # nøku can have two different RA-nummer from the same ident
 
             if len(skjemaer) > 1:
                 AlertHandler.info(
                     f"Flere enn ett RA-skjema funnet for {ident}: {', '.join(skjemaer)}. "
                     f"Velg det du vil se på i menyen under 'Se innsendinger'.",
                     ephemeral=True,
-                    duration=10
+                    duration=10,
                 )
 
             first = entries[0]
@@ -331,7 +335,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 logger.warning(message)
                 AlertHandler.warning(message)
                 return [], [], True
-                
+
             entries = [entry.model_dump() for entry in data]
             present = dict.fromkeys(key for entry in entries for key in entry)
             ordered = [c for c in _REFNR_COLUMN_ORDER if c in present]
