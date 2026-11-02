@@ -459,6 +459,10 @@ TYPE_REGNSKAP_TABLE = {
         "database": "resultatregnskap",
         "table": "tema_resultat",
     },
+    "omloepsmidler": {
+        "database": "omloepsmidler",
+        "table": "tema_omloepsmiddel",
+    },
     "enhet_opplysninger": {
         "database": "nspek_core",
         "table": "enhet_opplysninger",
@@ -703,6 +707,8 @@ def post_description_data(regnskapstype: str) -> DataFrame:
         poster = "nspek_balanseposter"
     elif regnskapstype == "resultatregnskap":
         poster = "nspek_resultatposter"
+    elif regnskapstype == "omloepsmidler":
+        poster = "nspek_omloepsmidler"
 
     post_file_path = base_path / f"{poster}.csv"
 
@@ -881,6 +887,111 @@ def build_column_defs(
     return column_defs
 
 
+def build_varelager_column_defs(
+    sekvensnummer: int,
+    sekvens_compare: int | None = None,
+    compare_label: str | None = None,
+):
+    """Bygger kolonnedefinisjoner for varelager-gridet."""
+
+    def numeric_column(field: str, header: str) -> dict:
+        return {
+            "field": field,
+            "headerName": header,
+            "flex": 2,
+            "sortable": False,
+            "resizable": True,
+            "filter": True,
+            "editable": False,
+            "type": "numericColumn",
+            "valueFormatter": {
+                "function": (
+                    "params.value == null ? '' : "
+                    "params.value.toLocaleString('no-NO')"
+                )
+            },
+            "cellStyle": {
+                "textAlign": "right",
+                "paddingRight": "10px",
+            },
+        }
+
+    columns = [
+        {
+            "field": "beskrivelse",
+            "headerName": "Beskrivelse",
+            "width": 320,
+            "sortable": False,
+            "resizable": True,
+        },
+    ]
+
+    if sekvens_compare is None:
+        columns.extend(
+            [
+                numeric_column(
+                    "skattemessig_verdi",
+                    "Skattemessig verdi",
+                ),
+                numeric_column(
+                    "regnskapsmessig_verdi",
+                    "Regnskapsmessig verdi",
+                ),
+            ]
+        )
+
+    else:
+        columns.extend(
+            [
+                {
+                    "headerName": f"Gjeldende versjon",
+                    "children": [
+                        numeric_column(
+                            "skattemessig_verdi",
+                            "Skatt",
+                        ),
+                        numeric_column(
+                            "regnskapsmessig_verdi",
+                            "Regnskap",
+                        ),
+                    ],
+                },
+                {
+                    "headerName": (
+                        f"Sammenlignet med {compare_label.split()[0]}"
+                        if compare_label
+                        else f"Sammenlignet med {sekvens_compare}"
+                    ),
+                    "children": [
+                        numeric_column(
+                            "skattemessig_verdi_compare",
+                            "Skatt",
+                        ),
+                        numeric_column(
+                            "regnskapsmessig_verdi_compare",
+                            "Regnskap",
+                        ),
+                    ],
+                },
+                {
+                    "headerName": "Endring",
+                    "children": [
+                        numeric_column(
+                            "diff_skattemessig",
+                            "Skatt",
+                        ),
+                        numeric_column(
+                            "diff_regnskapsmessig",
+                            "Regnskap",
+                        ),
+                    ],
+                },
+            ]
+        )
+
+    return columns
+
+
 def build_regnskap_dataframe(
     regnskapstype: str,
     structure,
@@ -1043,8 +1154,161 @@ def build_regnskap_dataframe(
     return df
 
 
+def fetch_varelager_values(
+    orgnr_foretak: str,
+    sekvensnummer: int,
+) -> pd.DataFrame:
+    """Henter og bygger skattemessige og regnskapsmessige varelagerverdier."""
+
+    post_descriptions = post_description_data("omloepsmidler")
+    post_descriptions["felt"] = post_descriptions["felt"].astype(str)
+
+    with get_nspek_connection() as conn:
+        ident_data = fetch_data_by_orgnr(
+            conn,
+            "omloepsmidler",
+            orgnr_foretak,
+            "",
+            sekvensnummer,
+            columns=["rad_sti", "felt", "belop", "char_verdi"],
+        )
+
+    if ident_data.empty:
+        return pd.DataFrame(
+            columns=[
+                "felt",
+                "skattemessig_verdi",
+                "regnskapsmessig_verdi",
+            ]
+        )
+
+    verdityper = (
+        ident_data.loc[
+            ident_data["felt"].eq("verditype"),
+            ["rad_sti", "char_verdi"],
+        ]
+        .drop_duplicates(subset="rad_sti")
+        .set_index("rad_sti")["char_verdi"]
+    )
+
+    belopsdata = ident_data.loc[
+        ident_data["belop"].notna()
+        & ident_data["felt"].isin(post_descriptions["felt"]),
+        ["rad_sti", "felt", "belop"],
+    ].copy()
+
+    belopsdata["verditype"] = (
+        belopsdata["rad_sti"]
+        .map(verdityper)
+        .fillna("skattemessigVerdi")
+    )
+
+    belopsdata["verditype"] = belopsdata["verditype"].replace(
+        {
+            "regnskapsmessigVerdi": "regnskapsmessig_verdi",
+            "skattemessigVerdi": "skattemessig_verdi",
+        }
+    )
+
+    belopsdata = belopsdata.dropna(subset=["verditype"])
+
+    if belopsdata.empty:
+        return pd.DataFrame(
+            columns=[
+                "felt",
+                "skattemessig_verdi",
+                "regnskapsmessig_verdi",
+            ]
+        )
+
+    df_values = belopsdata.pivot(
+        index="felt",
+        columns="verditype",
+        values="belop",
+    ).reset_index()
+
+    for column in ["skattemessig_verdi", "regnskapsmessig_verdi"]:
+        if column not in df_values.columns:
+            df_values[column] = None
+
+    return df_values[
+        [
+            "felt",
+            "skattemessig_verdi",
+            "regnskapsmessig_verdi",
+        ]
+    ]
+
+
+def build_varelager_dataframe(
+    orgnr_foretak: str,
+    sekvensnummer: int,
+    sekvens_compare: int | None = None,
+) -> pd.DataFrame:
+    """Henter og bygger dataframe for varelager/omløpsmidler."""
+
+    post_descriptions = post_description_data("omloepsmidler").copy()
+    post_descriptions["felt"] = post_descriptions["felt"].astype(str)
+
+    # Valgt sekvens
+    df_main = fetch_varelager_values(
+        orgnr_foretak,
+        sekvensnummer,
+    )
+
+    df = post_descriptions.merge(
+        df_main,
+        on="felt",
+        how="left",
+    )
+
+    df["sekvensnummer"] = sekvensnummer
+
+    # Sammenligningssekvens
+    if sekvens_compare is not None:
+        df_compare = fetch_varelager_values(
+            orgnr_foretak,
+            sekvens_compare,
+        )
+
+        df_compare = df_compare.rename(
+            columns={
+                "skattemessig_verdi": "skattemessig_verdi_compare",
+                "regnskapsmessig_verdi": "regnskapsmessig_verdi_compare",
+            }
+        )
+
+        df = df.merge(
+            df_compare,
+            on="felt",
+            how="left",
+        )
+
+        df["sekvensnummer_compare"] = sekvens_compare
+
+        # Differanse skattemessig verdi
+        verdi = df["skattemessig_verdi"]
+        verdi_compare = df["skattemessig_verdi_compare"]
+
+        df["diff_skattemessig"] = (
+            verdi.fillna(0) - verdi_compare.fillna(0)
+        ).where(~(verdi.isna() & verdi_compare.isna()))
+
+        # Differanse regnskapsmessig verdi
+        verdi = df["regnskapsmessig_verdi"]
+        verdi_compare = df["regnskapsmessig_verdi_compare"]
+
+        df["diff_regnskapsmessig"] = (
+            verdi.fillna(0) - verdi_compare.fillna(0)
+        ).where(~(verdi.isna() & verdi_compare.isna()))
+
+    df = df.rename(columns={"tekst": "beskrivelse"})
+
+    return df
+
+
 def fetch_data_by_orgnr(
-    conn, regnskapstype: str, ident: str, aar: str, sekvensnummer: int
+    conn, regnskapstype: str, ident: str, aar: str, sekvensnummer: int, columns: list[str] | None = None,
 ) -> pd.DataFrame:
     """Returns a pandas dataframe with all nspek values found in the specified regnskapstype for a unit/orgnr.
 
@@ -1052,9 +1316,12 @@ def fetch_data_by_orgnr(
     """
     config = TYPE_REGNSKAP_TABLE[regnskapstype]
 
+    if columns is None:
+        columns = ["felt", "belop"]
+
     t = conn.table(config["table"], database=config["database"])
     t = t.filter(_.sekvensnummer == sekvensnummer)
-    filtered = t.select(["felt", "belop"])
+    filtered = t.select(columns)
     df = filtered.to_pandas()
 
     return df
@@ -2333,7 +2600,7 @@ class Naeringsspesifikasjon(ModuleBase):
                     children=[
                         dcc.Tab(
                             label="Resultatregnskap",
-                            value="resultat",
+                            value="Resultat",
                             children=[
                                 dbc.Row(
                                     [
@@ -2394,7 +2661,7 @@ class Naeringsspesifikasjon(ModuleBase):
                         ),
                         dcc.Tab(
                             label="Balanseregnskap",
-                            value="balanse",
+                            value="Balanse",
                             children=[
                                 dbc.Row(
                                     [
@@ -2454,9 +2721,48 @@ class Naeringsspesifikasjon(ModuleBase):
                             ],
                         ),
                         dcc.Tab(
+                            id="nspek-varelager-tab",
+                            label="Varelager",
+                            value="Varelager",
+                            className="nspek-varelager-tab",
+                            children=[
+                                dcc.Loading(
+                                    id="Varelager-loading",
+                                    type="default",
+                                    color="#00824D",
+                                    overlay_style={
+                                        "visibility": "visible",
+                                        "filter": "blur(2px)",
+                                    },
+                                    children=[
+                                        AgGrid(
+                                            id="nspek-varelager-grid",
+                                            className="ag-theme-alpine ag-theme-ssb mb-2",
+                                            # getRowId="params.data.id",   ### Bør vurdere å legge til dette på sikt.
+                                            defaultColDef={"resizable": True},
+                                            rowData=[],
+                                            columnDefs=[],
+                                            dashGridOptions={
+                                                "rowSelection": "single",
+                                                "enableCellTextSelection": True,
+                                                "enableBrowserTooltips": True,
+                                                "suppressScrollOnNewData": True,
+                                            },
+                                            # getRowStyle=self.get_row_style_with_comments(),
+                                            # getRowStyle=self.get_row_style_ui_sums(),
+                                            style={
+                                                "height": "50vh",
+                                                "width": "100%",
+                                            },
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                        dcc.Tab(
                             id="nspek-kontrollutslag-tab",
                             label="Kontrollutslag",
-                            value="kontrollutslag",
+                            value="Kontrollutslag",
                             className="nspek-kontrollutslag-tab",
                             children=[
                                 dbc.Button(
@@ -2837,6 +3143,66 @@ class Naeringsspesifikasjon(ModuleBase):
             column_defs = build_column_defs(sekvens_compare, can_write=self.can_write)
 
             return row_data, column_defs
+
+
+        @callback(
+            Output("nspek-varelager-grid", "rowData"),
+            Output("nspek-varelager-grid", "columnDefs"),
+            Input("btn-hent-data", "n_clicks"),
+            Input("refresh-manager", "data"),
+            Input("var-aar", "value"),
+            Input("var-ident", "value"),
+            Input("nspek-versjon-dropdown", "value"),
+            Input("nspek-versjon-dropdown-compare", "value"),
+            Input("nspek-versjon-dropdown-compare", "options"),
+        )
+        def show_varelager(
+            n_clicks,
+            refresh_data,
+            aar: str,
+            orgnr_foretak: str,
+            sekvensnummer: int,
+            sekvens_compare: int | None,
+            compare_options: list | None,
+        ):
+            if not aar or not orgnr_foretak or not sekvensnummer:
+                raise PreventUpdate
+
+            if refresh_data and refresh_data.get("status") == "invalid_search":
+                return [], []
+
+            df = build_varelager_dataframe(
+                orgnr_foretak=orgnr_foretak,
+                sekvensnummer=sekvensnummer,
+                sekvens_compare=sekvens_compare,
+            )
+
+            # Finn labelen til valgt sammenligningsversjon
+            compare_label = None
+
+            if sekvens_compare is not None:
+                compare_label = next(
+                    (
+                        option["label"]
+                        for option in (compare_options or [])
+                        if option["value"] == sekvens_compare
+                    ),
+                    str(sekvens_compare),
+                )
+
+                # Fjern eventuell tilleggsinformasjon som "(konstruert)" eller "(editert)"
+                compare_label = compare_label.split(" (", maxsplit=1)[0]
+
+            row_data = df.to_dict("records")
+
+            column_defs = build_varelager_column_defs(
+                sekvensnummer=sekvensnummer,
+                sekvens_compare=sekvens_compare,
+                compare_label=compare_label,
+            )
+
+            return row_data, column_defs
+
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
@@ -4247,3 +4613,23 @@ class Naeringsspesifikasjon(ModuleBase):
                     alert_store,
                     True,
                 )
+
+        @callback(
+            Output("nspek-tabs", "value"),
+            *self.variableselector.get_input(["tema"]),
+            prevent_initial_call=True,
+        )
+        def update_nspek_tab(tema):
+            tema_to_tab = {
+                "resultat": "Resultat",
+                "balanse": "Balanse",
+                "varelager": "Varelager",
+                "kontrollutslag": "Kontrollutslag",
+            }
+
+            tab = tema_to_tab.get(str(tema).strip().casefold())
+
+            if tab is None:
+                raise PreventUpdate
+
+            return tab
