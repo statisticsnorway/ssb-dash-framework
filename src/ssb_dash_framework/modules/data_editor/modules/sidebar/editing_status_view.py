@@ -366,6 +366,6 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             skjema = selected_row[0]["skjema"]
 
             return (
-                refnr if refnr != current_refnr else "",
-                skjema if skjema != current_altinnskjema else "",
+                refnr if refnr != current_refnr else no_update,
+                skjema if skjema != current_altinnskjema else no_update,
             )

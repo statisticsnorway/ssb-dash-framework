@@ -363,7 +363,7 @@ class ControlView(ModuleBase):
             selected_row: list[dict[Any, Any]],
         ) -> Any | tuple[Any]:
             logger.debug(f"Selected row:\n{selected_row}")
-            if selected_row is None:
+            if not selected_row:
                 logger.debug("Raising PreventUpdate due to selected_row being None")
                 raise PreventUpdate
             if len(selected_row) > 1:
