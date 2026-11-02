@@ -1,3 +1,4 @@
+from ibis.expr.types.relations import Table
 import logging
 
 from typing import Any, Literal
@@ -60,7 +61,10 @@ class ControlView(ModuleBase):
         super().__init__()
 
     def layout(self) -> html.Div:
-        """Generates the layout for the ControlView module.
+        """
+        Defines the layout for the ControlView module.
+
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
 
         Returns:
             layout: A Div element containing two tables, kontroller and kontrollutslag.
@@ -248,21 +252,23 @@ class ControlView(ModuleBase):
                     (conn.table("kontrollutslag")[time_unit_variable] == period)
                     & (conn.table("kontrollutslag").skjema.isin(defined_schemas))
                 )
-                
+
                 # only unedited
                 subq = (
-                    skjemamottak.filter(status_filter)
-                    .select("ident", "refnr")
+                    skjemamottak.filter(status_filter).select(
+                        "ident", "refnr", "skjema"
+                    )
                 ).distinct()
 
-                # only active 
-                aktive = skjemamottak.select("ident", "refnr").distinct()
+                # only active
+                aktive = skjemamottak.select("ident", "refnr", "skjema").distinct()
 
                 utslag = (
                     kontrollutslag.join(
                         aktive,
                         (kontrollutslag.ident == aktive.ident)
-                        & (kontrollutslag.refnr == aktive.refnr),
+                        & (kontrollutslag.refnr == aktive.refnr)
+                        & (kontrollutslag.skjema == aktive.skjema),
                     )
                     .filter(kontrollutslag.utslag == True)
                     .group_by([kontrollutslag.skjema, kontrollutslag.kontrollid])
@@ -273,7 +279,8 @@ class ControlView(ModuleBase):
                     kontrollutslag.join(
                         subq,
                         (kontrollutslag.ident == subq.ident)
-                        & (kontrollutslag.refnr == subq.refnr),
+                        & (kontrollutslag.refnr == subq.refnr)
+                        & (kontrollutslag.skjema == subq.skjema),
                     )
                     .filter(kontrollutslag.utslag == True)
                     .group_by([kontrollutslag.skjema, kontrollutslag.kontrollid])
@@ -362,27 +369,34 @@ class ControlView(ModuleBase):
                 )
 
                 # Subquery: filter active rows in skjemamottak
-                s = skjemamottak.filter(skjemamottak.aktiv == True).select(
-                    skjemamottak.refnr,
-                    skjemamottak[status_column],
-                    skjemamottak.ident,
+                s: Table = (
+                    skjemamottak.filter(
+                        (skjemamottak.aktiv == True)
+                        & (skjemamottak[time_unit_variable] == period)
+                        & (skjemamottak.skjema == skjema)
+                    )
+                    .select(
+                        skjemamottak.refnr,
+                        skjemamottak[status_column],
+                        skjemamottak.ident,
+                    )
+                    .distinct()
                 )
 
-                print("skjemamottak check for 152cc8ee3435:")
-                print(s.filter(s.refnr == "152cc8ee3435"))
-
                 kontrollutslag = conn.table("kontrollutslag")
+                kontrollutslag = kontrollutslag.filter(
+                    (kontrollutslag[time_unit_variable] == period)
+                    & (kontrollutslag.skjema == skjema)
+                )
                 # Main query
                 result = (
                     kontrollutslag.join(
                         s,
                         (kontrollutslag.refnr == s.refnr)
-                        & (kontrollutslag.ident == s.ident),
+                        & (kontrollutslag.ident == s.ident)
                     )
                     .filter(
                         (kontrollutslag.kontrollid == kontrollid)
-                        & (kontrollutslag.skjema == skjema)
-                        & (kontrollutslag[time_unit_variable] == period)
                         & (kontrollutslag.utslag == True)
                     )
                     .select(
@@ -397,8 +411,6 @@ class ControlView(ModuleBase):
                 )
                 result = result.to_pandas()
 
-            print("result check for 152cc8ee3435:")
-            print(result.filter(result.refnr == "152cc8ee3435"))
             columns = [{"headerName": col, "field": col} for col in result.columns]
             columns[0]["checkboxSelection"] = True
             columns[0]["headerCheckboxSelection"] = True
