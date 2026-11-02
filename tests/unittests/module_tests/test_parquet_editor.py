@@ -7,10 +7,11 @@ import pytest
 from ssb_poc_statlog_model.change_data_log import ChangeDataLog
 
 from ssb_dash_framework import ParquetEditor
+from ssb_dash_framework import VariableSelectorOption
 from ssb_dash_framework import export_from_parqueteditor
 from ssb_dash_framework import get_export_log_path
 from ssb_dash_framework import get_log_path
-from ssb_dash_framework import VariableSelectorOption
+
 
 @pytest.fixture(autouse=True)
 def disable_bucket_check(monkeypatch):
@@ -126,6 +127,55 @@ def test_changelog_creation_success(monkeypatch) -> None:
 
     changelog = test._build_process_log_entry(example_change)
     ChangeDataLog.model_validate(changelog)
+
+
+def test_load_data_to_table_converts_records_once(tmp_path, monkeypatch) -> None:
+    VariableSelectorOption("id")
+    inndata_dir = tmp_path / "buckets" / "testbucket" / "inndata"
+    inndata_dir.mkdir(parents=True)
+    data_source = inndata_dir / "source.parquet"
+    df = pd.DataFrame({"id": [1, 2, 3], "value": [10, 40, 80]})
+    df.to_parquet(data_source)
+
+    callbacks = {}
+
+    def capture_callback(*args, **kwargs):
+        def decorator(func):
+            callbacks[func.__name__] = func
+            return func
+
+        return decorator
+
+    monkeypatch.setattr(
+        "ssb_dash_framework.modules.parquet_editor.callback", capture_callback
+    )
+
+    editor = ParquetEditor(
+        statistics_name="Test",
+        id_vars=["id"],
+        data_source=str(data_source),
+        data_period="2024",
+    )
+    editor.module_callbacks()
+
+    to_dict_calls = []
+    original_to_dict = pd.DataFrame.to_dict
+
+    def counting_to_dict(self, *args, **kwargs):
+        to_dict_calls.append(kwargs.get("orient"))
+        return original_to_dict(self, *args, **kwargs)
+
+    monkeypatch.setattr(pd.DataFrame, "to_dict", counting_to_dict)
+
+    row_data, column_defs, stored_data = callbacks["load_data_to_table"]()
+
+    assert to_dict_calls == ["records"]
+    assert row_data == df.to_dict(orient="records")
+    assert stored_data == row_data
+    assert column_defs == [
+        {"headerName": "id", "field": "id", "editable": False},
+        {"headerName": "value", "field": "value", "editable": True},
+    ]
 
 
 def test_export_from_parqueteditor_success(parquet_with_log):
