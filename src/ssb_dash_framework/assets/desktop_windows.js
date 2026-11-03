@@ -108,7 +108,7 @@
 
 
   // --------------------------------------------------
-  // Lukk historikkvinduer ved nytt søk
+  // Lukk underordnede vinduer ved nytt søk
   // --------------------------------------------------
 
   let lastSearchWindowCloseSignal = null;
@@ -124,17 +124,12 @@
 
     lastSearchWindowCloseSignal = signal;
 
-    const windowIds = [
-      "editeringslogg-window",
-      "generell-kommentar-historikk-window",
-    ];
+    const childWindows = document.querySelectorAll(
+      ".desktop-window[data-parent-window]"
+    );
 
-    windowIds.forEach((windowId) => {
-      const win = document.getElementById(windowId);
-
-      if (win) {
-        closeDesktopWindow(win);
-      }
+    childWindows.forEach((win) => {
+      closeDesktopWindow(win);
     });
   };
 
