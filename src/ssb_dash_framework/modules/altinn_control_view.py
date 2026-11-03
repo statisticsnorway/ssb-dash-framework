@@ -1,18 +1,20 @@
-from ibis.expr.types.relations import Table
 import logging
-
+import threading
+import time
 from typing import Any, Literal
 
-import dash_ag_grid as dag
-import dash_bootstrap_components as dbc
-import ibis
-from dash import callback
+from dash import html, no_update
+from dash import callback, dcc
 from dash import callback_context as ctx
-from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
+from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+import dash_ag_grid as dag
+import dash_bootstrap_components as dbc
 from dash_iconify import DashIconify
+import ibis
+from ibis.expr.types.relations import Table
 
 from ..setup.variableselector import VariableSelector
 from ..utils import ModuleBase
@@ -36,14 +38,12 @@ class ControlView(ModuleBase):
 
     def __init__(
         self,
-        # time_units: list[str],
         control_dict: dict[str, Any],
         outputs: list[str] | None = None,
     ) -> None:  # TODO add proper annotation for control_dict value
         """Initializes the ControlView with time units, control dictionary, and database connection.
 
         Args:
-            time_units: A list of the time units used.
             control_dict: A dictionary with one control class per skjema.
             outputs: Variable selector fields to output to. Defaults to ['ident']
         """
@@ -58,6 +58,7 @@ class ControlView(ModuleBase):
 
         self.control_dict = control_dict
         self.outputs = outputs
+        self._state = {"running": False, "finished": 0.0}
         super().__init__()
 
     def layout(self) -> html.Div:
@@ -72,6 +73,10 @@ class ControlView(ModuleBase):
         layout = html.Div(
             style={"width": "100%"},
             children=[
+                dcc.Store(
+                    id=f"{self.module_number}-kontroll-done"
+                ),
+                dcc.Interval(id=f"{self.module_number}-kontroll-poll", interval=5000),
                 dbc.Row(
                     [
                         dbc.Col(
@@ -153,6 +158,29 @@ class ControlView(ModuleBase):
         )
         return layout
 
+    def _run_all(self, period: Any) -> None:
+                time_unit_variable = getattr(VariableSelector._time_unit, "name")
+                try:
+                    for s in list(self.control_dict):
+                        instance = self.control_dict[s](
+                            time_units=[time_unit_variable],
+                            applies_to_subset={
+                                "skjema": [s],
+                                time_unit_variable: period,
+                            },
+                        )
+                        try:
+                            instance.register_all_controls()
+                            instance.execute_controls()
+                        except ValueError as e:
+                            if "No control methods found" not in str(e):
+                                logger.error(f"Controls failed for {s}", exc_info=True)
+                        except Exception:
+                            logger.error(f"Controls failed for {s}", exc_info=True)
+                finally:
+                    self._state["running"] = False
+                    self._state["finished"] = time.time()
+
     def module_callbacks(self) -> None:
         """Registers Dash callbacks for the ControlView module."""
 
@@ -171,58 +199,131 @@ class ControlView(ModuleBase):
 
         @callback(
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
+            VariableSelector.get_timevar(State),
             prevent_initial_call=True,
         )
-        def alert_user_of_controls(click: int | None):
+        def start_controls(click: int | None, period: Any) -> None:
+            if self._state["running"]:
+                AlertHandler.info("Kontroller kjører allerede.", ephemeral=True)
+                raise PreventUpdate
+            self._state["running"] = True
             AlertHandler.info(
-                "Kjører kontroller, dette kan ta litt tid, du får beskjed når den er ferdig. Ikke klikk på knappen igjen.",
+                "Kjører kontroller, dette kan ta litt tid. Du får beskjed når det er ferdig.",
                 ephemeral=True,
                 duration=10,
             )
+            try:
+                threading.Thread(target=self._run_all, args=(period,), daemon=True).start()
+            except Exception:
+                self._state["running"] = False
+                raise
+
+        @callback(
+            Output(f"{self.module_number}-kontroll-done", "data"),
+            Output(f"{self.module_number}-kontroll-run-button", "disabled"),
+            Input(f"{self.module_number}-kontroll-poll", "n_intervals"),
+            State(f"{self.module_number}-kontroll-done", "data"),
+        )
+        def poll(_: int | None, seen: float | None):
+            finished = self._state["finished"]
+            notify = finished if finished and finished != seen else no_update
+            return notify, self._state["running"]
+
+        # @callback(
+        #     Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
+        #     prevent_initial_call=True,
+        # )
+        # def alert_user_of_controls(click: int | None):
+        #     AlertHandler.info(
+        #         "Kjører kontroller, dette kan ta litt tid, du får beskjed når den er ferdig. Ikke klikk på knappen igjen.",
+        #         ephemeral=True,
+        #         duration=10,
+        #     )
+
+        # @callback(
+        #     Output(f"{self.module_number}-kontroll-done", "data"),
+        #     Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
+        #     VariableSelector.get_timevar(State),
+        #     background=True,
+        #     running=[
+        #         (
+        #             Output(f"{self.module_number}-kontroll-run-button", "disabled"),
+        #             True,
+        #             False,
+        #         )
+        #     ],
+        #     interval=3000,  # poll every 3 s instead of every 1 s
+        #     prevent_initial_call=True,
+        # )
+        # def run_controls(click, period):
+        #     """
+        #     Background callback for running kontroller, so it doesn't freeze the app during runtime.
+        #     Returns timing for dcc.Store so the user can be notified when finished running.
+        #     """
+        #     time_unit_variable = getattr(VariableSelector._time_unit, "name")
+        #     for s in list(self.control_dict.keys()):
+        #         instance = self.control_dict[s](
+        #             time_units=[time_unit_variable],
+        #             applies_to_subset={"skjema": [s], time_unit_variable: period},
+        #         )
+        #         try:
+        #             instance.register_all_controls()
+        #             instance.execute_controls()
+        #         except ValueError as e:
+        #             if "No control methods found" in str(e):
+        #                 logger.info(f"No control methods found for {s}.")
+        #                 continue
+        #             logger.error(f"Controls failed for {s}", exc_info=True)
+        #         except Exception:
+        #             logger.error(f"Controls failed for {s}", exc_info=True)
+        #     return time.time()
 
         @callback(
             Output(f"{self.module_number}-kontroller", "rowData"),
             Output(f"{self.module_number}-kontroller", "columnDefs"),
             Input(f"{self.module_number}-kontroll-refresh", "n_clicks"),
-            Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
+            # Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
+            Input(f"{self.module_number}-kontroll-done", "data"),
             VariableSelector.get_timevar(Input),
             prevent_initial_call=True,
         )
         def get_kontroller_overview(
             refresh: int | None,
-            rerun: int | None,
+            # rerun: int | None,
+            kontroller_done,
             period: Any,
         ):
             logger.debug(
                 f"Args:\n"
                 f"refresh: {refresh}\n"
-                f"rerun: {rerun}\n"
+                # f"rerun: {rerun}\n"
+                f"kontroller_done: {kontroller_done}\n"
                 f"period: {period}"
             )
             time_unit_variable: str = getattr(VariableSelector._time_unit, "name")
 
             logger.debug({time_unit_variable: period})
             defined_schemas = list(self.control_dict.keys())
-            if (
-                ctx.triggered_id == f"{self.module_number}-kontroll-run-button"
-            ):  # TODO: Possibly better to replace with background callback.
-                logger.info("Running controls")
+            # if (
+            #     ctx.triggered_id == f"{self.module_number}-kontroll-run-button"
+            # ):  # TODO: Possibly better to replace with background callback.
+            #     logger.info("Running controls")
 
-                for s in defined_schemas:
-                    control_class_instance = self.control_dict[s](
-                        time_units=[time_unit_variable],
-                        applies_to_subset={"skjema": [s], time_unit_variable: period},
-                    )
-                    try:
-                        control_class_instance.register_all_controls()
-                        control_class_instance.execute_controls()
-                    except ValueError as e:
-                        if "No control methods found" in str(e):
-                            logger.info(f"No control methods found for {s}.")
-                        else:
-                            raise e
-            else:
-                logger.info("Refreshing view without re-running controls.")
+            #     for s in defined_schemas:
+            #         control_class_instance = self.control_dict[s](
+            #             time_units=[time_unit_variable],
+            #             applies_to_subset={"skjema": [s], time_unit_variable: period},
+            #         )
+            #         try:
+            #             control_class_instance.register_all_controls()
+            #             control_class_instance.execute_controls()
+            #         except ValueError as e:
+            #             if "No control methods found" in str(e):
+            #                 logger.info(f"No control methods found for {s}.")
+            #             else:
+            #                 raise e
+            # else:
+            #     logger.info("Refreshing view without re-running controls.")
             with get_connection(
                 necessary_tables=["skjemamottak", "kontroller", "kontrollutslag"]
             ) as conn:
@@ -328,13 +429,13 @@ class ControlView(ModuleBase):
                 ]
                 columns[0]["checkboxSelection"] = True
                 columns[0]["headerCheckboxSelection"] = True
-                if ctx.triggered_id == f"{self.module_number}-kontroll-run-button":
+                if ctx.triggered_id == f"{self.module_number}-kontroll-done":
                     AlertHandler.info(
-                        f"Kontrollkjøring ferdig for {len(defined_schemas)} skjemaer",
+                        "Kontrollkjøring ferdig.",
                         ephemeral=True,
                     )
                 else:
-                    AlertHandler.info("Kontrollvisning oppdatert.")
+                    AlertHandler.info("Kontrollvisning oppdatert.", ephemeral=True)
 
                 return result.to_dict("records"), columns
 
@@ -393,7 +494,7 @@ class ControlView(ModuleBase):
                     kontrollutslag.join(
                         s,
                         (kontrollutslag.refnr == s.refnr)
-                        & (kontrollutslag.ident == s.ident)
+                        & (kontrollutslag.ident == s.ident),
                     )
                     .filter(
                         (kontrollutslag.kontrollid == kontrollid)
