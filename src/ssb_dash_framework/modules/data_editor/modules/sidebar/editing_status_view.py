@@ -192,7 +192,6 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     f"Flere enn ett RA-skjema funnet for {ident}: {', '.join(skjemaer)}. "
                     f"Velg det du vil se på i menyen under 'Se innsendinger'.",
                     ephemeral=True,
-                    duration=10,
                 )
 
             first = entries[0]
@@ -205,12 +204,13 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 f"{self.module_name}-{self.module_number}-refnr-text-row", "children"
             ),
             VariableSelector.get_refnr(Input),
+            VariableSelector.get_state("altinnskjema"),
             Input("skjemamottak-status-signal", "data"),
             State(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             State(f"{self.module_name}-{self.module_number}-radioitems", "value"),
             optional=True,
         )
-        def set_initial_status(refnr, status_signal, current_checkbox, current_radio):
+        def set_initial_status(refnr, skjema, status_signal, current_checkbox, current_radio):
 
             if not refnr:
                 return [], None, "Skjema ikke funnet."
@@ -246,12 +246,10 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             )
             radio_out = new_radio if new_radio != current_radio else no_update
 
-            AlertHandler.success("Editeringsstatus hentet.")
-
             return (
                 checkbox_out,
                 radio_out,
-                f"Viser skjema: {refnr}",
+                f"Viser {skjema}: {refnr}",
             )
 
         checkbox_id = f"{self.module_name}-{self.module_number}-checkbox"
@@ -273,6 +271,20 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 raise PreventUpdate
 
             triggered_id = ctx.triggered_id
+            if triggered_id not in (checkbox_id, radio_id):
+                raise PreventUpdate
+
+            try:
+                current = self.fetcher.get_form_status(refnr)
+            except Exception as e:
+                logger.warning(f"Could not read form status before update: {e}")
+                current = None
+
+            if current is not None:
+                if triggered_id == checkbox_id and bool(aktiv_status) == bool(current.aktiv):
+                    raise PreventUpdate
+                if triggered_id == radio_id and status_code == current.status:
+                    raise PreventUpdate
 
             if triggered_id == checkbox_id:
                 success = self.fetcher.update_form_active_status(
