@@ -365,8 +365,8 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             Input(
                 f"{self.module_name}-{self.module_number}-form-table", "selectedRows"
             ),
-            VariableSelector.get_refnr(Input),
-            VariableSelector.get_input("altinnskjema"),
+            VariableSelector.get_refnr(State),
+            VariableSelector.get_state("altinnskjema"),
             prevent_initial_call=True,
         )
         def selected_refnr(
