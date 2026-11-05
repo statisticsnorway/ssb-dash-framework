@@ -705,6 +705,7 @@
     initializeWindow(win);
     createTaskbarButton(win);
 
+    win.dataset.opened = "true";
     win.style.display = "flex";
     win.dataset.minimized = "false";
     win.dataset.closed = "false";
@@ -941,6 +942,7 @@
       document.querySelectorAll(".desktop-window")
     ).filter((win) => (
       win !== currentWindow &&
+      win.dataset.opened === "true" &&
       win.dataset.closed !== "true" &&
       win.dataset.snapped !== "true"
     ));
@@ -1485,21 +1487,32 @@
   document.addEventListener("click", (event) => {
     if (!(event.target instanceof Element)) return;
 
-    const button = event.target.closest("button[id]");
-    if (!button) return;
-
-    const sourceWindow = getOwningWindow(button);
+    // --------------------------------------------------
+    // Generisk åpning via data-open-button-id
+    // --------------------------------------------------
 
     const launchWindow = Array.from(
       document.querySelectorAll(".desktop-window[data-open-button-id]")
-    ).find(
-      (win) => win.dataset.openButtonId === button.id
-    );
+    ).find((win) => {
+      const openButton = document.getElementById(
+        win.dataset.openButtonId
+      );
+
+      return openButton && openButton.contains(event.target);
+    });
 
     if (launchWindow) {
+      const sourceWindow = getOwningWindow(event.target);
       openWindow(launchWindow, sourceWindow);
       return;
     }
+
+    // --------------------------------------------------
+    // Sidebar og vindusknapper
+    // --------------------------------------------------
+
+    const button = event.target.closest("button[id]");
+    if (!button) return;
 
     const sidebarPrefix = "sidebar-";
     const sidebarSuffix = "-modal-button";
