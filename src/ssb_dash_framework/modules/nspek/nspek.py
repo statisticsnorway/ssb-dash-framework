@@ -9,6 +9,7 @@ import dash_bootstrap_components as dbc
 import ibis
 import pandas as pd
 from dash import callback
+from dash import clientside_callback
 from dash import ctx
 from dash import dcc
 from dash import html
@@ -22,14 +23,17 @@ from dash_iconify import DashIconify
 from ibis import _
 from pandas.core.frame import DataFrame
 
+
 from ...setup.variableselector import VariableSelector
 from ...utils import ModuleBase
 from ...utils.alert_handler import create_alert
+from ...utils.desktop_windows import desktop_window as create_desktop_window
 from .nspek_control_engine import run_all_controls_for_sekvensnummer
 from .nspek_control_engine import run_controls_changed_fields_for_sekvensnummer
 from .nspek_controls import NspekControls
 from .nspek_utils import get_nspek_connection
 from .nspek_utils import set_nspek_connection
+
 
 ibis.options.interactive = True
 logger = logging.getLogger(__name__)
@@ -1105,13 +1109,19 @@ def get_latest_field_comments(conn, orgnr: str) -> dict:
     return latest
 
 
-def trigger_refresh(current_data, key):
-    """Triggers refresh for a specific UI domain key.
+def trigger_refresh(current_data, key, extra_data=None):
+    """Triggers refresh for a specific UI domain key."""
+    new_data = dict(current_data or {})
+    new_data.update(
+        {
+            "status": key,
+            "ts": time.time_ns(),
+        }
+    )
 
-    Example use: trigger_refresh(refresh_data, "balanse")
-    """
-    new_data = {"status": key}
-    new_data["ts"] = time.time_ns()
+    if extra_data:
+        new_data.update(extra_data)
+
     return new_data
 
 
@@ -1481,7 +1491,7 @@ class Naeringsspesifikasjon(ModuleBase):
         ]
         logger.debug("TIME UNITS %s", self.time_units)
 
-        super().__init__()
+        super().__init__(desktop_window=True)
 
     def _is_valid(self) -> None:
         for var in Naeringsspesifikasjon._required_variables:
@@ -1777,179 +1787,6 @@ class Naeringsspesifikasjon(ModuleBase):
                                 close_button_id="close-readonly-warning",
                             ),
                             style={"display": "none"},
-                        ),
-                        dbc.Modal(
-                            [
-                                dbc.ModalHeader(
-                                    dbc.ModalTitle(
-                                        "Editeringslogg",
-                                        id="modal-editeringslogg-title",
-                                    )
-                                ),
-                                dbc.ModalBody(
-                                    AgGrid(
-                                        id="nspek-editeringslogg-grid",
-                                        className="ag-theme-alpine ag-theme-ssb mb-2",
-                                        columnDefs=[
-                                            {"field": "tekst", "flex": 5},
-                                            {"field": "felt", "flex": 3},
-                                            {
-                                                "field": "belop",
-                                                "flex": 2,
-                                                "type": "numericColumn",
-                                                "valueFormatter": {
-                                                    "function": "params.value == null ? '' : params.value.toLocaleString('no-NO')"
-                                                },
-                                                "cellStyle": {"textAlign": "right"},
-                                            },
-                                            {"field": "endret_av", "flex": 2},
-                                            {"field": "endret_dato", "flex": 2},
-                                            {"field": "operation_type", "hide": True},
-                                            {"field": "process_type", "hide": True},
-                                        ],
-                                        rowData=[],
-                                        dashGridOptions={
-                                            "enableCellTextSelection": True,
-                                            "ensureDomOrder": True,
-                                            "enableRangeSelection": True,
-                                        },
-                                        getRowStyle=self.get_edit_log_row_style(),
-                                        style={"height": "83vh", "width": "100%"},
-                                    )
-                                ),
-                                dbc.ModalFooter(
-                                    dbc.Row(
-                                        [
-                                            dbc.Col(
-                                                dbc.Label(
-                                                    [
-                                                        html.Span(
-                                                            "■",
-                                                            style={
-                                                                "color": "#c8e6c9",
-                                                                "marginRight": "5px",
-                                                            },
-                                                        ),
-                                                        html.Span("Satt inn nytt felt"),
-                                                        html.Span(
-                                                            "   ■",
-                                                            style={
-                                                                "color": "#ffe082",
-                                                                "marginLeft": "15px",
-                                                                "marginRight": "5px",
-                                                            },
-                                                        ),
-                                                        html.Span("Editert felt"),
-                                                        html.Span(
-                                                            "   ■",
-                                                            style={
-                                                                "color": "#9fc5e8",
-                                                                "marginLeft": "15px",
-                                                                "marginRight": "5px",
-                                                            },
-                                                        ),
-                                                        html.Span("Innsamling fra SKE"),
-                                                    ],
-                                                ),
-                                                width="auto",
-                                            ),
-                                            dbc.Col(width=True),
-                                            dbc.Col(
-                                                dbc.Button(
-                                                    "Lukk",
-                                                    id="btn-lukk-editeringslogg",
-                                                    className="ssb-btn primary-btn",
-                                                ),
-                                                width="auto",
-                                            ),
-                                        ],
-                                        align="center",
-                                        className="w-100",
-                                    )
-                                ),
-                            ],
-                            id="modal-editeringslogg",
-                            className="ssb-modal",
-                            is_open=False,
-                            size="xl",
-                            style={
-                                "maxWidth": "100vw",
-                                "width": "100vw",
-                            },
-                        ),
-                        dbc.Modal(
-                            [
-                                dbc.ModalHeader(
-                                    dbc.ModalTitle(
-                                        id="modal-generell-kommentar-historikk-title"
-                                    )
-                                ),
-                                dbc.ModalBody(
-                                    AgGrid(
-                                        id="generell-kommentar-historikk-grid",
-                                        className="ag-theme-alpine ag-theme-ssb mb-2",
-                                        columnDefs=[
-                                            {
-                                                "field": "id",
-                                                "headerName": "ID",
-                                                "width": 80,
-                                                "hide": True,
-                                            },
-                                            {
-                                                "field": "kommentar",
-                                                "headerName": "Kommentar",
-                                                "flex": 1,
-                                                "wrapText": True,
-                                                "autoHeight": True,
-                                                "cellStyle": {
-                                                    "whiteSpace": "normal",
-                                                    "lineHeight": "1.4",
-                                                    "paddingTop": "6px",
-                                                    "paddingBottom": "6px",
-                                                },
-                                            },
-                                            {
-                                                "field": "opprettet",
-                                                "headerName": "Opprettet",
-                                                "width": 160,
-                                            },
-                                            {
-                                                "field": "opprettet_av",
-                                                "headerName": "Opprettet av",
-                                                "width": 120,
-                                            },
-                                            {
-                                                "field": "aktiv",
-                                                "headerName": "Aktiv",
-                                                "width": 90,
-                                                "editable": self.can_write,
-                                            },
-                                        ],
-                                        rowData=[],
-                                        dashGridOptions={
-                                            "rowSelection": "single",
-                                            "animateRows": True,
-                                            "enableCellTextSelection": True,
-                                        },
-                                        style={"height": "83vh", "width": "100%"},
-                                    )
-                                ),
-                                dbc.ModalFooter(
-                                    dbc.Button(
-                                        "Lukk",
-                                        id="close-generell-historikk",
-                                        className="ssb-btn primary-btn",
-                                    )
-                                ),
-                            ],
-                            id="modal-generell-kommentar-historikk",
-                            className="ssb-modal",
-                            is_open=False,
-                            size="xl",
-                            style={
-                                "maxWidth": "100vw",
-                                "width": "100vw",
-                            },
                         ),
                         dbc.Modal(
                             [
@@ -2555,6 +2392,183 @@ class Naeringsspesifikasjon(ModuleBase):
 
         return layout
 
+    def extra_desktop_windows(self):
+        return [
+            html.Div(
+                id="desktop-window-command-sink",
+                style={"display": "none"},
+            ),
+            create_desktop_window(
+                module_id="editeringslogg",
+                icon = DashIconify(icon="feather:eye", width=24),
+                title=html.Span(
+                    "Editeringslogg",
+                    id="modal-editeringslogg-title",
+                    className="modal-title-text",
+                ),
+                open_button_id="btn-vis-editeringslogg",
+                width="1200px",
+                height="800px",
+                children=[
+                    html.Div(
+                        [
+                            html.Div(
+                                AgGrid(
+                                    id="nspek-editeringslogg-grid",
+                                    className="ag-theme-alpine ag-theme-ssb mb-2",
+                                    columnDefs=[
+                                        {"field": "tekst", "flex": 5},
+                                        {"field": "felt", "flex": 3},
+                                        {
+                                            "field": "belop",
+                                            "flex": 2,
+                                            "type": "numericColumn",
+                                            "valueFormatter": {
+                                                "function": (
+                                                    "params.value == null ? '' : "
+                                                    "params.value.toLocaleString('no-NO')"
+                                                )
+                                            },
+                                            "cellStyle": {"textAlign": "right"},
+                                        },
+                                        {"field": "endret_av", "flex": 2},
+                                        {"field": "endret_dato", "flex": 2},
+                                        {"field": "operation_type", "hide": True},
+                                        {"field": "process_type", "hide": True},
+                                    ],
+                                    rowData=[],
+                                    dashGridOptions={
+                                        "enableCellTextSelection": True,
+                                        "ensureDomOrder": True,
+                                        "enableRangeSelection": True,
+                                    },
+                                    getRowStyle=self.get_edit_log_row_style(),
+                                    style={
+                                        "height": "100%",
+                                        "width": "100%",
+                                    },
+                                ),
+                                style={
+                                    "flex": "1 1 0",
+                                    "minHeight": 0,
+                                    "minWidth": 0,
+                                },
+                            ),
+                            html.Div(
+                                dbc.Label(
+                                    [
+                                        html.Span(
+                                            "■",
+                                            style={
+                                                "color": "#c8e6c9",
+                                                "marginRight": "5px",
+                                            },
+                                        ),
+                                        html.Span("Satt inn nytt felt"),
+                                        html.Span(
+                                            "   ■",
+                                            style={
+                                                "color": "#ffe082",
+                                                "marginLeft": "15px",
+                                                "marginRight": "5px",
+                                            },
+                                        ),
+                                        html.Span("Editert felt"),
+                                        html.Span(
+                                            "   ■",
+                                            style={
+                                                "color": "#9fc5e8",
+                                                "marginLeft": "15px",
+                                                "marginRight": "5px",
+                                            },
+                                        ),
+                                        html.Span("Innsamling fra SKE"),
+                                    ],
+                                ),
+                                style={
+                                    "flex": "0 0 auto",
+                                    "paddingTop": "8px",
+                                },
+                            ),
+                        ],
+                        style={
+                            "display": "flex",
+                            "flexDirection": "column",
+                            "width": "100%",
+                            "height": "100%",
+                            "minHeight": 0,
+                            "minWidth": 0,
+                        },
+                    ),
+                ],
+            ),
+            create_desktop_window(
+                module_id="generell-kommentar-historikk",
+                icon = DashIconify(icon="feather:message-square", width=24),
+                title=html.Span(
+                    "Generell kommentar - historikk",
+                    id="modal-generell-kommentar-historikk-title",
+                    className="modal-title-text",
+                ),
+                open_button_id="btn-generell-kommentar-historikk",
+                width="1100px",
+                height="800px",
+                children=[
+                    html.Div(
+                        AgGrid(
+                            id="generell-kommentar-historikk-grid",
+                            className="ag-theme-alpine ag-theme-ssb mb-2",
+                            columnDefs=[
+                                {
+                                    "field": "id",
+                                    "headerName": "ID",
+                                    "width": 80,
+                                    "hide": True,
+                                },
+                                {
+                                    "field": "kommentar",
+                                    "headerName": "Kommentar",
+                                    "flex": 1,
+                                    "wrapText": True,
+                                    "autoHeight": True,
+                                    "cellStyle": {
+                                        "whiteSpace": "normal",
+                                        "lineHeight": "1.4",
+                                        "paddingTop": "6px",
+                                        "paddingBottom": "6px",
+                                    },
+                                },
+                                {
+                                    "field": "opprettet",
+                                    "headerName": "Opprettet",
+                                    "width": 160,
+                                },
+                                {
+                                    "field": "opprettet_av",
+                                    "headerName": "Opprettet av",
+                                    "width": 120,
+                                },
+                                {
+                                    "field": "aktiv",
+                                    "headerName": "Aktiv",
+                                    "width": 90,
+                                    "editable": self.can_write,
+                                },
+                            ],
+                            rowData=[],
+                            dashGridOptions={
+                                "rowSelection": "single",
+                                "animateRows": True,
+                                "enableCellTextSelection": True,
+                            },
+                            style={"height": "100%", "width": "100%"},
+                        ),
+                        style={"flex": "1", "minHeight": 0},
+                    ),
+                ],
+            ),
+        ]
+
     def module_callbacks(self) -> None:
         """Defines the callbacks for the Naeringsspesifikasjon module."""
 
@@ -2990,6 +3004,9 @@ class Naeringsspesifikasjon(ModuleBase):
         ):
 
             alert_store = alert_store or []
+            refresh_data = dict(refresh_data or {})
+
+            refresh_data["close_search_windows"] = time.time_ns()
 
             orgnr = clean_whitespace(orgnr)
 
@@ -3257,17 +3274,6 @@ class Naeringsspesifikasjon(ModuleBase):
             return options, None
 
         @callback(
-            Output("modal-editeringslogg", "is_open"),
-            Input("btn-vis-editeringslogg", "n_clicks"),
-            Input("btn-lukk-editeringslogg", "n_clicks"),
-            State("modal-editeringslogg", "is_open"),
-        )
-        def toggle_modal_editeringslogg(open_click, close_click, is_open):
-            if open_click or close_click:
-                return not is_open
-            return is_open
-
-        @callback(
             Output("btn-vis-editeringslogg", "disabled"),
             Input("nspek-tabs", "value"),
         )
@@ -3280,20 +3286,25 @@ class Naeringsspesifikasjon(ModuleBase):
             Input("btn-vis-editeringslogg", "n_clicks"),
             State("nspek-versjon-dropdown", "value"),
             State("nspek-tabs", "value"),
+            State("var-ident", "value"),
             prevent_initial_call=True,
         )
-        def load_logg(n_clicks, sekvensnummer, active_tab):
+        def load_logg(n_clicks, sekvensnummer, active_tab, orgnr):
             if not sekvensnummer:
                 raise PreventUpdate
 
             if active_tab == "balanse":
                 table = "balanseregnskap.tema_balanse_hist"
                 regnskapstype = "balanseregnskap"
-                title = "Editeringslogg - Balanseregnskap"
+                regnskapstittel = "Balanseregnskap"
             elif active_tab == "resultat":
                 table = "resultatregnskap.tema_resultat_hist"
                 regnskapstype = "resultatregnskap"
-                title = "Editeringslogg - Resultatregnskap"
+                regnskapstittel = "Resultatregnskap"
+            else:
+                raise PreventUpdate
+
+            title = f"Editeringslogg - {regnskapstittel} ({orgnr})"
 
             query = f"""
                 SELECT *
@@ -3698,17 +3709,6 @@ class Naeringsspesifikasjon(ModuleBase):
                 return ["show_petroleum"], ["show_petroleum"]
 
             return [], []
-
-        @callback(
-            Output("modal-generell-kommentar-historikk", "is_open"),
-            Input("btn-generell-kommentar-historikk", "n_clicks"),
-            Input("close-generell-historikk", "n_clicks"),
-            State("modal-generell-kommentar-historikk", "is_open"),
-        )
-        def toggle_modal_kommentar_historikk(open_click, close_click, is_open):
-            if open_click or close_click:
-                return not is_open
-            return is_open
 
         @callback(
             Output("generell-kommentar-historikk-grid", "rowData"),
@@ -4247,3 +4247,25 @@ class Naeringsspesifikasjon(ModuleBase):
                     alert_store,
                     True,
                 )
+
+
+        clientside_callback(
+            """
+            function(refreshData) {
+                if (
+                    refreshData &&
+                    refreshData.close_search_windows &&
+                    window.nspekCloseSearchWindows
+                ) {
+                    window.nspekCloseSearchWindows(
+                        refreshData.close_search_windows
+                    );
+                }
+
+                return "";
+            }
+            """,
+            Output("desktop-window-command-sink", "children"),
+            Input("refresh-manager", "data"),
+            prevent_initial_call=True,
+        )

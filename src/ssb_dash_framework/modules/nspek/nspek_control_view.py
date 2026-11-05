@@ -66,7 +66,7 @@ class NspekControlView(ModuleBase):
             self.variableselector.get_option(x).id.removeprefix("var-")
             for x in time_units
         ]
-        super().__init__()
+        super().__init__(desktop_window=True)
 
     def layout(self) -> html.Div:
         """Generates the layout for the ControlView module.
