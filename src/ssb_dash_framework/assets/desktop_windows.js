@@ -2,6 +2,7 @@
   const initializedWindows = new WeakSet();
   let topZIndex = 1050;
   let snapPreview = null;
+  let snapAssist = null;
 
   let pendingModalOrigin = null;
 
@@ -69,10 +70,7 @@
   function setWindowParent(childWindow, parentWindow) {
     if (!childWindow) return;
 
-    if (
-      parentWindow &&
-      parentWindow !== childWindow
-    ) {
+    if (parentWindow && parentWindow !== childWindow) {
       childWindow.dataset.parentWindow = parentWindow.id;
     } else {
       delete childWindow.dataset.parentWindow;
@@ -84,14 +82,10 @@
 
     visited.add(win);
 
-    // Lukk alle direkte barn først.
-    // Rekursjonen håndterer også eventuelle etterkommere.
     document
       .querySelectorAll(".desktop-window[data-parent-window]")
       .forEach((childWindow) => {
-        if (
-          childWindow.dataset.parentWindow === win.id
-        ) {
+        if (childWindow.dataset.parentWindow === win.id) {
           closeDesktopWindow(childWindow, visited);
         }
       });
@@ -103,9 +97,14 @@
     win.dataset.closed = "true";
     win.classList.remove("active-window");
 
-    removeTaskbarButton(win);
-  }
+    if (win.dataset.snapped === "true") {
+      win.dataset.snapped = "false";
+      delete win.dataset.snapCells;
+    }
 
+    removeTaskbarButton(win);
+    closeSnapAssist();
+  }
 
   // --------------------------------------------------
   // Lukk underordnede vinduer ved nytt søk
@@ -124,18 +123,25 @@
 
     lastSearchWindowCloseSignal = signal;
 
-    const childWindows = document.querySelectorAll(
-      ".desktop-window[data-parent-window]"
+    const childWindows = Array.from(
+      document.querySelectorAll(
+        ".desktop-window[data-parent-window]"
+      )
+    );
+
+    const childWindowIds = new Set(
+      childWindows.map((win) => win.id)
     );
 
     childWindows.forEach((win) => {
-      closeDesktopWindow(win);
+      if (!childWindowIds.has(win.dataset.parentWindow)) {
+        closeDesktopWindow(win);
+      }
     });
   };
 
   // --------------------------------------------------
-  // Arbeidsområde: sidebar til venstre, oppgavelinje
-  // nederst og vinduer i området mellom disse.
+  // Arbeidsområde
   // --------------------------------------------------
 
   function getWorkArea() {
@@ -230,6 +236,7 @@
         ...getWindowRect(win),
         maximized: win.classList.contains("maximized"),
         snapped: win.dataset.snapped === "true",
+        snapCells: win.dataset.snapCells || null,
         restoreRect: win._desktopRestoreRect || null,
       };
 
@@ -276,6 +283,13 @@
       }
 
       win.dataset.snapped = state.snapped ? "true" : "false";
+
+      if (state.snapCells) {
+        win.dataset.snapCells = state.snapCells;
+      } else {
+        delete win.dataset.snapCells;
+      }
+
       win.classList.toggle("maximized", Boolean(state.maximized));
 
       const maximizeButton = document.getElementById(
@@ -376,13 +390,8 @@
     }
 
     if (dialog) {
-      if (dialog.style.left) {
-        dialog.style.removeProperty("left");
-      }
-
-      if (dialog.style.top) {
-        dialog.style.removeProperty("top");
-      }
+      dialog.style.removeProperty("left");
+      dialog.style.removeProperty("top");
     }
 
     modalOrigins.delete(modal);
@@ -400,7 +409,6 @@
     const winStyle = window.getComputedStyle(win);
     const winRect = win.getBoundingClientRect();
 
-    // Ikke plasser en modal i et skjult eller minimert vindu.
     if (
       winStyle.display === "none" ||
       winStyle.visibility === "hidden" ||
@@ -420,8 +428,6 @@
       modal.classList.add("desktop-window-modal");
     }
 
-    // Unngå unødvendige DOM-endringer som kan utløse
-    // MutationObserver på nytt.
     const left = `${centerX}px`;
     const top = `${centerY}px`;
 
@@ -455,8 +461,6 @@
       return;
     }
 
-    // Behold koblingen dersom modalen allerede er knyttet
-    // til et vindu.
     const existingOrigin = modalOrigins.get(modal);
 
     if (existingOrigin) {
@@ -472,13 +476,10 @@
       pending.win.isConnected
     ) {
       positionModalInDesktopWindow(modal, pending.win);
-
-      // Bruk klikkhendelsen bare én gang.
       pendingModalOrigin = null;
       return;
     }
 
-    // Ingen kjent opprinnelse: behold Bootstrap-standard.
     resetModalPosition(modal);
   }
 
@@ -498,7 +499,6 @@
         timestamp: Date.now(),
       };
     } else {
-      // Ikke arve opphavsvindu fra et tidligere klikk.
       pendingModalOrigin = null;
     }
   }
@@ -534,10 +534,8 @@
     });
   }
 
-  // Registrer opphavsvindu før Dash behandler klikket.
   document.addEventListener("click", trackModalOrigin, true);
 
-  // Oppdag både nye modaler og eksisterende modaler som åpnes.
   const modalObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.type === "attributes") {
@@ -623,7 +621,6 @@
     label.textContent = titleText;
     button.appendChild(label);
 
-    // Lukkeknapp som vises ved hover.
     const closeButton = document.createElement("span");
     closeButton.className = "desktop-taskbar-close";
     closeButton.setAttribute("role", "button");
@@ -635,7 +632,6 @@
     function closeWindow(event) {
       event.preventDefault();
       event.stopPropagation();
-
       closeDesktopWindow(win);
     }
 
@@ -649,29 +645,43 @@
 
     button.appendChild(closeButton);
 
-    // Klikk på oppgavelinjeknappen minimerer eller gjenoppretter.
     button.addEventListener("click", () => {
-      const isVisible = win.style.display !== "none";
-      const isMinimized = win.dataset.minimized === "true";
+      const isVisible =
+        win.style.display !== "none" &&
+        win.dataset.minimized !== "true" &&
+        win.dataset.closed !== "true";
 
-      if (isVisible && !isMinimized) {
+      const isActive = win.classList.contains("active-window");
+
+      // Vinduet er synlig, men ligger bak et annet vindu.
+      // Hent det frem i stedet for å minimere det.
+      if (isVisible && !isActive) {
+        bringToFront(win);
+        return;
+      }
+
+      // Vinduet er allerede aktivt: minimer det.
+      if (isVisible && isActive) {
         saveWindowState(win);
 
         win.style.display = "none";
         win.dataset.minimized = "true";
-        button.classList.remove("active");
         win.classList.remove("active-window");
+        button.classList.remove("active");
 
+        closeSnapAssist();
         updateMainLayoutHeight();
         return;
       }
 
+      // Vinduet er minimert eller skjult: åpne det igjen.
       win.style.display = "flex";
       win.dataset.minimized = "false";
       win.dataset.closed = "false";
 
       clampWindowToWorkArea(win);
       bringToFront(win);
+      repositionDesktopModals();
       updateMainLayoutHeight();
     });
 
@@ -690,8 +700,6 @@
   function openWindow(win, parentWindow = null) {
     if (!win) return;
 
-    // Relasjonen bestemmes av vinduet som faktisk åpner
-    // målvinduet, ikke av hvilket vindu som tilfeldigvis er aktivt.
     setWindowParent(win, parentWindow);
 
     initializeWindow(win);
@@ -748,13 +756,13 @@
     const halfWidth = area.width / 2;
     const halfHeight = area.height / 2;
 
-    // Hjørnene prioriteres foran sidekantene.
     if (nearLeft && nearTop) {
       return {
         left: area.left,
         top: area.top,
         width: halfWidth,
         height: halfHeight,
+        snapCells: ["tl"],
       };
     }
 
@@ -764,6 +772,7 @@
         top: area.top,
         width: halfWidth,
         height: halfHeight,
+        snapCells: ["tr"],
       };
     }
 
@@ -773,6 +782,7 @@
         top: area.top + halfHeight,
         width: halfWidth,
         height: halfHeight,
+        snapCells: ["bl"],
       };
     }
 
@@ -782,6 +792,7 @@
         top: area.top + halfHeight,
         width: halfWidth,
         height: halfHeight,
+        snapCells: ["br"],
       };
     }
 
@@ -791,6 +802,7 @@
         top: area.top,
         width: halfWidth,
         height: area.height,
+        snapCells: ["tl", "bl"],
       };
     }
 
@@ -800,10 +812,10 @@
         top: area.top,
         width: halfWidth,
         height: area.height,
+        snapCells: ["tr", "br"],
       };
     }
 
-    // Dra til toppen for å maksimere.
     if (nearTop) {
       return {
         left: area.left,
@@ -816,6 +828,221 @@
 
     return null;
   }
+
+  // --------------------------------------------------
+  // Snap Assist: ledige områder
+  // --------------------------------------------------
+
+  const SNAP_ZONES = [
+    { cells: ["tl", "tr", "bl", "br"], name: "Hele arbeidsområdet" },
+    { cells: ["tl", "bl"], name: "Venstre halvdel" },
+    { cells: ["tr", "br"], name: "Høyre halvdel" },
+    { cells: ["tl", "tr"], name: "Øvre halvdel" },
+    { cells: ["bl", "br"], name: "Nedre halvdel" },
+    { cells: ["tl"], name: "Øverst til venstre" },
+    { cells: ["tr"], name: "Øverst til høyre" },
+    { cells: ["bl"], name: "Nederst til venstre" },
+    { cells: ["br"], name: "Nederst til høyre" },
+  ];
+
+  function getOccupiedSnapCells() {
+    const occupied = new Set();
+
+    document.querySelectorAll(
+      '.desktop-window[data-snapped="true"]'
+    ).forEach((win) => {
+      if (
+        win.style.display === "none" ||
+        win.dataset.minimized === "true" ||
+        win.dataset.closed === "true"
+      ) {
+        return;
+      }
+
+      let cells = [];
+
+      try {
+        cells = JSON.parse(win.dataset.snapCells || "[]");
+      } catch (error) {
+        // Ugyldig lagret soneinformasjon ignoreres.
+      }
+
+      cells.forEach((cell) => occupied.add(cell));
+    });
+
+    return occupied;
+  }
+
+  function getAvailableSnapZones() {
+    const occupied = getOccupiedSnapCells();
+
+    return SNAP_ZONES
+      .filter((zone) =>
+        zone.cells.every((cell) => !occupied.has(cell))
+      )
+      .sort((a, b) => b.cells.length - a.cells.length);
+  }
+
+  function getSnapZoneRect(zone) {
+    const area = getWorkArea();
+    const columns = zone.cells.map((cell) =>
+      cell.endsWith("r") ? 1 : 0
+    );
+    const rows = zone.cells.map((cell) =>
+      cell.startsWith("b") ? 1 : 0
+    );
+
+    const minColumn = Math.min(...columns);
+    const maxColumn = Math.max(...columns);
+    const minRow = Math.min(...rows);
+    const maxRow = Math.max(...rows);
+
+    const halfWidth = area.width / 2;
+    const halfHeight = area.height / 2;
+
+    return {
+      left: area.left + minColumn * halfWidth,
+      top: area.top + minRow * halfHeight,
+      width: (maxColumn - minColumn + 1) * halfWidth,
+      height: (maxRow - minRow + 1) * halfHeight,
+      snapCells: zone.cells,
+    };
+  }
+
+  // --------------------------------------------------
+  // Snap Assist: vindusforslag
+  // --------------------------------------------------
+
+  function closeSnapAssist() {
+    snapAssist?.remove();
+    snapAssist = null;
+  }
+
+  // Klikk utenfor Snap Assist, eller på et område som ikke
+  // er et vindusvalg, lukker valgvisningen.
+  document.addEventListener("click", (event) => {
+    if (!snapAssist) return;
+
+    const clickedElement = event.target;
+
+    if (
+      clickedElement instanceof Element &&
+      snapAssist.contains(clickedElement) &&
+      clickedElement.closest(".desktop-snap-assist-item")
+    ) {
+      return;
+    }
+
+    closeSnapAssist();
+  });
+
+  function getSnapCandidates(currentWindow) {
+    return Array.from(
+      document.querySelectorAll(".desktop-window")
+    ).filter((win) => (
+      win !== currentWindow &&
+      win.dataset.closed !== "true" &&
+      win.dataset.snapped !== "true"
+    ));
+  }
+
+  function showSnapAssist(currentWindow) {
+    closeSnapAssist();
+
+    const availableZones = getAvailableSnapZones();
+    if (!availableZones.length) return;
+
+    const candidates = getSnapCandidates(currentWindow);
+    if (!candidates.length) return;
+
+    const zone = availableZones[0];
+    const rect = getSnapZoneRect(zone);
+
+    snapAssist = document.createElement("div");
+    snapAssist.className = "desktop-snap-assist";
+    snapAssist.setAttribute("role", "dialog");
+    snapAssist.setAttribute("aria-label", "Velg et vindu å snappe");
+
+    Object.assign(snapAssist.style, {
+      left: `${rect.left}px`,
+      top: `${rect.top}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+    });
+
+    const content = document.createElement("div");
+    content.className = "desktop-snap-assist-content";
+
+    const heading = document.createElement("div");
+    heading.className = "desktop-snap-assist-heading";
+    heading.textContent = "Velg et vindu";
+
+    content.appendChild(heading);
+
+    const list = document.createElement("div");
+    list.className = "desktop-snap-assist-list";
+
+    candidates.forEach((win) => {
+      const titleElement = win.querySelector(".desktop-window-title");
+      const title = titleElement?.innerText.trim() || getModuleId(win);
+      const icon = titleElement?.querySelector("svg");
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "desktop-snap-assist-item";
+      button.title = `Snap ${title}`;
+
+      const thumbnail = document.createElement("div");
+      thumbnail.className = "desktop-snap-assist-thumbnail";
+
+      if (icon) {
+        thumbnail.appendChild(icon.cloneNode(true));
+      } else {
+        thumbnail.textContent = title.charAt(0).toUpperCase();
+      }
+
+      const label = document.createElement("span");
+      label.className = "desktop-snap-assist-label";
+      label.textContent = title;
+
+      button.appendChild(thumbnail);
+      button.appendChild(label);
+
+      button.addEventListener("click", () => {
+        if (
+          !win.isConnected ||
+          win.dataset.closed === "true"
+        ) {
+          closeSnapAssist();
+          return;
+        }
+
+        closeSnapAssist();
+
+        win.style.display = "flex";
+        win.dataset.minimized = "false";
+        win.dataset.closed = "false";
+
+        snapWindow(win, rect);
+        bringToFront(win);
+        repositionDesktopModals();
+
+        requestAnimationFrame(() => {
+          showSnapAssist(win);
+        });
+      });
+
+      list.appendChild(button);
+    });
+
+    content.appendChild(list);
+    snapAssist.appendChild(content);
+    document.body.appendChild(snapAssist);
+  }
+
+  // --------------------------------------------------
+  // Plassering og snapping av vinduer
+  // --------------------------------------------------
 
   function applyWindowRect(win, rect) {
     win.style.left = `${rect.left}px`;
@@ -833,6 +1060,7 @@
       }
 
       win.dataset.snapped = "false";
+      delete win.dataset.snapCells;
       win.classList.add("maximized");
 
       const maximizeButton = document.getElementById(
@@ -853,6 +1081,7 @@
 
     win.classList.remove("maximized");
     win.dataset.snapped = "true";
+    win.dataset.snapCells = JSON.stringify(rect.snapCells || []);
 
     applyWindowRect(win, rect);
 
@@ -922,6 +1151,8 @@
     };
 
     win.dataset.snapped = "false";
+    delete win.dataset.snapCells;
+
     applyWindowRect(win, restoredRect);
   }
 
@@ -940,7 +1171,6 @@
     const titlebar = win.querySelector(".desktop-window-titlebar");
     if (!titlebar) return;
 
-    // Dobbeltklikk på tittellinjen maksimerer/gjenoppretter.
     titlebar.addEventListener("dblclick", (event) => {
       if (event.target.closest("button")) return;
 
@@ -960,75 +1190,17 @@
         return;
       }
 
-      const wasMaximized = win.classList.contains("maximized");
-      const wasSnapped = win.dataset.snapped === "true";
-
-      // Gjenopprett et maksimert vindu før det dras.
-      if (wasMaximized) {
-        const area = getWorkArea();
-
-        const saved = win._desktopRestoreRect || {
-          left: area.left + 40,
-          top: 40,
-          width: Math.min(900, area.width),
-          height: Math.min(600, area.height),
-        };
-
-        const currentRect = getWindowRect(win);
-
-        const pointerRatio = Math.max(
-          0.1,
-          Math.min(
-            0.9,
-            (event.clientX - currentRect.left) /
-              Math.max(1, currentRect.width)
-          )
-        );
-
-        const restoredWidth = Math.min(saved.width, area.width);
-        const restoredHeight = Math.min(saved.height, area.height);
-
-        win.classList.remove("maximized");
-        win.dataset.snapped = "false";
-
-        applyWindowRect(win, {
-          ...saved,
-          width: restoredWidth,
-          height: restoredHeight,
-          left: Math.max(
-            area.left,
-            Math.min(
-              area.right - restoredWidth,
-              event.clientX - restoredWidth * pointerRatio
-            )
-          ),
-          top: Math.max(
-            area.top,
-            Math.min(
-              area.bottom - restoredHeight,
-              event.clientY - 20
-            )
-          ),
-        });
-
-        const maximizeButton = document.getElementById(
-          `${getModuleId(win)}-window-maximize`
-        );
-
-        if (maximizeButton) {
-          maximizeButton.title = "Maksimer vindu";
-        }
-      } else if (wasSnapped) {
-        restoreSnappedWindowForDrag(win, event);
-      }
-
       const startX = event.clientX;
       const startY = event.clientY;
 
-      // Bruk vinduets faktiske viewport-posisjon.
-      const startRect = getWindowRect(win);
-      const startLeft = startRect.left;
-      const startTop = startRect.top;
+      const wasMaximized = win.classList.contains("maximized");
+      const wasSnapped = win.dataset.snapped === "true";
+
+      const dragThreshold = 5;
+      let isDragging = false;
+
+      let startLeft = 0;
+      let startTop = 0;
 
       try {
         titlebar.setPointerCapture(event.pointerId);
@@ -1036,14 +1208,103 @@
         // Pointer capture er ikke tilgjengelig i alle miljøer.
       }
 
+      function startDrag() {
+        if (isDragging) return;
+
+        isDragging = true;
+
+        closeSnapAssist();
+
+        // Gjenopprett først når brukeren faktisk begynner å dra.
+        if (wasMaximized) {
+          const area = getWorkArea();
+
+          const saved = win._desktopRestoreRect || {
+            left: area.left + 40,
+            top: 40,
+            width: Math.min(900, area.width),
+            height: Math.min(600, area.height),
+          };
+
+          const currentRect = getWindowRect(win);
+
+          const pointerRatio = Math.max(
+            0.1,
+            Math.min(
+              0.9,
+              (startX - currentRect.left) /
+                Math.max(1, currentRect.width)
+            )
+          );
+
+          const restoredWidth = Math.min(saved.width, area.width);
+          const restoredHeight = Math.min(saved.height, area.height);
+
+          win.classList.remove("maximized");
+          win.dataset.snapped = "false";
+          delete win.dataset.snapCells;
+
+          applyWindowRect(win, {
+            ...saved,
+            width: restoredWidth,
+            height: restoredHeight,
+            left: Math.max(
+              area.left,
+              Math.min(
+                area.right - restoredWidth,
+                startX - restoredWidth * pointerRatio
+              )
+            ),
+            top: Math.max(
+              area.top,
+              Math.min(
+                area.bottom - restoredHeight,
+                startY - 20
+              )
+            ),
+          });
+
+          const maximizeButton = document.getElementById(
+            `${getModuleId(win)}-window-maximize`
+          );
+
+          if (maximizeButton) {
+            maximizeButton.title = "Maksimer vindu";
+          }
+        } else if (wasSnapped) {
+          restoreSnappedWindowForDrag(win, {
+            clientX: startX,
+            clientY: startY,
+          });
+        }
+
+        const startRect = getWindowRect(win);
+        startLeft = startRect.left;
+        startTop = startRect.top;
+      }
+
       function move(moveEvent) {
+        const dx = moveEvent.clientX - startX;
+        const dy = moveEvent.clientY - startY;
+
+        // Et vanlig klikk skal ikke flytte eller gjenopprette vinduet.
+        if (
+          !isDragging &&
+          Math.hypot(dx, dy) < dragThreshold
+        ) {
+          return;
+        }
+
+        if (!isDragging) {
+          startDrag();
+        }
+
         const area = getWorkArea();
         const titlebarHeight = titlebar.offsetHeight || 36;
 
-        const left = startLeft + moveEvent.clientX - startX;
-        const top = startTop + moveEvent.clientY - startY;
+        const left = startLeft + dx;
+        const top = startTop + dy;
 
-        // Hold alltid en del av vinduet og tittellinjen synlig.
         win.style.left = `${
           Math.min(
             Math.max(left, area.left - win.offsetWidth + 80),
@@ -1068,6 +1329,12 @@
         titlebar.removeEventListener("pointerup", stop);
         titlebar.removeEventListener("pointercancel", cancel);
 
+        // Hvis brukeren bare klikket, skal vinduet beholde
+        // nøyaktig samme størrelse og plassering.
+        if (!isDragging) {
+          return;
+        }
+
         showSnapPreview(null);
 
         if (stopEvent.type === "pointerup") {
@@ -1078,14 +1345,26 @@
 
           if (snapRect) {
             snapWindow(win, snapRect);
+
+            if (!snapRect.maximized) {
+              requestAnimationFrame(() => {
+                showSnapAssist(win);
+              });
+            } else {
+              closeSnapAssist();
+            }
           } else {
             win.dataset.snapped = "false";
+            delete win.dataset.snapCells;
+
             clampWindowToWorkArea(win);
             saveWindowState(win);
+            closeSnapAssist();
           }
         } else {
           clampWindowToWorkArea(win);
           saveWindowState(win);
+          closeSnapAssist();
         }
 
         repositionDesktopModals();
@@ -1112,6 +1391,7 @@
 
         event.preventDefault();
         event.stopPropagation();
+        closeSnapAssist();
         bringToFront(win);
 
         const edge = handle.dataset.resizeEdge;
@@ -1124,8 +1404,8 @@
         const startWidth = startRect.width;
         const startHeight = startRect.height;
 
-        // Manuell resizing opphever snap.
         win.dataset.snapped = "false";
+        delete win.dataset.snapCells;
 
         try {
           handle.setPointerCapture(event.pointerId);
@@ -1161,7 +1441,6 @@
             top = startTop + startHeight - height;
           }
 
-          // Begrens størrelsen og posisjonen til arbeidsområdet.
           width = Math.min(width, area.width);
           height = Math.min(height, area.height);
 
@@ -1209,12 +1488,8 @@
     const button = event.target.closest("button[id]");
     if (!button) return;
 
-    // Finn vinduet knappen ligger i.
-    // Dette brukes som forelder når knappen åpner et annet vindu.
     const sourceWindow = getOwningWindow(button);
 
-    // Åpne desktop-vindu fra en knapp deklarert i vinduet.
-    // Koblingen defineres i Python via data-open-button-id.
     const launchWindow = Array.from(
       document.querySelectorAll(".desktop-window[data-open-button-id]")
     ).find(
@@ -1229,7 +1504,6 @@
     const sidebarPrefix = "sidebar-";
     const sidebarSuffix = "-modal-button";
 
-    // Åpne vindu fra sidebaren.
     if (
       button.id.startsWith(sidebarPrefix) &&
       button.id.endsWith(sidebarSuffix)
@@ -1242,8 +1516,6 @@
       const win = document.getElementById(`${moduleId}-window`);
 
       if (win) {
-        // Sidebar-knapper er utenfor desktop-vinduene.
-        // De åpner derfor et vindu uten forelder.
         openWindow(win, null);
       }
 
@@ -1278,24 +1550,28 @@
 
         getTaskbarButton(win)?.classList.remove("active");
 
+        closeSnapAssist();
         updateMainLayoutHeight();
       }
 
       if (action === "maximize") {
+        closeSnapAssist();
         getWorkArea();
 
         if (!win.classList.contains("maximized")) {
-          // Behold opprinnelig størrelse for gjenoppretting.
           if (win.dataset.snapped !== "true") {
             win._desktopRestoreRect = getWindowRect(win);
           }
 
           win.dataset.snapped = "false";
+          delete win.dataset.snapCells;
+
           win.classList.add("maximized");
           button.title = "Gjenopprett vindu";
         } else {
           win.classList.remove("maximized");
           win.dataset.snapped = "false";
+          delete win.dataset.snapCells;
 
           if (win._desktopRestoreRect) {
             applyWindowRect(win, win._desktopRestoreRect);
@@ -1341,8 +1617,6 @@
     getWorkArea();
     scanWindows();
 
-    // Dash kan endre tittelen etter at vinduet er opprettet.
-    // Synkroniser derfor eksisterende oppgavelinjeknapper.
     document.querySelectorAll(".desktop-window").forEach((win) => {
       updateTaskbarButtonTitle(win);
     });
@@ -1361,7 +1635,6 @@
     updateTaskbarMode();
     updateMainLayoutHeight();
 
-    // Hold åpne vinduer innenfor det nye arbeidsområdet.
     document.querySelectorAll(".desktop-window").forEach((win) => {
       if (
         win.style.display !== "none" &&
@@ -1373,5 +1646,6 @@
     });
 
     repositionDesktopModals();
+    closeSnapAssist();
   });
 })();

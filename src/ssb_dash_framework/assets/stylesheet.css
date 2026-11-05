@@ -5264,3 +5264,139 @@ so replicate it here using darkly's own CSS variables.
   width: calc(100% - 2rem);
   max-width: 1140px;
 }
+
+/* --------------------------------------------------
+   Snap Assist – SSB styling
+   -------------------------------------------------- */
+
+.desktop-snap-assist {
+  position: fixed;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  background: rgba(22, 35, 39, 0.35);
+  backdrop-filter: blur(3px);
+}
+
+.desktop-snap-assist-content {
+  width: min(100%, 620px);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 24px;
+  box-sizing: border-box;
+  background: var(--bs-body-bg, #fff);
+  color: var(--bs-body-color, #162327);
+  border: 1px solid #c3dcdc;
+  border-top: 5px solid #1a9d49;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  font-family: "Roboto", sans-serif !important;
+}
+
+.desktop-snap-assist-heading {
+  margin-bottom: 20px;
+  color: #162327;
+  font-family: "Roboto", sans-serif !important;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.desktop-snap-assist-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 16px;
+}
+
+.desktop-snap-assist-item {
+  min-width: 0;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #c3dcdc;
+  border-top: 5px solid #1a9d49;
+  background: var(--bs-body-bg, #fff);
+  color: inherit;
+  cursor: pointer;
+  font-family: "Roboto", sans-serif !important;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.desktop-snap-assist-item:hover {
+  border-color: #00824d;
+  border-top-color: #00824d;
+  background: var(--bs-secondary-bg, #f8f9fa);
+}
+
+.desktop-snap-assist-item:focus-visible {
+  outline: #9272fc solid 2px;
+  outline-offset: 3px;
+}
+
+.desktop-snap-assist-thumbnail {
+  width: 100%;
+  height: 75px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c3dcdc;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  color: #00824d;
+  font-size: 28px;
+}
+
+.desktop-snap-assist-thumbnail svg {
+  width: 28px;
+  height: 28px;
+}
+
+.desktop-snap-assist-label {
+  width: 100%;
+  overflow: hidden;
+  color: #162327;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------
+   Dark mode
+   -------------------------------------------------- */
+
+body.dark-mode .desktop-snap-assist-content {
+  background: #303030;
+  color: #fff;
+  border-color: #4a4a4a;
+  border-top-color: #1a9d49;
+}
+
+body.dark-mode .desktop-snap-assist-heading,
+body.dark-mode .desktop-snap-assist-label {
+  color: #fff;
+}
+
+body.dark-mode .desktop-snap-assist-item {
+  background: #303030;
+  color: #fff;
+  border-color: #4a4a4a;
+  border-top-color: #1a9d49;
+}
+
+body.dark-mode .desktop-snap-assist-item:hover {
+  background: #3b3b3b;
+  border-color: #00824d;
+  border-top-color: #00824d;
+}
+
+body.dark-mode .desktop-snap-assist-thumbnail {
+  background: #252525;
+  border-color: #4a4a4a;
+  color: #1a9d49;
+}
