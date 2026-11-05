@@ -162,9 +162,13 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 "ident": VariableSelector.get_ident(Input),
                 "period": VariableSelector.get_timevar(Input),
             },
+            state={
+                "current_refnr": VariableSelector.get_refnr(State),
+                "current_skjema": VariableSelector.get_state("altinnskjema"),
+            },
             prevent_initial_call=True,
         )
-        def update_refnr(ident, period):
+        def update_refnr(ident, period, current_refnr, current_skjema):
 
             if not ident:
                 raise PreventUpdate
@@ -183,19 +187,29 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             if not entries:
                 return "", ""
 
-            skjemaer = list(
-                dict.fromkeys(entry.skjema for entry in entries)
-            )  # nøku can have two different RA-nummer from the same ident
+            # ControlView (or the user) already set a refnr valid for this ident x period: keep it
+            if current_refnr:
+                match = next((e for e in entries if e.refnr == current_refnr), None)
+                if match is not None:
+                    return no_update, (
+                        no_update if match.skjema == current_skjema else match.skjema
+                    )
 
-            if len(skjemaer) > 1:
-                AlertHandler.info(
-                    f"Flere enn ett RA-skjema funnet for {ident}: {', '.join(skjemaer)}. "
-                    f"Velg det du vil se på i menyen under 'Se innsendinger'.",
-                    ephemeral=True,
+                skjemaer = list(dict.fromkeys(entry.skjema for entry in entries))
+                if len(skjemaer) > 1:
+                    AlertHandler.info(
+                        f"Flere enn ett RA-skjema funnet for {ident}: {', '.join(skjemaer)}. "
+                        f"Velg det du vil se på i menyen under 'Se innsendinger'.",
+                        ephemeral=True,
+                    )
+
+                aktive = [e for e in entries if getattr(e, "aktiv", True)]
+                chosen = next(
+                    (e for e in aktive if e.skjema == current_skjema),
+                    aktive[0] if aktive else entries[0],
                 )
+                return chosen.refnr, chosen.skjema
 
-            first = entries[0]
-            return first.refnr, first.skjema
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-checkbox", "value"),
