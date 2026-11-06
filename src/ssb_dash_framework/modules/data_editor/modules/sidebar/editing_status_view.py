@@ -169,7 +169,6 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             prevent_initial_call=True,
         )
         def update_refnr(ident, period, current_refnr, current_skjema):
-
             if not ident:
                 raise PreventUpdate
 
@@ -187,29 +186,28 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             if not entries:
                 return "", ""
 
-            # ControlView (or the user) already set a refnr valid for this ident x period: keep it
-            if current_refnr:
+            if len(entries) > 1:
+                AlertHandler.info(
+                    f"Flere enn ett RA-skjema funnet for {ident}. "
+                    f"Velg det du vil se på i menyen under 'Se innsendinger'.",
+                    ephemeral=True,
+                )
+
+            if (
+                current_refnr
+            ):  # already set a refnr valid for this ident x period: keep it
                 match = next((e for e in entries if e.refnr == current_refnr), None)
                 if match is not None:
                     return no_update, (
                         no_update if match.skjema == current_skjema else match.skjema
                     )
 
-                skjemaer = list(dict.fromkeys(entry.skjema for entry in entries))
-                if len(skjemaer) > 1:
-                    AlertHandler.info(
-                        f"Flere enn ett RA-skjema funnet for {ident}: {', '.join(skjemaer)}. "
-                        f"Velg det du vil se på i menyen under 'Se innsendinger'.",
-                        ephemeral=True,
-                    )
-
-                aktive = [e for e in entries if getattr(e, "aktiv", True)]
-                chosen = next(
-                    (e for e in aktive if e.skjema == current_skjema),
-                    aktive[0] if aktive else entries[0],
-                )
-                return chosen.refnr, chosen.skjema
-
+            aktive = [e for e in entries if getattr(e, "aktiv", True)]
+            chosen = next(
+                (e for e in aktive if e.skjema == current_skjema),
+                aktive[0] if aktive else entries[0],
+            )
+            return chosen.refnr, chosen.skjema
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-checkbox", "value"),
@@ -224,7 +222,9 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             State(f"{self.module_name}-{self.module_number}-radioitems", "value"),
             optional=True,
         )
-        def set_initial_status(refnr, skjema, status_signal, current_checkbox, current_radio):
+        def set_initial_status(
+            refnr, skjema, status_signal, current_checkbox, current_radio
+        ):
 
             if not refnr:
                 return [], None, "Skjema ikke funnet."
@@ -263,7 +263,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             return (
                 checkbox_out,
                 radio_out,
-                f"Viser {skjema}: {refnr}",
+                f"Viser skjema: {refnr}",
             )
 
         checkbox_id = f"{self.module_name}-{self.module_number}-checkbox"
@@ -295,7 +295,9 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 current = None
 
             if current is not None:
-                if triggered_id == checkbox_id and bool(aktiv_status) == bool(current.aktiv):
+                if triggered_id == checkbox_id and bool(aktiv_status) == bool(
+                    current.aktiv
+                ):
                     raise PreventUpdate
                 if triggered_id == radio_id and status_code == current.status:
                     raise PreventUpdate
