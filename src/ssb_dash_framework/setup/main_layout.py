@@ -123,7 +123,7 @@ def main_layout(
         )
     layout = dbc.Container(
         [
-            dcc.Interval(id="kontroll-poll", interval=5000),
+            dcc.Interval(id="kontroll-poll", interval=20000, disabled=True),
         dcc.Store(id="kontroll-done"),
             html.Div(
                 id="notifications-container",

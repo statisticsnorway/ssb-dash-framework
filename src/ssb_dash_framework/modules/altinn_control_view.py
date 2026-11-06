@@ -98,12 +98,6 @@ class ControlView(ModuleBase):
                             ),
                             width="auto",
                         ),
-                        dbc.Col(
-                            html.P(
-                                id=f"{self.module_number}-kontroll-var",
-                                className="mb-0",
-                            )
-                        ),
                     ],
                     className="g-2 align-items-center",
                 ),
@@ -182,37 +176,24 @@ class ControlView(ModuleBase):
         """Registers Dash callbacks for the ControlView module."""
 
         @callback(
-            Output(f"{self.module_number}-kontroll-var", "children"),
-            VariableSelector.get_input("altinnskjema"),
-            VariableSelector.get_timevar(Input),
-        )
-        def kontroller_show_selected_controls(skjema: str | None, period: str | None):
-            logger.debug(f"Args:\nskjema: {skjema}\nperiod: {period}")
-            time_unit_variable: str = getattr(VariableSelector._time_unit, "name")
-            partition_args = {time_unit_variable: period}
-            if skjema is not None:
-                valgte_vars = f"valgt partisjon: {partition_args}\nvalgt skjema: {skjema if skjema else 'Velg skjema for å starte'}"
-                return valgte_vars
-
-        @callback(
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
             VariableSelector.get_timevar(State),
             prevent_initial_call=True,
         )
-        def start_controls(click: int | None, period: Any) -> None:
+        def start_controls(click: int | None, period: Any) -> bool:
             if self._state["running"]:
                 AlertHandler.info("Kontroller kjører allerede.", ephemeral=True)
                 raise PreventUpdate
             self._state["running"] = True
             AlertHandler.info(
-                "Kjører kontroller, dette kan ta litt tid. Du får beskjed når det er ferdig.",
+                "Kjører kontroller. Dette kan ta litt tid. Du får beskjed når det er ferdig.",
                 ephemeral=True,
-                duration=10,
             )
             try:
                 threading.Thread(
                     target=self._run_all, args=(period,), daemon=True
                 ).start()
+                return False
             except Exception:
                 self._state["running"] = False
                 raise
@@ -220,13 +201,15 @@ class ControlView(ModuleBase):
         @callback(
             Output("kontroll-done", "data"),
             Output(f"{self.module_number}-kontroll-run-button", "disabled"),
+            Output("kontroll-poll", "disabled"),
             Input("kontroll-poll", "n_intervals"),
             State("kontroll-done", "data"),
         )
         def poll(_: int | None, seen: float | None):
+            running = self._state["running"]
             finished = self._state["finished"]
             notify = finished if finished and finished != seen else no_update
-            return notify, self._state["running"]
+            return notify, self._state["running"], not running
 
         @callback(
             Output(f"{self.module_number}-kontroller", "rowData"),
@@ -400,7 +383,7 @@ class ControlView(ModuleBase):
                     "status" if "status" in skjemamottak.columns else "editert"
                 )
 
-                # Subquery: filter active rows in skjemamottak
+                # subquery: filter active rows in skjemamottak
                 s: Table = (
                     skjemamottak.filter(
                         (skjemamottak.aktiv == True)
@@ -420,7 +403,7 @@ class ControlView(ModuleBase):
                     (kontrollutslag[time_unit_variable] == period)
                     & (kontrollutslag.skjema == skjema)
                 )
-                # Main query
+
                 result = (
                     kontrollutslag.join(
                         s,
@@ -456,6 +439,7 @@ class ControlView(ModuleBase):
         def output_to_varselector(
             selected_row: list[dict[Any, Any]],
         ) -> Any | tuple[Any]:
+
             logger.debug(f"Selected row:\n{selected_row}")
             if not selected_row:
                 logger.debug("Raising PreventUpdate due to selected_row being None")
@@ -466,8 +450,10 @@ class ControlView(ModuleBase):
                 )
 
             if len(self.outputs) == 1:
+
                 return selected_row[0][self.outputs[0]]
             elif len(self.outputs) > 1:
+
                 return tuple(selected_row[0][output] for output in self.outputs)
             else:
                 raise ValueError(
