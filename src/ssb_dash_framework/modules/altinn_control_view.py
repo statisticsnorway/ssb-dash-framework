@@ -1,17 +1,20 @@
 import logging
+import threading
+import time
+from typing import Any, Literal
 
-from typing import Any
-
-import dash_ag_grid as dag
-import dash_bootstrap_components as dbc
-import ibis
-from dash import callback
+from dash import html, no_update
+from dash import callback, dcc
 from dash import callback_context as ctx
-from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
+from dash.dependencies import State
 from dash.exceptions import PreventUpdate
+import dash_ag_grid as dag
+import dash_bootstrap_components as dbc
 from dash_iconify import DashIconify
+import ibis
+from ibis.expr.types.relations import Table
 
 from ..setup.variableselector import VariableSelector
 from ..utils import ModuleBase
@@ -35,14 +38,12 @@ class ControlView(ModuleBase):
 
     def __init__(
         self,
-        # time_units: list[str],
         control_dict: dict[str, Any],
         outputs: list[str] | None = None,
     ) -> None:  # TODO add proper annotation for control_dict value
         """Initializes the ControlView with time units, control dictionary, and database connection.
 
         Args:
-            time_units: A list of the time units used.
             control_dict: A dictionary with one control class per skjema.
             outputs: Variable selector fields to output to. Defaults to ['ident']
         """
@@ -51,17 +52,20 @@ class ControlView(ModuleBase):
         )
         if outputs is None:
             outputs = ["ident"]
-        
+
         self.icon = DashIconify(icon="feather:alert-triangle", width=24)
         self.label = "Kontroll"
 
         self.control_dict = control_dict
         self.outputs = outputs
+        self._state = {"running": False, "finished": 0.0}
         super().__init__()
 
+    def layout(self) -> html.Div:
+        """
+        Defines the layout for the ControlView module.
 
-    def create_layout(self) -> html.Div:
-        """Generates the layout for the ControlView module.
+        This is an abstract method that must be implemented by subclasses to define the module's layout.
 
         Returns:
             layout: A Div element containing two tables, kontroller and kontrollutslag.
@@ -73,9 +77,16 @@ class ControlView(ModuleBase):
                     [
                         dbc.Col(
                             dbc.Button(
-                                "🔄 Oppdater visning",
+                                [
+                                    DashIconify(
+                                        icon="feather:refresh-cw",
+                                        width=18,
+                                        className="me-2",
+                                    ),
+                                    "Oppdater visning",
+                                ],
                                 id=f"{self.module_number}-kontroll-refresh",
-                                className="ssb-btn primary-btn",
+                                className="ssb-btn primary-btn d-flex align-items-center",
                             ),
                             width="auto",
                         ),
@@ -87,136 +98,154 @@ class ControlView(ModuleBase):
                             ),
                             width="auto",
                         ),
-                        dbc.Col(html.P(id=f"{self.module_number}-kontroll-var")),
                     ],
-                    className="g-2",
+                    className="g-2 align-items-center",
                 ),
                 dbc.Row(
-                    dag.AgGrid(
-                        id=f"{self.module_number}-kontroller",
-                        defaultColDef=default_col_def,
-                        className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
-                        columnSize="responsiveSizeToFit",
-                        dashGridOptions={
-                            "pagination": True,
-                            "rowSelection": "single",
-                            "rowHeight": 28,
-                        },
+                    dbc.Col(
+                        dag.AgGrid(
+                            id=f"{self.module_number}-kontroller",
+                            defaultColDef=default_col_def,
+                            className="ag-theme-alpine ag-theme-ssb header-style-on-filter",
+                            columnSize="responsiveSizeToFit",
+                            rowData=[],
+                            dashGridOptions={
+                                "loading": False,
+                                "pagination": True,
+                                "rowSelection": "single",
+                                "rowHeight": 28,
+                                "overlayNoRowsTemplate": "Trykk «Oppdater visning» for å laste inn kontrollene, "
+                                "eller «Kjør kontroller (kan ta tid)» for å kjøre dem på nytt.",
+                            },
+                            dangerously_allow_code=True,
+                        ),
+                        width=12,
                     ),
-                    style={"flexShrink": 0},
+                    className="mt-4",
                 ),
-                html.Hr(),
                 dbc.Row(
                     dbc.Col(
                         dag.AgGrid(
                             id=f"{self.module_number}-kontrollutslag",
                             defaultColDef=default_col_def,
-                            className="ag-theme-alpine ag-theme-ssb mb-2 header-style-on-filter",
+                            className="ag-theme-alpine ag-theme-ssb header-style-on-filter",
                             columnSize="responsiveSizeToFit",
+                            rowData=[],
                             dashGridOptions={
                                 "pagination": True,
                                 "rowSelection": "single",
                                 "rowHeight": 28,
+                                "overlayNoRowsTemplate": "Velg en kontroll i tabellen over for å se utslagene.",
+                                "loading": False,
                             },
+                            dangerously_allow_code=True,
                         ),
                         width=12,
-                    )
+                    ),
+                    className="mt-4",
                 ),
             ],
         )
         return layout
 
-    def layout(self) -> html.Div:
-        """Defines the layout for the ControlView module.
-
-        This is an abstract method that must be implemented by subclasses to define the module's layout.
-
-        Returns:
-            html.Div: A Dash HTML Div component representing the layout of the module.
-        """
-        return self.create_layout()
+    def _run_all(self, period: Any) -> None:
+        time_unit_variable = getattr(VariableSelector._time_unit, "name")
+        try:
+            for s in list(self.control_dict):
+                instance = self.control_dict[s](
+                    time_units=[time_unit_variable],
+                    applies_to_subset={
+                        "skjema": [s],
+                        time_unit_variable: period,
+                    },
+                )
+                try:
+                    instance.register_all_controls()
+                    instance.execute_controls()
+                except ValueError as e:
+                    if "No control methods found" not in str(e):
+                        logger.error(f"Controls failed for {s}", exc_info=True)
+                except Exception:
+                    logger.error(f"Controls failed for {s}", exc_info=True)
+        finally:
+            self._state["running"] = False
+            self._state["finished"] = time.time()
+            logger.info("Kontrollkjøring ferdig (thread)")
 
     def module_callbacks(self) -> None:
         """Registers Dash callbacks for the ControlView module."""
 
         @callback(
-            Output(f"{self.module_number}-kontroll-var", "children"),
-            VariableSelector.get_input("altinnskjema"),
-            VariableSelector.get_timevar(Input),
-        )
-        def kontroller_show_selected_controls(skjema: str | None, period: str | None):
-            logger.debug(f"Args:\nskjema: {skjema}\nperiod: {period}")
-            time_unit_variable: str = getattr(VariableSelector._time_unit, "name")
-            partition_args = {time_unit_variable: period}
-            if skjema is not None:
-                valgte_vars = f"valgt partisjon: {partition_args}\nvalgt skjema: {skjema if skjema else 'Velg skjema for å starte'}"
-                return valgte_vars
-
-        @callback(
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
+            VariableSelector.get_timevar(State),
             prevent_initial_call=True,
         )
-        def alert_user_of_controls(click: int | None):
+        def start_controls(click: int | None, period: Any) -> bool:
+            if self._state["running"]:
+                AlertHandler.info("Kontroller kjører allerede.", ephemeral=True)
+                raise PreventUpdate
+            self._state["running"] = True
             AlertHandler.info(
-                "Kjører kontroller, dette kan ta litt tid, du får beskjed når den er ferdig. Ikke klikk på knappen igjen."
+                "Kjører kontroller. Dette kan ta litt tid. Du får beskjed når det er ferdig.",
+                ephemeral=True,
             )
+            try:
+                threading.Thread(
+                    target=self._run_all, args=(period,), daemon=True
+                ).start()
+                return False
+            except Exception:
+                self._state["running"] = False
+                raise
+
+        @callback(
+            Output("kontroll-done", "data"),
+            Output(f"{self.module_number}-kontroll-run-button", "disabled"),
+            Output("kontroll-poll", "disabled"),
+            Input("kontroll-poll", "n_intervals"),
+            State("kontroll-done", "data"),
+        )
+        def poll(_: int | None, seen: float | None):
+            running = self._state["running"]
+            finished = self._state["finished"]
+            notify = finished if finished and finished != seen else no_update
+            return notify, self._state["running"], not running
 
         @callback(
             Output(f"{self.module_number}-kontroller", "rowData"),
             Output(f"{self.module_number}-kontroller", "columnDefs"),
-            VariableSelector.get_input("altinnskjema"),
             Input(f"{self.module_number}-kontroll-refresh", "n_clicks"),
-            Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
+            Input("kontroll-done", "data"),
             VariableSelector.get_timevar(Input),
             prevent_initial_call=True,
         )
         def get_kontroller_overview(
-            skjema: str,
             refresh: int | None,
-            rerun: int | None,
+            kontroller_done,
             period: Any,
         ):
             logger.debug(
                 f"Args:\n"
-                f"skjema: {skjema}\n"
                 f"refresh: {refresh}\n"
-                f"rerun: {rerun}\n"
+                f"kontroller_done: {kontroller_done}\n"
                 f"period: {period}"
             )
             time_unit_variable: str = getattr(VariableSelector._time_unit, "name")
 
             logger.debug({time_unit_variable: period})
-            control_class_instance = self.control_dict[skjema](
-                time_units=time_unit_variable,
-                applies_to_subset={"skjema": [skjema], time_unit_variable: period},
-            )
-            if (
-                ctx.triggered_id == f"{self.module_number}-kontroll-run-button"
-            ):  # TODO: Possibly better to replace with background callback.
-                logger.info("Running controls")
-                try:
-                    control_class_instance.register_all_controls()
-                    control_class_instance.execute_controls()
-                except ValueError as e:
-                    if (
-                        str(e)
-                        == "No control methods found. Remember to use the 'register_control' decorator function."
-                    ):
-                        logger.info("No control methods found.")
-                        AlertHandler.warning(
-                            f"Ingen kontroller funnet i {control_class_instance.__class__.__name__}"
-                        )
+            defined_schemas = list(self.control_dict.keys())
 
-                        return [], []
-                    else:
-                        raise e
-            else:
-                logger.info("Refreshing view without re-running controls.")
             with get_connection(
                 necessary_tables=["skjemamottak", "kontroller", "kontrollutslag"]
             ) as conn:
 
                 skjemamottak = conn.table("skjemamottak")
+                skjemamottak = skjemamottak.filter(
+                    (skjemamottak[time_unit_variable] == period)
+                    & (skjemamottak.skjema.isin(defined_schemas))
+                    & (skjemamottak.aktiv == True)
+                )
+
                 if "status" in skjemamottak.columns:
                     status_column, status_value = "status", "Ubehandlet"
                     status_filter = (
@@ -226,36 +255,62 @@ class ControlView(ModuleBase):
                     status_column, status_value = "editert", False
                     status_filter = skjemamottak[status_column] == status_value
 
-                kontroller = conn.table("kontroller")
-                kontrollutslag = conn.table("kontrollutslag")
-
-                utslag = (
-                    kontrollutslag.filter(kontrollutslag.utslag == True)
-                    .group_by(kontrollutslag.kontrollid)
-                    .aggregate(ant_utslag=ibis._.count())
+                kontroller = conn.table("kontroller").filter(
+                    (conn.table("kontroller")[time_unit_variable] == period)
+                    & (conn.table("kontroller").skjema.isin(defined_schemas))
                 )
 
+                kontrollutslag = conn.table("kontrollutslag").filter(
+                    (conn.table("kontrollutslag")[time_unit_variable] == period)
+                    & (conn.table("kontrollutslag").skjema.isin(defined_schemas))
+                )
+
+                # only unedited
                 subq = (
-                    skjemamottak.filter(skjemamottak.aktiv == True)
-                    .filter(status_filter)
-                    .select("ident", "refnr")
+                    skjemamottak.filter(status_filter).select(
+                        "ident", "refnr", "skjema"
+                    )
+                ).distinct()
+
+                # only active
+                aktive = skjemamottak.select("ident", "refnr", "skjema").distinct()
+
+                utslag = (
+                    kontrollutslag.join(
+                        aktive,
+                        (kontrollutslag.ident == aktive.ident)
+                        & (kontrollutslag.refnr == aktive.refnr)
+                        & (kontrollutslag.skjema == aktive.skjema),
+                    )
+                    .filter(kontrollutslag.utslag == True)
+                    .group_by([kontrollutslag.skjema, kontrollutslag.kontrollid])
+                    .aggregate(ant_utslag=ibis._.count())
                 )
 
                 uediterte = (
                     kontrollutslag.join(
                         subq,
                         (kontrollutslag.ident == subq.ident)
-                        & (kontrollutslag.refnr == subq.refnr),
+                        & (kontrollutslag.refnr == subq.refnr)
+                        & (kontrollutslag.skjema == subq.skjema),
                     )
                     .filter(kontrollutslag.utslag == True)
-                    .group_by(kontrollutslag.kontrollid)
+                    .group_by([kontrollutslag.skjema, kontrollutslag.kontrollid])
                     .aggregate(uediterte=ibis._.count())
-                    .select("kontrollid", "uediterte")
+                    .select("skjema", "kontrollid", "uediterte")
                 )
 
                 result = (
-                    kontroller.join(utslag, kontroller.kontrollid == utslag.kontrollid)
-                    .join(uediterte, kontroller.kontrollid == uediterte.kontrollid)
+                    kontroller.left_join(
+                        utslag,
+                        (kontroller.skjema == utslag.skjema)
+                        & (kontroller.kontrollid == utslag.kontrollid),
+                    )
+                    .left_join(
+                        uediterte,
+                        (kontroller.skjema == uediterte.skjema)
+                        & (kontroller.kontrollid == uediterte.kontrollid),
+                    )
                     .select(
                         kontroller.skjema,
                         kontroller.kontrollid,
@@ -263,11 +318,16 @@ class ControlView(ModuleBase):
                         kontroller.beskrivelse,
                         kontroller.sorting_var,
                         kontroller.sorting_order,
-                        utslag.ant_utslag,
-                        uediterte.uediterte,
+                        utslag.ant_utslag.fill_null(0).name("ant_utslag"),
+                        uediterte.uediterte.fill_null(0).name("uediterte"),
                     )
                 )
-                result = result.to_pandas().sort_values(by="kontrollid", ascending=True)
+                result = result.filter(
+                    result.ant_utslag != 0
+                )  # hide those with no output
+                result = result.to_pandas().sort_values(
+                    by=["ant_utslag", "kontrollid"], ascending=[False, True]
+                )
                 columns = [
                     {
                         "headerName": col,
@@ -280,14 +340,18 @@ class ControlView(ModuleBase):
                 ]
                 columns[0]["checkboxSelection"] = True
                 columns[0]["headerCheckboxSelection"] = True
-                if ctx.triggered_id == f"{self.module_number}-kontroll-run-button":
-                    AlertHandler.info(
-                        f"Kontrollkjøring ferdig for kontroller i {control_class_instance.__class__.__name__}"
-                    )
-                else:
-                    AlertHandler.info("Kontrollvisning oppdatert.")
+
+                AlertHandler.info("Kontrollvisning oppdatert.", ephemeral=True)
 
                 return result.to_dict("records"), columns
+
+        @callback(
+            Input("kontroll-done", "data"),
+            prevent_initial_call=True,
+        )
+        def notify_kontroller_done(finished):
+            if finished:
+                AlertHandler.info("Kontrollkjøring ferdig.", ephemeral=True)
 
         @callback(  # type: ignore[misc]
             Output(f"{self.module_number}-kontrollutslag", "rowData"),
@@ -304,30 +368,42 @@ class ControlView(ModuleBase):
                 necessary_tables=["skjemamottak", "kontrollutslag"]
             ) as conn:
                 kontrollid = current_row[0]["kontrollid"]
-                sorting_var = current_row[0]["sorting_var"]
                 skjema = current_row[0]["skjema"]
+                sorting_var = current_row[0]["sorting_var"]
                 sorting_order = current_row[0]["sorting_order"]
+                time_unit_variable: str = getattr(VariableSelector._time_unit, "name")
 
                 logger.debug(
-                    f"Variables from current_row:\nkontrollid: {kontrollid}\nsorting_var: {sorting_var}\nskjema: {skjema}\nsorting_order: {sorting_order}"
+                    f"Variables from current_row:\nkontrollid: {kontrollid}\nsorting_var: {sorting_var}\nsorting_order: {sorting_order}"
                 )
                 if sorting_order is None:
                     sorting_order = "DESC"
                 skjemamottak = conn.table("skjemamottak")
-                if "status" in skjemamottak.columns:
-                    status_column = "status"
-                else:
-                    status_column = "editert"
+                status_column: Literal["status", "editert"] = (
+                    "status" if "status" in skjemamottak.columns else "editert"
+                )
 
-                # Subquery: filter active rows in skjemamottak
-                s = skjemamottak.filter(skjemamottak.aktiv == True).select(
-                    skjemamottak.refnr,
-                    skjemamottak[status_column],
-                    skjemamottak.ident,
+                # subquery: filter active rows in skjemamottak
+                s: Table = (
+                    skjemamottak.filter(
+                        (skjemamottak.aktiv == True)
+                        & (skjemamottak[time_unit_variable] == period)
+                        & (skjemamottak.skjema == skjema)
+                    )
+                    .select(
+                        skjemamottak.refnr,
+                        skjemamottak[status_column],
+                        skjemamottak.ident,
+                    )
+                    .distinct()
                 )
 
                 kontrollutslag = conn.table("kontrollutslag")
-                # Main query
+                kontrollutslag = kontrollutslag.filter(
+                    (kontrollutslag[time_unit_variable] == period)
+                    & (kontrollutslag.skjema == skjema)
+                )
+
                 result = (
                     kontrollutslag.join(
                         s,
@@ -349,6 +425,7 @@ class ControlView(ModuleBase):
                     .order_by(s[status_column], kontrollutslag.verdi)
                 )
                 result = result.to_pandas()
+
             columns = [{"headerName": col, "field": col} for col in result.columns]
             columns[0]["checkboxSelection"] = True
             columns[0]["headerCheckboxSelection"] = True
@@ -362,6 +439,7 @@ class ControlView(ModuleBase):
         def output_to_varselector(
             selected_row: list[dict[Any, Any]],
         ) -> Any | tuple[Any]:
+
             logger.debug(f"Selected row:\n{selected_row}")
             if not selected_row:
                 logger.debug("Raising PreventUpdate due to selected_row being None")
@@ -370,9 +448,12 @@ class ControlView(ModuleBase):
                 raise ValueError(
                     "Too many rows selected, logic won't work with more than one row."
                 )
+
             if len(self.outputs) == 1:
+
                 return selected_row[0][self.outputs[0]]
             elif len(self.outputs) > 1:
+
                 return tuple(selected_row[0][output] for output in self.outputs)
             else:
                 raise ValueError(

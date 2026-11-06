@@ -72,7 +72,10 @@ class DataEditorSupportTable:
             dag.AgGrid(
                 className="ag-theme-alpine ag-theme-ssb mb-2",
                 defaultColDef={"editable": False, "filter": True},
-                dashGridOptions={"enableCellTextSelection": True},
+                dashGridOptions={
+                    "enableCellTextSelection": True,
+                    "floatingFilter": True,
+                },
                 id=f"support-table-{self.suptable_id}",
                 style={"height": "700px"},
             )
@@ -85,7 +88,11 @@ class DataEditorSupportTable:
             Output(f"support-table-{self.suptable_id}", "rowData"),
             Output(f"support-table-{self.suptable_id}", "columnDefs"),
             Input(f"{DataEditorSupportTables.__name__}-0-modal", "is_open"),
-            *(self.states if self.states is not None else VariableSelector.get_all_states()),
+            *(
+                self.states
+                if self.states is not None
+                else VariableSelector.get_all_states()
+            ),
             prevent_initial_call=True,
         )
         def load_support_table_data(is_open: bool, *args: Any):

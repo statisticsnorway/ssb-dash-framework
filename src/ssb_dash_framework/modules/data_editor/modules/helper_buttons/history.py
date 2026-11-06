@@ -15,6 +15,7 @@ from .editor_helper_button import DataEditorHelperButton
 
 logger = logging.getLogger(__name__)
 
+
 class DataEditorHistory(DataEditorHelperButton):
     """This module provides supporting tables for the DataEditor.
 
@@ -70,7 +71,12 @@ class DataEditorHistory(DataEditorHelperButton):
                         id=f"{self.module_name}-{self.module_number}-table",
                         className="ag-theme-alpine ag-theme-ssb mb-2",
                         dashGridOptions={"enableCellTextSelection": True},
-                        defaultColDef={"filter": True, "resizable": True},
+                        defaultColDef={
+                            "filter": True,
+                            "resizable": True,
+                            "sortable": True,
+                            "floatingFilter": True,
+                        },
                         columnSize="responsiveSizeToFit",
                     ),
                     className=f"{self.module_name}-table",
@@ -81,6 +87,7 @@ class DataEditorHistory(DataEditorHelperButton):
 
     def module_callbacks(self):
         """Registers callbacks to update and retrieve audit history records on target units."""
+
         @callback(
             Output(f"{self.module_name}-{self.module_number}-table", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-table", "columnDefs"),
