@@ -277,7 +277,6 @@ class UpdateSkjemadata(BaseModel):
                 "Kan ikke validere ident uten periode."
             )
 
-        # Forutsetter at perioden her er et år, f.eks. '2025'.
         aar = str(self.period).strip()
 
         t = conn.table("enhetsinfo")
@@ -286,8 +285,6 @@ class UpdateSkjemadata(BaseModel):
             t.filter(
                 (t.aar == aar)
                 & (t.ident == ident)
-                & (t.enhets_type == "FRTK")
-                & t.foretak.isnull()
             )
             .select("id")
             .limit(1)
@@ -298,7 +295,7 @@ class UpdateSkjemadata(BaseModel):
             raise InvalidIdentError(
                 f"Organisasjonsnummer {ident} finnes ikke "
                 f"i enhetsinfo for {aar}. "
-                "Endringen ble avbrutt."
+                "Oppdateringa ble avbrutt."
             )
 
     def _insert_ibis(self, conn):
