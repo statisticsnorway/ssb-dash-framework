@@ -7,7 +7,7 @@ from ibis import _
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
 
-from ..utils import AlertHandler
+from ssb_dash_framework import AlertHandler
 from .config_tools.connection import _get_connection_object
 from .config_tools.connection import get_connection
 from ssb_dash_framework.modules.data_editor.modules.microlayout.microlayout import FieldUpdateError, InvalidValueError, UpdateFailedError
@@ -286,7 +286,7 @@ class UpdateSkjemadata(BaseModel):
         elif self.table.startswith("saldoskjema"):
             columns = {
                 f"{self.time_units}": f"'{self.period}'",
-                "orgnr_foretak": f"'{self.ident}'",
+                "ident": f"'{self.ident}'",
                 "variabel": f"'{self.variable}'",
                 "verdi": f"'{self.value}'",
             }
