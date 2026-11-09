@@ -95,6 +95,7 @@ class ControlView(ModuleBase):
                                 "Kjør kontroller (kan ta tid)",
                                 id=f"{self.module_number}-kontroll-run-button",
                                 className="ssb-btn primary-btn",
+                                disabled=False,
                             ),
                             width="auto",
                         ),
@@ -152,6 +153,7 @@ class ControlView(ModuleBase):
         time_unit_variable = getattr(VariableSelector._time_unit, "name")
         try:
             for s in list(self.control_dict):
+                logger.info(f"\nKjører kontroller for: {s}.")
                 instance = self.control_dict[s](
                     time_units=[time_unit_variable],
                     applies_to_subset={
@@ -176,11 +178,13 @@ class ControlView(ModuleBase):
         """Registers Dash callbacks for the ControlView module."""
 
         @callback(
+            Output("kontroll-poll", "disabled", allow_duplicate=True),
+            Output(f"{self.module_number}-kontroll-run-button", "disabled", allow_duplicate=True),
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
             VariableSelector.get_timevar(State),
             prevent_initial_call=True,
         )
-        def start_controls(click: int | None, period: Any) -> bool:
+        def start_controls(click: int | None, period: Any):
             if self._state["running"]:
                 AlertHandler.info("Kontroller kjører allerede.", ephemeral=True)
                 raise PreventUpdate
@@ -193,10 +197,10 @@ class ControlView(ModuleBase):
                 threading.Thread(
                     target=self._run_all, args=(period,), daemon=True
                 ).start()
-                return False
             except Exception:
                 self._state["running"] = False
                 raise
+            return False, True
 
         @callback(
             Output("kontroll-done", "data"),
@@ -209,7 +213,7 @@ class ControlView(ModuleBase):
             running = self._state["running"]
             finished = self._state["finished"]
             notify = finished if finished and finished != seen else no_update
-            return notify, self._state["running"], not running
+            return notify, running, not running
 
         @callback(
             Output(f"{self.module_number}-kontroller", "rowData"),
