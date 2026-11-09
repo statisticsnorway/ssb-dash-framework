@@ -286,7 +286,7 @@ class UpdateSkjemadata(BaseModel):
         elif self.table.startswith("saldoskjema"):
             columns = {
                 f"{self.time_units}": f"'{self.period}'",
-                "orgnr_foretak": f"'{self.ident}'",
+                "ident": f"'{self.ident}'",
                 "variabel": f"'{self.variable}'",
                 "verdi": f"'{self.value}'",
             }
