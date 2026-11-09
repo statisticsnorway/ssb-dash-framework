@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
-import dash_bootstrap_components as dbc
 from dash import dcc
 from dash import html
+import dash_bootstrap_components as dbc
 from dash_iconify import DashIconify
 
 from ..utils.alert_handler import AlertHandler
@@ -124,7 +124,7 @@ def main_layout(
     layout = dbc.Container(
         [
             dcc.Interval(id="kontroll-poll", interval=20000, disabled=True),
-        dcc.Store(id="kontroll-done"),
+            dcc.Store(id="kontroll-done"),
             html.Div(
                 id="notifications-container",
                 className="main-layout-notifications-container",
