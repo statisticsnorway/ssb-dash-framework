@@ -274,7 +274,7 @@ class UpdateSkjemadata(BaseModel):
 
         if self.period is None:
             raise InvalidIdentError(
-                "Kan ikke validere ident uten periode."
+                "Ingen periode er valgt. Operasjonen er avbrutt."
             )
 
         aar = str(self.period).strip()

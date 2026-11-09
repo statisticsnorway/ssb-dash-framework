@@ -100,7 +100,7 @@ class MicroLayoutAIO(html.Div):
         callback_ctx = {item._id: item for item in ids}
 
         def revert_upon_failed_edit(old_value, triggered_id, all_ids):
-            """Restore the previous value when an edit fails."""
+            """Restores the previous value of the edited field when an update fails."""
             return {
                 **{
                     id_: old_value if id_ == triggered_id else no_update
