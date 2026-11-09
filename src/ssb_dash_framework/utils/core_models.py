@@ -7,7 +7,7 @@ from ibis import _
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
 
-from ssb_dash_framework import AlertHandler
+from ..utils import AlertHandler
 from .config_tools.connection import _get_connection_object
 from .config_tools.connection import get_connection
 from ssb_dash_framework.modules.data_editor.modules.microlayout.microlayout import FieldUpdateError, InvalidValueError, UpdateFailedError
