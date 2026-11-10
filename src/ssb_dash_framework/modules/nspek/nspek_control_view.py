@@ -319,6 +319,7 @@ class NspekControlView(ModuleBase):
             Output(f"{self.module_number}-kontrollutslag", "rowData"),
             Output(f"{self.module_number}-kontrollutslag", "columnDefs"),
             Output(f"{self.module_number}-kontrollutslag", "filterModel"),
+            self.variableselector.get_output_object("tema"),
             Input(f"{self.module_number}-kontroller", "selectedRows"),
             State(f"{self.module_number}-kontrollutslag", "filterModel"),
             prevent_initial_call=True,
@@ -331,6 +332,7 @@ class NspekControlView(ModuleBase):
 
             aar = int(selected[0]["aar"])
             kontrollid = selected[0]["kontrollid"]
+            tema = str(selected[0]["tema"])
 
             instance = control_class(
                 time_units=self.time_units,
@@ -343,7 +345,7 @@ class NspekControlView(ModuleBase):
             )
 
             if df is None or df.empty:
-                return [], [], {}
+                return [], [], {}, tema
 
             df["foretak"] = df["ident"]
 
@@ -363,6 +365,7 @@ class NspekControlView(ModuleBase):
                 df.to_dict("records"),
                 columns,
                 filter_model,
+                tema,
             )
 
         @callback(
