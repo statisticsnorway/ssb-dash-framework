@@ -220,7 +220,7 @@ class ControlView(ModuleBase):
             Output(f"{self.module_number}-kontroller", "columnDefs"),
             Input(f"{self.module_number}-kontroll-refresh", "n_clicks"),
             Input("kontroll-done", "data"),
-            VariableSelector.get_timevar(Input),
+            VariableSelector.get_timevar(State),
             prevent_initial_call=True,
         )
         def get_kontroller_overview(
@@ -361,7 +361,7 @@ class ControlView(ModuleBase):
             Output(f"{self.module_number}-kontrollutslag", "rowData"),
             Output(f"{self.module_number}-kontrollutslag", "columnDefs"),
             Input(f"{self.module_number}-kontroller", "selectedRows"),
-            VariableSelector.get_timevar(Input),
+            VariableSelector.get_timevar(State),
         )
         def get_kontrollutslag(current_row: list[dict[Any, Any]], period: Any):
             logger.debug(f"Args:\ncurrent_row: {current_row}\nperiod: {period}")
