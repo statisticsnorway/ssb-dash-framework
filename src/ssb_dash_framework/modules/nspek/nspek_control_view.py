@@ -277,7 +277,7 @@ class NspekControlView(ModuleBase):
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
             State(f"{self.module_number}-kontroller", "selectedRows"),
             State("alert_store", "data"),
-            *self.variableselector.get_input(self.time_units),
+            *self.variableselector.get_state(self.time_units),
             prevent_initial_call="initial_duplicate",
         )
         def get_kontroller_overview(refresh, run, selected_rows, store, *args):
