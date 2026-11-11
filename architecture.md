@@ -62,7 +62,7 @@ before calling it and validates the returned shape afterward.
 | `HBDataHandlerMeta` | HB data-handler module | Contract and common DataFrame validation | Vaskify invocation |
 | `AltinnHBDataHandler` | HB data-handler module | Altinn query, active-submission resolution, field selection, numeric conversion, source context | Plotting, Vaskify arguments, Vaskify result mapping |
 | `FakeHBDataHandler` | Test support | Deterministic handler responses for module tests | Production data access |
-| `resolve_hb_comparison_periods` | HB helper | Canonical period validation and `(t-1, t)` resolution | Source access |
+| `resolve_hb_comparison_periods` | HB helper | Resolve `(t-1, t)` using shared canonical-period validation and the HB-local WEEK and QUARTER formatters | Source access |
 | `run_hb_vaskify` | HB helper | `Detect` construction and `hb(...)` argument mapping | Altinn-specific logic, Dash callbacks |
 | `normalize_hb_result` | HB helper | Stable result schema, source-context reconciliation, flags, diagnostics, and identifier preservation | UI layout, recomputing eligibility or HB diagnostics |
 | `VariableSelector` | Framework setup | Shared selections and selected-unit output | HB calculation state |
