@@ -12,9 +12,9 @@ Ensure that any deviations from the architecture are documented and approved thr
 ## Current tasks
 | Task | Description/commit | AI- solution suggestion | User apporval or follow up | Ai- follow up - if not approved - or new questions arrise | User apporval or follow up |
 |---|---|---|---|---|---|
-| Add the HB data-handler interface | Add `HBDataHandlerMeta.get_hb_dataframe(...)`; keep it independent of Altinn queries and Vaskify calls. |  |  |  |  |
-| Validate the common HB input schema | Add schema validation and reject duplicate `unit_id`/`period` combinations. |  |  |  |  |
-| Test the HB input contract | Add unit tests for required columns, types, uniqueness, and clear errors. |  |  |  |  |
+
+
+
 
 
 # History
@@ -22,3 +22,6 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Task | Description/commit | AI- solution suggestion | User apporval or follow up | Ai- follow up - if not approved - or new questions arrise | User apporval or follow up |
 |---|---|---|---|---|---|
 | Define the common HB input schema | Add `unit_id`, canonical `period`, numeric `value`, optional `strata`, and configured selector context. |  |  |  |  |
+| Add the HB data-handler interface | Add `HBDataHandlerMeta.get_hb_dataframe(...)`; keep it independent of Altinn queries and Vaskify calls. |  |  |  |  |
+| Validate the common HB input schema | Add schema validation and reject duplicate `unit_id`/`period` combinations. |  |  |  |  |
+| Test the HB input contract | Add unit tests for required columns, types, uniqueness, and clear errors. |  |  |  |  |
