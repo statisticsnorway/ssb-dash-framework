@@ -37,17 +37,20 @@ Each numbered item below is one commit-sized change. Do not combine items unless
    - Add the supported `ssb-vaskify` runtime dependency.
    - Add `run_hb_vaskify`.
    - Construct `Detect(hb_input_dataframe, id_nr="unit_id")`.
-   - Pass `value`, `period`, comparison periods, optional stratum, and approved output options to `Detect.hb(...)`.
+   - Add structural preflight checks for exactly two distinct canonical periods, matching input period levels, Vaskify-compatible required dtypes, and a present `strata` column when configured.
+   - Pass `value`, `period`, comparison periods, optional stratum, and explicit public API defaults (`pu=0.5`, `pa=0.05`, `pc=20`, `percentiles=(0.25, 0.75)`, `flag="flag_hb"`, `output_format="wide"`, `output_scope="all"`) to `Detect.hb(...)`.
+   - Do not filter zero, negative, or missing values or recreate Vaskify eligibility/calculation rules in the framework.
    - Keep Vaskify argument mapping out of the Altinn adapter and Dash callbacks.
-   - Add mocked tests for exact Vaskify arguments.
+   - Add mocked tests for exact Vaskify arguments and preflight failures.
 
 6. **Normalize Vaskify results**
    - Add `normalize_hb_result`.
    - Validate the returned Vaskify shape.
-   - Preserve stable identifiers, comparison values, period context, diagnostics, `ratio`, limits, and `flag_hb`.
-   - Keep flagged, unflagged, and not-comparable states distinct.
-   - Reject invalid results and distinguish errors from valid empty populations.
-   - Add unit tests for valid, incomplete, missing, and invalid results.
+   - Preserve stable identifiers, source context, comparison values, period context, diagnostics, `ratio`, `median_ratio`, limits, and `flag_hb`.
+   - Reconcile results with the full handler input so units without Vaskify diagnostics remain visible.
+   - Keep flagged (`1`), calculated/unflagged (`0`), and not-comparable (missing diagnostics/flag) states distinct.
+   - Use verified Vaskify return behavior to distinguish no eligible population from an error; do not treat an unverified empty result as “no outliers.”
+   - Add unit tests for valid, incomplete, missing, not-comparable, and invalid results.
 
 7. **Create the ModuleBase shell**
    - Add `HBMethod` under `src/ssb_dash_framework/modules/`.
@@ -69,9 +72,9 @@ Each numbered item below is one commit-sized change. Do not combine items unless
    - On the explicit run action, call the handler, `run_hb_vaskify`, and `normalize_hb_result` in that order.
    - Store the normalized result for the current run.
    - Build the result figure from normalized Vaskify columns.
-   - Display ratio, limits, and candidate state without reimplementing HB logic.
+   - Display ratio, median ratio, limits, and candidate state without reimplementing HB logic.
    - Route failures through `AlertHandler` and log context without row-level sensitive data.
-   - Test successful runs, handler failures, Vaskify failures, and empty or not-comparable data.
+   - Test successful runs, handler failures, Vaskify failures, warning-only paths, and empty or not-comparable data.
 
 10. **Add click-to-selector behavior**
    - Put the stable `unit_id` in Plotly `customdata`.
@@ -89,8 +92,9 @@ Each numbered item below is one commit-sized change. Do not combine items unless
 
 12. **Add integration and reference-result tests**
    - Test the installed Vaskify package with deterministic input data.
-   - Verify the actual result shape and expected diagnostic columns.
-   - Add reference-result cases for flagged, unflagged, and not-comparable rows.
+   - Verify the actual result shape, `ratio`, `median_ratio`, limit and flag columns, and explicit call defaults.
+   - Add reference-result cases for positive, zero, negative, missing, flagged, unflagged, and not-comparable observations.
+   - Verify the package's return behavior when no unit has eligible values and when it logs warnings without raising.
    - Keep mathematical algorithm tests in Vaskify, not in framework helpers.
 
 13. **Add demo and browser coverage**
