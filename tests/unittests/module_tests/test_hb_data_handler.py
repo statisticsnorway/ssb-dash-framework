@@ -41,10 +41,13 @@ def test_validate_hb_dataframe_rejects_invalid_required_column_types(
         validate_hb_dataframe(hb_input_dataframe)
 
 
-def test_validate_hb_dataframe_rejects_missing_required_columns() -> None:
-    hb_input_dataframe = valid_hb_dataframe().drop(columns="value")
+@pytest.mark.parametrize("missing_column", ["unit_id", "period", "value"])
+def test_validate_hb_dataframe_rejects_missing_required_columns(
+    missing_column: str,
+) -> None:
+    hb_input_dataframe = valid_hb_dataframe().drop(columns=missing_column)
 
-    with pytest.raises(ValueError, match="missing required columns"):
+    with pytest.raises(ValueError, match=f"missing required columns: {missing_column}"):
         validate_hb_dataframe(hb_input_dataframe)
 
 
