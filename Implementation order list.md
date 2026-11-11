@@ -141,3 +141,7 @@
 20. **Remove temporary design documents**
    - Before integrating to `main`, remove `architecture_design_detailed.md` and `ssb-vaskify-design.md` after their lasting decisions and issue context are recorded in `architecture.md` and `Issues.md`.
    - User will decide what to keep in the end.
+   - Put back `AGENTS.md`
+   - Pull request to integrate the changes into `main`.
+
+21. **Report ISSUES to Github or Magnus**
