@@ -41,22 +41,22 @@ def resolve_hb_comparison_periods(
         )
 
     if frequency is TimeUnitType.WEEK:
-        selected_hb_time = parse_hb_week_period(
+        selected_hb_period_time_unit = parse_hb_week_period(
             selected_hb_period,
             configured_hb_time_unit,
         )
     else:
-        selected_hb_time = TimeUnit.parse(
+        selected_hb_period_time_unit = TimeUnit.parse(
             configured_hb_time_unit,
             selected_hb_period,
         )
 
-    previous_hb_time = selected_hb_time.subtract(1)
+    previous_hb_period_time_unit = selected_hb_period_time_unit.subtract(1)
     if frequency is TimeUnitType.WEEK:
-        previous_hb_period = format_hb_week_period(previous_hb_time)
+        previous_hb_period = format_hb_week_period(previous_hb_period_time_unit)
     elif frequency is TimeUnitType.QUARTER:
-        previous_hb_period = format_hb_quarter_period(previous_hb_time)
+        previous_hb_period = format_hb_quarter_period(previous_hb_period_time_unit)
     else:
-        previous_hb_period = previous_hb_time.to_str()
+        previous_hb_period = previous_hb_period_time_unit.to_str()
 
     return previous_hb_period, selected_hb_period

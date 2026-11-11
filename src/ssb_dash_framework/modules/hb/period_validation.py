@@ -21,6 +21,8 @@ def is_canonical_hb_period(
     frequency: TimeUnitType,
 ) -> bool:
     """Return whether a value is valid and canonical for an HB frequency."""
+    if not isinstance(frequency, TimeUnitType):
+        raise TypeError("HB period frequency must be a TimeUnitType.")
     if not isinstance(period_value, str):
         return False
 

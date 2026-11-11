@@ -167,16 +167,8 @@ def _is_canonical_period(
         else tuple(TimeUnitType)
     )
     return any(
-        _is_canonical_period_for_frequency(period_value, frequency)
-        for frequency in frequencies
+        is_canonical_hb_period(period_value, frequency) for frequency in frequencies
     )
-
-
-def _is_canonical_period_for_frequency(
-    period_value: str,
-    frequency: TimeUnitType,
-) -> bool:
-    return is_canonical_hb_period(period_value, frequency)
 
 
 def _validate_numeric_value_column(hb_input_dataframe: pd.DataFrame) -> None:
