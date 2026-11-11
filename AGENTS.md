@@ -15,6 +15,7 @@ Temporary working guidance for the HB implementation.
 
 - Add unit tests under `tests/unittests/` using pytest.
 - Focused test command: `uv run pytest <test-file-or-test-name> -q`.
+- In PowerShell, pass each pytest file path explicitly; wildcard paths such as `tests\unittests\module_tests\test_hb_*.py` are passed literally to pytest. If pytest reports a missing file or collects no tests, correct the command and rerun before reporting a test result.
 - Unit suite command: `uvx nox --session=tests`.
 - Demo browser tests: `uvx nox --session=e2e` (Linux).
 - List available Nox sessions with `uvx nox --list-sessions`.
