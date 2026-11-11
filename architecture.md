@@ -11,6 +11,10 @@ The required production source adapter is `AltinnHBDataHandler`. A prepared
 DataFrame or `FakeHBDataHandler` is used only for isolated tests and local
 development.
 
+The repository's existing Altinn database access patterns and their HB
+implications are documented in
+[altinnapiclient-documentation.md](altinnapiclient-documentation.md).
+
 ## Runtime architecture
 
 ```mermaid

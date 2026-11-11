@@ -61,6 +61,10 @@ and conversion belong in that handler, not in the module. A prepared
 DataFrame or fake handler remains useful for isolated tests, but does not
 replace the required Altinn adapter in the product implementation. Different future adapters can follow the same pattern without affecting the HB module.
 
+See [altinnapiclient-documentation.md](altinnapiclient-documentation.md) for
+the repository's existing Altinn database access patterns, schema relationships,
+and decisions the HB adapter must make explicitly.
+
 Responsibilities:
 
 | Component | Responsibility |
