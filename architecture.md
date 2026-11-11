@@ -75,6 +75,14 @@ before calling it and validates the returned shape afterward.
 The source adapter ends at the common DataFrame boundary. It is not also a
 Vaskify adapter.
 
+Altinn reads use the configured framework connection and Ibis, as described in
+[altinnapiclient-documentation.md](altinnapiclient-documentation.md). The active
+submission rule must be approved for HB before implementation. The existing
+`active_no_duplicates_refnr_list` helper keeps the latest active row per
+`ident`, not per period; if that rule is reused, apply it separately for each
+requested period or use period-aware grouping. Do not apply one identifier-only
+deduplication across both comparison periods.
+
 ## Data contracts
 
 ### Common HB input DataFrame

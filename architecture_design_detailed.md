@@ -239,6 +239,15 @@ runner framework: source adapters only supply the agreed DataFrame. They do
 not call Vaskify or contain Vaskify-specific result mapping. The HB module
 calls Vaskify on the common DataFrame through a small helper:
 
+The existing `active_no_duplicates_refnr_list` helper filters `aktiv`, orders
+by `dato_mottatt` descending, and keeps the latest row per `ident`. Its
+deduplication is not period-aware, so HB must not use it once across both
+comparison periods. Whether HB adopts this latest-active rule or rejects
+multiple active submissions is a pending policy choice in [plan.md](plan.md).
+If adopted, the rule must be applied separately per period or implemented with
+period-aware grouping. Likewise, do not use the editor's first-match behavior
+as an ambiguity policy for repeated or nested HB fields.
+
 ```python
 hb_detector = Detect(hb_input_dataframe, id_nr="unit_id")
 hb_vaskify_result_dataframe = hb_detector.hb(
@@ -491,10 +500,13 @@ automatic requirements for the new module.
   optional stratum, and any configured selector context.
 * The framework's
   [`active_no_duplicates_refnr_list`](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/utils/core_query_functions.py)
-  helper identifies active Altinn submissions, and
+  helper filters `aktiv`, selects the most recent `dato_mottatt` per `ident`,
+  and returns active Altinn submission references. Its grouping is not
+  period-aware; if HB adopts this rule, apply it separately per period or
+  implement period-aware grouping. The policy choice is recorded in
+  [plan.md](plan.md). The helper and
   [`AggDistPlotter`](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/experimental/modules/agg_dist_plotter.py)
-  contains an experimental, source-specific query and conversion. These are
-  useful references, not a ready-made HB adapter: the latter is tied to
+  are useful references, not a ready-made HB adapter: `AggDistPlotter` is tied to
   `skjemadata_hoved` and its own aggregation/plotting workflow.
 * The documented
   [Altinn data model](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/docs/datamodels.md)
