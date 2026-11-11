@@ -8,11 +8,11 @@ Ensure that any deviations from the architecture are documented and approved thr
 - When developer pastes a step into the chat, you are supposed to act on that step. 
 - Re-read the document often, as this document will be changed often.
 - Do not fill in User fields; they are reserved for user input and approval only.
+- ONLY WORK ON THE AFFECTED TASK
 
 ## Current tasks
-| Task | Description/commit | AI- solution suggestion | User apporval or follow up | Ai- follow up - if not approved - or new questions arrise | User apporval or follow up |
+| Task | Description/commit | AI- solution suggestion /or follow up | User apporval or follow up | Ai- follow up - if not approved - or new questions arrise | User apporval or follow up |
 |---|---|---|---|---|---|
-
 
 
 
@@ -25,3 +25,4 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Add the HB data-handler interface | Add `HBDataHandlerMeta.get_hb_dataframe(...)`; keep it independent of Altinn queries and Vaskify calls. |  |  |  |  |
 | Validate the common HB input schema | Add schema validation and reject duplicate `unit_id`/`period` combinations. |  |  |  |  |
 | Test the HB input contract | Add unit tests for required columns, types, uniqueness, and clear errors. |  |  |  |  |
+| Fiks HB kontrakten, den skal støtte rammeverkets TimeUnit  sine seks frekvenser |  | Utvid HB-kontraktens periodestøtte til rammeverkets seks kanoniske formater: YEAR (`YYYY`), HALF_YEAR (`YYYY-1`/`YYYY-2`), QUARTER (`YYYY-Q1`–`YYYY-Q4`), MONTH (`YYYY-MM`), WEEK (`YYYY-Www`) og DAY (`YYYY-MM-DD`). Valider periodeteksten mot konfigurert frekvens, og behold eksisterende krav til kolonner, typer og unikhet. | Godkjent: Implementer, Sjekk dette opp i mot alle stegene i `## Define the HB public contract` og sjekk at `architecture_design_detailed` og `architecture.md` er oppdatert med nye endringer og implikasjoner av det | approved - done - Oppdaterte planen med noen bugs som ble funnet. Dealer med det senere |  |

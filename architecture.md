@@ -82,7 +82,7 @@ Required columns:
 | Column | Type | Meaning |
 |---|---|---|
 | `unit_id` | `str` | Stable unit identifier used by Vaskify and graph selection |
-| `period` | `str` | Framework-canonical period, for example `YYYY`, `YYYY-Q1`, or `YYYY-MM` |
+| `period` | `str` | Canonical period for `YEAR` (`YYYY`), `HALF_YEAR` (`YYYY-1`/`YYYY-2`), `QUARTER` (`YYYY-Q1`–`YYYY-Q4`), `MONTH` (`YYYY-MM`), `WEEK` (`YYYY-Www`), or `DAY` (`YYYY-MM-DD`) |
 | `value` | numeric | Selected numeric target value |
 
 Optional:
@@ -145,12 +145,21 @@ method-specific diagnostics returned by Vaskify. Flagged (`1`), unflagged
 ### Validation boundary: HB module and Vaskify
 
 The HB module validates only the integration contract: DataFrame type and
-required columns; non-empty string identifiers; supported canonical period
-strings; numeric, non-boolean values; unique `unit_id`/`period` rows; exactly
-two distinct requested periods; and that the input period levels match that
-pair. When stratification is requested, it also verifies that the mapped
-`strata` column is present. It validates the configured Vaskify argument
-choices and result shape before display.
+required columns; non-empty string identifiers; canonical period strings for
+all six framework `TimeUnit` frequencies; numeric, non-boolean values; unique
+`unit_id`/`period` rows; exactly two distinct requested periods; and that the
+input period levels match that pair. When the configured frequency is
+available, period validation also requires the strings to match it. When
+stratification is requested, the HB module verifies that the mapped `strata`
+column is present. It validates the configured Vaskify argument choices and
+result shape before display.
+
+The HB contract validator checks canonical week strings independently of
+`TimeUnit.parse`. The current framework parser cannot parse `YYYY-Www` with
+the installed Pendulum token set, and quarter `SelectedTimeUnit.to_str()`
+does not currently emit the canonical `YYYY-Qn` form. The later comparison-
+period resolver must address these framework limitations before claiming
+week and quarter arithmetic support.
 
 The HB module must not filter out zero, negative, or missing values to decide
 eligibility, calculate ratios or limits, or recreate flags. Vaskify owns those
@@ -239,8 +248,9 @@ The implementation is complete only when these boundaries are covered:
 
 - `HBMethod` construction, `ModuleBase` lifecycle, placement as tab/window,
   and unique IDs for multiple instances.
-- Required selector configuration and canonical period resolution for each
-  supported `TimeUnit`.
+- Required selector configuration and canonical period resolution for all six
+  framework `TimeUnit` frequencies, including week and quarter handling that
+  preserves their canonical strings.
 - `AltinnHBDataHandler` active-submission filtering, numeric conversion,
   duplicate/repeated-field handling, and common-schema validation.
 - `FakeHBDataHandler` module-flow tests without backend access.
