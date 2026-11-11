@@ -23,11 +23,13 @@
    - Decide the HB policy for multiple active Altinn submissions
    - Map the configured Altinn form, field, and selector context
 
+------- Bookmark start ------------
 4. **Retrieve configured Altinn candidate records**
    - Add an HB-local retrieval component for the configured form, selected HB variable, and requested periods using the approved exact-`feltsti` mapping. Do not implement `HBDataHandlerMeta` yet; its method promises the final validated HB DataFrame.
    - Read through the configured `get_connection()` and Ibis table-query pattern. Scope `enheter` by `skjema` and `iso_periode`, then join to `skjemamottak` and `skjemadata` using the documented keys, including `refnr` for the answer join.
    - Retain source keys and field metadata needed by submission selection and normalization. Do not select active submissions, convert values, or validate the common HB DataFrame in this step.
    - Test configured form/field/period filters, the documented joins, and the required source keys/field metadata.
+------- Bookmark end ------------
 
 5. **Select active Altinn submissions per unit and requested period**
    - For each comparison period, call `active_no_duplicates_refnr_list` unchanged with the configured form and that period's filter; never call it once across both periods.
