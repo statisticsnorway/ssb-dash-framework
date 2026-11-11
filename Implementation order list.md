@@ -5,16 +5,17 @@ Each numbered item below is one commit-sized change. Do not combine items unless
 1. **Define the HB public contract**
    - Add the common HB input schema: `unit_id`, canonical `period`, numeric `value`, optional `strata`, and configured selector context.
    - Add `HBDataHandlerMeta.get_hb_dataframe(...)`.
-   - Add schema validation and duplicate `unit_id`/`period` rejection.
-   - Add unit tests for required columns, types, uniqueness, and clear errors.
+   - Add schema validation for all six `TimeUnit` frequencies and duplicate `unit_id`/`period` rejection.
+   - Add unit tests for each canonical frequency format, configured-frequency mismatches, required columns, types, uniqueness, and clear errors.
    - Do not add Altinn queries or Vaskify calls.
 
 2. **Implement canonical period resolution**
    - Add `resolve_hb_comparison_periods`.
-   - Accept framework-canonical annual, quarterly, and monthly strings: `YYYY`, `YYYY-Q1`, and `YYYY-MM`.
+   - Accept canonical strings for YEAR (`YYYY`), HALF_YEAR (`YYYY-1`/`YYYY-2`), QUARTER (`YYYY-Q1`–`YYYY-Q4`), MONTH (`YYYY-MM`), WEEK (`YYYY-Www`), and DAY (`YYYY-MM-DD`).
    - Use `TimeUnit` to derive `(t-1, t)` from the selected period.
    - Keep the resolution policy isolated so it can be changed without changing the data-handler contract.
-   - Test HB-supported `YEAR`, `QUARTER`, and `MONTH` frequencies; reject unsupported framework frequencies and invalid period input.
+   - Address the WEEK parsing and QUARTER formatting issues listed in `Issues.md` without changing the canonical input strings.
+   - Test `(t-1, t)` rollover behavior and canonical output for all six frequencies, plus invalid and frequency-mismatched inputs.
 
 3. **Implement the Altinn source adapter**
    - Add `AltinnHBDataHandler` implementing `HBDataHandlerMeta`.
@@ -105,15 +106,17 @@ Each numbered item below is one commit-sized change. Do not combine items unless
 
 14. **Complete user documentation**
    - Document Altinn handler setup and required configuration.
-   - Document the common DataFrame schema and canonical period requirements.
+   - Document the common DataFrame schema and canonical period requirements for all six `TimeUnit` frequencies.
    - Document the selected period `t` and the `TimeUnit`-based `t-1` assumption.
    - Document result flags, missing/not-comparable states, and limitations.
    - Document click-to-selector behavior and the no-write boundary.
    - Update the module/API documentation without duplicating implementation logic.
 
-15. **Run final validation**
-   - Run targeted unit and integration tests.
-   - Run the required `uvx nox --session=tests` suite.
-   - Run E2E coverage when the demo has changed and the environment supports it.
-   - Run formatting, linting, and import checks.
+15. **Validate completed tasks**
+   - Run only the tests explicitly listed for the active task in `plan.md`, after that task is complete.
+   - Run a broader test session or E2E coverage only when explicitly scheduled in `plan.md`.
    - Confirm that no source data is edited and that all failures remain visible.
+
+16. **Remove temporary design documents**
+   - Before integrating to `main`, remove `architecture_design_detailed.md` and `ssb-vaskify-design.md` after their lasting decisions and issue context are recorded in `architecture.md` and `Issues.md`.
+   - User will decide what to keep in the end.

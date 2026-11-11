@@ -159,7 +159,8 @@ The HB contract validator checks canonical week strings independently of
 the installed Pendulum token set, and quarter `SelectedTimeUnit.to_str()`
 does not currently emit the canonical `YYYY-Qn` form. The later comparison-
 period resolver must address these framework limitations before claiming
-week and quarter arithmetic support.
+week and quarter arithmetic support. These issues are tracked in
+[Issues.md](Issues.md).
 
 The HB module must not filter out zero, negative, or missing values to decide
 eligibility, calculate ratios or limits, or recreate flags. Vaskify owns those
