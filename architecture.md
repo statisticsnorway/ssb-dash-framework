@@ -34,30 +34,37 @@ flowchart LR
    `t-1`. This is a product-design assumption to confirm.
 3. `AltinnHBDataHandler.get_hb_dataframe(...)` reads Altinn data and returns
    the common DataFrame for `(t-1, t)`.
-4. The HB helper constructs `Detect(hb_input_dataframe, id_nr="unit_id")` and
-   calls `hb(...)`.
-5. `normalize_hb_result` validates the returned columns and preserves the
-   original Vaskify diagnostics.
-6. `HBMethod` stores the normalized result for the current run and renders the
+4. `HBMethod` checks the handler result and Vaskify call preconditions: the
+   comparison contains exactly two distinct canonical periods, the frame
+   contains exactly those period levels, required columns and dtypes are
+   acceptable, and a configured `strata` column exists.
+5. The HB helper constructs `Detect(hb_input_dataframe, id_nr="unit_id")` and
+   calls `hb(...)` with one explicit, centrally defined parameter set.
+6. `normalize_hb_result` validates the returned columns, preserves Vaskify
+   diagnostics, and reconciles results with the full handler input so units
+   without diagnostics remain visible as not comparable.
+7. `HBMethod` stores the normalized result for the current run and renders the
    result figure.
-7. A graph click reads the stable identifier from Plotly `customdata` and
+8. A graph click reads the stable identifier from Plotly `customdata` and
    updates the configured `VariableSelector` output. It does not rerun HB.
 
 Errors, invalid input, missing comparable observations, and Vaskify failures
 are reported through the framework's `AlertHandler` pattern. They must not be
-represented as a successful empty result.
+represented as a successful empty result. Vaskify may log warnings rather than
+raise for some invalid calls, so the HB module validates known API preconditions
+before calling it and validates the returned shape afterward.
 
 ## Components and boundaries
 
 | Component | Location | Owns | Must not own |
 |---|---|---|---|
-| `HBMethod` | `modules/hb_method.py` | Dash layout, callbacks, run state, result figure, click-to-selector behavior | Altinn queries, source reshaping, HB mathematics |
+| `HBMethod` | `modules/hb_method.py` | Dash layout, callbacks, structural input/call validation, run state, result figure, click-to-selector behavior | Altinn queries, source reshaping, positive-value eligibility rules, HB mathematics |
 | `HBDataHandlerMeta` | HB data-handler module | Contract and common DataFrame validation | Vaskify invocation |
 | `AltinnHBDataHandler` | HB data-handler module | Altinn query, active-submission resolution, field selection, numeric conversion, source context | Plotting, Vaskify arguments, Vaskify result mapping |
 | `FakeHBDataHandler` | Test support | Deterministic handler responses for module tests | Production data access |
 | `resolve_hb_comparison_periods` | HB helper | Canonical period validation and `(t-1, t)` resolution | Source access |
 | `run_hb_vaskify` | HB helper | `Detect` construction and `hb(...)` argument mapping | Altinn-specific logic, Dash callbacks |
-| `normalize_hb_result` | HB helper | Stable result schema, flags, diagnostics, and identifier preservation | UI layout |
+| `normalize_hb_result` | HB helper | Stable result schema, source-context reconciliation, flags, diagnostics, and identifier preservation | UI layout, recomputing eligibility or HB diagnostics |
 | `VariableSelector` | Framework setup | Shared selections and selected-unit output | HB calculation state |
 | `Vaskify` | External dependency | HB calculation | Framework UI and source access |
 
@@ -89,6 +96,11 @@ The adapter must return at most one row per `unit_id` and `period`. Repeated
 or ambiguous source values are explicitly resolved or rejected; they are not
 silently aggregated.
 
+The shared contract allows missing numeric values and does not implement
+Vaskify's positive-value eligibility rule. The HB module validates data shape
+and API preconditions, but passes value eligibility and all statistical
+decisions to Vaskify.
+
 ### Handler interface
 
 ```python
@@ -115,14 +127,53 @@ hb_vaskify_result_dataframe = hb_detector.hb(
     time_var="period",
     time_periods=list(hb_comparison_periods),
     strata_var="strata" if configured_hb_strata_variable else "",
+    pu=0.5,
+    pa=0.05,
+    pc=20,
+    percentiles=(0.25, 0.75),
+    flag="flag_hb",
     output_format="wide",
     output_scope="all",
 )
 ```
 
 The normalized result retains the stable identifier, comparison values, period
-context, `ratio`, limits, `flag_hb`, and method-specific diagnostics returned
-by Vaskify. Flagged, unflagged, and not-comparable states remain distinct.
+context, `ratio`, `median_ratio`, `lower_limit`, `upper_limit`, `flag_hb`, and
+method-specific diagnostics returned by Vaskify. Flagged (`1`), unflagged
+(`0`), and not-comparable (missing diagnostics/flag) states remain distinct.
+
+### Validation boundary: HB module and Vaskify
+
+The HB module validates only the integration contract: DataFrame type and
+required columns; non-empty string identifiers; supported canonical period
+strings; numeric, non-boolean values; unique `unit_id`/`period` rows; exactly
+two distinct requested periods; and that the input period levels match that
+pair. When stratification is requested, it also verifies that the mapped
+`strata` column is present. It validates the configured Vaskify argument
+choices and result shape before display.
+
+The HB module must not filter out zero, negative, or missing values to decide
+eligibility, calculate ratios or limits, or recreate flags. Vaskify owns those
+method rules. Vaskify's HB implementation uses only positive values in both
+periods; as a result, `output_scope="all"` does not guarantee a diagnostic row
+for every input unit.
+
+Keep the complete handler DataFrame and reconcile Vaskify output to its
+identifiers and context. Missing diagnostics must remain not comparable, not
+be converted to flag `0`. If Vaskify returns no eligible results or only logs
+a warning, the integration must use the verified return behavior to show a
+not-comparable state or a visible error; an empty result must never silently
+look like a successful run with no outliers. Do not infer this state from an
+empty frame until the installed Vaskify behavior is covered by integration
+tests.
+
+Use the public API defaults in one HB/Vaskify configuration location and pass
+them explicitly: `pu=0.5`, `pa=0.05`, `pc=20`,
+`percentiles=(0.25, 0.75)`, `flag="flag_hb"`, `output_format="wide"`, and
+`output_scope="all"`. These are Vaskify API defaults, not user-facing controls
+or a claim that the methodology has approved other parameter values. Any
+future configurable values must be validated at the integration boundary;
+do not invent statistical bounds in the framework.
 
 ## Module structure
 
@@ -193,8 +244,14 @@ The implementation is complete only when these boundaries are covered:
 - `AltinnHBDataHandler` active-submission filtering, numeric conversion,
   duplicate/repeated-field handling, and common-schema validation.
 - `FakeHBDataHandler` module-flow tests without backend access.
-- Exact Vaskify arguments and result normalization.
-- Empty, invalid, missing, not-comparable, and exception paths.
+- HB preflight checks for exactly two canonical period levels, requested
+  periods matching the input, Vaskify-compatible types, and configured strata.
+- Exact explicit Vaskify arguments and result normalization, including
+  `median_ratio`.
+- Positive, zero, negative, and missing values; preserve Vaskify's
+  not-comparable outcomes without reimplementing its eligibility rule.
+- Empty results, warning-only Vaskify paths, invalid results, and exceptions;
+  verify the installed package's no-eligible-population behavior.
 - Stable click-to-selector behavior without rerunning HB.
 - Integration coverage against the installed `ssb-vaskify` package.
 - Demo browser coverage for import, run, display, and click selection.

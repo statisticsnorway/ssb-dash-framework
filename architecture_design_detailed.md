@@ -164,6 +164,15 @@ and result mapping in the HB method helper:
 
 Do not treat an algorithm error or an empty eligible population as a successful
 “no outliers” result. Preserve missing/not-comparable separately from flag 0.
+The framework validates the structural input and call contract, but does not
+duplicate Vaskify's positive-value eligibility filter, ratio/limit calculation,
+stratification algorithm, or flag decisions. Vaskify owns those method rules.
+Because Vaskify uses only positive values in both periods, its `output_scope`
+of `"all"` may still omit input units that have no diagnostics. Preserve the
+full input and reconcile the returned diagnostics by stable identifier so
+omitted units remain distinguishable from unflagged units. Confirm the
+installed package's return behavior when no unit is eligible; do not treat an
+empty return or warning as success without that verification.
 
 ## Phase 2 — Define the shared DataFrame and source-adapter contract
 
@@ -188,6 +197,14 @@ instance can be injected into the Dash module. A deterministic
 sufficient for isolated tests; it does not replace the required Altinn
 adapter. The calculation function itself should accept a DataFrame, not a
 filepath or database connection.
+
+The common validator and HB module are responsible for API-level preflight,
+not the HB algorithm. Before calling Vaskify, verify that the requested period
+pair contains exactly two distinct canonical periods, that the input contains
+exactly those two period levels, that required columns and dtypes are
+Vaskify-compatible, and that a configured stratum maps to an existing
+`strata` column. Do not filter input units by positive or missing values to
+recreate Vaskify's eligibility behavior.
 
 Read the selected canonical period `t` from `VariableSelector`; use the
 configured `TimeUnit` frequency to resolve the preceding period `t-1`. Pass
@@ -216,15 +233,32 @@ hb_vaskify_result_dataframe = hb_detector.hb(
     time_var="period",
     time_periods=list(hb_comparison_periods),
     strata_var="strata" if configured_hb_strata_variable else "",
+    pu=0.5,
+    pa=0.05,
+    pc=20,
+    percentiles=(0.25, 0.75),
+    flag="flag_hb",
     output_format="wide",
     output_scope="all",
 )
 ```
 
-Map Vaskify's `flag_hb`, `ratio`, and limit columns into the module's result
-view, while retaining the returned DataFrame and its method-specific columns.
-Keep this mapping small and local; extract a reusable adapter only if another
-consumer needs the same conversion.
+These are Vaskify's public API defaults, set explicitly in one helper so the
+integration is deterministic and testable. They are not user-facing controls
+or an assertion that the methodology has approved alternative values. Do not
+invent framework-side statistical bounds; validate only configured types and
+the public call contract unless approved parameter constraints are documented.
+
+Map Vaskify's `flag_hb`, `ratio`, `median_ratio`, `lower_limit`, and
+`upper_limit` into the module's result view, while retaining the returned
+DataFrame and its method-specific columns. Preserve the original handler input
+and reconcile the output using stable unit identifiers. A missing diagnostic
+or flag is not comparable; flag `0` is calculated and unflagged. Do not
+interpret `output_scope="all"` as guaranteeing one diagnostic row per source
+unit: Vaskify only uses positive values in both comparison periods. Keep this
+eligibility rule inside Vaskify. If no eligible result is returned, use
+integration-tested behavior to distinguish not-comparable observations from
+an error; never render an unverified empty result as “no outliers.”
 
 The UI module must not open a source connection or contain source-specific
 queries. A handler can use the configured connection and return pandas data;
@@ -246,8 +280,10 @@ normalized result.
 6. Use `VariableSelector` helper methods for configured shared values. Validate
    required selector configuration early and provide actionable errors.
 7. On run, gather current selector/local inputs, ask the injected handler for
-   the common DataFrame, call `Detect.hb()` through the small Vaskify helper,
-   validate/normalize its result, and update the view.
+   the common DataFrame, validate the structural input and Vaskify call
+   preconditions, call `Detect.hb()` through the small Vaskify helper, then
+   validate/reconcile/normalize its result and update the view. Do not
+   reimplement Vaskify's eligibility or statistical rules.
 8. On a clicked result, map the point to a stable identifier and update the
    configured selector output. Avoid relying on display labels or positional
    row indices as identity.
@@ -285,7 +321,11 @@ re-export or document that the prototype was never a supported public API.
   and document the supported constructor/configuration keys.
 * Keep Vaskify method defaults and argument mapping in one place (the
   small helper/configuration object), not duplicated between UI state and
-  calculation code.
+  calculation code. Initially pass the documented API defaults explicitly:
+  `pu=0.5`, `pa=0.05`, `pc=20`, `percentiles=(0.25, 0.75)`,
+  `flag="flag_hb"`, `output_format="wide"`, and `output_scope="all"`.
+  Treat these as API defaults, not methodology approval for alternative
+  values. Do not invent parameter bounds in the framework.
 
 ## Phase 5 — Tests and documentation
 
@@ -303,12 +343,19 @@ Add tests under `tests/unittests/` for:
 * the prepared DataFrame/fake handler supplies the same required columns for
   isolated module tests;
 * Vaskify is called with the expected `y_var`, `time_var`, `time_periods`,
-  optional `strata_var`, and output options;
+  optional `strata_var`, explicit API-default parameters, and output options;
+* preflight rejects malformed period pairs, unexpected period levels,
+  Vaskify-incompatible required column types, and missing configured strata
+  without duplicating method eligibility rules;
 * canonical framework period strings are accepted, the selected
   `VariableSelector` period is treated as `t`, and the period-resolution helper
   returns the expected `(t-1, t)` pair for each supported `TimeUnit` frequency;
-* normalized result flags, diagnostics, and identifier preservation;
-* empty results, missing values, invalid data, and Vaskify exceptions;
+* normalized result flags, `ratio`, `median_ratio`, limits, diagnostics,
+  identifier/context reconciliation, and missing-flag semantics;
+* positive, zero, negative, and missing values, including Vaskify's
+  not-comparable behavior without framework-side eligibility filtering;
+* warning-only and no-eligible-result behavior, empty results, invalid data,
+  and Vaskify exceptions;
 * click selection updates the configured shared identifier;
 * tab and window placement both work without changing module behavior.
 
@@ -336,7 +383,13 @@ Update the framework's module documentation and API reference with:
 * how the required Altinn adapter and future Excel adapters map to that
   schema;
 * module configuration and usage;
-* flag and missing-value meaning;
+* Vaskify's positive-value eligibility behavior and its effect on which input
+  units receive diagnostics;
+* the distinction between flagged, calculated/unflagged, and not-comparable
+  results, including how source context is retained for units without
+  diagnostics;
+* the explicit Vaskify API defaults used by the integration and which
+  parameter choices have not been approved for user configuration;
 * how clicking a candidate updates the configured `VariableSelector` output;
 * unsupported shapes and known limitations;
 * the module's supported status, requirements, and known limitations.
