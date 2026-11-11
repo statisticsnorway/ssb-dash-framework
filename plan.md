@@ -11,18 +11,27 @@ Ensure that any deviations from the architecture are documented and approved thr
 - ONLY WORK ON THE AFFECTED TASK
 
 ## Current tasks
-| Task | Description/commit | AI- solution suggestion /or follow up | User apporval or follow up | Ai- follow up - if not approved - or new questions arrise | User apporval or follow up |
+| Task | Description/commit | AI- solution/suggestion /or follow up | User apporval or follow up | Ai- follow up - if not approved - or new questions arrise | User apporval or follow up |
 |---|---|---|---|---|---|
+| Fix canonical QUARTER formatting in `SelectedTimeUnit.to_str()` | Ensure all quarter values format as `YYYY-Q1` through `YYYY-Q4`, including year-boundary subtraction. Add focused regression tests. | Derive the quarter number from the date's month and construct the canonical string explicitly, avoiding Pendulum interpreting `Q1` as format tokens. |  |  |  |
+| Implement canonical HB comparison-period resolution | Add `resolve_hb_comparison_periods` for canonical YEAR (`YYYY`), HALF_YEAR (`YYYY-1`/`YYYY-2`), QUARTER (`YYYY-Q1`–`YYYY-Q4`), MONTH (`YYYY-MM`), WEEK (`YYYY-Www`), and DAY (`YYYY-MM-DD`) periods. Use `TimeUnit` to derive `(t-1, t)` and keep resolution policy separate from the data-handler contract. | Implement a focused HB helper that validates the selected period against the configured `TimeUnit` frequency, uses `TimeUnit.parse(...).subtract(1)` for the previous period, and returns both periods in canonical form. Do this after the WEEK and QUARTER formatting fixes. |  |  |  |
+| Test HB comparison-period rollover by frequency | Verify the expected `(t-1, t)` pair for all six `TimeUnit` frequencies, including transitions across year boundaries. | Parameterize exact expected pairs for YEAR, HALF_YEAR, QUARTER, MONTH, WEEK, and DAY; include annual/quarter/month rollover, ISO week-year rollover, and January 1 for DAY. |  |  |  |
+| Test invalid HB comparison periods | Verify clear errors for malformed, non-canonical, and configured-frequency-mismatched period strings across the six frequencies. | Cover invalid date and ISO-week values, invalid quarter/half-year/month values, and valid canonical strings paired with the wrong configured frequency. |  |  |  |
+| Run all HB tests, consider if more tests are needed | | |  |  |  |
+
 
 
 
 
 # History
 ## Define the HB public contract
-| Task | Description/commit | AI- solution suggestion | User apporval or follow up | Ai- follow up - if not approved - or new questions arrise | User apporval or follow up |
+| Task | Description/commit | AI- solution/suggestion /or follow up | User apporval or follow up | Ai- follow up - if not approved - or new questions arrise | User apporval or follow up |
 |---|---|---|---|---|---|
 | Define the common HB input schema | Add `unit_id`, canonical `period`, numeric `value`, optional `strata`, and configured selector context. |  |  |  |  |
 | Add the HB data-handler interface | Add `HBDataHandlerMeta.get_hb_dataframe(...)`; keep it independent of Altinn queries and Vaskify calls. |  |  |  |  |
 | Validate the common HB input schema | Add schema validation and reject duplicate `unit_id`/`period` combinations. |  |  |  |  |
 | Test the HB input contract | Add unit tests for required columns, types, uniqueness, and clear errors. |  |  |  |  |
 | Fiks HB kontrakten, den skal støtte rammeverkets TimeUnit  sine seks frekvenser |  | Utvid HB-kontraktens periodestøtte til rammeverkets seks kanoniske formater: YEAR (`YYYY`), HALF_YEAR (`YYYY-1`/`YYYY-2`), QUARTER (`YYYY-Q1`–`YYYY-Q4`), MONTH (`YYYY-MM`), WEEK (`YYYY-Www`) og DAY (`YYYY-MM-DD`). Valider periodeteksten mot konfigurert frekvens, og behold eksisterende krav til kolonner, typer og unikhet. | Godkjent: Implementer, Sjekk dette opp i mot alle stegene i `## Define the HB public contract` og sjekk at `architecture_design_detailed` og `architecture.md` er oppdatert med nye endringer og implikasjoner av det | approved - done - Oppdaterte planen med noen bugs som ble funnet. Dealer med det senere |  |
+
+## Implement canonical period resolution
+| Fix canonical WEEK parsing and formatting in `TimeUnit` | Make `TimeUnit` handle canonical `YYYY-Www` periods across valid ISO weeks. Include regression tests for parsing and canonical round-tripping. | Handle ISO weeks explicitly instead of relying on the unsupported Pendulum `WW` token; validate week numbers against the ISO week-year and preserve `YYYY-Www` output. | Add the suggested fix to Issues. Make the HB-module handle this correctly with an exception. It needs to fail a test when Timeunit is fixed and the alternative approach is still in place. Such that the code can be cleaned up when Timeunit is fixed. | Proposal: keep shared `TimeUnit` unchanged for HB. Validate week strings and ISO-week validity in the HB resolver, call `TimeUnit.parse()`, and use an HB-local fallback only for the known `ValueError` caused by unsupported `WW`; preserve canonical `YYYY-Www` output. Keep behavior tests that always assert correct HB results. Add a temporary `xfail(strict=True, raises=ValueError)` sentinel for `TimeUnit.parse(WEEK, "2024-W01")`; when the shared parser is fixed, XPASS makes that test fail and prompts removal of the fallback and sentinel while retaining behavior tests. Update the Issues proposal to describe this HB-local fallback. | approved |
