@@ -7,7 +7,9 @@ SSB Dash Framework.
    :maxdepth: 1
    :caption: Ssb_dash_framework
 
+   Config <config/index>
    Control <control/index>
+   Experimental <experimental/index>
    Modules <modules/index>
    Setup <setup/index>
    Utils <utils/index>
