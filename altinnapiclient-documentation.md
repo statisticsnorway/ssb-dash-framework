@@ -114,8 +114,33 @@ period, convert the selected `verdi`, and return the common HB DataFrame. It
 must not call Vaskify or use UI/editor behavior as a substitute for source
 selection.
 
-Before implementation, the plan needs to settle or explicitly reuse the
-existing latest-active rule, identify the configured field using the agreed
-field-path/field-name semantics, and define how repeated or nested matches
-are handled. Preserve only selector context required by HB, and reject
-unresolved ambiguity rather than silently selecting the first field row.
+The plan approves reusing `active_no_duplicates_refnr_list` unchanged with
+configured form and period-specific filters, once per comparison period. The
+explicit HB field-path mapping and selector context are described below.
+Repeated or nested matches still need the separate HB ambiguity policy; do not
+silently select the first field row.
+
+## Proposed HB form, field, and selector mapping
+
+Keep the HB mapping explicit and local to `AltinnHBDataHandler`; do not change
+shared framework code or depend on the Data Editor's update path for HB reads.
+Configure the selected form (`skjema`) and map each selected HB variable to an
+exact `skjemadata.feltsti`. If a field path varies by form or period, include
+those dimensions in the configured mapping. Do not use `feltnavn` alone as the
+field key because it may repeat in nested form data.
+
+Map the source data as follows:
+
+| HB meaning | Altinn source | Mapping |
+|---|---|---|
+| Unit-period membership | `enheter` | Filter by configured `skjema` and requested `iso_periode`; use `ident` as the unit identifier. |
+| Submission metadata | `skjemamottak` | Join on `(iso_periode, skjema, ident)` and use the selected submission's `refnr`. |
+| Selected field answer | `skjemadata` | Join on `(iso_periode, skjema, ident, refnr)` and filter by the configured exact `feltsti`; read `verdi`. |
+| HB input row | Selected Altinn records | Map `ident` to `unit_id`, `iso_periode` to `period`, and the selected `verdi` to numeric `value`. |
+| Selector context | Common HB result | Retain `unit_id`/`ident` for graph-click selection. Use `refnr` to retrieve the answer, then drop it from the HB result unless a separately approved selector output requires it. |
+
+This is an HB-specific mapping proposal, not a change to the framework's
+`mapping_variabelnavn` convention. The Data Editor uses that lookup while
+updating form data; it is not currently a general HB read contract. The
+selected form and exact field paths must be supplied by the consuming
+application; this repository does not establish a single HB form or field.
