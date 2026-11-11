@@ -154,6 +154,11 @@ return None if pd.isna(value) else value
 
 **Where:** [getter.py](../src/ssb_dash_framework/modules/data_editor/default_getter/getter.py#L148)
 
+> **Update (MacroModule work):** the first point below no longer applies. The query uses
+> `variabel` and the schemas define `variabel`. The second point is still true: the ident
+> column is compared with `refnr` at
+> [getter.py](../src/ssb_dash_framework/modules/data_editor/default_getter/getter.py#L152).
+
 Two issues in one query:
 
 - It filters `t.filter(_.variabel == info_var.source_variable_name)`, but the `enhetsinfo`
@@ -175,6 +180,11 @@ never touch the database.
 
 **Where:** [getter.py](../src/ssb_dash_framework/modules/data_editor/default_getter/getter.py#L79)
 
+> **Update (MacroModule work):** this appears fixed. `get_contact_info` now reads the
+> `kontaktinfo` table
+> ([getter.py](../src/ssb_dash_framework/modules/data_editor/default_getter/getter.py#L77)),
+> and `test_dataeditor.py` checks the result. The entry can likely be removed.
+
 ```python
 def get_contact_info(self, refnr: str) -> ContactInfo:
     data = pd.DataFrame()
@@ -187,3 +197,221 @@ def get_contact_info(self, refnr: str) -> ContactInfo:
 **Demo workaround:** the contact-info button is left out of the `buttons:` list.
 
 ---
+
+# Found while building the generic MacroModule
+
+These were found while building the experimental
+[MacroModule](../src/ssb_dash_framework/modules/macro_module/README.md). Workarounds in the
+MacroModule are noted so they can be removed once the problem is fixed.
+
+---
+
+## 8. `AlertHandler.error` shows errors as warnings
+
+**Where:** [alert_handler.py](../src/ssb_dash_framework/utils/alert_handler.py#L119)
+
+```python
+def error(cls, msg: str, ephemeral: bool | None = True, duration: int | None = 5):
+    cls._add_alert(msg, "warning", ephemeral=ephemeral, duration=duration)
+```
+
+`error` adds the alert with the colour `"warning"`. The AlertHandler has no error variant
+at all: no colour, no icon in `_map_icon`
+([alert_handler.py](../src/ssb_dash_framework/utils/alert_handler.py#L365)) and no filter
+button in the alert modal. Errors therefore look the same as warnings and cannot be filtered
+out from them.
+
+**Possible fix:** add an error variant (e.g. `"danger"`) with an icon, a CSS class and a filter
+button, and use it in `error`.
+
+---
+
+## 9. `AlertHandler` can only be called while a callback is running
+
+**Where:** [alert_handler.py](../src/ssb_dash_framework/utils/alert_handler.py#L108)
+
+`_add_alert` uses `dash.set_props`, which raises
+`MissingCallbackContextException: dash.callback_context.set_props is only available from a callback!`
+outside a callback. Code that is shared between callbacks and plain Python (data handlers,
+helpers, scripts, unit tests) can therefore not report through the AlertHandler without
+crashing outside the app.
+
+**Possible fix:** fall back to logging when there is no callback context.
+
+**MacroModule workaround:** the unit tests monkeypatch `AlertHandler.warning`
+([test_macro_module_data_handler.py](../tests/unittests/module_tests/macro_module/test_macro_module_data_handler.py)).
+
+---
+
+## 10. Lazy ibis tables do not survive the end of `with get_connection()`
+
+**Where:** [connection.py](../src/ssb_dash_framework/utils/config_tools/connection.py#L38)
+
+`get_connection()` lends out a connection for the duration of the `with` block. Pooled
+Postgres (`set_postgres_connection`) and parquedit (`set_parquedit_connection`) give the
+connection back when the block ends, so an ibis table expression returned from inside the
+block points to a connection that is no longer usable. SQLite happens to work because it
+opens a new connection per call. Nothing in the docs warns about this, and a design that
+returns ibis tables from a data handler works in SQLite tests but fails in production.
+
+**Possible fix:** document in `get_connection` and `docs/architecture.md` that results must
+be executed (`.to_pandas()`/`.execute()`) inside the `with` block.
+
+**MacroModule workaround:** data handlers return a pandas DataFrame (see
+[ADR 0001](../src/ssb_dash_framework/modules/macro_module/adr/0001-module-owns-aggregation.md)).
+
+---
+
+## 11. `experimental/` cannot import modules directly
+
+**Where:** [\_\_init\_\_.py](../src/ssb_dash_framework/__init__.py#L3)
+
+The top-level package runs `from . import experimental` before any of its other imports, and
+ruff's import sorting keeps it there. If `experimental/__init__.py` imports from
+`..modules`, the import is circular (`cannot import name 'app_setup' from partially
+initialized module`).
+
+**Possible fix:** remove `from . import experimental` from the top-level package. Users import
+`ssb_dash_framework.experimental` explicitly anyway.
+
+**MacroModule workaround:** [experimental/\_\_init\_\_.py](../src/ssb_dash_framework/experimental/__init__.py)
+resolves its names lazily with a module-level `__getattr__`.
+
+---
+
+## 12. Experimental modules are not registered for yaml configs
+
+**Where:** [experimental/\_\_init\_\_.py](../src/ssb_dash_framework/experimental/__init__.py)
+and [models.py](../src/ssb_dash_framework/config/models.py#L74)
+
+A class is registered for yaml when it is defined, i.e. when its module is imported. The
+package never imports experimental modules, so `type: MacroModule` in an app config fails
+with `No module named 'MacroModule' found` unless the app first imports
+`ssb_dash_framework.experimental` and touches the class (or imports it by name).
+
+**Possible fix:** have `build_app_from_config` import `ssb_dash_framework.experimental` when
+an unknown type is requested, or document the explicit import for experimental modules.
+
+---
+
+## 13. YamlLoadable subclasses defined inside a test break on the second backend
+
+**Where:** [models.py](../src/ssb_dash_framework/config/models.py#L74)
+
+Every `YamlLoadable` subclass registers itself by class name, and a second registration
+raises `Module '<name>' is already registered`. The `db_backend` fixture runs every test once
+per backend, so a handler or module subclass defined inside a test function passes on the
+first backend and fails on the next.
+
+**Possible fix:** document that test classes must be defined at module level, or let the
+registry replace a class whose `__module__` and `__qualname__` are the same.
+
+---
+
+## 14. Test fixture only resets part of the VariableSelector state
+
+**Where:** [conftest.py](../tests/unittests/conftest.py#L84) and
+[set_variables.py](../src/ssb_dash_framework/setup/variableselector/set_variables.py#L108)
+
+`clear_VariableSelector_variableselectoroptions` clears `_variableselectoroptions`, but not
+`_time_unit`, `_ident`, `_refnr`, `_secondary_ident` or `_grouping_variables`. `apply_config`
+only sets the values that are present, so a `VariableSelectorConfig` without `ident` keeps
+the ident from an earlier test. Tests that depend on these values can pass or fail
+depending on test order.
+
+**Possible fix:** reset all the class variables in the fixture.
+
+**MacroModule workaround:** the `selector` fixture in
+[test_macro_module.py](../tests/unittests/module_tests/macro_module/test_macro_module.py)
+saves, resets and restores them.
+
+---
+
+## 15. `VariableSelectorConfig.from_yaml` and `from_dict` expect the old `time_units` format
+
+**Where:** [set_variables.py](../src/ssb_dash_framework/setup/variableselector/set_variables.py#L44)
+and [L69](../src/ssb_dash_framework/setup/variableselector/set_variables.py#L69)
+
+Both loop over `config["time_units"]` as a dict of `{name: frequency}`, but the field is a
+single `TimeUnit(name, frequency)`. A config in the current format (as in
+`demo/altinn_app/config/base.yaml`) iterates over the keys `name` and `frequency` and raises
+`RuntimeError: The time unit you selected was invalid`. `from_dict` also raises `KeyError`
+when `time_units` is missing. App configs loaded through `AppConfig` are not affected,
+because they use pydantic validation directly.
+
+**Possible fix:** delete the loops; `TimeUnit` already parses frequency strings.
+
+---
+
+## 16. The Altinn demo's time unit cannot parse yearly periods
+
+**Where:** [base.yaml](../demo/altinn_app/config/base.yaml#L12)
+
+The demo configures `frequency: month` for both RA-0187 (monthly) and RA-0745 (yearly). That
+works as long as the period is only string-matched, but any module that parses the period
+with `TimeUnit.parse`, such as the MacroModule's comparison period, fails for `2024`.
+
+**Possible fix:** none in the demo while one time unit serves two frequencies. The
+MacroModule has its own demo with a yearly time unit
+([demo/macro_module](../demo/macro_module/app.py)).
+
+---
+
+## 17. `pinnedTopRowData` is not a property of this dash-ag-grid version
+
+**Where:** [hardcoded_version.py.txt](../src/ssb_dash_framework/modules/macro_module/reference/hardcoded_version.py.txt#L600)
+
+Using `Output(grid_id, "pinnedTopRowData")` makes the browser report *"Invalid prop for this
+component"*. The hardcoded MacroModule does this, so its count row would not show if the code
+were used again.
+
+**Possible fix:** set it through grid options:
+`dashGridOptions={..., "pinnedTopRowData": rows}`, as the generic MacroModule does.
+
+---
+
+## 18. The architecture test does not catch modules that write to other modules' components
+
+**Where:** [test_architecture.py](../tests/unittests/test_architecture.py#L78)
+
+`test_modules_are_independent` only checks imports. The hardcoded MacroModule wrote to
+DataEditor's `"dataeditortableselector"` component
+([hardcoded_version.py.txt](../src/ssb_dash_framework/modules/macro_module/reference/hardcoded_version.py.txt#L1362)),
+which breaks the rule that modules only communicate through the variable selector, without
+failing the test.
+
+**Possible fix:** none simple, since component ids are strings. A convention that ids start
+with `self.module_id` could be checked by inspecting the registered callbacks.
+
+---
+
+## 19. Parquedit tests emit ibis deprecation warnings
+
+**Where:** ibis' DuckDB backend (`ibis/backends/duckdb/__init__.py`), reached through
+`set_parquedit_connection`
+
+Every query through the parquedit backend warns
+`DeprecationWarning: fetch_arrow_table() is deprecated, use to_arrow_table() instead.` The
+unit tests show these warnings (from DataEditor, the Altinn testdata checks and the
+MacroModule's Altinn handler), although `AGENTS.md` requires the suite to pass without
+warnings. The warning comes from ibis itself, not from the framework.
+
+**Possible fix:** upgrade ibis once a release uses `to_arrow_table()`, or filter this specific
+warning in the pytest configuration until then.
+
+---
+
+## 20. Documentation gaps
+
+- [architecture.md](architecture.md#L135): the "Recommended test suite" section is empty,
+  although `AGENTS.md` points to it for how tests should be written. [testing.md](testing.md)
+  is also an empty file.
+- [architecture.md](architecture.md#L123): the link text says `docs/datamodels/README.md`, but
+  the file is `docs/datamodels.md` (the link target itself works).
+- [architecture.md](architecture.md#L106) names ssb-parquedit as the standard backend, but
+  `set_parquedit_connection`
+  ([connection.py](../src/ssb_dash_framework/utils/config_tools/connection.py#L195)) is not
+  exported, and only the tests use it.
+- [datamodels.md](datamodels.md#L31) does not say that `indeks` is only the index within the
+  innermost repeating group, and that outer indices are only found in `feltsti`
+  (e.g. `/NyEngHusdyrGjodsGroup/6/NyEngHusdyrGjodslinger/1/...`).
