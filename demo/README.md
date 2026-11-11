@@ -9,6 +9,7 @@ They are functional and some can be used as a foundation for creating a custom a
 | hello_world    | A very simple example of how to create a module. |
 | parqueteditor | Copy paste friendly setup for an app containing the ParquetEditor module. Runnable for SSB-employees using the "dapla-felles-developers" access. |
 | altinn_app | DataEditor with custom dataviews for two Altinn forms. Runs standalone on the bundled testdata, no database access needed. |
+| macro_module | The experimental MacroModule on the bundled RA-0745 testdata, per unit and per repeating group instance. Runs standalone. |
 
 ## altinn_app
 

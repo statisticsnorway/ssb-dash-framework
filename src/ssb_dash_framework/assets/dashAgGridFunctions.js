@@ -389,3 +389,46 @@ document.addEventListener('click', function(e) {
     window._macroModuleLastClickX = e.clientX;
     window._macroModuleLastClickY = e.clientY;
 });
+
+// Generic MacroModule (modules/macro_module/macro_module.py)
+window.dashAgGridFunctions.MacroTable = {
+
+    // Percent for 'pct', whole numbers otherwise
+    formatValue(params, mode) {
+        const value = params.value;
+        if (value === null || value === undefined || value === '') return '';
+        const options = mode === 'pct'
+            ? {style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1}
+            : {minimumFractionDigits: 0, maximumFractionDigits: 0};
+        return Number(value).toLocaleString('nb-NO', options);
+    },
+
+    // Blue for increase, red for decrease. 'pct' is graded up to +/- 30 %, 'diff' only shows the sign.
+    heatmapStyle(params, mode) {
+        const value = params.value;
+        if (params.node.rowPinned || mode === 'current' || value === null || value === undefined || isNaN(value)) {
+            return {};
+        }
+        const share = mode === 'pct' ? Math.max(-1, Math.min(1, value / 0.3)) : Math.sign(value) * 0.6;
+        const target = share >= 0 ? [180, 213, 250] : [252, 195, 174];
+        const weight = Math.abs(share);
+        const [r, g, b] = target.map(c => Math.round(255 * (1 - weight) + c * weight));
+        return {backgroundColor: `rgb(${r}, ${g}, ${b})`, color: 'black'};
+    },
+
+    // Grouping value differs from the comparison period
+    changedStyle(params) {
+        if (params.data && params.data[params.colDef.field + '__changed']) {
+            return {backgroundColor: '#fff8c7', color: 'black'};
+        }
+        return {};
+    },
+
+    // Green when the observation entered the group, red when it left
+    statusStyle(params) {
+        const status = params.data && params.data.status;
+        if (status === 'Ny' || status === 'Inn') return {backgroundColor: '#c7f5c7', color: 'black'};
+        if (status === 'Ut' || status === 'Borte') return {backgroundColor: '#ffc7c7', color: 'black'};
+        return {};
+    },
+};

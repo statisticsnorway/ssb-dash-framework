@@ -383,3 +383,25 @@ INSERT INTO enhetsinfo (iso_periode, ident, variabel, verdi) VALUES
     ('2026', 'ATF2134662', 'enhetsPostnr', '4340'),
     ('2026', 'ATF2134662', 'enhetsPoststed', 'BRYNE'),
     ('2026', 'ATF2134662', 'enhetsAvdeling', 'AVD HUSDYR');
+
+-- RA-0745 grouping variables for the MacroModule demo. ATF2134661 changes
+-- naring between 2025 and 2026, so the demo shows units moving between groups.
+INSERT INTO enhetsinfo (iso_periode, ident, variabel, verdi) VALUES
+    ('2024', 'ATF2134660', 'naring', '01.11'),
+    ('2024', 'ATF2134660', 'kommune', '3411'),
+    ('2025', 'ATF2134660', 'naring', '01.11'),
+    ('2025', 'ATF2134660', 'kommune', '3411'),
+    ('2026', 'ATF2134660', 'naring', '01.11'),
+    ('2026', 'ATF2134660', 'kommune', '3411'),
+    ('2024', 'ATF2134661', 'naring', '01.41'),
+    ('2024', 'ATF2134661', 'kommune', '3411'),
+    ('2025', 'ATF2134661', 'naring', '01.41'),
+    ('2025', 'ATF2134661', 'kommune', '3411'),
+    ('2026', 'ATF2134661', 'naring', '01.11'),
+    ('2026', 'ATF2134661', 'kommune', '3411'),
+    ('2024', 'ATF2134662', 'naring', '01.41'),
+    ('2024', 'ATF2134662', 'kommune', '1121'),
+    ('2025', 'ATF2134662', 'naring', '01.41'),
+    ('2025', 'ATF2134662', 'kommune', '1121'),
+    ('2026', 'ATF2134662', 'naring', '01.41'),
+    ('2026', 'ATF2134662', 'kommune', '1121');

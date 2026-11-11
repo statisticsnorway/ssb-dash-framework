@@ -78,6 +78,8 @@ constructor arguments listed.
 - [DataEditorSidebarComment](#dataeditorsidebarcomment)
 - [DataEditorSidebarEditingStatus](#dataeditorsidebareditingstatus)
 - [DataEditorTableSelector](#dataeditortableselector)
+- [AltinnMacroModuleDataHandler](#altinnmacromoduledatahandler)
+- [MacroModule](#macromodule)
 - [Naeringsspesifikasjon](#naeringsspesifikasjon)
 - [NspekControlView](#nspekcontrolview)
 - [NspekDashboard](#nspekdashboard)
@@ -454,6 +456,50 @@ Default module to select datasource table to show data for.
 - type: DataEditorTableSelector
   form_data_tables: <form_data_tables>
   starting_table: <starting_table>
+```
+
+## AltinnMacroModuleDataHandler
+
+Import path: `ssb_dash_framework.modules.macro_module.altinn_data_handler.AltinnMacroModuleDataHandler`
+
+Feeds a MacroModule from the Altinn data model (skjemamottak, skjemadata, enhetsinfo).
+
+| Argument | Type | Default | Description |
+| --- | --- | --- | --- |
+| `skjema` | `str` | required | The form, e.g. "RA-0745". |
+| `value_variables` | `dict[str, str] \| list[str]` | required | `feltnavn` of the numeric fields to aggregate, as a list or as {feltnavn: label}. |
+| `grouping_variables` | `list[str]` | required | Names of the grouping variables, in display order. |
+| `codelists` | `dict[str, list[str] \| dict[str, Any]] \| None` | `None` | Codelist per grouping variable, as a list of codes, a {code: label} dict, or {"klass": classification id, "level": level} to fetch it from Klass for the selected period's year. |
+| `repeating_group` | `str \| None` | `None` | Path of a top-level repeating group, e.g. "/NyEngSpredUtsGroup". Makes each instance of it an observation. |
+| `exclude_instances` | `dict[str, list[str]] \| None` | `None` | Drops repeating group instances where a field has one of the listed values, e.g. {"NyEngSpredUtsID": ["TOTAL_ROW"]}. |
+
+```yaml
+- type: AltinnMacroModuleDataHandler
+  skjema: <skjema>
+  value_variables: <value_variables>
+  grouping_variables: <grouping_variables>
+```
+
+## MacroModule
+
+Import path: `ssb_dash_framework.modules.macro_module.macro_module.MacroModule`
+
+Drill down from aggregated values to the observations behind them.
+
+**Custom loader:** `from_yaml(*args: Any, **kwargs: Any) -> 'MacroModule'`.
+
+Create the module from yaml, building the data handler from its own block.
+
+| Argument | Type | Default | Description |
+| --- | --- | --- | --- |
+| `data_handler` | `MacroModuleDataHandler` | required | Supplies observations in the MacroModule's data model. |
+| `grouping_variables` | `list[str] \| None` | `None` | The grouping variables to offer, in display order. Defaults to every grouping variable declared by the data handler. |
+| `comparison_lag` | `int` | `1` | How many periods back the comparison period starts out as. |
+| `label` | `str` | `'Makromodul'` | The label of the tab or window. |
+
+```yaml
+- type: MacroModule
+  data_handler: <data_handler>
 ```
 
 ## Naeringsspesifikasjon

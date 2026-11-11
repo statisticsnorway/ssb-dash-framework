@@ -1,6 +1,14 @@
 # Plan: generic MacroModule
 
-Status: design agreed, not implemented. Terms follow [GLOSSARY.md](GLOSSARY.md) and [docs/GLOSSARY.md](../../../../docs/GLOSSARY.md).
+Status: implemented (experimental). Terms follow [GLOSSARY.md](GLOSSARY.md) and [docs/GLOSSARY.md](../../../../docs/GLOSSARY.md). User documentation is in [README.md](README.md).
+
+## Changes made during implementation
+
+- **Data handlers return a pandas DataFrame, not an ibis table.** A lazy ibis table is tied to the `get_connection()` connection, which pooled Postgres and parquedit return when the handler's block ends. ADR 0001 is updated. As a result, the Altinn handler pivots in pandas, so the SQLite string-function risk below no longer applies.
+- **`hardcoded_version.py` moved to `reference/hardcoded_version.py.txt`.** The yaml tests and docgen import every `.py` file under `src/`, and its class name `MacroModule` clashed with the generic module in the yaml registry.
+- **`experimental/__init__.py` resolves its names lazily** with a module `__getattr__`. The top-level package imports `experimental` before its modules, so a direct import is circular.
+- **`MacroModule` got a `label` argument**, so several instances can have different tab names.
+- **The macro table's pinned Totalt row is set through `dashGridOptions`**, because this dash-ag-grid version has no `pinnedTopRowData` prop.
 
 ## Goal
 
@@ -37,7 +45,7 @@ Priorities: readable, short, easy for a person to extend. The module should fit 
 | `README.md` | User docs: configuration, YAML, writing your own handler, limitations |
 | `GLOSSARY.md` | Module terms |
 | `adr/` | Decision records for the module |
-| `hardcoded_version.py` | Untouched reference. Never imported. |
+| `reference/hardcoded_version.py.txt` | Untouched reference, stored as text so the test suite and docgen never import it. |
 
 Export only through `ssb_dash_framework.experimental`, never top-level. The test suite requires `__init__.py` in every source directory.
 
@@ -69,7 +77,9 @@ class MacroModuleDataHandler(YamlLoadable, ABC):
     grouping_variables: list[str]    # display order
 
     @abstractmethod
-    def fetch_observations(self, period: str) -> ibis.Table: ...
+    def fetch_observations(self, period: str) -> pd.DataFrame:
+        """Build the query in ibis and call .to_pandas() inside the handler's own
+        `with get_connection()` block (see ADR 0001)."""
 
     def get_codelists(self, period: str) -> dict[str, dict[str, str]]:
         """Optional. grouping variable -> {code: label} in display order.
@@ -80,14 +90,14 @@ class MacroModuleDataHandler(YamlLoadable, ABC):
     def last_updated(self, period: str) -> str | None:
         return None
 
-    def resolve_duplicates(self, table: ibis.Table) -> ibis.Table:
-        """Optional hook. Default: AlertHandler warning if duplicates exist, returns table unchanged
+    def resolve_duplicates(self, data: pd.DataFrame, period: str) -> pd.DataFrame:
+        """Optional hook. Default: AlertHandler warning if duplicates exist, returns data unchanged
         (validate then raises). Override to resolve duplicates; this is the intended extension point."""
 
-    def validate(self, table: ibis.Table, period: str) -> None:
+    def validate(self, data: pd.DataFrame, period: str) -> None:
         """Raises ValueError naming handler, period and column."""
 
-    def get_observations(self, period: str) -> ibis.Table:
+    def get_observations(self, period: str) -> pd.DataFrame:
         """Concrete, final: fetch -> resolve_duplicates -> validate. The module only calls this."""
 ```
 
@@ -98,7 +108,7 @@ class MacroModuleDataHandler(YamlLoadable, ABC):
   - a missing grouping column or value column
   - a value column that isn't numeric
   - a grouping, `ident`, `instance` or `name` column that isn't a string
-  - a duplicate key within a period. This check executes one count query and runs on every fetch.
+  - a duplicate key within a period
 - **Content problems become findings.** Null codes and codes outside the codelist go into an `"Ukjent"` group, and an AlertHandler warning gives the count.
 - **At `__init__`, the module checks** that:
   - there is at least one value variable
@@ -112,7 +122,8 @@ class MacroModuleDataHandler(YamlLoadable, ABC):
 ```python
 MacroModule(data_handler: MacroModuleDataHandler,
             grouping_variables: list[str] | None = None,  # default: handler's list
-            comparison_lag: int = 1)
+            comparison_lag: int = 1,
+            label: str = "Makromodul")
 ```
 
 - All component IDs are `f"{self.module_id}-..."`.
@@ -217,7 +228,7 @@ AltinnMacroModuleDataHandler(
 - **Grouping variables:** looked up in `enhetsinfo.variabel` (`verdi`) first, then `skjemadata.feltnavn`.
 - **Name column:** `name` comes from `enhetsinfo` `enhetsNavn`.
 - **Codelists:** Klass entries use `ssb-klass-python` (already a dependency) for the selected period. The same codelist is used for both periods.
-- **SQLite risk:** extracting the instance path from `feltsti` must stay within string operations that ibis supports on SQLite, Postgres and DuckDB (substr/find-style). Check this early.
+- **SQLite risk (resolved):** instance paths are extracted in pandas, after `.to_pandas()`, so no backend-specific string functions are needed.
 - **YAML:** all constructor arguments are plain YAML types.
 
 ## Test data additions (`ssb_dash_framework_testdata/altinn/enhetsinfo.sql`)
