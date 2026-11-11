@@ -132,20 +132,27 @@ and result mapping in the HB method helper:
 1. **One common DataFrame format:** One row per unit and period for the
    selected target variable. For an HB run, it contains the two comparison
    periods (`t-1` and `t`). Required columns are `unit_id` (string),
-   `period` (canonical framework period string such as `YYYY`, `YYYY-Q1`, or
-   `YYYY-MM`), and `value` (numeric). `strata` is optional.
+   `period` (canonical framework period string: `YYYY` for YEAR, `YYYY-1` or
+   `YYYY-2` for HALF_YEAR, `YYYY-Q1` through `YYYY-Q4` for QUARTER, `YYYY-MM`
+   for MONTH, `YYYY-Www` for WEEK, or `YYYY-MM-DD` for DAY), and `value`
+   (numeric). `strata` is optional.
    Adapters may preserve additional columns needed to populate configured
    `VariableSelector` outputs; these are context, not HB calculation inputs.
 2. **Uniqueness:** The adapter must produce at most one row per
    `unit_id`/`period` for the selected target. It must explicitly resolve or
    reject duplicate/repeated values rather than silently aggregating them.
 3. **Comparison periods:** Vaskify's HB implementation requires two period
-   values. Use the framework's canonical period strings (`YYYY`, `YYYY-Q1`,
-   `YYYY-MM`, etc.). The initial implementation uses the period selected in
+   values. Use the framework's canonical period strings for all six
+   `TimeUnit` frequencies. Validate each period against the configured
+   frequency. The initial implementation uses the period selected in
    `VariableSelector` as `t` and derives `t-1` using the configured `TimeUnit`
    frequency. This is an implementation assumption to be confirmed as part of
    the product design. Keep the period-resolution rule isolated so it can be
-   changed if the intended comparison policy differs.
+   changed if the intended comparison policy differs. The current framework
+   `TimeUnit.parse` cannot parse week strings with the installed Pendulum token
+   set, and quarter `SelectedTimeUnit.to_str()` does not currently produce
+   canonical quarter strings; the period-resolution implementation must
+   address both limitations before supporting those frequencies.
 4. **Target variable:** Select/configure the source variable before it becomes
    the common numeric `value` column; do not make source-specific field names
    part of the HB module contract.
@@ -199,9 +206,11 @@ adapter. The calculation function itself should accept a DataFrame, not a
 filepath or database connection.
 
 The common validator and HB module are responsible for API-level preflight,
-not the HB algorithm. Before calling Vaskify, verify that the requested period
-pair contains exactly two distinct canonical periods, that the input contains
-exactly those two period levels, that required columns and dtypes are
+not the HB algorithm. The validator accepts canonical strings for all six
+framework `TimeUnit` frequencies and checks them against the configured
+frequency when supplied. Before calling Vaskify, verify that the requested
+period pair contains exactly two distinct canonical periods, that the input
+contains exactly those two period levels, that required columns and dtypes are
 Vaskify-compatible, and that a configured stratum maps to an existing
 `strata` column. Do not filter input units by positive or missing values to
 recreate Vaskify's eligibility behavior.
@@ -347,9 +356,12 @@ Add tests under `tests/unittests/` for:
 * preflight rejects malformed period pairs, unexpected period levels,
   Vaskify-incompatible required column types, and missing configured strata
   without duplicating method eligibility rules;
-* canonical framework period strings are accepted, the selected
-  `VariableSelector` period is treated as `t`, and the period-resolution helper
-  returns the expected `(t-1, t)` pair for each supported `TimeUnit` frequency;
+* canonical framework period strings are accepted and checked against the
+  configured frequency for all six `TimeUnit` frequencies;
+* the selected `VariableSelector` period is treated as `t`, and the
+  period-resolution helper returns the expected `(t-1, t)` pair for all six
+  frequencies, including canonical quarter/week formatting despite the current
+  framework parser/formatter limitations;
 * normalized result flags, `ratio`, `median_ratio`, limits, diagnostics,
   identifier/context reconciliation, and missing-flag semantics;
 * positive, zero, negative, and missing values, including Vaskify's

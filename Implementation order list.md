@@ -11,10 +11,10 @@ Each numbered item below is one commit-sized change. Do not combine items unless
 
 2. **Implement canonical period resolution**
    - Add `resolve_hb_comparison_periods`.
-   - Accept framework-canonical period strings such as `YYYY`, `YYYY-Q1`, and `YYYY-MM`.
+   - Accept framework-canonical annual, quarterly, and monthly strings: `YYYY`, `YYYY-Q1`, and `YYYY-MM`.
    - Use `TimeUnit` to derive `(t-1, t)` from the selected period.
    - Keep the resolution policy isolated so it can be changed without changing the data-handler contract.
-   - Test every supported frequency and invalid period input.
+   - Test HB-supported `YEAR`, `QUARTER`, and `MONTH` frequencies; reject unsupported framework frequencies and invalid period input.
 
 3. **Implement the Altinn source adapter**
    - Add `AltinnHBDataHandler` implementing `HBDataHandlerMeta`.

@@ -1,8 +1,11 @@
+from typing import cast
+
 import pandas as pd
 import pytest
 
 from ssb_dash_framework.modules.hb import HBDataHandlerMeta
 from ssb_dash_framework.modules.hb import validate_hb_dataframe
+from ssb_dash_framework.setup.variableselector.time_unit import TimeUnitType
 
 
 def valid_hb_dataframe() -> pd.DataFrame:
@@ -64,13 +67,118 @@ def test_validate_hb_dataframe_rejects_duplicate_unit_period_rows() -> None:
         validate_hb_dataframe(hb_input_dataframe)
 
 
-@pytest.mark.parametrize("period", ["2024-Q5", "2024-00", "2024-13", "24", "2024-W1"])
-def test_validate_hb_dataframe_rejects_noncanonical_periods(period: str) -> None:
+@pytest.mark.parametrize(
+    ("frequency", "period"),
+    [
+        (None, "2024-Q5"),
+        (None, "2024-00"),
+        (None, "2024-13"),
+        (None, "24"),
+        (None, "2024-3"),
+        (None, "2024-W1"),
+        (None, "2024-W00"),
+        (None, "2024-W54"),
+        (None, "2024-02-30"),
+        (None, "0000"),
+        (TimeUnitType.YEAR, "2024-Q1"),
+        (TimeUnitType.HALF_YEAR, "2024-Q1"),
+        (TimeUnitType.QUARTER, "2024-1"),
+        (TimeUnitType.MONTH, "2024-01-01"),
+        (TimeUnitType.WEEK, "2024-01-01"),
+        (TimeUnitType.DAY, "2024-W01"),
+    ],
+)
+def test_validate_hb_dataframe_rejects_noncanonical_periods(
+    frequency: TimeUnitType | None,
+    period: str,
+) -> None:
     hb_input_dataframe = valid_hb_dataframe()
     hb_input_dataframe.loc[0, "period"] = period
 
     with pytest.raises(ValueError, match="canonical"):
-        validate_hb_dataframe(hb_input_dataframe)
+        validate_hb_dataframe(
+            hb_input_dataframe,
+            configured_hb_frequency=frequency,
+        )
+
+
+@pytest.mark.parametrize(
+    ("frequency", "periods"),
+    [
+        (TimeUnitType.YEAR, ["2024", "2023"]),
+        (TimeUnitType.HALF_YEAR, ["2024-1", "2024-2"]),
+        (TimeUnitType.QUARTER, ["2024-Q1", "2024-Q2"]),
+        (TimeUnitType.MONTH, ["2024-01", "2024-02"]),
+        (TimeUnitType.WEEK, ["2024-W01", "2024-W02"]),
+        (TimeUnitType.DAY, ["2024-01-01", "2024-01-02"]),
+    ],
+)
+def test_validate_hb_dataframe_accepts_all_timeunit_frequencies(
+    frequency: TimeUnitType,
+    periods: list[str],
+) -> None:
+    hb_input_dataframe = valid_hb_dataframe()
+    hb_input_dataframe["period"] = periods
+
+    validated_dataframe = validate_hb_dataframe(
+        hb_input_dataframe,
+        configured_hb_frequency=frequency,
+    )
+
+    assert validated_dataframe is hb_input_dataframe
+
+
+@pytest.mark.parametrize(
+    "period",
+    [
+        "2024",
+        "2024-1",
+        "2024-Q1",
+        "2024-01",
+        "2024-W01",
+        "2024-01-01",
+    ],
+)
+def test_validate_hb_dataframe_accepts_canonical_periods_without_frequency(
+    period: str,
+) -> None:
+    hb_input_dataframe = valid_hb_dataframe()
+    hb_input_dataframe.loc[0, "period"] = period
+
+    validate_hb_dataframe(hb_input_dataframe)
+
+
+def test_validate_hb_dataframe_accepts_week_53_only_when_valid_for_week_year() -> None:
+    hb_input_dataframe = valid_hb_dataframe()
+    hb_input_dataframe["period"] = ["2020-W53", "2020-W52"]
+
+    validated_dataframe = validate_hb_dataframe(
+        hb_input_dataframe,
+        configured_hb_frequency=TimeUnitType.WEEK,
+    )
+
+    assert validated_dataframe is hb_input_dataframe
+
+
+def test_validate_hb_dataframe_rejects_week_53_for_52_week_year() -> None:
+    hb_input_dataframe = valid_hb_dataframe()
+    hb_input_dataframe.loc[0, "period"] = "2024-W53"
+
+    with pytest.raises(ValueError, match="configured frequency WEEK"):
+        validate_hb_dataframe(
+            hb_input_dataframe,
+            configured_hb_frequency=TimeUnitType.WEEK,
+        )
+
+
+def test_validate_hb_dataframe_rejects_invalid_configured_frequency_type() -> None:
+    with pytest.raises(
+        TypeError, match="configured_hb_frequency must be a TimeUnitType"
+    ):
+        validate_hb_dataframe(
+            valid_hb_dataframe(),
+            configured_hb_frequency=cast(TimeUnitType, "YEAR"),
+        )
 
 
 def test_validate_hb_dataframe_allows_missing_numeric_values() -> None:
