@@ -159,8 +159,11 @@ when available. It falls back locally only for the known Pendulum
 `Unsupported token: WW` error and formats the result using ISO week values.
 A strict-xfail round-trip test signals when shared WEEK support is fixed, at
 which point the fallback and sentinel can be removed. The separate QUARTER
-formatting limitation remains to be addressed by its planned task. These
-issues are tracked in [Issues.md](Issues.md).
+formatter emits canonical `YYYY-Qn` periods from the selected date's year and
+month, without changing `SelectedTimeUnit.to_str()`. A strict-xfail round-trip
+test signals when the shared QUARTER formatter is fixed, at which point the HB
+formatter and sentinel can be removed. These issues are tracked in
+[Issues.md](Issues.md).
 
 The HB module must not filter out zero, negative, or missing values to decide
 eligibility, calculate ratios or limits, or recreate flags. Vaskify owns those
