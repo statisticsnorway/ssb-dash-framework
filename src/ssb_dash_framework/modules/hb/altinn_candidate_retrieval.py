@@ -50,14 +50,7 @@ class AltinnHBCandidateRetriever:
         Active-submission selection and conversion into the common HB DataFrame
         are intentionally left to later steps.
         """
-        if (
-            not isinstance(selected_hb_variable, str)
-            or selected_hb_variable not in self._hb_variable_to_feltsti
-        ):
-            raise ValueError(
-                f"No Altinn feltsti is configured for HB variable "
-                f"{selected_hb_variable!r}."
-            )
+        selected_feltsti = self.get_feltsti_for_hb_variable(selected_hb_variable)
         if (
             not isinstance(hb_comparison_periods, tuple)
             or len(hb_comparison_periods) != 2
@@ -71,8 +64,6 @@ class AltinnHBCandidateRetriever:
                 "hb_comparison_periods must contain two distinct non-empty "
                 "period strings."
             )
-
-        selected_feltsti = self._hb_variable_to_feltsti[selected_hb_variable]
 
         with get_connection() as conn:
             enheter = conn.table("enheter")
@@ -145,6 +136,18 @@ class AltinnHBCandidateRetriever:
             )
 
             return candidate_records.to_pandas()
+
+    def get_feltsti_for_hb_variable(self, selected_hb_variable: str) -> str:
+        """Return the configured exact Altinn field path for an HB variable."""
+        if (
+            not isinstance(selected_hb_variable, str)
+            or selected_hb_variable not in self._hb_variable_to_feltsti
+        ):
+            raise ValueError(
+                f"No Altinn feltsti is configured for HB variable "
+                f"{selected_hb_variable!r}."
+            )
+        return self._hb_variable_to_feltsti[selected_hb_variable]
 
     def select_active_candidate_records(
         self,
