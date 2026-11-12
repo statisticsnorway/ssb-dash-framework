@@ -144,3 +144,14 @@ This is an HB-specific mapping proposal, not a change to the framework's
 updating form data; it is not currently a general HB read contract. The
 selected form and exact field paths must be supplied by the consuming
 application; this repository does not establish a single HB form or field.
+
+The HB-local [`AltinnHBCandidateRetriever`](./src/ssb_dash_framework/modules/hb/altinn_candidate_retrieval.py)
+uses this mapping to retrieve source-keyed candidates for the requested
+comparison periods. It joins unit-period membership to submission metadata by
+`(iso_periode, skjema, ident)`, then to answers by those keys plus `refnr` and
+the configured exact `feltsti`. It returns the source keys and field metadata,
+including `dybde` and `indeks`, without filtering on `aktiv` or converting
+`verdi`. Left joins preserve unit-period membership when a submission or
+matching answer is absent so later stages can handle missing data explicitly.
+Active-submission selection and conversion to the common HB DataFrame remain
+separate steps.
