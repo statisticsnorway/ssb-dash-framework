@@ -202,30 +202,22 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
 
         df_expanded = pd.DataFrame(combinations, columns=self.applies_to_subset.keys())
         rows_to_register = row_to_register.merge(df_expanded, how="cross")
-        if registered_controls is not None:
-            rows_to_register = rows_to_register.merge(
-                registered_controls,
-                how="outer",
-                on=[
-                    *self.applies_to_subset.keys(),
-                    *[k for k in control_meta.keys() if k != "kontrollvars"],
-                ],  # TODO: Fix better Dropping kontrollvars as it is included in control_meta but only clutter in the database.
-                indicator=True,
+        if registered_controls is not None and not registered_controls.empty:
+            nokkel_kolonner = [*self.applies_to_subset.keys(), "kontrollid"]
+            eksisterende = set(
+                map(tuple, registered_controls[nokkel_kolonner].astype(str).values)
             )
-            rows_to_register = rows_to_register[
-                rows_to_register["_merge"] == "left_only"
-            ].drop(columns=["_merge"])
+            nye = [
+                tuple(rad) not in eksisterende
+                for rad in rows_to_register[nokkel_kolonner].astype(str).values
+            ]
+            rows_to_register = rows_to_register[nye]
         if rows_to_register.empty:
             logger.debug("No new control to register, ending here.")
             return None
         logger.debug(f"Rows to register:\n{rows_to_register}")
-        connection_object = _get_connection_object()
-        if isinstance(connection_object, ConnectionPool):
-            connection_object.insert("kontroller", rows_to_register)
-        else:
-            raise NotImplementedError(
-                f"Connection type '{type(connection_object)}' is currently not implemented."
-            )
+        with get_connection() as conn:
+            conn.insert("kontroller", rows_to_register)
         logger.info(f"Done inserting {control}")
 
     def register_all_controls(self) -> None:
@@ -264,8 +256,16 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
                 raise TypeError(
                     f"Attribute in class '{method_name}' is not callable. Either make it a method or change its name to not start with 'control_'."
                 )
-            result = self.run_control(method_name)
-            df_all_results.append(result)
+            try:
+                result = self.run_control(method_name)
+                df_all_results.append(result)
+            except Exception as e:
+                logger.error(f"Error running control '{method_name}': {e}", exc_info=True)
+
+        if not df_all_results:
+            columns = [*self._required_kontrollutslag_columns, "skjema", "verdi"]
+            return pd.DataFrame(columns=columns)
+
         df = pd.concat(df_all_results).reset_index(drop=True)
 
         if not isinstance(df, pd.DataFrame):
@@ -418,13 +418,8 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
             return None
         # Now to insert new rows into the table.
         logger.debug(f"Inserting {control_results.shape[0]} new rows.")
-        connection_object = _get_connection_object()
-        if isinstance(connection_object, ConnectionPool):
-            connection_object.insert("kontrollutslag", control_results)
-        else:
-            raise NotImplementedError(
-                f"Connection type '{type(connection_object)}' is currently not implemented."
-            )
+        with get_connection() as conn:
+            conn.insert("kontrollutslag", control_results)
         logger.debug("Finished inserting new rows.")
 
     def update_existing_records(self, control_results: pd.DataFrame) -> None:
@@ -492,14 +487,8 @@ class ControlFrameworkBase:  # TODO: Add some common control methods here for ea
         logger.debug(f"Rows to update:\n{changed}")
         update_query = self.generate_update_query(changed)
 
-        connection_object = _get_connection_object()
-        if isinstance(connection_object, ConnectionPool):
-            with get_connection() as conn:
-                conn.raw_sql(update_query)
-        else:
-            raise NotImplementedError(
-                f"Connection type '{type(connection_object)}' is currently not implemented."
-            )
+        with get_connection() as conn:
+            conn.raw_sql(update_query)
 
         logger.debug("Finished updating kontrollutslag.")
 
