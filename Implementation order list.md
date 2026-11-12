@@ -37,21 +37,21 @@
    - Compare selected submissions against identifiers from the scoped `enheter` records and fail clearly when a required unit-period has no active submission.
    - Test active/inactive, missing, and multiple-active submissions with distinct receipt dates, and verify both comparison periods remain present.
 
-------- Bookmark start ------------
 6. **Implement AltinnHBDataHandler and normalize records**
    - Add `AltinnHBDataHandler` implementing `HBDataHandlerMeta`, composing candidate retrieval and per-period active-submission selection.
    - Add the HB-specific `HBDataResult` and `HBDataWarning` contract: return the validated common HB DataFrame with structured warning records containing the approved message, unit, and period. The HB module sends each warning through the existing `AlertHandler`; source handlers do not call Dash.
    - Apply the approved exact-path single-answer policy: for multiple matches, provide no selected value, preserve the unit-period with a missing value, and add its `HBDataWarning`. Convert unambiguous `verdi` values to numeric while preserving missing values and rejecting unconvertible values, then return the data and warnings in `HBDataResult`.
    - Map `ident` to `unit_id` and `iso_periode` to `period`; retain only selector context required by the module.
    - Test numeric conversion, missing/invalid values, approved field matching, `HBDataResult`/`HBDataWarning` details, output schema, and uniqueness.
-------- Bookmark end ------------
 
+------- Bookmark start ------------
 7. **Altinn strata support**
    - Define the exact Altinn field mapping for `configured_hb_strata_variable` and the approved handling of missing or multiple strata answers before implementation; do not assume the numeric measure's ambiguity policy automatically applies.
    - Extend candidate retrieval to include the configured strata field from the same selected active submission and unit-period as the HB measure.
    - Extend normalization to return the optional `strata` column while preserving source group-value types; keep numeric conversion limited to `value` and preserve existing unstratified behavior.
    - Keep Altinn access and conversion in the source handler; do not add Dash, `AlertHandler`, or Vaskify calls.
    - Test exact field mapping, same-submission and period scoping, strata type preservation, approved missing/ambiguous behavior, output schema and uniqueness, and unchanged unstratified runs.
+------- Bookmark end ------------
 
 8. **Add deterministic test data access**
    - Add `FakeHBDataHandler` for deterministic module tests.
