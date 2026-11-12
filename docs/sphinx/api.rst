@@ -1,11 +1,11 @@
-Ssb_dash_framework
-==================
+API reference
+=============
 
 SSB Dash Framework.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Ssb_dash_framework
+   :caption: API reference
 
    Config <config/index>
    Control <control/index>

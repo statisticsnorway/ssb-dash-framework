@@ -1,6 +1,6 @@
 # Known bugs found while building the Altinn demo
 
-These were found while wiring up [demo/altinn_app](../demo/altinn_app) against the
+These were found while wiring up [demo/altinn_app](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/demo/altinn_app) against the
 `ssb_dash_framework_testdata` Altinn tables. Each entry notes where the demo works around
 the problem, so the workaround can be removed once the bug is fixed.
 
@@ -8,12 +8,12 @@ the problem, so the workaround can be removed once the bug is fixed.
 
 ## 1. `enable_table_selector` is never acted on, which kills dataview switching
 
-**Where:** [editor.py](../src/ssb_dash_framework/modules/data_editor/editor.py#L66)
+**Where:** [editor.py](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/modules/data_editor/editor.py#L66)
 
 `DataEditor.__init__` takes `enable_table_selector: bool = True`, but the parameter is never
 read and `DataEditorTableSelector` is never instantiated. At the same time,
 `toggle_view_visibility` takes `Input("dataeditortableselector", "value")`
-([editor.py](../src/ssb_dash_framework/modules/data_editor/editor.py#L279)), and
+([editor.py](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/modules/data_editor/editor.py#L279)), and
 `DataViewCustom` and `DataEditorTable` listen to the same id.
 
 Because the component does not exist, Dash reports *"A nonexistent object was used in an
@@ -41,7 +41,7 @@ if enable_table_selector:
 
 ## 2. `update_refnr` crashes unless the ident/period pair has exactly one submission
 
-**Where:** [editing_status_view.py](../src/ssb_dash_framework/modules/data_editor/modules/sidebar/editing_status_view.py#L170)
+**Where:** [editing_status_view.py](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/modules/data_editor/modules/sidebar/editing_status_view.py#L170)
 
 ```python
 refnr = self.fetcher.get_refnrs_by_period_ident(self.settings, ident, period)
@@ -82,7 +82,7 @@ Filtering on `aktiv` as well would be better still, so a superseded submission i
 
 ## 3. `handle_field_value_change` returns `None` and triggers a Dash 500
 
-**Where:** [microlayout.py](../src/ssb_dash_framework/modules/data_editor/modules/microlayout/microlayout.py#L135)
+**Where:** [microlayout.py](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/modules/data_editor/modules/microlayout/microlayout.py#L135)
 
 The callback body is wrapped in `if ctx.triggered_id and isinstance(ctx.triggered_id, dict):`
 with no `else`, so whenever the callback is triggered by something that is not a
@@ -109,8 +109,8 @@ return {item._id: no_update for item in ids}
 
 ## 4. `dynamic-list` leaks internals and has unstable column order
 
-**Where:** [getter.py](../src/ssb_dash_framework/modules/data_editor/default_getter/getter.py#L210)
-and [dynamic_list.py](../src/ssb_dash_framework/modules/data_editor/modules/microlayout/microlayout_components/dynamic_list.py#L71)
+**Where:** [getter.py](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/modules/data_editor/default_getter/getter.py#L210)
+and [dynamic_list.py](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/modules/data_editor/modules/microlayout/microlayout_components/dynamic_list.py#L71)
 
 Three separate problems in the same feature:
 
@@ -134,7 +134,7 @@ visible heading.
 
 ## 5. `get_field` returns `NaN` instead of `None` for NULL values
 
-**Where:** [getter.py](../src/ssb_dash_framework/modules/data_editor/default_getter/getter.py#L61)
+**Where:** [getter.py](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/modules/data_editor/default_getter/getter.py#L61)
 
 `return res.iloc[0, 0]` hands back whatever pandas stored, which for a SQL `NULL` is
 `float('nan')` rather than `None`. Downstream comparisons such as
@@ -152,7 +152,7 @@ return None if pd.isna(value) else value
 
 ## 6. `get_info_row_fields` queries the wrong column and the wrong identifier
 
-**Where:** [getter.py](../src/ssb_dash_framework/modules/data_editor/default_getter/getter.py#L148)
+**Where:** [getter.py](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/modules/data_editor/default_getter/getter.py#L148)
 
 Two issues in one query:
 
@@ -173,7 +173,7 @@ never touch the database.
 
 ## 7. `get_contact_info` is an unimplemented stub that raises
 
-**Where:** [getter.py](../src/ssb_dash_framework/modules/data_editor/default_getter/getter.py#L79)
+**Where:** [getter.py](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/modules/data_editor/default_getter/getter.py#L79)
 
 ```python
 def get_contact_info(self, refnr: str) -> ContactInfo:

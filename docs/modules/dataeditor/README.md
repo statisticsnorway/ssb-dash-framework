@@ -389,7 +389,7 @@ How does a JSON/YAML configuration list get translated into functional Dash comp
 
 ## 4. Internal Architecture & UML Diagram
 
-To provide a complete map of how the classes, data wrappers, and dynamic layouts coordinate internally, we have authored a detailed **D2 UML Diagram** in [data_editor.d2](./data_editor.d2).
+To provide a complete map of how the classes, data wrappers, and dynamic layouts coordinate internally, we have authored a detailed **D2 UML Diagram** in [data_editor.d2](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/docs/modules/dataeditor/data_editor.d2).
 
 ### Architectural Relationships Map
 
@@ -400,12 +400,12 @@ The D2 diagram outlines several critical layers:
 4. **The MicroLayout Form Engine (`MicroLayoutAIO`)**: The heart of config-driven layouts. It validates shapes using Pydantic, generates isolated `aio_id` namespaces, auto-wires Javascript-based math callbacks, and dynamically binds blur-listeners.
 5. **The Persistence/Database Access Layer (`StandardDataHandler`)**: Implements `FetcherMeta` to wrap all database execution. Integrates `FormGetterCached` to cache datasets on-the-fly and processes `UpdateSkjemadata` models.
 
-<img src="./data_editor.svg" height="auto" alt="Description">
+![DataEditor UML diagram](./data_editor.svg)
 
 ### Rendering the UML Diagram
 
 To compile this D2 specification into a visual SVG or PNG diagram, run:
 ```bash
-d2 docs/modules/dataeditor/data_editor.d2 docs/modules/dataeditor/data_editor_uml.svg
+d2 docs/modules/dataeditor/data_editor.d2 docs/modules/dataeditor/data_editor.svg
 ```
 Or you can paste the contents of `data_editor.d2` into any D2 playground/viewer (e.g., [https://play.d2lang.com/](https://play.d2lang.com/)).

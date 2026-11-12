@@ -7,6 +7,7 @@ They are functional and some can be used as a foundation for creating a custom a
 | Demo  | Description |
 |-------|------------|
 | hello_world    | A very simple example of how to create a module. |
+| getting_started | The finished app from the [getting started guide](../docs/guides/getting_started.md). Runs anywhere, no data access needed. |
 | parqueteditor | Copy paste friendly setup for an app containing the ParquetEditor module. Runnable for SSB-employees using the "dapla-felles-developers" access. |
 | altinn_app | DataEditor with custom dataviews for two Altinn forms. Runs standalone on the bundled testdata, no database access needed. |
 

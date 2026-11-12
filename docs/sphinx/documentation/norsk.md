@@ -7,5 +7,5 @@ Nedenfor er det samlet norsk dokumentasjon, om du ikke finner det du leter etter
 ```{toctree}
 :maxdepth: 1
 
-hurtigstart
+/docs/norsk/kontrollrammeverket
 ```
