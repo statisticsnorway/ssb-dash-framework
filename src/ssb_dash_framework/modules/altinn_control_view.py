@@ -360,7 +360,6 @@ class ControlView(ModuleBase):
                     "status" if "status" in skjemamottak.columns else "editert"
                 )
 
-                # subquery: filter active rows in skjemamottak
                 s: Table = (
                     skjemamottak.filter(
                         (skjemamottak.aktiv == True)
@@ -401,7 +400,7 @@ class ControlView(ModuleBase):
                     )
                     .order_by(s[status_column], kontrollutslag.verdi)
                 )
-                result = result.to_pandas()
+                result = result.to_pandas().sort_values("verdi", ascending=False)
 
             columns = [{"headerName": col, "field": col} for col in result.columns]
             columns[0]["checkboxSelection"] = True
