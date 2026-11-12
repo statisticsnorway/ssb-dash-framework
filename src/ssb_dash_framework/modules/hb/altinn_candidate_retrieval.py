@@ -4,10 +4,10 @@ from collections.abc import Mapping
 
 import pandas as pd
 
+from ssb_dash_framework.utils.config_tools.connection import get_connection
 from ssb_dash_framework.utils.core_query_functions import (
     active_no_duplicates_refnr_list,
 )
-from ssb_dash_framework.utils.config_tools.connection import get_connection
 
 
 class AltinnHBCandidateRetriever:
@@ -196,8 +196,64 @@ class AltinnHBCandidateRetriever:
             candidate_records.loc[
                 (candidate_records["skjema"] == self._configured_hb_form)
                 & (candidate_records["iso_periode"] == comparison_period)
-                & candidate_records["refnr"].isin(active_refnrs_by_period[comparison_period])
+                & candidate_records["refnr"].isin(
+                    active_refnrs_by_period[comparison_period]
+                )
             ]
             for comparison_period in hb_comparison_periods
         ]
         return pd.concat(selected_period_records, ignore_index=True)
+
+    def validate_active_submission_coverage(
+        self,
+        candidate_records: pd.DataFrame,
+        selected_active_candidate_records: pd.DataFrame,
+    ) -> None:
+        """Raise when any scoped unit-period has no selected active submission."""
+        required_columns = {"iso_periode", "skjema", "ident", "refnr"}
+        for dataframe_name, dataframe in (
+            ("candidate_records", candidate_records),
+            ("selected_active_candidate_records", selected_active_candidate_records),
+        ):
+            if not isinstance(dataframe, pd.DataFrame):
+                raise TypeError(f"{dataframe_name} must be a pandas DataFrame.")
+            missing_columns = required_columns - set(dataframe.columns)
+            if missing_columns:
+                missing_column_names = ", ".join(sorted(missing_columns))
+                raise ValueError(
+                    f"{dataframe_name} is missing required columns: "
+                    f"{missing_column_names}."
+                )
+
+        unit_period_key_columns = ["iso_periode", "skjema", "ident"]
+        expected_unit_periods = candidate_records.loc[
+            candidate_records["skjema"] == self._configured_hb_form,
+            unit_period_key_columns,
+        ].drop_duplicates()
+        selected_active_unit_periods = selected_active_candidate_records.loc[
+            selected_active_candidate_records["refnr"].notna(),
+            unit_period_key_columns,
+        ].drop_duplicates()
+        missing_unit_periods = expected_unit_periods.merge(
+            selected_active_unit_periods,
+            on=unit_period_key_columns,
+            how="left",
+            indicator=True,
+        )
+        missing_unit_periods = missing_unit_periods.loc[
+            missing_unit_periods["_merge"] == "left_only",
+            unit_period_key_columns,
+        ].sort_values(["iso_periode", "ident"])
+
+        if not missing_unit_periods.empty:
+            missing_unit_period_descriptions = [
+                f"unit {unit_identifier!r} in period {period!r}"
+                for period, _, unit_identifier in missing_unit_periods.itertuples(
+                    index=False,
+                    name=None,
+                )
+            ]
+            raise ValueError(
+                "No active Altinn submission for required unit-period(s): "
+                f"{'; '.join(missing_unit_period_descriptions)}."
+            )
