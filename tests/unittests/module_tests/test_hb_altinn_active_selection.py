@@ -1,4 +1,6 @@
 from contextlib import contextmanager
+from unittest.mock import Mock
+from unittest.mock import call
 
 import ibis
 import pandas as pd
@@ -34,6 +36,14 @@ def test_active_candidate_selection_uses_latest_submission_per_period(
         yield sqlite_backend
 
     monkeypatch.setattr(candidate_retrieval, "get_connection", use_sqlite_backend)
+    active_refnr_helper = Mock(
+        wraps=candidate_retrieval.active_no_duplicates_refnr_list
+    )
+    monkeypatch.setattr(
+        candidate_retrieval,
+        "active_no_duplicates_refnr_list",
+        active_refnr_helper,
+    )
     candidate_retriever = AltinnHBCandidateRetriever(
         configured_hb_form="RA-0187",
         hb_variable_to_feltsti={"turnover": "/turnover"},
@@ -63,13 +73,30 @@ def test_active_candidate_selection_uses_latest_submission_per_period(
     finally:
         sqlite_backend.disconnect()
 
+    assert active_refnr_helper.call_args_list == [
+        call(
+            sqlite_backend,
+            "RA-0187",
+            filters={"iso_periode": "2024"},
+        ),
+        call(
+            sqlite_backend,
+            "RA-0187",
+            filters={"iso_periode": "2025"},
+        ),
+    ]
     assert list(
         zip(
             selected_candidate_records["iso_periode"],
+            selected_candidate_records["skjema"],
+            selected_candidate_records["ident"],
             selected_candidate_records["refnr"],
             strict=True,
         )
-    ) == [("2024", "active-latest"), ("2025", "next-period")]
+    ) == [
+        ("2024", "RA-0187", "unit-1", "active-latest"),
+        ("2025", "RA-0187", "unit-1", "next-period"),
+    ]
 
 
 def test_active_submission_coverage_reports_missing_unit_and_period() -> None:
