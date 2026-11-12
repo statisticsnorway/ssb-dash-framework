@@ -74,7 +74,6 @@ class DataEditorSupportTable:
                 defaultColDef={"editable": False, "filter": True},
                 dashGridOptions={
                     "enableCellTextSelection": True,
-                    "floatingFilter": True,
                 },
                 id=f"support-table-{self.suptable_id}",
                 style={"height": "700px"},

@@ -75,7 +75,6 @@ class DataEditorHistory(DataEditorHelperButton):
                             "filter": True,
                             "resizable": True,
                             "sortable": True,
-                            "floatingFilter": True,
                         },
                         columnSize="responsiveSizeToFit",
                     ),
