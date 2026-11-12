@@ -74,6 +74,13 @@ configured exact `feltsti` to produce one answer row for the selected unit,
 period, and submission; multiple matching rows must be reported as ambiguous,
 not silently reduced to the first value.
 
+For HB, continue the run without selecting a value for an ambiguous
+unit-period; represent its value as missing and warn which unit and period were
+affected. The warning should explain that the configured analysis method
+determines how the missing value affects results, and that excluding units can
+change the analysis population, thresholds, or classifications. Keep that
+statistical treatment in the downstream method, not in this source adapter.
+
 ### Other Altinn integration
 
 [`AltinnDataCapture`](./src/ssb_dash_framework/experimental/modules/altinn_data_capture.py)
