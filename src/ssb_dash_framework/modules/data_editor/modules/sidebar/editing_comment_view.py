@@ -126,19 +126,17 @@ class DataEditorSidebarComment(DataEditorHelperSidebar):
 
             try:
                 comment = self.fetcher.get_comment(refnr)
-                comment_update = "Comment was updated successfully"
+                comment_update = "Kommentar hentet."
                 logger.info(comment_update)
-                AlertHandler.info(comment_update)
             except Exception as e:
-                error_msg = f"Comment failed to update with error: {e}"
-                logger.info(error_msg)
-                AlertHandler.info(error_msg)
+                error_msg = f"Henting av kommentar feilet: {e}"
+                logger.error(error_msg)
+                AlertHandler.warning(error_msg)
                 comment = None
 
             if comment is None:
-                error_msg = "Comment returned with None"
+                error_msg = "Kommentar returnerte: None"
                 logger.info(error_msg)
-                AlertHandler.info(error_msg)
                 return ""
 
             return comment
