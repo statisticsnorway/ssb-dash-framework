@@ -135,7 +135,4 @@ def apply_config(config: VariableSelectorConfig) -> None:
             VariableSelectorOption(var)
 
     if config.ignore_alerts_on_varchange:
-        VariableSelector._ignore_alerts_on_varchange = (
-            config.ignore_alerts_on_varchange
-        )
-
+        VariableSelector._ignore_alerts_on_varchange = config.ignore_alerts_on_varchange
