@@ -179,7 +179,11 @@ class ControlView(ModuleBase):
 
         @callback(
             Output("kontroll-poll", "disabled", allow_duplicate=True),
-            Output(f"{self.module_number}-kontroll-run-button", "disabled", allow_duplicate=True),
+            Output(
+                f"{self.module_number}-kontroll-run-button",
+                "disabled",
+                allow_duplicate=True,
+            ),
             Input(f"{self.module_number}-kontroll-run-button", "n_clicks"),
             VariableSelector.get_timevar(State),
             prevent_initial_call=True,
@@ -251,85 +255,54 @@ class ControlView(ModuleBase):
                 )
 
                 if "status" in skjemamottak.columns:
-                    status_column, status_value = "status", "Ubehandlet"
-                    status_filter = (
-                        skjemamottak[status_column].cast("string") == status_value
-                    )
+                    unedited = skjemamottak["status"].cast("string").isin(["Ubehandlet"])
                 else:
-                    status_column, status_value = "editert", False
-                    status_filter = skjemamottak[status_column] == status_value
+                    unedited = ~skjemamottak["editert"]   # editert == False
 
-                kontroller = conn.table("kontroller").filter(
-                    (conn.table("kontroller")[time_unit_variable] == period)
-                    & (conn.table("kontroller").skjema.isin(defined_schemas))
+                skjemamottak = skjemamottak.select(
+                    time_unit_variable, "ident", "refnr", "skjema",
+                    unedited=unedited.ifelse(1, 0),
                 )
 
-                kontrollutslag = conn.table("kontrollutslag").filter(
-                    (conn.table("kontrollutslag")[time_unit_variable] == period)
-                    & (conn.table("kontrollutslag").skjema.isin(defined_schemas))
+                kontrollutslag = conn.table("kontrollutslag")
+                kontrollutslag = kontrollutslag.filter(
+                    (kontrollutslag[time_unit_variable] == period)
+                    & kontrollutslag.skjema.isin(defined_schemas)
+                    & (kontrollutslag.utslag == True)
                 )
 
-                # only unedited
-                subq = (
-                    skjemamottak.filter(status_filter).select(
-                        "ident", "refnr", "skjema"
-                    )
-                ).distinct()
-
-                # only active
-                aktive = skjemamottak.select("ident", "refnr", "skjema").distinct()
-
-                utslag = (
+                counts = (
                     kontrollutslag.join(
-                        aktive,
-                        (kontrollutslag.ident == aktive.ident)
-                        & (kontrollutslag.refnr == aktive.refnr)
-                        & (kontrollutslag.skjema == aktive.skjema),
+                        skjemamottak, [time_unit_variable, "ident", "refnr", "skjema"]
                     )
-                    .filter(kontrollutslag.utslag == True)
-                    .group_by([kontrollutslag.skjema, kontrollutslag.kontrollid])
-                    .aggregate(ant_utslag=ibis._.count())
+                    .group_by(["skjema", "kontrollid"])
+                    .aggregate(
+                        ant_utslag=ibis._.count(), uediterte=ibis._.unedited.sum()
+                    )
                 )
 
-                uediterte = (
-                    kontrollutslag.join(
-                        subq,
-                        (kontrollutslag.ident == subq.ident)
-                        & (kontrollutslag.refnr == subq.refnr)
-                        & (kontrollutslag.skjema == subq.skjema),
-                    )
-                    .filter(kontrollutslag.utslag == True)
-                    .group_by([kontrollutslag.skjema, kontrollutslag.kontrollid])
-                    .aggregate(uediterte=ibis._.count())
-                    .select("skjema", "kontrollid", "uediterte")
+                kontroller = conn.table("kontroller")
+                kontroller = kontroller.filter(
+                    (kontroller[time_unit_variable] == period)
+                    & kontroller.skjema.isin(defined_schemas)
                 )
 
                 result = (
-                    kontroller.left_join(
-                        utslag,
-                        (kontroller.skjema == utslag.skjema)
-                        & (kontroller.kontrollid == utslag.kontrollid),
-                    )
-                    .left_join(
-                        uediterte,
-                        (kontroller.skjema == uediterte.skjema)
-                        & (kontroller.kontrollid == uediterte.kontrollid),
-                    )
+                    kontroller.join(counts, ["skjema", "kontrollid"])
                     .select(
-                        kontroller.skjema,
-                        kontroller.kontrollid,
-                        kontroller.type,
-                        kontroller.beskrivelse,
-                        kontroller.sorting_var,
-                        kontroller.sorting_order,
-                        utslag.ant_utslag.fill_null(0).name("ant_utslag"),
-                        uediterte.uediterte.fill_null(0).name("uediterte"),
+                        "skjema",
+                        "kontrollid",
+                        "type",
+                        "beskrivelse",
+                        "sorting_var",
+                        "sorting_order",
+                        "ant_utslag",
+                        "uediterte",
                     )
+                    .to_pandas()
                 )
-                result = result.filter(
-                    result.ant_utslag != 0
-                )  # hide those with no output
-                result = result.to_pandas().sort_values(
+
+                result = result.sort_values(
                     by=["ant_utslag", "kontrollid"], ascending=[False, True]
                 )
                 columns = [
