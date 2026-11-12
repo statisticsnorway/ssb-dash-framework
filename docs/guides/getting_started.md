@@ -214,7 +214,7 @@ VariableSelectorConfig(
 # 2. Set up the app.
 app = app_setup(port=port, service_prefix=service_prefix, stylesheet="lumen")
 
-# 3. Some example data. In your own app you would read your own data here.
+# 3. Some example data. In your own app you would read your own data, preferably using get_connection() as explained...
 data = pd.DataFrame(
     {
         "aar": ["2024", "2024", "2024", "2025", "2025", "2025"],
@@ -356,7 +356,8 @@ config_path = Path(__file__).parent / "app.yaml"
 config = AppConfig(**config_parser_yaml(str(config_path)))
 app, tab_list, window_list = build_app_from_config(config)
 
-# 2. Some example data. In your own app you would read your own data here.
+# 3. Some example data. In your own app you would read your own data, preferably using get_connection() as explained...
+
 data = pd.DataFrame(
     {
         "aar": ["2024", "2024", "2024", "2025", "2025", "2025"],
@@ -448,7 +449,7 @@ You can configure an app in three ways:
 | | Good | Not so good |
 | --- | --- | --- |
 | **YAML** | Short and easy to read. Easy to share and compare between statistics. Easier to update when the package changes. If you misspell an argument, you get an error right away with a list of the valid names. You can split a large file into smaller files with `!include path/to/file.yaml`. | No help from the editor, such as autocomplete or type checks. A few modules read their YAML a little differently from their Python arguments. The guide for each module shows this. |
-| **Python** | Full flexibility. Help from the editor, such as autocomplete and type hints. | More code to write and read. Apps look more different from each other. You must find the address prefix yourself (the `service_prefix` line). |
+| **Python** | Full flexibility. Help from the editor, such as autocomplete and type hints. | More code to write and read. Apps look more different from each other. |
 
 ### How YAML matches Python
 

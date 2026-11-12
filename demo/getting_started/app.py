@@ -18,7 +18,7 @@ config_path = Path(__file__).parent / "app.yaml"
 config = AppConfig(**config_parser_yaml(str(config_path)))
 app, tab_list, window_list = build_app_from_config(config)
 
-# 2. Some example data. In your own app you would read your own data here.
+# 2. Some example data. In your own app you would read your own data, preferably using get_connection() as explained...
 data = pd.DataFrame(
     {
         "aar": ["2024", "2024", "2024", "2025", "2025", "2025"],
