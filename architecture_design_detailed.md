@@ -145,6 +145,12 @@ and result mapping in the HB method helper:
 2. **Uniqueness:** The adapter must produce at most one row per
    `unit_id`/`period` for the selected target. It must explicitly resolve or
    reject duplicate/repeated values rather than silently aggregating them.
+   For an ambiguous Altinn exact-path match, select no answer, preserve that
+   unit-period with a missing value, and warn with its unit and period. Continue
+   with the remaining input. The configured analysis method owns the
+   statistical treatment of missing values and eligibility; source adapters
+   must not reproduce method-specific rules. Warn that excluding units can
+   change the analysis population and affect thresholds or classifications.
 3. **Comparison periods:** Vaskify's HB implementation requires two period
    values. Use the framework's canonical period strings for all six
    `TimeUnit` frequencies. Validate each period against the configured

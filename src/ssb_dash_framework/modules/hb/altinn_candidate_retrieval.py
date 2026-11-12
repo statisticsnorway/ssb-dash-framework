@@ -114,6 +114,7 @@ class AltinnHBCandidateRetriever:
                 indeks=skjemadata.indeks,
             )
 
+            # Keep all matches; the downstream method owns missing-value treatment.
             candidate_records = unit_submission_records.join(
                 selected_field_answers,
                 (
