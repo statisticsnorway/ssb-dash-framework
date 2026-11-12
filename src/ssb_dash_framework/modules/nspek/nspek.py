@@ -4635,22 +4635,24 @@ class Naeringsspesifikasjon(ModuleBase):
             Input("refresh-manager", "data"),
             prevent_initial_call=True,
         )
-        @callback(
-            Output("nspek-tabs", "value"),
-            *self.variableselector.get_input(["tema"]),
-            prevent_initial_call=True,
-        )
-        def update_nspek_tab(tema):
-            tema_to_tab = {
-                "resultat": "Resultat",
-                "balanse": "Balanse",
-                "varelager": "Varelager",
-                "kontrollutslag": "Kontrollutslag",
-            }
+            
+        if "tema" in VariableSelector._variableselectoroptions:
+            @callback(
+                Output("nspek-tabs", "value"),
+                *self.variableselector.get_input(["tema"]),
+                prevent_initial_call=True,
+            )
+            def update_nspek_tab(tema):
+                tema_to_tab = {
+                    "resultat": "Resultat",
+                    "balanse": "Balanse",
+                    "varelager": "Varelager",
+                    "kontrollutslag": "Kontrollutslag",
+                }
 
-            tab = tema_to_tab.get(str(tema).strip().casefold())
+                tab = tema_to_tab.get(str(tema).strip().casefold())
 
-            if tab is None:
-                raise PreventUpdate
+                if tab is None:
+                    raise PreventUpdate
 
-            return tab
+                return tab
