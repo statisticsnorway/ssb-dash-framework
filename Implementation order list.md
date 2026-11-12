@@ -31,19 +31,19 @@
    - Retain source keys and field metadata needed by submission selection and normalization. Do not select active submissions, convert values, or validate the common HB DataFrame in this step.
    - Test configured form/field/period filters, the documented joins, and the required source keys/field metadata.
 
-------- Bookmark start ------------
 5. **Select active Altinn submissions per unit and requested period**
    - For each comparison period, call `active_no_duplicates_refnr_list` unchanged with the configured form and that period's filter; never call it once across both periods.
    - Filter candidate records to the returned `refnr` values while preserving the period/unit join keys.
    - Compare selected submissions against identifiers from the scoped `enheter` records and fail clearly when a required unit-period has no active submission.
    - Test active/inactive, missing, and multiple-active submissions with distinct receipt dates, and verify both comparison periods remain present.
-------- Bookmark end ------------
 
+------- Bookmark start ------------
 6. **Implement AltinnHBDataHandler and normalize records**
    - Add `AltinnHBDataHandler` implementing `HBDataHandlerMeta`, composing candidate retrieval and per-period active-submission selection.
    - Apply the approved exact-path single-answer policy: report multiple matches and provide no selected value for that unit-period. Convert unambiguous `verdi` values to numeric while preserving missing values and rejecting unconvertible values, then return the validated common HB DataFrame.
    - Map `ident` to `unit_id` and `iso_periode` to `period`; retain only selector context required by the module.
    - Test numeric conversion, missing/invalid values, approved field matching, output schema, and uniqueness.
+------- Bookmark end ------------
 
 7. **Add deterministic test data access**
    - Add `FakeHBDataHandler` for deterministic module tests.

@@ -12,9 +12,13 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Do not fill in User fields; they are reserved for user input and approval only.
 - ONLY WORK ON THE AFFECTED TASK
 
-## Current tasks: Stage 5
+## Current tasks: Stage 6
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
+| Decide how Altinn ambiguity warnings reach the HB run | Specify how the Altinn handler reports ambiguous unit-period answers so the HB run can show the approved warning without coupling the source adapter to Dash or a particular statistical method. | `HBDataHandlerMeta.get_hb_dataframe()` currently returns only a DataFrame. Choose a method-neutral warning handoff; do not treat logging alone as a user-visible warning or change the public return contract without approval. |  |  |  |
+| Normalize selected Altinn records to the common HB DataFrame | Convert selected candidate records from Stage 5 into one common HB row per unit and period. | Map `ident` to `unit_id` and `iso_periode` to `period`. Preserve missing `verdi`; convert unambiguous values to numeric and fail clearly for unconvertible values. If multiple rows match the same selected unit-period and exact `feltsti`, select none, leave `value` missing, and prepare the approved unit-period warning for the chosen handoff. Retain only approved selector context; do not pass internal `refnr` through unless explicitly required. Validate with `validate_hb_dataframe`; do not call the statistical method. |  |  |  |
+| Implement AltinnHBDataHandler | Add `AltinnHBDataHandler` implementing `HBDataHandlerMeta` and compose the completed retrieval, per-period active-selection, coverage-check, and normalization steps. | Implement `get_hb_dataframe(...)` using its named contract arguments. Keep Altinn access and conversion in the source handler; do not add Vaskify or other method-specific calls. |  |  |  |
+| Test AltinnHBDataHandler normalization and output contract | Verify the concrete handler returns validated common HB data and reports ambiguous source answers through the approved warning handoff. | Cover numeric conversion, null and unconvertible values, multiple exact-path matches with no selected answer, warning unit/period details, `unit_id`/`period` mapping, retained selector context, required columns, numeric dtype, and unique unit-period rows. |  |  |  |
 
 
 # History
