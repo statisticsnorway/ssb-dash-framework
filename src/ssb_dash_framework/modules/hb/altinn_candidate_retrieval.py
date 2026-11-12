@@ -88,8 +88,6 @@ class AltinnHBCandidateRetriever:
                 submission_skjema=skjemamottak.skjema,
                 submission_ident=skjemamottak.ident,
                 refnr=skjemamottak.refnr,
-                dato_mottatt=skjemamottak.dato_mottatt,
-                aktiv=skjemamottak.aktiv,
             )
 
             unit_submission_records = unit_period_records.join(
@@ -135,8 +133,6 @@ class AltinnHBCandidateRetriever:
                 unit_submission_records.skjema,
                 unit_submission_records.ident,
                 unit_submission_records.refnr,
-                unit_submission_records.dato_mottatt,
-                unit_submission_records.aktiv,
                 selected_field_answers.feltsti,
                 selected_field_answers.feltnavn,
                 selected_field_answers.verdi,

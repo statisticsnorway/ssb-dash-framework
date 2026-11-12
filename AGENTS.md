@@ -13,6 +13,7 @@ Temporary working guidance for the HB implementation.
 
 ## Tests
 - Do not run the full nox suite unless explicitly scheduled in `plan.md`.
+- Limit tests to fit the current scope and active task in `plan.md`.
 - Add unit tests under `tests/unittests/` using pytest.
 - Focused test command: `uv run pytest <test-file-or-test-name> -q`.
 - In PowerShell, pass each pytest file path explicitly; wildcard paths such as `tests\unittests\module_tests\test_hb_*.py` are passed literally to pytest. If pytest reports a missing file or collects no tests, correct the command and rerun before reporting a test result.
