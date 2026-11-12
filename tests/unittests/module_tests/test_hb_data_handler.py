@@ -1,9 +1,12 @@
 from typing import cast
+from typing import get_type_hints
 
 import pandas as pd
 import pytest
 
 from ssb_dash_framework.modules.hb import HBDataHandlerMeta
+from ssb_dash_framework.modules.hb import HBDataResult
+from ssb_dash_framework.modules.hb import HBDataWarning
 from ssb_dash_framework.modules.hb import validate_hb_dataframe
 from ssb_dash_framework.setup.variableselector.time_unit import TimeUnitType
 
@@ -24,6 +27,35 @@ def test_validate_hb_dataframe_returns_the_input_dataframe() -> None:
     validated_dataframe = validate_hb_dataframe(hb_input_dataframe)
 
     assert validated_dataframe is hb_input_dataframe
+
+
+def test_hb_data_result_contains_validated_dataframe_and_warnings() -> None:
+    hb_input_dataframe = valid_hb_dataframe()
+    hb_warning = HBDataWarning(
+        message="Multiple answers matched the configured field.",
+        unit_id="unit-1",
+        period="2024",
+    )
+
+    hb_data_result = HBDataResult(
+        hb_dataframe=validate_hb_dataframe(hb_input_dataframe),
+        hb_warnings=(hb_warning,),
+    )
+
+    assert hb_data_result.hb_dataframe is hb_input_dataframe
+    assert hb_data_result.hb_warnings == (hb_warning,)
+
+
+def test_hb_data_result_defaults_to_no_warnings() -> None:
+    hb_data_result = HBDataResult(hb_dataframe=valid_hb_dataframe())
+
+    assert hb_data_result.hb_warnings == ()
+
+
+def test_hb_data_handler_meta_returns_hb_data_result() -> None:
+    return_type = get_type_hints(HBDataHandlerMeta.get_hb_dataframe)["return"]
+
+    assert return_type is HBDataResult
 
 
 @pytest.mark.parametrize(

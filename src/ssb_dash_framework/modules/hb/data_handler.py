@@ -2,6 +2,7 @@
 
 from abc import ABC
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import Final
 
 import pandas as pd
@@ -15,8 +16,25 @@ from .period_validation import is_canonical_hb_period
 HB_REQUIRED_COLUMNS: Final[tuple[str, ...]] = ("unit_id", "period", "value")
 
 
+@dataclass(frozen=True)
+class HBDataWarning:
+    """A user-facing HB data warning for one unit and period."""
+
+    message: str
+    unit_id: str
+    period: str
+
+
+@dataclass(frozen=True)
+class HBDataResult:
+    """Validated common HB input and non-fatal warnings from a data handler."""
+
+    hb_dataframe: pd.DataFrame
+    hb_warnings: tuple[HBDataWarning, ...] = ()
+
+
 class HBDataHandlerMeta(ABC):
-    """Interface for handlers that provide validated HB input data."""
+    """Interface for handlers that provide validated HB data and warnings."""
 
     @abstractmethod
     def get_hb_dataframe(
@@ -25,8 +43,8 @@ class HBDataHandlerMeta(ABC):
         selected_hb_variable: str,
         hb_comparison_periods: tuple[str, str],
         configured_hb_strata_variable: str | None = None,
-    ) -> pd.DataFrame:
-        """Return one validated HB row per unit and comparison period.
+    ) -> HBDataResult:
+        """Return validated HB rows and any non-fatal data warnings.
 
         Args:
             selected_hb_variable: Source variable selected for the HB run.
@@ -34,7 +52,8 @@ class HBDataHandlerMeta(ABC):
             configured_hb_strata_variable: Optional source grouping variable.
 
         Returns:
-            A DataFrame with the required HB columns and optional context.
+            An HBDataResult containing one validated row per unit and period,
+            plus any warning records associated with the returned data.
 
         Raises:
             NotImplementedError: If a concrete handler has no implementation.

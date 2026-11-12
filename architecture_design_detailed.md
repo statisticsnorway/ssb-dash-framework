@@ -212,8 +212,8 @@ class HBDataWarning:
 
 @dataclass(frozen=True)
 class HBDataResult:
-    dataframe: pd.DataFrame
-    warnings: tuple[HBDataWarning, ...] = ()
+    hb_dataframe: pd.DataFrame
+    hb_warnings: tuple[HBDataWarning, ...] = ()
 
 
 class HBDataHandlerMeta(ABC):
