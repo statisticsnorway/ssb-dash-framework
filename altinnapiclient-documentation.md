@@ -48,9 +48,9 @@ This helper's duplicate policy is therefore **latest active submission per
 identifier**, not an error on multiple active submissions. It does not group
 by period while dropping duplicate identifiers. If used for both comparison
 periods at once, it can retain only the latest period's submission for an
-identifier. Call it separately per period or implement period-aware grouping.
-The HB adapter plan must decide whether this established policy is appropriate
-for HB or whether ambiguous active submissions should instead be rejected.
+identifier. For HB, call it unchanged once per requested comparison period,
+using the configured form and that period's `iso_periode` filter. Do not call
+it once across both periods.
 
 ### Data-editor reads
 
@@ -80,6 +80,10 @@ affected. The warning should explain that the configured analysis method
 determines how the missing value affects results, and that excluding units can
 change the analysis population, thresholds, or classifications. Keep that
 statistical treatment in the downstream method, not in this source adapter.
+The Altinn handler returns this warning as structured data alongside the common
+HB DataFrame in an HB-specific result. The HB module sends each warning through
+the existing `AlertHandler` exactly once; the source adapter does not call
+Dash.
 
 ### Other Altinn integration
 
@@ -119,17 +123,15 @@ same as `skjemadata`.
 
 The HB adapter is a source adapter: it should use the configured connection to
 read the selected form and field, resolve submissions for each requested
-period, convert the selected `verdi`, and return the common HB DataFrame. It
-must not call Vaskify or use UI/editor behavior as a substitute for source
-selection.
+period, convert the selected `verdi`, and return the common HB DataFrame with
+any structured data warnings in the HB-specific handler result. It must not
+call Vaskify or use UI/editor behavior as a substitute for source selection.
 
 The plan approves reusing `active_no_duplicates_refnr_list` unchanged with
 configured form and period-specific filters, once per comparison period. The
 explicit HB field-path mapping and selector context are described below. If
 multiple answer rows match the same configured exact `feltsti` for one selected
-unit-period submission, report ambiguity; do not select the first row or
-aggregate answers. Whether that ambiguity stops the whole run or makes only
-the affected unit-period not comparable remains a separate product decision.
+unit-period submission, follow the approved ambiguity behavior described above.
 
 ## Proposed HB form, field, and selector mapping
 

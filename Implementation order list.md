@@ -40,9 +40,10 @@
 ------- Bookmark start ------------
 6. **Implement AltinnHBDataHandler and normalize records**
    - Add `AltinnHBDataHandler` implementing `HBDataHandlerMeta`, composing candidate retrieval and per-period active-submission selection.
-   - Apply the approved exact-path single-answer policy: report multiple matches and provide no selected value for that unit-period. Convert unambiguous `verdi` values to numeric while preserving missing values and rejecting unconvertible values, then return the validated common HB DataFrame.
+   - Add the HB-specific `HBDataResult` and `HBDataWarning` contract: return the validated common HB DataFrame with structured warning records containing the approved message, unit, and period. The HB module sends each warning through the existing `AlertHandler`; source handlers do not call Dash.
+   - Apply the approved exact-path single-answer policy: for multiple matches, provide no selected value, preserve the unit-period with a missing value, and add its `HBDataWarning`. Convert unambiguous `verdi` values to numeric while preserving missing values and rejecting unconvertible values, then return the data and warnings in `HBDataResult`.
    - Map `ident` to `unit_id` and `iso_periode` to `period`; retain only selector context required by the module.
-   - Test numeric conversion, missing/invalid values, approved field matching, output schema, and uniqueness.
+   - Test numeric conversion, missing/invalid values, approved field matching, `HBDataResult`/`HBDataWarning` details, output schema, and uniqueness.
 ------- Bookmark end ------------
 
 7. **Add deterministic test data access**

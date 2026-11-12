@@ -118,6 +118,15 @@ with get_connection() as conn:
     t.to_pandas() # either return the table contents to a pandas dataframe
 ```
 
+#### Module-specific data warnings
+
+Data handlers should report source-data warnings through their module's data
+contract rather than calling Dash UI components directly. The owning module is
+responsible for presenting those warnings through the existing `AlertHandler`.
+For HB, the handler result contains the validated common DataFrame and
+structured warning records; the HB module forwards each warning to
+`AlertHandler` once. This is an HB-specific contract.
+
 #### Default handlers whenever possible for documented data models
 
 There should be default datahandler implementations for datamodels documented in [docs/datamodels/README.md](datamodels.md).

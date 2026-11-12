@@ -7,8 +7,10 @@ reporting period, displays the results, and sends a clicked unit's identifier
 to `VariableSelector`. Treat the selected period as `t` and provisionally
 compare it with `t-1` at the configured publication frequency. Keep the module
 independent of both the data source and the HB calculation: a prepared
-DataFrame or source adapter supplies the common input, the HB module calls
-Vaskify, and Vaskify performs the methodology.
+DataFrame or source adapter supplies an HB-specific result containing the
+common input and any structured data warnings. The HB module sends warnings
+through the existing `AlertHandler`, passes the DataFrame to Vaskify, and
+Vaskify performs the methodology.
 
 This plan describes a module in `ssb-dash-framework`; it does not implement or
 re-specify the HB algorithm.
@@ -44,22 +46,25 @@ re-specify the HB algorithm.
 ```text
 VariableSelector ── selected variable / periods ──┐
                                                   v
-Data source ──> source adapter ──> common HB DataFrame
-                                             │
-                                             v
-                                      HB module ──> Vaskify
-                                             │          │
-                                             └── figure/result DataFrame
-                                                        │
-Clicked unit ───────────────────────────────> VariableSelector output
+Data source ──> source adapter ──> HB-specific result
+                                     ├── common HB DataFrame ──> HB module ──> Vaskify
+                                     └── structured warnings ──> HB module ──> AlertHandler
+                                                                   │
+                                                        figure/result DataFrame
+                                                                   │
+Clicked unit ────────────────────────────────────────> VariableSelector output
 ```
 
 **Lag ett felles DataFrame-format for HB, og én adapter per datakilde.**
-The HB calculation consumes only this common DataFrame format. The required
-Altinn adapter supplies it to the interactive module; source-specific reading
-and conversion belong in that handler, not in the module. A prepared
-DataFrame or fake handler remains useful for isolated tests, but does not
-replace the required Altinn adapter in the product implementation. Different future adapters can follow the same pattern without affecting the HB module.
+The HB calculation consumes only this common DataFrame format. The handler
+returns it together with structured warnings in an HB-specific result. The
+required Altinn adapter performs source-specific reading, conversion, and
+ambiguity detection, but does not call Dash or present alerts. The HB module
+forwards each returned warning through the existing `AlertHandler` once and
+passes only the common DataFrame to Vaskify. A prepared DataFrame or fake
+handler remains useful for isolated tests, but does not replace the required
+Altinn adapter in the product implementation. Future HB adapters can use the
+same contract without affecting the HB module.
 
 See [altinnapiclient-documentation.md](altinnapiclient-documentation.md) for
 the repository's existing Altinn database access patterns, schema relationships,
@@ -69,9 +74,9 @@ Responsibilities:
 
 | Component | Responsibility |
 |---|---|
-| `HBMethod` Dash module | Inputs, run action, loading/error state, result figure, and click-to-select |
-| `HBDataHandlerMeta` | Define the contract for supplying and validating the common HB DataFrame |
-| Source adapter | Read/receive one source's data, convert it once to the common HB DataFrame, and preserve selector context |
+| `HBMethod` Dash module | Inputs, run action, loading/error state, result figure, click-to-select, and warning presentation through `AlertHandler` |
+| `HBDataHandlerMeta` | Define the contract for supplying the common HB DataFrame and structured warnings |
+| Source adapter | Read/receive one source's data, convert it once to the common HB DataFrame, preserve selector context, and report data warnings without presenting them |
 | HB/Vaskify call helper | Translate the common DataFrame and selected periods to `Detect.hb()` and normalize its result |
 | Vaskify | Perform and own the HB calculation |
 | `VariableSelector` | Share configured analysis selections and receive the clicked unit identifier |
@@ -82,8 +87,9 @@ the selector. The handler interface is not an instruction for each module to
 implement data loading: a concrete adapter is written once per source and can
 be reused by the HB module wherever that source is used.
 The source adapter's responsibility ends when it has produced the common
-DataFrame; it is not also a Vaskify adapter. The HB module owns the Vaskify call,
-result normalization, and presentation.
+DataFrame and structured warning records; it is not also a Vaskify adapter or
+an alert presenter. The HB module owns warning presentation, the Vaskify call,
+and result normalization.
 
 ## Naming and scope rules
 
@@ -151,6 +157,9 @@ and result mapping in the HB method helper:
    statistical treatment of missing values and eligibility; source adapters
    must not reproduce method-specific rules. Warn that excluding units can
    change the analysis population and affect thresholds or classifications.
+   Represent this as a structured warning in the handler result. The HB module
+   delivers the warning through the existing `AlertHandler`; the source adapter
+   does not call Dash.
 3. **Comparison periods:** Vaskify's HB implementation requires two period
    values. Use the framework's canonical period strings for all six
    `TimeUnit` frequencies. Validate each period against the configured
@@ -194,6 +203,19 @@ empty return or warning as success without that verification.
 ## Phase 2 — Define the shared DataFrame and source-adapter contract
 
 ```python
+@dataclass(frozen=True)
+class HBDataWarning:
+    message: str
+    unit_id: str
+    period: str
+
+
+@dataclass(frozen=True)
+class HBDataResult:
+    dataframe: pd.DataFrame
+    warnings: tuple[HBDataWarning, ...] = ()
+
+
 class HBDataHandlerMeta(ABC):
     def get_hb_dataframe(
         self,
@@ -202,11 +224,13 @@ class HBDataHandlerMeta(ABC):
         # Ordered as previous period, then selected/current period.
         hb_comparison_periods: tuple[str, str],
         configured_hb_strata_variable: str | None = None,
-    ) -> pd.DataFrame: ...
+    ) -> HBDataResult: ...
 ```
 
-Define and validate the common DataFrame schema at this boundary. Implement
-source-specific handlers outside `HBMethod`. The required
+Define and validate the common DataFrame schema at this boundary, and return
+any non-fatal source warnings alongside it. Use HB-scoped result and warning
+types so their purpose is clear. Implement source-specific handlers outside
+`HBMethod`. The required
 `AltinnHBDataHandler` converts Altinn data, while a future
 `ExcelHBDataHandler` can convert Excel data to the same columns. The handler
 instance can be injected into the Dash module. A deterministic
@@ -235,24 +259,27 @@ changing the DataFrame contract.
 
 The Altinn handler must select the configured form/field, resolve active
 submissions and any repeated-field ambiguity, convert the selected `verdi` to
-numeric, and return one HB row per unit and period. Keep those Altinn rules out
-of `HBMethod`. An Excel handler can perform the corresponding column mapping
-and reshaping later, without changes to the HB module.
+numeric, and return one HB row per unit and period in `HBDataResult`. For an
+ambiguous exact-path answer, it leaves the value missing and adds a structured
+warning containing the approved message, unit, and period. Keep those Altinn
+rules out of `HBMethod`; the HB module sends the warning through
+`AlertHandler` exactly once. An Excel handler can perform the corresponding
+column mapping and reshaping later, returning the same result contract without
+changes to the HB module.
 
 Use the framework's existing `get_connection()` and injected data-function
 patterns inside a source handler where appropriate. Avoid a generic plugin or
-runner framework: source adapters only supply the agreed DataFrame. They do
-not call Vaskify or contain Vaskify-specific result mapping. The HB module
-calls Vaskify on the common DataFrame through a small helper:
+runner framework: source adapters supply the agreed DataFrame and warning
+records, but do not call `AlertHandler`, Vaskify, or contain Vaskify-specific
+result mapping. The HB module presents warnings and calls Vaskify on the common
+DataFrame through a small helper:
 
 The existing `active_no_duplicates_refnr_list` helper filters `aktiv`, orders
 by `dato_mottatt` descending, and keeps the latest row per `ident`. Its
 deduplication is not period-aware, so HB must not use it once across both
-comparison periods. Whether HB adopts this latest-active rule or rejects
-multiple active submissions is a pending policy choice in [plan.md](plan.md).
-If adopted, the rule must be applied separately per period or implemented with
-period-aware grouping. Likewise, do not use the editor's first-match behavior
-as an ambiguity policy for repeated or nested HB fields.
+comparison periods. The approved HB policy is to call this helper unchanged
+once per comparison period with that period's filter. Do not use the editor's
+first-match behavior as an ambiguity policy for repeated or nested HB fields.
 
 ```python
 hb_detector = Detect(hb_input_dataframe, id_nr="unit_id")
@@ -343,8 +370,8 @@ re-export or document that the prototype was never a supported public API.
 * Implement the common `HBDataHandlerMeta` contract and the required
   `AltinnHBDataHandler`. A prepared DataFrame or deterministic fake handler
   may be used for isolated tests. Any additional source adapter, such as
-  Excel, implements the same contract and returns the same DataFrame schema;
-  it does not call Vaskify or require changes to `HBMethod`.
+  Excel, implements the same result contract and returns the same DataFrame
+  schema plus structured warnings; it does not call `AlertHandler` or Vaskify.
 * Verify that the class is registered for YAML when its module is imported
   and document the supported constructor/configuration keys.
 * Keep Vaskify method defaults and argument mapping in one place (the
@@ -435,8 +462,10 @@ The first usable version is complete when:
   `HBDataHandlerMeta`; the HB calculation itself receives only the common
   DataFrame. Prepared DataFrames and fake handlers are supported for isolated
   tests.
-- The required Altinn adapter returns the documented schema, while a fake
-  handler can exercise the UI flow independently of backend data access.
+- The required Altinn adapter returns the documented schema and structured
+  warnings, while a fake handler can exercise the UI flow independently of
+  backend data access. The HB module displays each handler warning once using
+  the existing `AlertHandler`.
   Integration tests exercise the real Vaskify call, and later adapters can
   return the same schema without changing the HB module.
 - The result view clearly distinguishes flagged, unflagged, and
@@ -619,14 +648,16 @@ automatic requirements for the new module.
 
 Based on those examples, use this first-version integration contract:
 
-1. A prepared DataFrame or source adapter supplies the common HB DataFrame: one
-   row per unit/period, with string `unit_id`, canonical framework `period`,
-   numeric `value`, and optional
-   `strata`. Any configured selector context is preserved as extra columns.
+1. A prepared DataFrame or source adapter supplies an `HBDataResult`. Its
+   DataFrame contains one row per unit/period, with string `unit_id`, canonical
+   framework `period`, numeric `value`, and optional `strata`. Any configured
+   selector context is preserved as extra columns; source warnings are returned
+   as structured records alongside the DataFrame.
 2. The HB module calls Vaskify with an explicit pair of periods and requests a
    predictable output format/scope. It normalizes Vaskify's result but keeps
    its original diagnostics available. Source adapters only prepare the
-   DataFrame.
+   DataFrame and report warnings; the HB module presents warnings through the
+   existing `AlertHandler`.
 3. Keep the source identifier and both compared values so a flagged result can
    be traced and reviewed; use a stable identifier in Plotly `customdata` for
    selector updates.
