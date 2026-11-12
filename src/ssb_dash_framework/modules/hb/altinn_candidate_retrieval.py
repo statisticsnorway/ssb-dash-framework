@@ -4,6 +4,9 @@ from collections.abc import Mapping
 
 import pandas as pd
 
+from ssb_dash_framework.utils.core_query_functions import (
+    active_no_duplicates_refnr_list,
+)
 from ssb_dash_framework.utils.config_tools.connection import get_connection
 
 
@@ -142,3 +145,59 @@ class AltinnHBCandidateRetriever:
             )
 
             return candidate_records.to_pandas()
+
+    def select_active_candidate_records(
+        self,
+        candidate_records: pd.DataFrame,
+        *,
+        hb_comparison_periods: tuple[str, str],
+    ) -> pd.DataFrame:
+        """Keep latest active candidate submissions, selecting independently by period.
+
+        Unit-periods with no active submission are left for the separate
+        missing-submission validation step.
+        """
+        if not isinstance(candidate_records, pd.DataFrame):
+            raise TypeError("candidate_records must be a pandas DataFrame.")
+        required_columns = {"iso_periode", "skjema", "ident", "refnr"}
+        missing_columns = required_columns - set(candidate_records.columns)
+        if missing_columns:
+            missing_column_names = ", ".join(sorted(missing_columns))
+            raise ValueError(
+                "candidate_records is missing required columns: "
+                f"{missing_column_names}."
+            )
+        if (
+            not isinstance(hb_comparison_periods, tuple)
+            or len(hb_comparison_periods) != 2
+            or any(
+                not isinstance(period, str) or not period.strip()
+                for period in hb_comparison_periods
+            )
+            or hb_comparison_periods[0] == hb_comparison_periods[1]
+        ):
+            raise ValueError(
+                "hb_comparison_periods must contain two distinct non-empty "
+                "period strings."
+            )
+
+        active_refnrs_by_period: dict[str, list[str]] = {}
+        with get_connection() as conn:
+            for comparison_period in hb_comparison_periods:
+                active_refnrs_by_period[comparison_period] = (
+                    active_no_duplicates_refnr_list(
+                        conn,
+                        self._configured_hb_form,
+                        filters={"iso_periode": comparison_period},
+                    )
+                )
+
+        selected_period_records = [
+            candidate_records.loc[
+                (candidate_records["skjema"] == self._configured_hb_form)
+                & (candidate_records["iso_periode"] == comparison_period)
+                & candidate_records["refnr"].isin(active_refnrs_by_period[comparison_period])
+            ]
+            for comparison_period in hb_comparison_periods
+        ]
+        return pd.concat(selected_period_records, ignore_index=True)
