@@ -67,6 +67,7 @@ class VariableSelector:
     _time_unit: ClassVar[None | TimeUnit] = None
     _secondary_ident: ClassVar[list[str] | None] = None
     _grouping_variables: ClassVar[list[str] | None] = None
+    _ignore_alerts_on_varchange: ClassVar[list[str] | None] = None
 
     def __init__(
         self,
@@ -428,9 +429,16 @@ class VariableSelector:
             logger.info(
                 f"Attempting to update variable selector: {component_name} to {value}"
             )
+
+            alerts_to_ignore = VariableSelector._ignore_alerts_on_varchange or []
+
+            if component_name in alerts_to_ignore:
+                return
+
             if isinstance(value, str):
                 AlertHandler.info(
-                    f"Oppdatering av variabelvelger: {component_name} til {value}"
+                    f"Oppdatering av variabelvelger: {component_name} til {value}",
+                    ephemeral=True,
                 )
             else:
                 AlertHandler.warning(

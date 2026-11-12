@@ -37,6 +37,11 @@ class VariableSelectorConfig(BaseModel):  # TODO Add default templates?
         default=None, description="Variables used for grouping operations"
     )
 
+    ignore_alerts_on_varchange: list[str] | None = Field(
+        default=None,
+        description="Variables that when changed, should not display an alert",
+    )
+
     def model_post_init(self, __context: Any) -> None:
         apply_config(self)
 
@@ -89,10 +94,11 @@ class VariableSelectorConfig(BaseModel):  # TODO Add default templates?
     def __str__(self) -> str:
         lines = [
             "VariableSelectorConfig",
-            f"  refnr:                {self.refnr or '(not set)'}",
-            f"  ident:                {self.ident or '(not set)'}",
-            f"  secondary_idents:     {', '.join(self.secondary_idents) if self.secondary_idents else '(not set)'}",
-            f"  grouping_variables:   {', '.join(self.grouping_variables) if self.grouping_variables else '(not set)'}",
+            f"  refnr:                      {self.refnr or '(not set)'}",
+            f"  ident:                      {self.ident or '(not set)'}",
+            f"  secondary_idents:           {', '.join(self.secondary_idents) if self.secondary_idents else '(not set)'}",
+            f"  grouping_variables:         {', '.join(self.grouping_variables) if self.grouping_variables else '(not set)'}",
+            f"  ignore_alerts_on_varchange: {', '.join(self.ignore_alerts_on_varchange) if self.ignore_alerts_on_varchange else '(not set)'}",
         ]
 
         if self.time_units:
@@ -127,3 +133,9 @@ def apply_config(config: VariableSelectorConfig) -> None:
         VariableSelector._grouping_variables = config.grouping_variables
         for var in config.grouping_variables:
             VariableSelectorOption(var)
+
+    if config.ignore_alerts_on_varchange:
+        VariableSelector._ignore_alerts_on_varchange = (
+            config.ignore_alerts_on_varchange
+        )
+
