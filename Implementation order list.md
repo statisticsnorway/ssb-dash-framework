@@ -37,14 +37,14 @@
    - Compare selected submissions against identifiers from the scoped `enheter` records and fail clearly when a required unit-period has no active submission.
    - Test active/inactive, missing, and multiple-active submissions with distinct receipt dates, and verify both comparison periods remain present.
 
-6. **Decide the repeated and nested field-answer policy**
-   - Confirm how to handle multiple `skjemadata` rows matching a unit, period, selected submission, and exact `feltsti`.
-   - The existing mapping documentation notes that `dybde` and `indeks` provide nested/repeated-field context. The prior normalization proposal to reject ambiguity is not an approved policy until this decision is recorded in `plan.md`.
-   - Do not silently take the first match or aggregate answers.
+6. **Decide how ambiguous Altinn answers affect the HB run**
+   - The approved field-answer policy requires the configured exact `feltsti` to produce one answer row for a unit, period, and selected submission. Report multiple matching rows as ambiguous; do not silently take the first match or aggregate answers.
+   - Decide whether an ambiguous unit-period stops the entire HB run or is marked not comparable while the rest of the run continues.
+   - Record the user-visible behavior in `plan.md` before implementing normalization.
 
 7. **Implement AltinnHBDataHandler and normalize records**
    - Add `AltinnHBDataHandler` implementing `HBDataHandlerMeta`, composing candidate retrieval and per-period active-submission selection.
-   - Apply the approved repeated/nested answer policy, convert `verdi` to numeric while preserving missing values and rejecting unconvertible values, and return the validated common HB DataFrame.
+   - Apply the approved exact-path single-answer policy and the approved run-scope behavior for ambiguity. Convert `verdi` to numeric while preserving missing values and rejecting unconvertible values, then return the validated common HB DataFrame.
    - Map `ident` to `unit_id` and `iso_periode` to `period`; retain only selector context required by the module.
    - Test numeric conversion, missing/invalid values, approved field matching, output schema, and uniqueness.
 

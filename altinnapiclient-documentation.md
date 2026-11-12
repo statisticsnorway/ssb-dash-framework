@@ -69,8 +69,10 @@ submission. `get_form_status()` reads `aktiv` and `status` for a specific
 
 `get_field()` filters a form by `refnr` and the configured field-name column.
 If more than one row matches, the existing editor logs an error and uses the
-first value. That is a legacy UI behavior, not a safe HB ambiguity policy; the
-HB adapter should follow the explicit repeated/nested-field rule agreed for HB.
+first value. That is a legacy UI behavior, not the HB policy. HB requires the
+configured exact `feltsti` to produce one answer row for the selected unit,
+period, and submission; multiple matching rows must be reported as ambiguous,
+not silently reduced to the first value.
 
 ### Other Altinn integration
 
@@ -116,9 +118,11 @@ selection.
 
 The plan approves reusing `active_no_duplicates_refnr_list` unchanged with
 configured form and period-specific filters, once per comparison period. The
-explicit HB field-path mapping and selector context are described below.
-Repeated or nested matches still need the separate HB ambiguity policy; do not
-silently select the first field row.
+explicit HB field-path mapping and selector context are described below. If
+multiple answer rows match the same configured exact `feltsti` for one selected
+unit-period submission, report ambiguity; do not select the first row or
+aggregate answers. Whether that ambiguity stops the whole run or makes only
+the affected unit-period not comparable remains a separate product decision.
 
 ## Proposed HB form, field, and selector mapping
 
