@@ -253,7 +253,7 @@ def docs_build(session: Session) -> None:
     if not session.posargs and "FORCE_COLOR" in os.environ:
         args.insert(0, "--color")
 
-    install_with_uv(session, only_groups=["doc"])
+    install_with_uv(session, groups=["doc"])
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
@@ -265,8 +265,14 @@ def docs_build(session: Session) -> None:
 @session(python=python_versions[0])
 def docs(session: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
-    args = session.posargs or ["--open-browser", "docs", "docs/_build"]
-    install_with_uv(session, only_groups=["doc"])
+    args = session.posargs or [
+        "--open-browser",
+        "--watch",
+        "docs",
+        "docs/sphinx",
+        "docs/_build",
+    ]
+    install_with_uv(session, groups=["doc"])
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():

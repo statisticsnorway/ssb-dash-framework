@@ -585,3 +585,4 @@ Not selected with `type`. Created with `VariableSelectorConfig.from_yaml(...)` o
 | `secondary_idents` | `list[str] \| None` | `None` | Additional identifier columns |
 | `time_units` | `TimeUnit \| None` | `None` | Mapping of variable name to time unit type |
 | `grouping_variables` | `list[str] \| None` | `None` | Variables used for grouping operations |
+| `ignore_alerts_on_varchange` | `list[str] \| None` | `None` | Variables that when changed, should not display an alert |

@@ -56,6 +56,7 @@ class DataViewCustomFigure:
 
     def module_callbacks(self) -> None:
         """Registers callbacks to refresh the custom figure when reference state changes."""
+
         @callback(
             Output(f"{self.module_name}-{self.module_number}-figure", "figure"),
             Input("dataeditortableselector", "value"),
@@ -122,6 +123,7 @@ class DataViewCustomTable:
 
     def module_callbacks(self) -> None:
         """Registers callbacks to refresh and load AgGrid records on context changes."""
+
         @callback(
             Output(f"{self.module_name}-{self.module_number}-table", "rowData"),
             Output(f"{self.module_name}-{self.module_number}-table", "columnDefs"),
@@ -181,6 +183,7 @@ class DataViewCustom(DataEditorDataView):
         self._extra_args = kwargs
         self._layout = layout
         self._from_config_file = _from_config_file
+        self._tabs_layouts = {}
 
     def build_layout(self, layout: dict | list) -> list:
         """Builds the visual layout components from config nodes.
@@ -228,20 +231,6 @@ class DataViewCustom(DataEditorDataView):
                     inputs.append(VariableSelector.get_refnr(Input))
                     inputs.append(VariableSelector.get_timevar(Input))
 
-                input_id = layout.get("ident_col")
-                refnr_col = layout.get("refnr_col", self.settings.refnr_col)
-                if input_id in ("var-ident", "ident") or refnr_col != "refnr":
-                    ref_input = VariableSelector.get_ident(Input)
-                else:
-                    ref_input = VariableSelector.get_refnr(Input)
-
-                input_id = layout.get("ident_col")
-                refnr_col = layout.get("refnr_col", self.settings.refnr_col)
-                if input_id in ("var-ident", "ident") or refnr_col != "refnr":
-                    ref_input = VariableSelector.get_ident(Input)
-                else:
-                    ref_input = VariableSelector.get_refnr(Input)
-
                 microlayout = MicroLayoutAIO(
                     data_handler=self.fetcher,
                     settings=updates_settings,
@@ -254,6 +243,42 @@ class DataViewCustom(DataEditorDataView):
                 internal_layout = layout["layout"]
                 for item in internal_layout:
                     components.extend(self.build_layout(item))
+            elif layout["type"] == "tabs":
+                tabs_id = f"{self.divname}-tabs-{len(self._tabs_layouts)}"
+                content_id = f"{tabs_id}-content"
+                tab_layouts = {}
+                tab_components = []
+
+                for i, child in enumerate(layout["children"]):
+                    if child["type"] == "tab":
+                        tab_id = f"{tabs_id}-tab-{i}"
+                        label = child.get("label", f"Tab {i}")
+                        tab_layouts[tab_id] = self.build_layout(child["children"])
+                        tab_components.append(
+                            dcc.Tab(
+                                label=label,
+                                value=tab_id,
+                            )
+                        )
+
+                self._tabs_layouts[tabs_id] = tab_layouts
+                active_tab = f"{tabs_id}-tab-0" if tab_components else None
+
+                components.append(
+                    html.Div(
+                        [
+                            dcc.Tabs(
+                                tab_components,
+                                id=tabs_id,
+                                value=active_tab,
+                                parent_className="ssb-tabs ssb-tabs--custom-view mb-3",
+                            ),
+                            html.Div(id=content_id),
+                        ]
+                    )
+                )
+            elif layout["type"] == "tab":
+                components.extend(self.build_layout(layout["children"]))
             else:
                 raise ValueError(
                     f"Value for 'type' must be a valid component. Found type '{layout['type']}'"
@@ -290,13 +315,24 @@ class DataViewCustom(DataEditorDataView):
             applies_to_tables=tables,
             applies_to_forms=forms,
         )
+        self.module_callbacks()
         return html.Div(
             id=self.divname, children=created_layout, style={"display": "none"}
         )
 
     def module_callbacks(self) -> None:
         """Registers the module callbacks."""
-        pass
+        for tabs_id, tab_layouts in self._tabs_layouts.items():
+            content_id = f"{tabs_id}-content"
+
+            @callback(
+                Output(content_id, "children"),
+                Input(tabs_id, "value"),
+            )
+            def render_tab_content(active_tab, layouts=tab_layouts):
+                if active_tab in layouts:
+                    return layouts[active_tab]
+                return []
 
     @classmethod
     def from_yaml(cls, *args, **kwargs):

@@ -18,7 +18,7 @@ This is the framework part of the library.
 
 ### VariableSelector
 
-[`VariableSelector source code`](/src/ssb_dash_framework/setup/variableselector/variableselector.py)
+[`VariableSelector source code`](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/setup/variableselector/variableselector.py)
 
 Simply put, the variable selector enables communication between modules without creating a dependency between modules. It is designed to be plug and play, so that you can freely pick and choose what modules to include in your own app.
 
@@ -41,11 +41,11 @@ This function creates the layout for the app, which contains a few different par
     - Here the AlertHandler (more about this later) module also gets added to the layout.
 - A row of tabs at the top that contain modules
 
-This ensures all apps using this library have the same general look and layout, which makes it easier to create reusable components and modules. As long as a module is structured in a few particular ways, it will fit into an existing app. How to structure the module code is explained in its own document.
+This ensures all apps using this library have the same general look and layout, which makes it easier to create reusable components and modules. As long as a module is structured in a few particular ways, it will fit into an existing app. How to structure the module code is explained in [Module design](architecture.md#module-design).
 
 ### AlertHandler
 
-[`AlertHandler source code`](/src/ssb_dash_framework/utils/alert_handler.py)
+[`AlertHandler source code`](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/utils/alert_handler.py)
 
 During development we realized that a user would need feedback about what is going on when there is no direct visual feedback. If you change a value in the variableselector through a module, getting a message letting you know what was changed might be convenient. If you try to update a value, getting a confirmation of what was changed is also important to ensure that you know the app is working. And if something goes wrong, it is useful to get a visible error message to let you know something went wrong.
 

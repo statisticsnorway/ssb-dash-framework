@@ -1,0 +1,10 @@
+# App config for the getting started guide: docs/guides/getting_started.md
+app_settings:
+  port: 8070
+  stylesheet: lumen
+  logging_level: info
+  variableselector:
+    ident: orgnr
+    time_units:
+      name: aar
+      frequency: year

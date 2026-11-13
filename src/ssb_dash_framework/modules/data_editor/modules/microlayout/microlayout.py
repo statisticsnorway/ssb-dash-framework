@@ -99,8 +99,8 @@ class MicroLayoutAIO(html.Div):
 
         callback_ctx = {item._id: item for item in ids}
 
-        def revert_upon_failed_edit(old_value):
-            """Returns old value (prior to edit) to the frontend when an edit fails."""
+        def revert_upon_failed_edit(old_value, triggered_id, all_ids):
+            """Restores the previous value of the edited field when an update fails."""
             return {
                 **{
                     id_: old_value if id_ == triggered_id else no_update
@@ -108,7 +108,7 @@ class MicroLayoutAIO(html.Div):
                 },
                 "status_signal": no_update,
             }
-            
+
         if len(ids):
 
             @callback(
@@ -231,7 +231,9 @@ class MicroLayoutAIO(html.Div):
                         logger.info(
                             f"Field update rejected for {custom_ctx.settings.variable}: {e}"
                         )
-                        return revert_upon_failed_edit(old_value)
+                        return revert_upon_failed_edit(
+                            old_value, triggered_id, all_ids
+                        )
 
                     except Exception as e:
                         logger.error(
@@ -239,9 +241,12 @@ class MicroLayoutAIO(html.Div):
                             exc_info=True,
                         )
                         AlertHandler.warning(
-                            f"Uventet feil ved oppdatering av {custom_ctx.settings.variable}: {e}"
+                            f"Uventet feil ved oppdatering av {custom_ctx.settings.variable}: {e}",
+                            ephemeral=True,
                         )
-                        return revert_upon_failed_edit(old_value)
+                        return revert_upon_failed_edit(
+                            old_value, triggered_id, all_ids
+                        )
                 else:
                     # fetcher/getter
                     if not custom_inputs:

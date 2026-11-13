@@ -66,3 +66,6 @@ autodoc_typehints = "description"
 
 # Do not prepend module names to object names
 add_module_names = False
+
+# Create anchors for headings so links like (#some-heading) work, as they do on GitHub
+myst_heading_anchors = 3

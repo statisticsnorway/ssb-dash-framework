@@ -3,6 +3,7 @@ from collections.abc import Callable
 from typing import Any
 from typing import Literal
 
+from dash.exceptions import PreventUpdate
 from ibis import _
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
@@ -114,6 +115,8 @@ class UpdateSkjemamottakKommentar(UpdateSkjemamottak):
     value: str
     column: Literal["kommentar"] = "kommentar"
 
+class InvalidIdentError(UpdateFailedError):
+    """Raised when an ident is not valid for editing."""
 
 class UpdateSkjemadata(BaseModel):
     """Model to centralize logic for updating data.
@@ -259,6 +262,42 @@ class UpdateSkjemadata(BaseModel):
             return "float"
         return datatype
 
+    def _validate_ident(self, conn) -> None:
+        """NØKU-spesific function that validates whether the ident exists before inserting."""
+
+        ident = str(self.ident).strip()
+
+        if not (ident.isdigit() and len(ident) == 9):
+            raise InvalidIdentError(
+                f"Ugyldig organisasjonsnummer: {ident}."
+            )
+
+        if self.period is None:
+            raise InvalidIdentError(
+                "Ingen periode er valgt. Operasjonen er avbrutt."
+            )
+
+        aar = str(self.period).strip()
+
+        t = conn.table("enhetsinfo")
+
+        exists = (
+            t.filter(
+                (t.aar == aar)
+                & (t.ident == ident)
+            )
+            .select("id")
+            .limit(1)
+            .to_pandas()
+        )
+
+        if exists.empty:
+            raise InvalidIdentError(
+                f"Organisasjonsnummer {ident} finnes ikke "
+                f"i enhetsinfo for {aar}. "
+                "Oppdateringa ble avbrutt."
+            )
+
     def _insert_ibis(self, conn):
         """NØKU-specific function to insert data if the row doesn't exist in the postgreSQL database.
         This is a separate, necessary handler because the Altinn3-XML only returns data if the values are not None.
@@ -267,6 +306,8 @@ class UpdateSkjemadata(BaseModel):
         if not isinstance(_get_connection_object(), ConnectionPool):
             msg = "Insert failed. Not a valid postgreSQL connection. This insert function only works for tables starting with 'skjemadata', 'kildevalg', or 'saldoskjema'."
             raise UpdateFailedError(msg)
+
+        self._validate_ident(conn)
 
         if self.table.startswith("skjemadata"):
             feltsti: str = self._get_feltsti(conn)
@@ -286,7 +327,7 @@ class UpdateSkjemadata(BaseModel):
         elif self.table.startswith("saldoskjema"):
             columns = {
                 f"{self.time_units}": f"'{self.period}'",
-                "orgnr_foretak": f"'{self.ident}'",
+                "ident": f"'{self.ident}'",
                 "variabel": f"'{self.variable}'",
                 "verdi": f"'{self.value}'",
             }
@@ -377,6 +418,7 @@ class UpdateSkjemadata(BaseModel):
 
         try:
             with get_connection() as conn:
+                self._validate_ident(conn)
                 result = conn.raw_sql(update_query)
                 if result.rowcount == 0:
                     if self.table.startswith("skjemadata_bedriftstabell"):
@@ -393,6 +435,13 @@ class UpdateSkjemadata(BaseModel):
                         raise UpdateFailedError(f"No rows matched in {self.table}")
             logger.info(f"Updated '{self.column}' from '{self.old_value}' to '{self.value}'")
             self.to_alert(long, success=True)
+
+        except InvalidIdentError as e:
+            AlertHandler.warning(
+                msg=str(e),
+                ephemeral=True,
+            )
+            raise
 
         except FieldUpdateError:
             self.to_alert(long, success=False)

@@ -1,6 +1,6 @@
 # Hurtigstart: Kontrollrammeverk
 
-Veiledningen tar utgangspunkt i at du allerede har satt opp en app. Hvis du ikke har det så kan du fortsatt følge beskrivelsen, men du vil måtte sette opp en app for å sjekke at ting er satt opp som det skal. Se hurtigstart.md for veiledning til å sette opp din første app.
+Veiledningen tar utgangspunkt i at du allerede har satt opp en app. Hvis du ikke har det så kan du fortsatt følge beskrivelsen, men du vil måtte sette opp en app for å sjekke at ting er satt opp som det skal. Se [Getting started: build your first app](../guides/getting_started.md) for veiledning til å sette opp din første app. Veiledningen er foreløpig bare på engelsk.
 
 Dette dokumentet viser hvordan du bruker kontroller i Editeringsrammeverket. Veiledningen er delt i to biter, hvor den første går gjennom hvordan du bruker det og den andre delen er mer tekniske forklaringer for de som er interessert i den slags.
 
