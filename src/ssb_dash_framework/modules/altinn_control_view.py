@@ -255,12 +255,17 @@ class ControlView(ModuleBase):
                 )
 
                 if "status" in skjemamottak.columns:
-                    unedited = skjemamottak["status"].cast("string").isin(["Ubehandlet"])
+                    unedited = (
+                        skjemamottak["status"].cast("string").isin(["Ubehandlet"])
+                    )
                 else:
-                    unedited = ~skjemamottak["editert"]   # editert == False
+                    unedited = ~skjemamottak["editert"]  # editert == False
 
                 skjemamottak = skjemamottak.select(
-                    time_unit_variable, "ident", "refnr", "skjema",
+                    time_unit_variable,
+                    "ident",
+                    "refnr",
+                    "skjema",
                     unedited=unedited.ifelse(1, 0),
                 )
 
@@ -360,7 +365,6 @@ class ControlView(ModuleBase):
                     "status" if "status" in skjemamottak.columns else "editert"
                 )
 
-                # subquery: filter active rows in skjemamottak
                 s: Table = (
                     skjemamottak.filter(
                         (skjemamottak.aktiv == True)
@@ -401,7 +405,7 @@ class ControlView(ModuleBase):
                     )
                     .order_by(s[status_column], kontrollutslag.verdi)
                 )
-                result = result.to_pandas()
+                result = result.to_pandas().sort_values("verdi", ascending=False)
 
             columns = [{"headerName": col, "field": col} for col in result.columns]
             columns[0]["checkboxSelection"] = True
