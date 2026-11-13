@@ -15,9 +15,9 @@ import gcsfs
 from ..setup.variableselector import VariableSelector
 from ..setup.variableselector import TimeUnit
 from ..utils import ModuleBase
-from ..utils.alert_handler import AlertHandler
 
 logger = logging.getLogger(__name__)
+
 
 class Aarsregnskap(ModuleBase):
     """Module for displaying annual financial statements (Årsregnskap).
@@ -29,7 +29,6 @@ class Aarsregnskap(ModuleBase):
         icon: Emoji icon representing the module.
         module_layout: The UI layout object returned by ``_create_layout()``.
     """
-
 
     def __init__(
         self,
@@ -43,7 +42,6 @@ class Aarsregnskap(ModuleBase):
         self.icon = DashIconify(icon="feather:file-text", width=24)
         self._is_valid()
         super().__init__()
-
 
     def _is_valid(self) -> None:
         """Validates the presence of required variables in VariableSelector.
@@ -116,8 +114,15 @@ class Aarsregnskap(ModuleBase):
                                 dbc.Col(
                                     html.A(
                                         dbc.Button(
-                                            "Åpne i Brønnøysundregisteret",
-                                            className="ssb-btn primary-btn",
+                                            [
+                                                DashIconify(
+                                                    icon="feather:external-link",
+                                                    width=18,
+                                                    className="me-2",
+                                                ),
+                                                "Åpne i Brønnøysundregisteret",
+                                            ],
+                                            className="ssb-btn primary-btn d-flex align-items-center",
                                             size="sm",
                                         ),
                                         id="tab-aarsregnskap-brreg-link",
@@ -163,6 +168,28 @@ class Aarsregnskap(ModuleBase):
                                         id="tab-aarsregnskap-img-container",
                                         style={"display": "none"},
                                         className="tab-aarsregnskap-img-container",
+                                    ),
+                                    html.Div(
+                                        id="tab-aarsregnskap-placeholder",
+                                        children=[
+                                            DashIconify(
+                                                icon="feather:x-square",
+                                                width=30,
+                                                color="#999",
+                                            ),
+                                            html.H5(
+                                                "Ingen årsregnskap funnet",
+                                            ),
+                                            html.P(
+                                                [
+                                                    "Det finnes ingen PDF- eller TIFF-fil for valgt årgang.",
+                                                    html.Br(),
+                                                    "Sjekk i Brønnøysundregisteret.",
+                                                ]
+                                            ),
+                                        ],
+                                        className="aarsregnskap-placeholder",
+                                        style={"display": "none"},
                                     ),
                                 ],
                                 className="aarsregnskap-pdf-col",
@@ -227,6 +254,7 @@ class Aarsregnskap(ModuleBase):
             Output("tab-aarsregnskap-img-container", "style"),
             Output("tab-aarsregnskap-zoom-controls", "style"),
             Output("tab-aarsregnskap-brreg-link", "href"),
+            Output("tab-aarsregnskap-placeholder", "style"),
             Input("tab-aarsregnskap-input-aar", "value"),
             Input("tab-aarsregnskap-input-orgnr", "value"),
             prevent_initial_call="initial_duplicate",
@@ -234,12 +262,11 @@ class Aarsregnskap(ModuleBase):
         def update_pdf_source(aar: int, orgnr: str):
             """Fetch and encode the PDF source based on the year and organization number.
             If PDF cannot be found, it fetches the TIF-file instead (if it exists), and styles it like a PDF.
-            Returns an alert to the user if neither can be found.
+            Displays a placeholder to the user if neither can be found.
 
             Args:
                 aar: The year input value.
                 orgnr: The organization number input value.
-                alert_store: Alert setup.
 
             Returns:
                 A data URI for the PDF/TIF file, encoded in base64.
@@ -249,6 +276,8 @@ class Aarsregnskap(ModuleBase):
             show_div = {"display": "block"}
             hide_div = {"display": "none"}
             brreg_link = f"https://virksomhet.brreg.no/nb/oppslag/enheter/{orgnr}"
+            show_placeholder = {"display": "flex"}
+            hide_placeholder = {"display": "none"}
 
             if not aar or not orgnr:
                 raise PreventUpdate
@@ -293,7 +322,8 @@ class Aarsregnskap(ModuleBase):
                     show_iframe,
                     hide_div,
                     {"display": "none"},
-                    brreg_link
+                    brreg_link,
+                    hide_placeholder,
                 )
 
             except FileNotFoundError:
@@ -332,13 +362,11 @@ class Aarsregnskap(ModuleBase):
                     hide_iframe,
                     show_div,
                     {"display": "block"},
-                    brreg_link
+                    brreg_link,
+                    hide_placeholder,
                 )
             except FileNotFoundError:
                 logger.debug("TIF not found either")
-                AlertHandler.warning(
-                    f"Hverken PDF eller TIF av årsregnskapet funnet for årgang {aar}!"
-                )
                 return (
                     None,
                     [],
@@ -346,6 +374,7 @@ class Aarsregnskap(ModuleBase):
                     hide_div,
                     {"display": "none"},
                     brreg_link,
+                    show_placeholder,
                 )
 
         clientside_callback(
@@ -354,4 +383,3 @@ class Aarsregnskap(ModuleBase):
             Input("tab-aarsregnskap-zoom-in", "n_clicks"),
             Input("tab-aarsregnskap-zoom-out", "n_clicks"),
         )
-

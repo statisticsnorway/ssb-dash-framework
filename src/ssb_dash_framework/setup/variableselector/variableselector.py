@@ -32,6 +32,7 @@ InputType = (
     | None
 )
 
+
 def set_variables(variable_list: str | list[str]) -> None:
     """Sets the list of variables for the VariableSelector.
 
@@ -67,6 +68,7 @@ class VariableSelector:
     _time_unit: ClassVar[None | TimeUnit] = None
     _secondary_ident: ClassVar[list[str] | None] = None
     _grouping_variables: ClassVar[list[str] | None] = None
+    _ignore_alerts_on_varchange: ClassVar[list[str] | None] = None
 
     def __init__(
         self,
@@ -206,7 +208,9 @@ class VariableSelector:
         return inputs
 
     @classmethod
-    def get_state(cls, requested: str | list[str], search_target: str = "title") -> list[State]:
+    def get_state(
+        cls, requested: str | list[str], search_target: str = "title"
+    ) -> list[State]:
         """Retrieves a State object for the selected variable."""
         if isinstance(requested, str):
             requested = [requested]
@@ -315,7 +319,6 @@ class VariableSelector:
     #            "Returning empty list of inputs. This is fine if intentional, but could cause weird bugs if not. Check this if something is missing from callbacks."
     #        )
     #    return to_be_returned
-
 
     # @classmethod
     # def get_all_states(cls) -> list[State]:
@@ -428,9 +431,16 @@ class VariableSelector:
             logger.info(
                 f"Attempting to update variable selector: {component_name} to {value}"
             )
+
+            alerts_to_ignore = VariableSelector._ignore_alerts_on_varchange or []
+
+            if component_name in alerts_to_ignore:
+                return
+
             if isinstance(value, str):
                 AlertHandler.info(
-                    f"Oppdatering av variabelvelger: {component_name} til {value}"
+                    f"Oppdatering av variabelvelger: {component_name} til {value}",
+                    ephemeral=True,
                 )
             else:
                 AlertHandler.warning(
