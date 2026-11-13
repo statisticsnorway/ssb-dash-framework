@@ -13,6 +13,7 @@ You will learn:
 - how to add a **module** as a **tab** or as a **window**
 - how to write the same app with an **app config** (a YAML file)
 - how to combine YAML and Python, which is the approach we recommend
+- how your app connects to your own data
 
 Words in **bold** are explained in the [glossary](../../GLOSSARY.md).
 
@@ -356,8 +357,7 @@ config_path = Path(__file__).parent / "app.yaml"
 config = AppConfig(**config_parser_yaml(str(config_path)))
 app, tab_list, window_list = build_app_from_config(config)
 
-# 3. Some example data. In your own app you would read your own data, preferably using get_connection() as explained...
-
+# 2. Some example data. In your own app you would read your own data, preferably using get_connection() as explained...
 data = pd.DataFrame(
     {
         "aar": ["2024", "2024", "2024", "2025", "2025", "2025"],
@@ -437,6 +437,40 @@ variable selector.
 
 This is the finished app. You can also find it in the repository, in
 [demo/getting_started](https://github.com/statisticsnorway/ssb-dash-framework/tree/main/demo/getting_started).
+
+## Use your own data
+
+In this guide, the data is a small DataFrame in the code. In a real app you read your own
+data, for example from tables in ParquEdit on Dapla.
+
+You do this with a shared **connection**. You set it up once, at the top of `app.py`.
+After that, your functions and the modules use `get_connection` to read data:
+
+```python
+from ssb_dash_framework import get_connection
+from ssb_dash_framework import set_parquedit_connection
+
+# Set up the connection once, right after the imports.
+set_parquedit_connection()
+
+
+# Read the data inside the function that needs it.
+def turnover_per_unit(aar: str) -> go.Figure:
+    """Bar chart with the turnover of every unit in the selected year."""
+    with get_connection() as conn:
+        t = conn.table("omsetning")
+        selected = t.filter(t.aar == aar).to_pandas()
+    return px.bar(selected, x="orgnr", y="omsetning", title=f"Turnover in {aar}")
+```
+
+There are ready-made functions for the most common places to store data:
+
+- `set_parquedit_connection()` for ParquEdit tables on Dapla. We recommend this one.
+- `set_postgres_connection(...)` for a PostgreSQL database.
+- `set_sqlite_connection(...)` for a SQLite file.
+
+The guide [Connect to your data](connecting_to_data.md) explains how to use them, and how
+to use `get_connection` correctly.
 
 ## Python or YAML?
 
@@ -547,7 +581,8 @@ Stop the app with `Ctrl+C` and start it again.
 
 ## Next steps
 
-Now you know how an app is built. Next, add a module that edits data:
+Now you know how an app is built. Next:
 
+- [Connect to your data](connecting_to_data.md)
 - [Edit a parquet file with the ParquetEditor](parqueteditor.md)
 - [Edit form data with the DataEditor](dataeditor.md)

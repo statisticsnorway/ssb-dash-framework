@@ -33,6 +33,10 @@ _Avoid_: Modal, popup
 
 ### Data
 
+**Connection**:
+The app's single shared link to where its data is stored. It is set once, and every module and function in the app reads through it.
+_Avoid_: Database, engine, backend
+
 **Data handler**:
 The adapter between a module and the place its data is stored. Swapping the data handler lets a module work with other data without changing the module.
 _Avoid_: Fetcher, getter, MetaDataHandler

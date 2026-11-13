@@ -1,235 +1,37 @@
 # DataEditor Module Documentation
 
-The `DataEditor` module is a powerful, flexible, and fully configurable component within the **SSB Dash Framework**. It is designed specifically for micro-level editing, validation, and metadata visualization of statistical survey data (e.g., Altinn questionnaires) within Statistics Norway (SSB) platforms like Dapla.
+The `DataEditor` module is a configurable component within the **SSB Dash Framework**. It is designed for micro-level editing, validation, and metadata visualization of statistical survey data (e.g., Altinn questionnaires) within Statistics Norway (SSB) platforms like Dapla.
 
-This document serves as both a **Getting Started Guide** for new users and an **Advanced Architectural Blueprint** explaining how the module integrates within the broader framework.
+This document is a reference for the MicroLayout components and explains how the module is built. To learn how to set up a `DataEditor` in your app, with both YAML and Python, follow the guide [Edit form data with the DataEditor](../../guides/dataeditor.md).
 
 ---
 
 ## Table of Contents
 
-1. [Getting Started for New Users](#1-getting-started-for-new-users)
-   - [Overview & Use Case](#overview--use-case)
-   - [Configuring with Python API](#configuring-with-python-api)
-   - [Configuring with YAML](#configuring-with-yaml)
-2. [MicroLayout Components Reference](#2-microlayout-components-reference)
+1. [MicroLayout Components Reference](#microlayout-components-reference)
    - [Layout & Grid Containers](#layout--grid-containers)
-   - [Leaf & Value Fields](#leaf--value-components)
-3. [Advanced Architecture & Framework Integration](#3-advanced-architecture--framework-integration)
+   - [Leaf & Value Components](#leaf--value-components)
+2. [Advanced Architecture & Framework Integration](#advanced-architecture--framework-integration)
    - [Structural Decomposition (InfoRow, Sidebar, Buttons, DataView)](#structural-decomposition)
    - [Decoupled Communication (VariableSelector Integration)](#decoupled-communication)
    - [The Data Access Layer (StandardDataHandler)](#the-data-access-layer)
    - [The MicroLayout Engine (Pydantic, AIO, Callbacks)](#the-microlayout-engine)
-4. [Internal Architecture & UML Diagram](#4-internal-architecture--uml-diagram)
+3. [Internal Architecture & UML Diagram](#internal-architecture--uml-diagram)
 
 ---
 
-## 1. Getting Started for New Users
+## MicroLayout Components Reference
 
-### Overview & Use Case
+The key to customizing individual data views is `MicroLayout`. It arranges elements on a grid and binds input controls to data fields. In a `MicroLayout` definition, each item has a required `"type"` key.
 
-Statisticians at SSB frequently need to inspect and adjust individual survey responses (micro-level data editing) after they are captured. The `DataEditor` provides a customizable interface to achieve this. Rather than forcing developers to write redundant Dash callbacks, CSS rules, and database queries for each individual questionnaire form, the `DataEditor` abstracts this complexity behind a descriptive configuration format.
+A `DataViewCustom` layout itself may only contain `row`, `col`, `microlayout` and nested `DataViewCustom` nodes. All components below are used inside the `layout` of a `microlayout` node.
 
-You can set up editing screens in two ways:
-1. **Via Python API**: For programmatic, custom, or dynamic layouts.
-2. **Via YAML Files**: For metadata-driven, fast, and easily maintainable layouts.
+The `microlayout` node accepts these keys in addition to `layout`:
 
----
+- `inputs`: Variable selector fields that select the form, in the order refnr field, then time unit field. Defaults to the configured `refnr` and time unit.
+- Any `EditorSettings` key, for example `field_name_col` or `form_data_table`. These override the `DataEditor` settings for this microlayout only.
 
-### Configuring with Python API
-
-To instantiate a `DataEditor` using Python, you define its **Settings**, its **Data Handler**, and assemble the components for its sections (the Info Row, helper buttons, sidebars, and main data views).
-
-Here is a typical Python implementation:
-
-```python
-import pandas as pd
-from ssb_dash_framework import (
-    DataEditor,
-    EditorSettings,
-    StandardDataHandler,
-    VariableSelectorConfig,
-    DataEditorHistory,
-    DataEditorContactInfo,
-    DataEditorSidebarEditingStatus,
-    DataEditorSidebarComment,
-    DataViewCustom
-)
-from ssb_dash_framework.setup.variableselector.time_unit import TimeUnit, TimeUnitType
-
-# 1. Define global variable selector criteria
-VariableSelectorConfig(
-    refnr="refnr",
-    ident="ident",
-    time_units=TimeUnit(name="iso_periode", frequency=TimeUnitType.MONTH),
-    grouping_variables=["altinnskjema", "variabel"],
-)
-
-# 2. Set up editor database and column settings
-settings = EditorSettings(
-    starting_table="skjemadata",
-    form_data_table="skjemadata",
-    form_list=["RA-0187"],
-    period_col="iso_periode",
-    ident_col="ident",
-    refnr_col="refnr",
-    form_name_col="skjema",
-    field_name_col="feltsti",
-    field_value_col="verdi",
-)
-
-# 3. Instantiate the standard data handler (communicates with the DB)
-handler = StandardDataHandler()
-
-# 4. Assemble the DataEditor Tab module
-data_editor_tab = DataEditor(
-    settings=settings,
-    data_handler=handler,
-    inforow={
-        "orgnr": {"source": "variableselector", "variable_name": "ident"},
-        "navn": {"source": "enhetsinfo", "variable_name": "navn"},
-        "skjema": {"source": "variableselector", "variable_name": "altinnskjema"},
-    },
-    buttons=[
-        DataEditorHistory(),
-        DataEditorContactInfo(),
-    ],
-    sidebar=[
-        DataEditorSidebarEditingStatus(),
-        DataEditorSidebarComment(),
-    ],
-    dataview=[
-        # A custom visual screen with defined containers and fields
-        DataViewCustom(
-            layout=[
-                {
-                    "type": "row",
-                    "children": [
-                        {
-                            "type": "col",
-                            "children": [
-                                {
-                                    "type": "microlayout",
-                                    "label": "Internet Sales Form Section",
-                                    "applies_to_table": "skjemadata",
-                                    "applies_to_forms": ["RA-0187"],
-                                    "layout": [
-                                        {"type": "header", "label": "Internet Sales Summary", "size": "md"},
-                                        {"type": "input", "label": "Revenue", "variable": "/omsVirksomhetPerioden"}
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ],
-        ),
-    ],
-)
-```
-
----
-
-### Configuring with YAML
-
-With YAML-based app builds, you don't write setup code; instead, you define the application layout declaratively in a `.yaml` file. The framework automatically parses and validates this schema at runtime.
-
-#### Application Configuration Example (`dataeditor_test.yaml`):
-
-```yaml
-app_settings:
-  port: 8000
-  enable_logging: false
-  logging_level: warning
-  variableselector:
-    refnr: refnr
-    ident: ident
-    grouping_variables:
-      - altinnskjema
-      - variabel
-    time_units:
-        name: aar
-        frequency: year
-  connection:
-    type: postgres
-    database_url: test
-
-modules:
-  tabs:
-    - type: DataEditor
-      settings:
-        starting_table: skjemadata
-        form_data_table: skjemadata
-        form_list:
-          - RA-0187
-        period_col: iso_periode
-        ident_col: ident
-        refnr_col: refnr
-        form_name_col: skjema
-        field_name_col: feltsti
-        field_value_col: verdi
-      data_handler: StandardDataHandler
-      inforow:
-        orgnr: {"source": "variableselector", "variable_name": "ident"}
-      buttons:
-        - type: DataEditorHistory
-        - type: DataEditorSupportTables
-      sidebar:
-        - type: DataEditorSidebarEditingStatus
-        - type: DataEditorSidebarComment
-      dataview:
-        - type: DataViewCustom
-          layout:
-            - type: row
-              children:
-                - type: col
-                  children:
-                    - type: microlayout
-                      label: Internett_salg
-                      applies_to_table: skjemadata
-                      applies_to_forms:
-                        - RA-0187
-                      field_name_col: "feltsti"
-                      field_value_col: "verdi"
-                      layout:
-                        - type: header
-                          label: Omsetning i Varehandelen
-                          size: md
-                        - type: row
-                          children:
-                            - type: col
-                              children:
-                                - type: input
-                                  label: Omsetning i perioden (kr)
-                                  id: omsVirksomhetPerioden
-                                  variable: "/omsVirksomhetPerioden"
-                                - type: input
-                                  label: Omsetning forrige periode
-                                  id: oms_fr
-                                  variable: "/omsForrigePerPrefill"
-                                - type: calculated-field
-                                  label: Endring i Omsetning
-                                  ids:
-                                    oms: omsVirksomhetPerioden
-                                    oms_fr: oms_fr
-                                  expression: "Math.round(oms - oms_fr)"
-                            - type: col
-                              children:
-                                - type: klass-dropdown
-                                  klass_code: "689" # SSB Classification for "Årsak til null omsetning"
-                                  label: Årsak til null omsetning
-                                  variable: "/nullOmsPerAarsak"
-                                  variable_trigger: "value"
-                                - type: textarea
-                                  label: Årsak kommentar
-                                  variable: "/nullOmsPerAarsakSpes"
-```
-
----
-
-## 2. MicroLayout Components Reference
-
-The key to customizing individual editing pages is `MicroLayout`. It arranges elements on a grid and binds input controls to data fields. In a `MicroLayout` definition, each item has a required `"type"` key.
+`applies_to_forms` and `applies_to_tables` belong on the `DataViewCustom` node, not on the `microlayout` node.
 
 Below is an overview of all supported components:
 
@@ -239,9 +41,9 @@ Container components arrange other elements into columns, rows, or tabular layou
 
 | Type | Key Properties | Description | Example |
 | :--- | :--- | :--- | :--- |
-| **`row`** | `children: list` | Arranges all child elements horizontally in a single row. | See YAML example above. |
-| **`col`** | `children: list` | Arranges all child elements vertically in a column. | See YAML example above. |
-| **`tabs`** | `children: list` | Displays a tabbed header bar. Children must be of type `tab`. | Useful for multi-page questionnaires. |
+| **`row`** | `children: list` | Arranges all child elements horizontally in a single row. | `{"type": "row", "children": [...]}` |
+| **`col`** | `children: list` | Arranges all child elements vertically in a column. | `{"type": "col", "children": [...]}` |
+| **`tabs`** | `children: list`<br>`tabs: list` | Displays a tabbed header bar. The tabs shown are the `tab` nodes in `children`. The `tabs` key is required, and can be an empty list. | `{"type": "tabs", "tabs": [], "children": [{"type": "tab", ...}]}` |
 | **`tab`** | `label: str`, `children: list` | Represents a single page or view category inside a `tabs` group. | `{"type": "tab", "label": "Step 1", "children": [...]}` |
 
 ---
@@ -252,21 +54,21 @@ Leaf components display static information, gather user input, show chart visual
 
 | Component Type | Properties | Description | Example Configuration |
 | :--- | :--- | :--- | :--- |
-| **`header`** | `label: str`<br>`size: Literal["sm", "md", "lg"]` | Displays a static title or section header. | `{"type": "header", "label": "Financials", "size": "md"}` |
-| **`label`** | `label: str`<br>`hidelabel: bool` | Renders plain static helper text or instructions. | `{"type": "label", "label": "Please verify numbers against receipts."}` |
-| **`input`** | `label: str`<br>`variable: str`<br>`id: str`<br>`readonly: bool` | Standard text box for reading and writing data values. Triggers a save on losing focus (`blur`). | `{"type": "input", "label": "Sales", "variable": "/sales_value"}` |
-| **`textarea`**| `label: str`<br>`variable: str`<br>`readonly: bool` | Multiline input box. Best suited for comments, clarifications, or descriptive feedback. | `{"type": "textarea", "label": "Notes", "variable": "/notes_path"}` |
+| **`header`** | `label: str`<br>`size: Literal["xs", "sm", "md", "lg"]` (default `"md"`) | Displays a static title or section header. | `{"type": "header", "label": "Financials", "size": "md"}` |
+| **`label`** | `label: str`<br>`bold: bool` | Renders plain static helper text or instructions. | `{"type": "label", "label": "Please verify numbers against receipts."}` |
+| **`input`** | `label: str`<br>`variable: str`<br>`id: str`<br>`readonly: bool`<br>`hidelabel: bool`<br>`hidden: bool` | Standard text box for reading and writing data values. Saves when the field loses focus or when the user presses Enter. `id` defaults to `variable`. | `{"type": "input", "label": "Sales", "variable": "/sales_value"}` |
+| **`textarea`**| `label: str`<br>`variable: str`<br>`readonly: bool`<br>`hidelabel: bool` | Multiline input box. Best suited for comments, clarifications, or descriptive feedback. Saves when the field loses focus. | `{"type": "textarea", "label": "Notes", "variable": "/notes_path"}` |
 | **`dropdown`**| `label: str`<br>`variable: str`<br>`options: list[dict]`| Standard dropdown containing user-defined options of `{label, value}` objects. | `{"type": "dropdown", "label": "Type", "variable": "/sales_type", "options": [{"label": "Domestic", "value": "D"}]}` |
 | **`checklist`**|`label: str`<br>`variable: str`<br>`options: list[dict]`| Checklist allowing users to toggle multiple criteria. | `{"type": "checklist", "label": "Tags", "variable": "/tags", "options": [{"label": "E-Commerce", "value": "eco"}]}` |
-| **`klass-dropdown`**|`label: str`<br>`variable: str`<br>`klass_code: str`| **SSB-specific!** Connects directly with the **SSB Klass Classification API**. Fetches the classification code list (e.g. `689`) and translates them into dropdown options automatically. | `{"type": "klass-dropdown", "klass_code": "689", "label": "Reason Code", "variable": "/nullOmsAarsak"}` |
+| **`klass-dropdown`**|`label: str`<br>`variable: str`<br>`klass_code: str`| **SSB-specific!** Connects directly with the **SSB Klass Classification API**. Fetches the classification code list (e.g. `689`) when the app starts and translates them into dropdown options automatically. Requires network access to the KLASS API. | `{"type": "klass-dropdown", "klass_code": "689", "label": "Reason Code", "variable": "/nullOmsAarsak"}` |
 | **`klass-checklist`**|`label: str`<br>`variable: str`<br>`klass_code: str`| Similar to `klass-dropdown`, but renders the SSB Klass classifications as a checklist. | `{"type": "klass-checklist", "klass_code": "106", "label": "Industries", "variable": "/industry_codes"}` |
-| **`calculated-field`**|`label: str`<br>`ids: dict`<br>`expression: str`| Runs client-side math calculations in real-time. Translates variable keys in `ids` to parameter inputs, and evaluates them with a standard JS `expression`. | `{"type": "calculated-field", "label": "Tax", "ids": {"val": "sales_input"}, "expression": "Math.round(val * 0.25)"}` |
-| **`timeseries`**|`variable: list[str]`<br>`num_periods: int`<br>`label: str` | Renders a trend line (sparkline graph) of specific variable values over a past number of periods for historical comparison. | `{"type": "timeseries", "variable": ["/omsVirksomhetPerioden"], "num_periods": 12, "label": "Trend"}` |
-| **`dynamic-list`**|`label: str`<br>`variable: str` | Generates lists of sub-items based on wildcards, capturing repeating or dynamic field lists. | `{"type": "dynamic-list", "label": "Sub-entities", "variable": "/sub_units/*"}` |
+| **`calculated-field`**|`label: str`<br>`ids: dict`<br>`expression: str`<br>`decimals: int`| Runs client-side math calculations in real-time. `ids` maps the names used in `expression` to the ids of other fields (a field's id is its `variable` unless `id` is set). The `expression` is JavaScript. The result is only shown, it is not saved. | `{"type": "calculated-field", "label": "Tax", "ids": {"val": "/sales_value"}, "expression": "Math.round(val * 0.25)"}` |
+| **`timeseries`**|`variable: list[str]`<br>`num_periods: int`<br>`label: str`<br>`width: int` | Renders a trend line (sparkline graph) of specific variable values over a past number of periods for historical comparison. | `{"type": "timeseries", "variable": ["/omsVirksomhetPerioden"], "num_periods": 12, "label": "Trend"}` |
+| **`dynamic-list`**|`label: str`<br>`variable: str` | Generates a table of all fields matching a pattern, capturing repeating or dynamic field lists. The pattern is a SQL `LIKE` pattern, so use `%` as the wildcard. | `{"type": "dynamic-list", "label": "Sub-entities", "variable": "/sub_units/%"}` |
 
 ---
 
-## 3. Advanced Architecture & Framework Integration
+## Advanced Architecture & Framework Integration
 
 To understand how the `DataEditor` fits within the broader SSB Dash Framework, we need to inspect its internal division of responsibilities and flow.
 
@@ -327,14 +129,15 @@ An instantiated `DataEditor` is divided into four major UI panels:
 
 2. **Sidebar Modules (`DataEditorHelperSidebar`)**:
    - Placed in the left column.
-   - **Table Selector**: A dropdown that lets the user choose which table to inspect/edit (e.g., `skjemadata`).
+   - **Table Selector (`DataEditorTableSelector`)**: A dropdown that lets the user choose which table to inspect/edit (e.g., `skjemadata`). Add it to the `sidebar` list. The DataEditor uses its value to pick the data view to show.
    - **Editing Status (`DataEditorSidebarEditingStatus`)**: Allows the statistician to mark a questionnaire as "Ubehandlet" (Unprocessed), "Under arbeid" (Under work/editing), or "Ferdig" (Finished/approved). Writes these flags directly back to the `skjemamottak` tracking table.
    - **Comment Field (`DataEditorSidebarComment`)**: Allows writing and retrieving notes or comments regarding that specific submission.
 
 3. **Helper Buttons (`DataEditorHelperButton`)**:
    - Placed on the top-right card.
-   - **History Viewer (`DataEditorHistory`)**: Provides an audit log showing previous field changes, values, and timestamps to track editing progress and rollback history.
+   - **History Viewer (`DataEditorHistory`)**: Shows the editing history of the form, as returned by the data handler's `get_history`.
    - **Contact Information (`DataEditorContactInfo`)**: Displays details of the person who submitted the form (e.g., name, phone number, email address) to enable easy verification and communication.
+   - **Support Tables (`DataEditorSupportTables`)**: Shows a collection of supporting reference tables in a window.
 
 4. **Main Data View (`DataEditorDataView`)**:
    - Placed on the bottom-right card.
@@ -363,7 +166,9 @@ To keep database queries separate from UI layout logic, the `DataEditor` depends
 The handler performs several tasks:
 - **Form Caching**: Employs `FormGetterCached` to cache datasets from the backend on-the-fly, reducing database latency during navigation.
 - **Reading Values (`get_field`)**: Queries targeted fields dynamically. For instance, filtering files/tables where the reference number (`refnr`) matches and where the field path (`feltsti`) matches the target variable path.
-- **Committing Changes (`update_field`)**: Writes individual adjustments back to the database. Whenever a user types a new value and focus changes on an `input` or `textarea`, an update signal triggers the handler, which instantly updates the respective table (e.g., updating a cell's string value or setting updated statuses in the tracking database).
+- **Committing Changes (`update_field_value`)**: Writes individual adjustments back to the database. Whenever a user changes a value in an `input` or `textarea` and leaves the field (or presses Enter), an update signal triggers the handler, which updates the respective table (e.g., updating a cell's string value or setting updated statuses in the tracking database).
+
+The data handler is the only place the `DataEditor` reads or writes data, so any data can be used by writing a handler that inherits from `FetcherMeta` (or from `StandardDataHandler`). See [Use your own data](../../guides/dataeditor.md#use-your-own-data) in the guide.
 
 ---
 
@@ -382,12 +187,12 @@ How does a JSON/YAML configuration list get translated into functional Dash comp
 3. **Auto-Wiring Callbacks**:
    Inside `MicroLayoutAIO`, the system loops through all validated leaf components. For every interactive node (like `InputField` or `Textarea`):
    - It instantiates a `FieldCallbackContainer` containing the specific field metadata.
-   - It registers a dynamic Dash callback listening to changes (`n_blur` on inputs, or `value` changes on dropdowns).
+   - It registers a dynamic Dash callback listening to `value` changes. Inputs and textareas are debounced, so they only send their value when the field loses focus or the user presses Enter.
    - When triggered, these callbacks feed changes directly into the `StandardDataHandler` which commits them, completing the end-to-end data flow seamlessly.
 
 ---
 
-## 4. Internal Architecture & UML Diagram
+## Internal Architecture & UML Diagram
 
 To provide a complete map of how the classes, data wrappers, and dynamic layouts coordinate internally, we have authored a detailed **D2 UML Diagram** in [data_editor.d2](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/docs/modules/dataeditor/data_editor.d2).
 
@@ -396,8 +201,8 @@ To provide a complete map of how the classes, data wrappers, and dynamic layouts
 The D2 diagram outlines several critical layers:
 1. **The Core Orchestration Module (`DataEditor`)**: Houses configurations, manages sub-layouts, and connects to the global `VariableSelector` to trigger updates on active context adjustments (such as switching target organizations or periods).
 2. **Sub-Modules and Helper Panels**: Holds the layout and callback behavior for contextual widgets like metadata cards (`DataEditorInfoRow`), comments management (`DataEditorSidebarComment`), status toggles (`DataEditorSidebarEditingStatus`), and helper modals (`DataEditorContactInfo`, `DataEditorHistory`, `DataEditorSupportTables`).
-3. **The Data Views Grid (`DataEditorTable` & `DataViewCustom`)**: Standard spreadsheet mode coordinates edits directly via SQL wrappers, while custom layouts read tree-like configurations to draw beautiful questionnaire interfaces.
-4. **The MicroLayout Form Engine (`MicroLayoutAIO`)**: The heart of config-driven layouts. It validates shapes using Pydantic, generates isolated `aio_id` namespaces, auto-wires Javascript-based math callbacks, and dynamically binds blur-listeners.
+3. **The Data Views Grid (`DataEditorTable` & `DataViewCustom`)**: Standard spreadsheet mode coordinates edits directly via SQL wrappers, while custom layouts read tree-like configurations to draw questionnaire interfaces.
+4. **The MicroLayout Form Engine (`MicroLayoutAIO`)**: The heart of config-driven layouts. It validates shapes using Pydantic, generates isolated `aio_id` namespaces, auto-wires Javascript-based math callbacks, and dynamically binds value-change listeners.
 5. **The Persistence/Database Access Layer (`StandardDataHandler`)**: Implements `FetcherMeta` to wrap all database execution. Integrates `FormGetterCached` to cache datasets on-the-fly and processes `UpdateSkjemadata` models.
 
 ![DataEditor UML diagram](./data_editor.svg)
