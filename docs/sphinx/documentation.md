@@ -1,14 +1,11 @@
 # Documentation
 
-```{include} ../README.md
-```
-
 ```{toctree}
 :maxdepth: 1
 
-documentation/norsk
-documentation/tutorials
+Overview <docs/README>
+Guides <docs/guides/README>
 documentation/how-to
 documentation/explanations
-
+documentation/norsk
 ```
