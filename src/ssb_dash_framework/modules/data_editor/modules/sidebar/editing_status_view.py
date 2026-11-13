@@ -32,6 +32,7 @@ _REFNR_COLUMN_ORDER = [
     "aktiv",
 ]
 
+
 class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
     """A sidebar module for inspecting and updating the status of the selected form by 'refnr'.
 
@@ -82,6 +83,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     [
                         dag.AgGrid(
                             id=f"{self.module_name}-{self.module_number}-form-table",
+                            defaultColDef={"filter": True},
                             className="ag-theme-alpine ag-theme-ssb mb-2",
                             columnSize="responsiveSizeToFit",
                             dashGridOptions={"rowSelection": "single"},
@@ -160,10 +162,13 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 "ident": VariableSelector.get_ident(Input),
                 "period": VariableSelector.get_timevar(Input),
             },
+            state={
+                "current_refnr": VariableSelector.get_refnr(State),
+                "current_skjema": VariableSelector.get_state("altinnskjema"),
+            },
             prevent_initial_call=True,
         )
-        def update_refnr(ident, period):
-
+        def update_refnr(ident, period, current_refnr, current_skjema):
             if not ident:
                 raise PreventUpdate
 
@@ -181,18 +186,28 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             if not entries:
                 return "", ""
 
-            skjemaer = list(dict.fromkeys(entry.skjema for entry in entries))  # nøku can have two different RA-nummer from the same ident
-
-            if len(skjemaer) > 1:
+            if len(entries) > 1:
                 AlertHandler.info(
-                    f"Flere enn ett RA-skjema funnet for {ident}: {', '.join(skjemaer)}. "
+                    f"Flere enn ett RA-skjema funnet for {ident}. "
                     f"Velg det du vil se på i menyen under 'Se innsendinger'.",
                     ephemeral=True,
-                    duration=10
                 )
 
-            first = entries[0]
-            return first.refnr, first.skjema
+            if (
+                current_refnr
+            ):  # already set a refnr valid for this ident x period: keep it
+                match = next((e for e in entries if e.refnr == current_refnr), None)
+                if match is not None:
+                    return no_update, (
+                        no_update if match.skjema == current_skjema else match.skjema
+                    )
+
+            aktive = [e for e in entries if getattr(e, "aktiv", True)]
+            chosen = next(
+                (e for e in aktive if e.skjema == current_skjema),
+                aktive[0] if aktive else entries[0],
+            )
+            return chosen.refnr, chosen.skjema
 
         @callback(
             Output(f"{self.module_name}-{self.module_number}-checkbox", "value"),
@@ -201,12 +216,15 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 f"{self.module_name}-{self.module_number}-refnr-text-row", "children"
             ),
             VariableSelector.get_refnr(Input),
+            VariableSelector.get_state("altinnskjema"),
             Input("skjemamottak-status-signal", "data"),
             State(f"{self.module_name}-{self.module_number}-checkbox", "value"),
             State(f"{self.module_name}-{self.module_number}-radioitems", "value"),
             optional=True,
         )
-        def set_initial_status(refnr, status_signal, current_checkbox, current_radio):
+        def set_initial_status(
+            refnr, skjema, status_signal, current_checkbox, current_radio
+        ):
 
             if not refnr:
                 return [], None, "Skjema ikke funnet."
@@ -242,8 +260,6 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             )
             radio_out = new_radio if new_radio != current_radio else no_update
 
-            AlertHandler.success("Editeringsstatus hentet.")
-
             return (
                 checkbox_out,
                 radio_out,
@@ -269,6 +285,22 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 raise PreventUpdate
 
             triggered_id = ctx.triggered_id
+            if triggered_id not in (checkbox_id, radio_id):
+                raise PreventUpdate
+
+            try:
+                current = self.fetcher.get_form_status(refnr)
+            except Exception as e:
+                logger.warning(f"Could not read form status before update: {e}")
+                current = None
+
+            if current is not None:
+                if triggered_id == checkbox_id and bool(aktiv_status) == bool(
+                    current.aktiv
+                ):
+                    raise PreventUpdate
+                if triggered_id == radio_id and status_code == current.status:
+                    raise PreventUpdate
 
             if triggered_id == checkbox_id:
                 success = self.fetcher.update_form_active_status(
@@ -331,7 +363,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 logger.warning(message)
                 AlertHandler.warning(message)
                 return [], [], True
-                
+
             entries = [entry.model_dump() for entry in data]
             present = dict.fromkeys(key for entry in entries for key in entry)
             ordered = [c for c in _REFNR_COLUMN_ORDER if c in present]
@@ -349,8 +381,8 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
             Input(
                 f"{self.module_name}-{self.module_number}-form-table", "selectedRows"
             ),
-            VariableSelector.get_refnr(Input),
-            VariableSelector.get_input("altinnskjema"),
+            VariableSelector.get_refnr(State),
+            VariableSelector.get_state("altinnskjema"),
             prevent_initial_call=True,
         )
         def selected_refnr(

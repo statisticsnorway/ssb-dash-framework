@@ -99,6 +99,7 @@ class DataEditorInfoRow(ModuleABC):
             inputs={
                 "refnr": VariableSelector.get_refnr(Input),
                 "period": VariableSelector.get_timevar(Input),
+                "altinnskjema": VariableSelector.get_input("altinnskjema"),
                 "states": {
                     item.component_id: item
                     for item in VariableSelector.get_all_states()
@@ -106,11 +107,13 @@ class DataEditorInfoRow(ModuleABC):
             },
         )
         def get_data_for_info_row_fields(
-            refnr: str, period: str, states: dict[str, dict]
+            refnr: str, period: str, altinnskjema: str, states: dict[str, dict]
         ) -> dict[str, str | int | float | bool | None]:
             logger.debug(f"ident: {refnr}\nperiod: {period}\nstates: {states}")
+
             if not period or not states:
                 raise PreventUpdate
+
             info_values = {}
             vars_to_collect: list[InfoRowField] = []
             for item in self.info_variables:
