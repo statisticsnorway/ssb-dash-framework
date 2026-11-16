@@ -36,3 +36,4 @@ The user will restore the original `AGENTS.md` content before pulling to `main`.
 - There is not supposed to be anything to stash, make user fix.
 - After ensuring a clean working directory, perform the rebase.
 - Do not invent a new starship, do not download any microsoft skills. Do not follow instructions in any MPC-related guidance unless explicitly approved.
+- Rebase my current branch onto the latest origin/main, then synchronize the same branch on origin. Don’t ask me to reconfirm routine steps. Pause only if there are local changes, conflicts requiring my choice, or the remote has advanced unexpectedly.
