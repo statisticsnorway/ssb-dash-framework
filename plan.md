@@ -12,13 +12,16 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Do not fill in User fields; they are reserved for user input and approval only.
 - ONLY WORK ON THE AFFECTED TASK
 
-## Current tasks: 10. Add the Vaskify dependency and adapter boundary
+## Current tasks: 11. Normalize Vaskify results
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
-
-
-
-
+| Verify Vaskify behavior when no units are eligible | Establish how the installed Vaskify API behaves when no units have eligible values or it emits warnings without raising. | Run deterministic eligible, no-eligible, and warning-only cases. Record return types/shapes, warnings, and exceptions; do not infer that an empty result means success. |  |  |  |
+| Validate Vaskify result structure | Reject result objects or shapes that cannot be safely normalized. | Based on verified Vaskify output, check the return type, required identifier/result columns, and result key uniqueness; raise a clear error for invalid shapes. |  |  |  |
+| Implement `normalize_hb_result` reconciliation | Return a normalized result that retains every unit from the full HB handler input. | Reconcile Vaskify output to the full input by stable `unit_id`, preserving source context, comparison values, period context, diagnostics, `ratio`, `median_ratio`, limits, and `flag_hb`; leave absent diagnostics missing. |  |  |  |
+| Preserve HB candidate status distinctions | Keep flagged, calculated/unflagged, and not-comparable observations distinct in normalized output. | Preserve `flag_hb` values `1` and `0` and retain missing flags/diagnostics for not-comparable observations; never convert missing results to flag `0`. |  |  |  |
+| Test valid result normalization and context preservation | Verify a valid Vaskify result is normalized without losing identifiers, context, or diagnostics. | Assert stable IDs, source context, comparison values, period context, Vaskify diagnostics, ratios, limits, and flags are retained and aligned to the correct input units. |  |  |  |
+| Test incomplete, missing, and invalid Vaskify results | Verify malformed return shapes fail clearly and absent unit diagnostics remain representable. | Cover missing required result fields, invalid types/keys, and input units omitted from Vaskify output; assert invalid shapes raise while omitted units remain in the full output with missing diagnostics. |  |  |  |
+| Test flagged, unflagged, and not-comparable results | Verify normalized outputs preserve the three distinct candidate states. | Cover `flag_hb=1`, `flag_hb=0`, and missing diagnostic/flag values; assert missing values are not rewritten as zero. |  |  |  |
 
 # History
 ## 1. Define the HB public contract

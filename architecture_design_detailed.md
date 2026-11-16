@@ -163,11 +163,10 @@ and result mapping in the HB method helper:
 3. **Comparison periods:** Vaskify's HB implementation requires two period
    values. Use the framework's canonical period strings for all six
    `TimeUnit` frequencies. Validate each period against the configured
-   frequency. The initial implementation uses the period selected in
-   `VariableSelector` as `t` and derives `t-1` using the configured `TimeUnit`
-   frequency. This is an implementation assumption to be confirmed as part of
-   the product design. Keep the period-resolution rule isolated so it can be
-   changed if the intended comparison policy differs. The current framework
+   frequency. The chosen V1 assumption is to use the period selected in
+   `VariableSelector` as `t` and derive `t-1` using the configured `TimeUnit`
+   frequency.   Keep the period-resolution rule isolated so it can be changed if the
+   intended comparison policy differs. The current framework
    `TimeUnit.parse` cannot parse week strings with the installed Pendulum token
    set, and quarter `SelectedTimeUnit.to_str()` does not currently produce
    canonical quarter strings; the period-resolution implementation must
@@ -177,10 +176,15 @@ and result mapping in the HB method helper:
    part of the HB module contract.
 5. **Stratification:** Make stratification optional, with no stratum as the
    default. Vaskify supports `strata_var`; offer it only when the input data
-   contains a suitable grouping variable. For a configured Altinn stratum,
-   require exactly one non-null, non-blank exact-path answer for every
-   unit-period. Treat missing or multiple answers as a blocking data error;
-   do not select or aggregate an answer, drop the unit, assign an unknown
+   contains a suitable grouping variable. For Altinn, map
+   `configured_hb_strata_variable` through the configured
+   `hb_variable_to_feltsti` mapping and retrieve its answer from the same
+   selected active submission and unit-period as the measure. Preserve the
+   source strata value type; numeric conversion applies only to `value`.
+   Require exactly one non-null, non-blank exact-path answer for each
+   unit-period. Missing, null/blank, or multiple strata answers are blocking
+   data errors; do not apply the measure's non-fatal ambiguity warning policy,
+   select or aggregate a strata answer, drop the unit, assign an unknown
    group, or fall back to an unstratified run. Test small-group behavior
    separately.
 6. **Parameters:** Start with Vaskify defaults unless there is a concrete need
@@ -270,20 +274,24 @@ recreate Vaskify's eligibility behavior.
 Read the selected canonical period `t` from `VariableSelector`; use the
 configured `TimeUnit` frequency to resolve the preceding period `t-1`. Pass
 the ordered pair `(t-1, t)` to the data handler (when one is used) and to
-Vaskify. This period-resolution rule is an implementation assumption to be
-confirmed as part of the product design. Keep it in a small helper separate from
+Vaskify. This is the chosen V1 implementation assumption; Keep it in a small helper separate from
 source adapters, so a different comparison policy can be adopted without
 changing the DataFrame contract.
 
 The Altinn handler must select the configured form/field, resolve active
 submissions and any repeated-field ambiguity, convert the selected `verdi` to
 numeric, and return one HB row per unit and period in `HBDataResult`. For an
-ambiguous exact-path answer, it leaves the value missing and adds a structured
-warning containing the approved message, unit, and period. Keep those Altinn
-rules out of `HBMethod`; the HB module sends the warning through
-`AlertHandler` exactly once. An Excel handler can perform the corresponding
-column mapping and reshaping later, returning the same result contract without
-changes to the HB module.
+ambiguous measure exact-path answer, it leaves the value missing and adds a
+structured warning containing the approved message, unit, and period. When a
+stratum is configured, map it through `hb_variable_to_feltsti` and retrieve it
+from the same selected active submission and unit-period as the measure.
+Preserve the source strata value type and do not convert it to numeric. Missing,
+null/blank, or multiple strata answers are blocking data errors, not measure
+warnings or a reason to run unstratified. Keep those Altinn rules out of
+`HBMethod`; the HB module sends measure warnings through `AlertHandler` exactly
+once. An Excel handler can perform the corresponding column mapping and
+reshaping later, returning the same result contract without changes to the HB
+module.
 
 Use the framework's existing `get_connection()` and injected data-function
 patterns inside a source handler where appropriate. Avoid a generic plugin or
@@ -385,9 +393,10 @@ re-export or document that the prototype was never a supported public API.
 
 ## Phase 4 — Configuration and Vaskify dependency
 
-* Add `ssb-vaskify` as a runtime dependency at a version compatible with the
-  supported Vaskify API. The new normal module imports `Detect` and delegates
-  the calculation to it; do not add another HB implementation.
+* Add `ssb-vaskify>=0.0.6,<0.1.0` as a runtime dependency. This range includes
+  the current 0.0.6 release and remains within the 0.0.x series. The new normal
+  module imports `Detect` and delegates the calculation to it; do not add
+  another HB implementation.
 * Use the existing module configuration conventions for selecting a data
   handler. A Python handler instance cannot be represented directly in YAML;
   if YAML setup is required, provide a documented app-level factory or
@@ -515,8 +524,7 @@ The first usable version is complete when:
 
 | Question | Why it matters | Recommended default |
 |---|---|---|
-| Which Vaskify version will the framework support? | Determines the install requirement and verified API | Pin a compatible range in runtime dependencies |
-| How are comparison periods selected? | Controls which observations are compared | Initial implementation assumption: treat the selector's canonical period as `t` and derive `t-1` from its configured `TimeUnit` frequency; confirm this as product design and isolate the rule so it can be changed |
+| How are comparison periods selected? | Controls which observations are compared | Chosen V1 assumption: treat the selector's canonical period as `t` and derive `t-1` from its configured `TimeUnit` frequency.  isolate the rule so it can be changed |
 | Is stratification needed in the initial implementation? | Changes data requirements and method invocation | Optional, omitted unless configured |
 | How are handler instances configured in YAML? | Python instances cannot be represented directly in YAML | Use an app factory or serializable adapter configuration if required |
 | Which selector identifies the clicked unit? | `ident` and `refnr` have distinct framework meanings | Confirm against the app's `VariableSelectorConfig` |

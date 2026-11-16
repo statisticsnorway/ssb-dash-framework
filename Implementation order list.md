@@ -63,7 +63,6 @@
    - Return validated common-schema data.
    - Keep it out of the production Altinn path.
 
-------- Bookmark start ------------
 10. **Add the Vaskify dependency and adapter boundary**
    - Add the supported `ssb-vaskify` runtime dependency.
    - Add `run_hb_vaskify`.
@@ -73,8 +72,8 @@
    - Do not filter zero, negative, or missing values or recreate Vaskify eligibility/calculation rules in the framework.
    - Keep Vaskify argument mapping out of the Altinn adapter and Dash callbacks.
    - Add mocked tests for exact Vaskify arguments and preflight failures.
-------- Bookmark end ------------
 
+------- Bookmark start ------------
 11. **Normalize Vaskify results**
    - Add `normalize_hb_result`.
    - Validate the returned Vaskify shape.
@@ -83,6 +82,7 @@
    - Keep flagged (`1`), calculated/unflagged (`0`), and not-comparable (missing diagnostics/flag) states distinct.
    - Use verified Vaskify return behavior to distinguish no eligible population from an error; do not treat an unverified empty result as “no outliers.”
    - Add unit tests for valid, incomplete, missing, not-comparable, and invalid results.
+------- Bookmark end ------------
 
 12. **Create the ModuleBase shell**
    - Add `HBMethod` under `src/ssb_dash_framework/modules/`.
