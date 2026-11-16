@@ -12,9 +12,10 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Do not fill in User fields; they are reserved for user input and approval only.
 - ONLY WORK ON THE AFFECTED TASK
 
-## Current tasks: Stage 7
+## Current tasks: Rebase to main
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
+| main has changed | rebase to mot recent main | Rebase the current branch to the latest main branch to incorporate recent changes. Resolve any conflicts that arise during the rebase process. | reviev acitecture choices against the latest main and update any affected tasks in `Implementation order list.md`. If something needs to be changed create it as a new stage 8 and update numbers accordingly. approved|---|---|---|
 
 
 
