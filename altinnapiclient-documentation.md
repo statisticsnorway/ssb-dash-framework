@@ -138,8 +138,10 @@ The current `AltinnHBDataHandler` supports unstratified runs only and raises an
 error if `configured_hb_strata_variable` is supplied. For a configured strata
 variable, retrieve its field from the same selected
 active submission as the measure and preserve its value as a grouping label
-rather than converting it to a number. Missing or multiple strata answers must
-not be silently assigned a value.
+rather than converting it to a number. Require exactly one non-null,
+non-blank exact-path strata answer for each unit-period. Treat a missing or
+multiple answer as a blocking data error; do not select or aggregate an answer,
+drop the unit, assign an unknown group, or fall back to an unstratified run.
 
 ## Proposed HB form, field, and selector mapping
 

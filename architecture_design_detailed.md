@@ -177,7 +177,12 @@ and result mapping in the HB method helper:
    part of the HB module contract.
 5. **Stratification:** Make stratification optional, with no stratum as the
    default. Vaskify supports `strata_var`; offer it only when the input data
-   contains a suitable grouping variable, and test missing and small groups.
+   contains a suitable grouping variable. For a configured Altinn stratum,
+   require exactly one non-null, non-blank exact-path answer for every
+   unit-period. Treat missing or multiple answers as a blocking data error;
+   do not select or aggregate an answer, drop the unit, assign an unknown
+   group, or fall back to an unstratified run. Test small-group behavior
+   separately.
 6. **Parameters:** Start with Vaskify defaults unless there is a concrete need
    to expose parameters. If exposed, validate bounds and document their units.
 7. **Results:** Agree the minimum normalized columns: identifier, period or
