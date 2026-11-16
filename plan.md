@@ -12,9 +12,12 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Do not fill in User fields; they are reserved for user input and approval only.
 - ONLY WORK ON THE AFFECTED TASK
 
-## Current tasks:
+## Current tasks: 9. Add deterministic test data access
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
+| Record fake-handler requests | Make `FakeHBDataHandler` record the requested variable, comparison periods, and optional strata variable on each call. | Retain the exact `selected_hb_variable`, `hb_comparison_periods`, and `configured_hb_strata_variable` values passed to `get_hb_dataframe(...)` so tests can assert the module's request. |  |  |  |
+| Test fake-handler result and request contract | Verify the fake returns the expected common-schema data and records all request arguments. | Cover validated output, deterministic fixture data, both comparison periods, and configured or absent strata; assert the returned `HBDataResult` contract. |  |  |  |
+| Test HB module with fake data and no backend | Verify the HB module can be exercised using `FakeHBDataHandler` without an Altinn or database connection. | Add a focused module integration test that supplies the fake handler, runs the module's data path, and confirms no production Altinn handler or backend access is required. |  |  |  |
 
 
 
@@ -76,3 +79,11 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Define Altinn strata mapping and answer behavior | Decide how `configured_hb_strata_variable` maps to an exact Altinn field and how missing or multiple strata answers are handled. | Use an explicit exact-`feltsti` mapping and retrieve strata from the same selected active submission and unit-period as the measure. Do not assume the numeric measure's ambiguity policy automatically applies. | Missing, null/blank, or multiple strata answers are a blocking data error. Do not select or aggregate an answer, drop the unit, assign an unknown group, or fall back to an unstratified run. |  | done |
 | Implement Altinn strata support | Extend the Altinn handler to return the optional strata value alongside the selected measure. | Extend candidate retrieval for the configured strata field, and normalize it into the optional `strata` column while preserving source group-value types. Keep numeric conversion limited to `value`, preserve unstratified behavior, and keep Altinn access and conversion out of Dash, `AlertHandler`, and Vaskify. Apply the defined missing/multiple-answer behavior. |  |  |  |
 | Test Altinn strata retrieval and output contract | Verify strata retrieval and normalization preserve the unit-period and active-submission contract. | Test exact field mapping, same-submission and period scoping, strata type preservation, defined missing/ambiguous behavior, output schema and uniqueness, and unchanged unstratified runs. |  |  |  |
+
+## 8. Account for VariableSelector alerts on HB selection
+| Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
+|---|---|---|---|---|---|
+| Account for VariableSelector alerts on HB selection | Document that `VariableSelector` emits an ephemeral alert when its value changes by default. When repeated graph-click selection should be quiet, configure the selected-unit selector's `VariableSelectorOption` display title in `VariableSelectorConfig.ignore_alerts_on_varchange` at the consuming-application level; the framework matches the display title, not the component ID. Keep alert suppression in the app's selector configuration; do not mutate shared `VariableSelector` configuration or add duplicate selection alerts in `HBMethod`. Verify configured suppression in the HB selector integration, preserving default alerts for selector display titles not listed for suppression. |  |  | Confirmed the selector already suppresses alerts by configured display title; added a regression test showing the selected-unit output is mapped to its component ID, the configured title is quiet, and an unlisted title retains the default ephemeral alert. The existing HB graph-click callback does not send a duplicate alert, and the architecture documents this boundary. | done |
+
+## 9. Add deterministic test data access
+| Implement `FakeHBDataHandler` | Add a deterministic fake implementing `HBDataHandlerMeta` for HB module tests. | Have the fake return an `HBDataResult` containing supplied deterministic data validated with `validate_hb_dataframe`; do not change production Altinn wiring. |  | Implemented the test-only `FakeHBDataHandler` in `tests/unittests/module_tests/fake_hb_data_handler.py`. It returns a deep-copied DataFrame validated against the common HB schema and does not alter production Altinn wiring. | done |

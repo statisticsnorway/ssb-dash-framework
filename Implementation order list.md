@@ -44,14 +44,12 @@
    - Map `ident` to `unit_id` and `iso_periode` to `period`; retain only selector context required by the module.
    - Test numeric conversion, missing/invalid values, approved field matching, `HBDataResult`/`HBDataWarning` details, output schema, and uniqueness.
 
-------- Bookmark start ------------
 7. **Altinn strata support**
    - Define the exact Altinn field mapping for `configured_hb_strata_variable` and the approved handling of missing or multiple strata answers before implementation; do not assume the numeric measure's ambiguity policy automatically applies.
    - Extend candidate retrieval to include the configured strata field from the same selected active submission and unit-period as the HB measure.
    - Extend normalization to return the optional `strata` column while preserving source group-value types; keep numeric conversion limited to `value` and preserve existing unstratified behavior.
    - Keep Altinn access and conversion in the source handler; do not add Dash, `AlertHandler`, or Vaskify calls.
    - Test exact field mapping, same-submission and period scoping, strata type preservation, approved missing/ambiguous behavior, output schema and uniqueness, and unchanged unstratified runs.
-------- Bookmark end ------------
 
 8. **Account for VariableSelector alerts on HB selection**
    - Document that `VariableSelector` emits an ephemeral alert when its value changes by default.
@@ -59,12 +57,14 @@
    - Keep alert suppression in the app's selector configuration; do not mutate shared `VariableSelector` configuration or add duplicate selection alerts in `HBMethod`.
    - Verify configured suppression in the HB selector integration, preserving default alerts for selector display titles not listed for suppression.
 
+------- Bookmark start ------------
 9. **Add deterministic test data access**
    - Add `FakeHBDataHandler` for deterministic module tests.
    - Make it record the requested variable, periods, and optional stratum.
    - Return validated common-schema data.
    - Keep it out of the production Altinn path.
    - Test that it can exercise the module without a backend connection.
+------- Bookmark end ------------
 
 10. **Add the Vaskify dependency and adapter boundary**
    - Add the supported `ssb-vaskify` runtime dependency.

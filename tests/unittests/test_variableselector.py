@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 from dash import Input
 from dash import State
 
@@ -6,6 +8,7 @@ from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.setup.variableselector import VariableSelectorOption
 from ssb_dash_framework.setup.variableselector.time_unit import TimeUnit
 from ssb_dash_framework.setup.variableselector.time_unit import TimeUnitType
+from ssb_dash_framework.utils.alert_handler import AlertHandler
 
 
 def test_empty_variableselectoroptions_at_start() -> None:
@@ -125,3 +128,33 @@ def test_time_units_implementation() -> None:
     assert [
         variableselector.get_option(x).id.removeprefix("var-") for x in time_units
     ] == ["aar"], "Congratulations, you might have broken a couple of modules! "
+
+
+def test_hb_selector_alert_suppression_uses_display_title(monkeypatch) -> None:
+    """Suppress configured HB selector alerts by title and preserve other alerts."""
+    monkeypatch.setattr(VariableSelector, "_ignore_alerts_on_varchange", None)
+    monkeypatch.setattr(
+        "ssb_dash_framework.setup.variableselector.variableselector.callback",
+        lambda *args, **kwargs: lambda function: function,
+    )
+    info_alert = Mock()
+    monkeypatch.setattr(AlertHandler, "info", info_alert)
+
+    VariableSelectorConfig(ignore_alerts_on_varchange=["Selected unit"])
+    selected_unit = VariableSelectorOption(
+        variable_title="Selected unit", variable_id="ident"
+    )
+    other_selector = VariableSelectorOption(variable_title="Other selector")
+    selector = VariableSelector([], [])
+
+    assert selected_unit.id == "var-ident"
+    assert VariableSelector.get_output_object(selected_unit.title).component_id == (
+        selected_unit.id
+    )
+    selector._make_alert_callback(selected_unit.id, selected_unit.title)("123")
+    info_alert.assert_not_called()
+
+    selector._make_alert_callback(other_selector.id, other_selector.title)("value")
+    info_alert.assert_called_once_with(
+        "Oppdatering av variabelvelger: Other selector til value", ephemeral=True
+    )
