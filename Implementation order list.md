@@ -63,7 +63,6 @@
    - Make it record the requested variable, periods, and optional stratum.
    - Return validated common-schema data.
    - Keep it out of the production Altinn path.
-   - Test that it can exercise the module without a backend connection.
 ------- Bookmark end ------------
 
 10. **Add the Vaskify dependency and adapter boundary**
@@ -108,6 +107,7 @@
    - Display ratio, median ratio, limits, and candidate state without reimplementing HB logic.
    - Route failures through `AlertHandler` and log context without row-level sensitive data.
    - Test successful runs, handler failures, Vaskify failures, warning-only paths, and empty or not-comparable data.
+   - Add a module integration test that supplies `FakeHBDataHandler`, exercises the handler-to-result path without an Altinn or database connection, and verifies that the production backend is not accessed.
 
 15. **Add click-to-selector behavior**
    - Put the stable `unit_id` in Plotly `customdata`.
