@@ -52,6 +52,15 @@ flowchart LR
 8. A graph click reads the stable identifier from Plotly `customdata` and
    updates the configured `VariableSelector` output. It does not rerun HB.
 
+`VariableSelector` emits an ephemeral change alert by default. If repeated
+graph selections should not generate those alerts, the consuming application
+can include the selected-unit output variable in
+`VariableSelectorConfig.ignore_alerts_on_varchange`. `HBMethod` must not mutate
+the selector's shared configuration or add a duplicate selection alert. The
+ignore list is matched against the `VariableSelectorOption` display title, so
+the application must configure that title rather than the underlying
+component ID.
+
 Errors, invalid input, missing comparable observations, and Vaskify failures
 are reported through the framework's `AlertHandler` pattern. They must not be
 represented as a successful empty result. Vaskify may log warnings rather than

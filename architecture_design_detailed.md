@@ -191,7 +191,14 @@ and result mapping in the HB method helper:
 8. **Selection semantics:** A clicked graph point should update the configured
    selector output with the unit identifier. Preserve any additional
    source-specific selector values separately; for Altinn, `ident` and
-   submission-level `refnr` have distinct roles.
+   submission-level `refnr` have distinct roles. `VariableSelector` emits an
+   ephemeral alert on value changes by default. The consuming application can
+   list the selected-unit output variable in
+   `VariableSelectorConfig.ignore_alerts_on_varchange` to suppress repeated
+   alerts from graph clicks. The ignore list matches the
+   `VariableSelectorOption` display title, not its component ID. `HBMethod`
+   must not mutate this shared configuration or add a duplicate selection
+   alert.
 
 Do not treat an algorithm error or an empty eligible population as a successful
 “no outliers” result. Preserve missing/not-comparable separately from flag 0.
@@ -358,6 +365,12 @@ normalized result.
 9. Keep the computed result set available after a run. Selecting a candidate
    and moving to another candidate must not rerun HB. Only the explicit Run
    action starts a new calculation.
+   The consuming application may add the selected-unit output variable to
+   `VariableSelectorConfig.ignore_alerts_on_varchange` if it wants to suppress
+   the selector's default ephemeral change alert. This list is matched by
+   `VariableSelectorOption` display title, not component ID. Do not change that
+   shared configuration from `HBMethod` or add a second alert for the
+   selection.
 10. Treat HB flags as candidates, not corrections. The initial module only
     displays results and sends the selected identifier to `VariableSelector`;
     it does not edit or write source data. Any later editing workflow is a

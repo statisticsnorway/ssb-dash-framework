@@ -53,14 +53,20 @@
    - Test exact field mapping, same-submission and period scoping, strata type preservation, approved missing/ambiguous behavior, output schema and uniqueness, and unchanged unstratified runs.
 ------- Bookmark end ------------
 
-8. **Add deterministic test data access**
+8. **Account for VariableSelector alerts on HB selection**
+   - Document that `VariableSelector` emits an ephemeral alert when its value changes by default.
+   - When repeated graph-click selection should be quiet, configure the selected-unit selector's `VariableSelectorOption` display title in `VariableSelectorConfig.ignore_alerts_on_varchange` at the consuming-application level; the framework matches the display title, not the component ID.
+   - Keep alert suppression in the app's selector configuration; do not mutate shared `VariableSelector` configuration or add duplicate selection alerts in `HBMethod`.
+   - Verify configured suppression in the HB selector integration, preserving default alerts for selector display titles not listed for suppression.
+
+9. **Add deterministic test data access**
    - Add `FakeHBDataHandler` for deterministic module tests.
    - Make it record the requested variable, periods, and optional stratum.
    - Return validated common-schema data.
    - Keep it out of the production Altinn path.
    - Test that it can exercise the module without a backend connection.
 
-9. **Add the Vaskify dependency and adapter boundary**
+10. **Add the Vaskify dependency and adapter boundary**
    - Add the supported `ssb-vaskify` runtime dependency.
    - Add `run_hb_vaskify`.
    - Construct `Detect(hb_input_dataframe, id_nr="unit_id")`.
@@ -70,7 +76,7 @@
    - Keep Vaskify argument mapping out of the Altinn adapter and Dash callbacks.
    - Add mocked tests for exact Vaskify arguments and preflight failures.
 
-10. **Normalize Vaskify results**
+11. **Normalize Vaskify results**
    - Add `normalize_hb_result`.
    - Validate the returned Vaskify shape.
    - Preserve stable identifiers, source context, comparison values, period context, diagnostics, `ratio`, `median_ratio`, limits, and `flag_hb`.
@@ -79,7 +85,7 @@
    - Use verified Vaskify return behavior to distinguish no eligible population from an error; do not treat an unverified empty result as “no outliers.”
    - Add unit tests for valid, incomplete, missing, not-comparable, and invalid results.
 
-11. **Create the ModuleBase shell**
+12. **Create the ModuleBase shell**
    - Add `HBMethod` under `src/ssb_dash_framework/modules/`.
    - Set `label`, `icon`, and the handler before `ModuleBase.__init__()`.
    - Implement `layout()` with controls, run button, loading state, errors, empty state, result store, and graph placeholders.
@@ -87,7 +93,7 @@
    - Use descriptive IDs such as `hb_run_button`, `hb_result_graph`, `hb_error_message`, and `hb_result_store`.
    - Test construction, lifecycle, unique IDs, and tab/window placement.
 
-12. **Connect selector inputs to the run action**
+13. **Connect selector inputs to the run action**
    - Read the selected HB variable and canonical period from `VariableSelector` at callback time.
    - Validate required selector configuration during construction.
    - Resolve comparison periods with `resolve_hb_comparison_periods`.
@@ -95,7 +101,7 @@
    - Do not store per-user selector values on the module instance.
    - Test handler arguments and missing selector configuration.
 
-13. **Execute and display an HB run**
+14. **Execute and display an HB run**
    - On the explicit run action, call the handler, `run_hb_vaskify`, and `normalize_hb_result` in that order.
    - Store the normalized result for the current run.
    - Build the result figure from normalized Vaskify columns.
@@ -103,34 +109,34 @@
    - Route failures through `AlertHandler` and log context without row-level sensitive data.
    - Test successful runs, handler failures, Vaskify failures, warning-only paths, and empty or not-comparable data.
 
-14. **Add click-to-selector behavior**
+15. **Add click-to-selector behavior**
    - Put the stable `unit_id` in Plotly `customdata`.
    - Read the identifier from click data, never from hovertext, labels, or row positions.
    - Update the configured `VariableSelector` output.
    - Read the stored result only; do not call the handler or Vaskify on selection.
    - Test selecting multiple candidates and selecting no point.
 
-15. **Export and register the module**
+16. **Export and register the module**
    - Export `HBMethod` through `ssb_dash_framework.modules` and the package top-level API where required.
    - Register the module with the existing YAML configuration mechanism.
    - Document constructor and handler configuration keys.
    - Search for imports of the experimental prototype before removing or redirecting it.
    - Test normal imports and YAML registration.
 
-16. **Add integration and reference-result tests**
+17. **Add integration and reference-result tests**
    - Test the installed Vaskify package with deterministic input data.
    - Verify the actual result shape, `ratio`, `median_ratio`, limit and flag columns, and explicit call defaults.
    - Add reference-result cases for positive, zero, negative, missing, flagged, unflagged, and not-comparable observations.
    - Verify the package's return behavior when no unit has eligible values and when it logs warnings without raising.
    - Keep mathematical algorithm tests in Vaskify, not in framework helpers.
 
-17. **Add demo and browser coverage**
+18. **Add demo and browser coverage**
    - Add or update a demo that imports and configures `HBMethod`.
    - Use deterministic test data or the configured Altinn path as appropriate.
    - Verify app startup, run action, result display, and click-to-selector flow.
    - Add demo-specific E2E steps under `tests/e2e/hooks/` when needed.
 
-18. **Complete user documentation**
+19. **Complete user documentation**
    - Document Altinn handler setup and required configuration.
    - Document the common DataFrame schema and canonical period requirements for all six `TimeUnit` frequencies.
    - Document the selected period `t` and the `TimeUnit`-based `t-1` assumption.
@@ -138,15 +144,15 @@
    - Document click-to-selector behavior and the no-write boundary.
    - Update the module/API documentation without duplicating implementation logic.
 
-19. **Validate completed tasks**
+20. **Validate completed tasks**
    - Run only the tests explicitly listed for the active task in `plan.md`, after that task is complete.
    - Run a broader test session or E2E coverage only when explicitly scheduled in `plan.md`.
    - Confirm that no source data is edited and that all failures remain visible.
 
-20. **Remove temporary design documents**
+21. **Remove temporary design documents**
    - Before integrating to `main`, remove `architecture_design_detailed.md` and `ssb-vaskify-design.md` after their lasting decisions and issue context are recorded in `architecture.md` and `Issues.md`.
    - User will decide what to keep in the end.
    - Put back `AGENTS.md`
    - Pull request to integrate the changes into `main`.
 
-21. **Report ISSUES to Github or Magnus**
+22. **Report ISSUES to Github or Magnus**
