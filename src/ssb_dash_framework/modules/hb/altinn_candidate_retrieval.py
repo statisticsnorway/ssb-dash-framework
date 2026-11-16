@@ -10,6 +10,24 @@ from ssb_dash_framework.utils.core_query_functions import (
 )
 
 
+def _validate_hb_comparison_periods(
+    hb_comparison_periods: tuple[str, str],
+) -> None:
+    if (
+        not isinstance(hb_comparison_periods, tuple)
+        or len(hb_comparison_periods) != 2
+        or any(
+            not isinstance(comparison_period, str) or not comparison_period.strip()
+            for comparison_period in hb_comparison_periods
+        )
+        or hb_comparison_periods[0] == hb_comparison_periods[1]
+    ):
+        raise ValueError(
+            "hb_comparison_periods must contain two distinct non-empty "
+            "period strings."
+        )
+
+
 class AltinnHBCandidateRetriever:
     """Read candidate Altinn answers without selecting submissions or normalizing values."""
 
@@ -51,19 +69,7 @@ class AltinnHBCandidateRetriever:
         are intentionally left to later steps.
         """
         selected_feltsti = self.get_feltsti_for_hb_variable(selected_hb_variable)
-        if (
-            not isinstance(hb_comparison_periods, tuple)
-            or len(hb_comparison_periods) != 2
-            or any(
-                not isinstance(period, str) or not period.strip()
-                for period in hb_comparison_periods
-            )
-            or hb_comparison_periods[0] == hb_comparison_periods[1]
-        ):
-            raise ValueError(
-                "hb_comparison_periods must contain two distinct non-empty "
-                "period strings."
-            )
+        _validate_hb_comparison_periods(hb_comparison_periods)
 
         with get_connection() as conn:
             enheter = conn.table("enheter")
@@ -170,19 +176,7 @@ class AltinnHBCandidateRetriever:
                 "candidate_records is missing required columns: "
                 f"{missing_column_names}."
             )
-        if (
-            not isinstance(hb_comparison_periods, tuple)
-            or len(hb_comparison_periods) != 2
-            or any(
-                not isinstance(period, str) or not period.strip()
-                for period in hb_comparison_periods
-            )
-            or hb_comparison_periods[0] == hb_comparison_periods[1]
-        ):
-            raise ValueError(
-                "hb_comparison_periods must contain two distinct non-empty "
-                "period strings."
-            )
+        _validate_hb_comparison_periods(hb_comparison_periods)
 
         active_refnrs_by_period: dict[str, list[str]] = {}
         with get_connection() as conn:

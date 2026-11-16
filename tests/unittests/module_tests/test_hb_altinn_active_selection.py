@@ -124,3 +124,33 @@ def test_active_submission_coverage_reports_missing_unit_and_period() -> None:
             candidate_records,
             selected_active_candidate_records,
         )
+
+
+@pytest.mark.parametrize(
+    "hb_comparison_periods",
+    [("2024", " "), ("2024", "2024")],
+)
+def test_active_candidate_selection_rejects_invalid_comparison_period_pairs(
+    hb_comparison_periods: tuple[str, str],
+) -> None:
+    candidate_retriever = AltinnHBCandidateRetriever(
+        configured_hb_form="RA-0187",
+        hb_variable_to_feltsti={"turnover": "/turnover"},
+    )
+    candidate_records = pd.DataFrame(
+        {
+            "iso_periode": ["2024"],
+            "skjema": ["RA-0187"],
+            "ident": ["unit-1"],
+            "refnr": ["active-1"],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="hb_comparison_periods must contain two distinct non-empty",
+    ):
+        candidate_retriever.select_active_candidate_records(
+            candidate_records,
+            hb_comparison_periods=hb_comparison_periods,
+        )

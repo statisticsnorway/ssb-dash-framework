@@ -217,6 +217,7 @@ class HBDataResult:
 
 
 class HBDataHandlerMeta(ABC):
+    @abstractmethod
     def get_hb_dataframe(
         self,
         *,
@@ -238,6 +239,11 @@ instance can be injected into the Dash module. A deterministic
 sufficient for isolated tests; it does not replace the required Altinn
 adapter. The calculation function itself should accept a DataFrame, not a
 filepath or database connection.
+
+Use decorators where they express a concrete contract: `@dataclass(frozen=True)`
+for the HB result and warning records, and `@abstractmethod` for the required
+data-handler method. The frozen dataclasses prevent field reassignment; they
+do not make the contained pandas DataFrame immutable.
 
 The common validator and HB module are responsible for API-level preflight,
 not the HB algorithm. The validator accepts canonical strings for all six
@@ -329,7 +335,9 @@ normalized result.
 3. Implement `layout()` for the method controls, run button, progress/loading
    state, error/empty-result message, and result visualization.
 4. Implement `module_callbacks()` using `self.module_id` for every component
-   ID. Remove the prototype's class-level counter and fixed IDs.
+   ID. Register callbacks with Dash's `@callback` pattern inside this method,
+   following the framework's existing modules. Remove the prototype's
+   class-level counter and fixed IDs.
 5. Keep the visual content presentation-neutral so `main_layout` can place the
    module as either a tab or a window.
 6. Use `VariableSelector` helper methods for configured shared values. Validate

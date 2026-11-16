@@ -78,3 +78,25 @@ def test_candidate_retriever_uses_selected_variable_feltsti_mapping(
         "36dc58f7b6fe": "4025",
         "03cfdcfc6266": "4030",
     }
+
+
+@pytest.mark.parametrize(
+    "hb_comparison_periods",
+    [("2024", " "), ("2024", "2024")],
+)
+def test_candidate_retriever_rejects_invalid_comparison_period_pairs(
+    hb_comparison_periods: tuple[str, str],
+) -> None:
+    candidate_retriever = AltinnHBCandidateRetriever(
+        configured_hb_form="RA-0187",
+        hb_variable_to_feltsti={"turnover": "/turnover"},
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="hb_comparison_periods must contain two distinct non-empty",
+    ):
+        candidate_retriever.retrieve_candidate_records(
+            selected_hb_variable="turnover",
+            hb_comparison_periods=hb_comparison_periods,
+        )
