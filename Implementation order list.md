@@ -57,14 +57,13 @@
    - Keep alert suppression in the app's selector configuration; do not mutate shared `VariableSelector` configuration or add duplicate selection alerts in `HBMethod`.
    - Verify configured suppression in the HB selector integration, preserving default alerts for selector display titles not listed for suppression.
 
-------- Bookmark start ------------
 9. **Add deterministic test data access**
    - Add `FakeHBDataHandler` for deterministic module tests.
    - Make it record the requested variable, periods, and optional stratum.
    - Return validated common-schema data.
    - Keep it out of the production Altinn path.
-------- Bookmark end ------------
 
+------- Bookmark start ------------
 10. **Add the Vaskify dependency and adapter boundary**
    - Add the supported `ssb-vaskify` runtime dependency.
    - Add `run_hb_vaskify`.
@@ -74,6 +73,7 @@
    - Do not filter zero, negative, or missing values or recreate Vaskify eligibility/calculation rules in the framework.
    - Keep Vaskify argument mapping out of the Altinn adapter and Dash callbacks.
    - Add mocked tests for exact Vaskify arguments and preflight failures.
+------- Bookmark end ------------
 
 11. **Normalize Vaskify results**
    - Add `normalize_hb_result`.
