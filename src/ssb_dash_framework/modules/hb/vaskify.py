@@ -5,6 +5,7 @@ from vaskify import Detect
 
 from ssb_dash_framework.setup.variableselector.time_unit import TimeUnitType
 
+from .data_handler import validate_hb_dataframe
 from .period_validation import is_canonical_hb_period
 
 
@@ -25,14 +26,39 @@ def run_hb_vaskify(
     Returns:
         The DataFrame returned by Vaskify's HB method.
     """
+    _validate_hb_vaskify_input(
+        hb_input_dataframe,
+        configured_hb_strata_variable=configured_hb_strata_variable,
+    )
     _validate_hb_comparison_periods(hb_input_dataframe, hb_comparison_periods)
     detector = Detect(hb_input_dataframe, id_nr="unit_id")
     return detector.hb(
-    y_var="value",
+        y_var="value",
         time_var="period",
         time_periods=list(hb_comparison_periods),
-        strata_var="strata" if configured_hb_strata_variable else "",
+        strata_var="strata" if configured_hb_strata_variable is not None else "",
+        pu=0.5,
+        pa=0.05,
+        pc=20,
+        percentiles=(0.25, 0.75),
+        flag="flag_hb",
+        output_format="wide",
+        output_scope="all",
     )
+
+
+def _validate_hb_vaskify_input(
+    hb_input_dataframe: pd.DataFrame,
+    *,
+    configured_hb_strata_variable: str | None,
+) -> None:
+    validate_hb_dataframe(hb_input_dataframe)
+    if configured_hb_strata_variable is not None and (
+        "strata" not in hb_input_dataframe.columns
+    ):
+        raise ValueError(
+            "HB input must contain a 'strata' column when a strata variable is configured."
+        )
 
 
 def _validate_hb_comparison_periods(
