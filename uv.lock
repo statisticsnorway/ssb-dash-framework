@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
@@ -2539,6 +2539,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pandas-stubs"
+version = "3.1.0.261029"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f9/f8/0346629264426a6693affbc9a0fb52143acfa38112d569f68da514ea503a/pandas_stubs-3.1.0.261029.tar.gz", hash = "sha256:dcfb5b14d399beae72cce558db6d2a0d89c10301275557f1c00d5393e9cb190e", size = 119466, upload-time = "2026-10-29T17:09:31.352Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/2c/ecbc04b2a8d05d737351a54398f843223cb66edf42ec5c0fcc6198f17d3a/pandas_stubs-3.1.0.261029-py3-none-any.whl", hash = "sha256:70f631f2d0781c4500b1cd5f84cab7d7279a3d114674d69655536a4a99a3a67f", size = 179851, upload-time = "2026-10-29T17:09:30.112Z" },
+]
+
+[[package]]
 name = "parso"
 version = "0.8.7"
 source = { registry = "https://pypi.org/simple" }
@@ -4170,6 +4182,7 @@ dependencies = [
     { name = "ssb-klass-python" },
     { name = "ssb-parquedit" },
     { name = "ssb-poc-statlog-model" },
+    { name = "ssb-vaskify" },
     { name = "tzlocal" },
 ]
 
@@ -4242,6 +4255,7 @@ requires-dist = [
     { name = "ssb-klass-python", specifier = ">=1.0.6,<2.0.0" },
     { name = "ssb-parquedit", specifier = ">=0.1.0" },
     { name = "ssb-poc-statlog-model", specifier = ">=2.0.0,<3.0.0" },
+    { name = "ssb-vaskify", specifier = ">=0.0.6,<0.1.0" },
     { name = "tzlocal", specifier = ">=5.4.4,<6.0.0" },
 ]
 
@@ -4334,6 +4348,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/84/31/d1a24a020538ac9c99955a7111129fb2d71c84f7383bbf35034ff3ecb399/ssb_poc_statlog_model-2.0.0.tar.gz", hash = "sha256:9a407bc14762da196701fc63e56687e44ff36da9488eb4f4140849426587ae1b", size = 13010, upload-time = "2026-04-17T10:21:22.851Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2e/22/828f370fe7247607a7b6382a766a780de2fa89d4e3e4a6c054eff6f1f8ef/ssb_poc_statlog_model-2.0.0-py3-none-any.whl", hash = "sha256:931e1adbaf20b15b3387d0485cc648a3095bd1933989b992056002d3c4704c1d", size = 13237, upload-time = "2026-04-17T10:21:21.383Z" },
+]
+
+[[package]]
+name = "ssb-vaskify"
+version = "0.0.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "ipykernel" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "pandas-stubs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ae/34/3d49cd2d7f15d22386b3f80ee477d4988e6019e230433aa6f7e8817a4812/ssb_vaskify-0.0.6.tar.gz", hash = "sha256:19fa48c76d308afc0e748071cc64aafdac287432a30c8edb9dc313912fee0b26", size = 14414, upload-time = "2026-06-25T10:19:34.184Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/28/b1/519fc12edd99a24272c2290004b3eeb4c2fc9c711fedc83a4177f84feaee/ssb_vaskify-0.0.6-py3-none-any.whl", hash = "sha256:0c0f0a907a715ce63f931116696cfa9b5d0397330a0d84e0a09cc34c7098794d", size = 13601, upload-time = "2026-06-25T10:19:32.972Z" },
 ]
 
 [[package]]
