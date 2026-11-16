@@ -134,14 +134,14 @@ multiple answer rows match the same configured exact `feltsti` for one selected
 unit-period submission, leave the value missing and return the structured
 warning described above.
 
-The current `AltinnHBDataHandler` supports unstratified runs only and raises an
-error if `configured_hb_strata_variable` is supplied. For a configured strata
-variable, retrieve its field from the same selected
-active submission as the measure and preserve its value as a grouping label
-rather than converting it to a number. Require exactly one non-null,
-non-blank exact-path strata answer for each unit-period. Treat a missing or
-multiple answer as a blocking data error; do not select or aggregate an answer,
-drop the unit, assign an unknown group, or fall back to an unstratified run.
+`AltinnHBDataHandler` maps `configured_hb_strata_variable` through the same
+explicit `hb_variable_to_feltsti` configuration used for measure fields. It
+retrieves the strata answer from the same selected active submission and
+unit-period as the measure, and preserves its value as a grouping label rather
+than converting it to a number. Require exactly one non-null, non-blank
+exact-path strata answer for each unit-period. Treat a missing or multiple
+answer as a blocking data error; do not select or aggregate an answer, drop the
+unit, assign an unknown group, or fall back to an unstratified run.
 
 ## Proposed HB form, field, and selector mapping
 
@@ -158,7 +158,7 @@ Map the source data as follows:
 |---|---|---|
 | Unit-period membership | `enheter` | Filter by configured `skjema` and requested `iso_periode`; use `ident` as the unit identifier. |
 | Submission metadata | `skjemamottak` | Join on `(iso_periode, skjema, ident)` and use the selected submission's `refnr`. |
-| Selected field answer | `skjemadata` | Join on `(iso_periode, skjema, ident, refnr)` and filter by the configured exact `feltsti`; read `verdi` for the measure and, when configured, the strata field. |
+| Selected field answer | `skjemadata` | Join on `(iso_periode, skjema, ident, refnr)` and retrieve the exact `feltsti` paths mapped for the measure and, when configured, the strata field; read their separate `verdi` answers. |
 | HB input row | Selected Altinn records | Map `ident` to `unit_id`, `iso_periode` to `period`, and the selected measure `verdi` to numeric `value`; when configured, preserve strata `verdi` separately as a grouping value. |
 | Selector context | Common HB result | Retain `unit_id`/`ident` for graph-click selection. Use `refnr` to retrieve the answer, then drop it from the HB result unless the handler contract requires it. |
 

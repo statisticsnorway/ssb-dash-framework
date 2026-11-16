@@ -15,8 +15,7 @@ Ensure that any deviations from the architecture are documented and approved thr
 ## Current tasks: Stage 7
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
-| Implement Altinn strata support | Extend the Altinn handler to return the optional strata value alongside the selected measure. | Extend candidate retrieval for the configured strata field, and normalize it into the optional `strata` column while preserving source group-value types. Keep numeric conversion limited to `value`, preserve unstratified behavior, and keep Altinn access and conversion out of Dash, `AlertHandler`, and Vaskify. Apply the defined missing/multiple-answer behavior. |  |  |  |
-| Test Altinn strata retrieval and output contract | Verify strata retrieval and normalization preserve the unit-period and active-submission contract. | Test exact field mapping, same-submission and period scoping, strata type preservation, defined missing/ambiguous behavior, output schema and uniqueness, and unchanged unstratified runs. |  |  |  |
+
 
 
 # History
@@ -75,3 +74,5 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
 | Define Altinn strata mapping and answer behavior | Decide how `configured_hb_strata_variable` maps to an exact Altinn field and how missing or multiple strata answers are handled. | Use an explicit exact-`feltsti` mapping and retrieve strata from the same selected active submission and unit-period as the measure. Do not assume the numeric measure's ambiguity policy automatically applies. | Missing, null/blank, or multiple strata answers are a blocking data error. Do not select or aggregate an answer, drop the unit, assign an unknown group, or fall back to an unstratified run. |  | done |
+| Implement Altinn strata support | Extend the Altinn handler to return the optional strata value alongside the selected measure. | Extend candidate retrieval for the configured strata field, and normalize it into the optional `strata` column while preserving source group-value types. Keep numeric conversion limited to `value`, preserve unstratified behavior, and keep Altinn access and conversion out of Dash, `AlertHandler`, and Vaskify. Apply the defined missing/multiple-answer behavior. |  |  |  |
+| Test Altinn strata retrieval and output contract | Verify strata retrieval and normalization preserve the unit-period and active-submission contract. | Test exact field mapping, same-submission and period scoping, strata type preservation, defined missing/ambiguous behavior, output schema and uniqueness, and unchanged unstratified runs. |  |  |  |

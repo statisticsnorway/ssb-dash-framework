@@ -30,21 +30,17 @@ class AltinnHBDataHandler(HBDataHandlerMeta):
         hb_comparison_periods: tuple[str, str],
         configured_hb_strata_variable: str | None = None,
     ) -> HBDataResult:
-        """Return normalized unstratified HB data and source warnings.
+        """Return normalized HB data and source warnings.
 
         Raises:
-            NotImplementedError: If a strata variable is requested.
             ValueError: If the selected variable or comparison periods are
-                invalid, or an active submission is missing.
+                invalid, an active submission is missing, or a requested strata
+                answer is missing or ambiguous.
         """
-        if configured_hb_strata_variable is not None:
-            raise NotImplementedError(
-                "AltinnHBDataHandler does not support a configured strata variable."
-            )
-
         candidate_records = self._candidate_retriever.retrieve_candidate_records(
             selected_hb_variable=selected_hb_variable,
             hb_comparison_periods=hb_comparison_periods,
+            configured_hb_strata_variable=configured_hb_strata_variable,
         )
         selected_active_candidate_records = (
             self._candidate_retriever.select_active_candidate_records(
@@ -60,7 +56,15 @@ class AltinnHBDataHandler(HBDataHandlerMeta):
         selected_feltsti = self._candidate_retriever.get_feltsti_for_hb_variable(
             selected_hb_variable
         )
+        selected_strata_feltsti = (
+            self._candidate_retriever.get_feltsti_for_hb_variable(
+                configured_hb_strata_variable
+            )
+            if configured_hb_strata_variable is not None
+            else None
+        )
         return normalize_altinn_hb_candidate_records(
             selected_active_candidate_records,
             selected_feltsti=selected_feltsti,
+            selected_strata_feltsti=selected_strata_feltsti,
         )

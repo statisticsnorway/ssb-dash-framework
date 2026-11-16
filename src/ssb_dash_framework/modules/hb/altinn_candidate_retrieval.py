@@ -62,13 +62,22 @@ class AltinnHBCandidateRetriever:
         *,
         selected_hb_variable: str,
         hb_comparison_periods: tuple[str, str],
+        configured_hb_strata_variable: str | None = None,
     ) -> pd.DataFrame:
         """Return source-keyed Altinn rows for the configured field and periods.
 
         Active-submission selection and conversion into the common HB DataFrame
-        are intentionally left to later steps.
+        are intentionally left to later steps. When configured, strata answers
+        are retrieved from the same unit-period and submission.
         """
         selected_feltsti = self.get_feltsti_for_hb_variable(selected_hb_variable)
+        selected_feltsti_paths = [selected_feltsti]
+        if configured_hb_strata_variable is not None:
+            selected_strata_feltsti = self.get_feltsti_for_hb_variable(
+                configured_hb_strata_variable
+            )
+            if selected_strata_feltsti not in selected_feltsti_paths:
+                selected_feltsti_paths.append(selected_strata_feltsti)
         _validate_hb_comparison_periods(hb_comparison_periods)
 
         with get_connection() as conn:
@@ -114,7 +123,7 @@ class AltinnHBCandidateRetriever:
                 indeks=skjemadata.indeks,
             )
 
-            # Keep all matches; the downstream method owns missing-value treatment.
+            # Keep all matches so normalization can detect ambiguous answers.
             candidate_records = unit_submission_records.join(
                 selected_field_answers,
                 (
@@ -127,7 +136,7 @@ class AltinnHBCandidateRetriever:
                 )
                 & (unit_submission_records.ident == selected_field_answers.answer_ident)
                 & (unit_submission_records.refnr == selected_field_answers.answer_refnr)
-                & (selected_field_answers.feltsti == selected_feltsti),
+                & selected_field_answers.feltsti.isin(selected_feltsti_paths),
                 how="left",
             ).select(
                 unit_submission_records.iso_periode,

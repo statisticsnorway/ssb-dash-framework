@@ -80,6 +80,71 @@ def test_normalize_altinn_hb_candidate_records_reports_ambiguous_exact_answers()
     )
 
 
+def test_normalize_altinn_hb_candidate_records_preserves_strata_values() -> None:
+    selected_active_candidate_records = pd.DataFrame(
+        {
+            "iso_periode": ["2024", "2024", "2025", "2025"],
+            "skjema": ["RA-0187"] * 4,
+            "ident": ["unit-1"] * 4,
+            "refnr": ["ref-1"] * 4,
+            "feltsti": ["/turnover", "/region"] * 2,
+            "verdi": ["12.5", "001", "13.5", "002"],
+        }
+    )
+
+    hb_data_result = normalize_altinn_hb_candidate_records(
+        selected_active_candidate_records,
+        selected_feltsti="/turnover",
+        selected_strata_feltsti="/region",
+    )
+
+    assert list(hb_data_result.hb_dataframe.columns) == [
+        "unit_id",
+        "period",
+        "value",
+        "strata",
+    ]
+    assert hb_data_result.hb_dataframe["value"].tolist() == [12.5, 13.5]
+    assert hb_data_result.hb_dataframe["strata"].tolist() == ["001", "002"]
+    assert all(
+        isinstance(strata_value, str)
+        for strata_value in hb_data_result.hb_dataframe["strata"]
+    )
+    assert not hb_data_result.hb_dataframe.duplicated(["unit_id", "period"]).any()
+    assert hb_data_result.hb_warnings == ()
+
+
+@pytest.mark.parametrize(
+    ("strata_answer_values", "error_message"),
+    [
+        ([], "Missing Altinn strata answer"),
+        ([None], "must be a non-null scalar value"),
+        ([" "], "must not be blank"),
+        (["north", "south"], "Multiple Altinn strata answers"),
+    ],
+)
+def test_normalize_altinn_hb_candidate_records_rejects_invalid_strata_answers(
+    strata_answer_values: list[str | None],
+    error_message: str,
+) -> None:
+    selected_active_candidate_records = pd.DataFrame(
+        {
+            "iso_periode": ["2024"] * (len(strata_answer_values) + 1),
+            "skjema": ["RA-0187"] * (len(strata_answer_values) + 1),
+            "ident": ["unit-1"] * (len(strata_answer_values) + 1),
+            "feltsti": ["/turnover"] + ["/region"] * len(strata_answer_values),
+            "verdi": ["12.5", *strata_answer_values],
+        }
+    )
+
+    with pytest.raises(ValueError, match=error_message):
+        normalize_altinn_hb_candidate_records(
+            selected_active_candidate_records,
+            selected_feltsti="/turnover",
+            selected_strata_feltsti="/region",
+        )
+
+
 @pytest.mark.parametrize("raw_value", ["not-a-number", True, [1]])
 def test_normalize_altinn_hb_candidate_records_rejects_unconvertible_values(
     raw_value: object,

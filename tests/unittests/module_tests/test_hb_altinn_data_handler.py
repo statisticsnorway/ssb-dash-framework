@@ -1,8 +1,11 @@
+from contextlib import contextmanager
 from unittest.mock import Mock
 
+import ibis
 import pandas as pd
 import pytest
 
+import ssb_dash_framework.modules.hb.altinn_candidate_retrieval as candidate_retrieval
 from ssb_dash_framework.modules.hb import AltinnHBDataHandler
 from ssb_dash_framework.modules.hb.altinn_candidate_retrieval import (
     AltinnHBCandidateRetriever,
@@ -48,6 +51,7 @@ def test_altinn_hb_data_handler_composes_candidate_pipeline(
     assert retrieve_records.call_args.kwargs == {
         "selected_hb_variable": "turnover",
         "hb_comparison_periods": ("2024", "2025"),
+        "configured_hb_strata_variable": None,
     }
     assert select_active_records.call_args.args == (candidate_records,)
     assert select_active_records.call_args.kwargs == {
@@ -72,31 +76,118 @@ def test_altinn_hb_data_handler_composes_candidate_pipeline(
     assert hb_data_result.hb_warnings[0].period == "2024"
 
 
-def test_altinn_hb_data_handler_rejects_strata_before_retrieval(
+def test_altinn_hb_data_handler_retrieves_strata_from_selected_submissions(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    retrieve_records = Mock()
+    sqlite_backend = ibis.sqlite.connect(":memory:")
+    sqlite_backend.raw_sql(
+        "CREATE TABLE enheter (iso_periode TEXT, skjema TEXT, ident TEXT)"
+    )
+    sqlite_backend.raw_sql(
+        "CREATE TABLE skjemamottak (iso_periode TEXT, skjema TEXT, ident TEXT, "
+        "refnr TEXT, dato_mottatt TIMESTAMP, aktiv BOOLEAN)"
+    )
+    sqlite_backend.raw_sql(
+        "CREATE TABLE skjemadata (iso_periode TEXT, skjema TEXT, ident TEXT, "
+        "refnr TEXT, feltsti TEXT, feltnavn TEXT, verdi TEXT, dybde INTEGER, "
+        "indeks INTEGER)"
+    )
+    sqlite_backend.raw_sql(
+        "INSERT INTO enheter VALUES "
+        "('2024', 'RA-0187', 'unit-1'), "
+        "('2025', 'RA-0187', 'unit-1')"
+    )
+    sqlite_backend.raw_sql(
+        "INSERT INTO skjemamottak VALUES "
+        "('2024', 'RA-0187', 'unit-1', 'old-2024', '2024-01-01', TRUE), "
+        "('2024', 'RA-0187', 'unit-1', 'active-2024', '2024-01-02', TRUE), "
+        "('2025', 'RA-0187', 'unit-1', 'active-2025', '2025-01-02', TRUE)"
+    )
+    sqlite_backend.raw_sql(
+        "INSERT INTO skjemadata VALUES "
+        "('2024', 'RA-0187', 'unit-1', 'old-2024', '/turnover', "
+        "'turnover', '900', 1, 0), "
+        "('2024', 'RA-0187', 'unit-1', 'old-2024', '/region', "
+        "'region', 'old', 1, 0), "
+        "('2024', 'RA-0187', 'unit-1', 'active-2024', '/turnover', "
+        "'turnover', '100', 1, 0), "
+        "('2024', 'RA-0187', 'unit-1', 'active-2024', '/region', "
+        "'region', '001', 1, 0), "
+        "('2025', 'RA-0187', 'unit-1', 'active-2025', '/turnover', "
+        "'turnover', '120', 1, 0), "
+        "('2025', 'RA-0187', 'unit-1', 'active-2025', '/region', "
+        "'region', '002', 1, 0), "
+        "('2025', 'RA-0187', 'unit-1', 'active-2024', '/turnover', "
+        "'turnover', '777', 1, 0), "
+        "('2025', 'RA-0187', 'unit-1', 'active-2024', '/region', "
+        "'region', 'wrong-period', 1, 0), "
+        "('2024', 'RA-0187', 'unit-1', 'active-2024', '/other', "
+        "'other', 'not-selected', 1, 0)"
+    )
+
+    @contextmanager
+    def use_sqlite_backend():
+        yield sqlite_backend
+
     monkeypatch.setattr(
-        AltinnHBCandidateRetriever,
-        "retrieve_candidate_records",
-        retrieve_records,
+        candidate_retrieval,
+        "get_connection",
+        use_sqlite_backend,
+    )
+    hb_data_handler = AltinnHBDataHandler(
+        configured_hb_form="RA-0187",
+        hb_variable_to_feltsti={
+            "turnover": "/turnover",
+            "region": "/region",
+        },
+    )
+
+    try:
+        hb_data_result = hb_data_handler.get_hb_dataframe(
+            selected_hb_variable="turnover",
+            hb_comparison_periods=("2024", "2025"),
+            configured_hb_strata_variable="region",
+        )
+    finally:
+        sqlite_backend.disconnect()
+
+    hb_dataframe = hb_data_result.hb_dataframe
+    assert list(hb_dataframe.columns) == ["unit_id", "period", "value", "strata"]
+    assert hb_dataframe.set_index(["unit_id", "period"])["value"].to_dict() == {
+        ("unit-1", "2024"): 100.0,
+        ("unit-1", "2025"): 120.0,
+    }
+    assert hb_dataframe.set_index(["unit_id", "period"])["strata"].to_dict() == {
+        ("unit-1", "2024"): "001",
+        ("unit-1", "2025"): "002",
+    }
+    assert all(isinstance(value, str) for value in hb_dataframe["strata"])
+    assert not hb_dataframe.duplicated(["unit_id", "period"]).any()
+    assert hb_data_result.hb_warnings == ()
+
+
+def test_altinn_hb_data_handler_rejects_unmapped_strata_variable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    altinn_connection_getter = Mock()
+    monkeypatch.setattr(
+        candidate_retrieval,
+        "get_connection",
+        altinn_connection_getter,
     )
     hb_data_handler = AltinnHBDataHandler(
         configured_hb_form="RA-0187",
         hb_variable_to_feltsti={"turnover": "/turnover"},
     )
 
-    with pytest.raises(
-        NotImplementedError,
-        match="does not support a configured strata variable",
-    ):
+    with pytest.raises(ValueError, match="No Altinn feltsti is configured"):
         hb_data_handler.get_hb_dataframe(
             selected_hb_variable="turnover",
             hb_comparison_periods=("2024", "2025"),
             configured_hb_strata_variable="region",
         )
 
-    retrieve_records.assert_not_called()
+    altinn_connection_getter.assert_not_called()
 
 
 def test_altinn_hb_data_handler_propagates_missing_active_coverage(
