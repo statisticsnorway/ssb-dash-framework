@@ -131,9 +131,12 @@ Feilmeldingene er tekniske API-meldinger. `Detect`/`_check_data()` reiser
 | Tidsverdier matcher ikke et støttet format | `<time_var> should be in the format 'YYYY', 'YYYY-Qq', 'YYYY-MM','YYYY-Www','YYYY-MM-DD', 'YYYY-DDD'.` |
 
 Vaskifys datokontroll er mønsterbasert. Den sjekker ikke om en dato er en
-reell kalenderdato. Vaskifys mønstre omfatter år, måned, dag, kvartal,
-ISO-uke og ordinaldato; frameworkets felles HB-kontrakt begrenser perioder
-til år, kvartal og måned.
+reell kalenderdato. I `ssb-vaskify` 0.0.6 omfatter mønstrene år, måned, dag,
+kvartal, ISO-uke og ordinaldato. Frameworkets felles HB-kontrakt støtter seks
+kanoniske frekvenser, inkludert halvår (`YYYY-1` og `YYYY-2`), men halvår
+finnes ikke i Vaskifys mønstre. Støtte for halvår gjennom Vaskify må derfor
+avklares eller verifiseres før frameworket kan hevde ende-til-ende-støtte for
+alle seks frekvensene.
 
 Flere HB-situasjoner logger `error` eller `warning` uten nødvendigvis å kaste
 et unntak:
@@ -144,11 +147,20 @@ et unntak:
 | Filtrerte inndata har noe annet enn to unike perioder | Logger `The time variable must have exactly two unique levels.`; senere kode kan feile når periodene brukes. |
 | Feil type `y_var` for inputformen | Logger `y_var must contain a list with two column names for wide format.` eller `y_var must contain a string with column name for long format.` og fortsetter. |
 | Feil antall kolonner i bred form | Logger at nøyaktig to kolonnenavn kreves; for få kolonner kan gi indeksfeil, flere kolonner enn to kan bli ignorert. |
-| Ingen rader har positive verdier i begge perioder | Filtrerer bort rader med verdi `<= 0`; logger `No valid rows with y_var > 0 for both time periods.` når ingen rader står igjen, men fortsetter. |
-| Ugyldig `output_format` | Logger `output_format is not valid. Use 'wide', 'long' or 'infer'. Returning 'wide' format.`. Koden setter ikke variabelen til `"wide"` i denne grenen. |
+| Ingen rader har positive verdier i begge perioder | I en deterministisk kjøring med `output_scope="all"` logget Vaskify `ERROR`-meldingen `No valid rows with y_var > 0 for both time periods.`, kastet ikke et unntak og returnerte en tom DataFrame med form `(0, 8)` og kolonnene `unit_id`, `value_2023`, `value_2024`, `lower_limit`, `upper_limit`, `ratio`, `median_ratio` og `flag_hb`. Ingen Python-advarsler ble sendt. |
+| Ugyldig `output_format` | I en direkte kjøring med ellers gyldige data logget Vaskify `WARNING`-meldingen `output_format is not valid. Use 'wide', 'long' or 'infer'. Returning 'wide' format.`, kastet ikke et unntak og returnerte en DataFrame med samme brede form som gyldig output. Ingen Python-advarsler ble sendt. Dette er ikke en gyldig adapterkonfigurasjon; frameworket sender alltid `output_format="wide"`. |
 | `output_format="long"` med bred inndata | Logger at bare bredt output er tilgjengelig og fortsetter med bredt output. |
 | Ukjent `output_scope` | Valideres ikke; bare verdien `"outliers"` aktiverer filtrering. |
 | Manglende strata-kolonne | Kolonnen sjekkes ikke eksplisitt av `_check_data()` før gruppering. |
+
+En gyldig deterministisk kjøring med åtte enheter og positive verdier i begge
+perioder returnerte en DataFrame med form `(8, 8)` og kolonnene over, uten
+logger eller Python-advarsler. Den tomme no-eligible-responsen kan derfor ikke
+tolkes som «ingen uteliggere»: Vaskify logger en feil, returnerer likevel
+tomt, og skiller ikke dette fra andre ugyldige resultattilstander via
+DataFrame-formen alene. Framework-integrasjonen må håndtere den observerte
+feilmeldingen eller vise en feil; den må ikke rapportere et vellykket resultat
+uten uteliggere.
 
 ## Resultat og flagg
 

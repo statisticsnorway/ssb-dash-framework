@@ -125,6 +125,7 @@
 
 17. **Add integration and reference-result tests**
    - Test the installed Vaskify package with deterministic input data.
+   - Verify Vaskify compatibility with the framework's canonical half-year periods (`YYYY-1`, `YYYY-2`); do not silently transform them. If unsupported, document the gap and obtain an explicit handling decision before claiming end-to-end half-year support.
    - Verify the actual result shape, `ratio`, `median_ratio`, limit and flag columns, and explicit call defaults.
    - Add reference-result cases for positive, zero, negative, missing, flagged, unflagged, and not-comparable observations.
    - Verify the package's return behavior when no unit has eligible values and when it logs warnings without raising.

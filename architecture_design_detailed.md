@@ -212,9 +212,20 @@ stratification algorithm, or flag decisions. Vaskify owns those method rules.
 Because Vaskify uses only positive values in both periods, its `output_scope`
 of `"all"` may still omit input units that have no diagnostics. Preserve the
 full input and reconcile the returned diagnostics by stable identifier so
-omitted units remain distinguishable from unflagged units. Confirm the
-installed package's return behavior when no unit is eligible; do not treat an
-empty return or warning as success without that verification.
+omitted units remain distinguishable from unflagged units.
+
+With installed `ssb-vaskify` 0.0.6 and a valid `output_scope="all"` call, a
+deterministic eligible input returned an eight-row, eight-column DataFrame
+without logs or Python warnings. When no units had positive values in both
+periods, Vaskify logged `ERROR: No valid rows with y_var > 0 for both time
+periods.`, raised no exception, and returned an empty DataFrame with the same
+eight columns. The empty DataFrame alone does not distinguish this condition
+from another unsuccessful result. The integration must not report it as a
+successful run with no outliers; explicitly handle the observed error log or
+surface a failure. A separate direct call with an invalid `output_format`
+logged a warning but still returned a wide-shaped DataFrame without raising.
+The framework helper always sends the valid `"wide"` value; it must not rely
+on Vaskify's warning behavior as a fallback.
 
 ## Phase 2 — Define the shared DataFrame and source-adapter contract
 
@@ -270,6 +281,11 @@ contains exactly those two period levels, that required columns and dtypes are
 Vaskify-compatible, and that a configured stratum maps to an existing
 `strata` column. Do not filter input units by positive or missing values to
 recreate Vaskify's eligibility behavior.
+Although the framework contract accepts all six canonical frequencies,
+`ssb-vaskify` 0.0.6's period-format checker does not recognize the framework's
+HALF_YEAR strings (`YYYY-1` and `YYYY-2`). Do not silently rewrite those
+periods; end-to-end HALF_YEAR support requires an explicit compatibility
+decision.
 
 Read the selected canonical period `t` from `VariableSelector`; use the
 configured `TimeUnit` frequency to resolve the preceding period `t-1`. Pass
