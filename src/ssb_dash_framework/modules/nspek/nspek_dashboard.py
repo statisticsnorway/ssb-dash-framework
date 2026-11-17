@@ -144,7 +144,7 @@ KPI_CONFIG = {
         "grid_id": "nspek-dashboard-total-grid",
         "kilde": None,
         "glossary_text": (
-            "Totalt antall næringsspesifikasjoner i " "NSPEK for den valgte årgangen."
+            "Totalt antall næringsspesifikasjoner i NSPEK for den valgte årgangen."
         ),
         "columns": [
             {
@@ -616,7 +616,7 @@ def construct_sequence(
             "status": "warning",
             "orgnr": orgnr,
             "message": (
-                "Det oppstod en feil ved konstruksjon " "av næringsspesifikasjonen."
+                "Det oppstod en feil ved konstruksjon av næringsspesifikasjonen."
             ),
         }
 
@@ -906,7 +906,7 @@ class NspekDashboard(ModuleBase):
             content.append(
                 html.Span(
                     description,
-                    className=("ssb-text-wrapper " "nspek-dashboard-kpi-description"),
+                    className=("ssb-text-wrapper nspek-dashboard-kpi-description"),
                 )
             )
 
@@ -1274,7 +1274,7 @@ class NspekDashboard(ModuleBase):
         fig.update_traces(
             marker=dict(size=8),
             hovertemplate=(
-                "<b>%{customdata[0]}</b><br>" "%{fullData.name}: %{y}<extra></extra>"
+                "<b>%{customdata[0]}</b><br>%{fullData.name}: %{y}<extra></extra>"
             ),
         )
         fig.update_layout(
@@ -1383,9 +1383,7 @@ class NspekDashboard(ModuleBase):
         fig.update_traces(
             textposition="outside",
             showlegend=True,
-            hovertemplate=(
-                "<b>%{customdata[0]}</b><br>" "Antall: %{y:,}" "<extra></extra>"
-            ),
+            hovertemplate=("<b>%{customdata[0]}</b><br>Antall: %{y:,}<extra></extra>"),
         )
 
         # Bruk lesbare navn i legend

@@ -384,7 +384,7 @@ PETROLEUM_POSTS = {
     "6750",
     "6751",
     "6752",
-    "7501" "7502",
+    "75017502",
     "7503",
     "7650",
     "7651",
@@ -966,7 +966,7 @@ def build_varelager_column_defs(
         columns.extend(
             [
                 {
-                    "headerName": f"Gjeldende versjon",
+                    "headerName": "Gjeldende versjon",
                     "children": [
                         numeric_column(
                             "skattemessig_verdi",
@@ -1181,7 +1181,6 @@ def fetch_varelager_values(
     sekvensnummer: int,
 ) -> pd.DataFrame:
     """Henter og bygger skattemessige og regnskapsmessige varelagerverdier."""
-
     post_descriptions = post_description_data("omloepsmidler")
     post_descriptions["felt"] = post_descriptions["felt"].astype(str)
 
@@ -1220,9 +1219,7 @@ def fetch_varelager_values(
     ].copy()
 
     belopsdata["verditype"] = (
-        belopsdata["rad_sti"]
-        .map(verdityper)
-        .fillna("skattemessigVerdi")
+        belopsdata["rad_sti"].map(verdityper).fillna("skattemessigVerdi")
     )
 
     belopsdata["verditype"] = belopsdata["verditype"].replace(
@@ -1268,7 +1265,6 @@ def build_varelager_dataframe(
     sekvens_compare: int | None = None,
 ) -> pd.DataFrame:
     """Henter og bygger dataframe for varelager/omløpsmidler."""
-
     post_descriptions = post_description_data("omloepsmidler").copy()
     post_descriptions["felt"] = post_descriptions["felt"].astype(str)
 
@@ -1312,17 +1308,17 @@ def build_varelager_dataframe(
         verdi = df["skattemessig_verdi"]
         verdi_compare = df["skattemessig_verdi_compare"]
 
-        df["diff_skattemessig"] = (
-            verdi.fillna(0) - verdi_compare.fillna(0)
-        ).where(~(verdi.isna() & verdi_compare.isna()))
+        df["diff_skattemessig"] = (verdi.fillna(0) - verdi_compare.fillna(0)).where(
+            ~(verdi.isna() & verdi_compare.isna())
+        )
 
         # Differanse regnskapsmessig verdi
         verdi = df["regnskapsmessig_verdi"]
         verdi_compare = df["regnskapsmessig_verdi_compare"]
 
-        df["diff_regnskapsmessig"] = (
-            verdi.fillna(0) - verdi_compare.fillna(0)
-        ).where(~(verdi.isna() & verdi_compare.isna()))
+        df["diff_regnskapsmessig"] = (verdi.fillna(0) - verdi_compare.fillna(0)).where(
+            ~(verdi.isna() & verdi_compare.isna())
+        )
 
     df = df.rename(columns={"tekst": "beskrivelse"})
 
@@ -1330,7 +1326,12 @@ def build_varelager_dataframe(
 
 
 def fetch_data_by_orgnr(
-    conn, regnskapstype: str, ident: str, aar: str, sekvensnummer: int, columns: list[str] | None = None,
+    conn,
+    regnskapstype: str,
+    ident: str,
+    aar: str,
+    sekvensnummer: int,
+    columns: list[str] | None = None,
 ) -> pd.DataFrame:
     """Returns a pandas dataframe with all nspek values found in the specified regnskapstype for a unit/orgnr.
 
@@ -3166,7 +3167,6 @@ class Naeringsspesifikasjon(ModuleBase):
 
             return row_data, column_defs
 
-
         @callback(
             Output("nspek-varelager-grid", "rowData"),
             Output("nspek-varelager-grid", "columnDefs"),
@@ -3224,7 +3224,6 @@ class Naeringsspesifikasjon(ModuleBase):
             )
 
             return row_data, column_defs
-
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
@@ -4637,6 +4636,7 @@ class Naeringsspesifikasjon(ModuleBase):
                 )
 
         if "tema" in VariableSelector._variableselectoroptions:
+
             @callback(
                 Output("nspek-tabs", "value"),
                 *self.variableselector.get_input(["tema"]),
