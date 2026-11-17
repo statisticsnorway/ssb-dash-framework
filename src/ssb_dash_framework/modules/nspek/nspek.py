@@ -200,7 +200,25 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
             "is_ui_sum": True,
         }
 
-        årsresultat = (
+        aarsresultat = (
+            ui_sum_rows["UI_SUM_3000_3999"]["verdi"]
+            - ui_sum_rows["UI_SUM_4000_7999"]["verdi"]
+            + ui_sum_rows["UI_SUM_8000_8099"]["verdi"]
+            - ui_sum_rows["UI_SUM_8100_8299"]["verdi"]
+            - ui_sum_rows["UI_SUM_8300_8899"]["verdi"]
+        )
+
+        ui_sum_rows["UI_SUM_3000_8899"] = {
+            "beskrivelse": "SUM forslag for årsresultat",
+            "post": "UI_SUM_3000_8999",
+            "verdi": aarsresultat,
+            "verdi_compare": None,
+            "diff": None,
+            "sekvensnummer": None,
+            "is_ui_sum": True,
+        }
+
+        totalresultat = (
             ui_sum_rows["UI_SUM_3000_3999"]["verdi"]
             - ui_sum_rows["UI_SUM_4000_7999"]["verdi"]
             + ui_sum_rows["UI_SUM_8000_8099"]["verdi"]
@@ -210,9 +228,9 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
         )
 
         ui_sum_rows["UI_SUM_3000_8999"] = {
-            "beskrivelse": "SUM forslag for årsresultat",
+            "beskrivelse": "SUM forslag for totalresultat",
             "post": "UI_SUM_3000_8999",
-            "verdi": årsresultat,
+            "verdi": totalresultat,
             "verdi_compare": None,
             "diff": None,
             "sekvensnummer": None,
@@ -272,8 +290,9 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
         "UI_SUM_8300_8899": "sumSkattekostnad",
         "": "sumSkattekostnad",
         "UI_SUM_8000_8899": "sumSkattekostnad",
-        "UI_SUM_8900_8999": "8909.2",
-        "UI_SUM_3000_8999": "aarsresultat",
+        "UI_SUM_3000_8899": "aarsresultat",
+        "UI_SUM_8900_8999": "sumResultatkomponentForIFRSForetak",
+        "UI_SUM_3000_8999": "totalresultat",
     }
 
     new_rows = []
@@ -759,10 +778,13 @@ def build_column_defs(
         "Finansposter og skattekostnad",
         "SUM Finansposter og skattekostnad",
         "SUM forslag for finansposter og skattekostnad",
-        "Resultatkomponent for IFRS foretak",
-        "SUM forslag for resultatkomponent for IFRS foretak",
         "SUM Årsresultat",
         "SUM forslag for årsresultat",
+        "Resultatkomponent for IFRS foretak",
+        "SUM Resultatkomponent for IFRS foretak",
+        "SUM forslag for resultatkomponent for IFRS foretak",
+        "SUM Totalresultat",
+        "SUM forslag for totalresultat",
     ]
 
     subheader_rows: list[str] = [
@@ -3638,7 +3660,7 @@ class Naeringsspesifikasjon(ModuleBase):
             Input("nspek-tabs", "value"),
         )
         def toggle_editeringslogg_button(active_tab):
-            return active_tab not in ["resultat", "balanse"]
+            return active_tab not in ["Resultat", "Balanse"]
 
         @callback(
             Output("nspek-editeringslogg-grid", "rowData"),
@@ -3652,11 +3674,11 @@ class Naeringsspesifikasjon(ModuleBase):
             if not sekvensnummer:
                 raise PreventUpdate
 
-            if active_tab == "balanse":
+            if active_tab == "Balanse":
                 table = "balanseregnskap.tema_balanse_hist"
                 regnskapstype = "balanseregnskap"
                 title = "Editeringslogg - Balanseregnskap"
-            elif active_tab == "resultat":
+            elif active_tab == "Resultat":
                 table = "resultatregnskap.tema_resultat_hist"
                 regnskapstype = "resultatregnskap"
                 title = "Editeringslogg - Resultatregnskap"
