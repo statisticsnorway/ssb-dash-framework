@@ -32,7 +32,7 @@ def run_hb_vaskify(
     )
     _validate_hb_comparison_periods(hb_input_dataframe, hb_comparison_periods)
     detector = Detect(hb_input_dataframe, id_nr="unit_id")
-    return detector.hb(
+    hb_result = detector.hb(
         y_var="value",
         time_var="period",
         time_periods=list(hb_comparison_periods),
@@ -45,6 +45,43 @@ def run_hb_vaskify(
         output_format="wide",
         output_scope="all",
     )
+    _validate_hb_vaskify_result(
+        hb_result,
+        hb_comparison_periods=hb_comparison_periods,
+        require_strata=configured_hb_strata_variable is not None,
+    )
+    return hb_result
+
+
+def _validate_hb_vaskify_result(
+    hb_result: object,
+    *,
+    hb_comparison_periods: tuple[str, str],
+    require_strata: bool,
+) -> None:
+    if not isinstance(hb_result, pd.DataFrame):
+        raise TypeError("Vaskify HB result must be a pandas DataFrame.")
+
+    required_columns = {
+        "unit_id",
+        f"value_{hb_comparison_periods[0]}",
+        f"value_{hb_comparison_periods[1]}",
+        "lower_limit",
+        "upper_limit",
+        "ratio",
+        "median_ratio",
+        "flag_hb",
+    }
+    if require_strata:
+        required_columns.add("strata")
+
+    missing_columns = required_columns - set(hb_result.columns)
+    if missing_columns:
+        missing_column_names = ", ".join(sorted(missing_columns))
+        raise ValueError(
+            "Vaskify HB result is missing required columns: "
+            f"{missing_column_names}."
+        )
 
 
 def _validate_hb_vaskify_input(

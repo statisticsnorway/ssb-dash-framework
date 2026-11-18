@@ -17,6 +17,28 @@ def valid_hb_input_dataframe() -> pd.DataFrame:
     )
 
 
+def valid_vaskify_result_dataframe(
+    comparison_periods: tuple[str, str] = ("2023", "2024"),
+    *,
+    include_strata: bool = False,
+) -> pd.DataFrame:
+    result = pd.DataFrame(
+        {
+            "unit_id": ["unit-1"],
+            f"value_{comparison_periods[0]}": [10.0],
+            f"value_{comparison_periods[1]}": [12.0],
+            "lower_limit": [0.8],
+            "upper_limit": [1.2],
+            "ratio": [1.2],
+            "median_ratio": [1.0],
+            "flag_hb": [0],
+        }
+    )
+    if include_strata:
+        result["strata"] = ["group-1"]
+    return result
+
+
 def _run_direct_vaskify_hb(
     hb_input_dataframe: pd.DataFrame,
     hb_comparison_periods: tuple[str, str],
@@ -54,7 +76,9 @@ def test_run_hb_vaskify_maps_arguments_without_filtering_input(
             "strata": [1, 1, 2, 2],
         }
     )
-    expected_result = pd.DataFrame({"unit_id": ["unit-1"]})
+    expected_result = valid_vaskify_result_dataframe(
+        include_strata=configured_hb_strata_variable is not None,
+    )
     detector = Mock()
     detector.hb.return_value = expected_result
     detect = Mock(return_value=detector)
@@ -83,6 +107,96 @@ def test_run_hb_vaskify_maps_arguments_without_filtering_input(
     assert result is expected_result
     assert hb_input_dataframe["value"].tolist()[:3] == [0.0, -5.0, 2.0]
     assert pd.isna(hb_input_dataframe.loc[3, "value"])
+
+
+@pytest.mark.parametrize(
+    "invalid_result",
+    [None, [], {"unit_id": ["unit-1"]}],
+)
+def test_run_hb_vaskify_rejects_non_dataframe_results(
+    monkeypatch: pytest.MonkeyPatch,
+    invalid_result: object,
+) -> None:
+    detector = Mock()
+    detector.hb.return_value = invalid_result
+    monkeypatch.setattr(hb_vaskify, "Detect", Mock(return_value=detector))
+
+    with pytest.raises(TypeError, match="result must be a pandas DataFrame"):
+        hb_vaskify.run_hb_vaskify(
+            valid_hb_input_dataframe(),
+            hb_comparison_periods=("2023", "2024"),
+        )
+
+
+@pytest.mark.parametrize(
+    "missing_column",
+    [
+        "unit_id",
+        "value_2023",
+        "value_2024",
+        "lower_limit",
+        "upper_limit",
+        "ratio",
+        "median_ratio",
+        "flag_hb",
+    ],
+)
+def test_run_hb_vaskify_rejects_results_missing_required_columns(
+    monkeypatch: pytest.MonkeyPatch,
+    missing_column: str,
+) -> None:
+    detector = Mock()
+    detector.hb.return_value = valid_vaskify_result_dataframe().drop(
+        columns=[missing_column]
+    )
+    monkeypatch.setattr(hb_vaskify, "Detect", Mock(return_value=detector))
+
+    with pytest.raises(ValueError, match=missing_column):
+        hb_vaskify.run_hb_vaskify(
+            valid_hb_input_dataframe(),
+            hb_comparison_periods=("2023", "2024"),
+        )
+
+
+def test_run_hb_vaskify_requires_result_strata_when_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    detector = Mock()
+    detector.hb.return_value = valid_vaskify_result_dataframe()
+    monkeypatch.setattr(hb_vaskify, "Detect", Mock(return_value=detector))
+
+    with pytest.raises(ValueError, match="strata"):
+        hb_vaskify.run_hb_vaskify(
+            valid_hb_input_dataframe(),
+            hb_comparison_periods=("2023", "2024"),
+            configured_hb_strata_variable="industry",
+        )
+
+
+def test_run_hb_vaskify_allows_extra_columns_and_empty_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected_result = valid_vaskify_result_dataframe()
+    expected_result["context"] = ["preserved"]
+    detector = Mock()
+    detector.hb.return_value = expected_result
+    monkeypatch.setattr(hb_vaskify, "Detect", Mock(return_value=detector))
+
+    result = hb_vaskify.run_hb_vaskify(
+        valid_hb_input_dataframe(),
+        hb_comparison_periods=("2023", "2024"),
+    )
+
+    assert result is expected_result
+
+    empty_result = valid_vaskify_result_dataframe().iloc[0:0]
+    detector.hb.return_value = empty_result
+    result = hb_vaskify.run_hb_vaskify(
+        valid_hb_input_dataframe(),
+        hb_comparison_periods=("2023", "2024"),
+    )
+
+    assert result is empty_result
 
 
 @pytest.mark.parametrize(
@@ -240,6 +354,7 @@ def test_run_hb_vaskify_allows_other_canonical_frequencies(
         }
     )
     detector = Mock()
+    detector.hb.return_value = valid_vaskify_result_dataframe(comparison_periods)
     detect = Mock(return_value=detector)
     monkeypatch.setattr(hb_vaskify, "Detect", detect)
 
