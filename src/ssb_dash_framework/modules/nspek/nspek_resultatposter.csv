@@ -166,6 +166,8 @@ sumFinanskostnad,"SUM Finanskostnader",143
 8324,"For mye avsatt skatt fra forrige år",149
 sumSkattekostnad,"SUM Skattekostnader",150
 "",,
+aarsresultat,"SUM Årsresultat",163
+"",,
 "","Resultatkomponent for IFRS foretak",151
 8901.1,"Endring i verdireguleringsreserve",152
 8901.2,"Aktuariell gevinst og tap på ytelsesplaner",153
@@ -178,5 +180,6 @@ sumSkattekostnad,"SUM Skattekostnader",150
 8902.4,"Netto endring i kostnader ved sikring",160
 8909.1,"Skatt relatert til poster som ikke skal reklassifiseres",161
 8909.2,"Skatt relatert til poster som kan bli reklassifisert",162
+"sumResultatkomponentForIFRSForetak","SUM Resultatkomponent for IFRS foretak",150
 "",,
-aarsresultat,"SUM Årsresultat",163
+totalresultat,"SUM Totalresultat",163

@@ -200,7 +200,25 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
             "is_ui_sum": True,
         }
 
-        årsresultat = (
+        aarsresultat = (
+            ui_sum_rows["UI_SUM_3000_3999"]["verdi"]
+            - ui_sum_rows["UI_SUM_4000_7999"]["verdi"]
+            + ui_sum_rows["UI_SUM_8000_8099"]["verdi"]
+            - ui_sum_rows["UI_SUM_8100_8299"]["verdi"]
+            - ui_sum_rows["UI_SUM_8300_8899"]["verdi"]
+        )
+
+        ui_sum_rows["UI_SUM_3000_8899"] = {
+            "beskrivelse": "SUM forslag for årsresultat",
+            "post": "UI_SUM_3000_8999",
+            "verdi": aarsresultat,
+            "verdi_compare": None,
+            "diff": None,
+            "sekvensnummer": None,
+            "is_ui_sum": True,
+        }
+
+        totalresultat = (
             ui_sum_rows["UI_SUM_3000_3999"]["verdi"]
             - ui_sum_rows["UI_SUM_4000_7999"]["verdi"]
             + ui_sum_rows["UI_SUM_8000_8099"]["verdi"]
@@ -210,9 +228,9 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
         )
 
         ui_sum_rows["UI_SUM_3000_8999"] = {
-            "beskrivelse": "SUM forslag for årsresultat",
+            "beskrivelse": "SUM forslag for totalresultat",
             "post": "UI_SUM_3000_8999",
-            "verdi": årsresultat,
+            "verdi": totalresultat,
             "verdi_compare": None,
             "diff": None,
             "sekvensnummer": None,
@@ -260,20 +278,21 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
         "UI_SUM_2100_2299": "sumLangsiktigGjeld",
         "UI_SUM_2300_2999": "sumKortsiktigGjeld",
         "UI_SUM_2000_2999": "sumGjeldOgEgenkapital",
-        "UI_SUM_3000_3399": "3300",
-        "UI_SUM_3400_3999": "3911",
-        "UI_SUM_4000_4999": "4995",
-        "UI_SUM_5000_5999": "5950",
-        "UI_SUM_6000_7999": "7913",
+        #"UI_SUM_3000_3399": "3300",
+        #"UI_SUM_3400_3999": "3911",
+        #"UI_SUM_4000_4999": "4995",
+        #"UI_SUM_5000_5999": "5950",
+        #"UI_SUM_6000_7999": "7913",
         "UI_SUM_3000_3999": "sumDriftsinntekt",
         "UI_SUM_4000_7999": "sumDriftskostnad",
         "UI_SUM_8000_8099": "sumFinansinntekt",
         "UI_SUM_8100_8299": "sumFinanskostnad",
         "UI_SUM_8300_8899": "sumSkattekostnad",
-        "": "sumSkattekostnad",
-        "UI_SUM_8000_8899": "sumSkattekostnad",
-        "UI_SUM_8900_8999": "8909.2",
-        "UI_SUM_3000_8999": "aarsresultat",
+        #"": "sumSkattekostnad",
+        #"UI_SUM_8000_8899": "sumSkattekostnad",
+        "UI_SUM_3000_8899": "aarsresultat",
+        "UI_SUM_8900_8999": "sumResultatkomponentForIFRSForetak",
+        "UI_SUM_3000_8999": "totalresultat",
     }
 
     new_rows = []
@@ -365,7 +384,7 @@ PETROLEUM_POSTS = {
     "6750",
     "6751",
     "6752",
-    "7501" "7502",
+    "75017502",
     "7503",
     "7650",
     "7651",
@@ -759,10 +778,13 @@ def build_column_defs(
         "Finansposter og skattekostnad",
         "SUM Finansposter og skattekostnad",
         "SUM forslag for finansposter og skattekostnad",
-        "Resultatkomponent for IFRS foretak",
-        "SUM forslag for resultatkomponent for IFRS foretak",
         "SUM Årsresultat",
         "SUM forslag for årsresultat",
+        "Resultatkomponent for IFRS foretak",
+        "SUM Resultatkomponent for IFRS foretak",
+        "SUM forslag for resultatkomponent for IFRS foretak",
+        "SUM Totalresultat",
+        "SUM forslag for totalresultat",
     ]
 
     subheader_rows: list[str] = [
@@ -944,7 +966,7 @@ def build_varelager_column_defs(
         columns.extend(
             [
                 {
-                    "headerName": f"Gjeldende versjon",
+                    "headerName": "Gjeldende versjon",
                     "children": [
                         numeric_column(
                             "skattemessig_verdi",
@@ -1159,7 +1181,6 @@ def fetch_varelager_values(
     sekvensnummer: int,
 ) -> pd.DataFrame:
     """Henter og bygger skattemessige og regnskapsmessige varelagerverdier."""
-
     post_descriptions = post_description_data("omloepsmidler")
     post_descriptions["felt"] = post_descriptions["felt"].astype(str)
 
@@ -1198,9 +1219,7 @@ def fetch_varelager_values(
     ].copy()
 
     belopsdata["verditype"] = (
-        belopsdata["rad_sti"]
-        .map(verdityper)
-        .fillna("skattemessigVerdi")
+        belopsdata["rad_sti"].map(verdityper).fillna("skattemessigVerdi")
     )
 
     belopsdata["verditype"] = belopsdata["verditype"].replace(
@@ -1246,7 +1265,6 @@ def build_varelager_dataframe(
     sekvens_compare: int | None = None,
 ) -> pd.DataFrame:
     """Henter og bygger dataframe for varelager/omløpsmidler."""
-
     post_descriptions = post_description_data("omloepsmidler").copy()
     post_descriptions["felt"] = post_descriptions["felt"].astype(str)
 
@@ -1290,17 +1308,17 @@ def build_varelager_dataframe(
         verdi = df["skattemessig_verdi"]
         verdi_compare = df["skattemessig_verdi_compare"]
 
-        df["diff_skattemessig"] = (
-            verdi.fillna(0) - verdi_compare.fillna(0)
-        ).where(~(verdi.isna() & verdi_compare.isna()))
+        df["diff_skattemessig"] = (verdi.fillna(0) - verdi_compare.fillna(0)).where(
+            ~(verdi.isna() & verdi_compare.isna())
+        )
 
         # Differanse regnskapsmessig verdi
         verdi = df["regnskapsmessig_verdi"]
         verdi_compare = df["regnskapsmessig_verdi_compare"]
 
-        df["diff_regnskapsmessig"] = (
-            verdi.fillna(0) - verdi_compare.fillna(0)
-        ).where(~(verdi.isna() & verdi_compare.isna()))
+        df["diff_regnskapsmessig"] = (verdi.fillna(0) - verdi_compare.fillna(0)).where(
+            ~(verdi.isna() & verdi_compare.isna())
+        )
 
     df = df.rename(columns={"tekst": "beskrivelse"})
 
@@ -1308,7 +1326,12 @@ def build_varelager_dataframe(
 
 
 def fetch_data_by_orgnr(
-    conn, regnskapstype: str, ident: str, aar: str, sekvensnummer: int, columns: list[str] | None = None,
+    conn,
+    regnskapstype: str,
+    ident: str,
+    aar: str,
+    sekvensnummer: int,
+    columns: list[str] | None = None,
 ) -> pd.DataFrame:
     """Returns a pandas dataframe with all nspek values found in the specified regnskapstype for a unit/orgnr.
 
@@ -3144,7 +3167,6 @@ class Naeringsspesifikasjon(ModuleBase):
 
             return row_data, column_defs
 
-
         @callback(
             Output("nspek-varelager-grid", "rowData"),
             Output("nspek-varelager-grid", "columnDefs"),
@@ -3202,7 +3224,6 @@ class Naeringsspesifikasjon(ModuleBase):
             )
 
             return row_data, column_defs
-
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
@@ -3638,7 +3659,7 @@ class Naeringsspesifikasjon(ModuleBase):
             Input("nspek-tabs", "value"),
         )
         def toggle_editeringslogg_button(active_tab):
-            return active_tab not in ["resultat", "balanse"]
+            return active_tab not in ["Resultat", "Balanse"]
 
         @callback(
             Output("nspek-editeringslogg-grid", "rowData"),
@@ -3652,11 +3673,11 @@ class Naeringsspesifikasjon(ModuleBase):
             if not sekvensnummer:
                 raise PreventUpdate
 
-            if active_tab == "balanse":
+            if active_tab == "Balanse":
                 table = "balanseregnskap.tema_balanse_hist"
                 regnskapstype = "balanseregnskap"
                 title = "Editeringslogg - Balanseregnskap"
-            elif active_tab == "resultat":
+            elif active_tab == "Resultat":
                 table = "resultatregnskap.tema_resultat_hist"
                 regnskapstype = "resultatregnskap"
                 title = "Editeringslogg - Resultatregnskap"
@@ -4615,6 +4636,7 @@ class Naeringsspesifikasjon(ModuleBase):
                 )
 
         if "tema" in VariableSelector._variableselectoroptions:
+
             @callback(
                 Output("nspek-tabs", "value"),
                 *self.variableselector.get_input(["tema"]),
