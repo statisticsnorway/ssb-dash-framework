@@ -1,3 +1,4 @@
+import dash_bootstrap_components as dbc
 from dash import html
 from dash.development.base_component import Component
 
@@ -42,17 +43,39 @@ def test_hb_method_initializes_modulebase_with_injected_handler() -> None:
     assert hb_method.module_id.startswith("HBMethod-")
 
 
-def test_hb_layout_uses_module_scoped_ids_for_run_state_and_result() -> None:
-    hb_method = HBMethod(hb_data_handler=StubHBDataHandler())
-    component_ids = _component_ids(hb_method.module_layout)
+def test_hb_method_instances_have_unique_module_scoped_component_ids() -> None:
+    first_hb_method = HBMethod(hb_data_handler=StubHBDataHandler())
+    second_hb_method = HBMethod(hb_data_handler=StubHBDataHandler())
 
-    assert {
-        f"{hb_method.module_id}-hb_controls",
-        f"{hb_method.module_id}-hb_run_button",
-        f"{hb_method.module_id}-hb_result_loading",
-        f"{hb_method.module_id}-hb_error_message",
-        f"{hb_method.module_id}-hb_empty_state",
-        f"{hb_method.module_id}-hb_result_store",
-        f"{hb_method.module_id}-hb_result_graph",
-    }.issubset(component_ids)
-    assert all(component_id.startswith(hb_method.module_id) for component_id in component_ids)
+    first_component_ids = _component_ids(first_hb_method.module_layout)
+    second_component_ids = _component_ids(second_hb_method.module_layout)
+
+    assert first_hb_method.module_id != second_hb_method.module_id
+    assert first_component_ids.isdisjoint(second_component_ids)
+    for hb_method, component_ids in (
+        (first_hb_method, first_component_ids),
+        (second_hb_method, second_component_ids),
+    ):
+        assert {
+            f"{hb_method.module_id}-hb_controls",
+            f"{hb_method.module_id}-hb_run_button",
+            f"{hb_method.module_id}-hb_result_loading",
+            f"{hb_method.module_id}-hb_error_message",
+            f"{hb_method.module_id}-hb_empty_state",
+            f"{hb_method.module_id}-hb_result_store",
+            f"{hb_method.module_id}-hb_result_graph",
+        }.issubset(component_ids)
+        assert all(component_id.startswith(hb_method.module_id) for component_id in component_ids)
+
+
+def test_hb_method_can_be_placed_as_tab_or_window() -> None:
+    tab_hb_method = HBMethod(hb_data_handler=StubHBDataHandler(), as_type="Tab")
+    window_hb_method = HBMethod(hb_data_handler=StubHBDataHandler(), as_type="Window")
+
+    assert tab_hb_method.implemented_as == "Tab"
+    assert isinstance(tab_hb_method._internal_layout(), dbc.Tab)
+
+    assert window_hb_method.implemented_as == "Window"
+    window_layout = window_hb_method._internal_layout()
+    assert isinstance(window_layout, html.Div)
+    assert any(isinstance(child, dbc.Modal) for child in window_layout.children)

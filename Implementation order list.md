@@ -86,7 +86,6 @@
    - Use verified Vaskify return behavior to distinguish no eligible population from an error; do not treat an unverified empty result as “no outliers.”
    - Add unit tests for valid, incomplete, missing, not-comparable, and invalid results.
 
-------- Bookmark start ------------
 12. **Create the ModuleBase shell**
    - Add `HBMethod` under `src/ssb_dash_framework/modules/`.
    - Set `label`, `icon`, and the handler before `ModuleBase.__init__()`.
@@ -94,8 +93,8 @@
    - Implement `module_callbacks()` using `self.module_id` for every component ID.
    - Use descriptive IDs such as `hb_run_button`, `hb_result_graph`, `hb_error_message`, and `hb_result_store`.
    - Test construction, lifecycle, unique IDs, and tab/window placement.
-------- Bookmark end ------------
 
+------- Bookmark start ------------
 13. **Connect selector inputs to the run action**
    - Read the selected HB variable and canonical period from `VariableSelector` at callback time.
    - Validate required selector configuration during construction.
@@ -103,6 +102,7 @@
    - Call `AltinnHBDataHandler.get_hb_dataframe(...)` with the explicit named HB arguments.
    - Do not store per-user selector values on the module instance.
    - Test handler arguments and missing selector configuration.
+------- Bookmark end ------------
 
 14. **Execute and display an HB run**
    - On the explicit run action, call the handler, `run_hb_vaskify`, and `normalize_hb_result` in that order.
