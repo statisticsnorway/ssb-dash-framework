@@ -15,9 +15,12 @@ Ensure that any deviations from the architecture are documented and approved thr
 - When tasks use all the discussion space, mark it as research and add a new row for continued discussion.
 - When cell has the letter `a` it means approved by the user.
 
-## Current tasks: 12. Create the ModuleBase shell
+## Current tasks: 13. Connect selector inputs to the run action
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
+| Connect selector inputs to the run action | Read and validate selector context, resolve comparison periods, and request HB data for a run. | Require an explicit `hb_variable_selector` title and validate it during construction.<br>Use `VariableSelector.get_configured_time_unit()` to use the shared period configuration without duplicating it.<br>Read the selected HB variable and canonical period from `VariableSelector` at callback time.<br>Resolve comparison periods with `resolve_hb_comparison_periods`.<br>Call `AltinnHBDataHandler.get_hb_dataframe(...)` with the explicit named HB arguments.<br>Do not store per-user selector values on the module instance.<br>Test handler arguments and missing selector configuration. | a - add public variable accessor, require hb_variable selector. | User clarified this implementation should remain module-local for review. It now receives `configured_hb_time_unit` explicitly; a shared `VariableSelector` accessor is tracked separately in `Issues.md`. |  |
+
+
 
 # History
 ## 1. Define the HB public contract

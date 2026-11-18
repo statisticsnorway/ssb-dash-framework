@@ -33,6 +33,11 @@ flowchart LR
 
 1. `HBMethod` reads the current selector values when the user presses the
    explicit run button.
+   Construction requires an `hb_variable_selector` title, the configured
+   `TimeUnit`, and matching period-selector configuration. It validates the
+   selector options through `VariableSelector` helpers. Selected per-run values
+   are callback arguments, not instance state; the configured `TimeUnit` must
+   be passed to both `VariableSelectorConfig` and `HBMethod`.
 2. `resolve_hb_comparison_periods` receives the selected canonical period
    `t` and the configured `TimeUnit`. The initial implementation derives
    `t-1`. This is a product-design assumption to confirm.

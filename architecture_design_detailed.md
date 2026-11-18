@@ -381,8 +381,13 @@ normalized result.
    class-level counter and fixed IDs.
 5. Keep the visual content presentation-neutral so `main_layout` can place the
    module as either a tab or a window.
-6. Use `VariableSelector` helper methods for configured shared values. Validate
-   required selector configuration early and provide actionable errors.
+6. Require `hb_variable_selector` and `configured_hb_time_unit` in
+   `HBMethod` construction. Validate the selector options with
+   `VariableSelector` helpers and ensure the `TimeUnit` name matches the
+   configured period selector. Pass the same `TimeUnit` used by
+   `VariableSelectorConfig`; selected per-run values remain callback arguments,
+   not module-instance state. A shared public `VariableSelector` accessor can
+   be considered separately.
 7. On run, gather current selector/local inputs, ask the injected handler for
    the common DataFrame, validate the structural input and Vaskify call
    preconditions, call `Detect.hb()` through the small Vaskify helper, then
