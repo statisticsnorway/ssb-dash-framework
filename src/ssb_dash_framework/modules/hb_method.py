@@ -1,5 +1,7 @@
 """HB methodology application module."""
 
+import dash_bootstrap_components as dbc
+from dash import dcc
 from dash import html
 from dash_iconify import DashIconify
 
@@ -25,8 +27,40 @@ class HBMethod(ModuleBase):
         super().__init__(as_type=as_type)
 
     def layout(self) -> html.Div:
-        """Return the initial empty layout; controls are added in the next task."""
-        return html.Div()
+        """Create the HB controls and placeholders for a run's state and result."""
+        return html.Div(
+            children=[
+                dcc.Store(id=f"{self.module_id}-hb_result_store", data=None),
+                html.Div(
+                    dbc.Button(
+                        "Kjør HB-metoden",
+                        id=f"{self.module_id}-hb_run_button",
+                        n_clicks=0,
+                        className="ssb-btn primary-btn",
+                    ),
+                    id=f"{self.module_id}-hb_controls",
+                ),
+                dbc.Alert(
+                    id=f"{self.module_id}-hb_error_message",
+                    color="danger",
+                    is_open=False,
+                ),
+                html.Div(
+                    "Kjør HB-metoden for å vise resultater.",
+                    id=f"{self.module_id}-hb_empty_state",
+                    role="status",
+                ),
+                dcc.Loading(
+                    id=f"{self.module_id}-hb_result_loading",
+                    type="default",
+                    children=dcc.Graph(
+                        id=f"{self.module_id}-hb_result_graph",
+                        figure={},
+                        style={"display": "none"},
+                    ),
+                ),
+            ]
+        )
 
     def module_callbacks(self) -> None:
         """Register no callbacks until the module interaction tasks are implemented."""

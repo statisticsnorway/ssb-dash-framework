@@ -1,4 +1,5 @@
 from dash import html
+from dash.development.base_component import Component
 
 from ssb_dash_framework.modules.hb.data_handler import HBDataHandlerMeta
 from ssb_dash_framework.modules.hb.data_handler import HBDataResult
@@ -16,6 +17,19 @@ class StubHBDataHandler(HBDataHandlerMeta):
         raise AssertionError("The module shell must not call its handler.")
 
 
+def _component_ids(component: Component) -> set[str]:
+    component_id = getattr(component, "id", None)
+    component_ids = {component_id} if isinstance(component_id, str) else set()
+    children = getattr(component, "children", None)
+    if isinstance(children, (list, tuple)):
+        for child in children:
+            if isinstance(child, Component):
+                component_ids.update(_component_ids(child))
+    elif isinstance(children, Component):
+        component_ids.update(_component_ids(children))
+    return component_ids
+
+
 def test_hb_method_initializes_modulebase_with_injected_handler() -> None:
     hb_data_handler = StubHBDataHandler()
 
@@ -26,3 +40,19 @@ def test_hb_method_initializes_modulebase_with_injected_handler() -> None:
     assert hb_method.hb_data_handler is hb_data_handler
     assert isinstance(hb_method.module_layout, html.Div)
     assert hb_method.module_id.startswith("HBMethod-")
+
+
+def test_hb_layout_uses_module_scoped_ids_for_run_state_and_result() -> None:
+    hb_method = HBMethod(hb_data_handler=StubHBDataHandler())
+    component_ids = _component_ids(hb_method.module_layout)
+
+    assert {
+        f"{hb_method.module_id}-hb_controls",
+        f"{hb_method.module_id}-hb_run_button",
+        f"{hb_method.module_id}-hb_result_loading",
+        f"{hb_method.module_id}-hb_error_message",
+        f"{hb_method.module_id}-hb_empty_state",
+        f"{hb_method.module_id}-hb_result_store",
+        f"{hb_method.module_id}-hb_result_graph",
+    }.issubset(component_ids)
+    assert all(component_id.startswith(hb_method.module_id) for component_id in component_ids)
