@@ -34,6 +34,7 @@ from .modules import DataViewCustom
 from .modules import EditingTable
 from .modules import EditorSettings
 from .modules import FigureDisplay
+from .modules import HBMethod
 from .modules import MapDisplay
 from .modules import MultiModule
 from .modules import Naeringsspesifikasjon
@@ -104,6 +105,7 @@ __all__ = [
     "EditingTable",
     "EditorSettings",
     "FigureDisplay",
+    "HBMethod",
     "MapDisplay",
     "ModuleBase",
     "ModuleConfig",

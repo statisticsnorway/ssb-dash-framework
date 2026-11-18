@@ -131,21 +131,21 @@
    - Assess error reporting, pandas/DataFrame integration, cross-field validation, performance, and the risk of duplicating checks.
    - Record the recommendation and migration scope for approval. This step evaluates the approach; do not migrate validation without approval.
 
-------- Bookmark start ------------
 18. **Export and register the module**
    - Export `HBMethod` through `ssb_dash_framework.modules` and the package top-level API where required.
    - Register the module with the existing YAML configuration mechanism.
    - Document constructor and handler configuration keys.
    - Search for imports of the experimental prototype before removing or redirecting it.
    - Test normal imports and YAML registration.
-------- Bookmark end ------------
 
+------- Bookmark start ------------
 19. **Add integration and reference-result tests**
    - Test the installed Vaskify package with deterministic input data.
    - Verify the actual result shape, `ratio`, `median_ratio`, limit and flag columns, and explicit call defaults.
    - Add reference-result cases for positive, zero, negative, missing, flagged, unflagged, and not-comparable observations.
    - Verify the package's return behavior when no unit has eligible values and when it logs warnings without raising.
    - Keep mathematical algorithm tests in Vaskify, not in framework helpers.
+------- Bookmark end ------------
 
 20. **Add demo and browser coverage**
    - Add or update a demo that imports and configures `HBMethod`.

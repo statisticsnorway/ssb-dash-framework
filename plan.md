@@ -18,14 +18,15 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Do not combine groups of multiple tasks into one row; each task should have its own clearly defined row in the implementation plan.
 
 # Current tasks:
-## 18. Export and register the module
+## 19. Add integration and reference-result tests
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
-| Export `HBMethod` | Export `HBMethod` through `ssb_dash_framework.modules` and the package top-level API where required. |  |  |  |  |
-| Register the module | Register the module with the existing YAML configuration mechanism. |  |  |  |  |
-| Document configuration keys | Document constructor and handler configuration keys. |  |  |  |  |
-| Search for prototype imports | Search for imports of the experimental prototype before removing or redirecting it. |  |  |  |  |
-| Test imports and registration | Test normal imports and YAML registration. |  |  |  |  |
+| Test Vaskify package with deterministic input data |   - Test the installed Vaskify package with deterministic input data. |  | a |  |  |
+| Verify result shape and columns |   - Verify the actual result shape, `ratio`, `median_ratio`, limit and flag columns, and explicit call defaults. |  |  |  |  |
+| Add reference-result cases |   - Add reference-result cases for positive, zero, negative, missing, flagged, unflagged, and not-comparable observations. |  |  |  |  |
+| Verify return behavior for edge cases |   - Verify the package's return behavior when no unit has eligible values and when it logs warnings without raising. |  |  |  |  |
+| Keep algorithm tests in Vaskify |   - Keep mathematical algorithm tests in Vaskify, not in framework helpers. |  |  |  |  |
+
 
 # History
 ## 1. Define the HB public contract
@@ -182,3 +183,11 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Assess cross-cutting Pydantic trade-offs | Assess error reporting, pandas integration, cross-field rules, performance, and duplicate validation. | Finding: Pydantic can structure errors and configuration, but migration needs deliberate error mapping and a single validation owner; no performance benchmark was run. See [evaluate_pydantic.md](evaluate_pydantic.md). |  | Evaluation complete; see [evaluate_pydantic.md](evaluate_pydantic.md). |  |
 | Recommend HB validation migration scope | Present an evidence-based recommendation for approval without changing runtime behavior. | Recommendation: do not migrate HB validation wholesale; retain explicit boundary checks and use Pydantic selectively for structured configuration. No migration is included in this evaluation. See [evaluate_pydantic.md](evaluate_pydantic.md). |  | Evaluation complete; awaiting user approval before any migration. | done - no pydantic for now |
 
+## 18. Export and register the module
+| Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
+|---|---|---|---|---|---|
+| Export `HBMethod` | Export `HBMethod` through `ssb_dash_framework.modules` and the package top-level API where required. |  | a | Added `HBMethod` to both public package exports; verified both imports resolve to the same class. |  |
+| Register the module | Register the module with the existing YAML configuration mechanism. |  | a | Importing the public module package now loads and registers `HBMethod`; `ModuleConfig` accepts its YAML type and constructor keys. Smoke check passed. |  |
+| Document configuration keys | Document constructor and handler configuration keys. |  | a | Added the `HBMethod` and `AltinnHBDataHandler` keys to `architecture.md`; documented that YAML passes values through and does not construct injected handler or `TimeUnit` objects. | done |
+| Search for prototype imports | Search for imports of the experimental prototype before removing or redirecting it. |  | a | Found no prototype imports in source or tests; remaining references are in architecture and Sphinx documentation. Left the prototype and references unchanged. | done |
+| Test imports and registration | Test normal imports and YAML registration. |  | a | Added public-export and YAML-registry tests. Focused run: 18 passed, 9 skipped. | done |

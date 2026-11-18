@@ -34,6 +34,23 @@ flowchart LR
 | Normalize and display | `normalize_hb_result` / `HBMethod` | Preserve Vaskify diagnostics and all input units; display results without recomputing HB logic. |
 | Select unit | `HBMethod` | Send the stable `unit_id` from the clicked point to `VariableSelector`; do not rerun HB. |
 
+## Configuration
+
+| Component | Key | Required | Meaning |
+|---|---|---|---|
+| `HBMethod` | `hb_data_handler` | Yes | Injected `HBDataHandlerMeta`; production uses `AltinnHBDataHandler`. |
+| `HBMethod` | `hb_variable_selector` | Yes | Configured variable selector title for the HB measure. |
+| `HBMethod` | `configured_hb_time_unit` | Yes | The configured `TimeUnit` for the period selector. |
+| `HBMethod` | `configured_hb_strata_variable` | No | Source variable used for strata; omit or pass `None` when unused. |
+| `HBMethod` | `as_type` | No | Framework placement, `Tab` or `Window`, normally supplied by the module loader. |
+| `AltinnHBDataHandler` | `configured_hb_form` | Yes | Altinn form identifier. |
+| `AltinnHBDataHandler` | `hb_variable_to_feltsti` | Yes | Mapping from HB variable names to exact Altinn field paths; include the strata variable when configured. |
+
+The YAML registry recognizes `HBMethod` and validates these constructor key
+names. YAML values are passed through as-is; the loader does not construct an
+`HBDataHandlerMeta` or `TimeUnit` from a mapping. Those objects must currently
+be injected by Python code.
+
 ## Data contracts
 
 | Contract | Required details |
