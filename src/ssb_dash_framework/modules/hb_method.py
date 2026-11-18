@@ -1,9 +1,12 @@
 """HB methodology application module."""
 
 from dataclasses import asdict
+from io import StringIO
 from typing import Any
 
 import dash_bootstrap_components as dbc
+import pandas as pd
+import plotly.graph_objects as go
 from dash import Input
 from dash import Output
 from dash import State
@@ -108,6 +111,11 @@ class HBMethod(ModuleBase):
                     id=f"{self.module_id}-hb_empty_state",
                     role="status",
                 ),
+                html.Div(
+                    id=f"{self.module_id}-hb_candidate_state_summary",
+                    role="status",
+                    style={"display": "none"},
+                ),
                 dcc.Loading(
                     id=f"{self.module_id}-hb_result_loading",
                     type="default",
@@ -115,10 +123,107 @@ class HBMethod(ModuleBase):
                         id=f"{self.module_id}-hb_result_graph",
                         figure={},
                         style={"display": "none"},
+                        config={"displaylogo": False},
                     ),
                 ),
             ]
         )
+
+    def _build_hb_result_figure(
+        self,
+        normalized_hb_result_dataframe: pd.DataFrame,
+        *,
+        hb_comparison_periods: tuple[str, str],
+    ) -> go.Figure:
+        """Plot returned HB ratios, thresholds, and candidate states."""
+        selected_period_value_column = f"value_{hb_comparison_periods[1]}"
+        hb_result_figure = go.Figure()
+
+        if self.configured_hb_strata_variable is not None:
+            hb_strata_groups = normalized_hb_result_dataframe.groupby(
+                "strata",
+                dropna=False,
+                sort=False,
+            )
+        else:
+            hb_strata_groups = [("All units", normalized_hb_result_dataframe)]
+
+        for hb_strata_value, hb_strata_result_dataframe in hb_strata_groups:
+            strata_label = (
+                f" — {hb_strata_value}"
+                if self.configured_hb_strata_variable is not None
+                else ""
+            )
+            sorted_hb_strata_dataframe = hb_strata_result_dataframe.sort_values(
+                selected_period_value_column,
+                kind="stable",
+                na_position="last",
+            )
+            for diagnostic_column, diagnostic_label, diagnostic_color in (
+                ("median_ratio", "Median ratio", "#f1c40f"),
+                ("upper_limit", "Øvre grense", "#e74c3c"),
+                ("lower_limit", "Nedre grense", "#e74c3c"),
+            ):
+                diagnostic_values_dataframe = sorted_hb_strata_dataframe.dropna(
+                    subset=[selected_period_value_column, diagnostic_column]
+                )
+                if diagnostic_values_dataframe.empty:
+                    continue
+                hb_result_figure.add_trace(
+                    go.Scatter(
+                        x=diagnostic_values_dataframe[selected_period_value_column],
+                        y=diagnostic_values_dataframe[diagnostic_column],
+                        mode="lines+markers",
+                        name=f"{diagnostic_label}{strata_label}",
+                        line={"color": diagnostic_color, "dash": "solid"},
+                        marker={"size": 5},
+                        customdata=diagnostic_values_dataframe[["unit_id"]].to_numpy(),
+                        hovertemplate=(
+                            "Enhet: %{customdata[0]}<br>"
+                            f"{diagnostic_label}: %{{y}}<extra>{strata_label}</extra>"
+                        ),
+                    )
+                )
+
+        for candidate_flag, candidate_label, candidate_color in (
+            (1, "Flagget", "#e74c3c"),
+            (0, "Ikke flagget", "#3498db"),
+        ):
+            candidate_result_dataframe = normalized_hb_result_dataframe.loc[
+                normalized_hb_result_dataframe["flag_hb"].eq(candidate_flag)
+            ].dropna(subset=[selected_period_value_column, "ratio"])
+            if candidate_result_dataframe.empty:
+                continue
+            hb_result_figure.add_trace(
+                go.Scatter(
+                    x=candidate_result_dataframe[selected_period_value_column],
+                    y=candidate_result_dataframe["ratio"],
+                    mode="markers",
+                    name=candidate_label,
+                    marker={"color": candidate_color, "size": 9},
+                    customdata=candidate_result_dataframe[
+                        ["unit_id", "median_ratio", "lower_limit", "upper_limit"]
+                    ].to_numpy(),
+                    hovertemplate=(
+                        "Enhet: %{customdata[0]}<br>"
+                        "Ratio: %{y}<br>"
+                        "Median ratio: %{customdata[1]}<br>"
+                        "Nedre grense: %{customdata[2]}<br>"
+                        "Øvre grense: %{customdata[3]}<extra>"
+                        f"{candidate_label}</extra>"
+                    ),
+                )
+            )
+
+        hb_result_figure.update_layout(
+            title="HB-metoden",
+            xaxis_title=f"Verdi i {hb_comparison_periods[1]}",
+            yaxis_title="Forholdstall (ratio)",
+            legend_title="Kandidatstatus",
+            height=700,
+            hovermode="closest",
+        )
+        return hb_result_figure
 
     def _execute_hb_run(
         self,
@@ -162,7 +267,7 @@ class HBMethod(ModuleBase):
         }
 
     def module_callbacks(self) -> None:
-        """Register the explicit-run callback for selector-backed HB data retrieval."""
+        """Register callbacks for running HB and displaying the stored result."""
         selected_hb_variable_state = VariableSelector.get_state(
             self.hb_variable_selector
         )[0]
@@ -185,4 +290,49 @@ class HBMethod(ModuleBase):
             return self._execute_hb_run(
                 selected_hb_variable=selected_hb_variable,
                 selector_period_value=selector_period_value,
+            )
+
+        @callback(
+            Output(f"{self.module_id}-hb_result_graph", "figure"),
+            Output(f"{self.module_id}-hb_result_graph", "style"),
+            Output(f"{self.module_id}-hb_empty_state", "style"),
+            Output(f"{self.module_id}-hb_candidate_state_summary", "children"),
+            Output(f"{self.module_id}-hb_candidate_state_summary", "style"),
+            Input(f"{self.module_id}-hb_result_store", "data"),
+        )
+        def display_hb_result(
+            hb_result_store_data: dict[str, Any] | None,
+        ) -> tuple[go.Figure | dict[str, Any], dict[str, str], dict[str, str], str, dict[str, str]]:
+            if hb_result_store_data is None:
+                return {}, {"display": "none"}, {}, "", {"display": "none"}
+
+            normalized_hb_result_dataframe = pd.read_json(
+                StringIO(hb_result_store_data["hb_result_dataframe_json"]),
+                orient="split",
+            )
+            hb_comparison_periods = tuple(
+                hb_result_store_data["hb_comparison_periods"]
+            )
+            if len(hb_comparison_periods) != 2:
+                raise ValueError("HB result must contain exactly two comparison periods.")
+
+            hb_result_figure = self._build_hb_result_figure(
+                normalized_hb_result_dataframe,
+                hb_comparison_periods=(
+                    hb_comparison_periods[0],
+                    hb_comparison_periods[1],
+                ),
+            )
+            candidate_flags = normalized_hb_result_dataframe["flag_hb"]
+            candidate_state_summary = (
+                f"Flagget: {candidate_flags.eq(1).sum()} · "
+                f"Ikke flagget: {candidate_flags.eq(0).sum()} · "
+                f"Ikke sammenlignbar: {candidate_flags.isna().sum()}"
+            )
+            return (
+                hb_result_figure,
+                {"display": "block"},
+                {"display": "none"},
+                candidate_state_summary,
+                {"display": "block"},
             )

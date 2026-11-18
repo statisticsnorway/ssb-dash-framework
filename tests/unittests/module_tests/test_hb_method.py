@@ -130,6 +130,7 @@ def test_hb_method_instances_have_unique_module_scoped_component_ids(
             f"{hb_method.module_id}-hb_empty_state",
             f"{hb_method.module_id}-hb_result_store",
             f"{hb_method.module_id}-hb_result_graph",
+            f"{hb_method.module_id}-hb_candidate_state_summary",
         }.issubset(component_ids)
         assert all(component_id.startswith(hb_method.module_id) for component_id in component_ids)
 
@@ -355,3 +356,91 @@ def test_hb_run_callback_calls_handler_vaskify_and_normalizer_in_order(
     }
     assert not hasattr(hb_method, "selected_hb_variable")
     assert not hasattr(hb_method, "selector_period_value")
+
+
+def test_hb_result_callback_displays_diagnostics_and_candidate_states(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _configure_hb_selectors(monkeypatch)
+    captured_callbacks: list[
+        tuple[tuple[object, ...], dict[str, object], Callable[..., object]]
+    ] = []
+
+    def capture_callback(*dependencies: object, **kwargs: object):
+        def register(
+            callback_function: Callable[..., object],
+        ) -> Callable[..., object]:
+            captured_callbacks.append((dependencies, kwargs, callback_function))
+            return callback_function
+
+        return register
+
+    monkeypatch.setattr(
+        "ssb_dash_framework.modules.hb_method.callback",
+        capture_callback,
+    )
+    HBMethod(
+        hb_data_handler=StubHBDataHandler(),
+        hb_variable_selector="statistikkvariabel",
+        configured_hb_time_unit=TimeUnit(
+            name="periode",
+            frequency=TimeUnitType.YEAR,
+        ),
+        configured_hb_strata_variable="næring",
+    )
+    normalized_hb_result_dataframe = pd.DataFrame(
+        {
+            "unit_id": ["unit-flagged", "unit-unflagged", "unit-not-comparable"],
+            "value_2023": [10.0, 20.0, 30.0],
+            "value_2024": [15.0, 25.0, 35.0],
+            "strata": ["A", "A", "B"],
+            "ratio": [1.5, 1.0, None],
+            "median_ratio": [1.1, 1.1, None],
+            "lower_limit": [0.8, 0.8, None],
+            "upper_limit": [1.2, 1.2, None],
+            "flag_hb": [1, 0, None],
+        }
+    )
+    hb_result_store_data = {
+        "hb_comparison_periods": ["2023", "2024"],
+        "hb_result_dataframe_json": normalized_hb_result_dataframe.to_json(
+            orient="split",
+            date_format="iso",
+        ),
+        "hb_warnings": [],
+    }
+
+    display_callback = captured_callbacks[1][2]
+    (
+        hb_result_figure,
+        hb_result_graph_style,
+        hb_empty_state_style,
+        candidate_state_summary,
+        candidate_state_summary_style,
+    ) = display_callback(hb_result_store_data)
+
+    hb_trace_names = {trace.name for trace in hb_result_figure.data}
+    assert {
+        "Flagget",
+        "Ikke flagget",
+        "Median ratio — A",
+        "Øvre grense — A",
+        "Nedre grense — A",
+    }.issubset(hb_trace_names)
+    assert hb_result_figure.layout.xaxis.title.text == "Verdi i 2024"
+    assert hb_result_figure.layout.yaxis.title.text == "Forholdstall (ratio)"
+    assert hb_result_graph_style == {"display": "block"}
+    assert hb_empty_state_style == {"display": "none"}
+    assert candidate_state_summary == (
+        "Flagget: 1 · Ikke flagget: 1 · Ikke sammenlignbar: 1"
+    )
+    assert candidate_state_summary_style == {"display": "block"}
+
+    empty_display_result = display_callback(None)
+    assert empty_display_result == (
+        {},
+        {"display": "none"},
+        {},
+        "",
+        {"display": "none"},
+    )

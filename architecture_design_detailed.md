@@ -612,11 +612,14 @@ automatic requirements for the new module.
 * The existing
   [`experimental HB prototype`](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/experimental/modules/hb_method.py)
   is a UI prototype, not a working calculation. Reuse/adapt these parts:
-  * **Reuse the visual idea:** a run button, loading-wrapped Plotly figure,
-    ratio-versus-size scatter, and upper/lower limit lines. Build the figure
-    from Vaskify's returned columns, mapping `ratio`, `lower_limit`,
-    `upper_limit`, and `flag_hb` to the graph; do not expect the prototype's
-    `maxX`, `upperLimit`, `lowerLimit`, `id`, or `outlier` columns.
+  * **Reuse the visual idea:** a run button and loading-wrapped Plotly figure.
+    Plot the returned `ratio` against `value_<selected period>`; do not derive
+    or assume the prototype's `maxX` column. Display Vaskify's returned
+    `median_ratio`, `lower_limit`, and `upper_limit`, grouped by `strata` when
+    configured, without recalculating statistical values. Use `flag_hb` to
+    distinguish flagged (`1`) and unflagged (`0`) candidates, and preserve
+    missing flags as a separate not-comparable state. Do not expect the
+    prototype's `upperLimit`, `lowerLimit`, `id`, or `outlier` columns.
   * **Reuse the selection interaction:** clicking a plotted unit updates the
     shared identifier through `VariableSelector.get_output_object(...)`.
     Adapt the point data to carry the identifier in Plotly `customdata`; the

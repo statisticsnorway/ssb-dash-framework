@@ -53,7 +53,12 @@ flowchart LR
    diagnostics, and reconciles results with the full handler input so units
    without diagnostics remain visible as not comparable.
 7. `HBMethod` stores the normalized result for the current run and renders the
-   result figure.
+   result figure. The x-axis is the selected period's `value_<period>` column.
+   The graph plots Vaskify's returned `ratio` and displays its returned
+   `median_ratio`, `lower_limit`, and `upper_limit` separately per `strata`
+   when stratification is configured; it does not recalculate those values.
+   Candidate states remain distinct: flags `1` and `0` are plotted separately,
+   and missing flags are summarized as not comparable rather than changed to 0.
 8. A graph click reads the stable identifier from Plotly `customdata` and
    updates the configured `VariableSelector` output. It does not rerun HB.
 
@@ -258,12 +263,15 @@ boundaries must remain the same.
 <module_id>-hb_result_store
 ```
 
-The result store contains the result for the most recent explicit run.
-Selection callbacks read from this stored result and do not call the handler
-or Vaskify again.
+The result store contains the normalized result for the most recent explicit
+run, serialized for Dash along with its comparison periods and handler
+warnings. Selection callbacks read from this stored result and do not call the
+handler or Vaskify again.
 
-The graph carries the stable `unit_id` in `customdata`. Display labels,
-hovertext, and row positions are not identifiers.
+The graph uses the selected-period value for its x-axis and carries the stable
+`unit_id` in `customdata`. Vaskify-returned median ratios and limits are shown
+by stratum without recomputation. Display labels, hovertext, and row positions
+are not identifiers.
 
 ## Naming rules
 
