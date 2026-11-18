@@ -80,6 +80,8 @@
    - Add `normalize_hb_result`.
    - Validate the returned Vaskify shape.
    - Preserve stable identifiers, source context, comparison values, period context, diagnostics, `ratio`, `median_ratio`, limits, and `flag_hb`.
+   - Keep context that is stable per unit in one column; retain time-varying extra context in period-qualified columns rather than selecting one period's value.
+   - When configured, require a unit's `strata` to be stable across both comparison periods; fail clearly before calling Vaskify if it changes.
    - Reconcile results with the full handler input so units without Vaskify diagnostics remain visible.
    - Keep flagged (`1`), calculated/unflagged (`0`), and not-comparable (missing diagnostics/flag) states distinct.
    - Use verified Vaskify return behavior to distinguish no eligible population from an error; do not treat an unverified empty result as “no outliers.”

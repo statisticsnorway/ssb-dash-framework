@@ -58,6 +58,150 @@ def run_hb_vaskify(
     return hb_result
 
 
+def normalize_hb_result(
+    hb_input_dataframe: pd.DataFrame,
+    hb_vaskify_result_dataframe: pd.DataFrame,
+    *,
+    hb_comparison_periods: tuple[str, str],
+    configured_hb_strata_variable: str | None = None,
+) -> pd.DataFrame:
+    """Reconcile Vaskify diagnostics with every unit in the HB input.
+
+    Extra input columns are retained as source context. Context that is stable
+    for a unit is kept in one column; context that changes between periods is
+    retained in period-specific columns.
+    """
+    _validate_hb_vaskify_input(
+        hb_input_dataframe,
+        configured_hb_strata_variable=configured_hb_strata_variable,
+    )
+    _validate_hb_comparison_periods(hb_input_dataframe, hb_comparison_periods)
+    _validate_hb_vaskify_result(
+        hb_vaskify_result_dataframe,
+        hb_input_dataframe=hb_input_dataframe,
+        hb_comparison_periods=hb_comparison_periods,
+        require_strata=configured_hb_strata_variable is not None,
+    )
+    if hb_vaskify_result_dataframe.empty:
+        raise ValueError(
+            "Vaskify returned an empty HB result; no result is available."
+        )
+
+    hb_unit_ids = hb_input_dataframe["unit_id"].drop_duplicates().tolist()
+    normalized_hb_result = pd.DataFrame(
+        index=pd.Index(hb_unit_ids, name="unit_id")
+    )
+    hb_comparison_values = hb_input_dataframe.pivot(
+        index="unit_id",
+        columns="period",
+        values="value",
+    ).reindex(index=hb_unit_ids, columns=hb_comparison_periods)
+    hb_comparison_values.columns = [
+        f"value_{hb_period}" for hb_period in hb_comparison_periods
+    ]
+
+    normalized_context_columns: dict[object, pd.Series] = {}
+    normalized_value_column_names = {
+        f"value_{hb_period}" for hb_period in hb_comparison_periods
+    }
+    hb_input_context_columns = [
+        column_name
+        for column_name in hb_input_dataframe.columns
+        if column_name not in {"unit_id", "period", "value"}
+    ]
+    for context_column_name in hb_input_context_columns:
+        context_values_by_unit = hb_input_dataframe.groupby(
+            "unit_id",
+            sort=False,
+        )[context_column_name].nunique(dropna=False)
+        if context_values_by_unit.le(1).all():
+            context_by_unit = (
+                hb_input_dataframe.drop_duplicates("unit_id", keep="first")
+                .set_index("unit_id")[context_column_name]
+                .reindex(hb_unit_ids)
+            )
+            context_output_columns = {
+                context_column_name: context_by_unit,
+            }
+        else:
+            context_by_period = hb_input_dataframe.pivot(
+                index="unit_id",
+                columns="period",
+                values=context_column_name,
+            ).reindex(index=hb_unit_ids, columns=hb_comparison_periods)
+            context_output_columns = {
+                f"{context_column_name}_{hb_period}": context_by_period[hb_period]
+                for hb_period in hb_comparison_periods
+            }
+
+        for output_column_name, context_values in context_output_columns.items():
+            if (
+                output_column_name in normalized_context_columns
+                or output_column_name in normalized_value_column_names
+            ):
+                raise ValueError(
+                    "HB source context collides with a normalized result column: "
+                    f"{output_column_name!r}."
+                )
+            normalized_context_columns[output_column_name] = context_values
+
+    if normalized_context_columns:
+        normalized_hb_result = normalized_hb_result.join(
+            pd.DataFrame(normalized_context_columns, index=hb_unit_ids)
+        )
+    normalized_hb_result = normalized_hb_result.join(hb_comparison_values)
+
+    comparison_value_columns = {
+        f"value_{hb_period}" for hb_period in hb_comparison_periods
+    }
+    source_context_columns = set(normalized_context_columns)
+    required_diagnostic_columns = {
+        "lower_limit",
+        "upper_limit",
+        "ratio",
+        "median_ratio",
+        "flag_hb",
+    }
+    context_diagnostic_collisions = (
+        source_context_columns & required_diagnostic_columns
+    )
+    if context_diagnostic_collisions:
+        conflicting_column_names = ", ".join(
+            sorted(context_diagnostic_collisions)
+        )
+        raise ValueError(
+            "HB source context collides with Vaskify diagnostic columns: "
+            f"{conflicting_column_names}."
+        )
+    hb_diagnostic_columns = [
+        column_name
+        for column_name in hb_vaskify_result_dataframe.columns
+        if column_name != "unit_id"
+        and column_name not in comparison_value_columns
+        and column_name not in source_context_columns
+    ]
+    conflicting_diagnostic_columns = (
+        set(hb_diagnostic_columns) & set(normalized_hb_result.columns)
+    )
+    if conflicting_diagnostic_columns:
+        conflicting_column_names = ", ".join(
+            sorted(map(str, conflicting_diagnostic_columns))
+        )
+        raise ValueError(
+            "Vaskify diagnostics conflict with normalized HB input columns: "
+            f"{conflicting_column_names}."
+        )
+
+    normalized_hb_result = normalized_hb_result.reset_index()
+    return normalized_hb_result.merge(
+        hb_vaskify_result_dataframe[["unit_id", *hb_diagnostic_columns]],
+        on="unit_id",
+        how="left",
+        validate="one_to_one",
+        sort=False,
+    )
+
+
 def _validate_hb_vaskify_result(
     hb_result: object,
     *,
@@ -122,6 +266,16 @@ def _validate_hb_vaskify_input(
         raise ValueError(
             "HB input must contain a 'strata' column when a strata variable is configured."
         )
+    if configured_hb_strata_variable is not None:
+        strata_values_per_unit = hb_input_dataframe.groupby(
+            "unit_id",
+            sort=False,
+        )["strata"].nunique(dropna=False)
+        if strata_values_per_unit.gt(1).any():
+            raise ValueError(
+                "HB input 'strata' values must be consistent across periods "
+                "for each unit when a strata variable is configured."
+            )
 
 
 def _validate_hb_comparison_periods(

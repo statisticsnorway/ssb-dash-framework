@@ -369,6 +369,24 @@ def test_run_hb_vaskify_rejects_missing_configured_strata_column(
     detect.assert_not_called()
 
 
+def test_run_hb_vaskify_rejects_strata_that_changes_between_periods(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    hb_input_dataframe = valid_hb_input_dataframe()
+    hb_input_dataframe["strata"] = ["group-1", "group-2", "group-2", "group-2"]
+    detect = Mock()
+    monkeypatch.setattr(hb_vaskify, "Detect", detect)
+
+    with pytest.raises(ValueError, match=r"strata.*consistent across periods"):
+        hb_vaskify.run_hb_vaskify(
+            hb_input_dataframe,
+            hb_comparison_periods=("2023", "2024"),
+            configured_hb_strata_variable="industry",
+        )
+
+    detect.assert_not_called()
+
+
 @pytest.mark.parametrize(
     "comparison_periods",
     [("2023-1", "2023-2"), ("2023-2", "2024-1")],

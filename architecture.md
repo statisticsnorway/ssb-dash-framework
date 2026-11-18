@@ -162,6 +162,11 @@ The normalized result retains the stable identifier, comparison values, period
 context, `ratio`, `median_ratio`, `lower_limit`, `upper_limit`, `flag_hb`, and
 method-specific diagnostics returned by Vaskify. Flagged (`1`), unflagged
 (`0`), and not-comparable (missing diagnostics/flag) states remain distinct.
+It contains one row for every unit in the handler input. Comparison values use
+`value_<canonical-period>` columns. Extra context that is stable for a unit is
+kept in one column; context that changes between periods is retained in
+`<context-column>_<canonical-period>` columns rather than selecting one
+period's value.
 
 ### Validation boundary: HB module and Vaskify
 
@@ -174,6 +179,12 @@ available, period validation also requires the strings to match it. When
 stratification is requested, the HB module verifies that the mapped `strata`
 column is present. It validates the configured Vaskify argument choices and
 result shape before display.
+When stratification is configured, each unit must have the same `strata` value
+in both comparison periods. Vaskify 0.0.6 widens period-varying columns before
+grouping; a changing `strata` becomes period-specific columns, and the
+configured grouping column is then absent. More importantly, choosing a
+stratum from only one period would change the reference groups used to
+calculate limits and flags, so no such mapping is inferred.
 
 The HB week helper validates ISO weeks and uses the shared `TimeUnit.parse()`
 when available. It falls back locally only for the known Pendulum
