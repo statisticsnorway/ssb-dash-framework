@@ -73,7 +73,6 @@
    - Keep Vaskify argument mapping out of the Altinn adapter and Dash callbacks.
    - Add mocked tests for exact Vaskify arguments and preflight failures.
 
-------- Bookmark start ------------
 11. **Normalize Vaskify results**
    - Reject HALF_YEAR comparisons in `run_hb_vaskify` until Vaskify supports their canonical period strings; keep HALF_YEAR valid in the common HB schema and resolver.
    - Keep a strict-xfail test that calls `Detect.hb()` directly with raw half-year periods; when it passes, verify native behavior before removing the execution guard.
@@ -86,8 +85,8 @@
    - Keep flagged (`1`), calculated/unflagged (`0`), and not-comparable (missing diagnostics/flag) states distinct.
    - Use verified Vaskify return behavior to distinguish no eligible population from an error; do not treat an unverified empty result as “no outliers.”
    - Add unit tests for valid, incomplete, missing, not-comparable, and invalid results.
-------- Bookmark end ------------
 
+------- Bookmark start ------------
 12. **Create the ModuleBase shell**
    - Add `HBMethod` under `src/ssb_dash_framework/modules/`.
    - Set `label`, `icon`, and the handler before `ModuleBase.__init__()`.
@@ -95,6 +94,7 @@
    - Implement `module_callbacks()` using `self.module_id` for every component ID.
    - Use descriptive IDs such as `hb_run_button`, `hb_result_graph`, `hb_error_message`, and `hb_result_store`.
    - Test construction, lifecycle, unique IDs, and tab/window placement.
+------- Bookmark end ------------
 
 13. **Connect selector inputs to the run action**
    - Read the selected HB variable and canonical period from `VariableSelector` at callback time.
