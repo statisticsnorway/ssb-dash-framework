@@ -211,7 +211,7 @@ def test_hb_method_rejects_time_unit_with_different_selector_name(
         )
 
 
-def test_hb_run_callback_reads_selector_values_and_calls_handler(
+def test_hb_run_callback_calls_handler_vaskify_and_normalizer_in_order(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     configured_hb_time_unit = _configure_hb_selectors(monkeypatch)
@@ -233,6 +233,84 @@ def test_hb_run_callback_reads_selector_values_and_calls_handler(
         capture_callback,
     )
     hb_data_handler = StubHBDataHandler()
+    execution_order: list[str] = []
+    original_get_hb_dataframe = hb_data_handler.get_hb_dataframe
+
+    def tracked_get_hb_dataframe(
+        *,
+        selected_hb_variable: str,
+        hb_comparison_periods: tuple[str, str],
+        configured_hb_strata_variable: str | None = None,
+    ) -> HBDataResult:
+        execution_order.append("handler")
+        return original_get_hb_dataframe(
+            selected_hb_variable=selected_hb_variable,
+            hb_comparison_periods=hb_comparison_periods,
+            configured_hb_strata_variable=configured_hb_strata_variable,
+        )
+
+    monkeypatch.setattr(
+        hb_data_handler,
+        "get_hb_dataframe",
+        tracked_get_hb_dataframe,
+    )
+    hb_vaskify_result_dataframe = pd.DataFrame(
+        {
+            "unit_id": ["unit-1"],
+            "ratio": [1.2],
+            "median_ratio": [1.0],
+            "lower_limit": [0.8],
+            "upper_limit": [1.2],
+            "flag_hb": [0],
+        }
+    )
+    normalized_hb_result_dataframe = pd.DataFrame(
+        {
+            "unit_id": ["unit-1"],
+            "value_2023": [10.0],
+            "value_2024": [12.0],
+            "ratio": [1.2],
+            "median_ratio": [1.0],
+            "lower_limit": [0.8],
+            "upper_limit": [1.2],
+            "flag_hb": [0],
+        }
+    )
+
+    def fake_run_hb_vaskify(
+        hb_input_dataframe: pd.DataFrame,
+        *,
+        hb_comparison_periods: tuple[str, str],
+        configured_hb_strata_variable: str | None = None,
+    ) -> pd.DataFrame:
+        execution_order.append("vaskify")
+        assert hb_input_dataframe is hb_data_handler.hb_dataframe
+        assert hb_comparison_periods == ("2023", "2024")
+        assert configured_hb_strata_variable == "fylke"
+        return hb_vaskify_result_dataframe
+
+    def fake_normalize_hb_result(
+        hb_input_dataframe: pd.DataFrame,
+        input_hb_vaskify_result_dataframe: pd.DataFrame,
+        *,
+        hb_comparison_periods: tuple[str, str],
+        configured_hb_strata_variable: str | None = None,
+    ) -> pd.DataFrame:
+        execution_order.append("normalize")
+        assert hb_input_dataframe is hb_data_handler.hb_dataframe
+        assert input_hb_vaskify_result_dataframe is hb_vaskify_result_dataframe
+        assert hb_comparison_periods == ("2023", "2024")
+        assert configured_hb_strata_variable == "fylke"
+        return normalized_hb_result_dataframe
+
+    monkeypatch.setattr(
+        "ssb_dash_framework.modules.hb_method.run_hb_vaskify",
+        fake_run_hb_vaskify,
+    )
+    monkeypatch.setattr(
+        "ssb_dash_framework.modules.hb_method.normalize_hb_result",
+        fake_normalize_hb_result,
+    )
     hb_method = HBMethod(
         hb_data_handler=hb_data_handler,
         hb_variable_selector="statistikkvariabel",
@@ -257,6 +335,7 @@ def test_hb_run_callback_reads_selector_values_and_calls_handler(
 
     callback_result = callback_function(1, "omsetning", "2024")
 
+    assert execution_order == ["handler", "vaskify", "normalize"]
     assert hb_data_handler.calls == [
         {
             "selected_hb_variable": "omsetning",
@@ -266,7 +345,7 @@ def test_hb_run_callback_reads_selector_values_and_calls_handler(
     ]
     assert callback_result == {
         "hb_comparison_periods": ["2023", "2024"],
-        "hb_dataframe_json": hb_data_handler.hb_dataframe.to_json(
+        "hb_result_dataframe_json": normalized_hb_result_dataframe.to_json(
             orient="split",
             date_format="iso",
         ),

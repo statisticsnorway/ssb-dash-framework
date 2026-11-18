@@ -17,6 +17,8 @@ from ssb_dash_framework.modules.hb.data_handler import HBDataHandlerMeta
 from ssb_dash_framework.modules.hb.period_resolution import (
     resolve_hb_comparison_periods,
 )
+from ssb_dash_framework.modules.hb.vaskify import normalize_hb_result
+from ssb_dash_framework.modules.hb.vaskify import run_hb_vaskify
 from ssb_dash_framework.setup.variableselector import TimeUnit
 from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.utils.base_classes import AsType
@@ -118,13 +120,13 @@ class HBMethod(ModuleBase):
             ]
         )
 
-    def _get_hb_data_for_run(
+    def _execute_hb_run(
         self,
         *,
         selected_hb_variable: str | None,
         selector_period_value: str | None,
     ) -> dict[str, Any]:
-        """Resolve the selected period and fetch the corresponding HB input."""
+        """Fetch, analyze, and normalize the HB data for one explicit run."""
         if not isinstance(selected_hb_variable, str) or not selected_hb_variable.strip():
             raise ValueError("Select an HB variable before running the HB method.")
         if not isinstance(selector_period_value, str) or not selector_period_value.strip():
@@ -139,9 +141,20 @@ class HBMethod(ModuleBase):
             hb_comparison_periods=hb_comparison_periods,
             configured_hb_strata_variable=self.configured_hb_strata_variable,
         )
+        hb_vaskify_result_dataframe = run_hb_vaskify(
+            hb_data_result.hb_dataframe,
+            hb_comparison_periods=hb_comparison_periods,
+            configured_hb_strata_variable=self.configured_hb_strata_variable,
+        )
+        normalized_hb_result_dataframe = normalize_hb_result(
+            hb_data_result.hb_dataframe,
+            hb_vaskify_result_dataframe,
+            hb_comparison_periods=hb_comparison_periods,
+            configured_hb_strata_variable=self.configured_hb_strata_variable,
+        )
         return {
             "hb_comparison_periods": list(hb_comparison_periods),
-            "hb_dataframe_json": hb_data_result.hb_dataframe.to_json(
+            "hb_result_dataframe_json": normalized_hb_result_dataframe.to_json(
                 orient="split",
                 date_format="iso",
             ),
@@ -169,7 +182,7 @@ class HBMethod(ModuleBase):
         ) -> dict[str, Any]:
             if not n_clicks:
                 raise PreventUpdate
-            return self._get_hb_data_for_run(
+            return self._execute_hb_run(
                 selected_hb_variable=selected_hb_variable,
                 selector_period_value=selector_period_value,
             )
