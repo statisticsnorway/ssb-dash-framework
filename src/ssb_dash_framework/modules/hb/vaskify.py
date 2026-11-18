@@ -47,6 +47,7 @@ def run_hb_vaskify(
     )
     _validate_hb_vaskify_result(
         hb_result,
+        hb_input_dataframe=hb_input_dataframe,
         hb_comparison_periods=hb_comparison_periods,
         require_strata=configured_hb_strata_variable is not None,
     )
@@ -56,6 +57,7 @@ def run_hb_vaskify(
 def _validate_hb_vaskify_result(
     hb_result: object,
     *,
+    hb_input_dataframe: pd.DataFrame,
     hb_comparison_periods: tuple[str, str],
     require_strata: bool,
 ) -> None:
@@ -81,6 +83,26 @@ def _validate_hb_vaskify_result(
         raise ValueError(
             "Vaskify HB result is missing required columns: "
             f"{missing_column_names}."
+        )
+
+    result_unit_ids = hb_result["unit_id"]
+    string_unit_ids = result_unit_ids.map(
+        lambda unit_id: isinstance(unit_id, str)
+    ).astype(bool)
+    invalid_unit_ids = result_unit_ids.isna() | ~string_unit_ids
+    if invalid_unit_ids.any():
+        raise TypeError(
+            "Vaskify result 'unit_id' values must be non-null strings."
+        )
+    if result_unit_ids.duplicated().any():
+        raise ValueError("Vaskify result 'unit_id' values must be unique.")
+
+    input_unit_ids = set(hb_input_dataframe["unit_id"])
+    unknown_unit_ids = set(result_unit_ids) - input_unit_ids
+    if unknown_unit_ids:
+        raise ValueError(
+            "Vaskify result contains unit_id values not present in HB input: "
+            f"{', '.join(sorted(unknown_unit_ids))}."
         )
 
 

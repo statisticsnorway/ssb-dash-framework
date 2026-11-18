@@ -200,6 +200,53 @@ def test_run_hb_vaskify_allows_extra_columns_and_empty_result(
 
 
 @pytest.mark.parametrize(
+    ("result_unit_ids", "error_type", "error_message"),
+    [
+        ([None], TypeError, "non-null strings"),
+        ([1], TypeError, "non-null strings"),
+        (["unit-1", "unit-1"], ValueError, "must be unique"),
+        (["unknown-unit"], ValueError, "not present in HB input"),
+    ],
+)
+def test_run_hb_vaskify_rejects_invalid_result_unit_ids(
+    monkeypatch: pytest.MonkeyPatch,
+    result_unit_ids: list[object],
+    error_type: type[Exception],
+    error_message: str,
+) -> None:
+    result = valid_vaskify_result_dataframe()
+    if len(result_unit_ids) > 1:
+        result = pd.concat([result] * len(result_unit_ids), ignore_index=True)
+    result["unit_id"] = result_unit_ids
+
+    detector = Mock()
+    detector.hb.return_value = result
+    monkeypatch.setattr(hb_vaskify, "Detect", Mock(return_value=detector))
+
+    with pytest.raises(error_type, match=error_message):
+        hb_vaskify.run_hb_vaskify(
+            valid_hb_input_dataframe(),
+            hb_comparison_periods=("2023", "2024"),
+        )
+
+
+def test_run_hb_vaskify_allows_result_ids_to_be_subset_of_input(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected_result = valid_vaskify_result_dataframe()
+    detector = Mock()
+    detector.hb.return_value = expected_result
+    monkeypatch.setattr(hb_vaskify, "Detect", Mock(return_value=detector))
+
+    result = hb_vaskify.run_hb_vaskify(
+        valid_hb_input_dataframe(),
+        hb_comparison_periods=("2023", "2024"),
+    )
+
+    assert result is expected_result
+
+
+@pytest.mark.parametrize(
     ("comparison_periods", "error_type", "error_message"),
     [
         ((), ValueError, "exactly two periods"),
