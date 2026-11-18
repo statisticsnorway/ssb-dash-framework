@@ -16,6 +16,9 @@ from ssb_dash_framework.modules.hb.data_handler import HBDataHandlerMeta
 from ssb_dash_framework.modules.hb.data_handler import HBDataResult
 from ssb_dash_framework.modules.hb.data_handler import HBDataWarning
 from ssb_dash_framework.modules.hb_method import HBMethod
+from ssb_dash_framework.modules.hb_method import (
+    _extract_hb_unit_id_from_plotly_click_data,
+)
 from ssb_dash_framework.setup.variableselector import TimeUnit
 from ssb_dash_framework.setup.variableselector import TimeUnitType
 from ssb_dash_framework.setup.variableselector import VariableSelector
@@ -432,6 +435,16 @@ def test_hb_result_callback_displays_diagnostics_and_candidate_states(
     }.issubset(hb_trace_names)
     assert hb_result_figure.layout.xaxis.title.text == "Verdi i 2024"
     assert hb_result_figure.layout.yaxis.title.text == "Forholdstall (ratio)"
+    assert all(
+        trace.customdata is not None
+        and all(isinstance(point_customdata[0], str) for point_customdata in trace.customdata)
+        for trace in hb_result_figure.data
+    )
+    candidate_traces_by_name = {
+        trace.name: trace for trace in hb_result_figure.data if trace.name in {"Flagget", "Ikke flagget"}
+    }
+    assert candidate_traces_by_name["Flagget"].customdata[0][0] == "unit-flagged"
+    assert candidate_traces_by_name["Ikke flagget"].customdata[0][0] == "unit-unflagged"
     assert hb_result_graph_style == {"display": "block"}
     assert hb_empty_state_style == {"display": "none"}
     assert candidate_state_summary == (
@@ -447,6 +460,27 @@ def test_hb_result_callback_displays_diagnostics_and_candidate_states(
         "",
         {"display": "none"},
     )
+
+
+@pytest.mark.parametrize(
+    ("click_data", "expected_hb_unit_id"),
+    [
+        ({"points": [{"customdata": ["unit-flagged", 1.1]}]}, "unit-flagged"),
+        ({"points": [{"customdata": "unit-unflagged"}]}, "unit-unflagged"),
+        (
+            {"points": [{"hovertext": "unit-hover", "pointNumber": 7, "x": 4}]},
+            None,
+        ),
+        ({"points": []}, None),
+        ({"points": [{"customdata": []}]}, None),
+        (None, None),
+    ],
+)
+def test_hb_unit_id_is_extracted_only_from_plotly_customdata(
+    click_data: dict[str, object] | None,
+    expected_hb_unit_id: str | None,
+) -> None:
+    assert _extract_hb_unit_id_from_plotly_click_data(click_data) == expected_hb_unit_id
 
 
 @pytest.mark.parametrize("failure_point", ["handler", "vaskify", "empty_normalized"])

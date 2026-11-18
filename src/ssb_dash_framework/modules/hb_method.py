@@ -32,6 +32,34 @@ from ssb_dash_framework.utils.base_classes import ModuleBase
 logger = logging.getLogger(__name__)
 
 
+def _extract_hb_unit_id_from_plotly_click_data(
+    click_data: dict[str, Any] | None,
+) -> str | None:
+    """Read the stable unit identifier from a Plotly point's customdata."""
+    if click_data is None:
+        return None
+
+    clicked_points = click_data.get("points")
+    if not isinstance(clicked_points, list) or not clicked_points:
+        return None
+
+    clicked_point = clicked_points[0]
+    if not isinstance(clicked_point, dict):
+        return None
+
+    point_customdata = clicked_point.get("customdata")
+    if isinstance(point_customdata, (list, tuple)):
+        if not point_customdata:
+            return None
+        clicked_hb_unit_id = point_customdata[0]
+    else:
+        clicked_hb_unit_id = point_customdata
+
+    if not isinstance(clicked_hb_unit_id, str) or not clicked_hb_unit_id:
+        return None
+    return clicked_hb_unit_id
+
+
 class HBMethod(ModuleBase):
     """Module shell for running and displaying the HB methodology."""
 

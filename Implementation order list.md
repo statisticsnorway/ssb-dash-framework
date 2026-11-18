@@ -102,7 +102,6 @@
    - Do not store per-user selector values on the module instance.
    - Test handler arguments and missing selector configuration.
 
-------- Bookmark start ------------
 14. **Execute and display an HB run**
    - On the explicit run action, call the handler, `run_hb_vaskify`, and `normalize_hb_result` in that order.
    - Store the normalized result for the current run.
@@ -111,14 +110,15 @@
    - Route failures through `AlertHandler` and log context without row-level sensitive data.
    - Test successful runs, handler failures, Vaskify failures, warning-only paths, and empty or not-comparable data.
    - Add a module integration test that supplies `FakeHBDataHandler`, exercises the handler-to-result path without an Altinn or database connection, and verifies that the production backend is not accessed.
-------- Bookmark end ------------
 
+------- Bookmark start ------------
 15. **Add click-to-selector behavior**
    - Put the stable `unit_id` in Plotly `customdata`.
    - Read the identifier from click data, never from hovertext, labels, or row positions.
    - Update the configured `VariableSelector` output.
    - Read the stored result only; do not call the handler or Vaskify on selection.
    - Test selecting multiple candidates and selecting no point.
+------- Bookmark end ------------
 
 16. **Evaluate restrictions against usability**
    - Inventory restrictions across HB input validation, Altinn data access, Vaskify preflight, strata handling, and empty/not-comparable outcomes.
