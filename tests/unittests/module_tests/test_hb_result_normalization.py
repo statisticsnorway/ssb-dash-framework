@@ -4,6 +4,41 @@ import pytest
 from ssb_dash_framework.modules.hb.vaskify import normalize_hb_result
 
 
+def test_normalize_hb_result_preserves_candidate_states() -> None:
+    hb_input_dataframe = pd.DataFrame(
+        {
+            "unit_id": ["unit-1", "unit-1", "unit-2", "unit-2", "unit-3", "unit-3"],
+            "period": ["2023", "2024"] * 3,
+            "value": [10.0, 15.0, 20.0, 25.0, 30.0, 35.0],
+        }
+    )
+    hb_vaskify_result_dataframe = pd.DataFrame(
+        {
+            "unit_id": ["unit-1", "unit-2"],
+            "value_2023": [10.0, 20.0],
+            "value_2024": [15.0, 25.0],
+            "lower_limit": [0.8, 0.8],
+            "upper_limit": [1.2, 1.2],
+            "ratio": [1.5, 1.0],
+            "median_ratio": [1.1, 1.1],
+            "flag_hb": [1, 0],
+        }
+    )
+
+    hb_result_dataframe = normalize_hb_result(
+        hb_input_dataframe,
+        hb_vaskify_result_dataframe,
+        hb_comparison_periods=("2023", "2024"),
+    )
+
+    assert hb_result_dataframe["flag_hb"].iloc[:2].tolist() == [1, 0]
+    assert pd.isna(hb_result_dataframe.loc[2, "flag_hb"])
+    assert pd.isna(hb_result_dataframe.loc[2, "ratio"])
+    assert pd.isna(hb_result_dataframe.loc[2, "median_ratio"])
+    assert pd.isna(hb_result_dataframe.loc[2, "lower_limit"])
+    assert pd.isna(hb_result_dataframe.loc[2, "upper_limit"])
+
+
 def test_normalize_hb_result_reconciles_units_values_context_and_diagnostics() -> None:
     hb_input_dataframe = pd.DataFrame(
         {
