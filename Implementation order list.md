@@ -138,20 +138,20 @@
    - Search for imports of the experimental prototype before removing or redirecting it.
    - Test normal imports and YAML registration.
 
-------- Bookmark start ------------
 19. **Add integration and reference-result tests**
    - Test the installed Vaskify package with deterministic input data.
    - Verify the actual result shape, `ratio`, `median_ratio`, limit and flag columns, and explicit call defaults.
    - Add reference-result cases for positive, zero, negative, missing, flagged, unflagged, and not-comparable observations.
    - Verify the package's return behavior when no unit has eligible values and when it logs warnings without raising.
    - Keep mathematical algorithm tests in Vaskify, not in framework helpers.
-------- Bookmark end ------------
 
+------- Bookmark start ------------
 20. **Add demo and browser coverage**
    - Add or update a demo that imports and configures `HBMethod`.
    - Use deterministic test data or the configured Altinn path as appropriate.
    - Verify app startup, run action, result display, and click-to-selector flow.
    - Add demo-specific E2E steps under `tests/e2e/hooks/` when needed.
+------- Bookmark end ------------
 
 21. **Conduct user acceptance testing on the demo**
    - Have intended users exercise the demo with deterministic or approved test data.

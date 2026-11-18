@@ -8,8 +8,18 @@ They are functional and some can be used as a foundation for creating a custom a
 |-------|------------|
 | hello_world    | A very simple example of how to create a module. |
 | getting_started | The finished app from the [getting started guide](../docs/guides/getting_started.md). Runs anywhere, no data access needed. |
+| hb_method | Runs `HBMethod` with real Vaskify and a deterministic in-memory data handler. |
 | parqueteditor | Copy paste friendly setup for an app containing the ParquetEditor module. Runnable for SSB-employees using the "dapla-felles-developers" access. |
 | altinn_app | DataEditor with custom dataviews for two Altinn forms. Runs standalone on the bundled testdata, no database access needed. |
+
+## hb_method
+
+```bash
+uv run demo/hb_method/app.py
+```
+
+The demo exercises the real `HBMethod` and Vaskify flow without an Altinn
+connection. Only the data handler is replaced with fixed in-memory values.
 
 ## altinn_app
 

@@ -18,10 +18,11 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Do not combine groups of multiple tasks into one row; each task should have its own clearly defined row in the implementation plan.
 
 # Current tasks:
-
+## 20. Add demo and browser coverage
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
-
+| Verify app startup, run action, result display, and click-to-selector flow. |  | Reuse the demo smoke test for startup; add a browser flow that runs HB, waits for the chart, clicks a known candidate, and asserts the selector receives that point's stable `unit_id`. |  |  |  |
+| Add demo-specific E2E steps under `tests/e2e/hooks/` when needed. |  | Add `tests/e2e/hooks/hb_method.py` only for HB-specific browser interaction; keep startup and generic loading checks in the shared harness. |  |  |  |
 
 # History
 ## 1. Define the HB public contract
@@ -195,3 +196,9 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Add reference-result cases |   - Add reference-result cases for positive, zero, negative, missing, flagged, unflagged, and not-comparable observations. | a |  | Added direct-package cases: positive unflagged ratio 1.1; flagged ratio 10 with median 1.1 and limits 1.0/1.21; zero, negative, missing, and not-comparable units are omitted. Focused run: 1 passed. |  |
 | Verify return behavior for edge cases |   - Verify the package's return behavior when no unit has eligible values and when it logs warnings without raising. | a |  | Direct call with no eligible units returned an empty DataFrame and logged an error without raising; a wide-input format warning returned data without raising. Focused run: 2 passed. |  |
 | Keep algorithm tests in Vaskify |   - Keep mathematical algorithm tests in Vaskify, not in framework helpers. |  | a | Reference and edge tests call the installed `Detect` package directly; framework-helper tests remain limited to integration argument mapping. No algorithm logic was added to framework helpers. |  |
+
+## 20. Add demo and browser coverage
+| Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
+|---|---|---|---|---|---|
+| Add or update a demo that imports and configures `HBMethod`. |  | Create `demo/hb_method/app.py` following the Python setup in `demo/getting_started/app.py`. Configure the shared selectors and pass constructed `TimeUnit` and `HBDataHandlerMeta` objects; plain YAML mappings do not construct them. Document the run command in `demo/README.md`. | a | Added the runnable demo and README command using the user-selected deterministic handler; import/construction smoke check passed. | done |
+| Use deterministic test data or the configured Altinn path as appropriate. |  | Prefer a demo-local deterministic handler for a backend- and credential-free demo/E2E run. Keep `AltinnHBDataHandler` as the production path; do not import test-only fake handlers into the demo. | a | Implemented with `_DeterministicHBDataHandler` in the demo; smoke check returned 14 rows across both requested periods. Production `AltinnHBDataHandler` is unchanged. |  |
