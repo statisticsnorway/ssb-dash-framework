@@ -111,14 +111,12 @@
    - Test successful runs, handler failures, Vaskify failures, warning-only paths, and empty or not-comparable data.
    - Add a module integration test that supplies `FakeHBDataHandler`, exercises the handler-to-result path without an Altinn or database connection, and verifies that the production backend is not accessed.
 
-------- Bookmark start ------------
 15. **Add click-to-selector behavior**
    - Put the stable `unit_id` in Plotly `customdata`.
    - Read the identifier from click data, never from hovertext, labels, or row positions.
    - Update the configured `VariableSelector` output.
    - Read the stored result only; do not call the handler or Vaskify on selection.
    - Test selecting multiple candidates and selecting no point.
-------- Bookmark end ------------
 
 16. **Evaluate restrictions against usability**
    - Inventory restrictions across HB input validation, Altinn data access, Vaskify preflight, strata handling, and empty/not-comparable outcomes.
@@ -133,12 +131,14 @@
    - Assess error reporting, pandas/DataFrame integration, cross-field validation, performance, and the risk of duplicating checks.
    - Record the recommendation and migration scope for approval. This step evaluates the approach; do not migrate validation without approval.
 
+------- Bookmark start ------------
 18. **Export and register the module**
    - Export `HBMethod` through `ssb_dash_framework.modules` and the package top-level API where required.
    - Register the module with the existing YAML configuration mechanism.
    - Document constructor and handler configuration keys.
    - Search for imports of the experimental prototype before removing or redirecting it.
    - Test normal imports and YAML registration.
+------- Bookmark end ------------
 
 19. **Add integration and reference-result tests**
    - Test the installed Vaskify package with deterministic input data.
@@ -178,3 +178,12 @@
    - Pull request to integrate the changes into `main`.
 
 25. **Report ISSUES to Github or Magnus**
+   - Apply all the issues and delete the issues file, move it to boards if not resolved.
+
+-- At this point the initial implementation and documentation tasks should be complete. And we are working on the next version. This is a cutoff point for v1 tasks. ---
+
+26. **restrictions_research.md**
+   - Look at the restrictions research document to understand the timing and feedback recommendations for user approval.
+
+27. **Implement fixes for ISSUES where possible**
+   - If approved follow trough in v2.

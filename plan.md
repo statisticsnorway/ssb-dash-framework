@@ -18,10 +18,14 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Do not combine groups of multiple tasks into one row; each task should have its own clearly defined row in the implementation plan.
 
 # Current tasks:
-
+## 18. Export and register the module
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
-
+| Export `HBMethod` | Export `HBMethod` through `ssb_dash_framework.modules` and the package top-level API where required. |  |  |  |  |
+| Register the module | Register the module with the existing YAML configuration mechanism. |  |  |  |  |
+| Document configuration keys | Document constructor and handler configuration keys. |  |  |  |  |
+| Search for prototype imports | Search for imports of the experimental prototype before removing or redirecting it. |  |  |  |  |
+| Test imports and registration | Test normal imports and YAML registration. |  |  |  |  |
 
 # History
 ## 1. Define the HB public contract
@@ -149,7 +153,7 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Test HB run outcomes | Verify success, failure, warnings, and data-state behavior. | Test successful runs, handler failures, Vaskify failures, warning-only paths, and empty or not-comparable data. | a | Added handler/Vaskify/empty-result failure coverage, warning-only success coverage, and retained not-comparable display coverage. Focused HB module tests pass: 24 passed, 12 skipped. | done |
 | Test the HB module path with a fake handler | Exercise the production module flow without external data-source access. | Add a module integration test that supplies `FakeHBDataHandler`, exercises the handler-to-result path without an Altinn or database connection, and verifies that the production backend is not accessed. | a | Added a module callback integration test using `FakeHBDataHandler` and real Vaskify/normalization, with Altinn backend access guarded. | done |
 
-## Add click-to-selector behavior
+## 15. Add click-to-selector behavior
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
 | Include the stable unit identifier in graph points | Make each plotted HB point carry its stable identifier. | Put `unit_id` in Plotly `customdata`. | a | Candidate and diagnostic traces already include `unit_id` in `customdata`; added assertions covering plotted points. | done |
@@ -158,3 +162,23 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Keep graph selection separate from HB execution | Ensure selecting a plotted unit does not start another calculation. | Read the stored result only; do not call the data handler or Vaskify on selection. | a | The click callback reads click data and the normalized result store only; a focused test verifies the handler and Vaskify are not called. | done |
 | Test selecting multiple graph candidates | Verify successive clicks select the correct stable unit identifiers. | Test multiple candidate clicks and assert each configured selector output receives the clicked point's `unit_id`. | a | Added successive-click coverage asserting each candidate's stable ID reaches the configured identifier output; handler and Vaskify are not called. | done |
 | Test graph clicks with no selected point | Verify empty click data does not alter selector state or trigger HB execution. | Test selecting no point and assert the stored result, data handler, and Vaskify are not used to start a run. | a | Added no-point coverage asserting `PreventUpdate`, unchanged stored result, and no handler or Vaskify calls. Focused HB module tests pass: 40 passed, 20 skipped. | done |
+
+## 16. Evaluate restrictions against usability
+| Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
+|---|---|---|---|---|---|
+| Inventory restrictions across the HB flow | Identify current restrictions in HB input validation, Altinn data access, Vaskify preflight, strata handling, and empty/not-comparable outcomes. | Record each restriction and where it is enforced or surfaced. Do not change behavior. | a | Inventory recorded in [restrictions_research.md](restrictions_research.md) across the approved areas; no runtime behavior changed. | done |
+| Classify each restriction | Distinguish the nature of every inventoried restriction. | Classify each as an API limitation, method assumption, data-integrity safeguard, or presentation behavior. | a | Added a classification for each inventory item in [restrictions_research.md](restrictions_research.md), distinguishing Vaskify/API constraints, methodology assumptions, integrity safeguards, and UI behavior. | done |
+| Assess usability impact and evidence | Establish why each restriction matters in real use. | For each restriction, record the real-world use case it blocks, evidence for keeping it, and any safe less-restrictive alternative. Do not relax approved behavior. | a | Recorded affected use cases, code/test/design evidence, and candidate alternatives in [restrictions_research.md](restrictions_research.md). Alternatives are not approvals; no behavior was relaxed. | done |
+| Investigate late restrictions and warnings | Identify restrictions that are enforced late and cause late warnings on non-passing data. | Trace when each relevant restriction is detected and assess the resulting user experience. Keep this investigation evaluative; do not change validation timing or behavior. | a | Timing analysis in [restrictions_research.md](restrictions_research.md): HALF_YEAR rejection occurs after handler retrieval; handler warnings are emitted before Vaskify preflight/result, so failed runs can show a warning followed by a generic error. Data-dependent Altinn checks remain retrieval-bound; no-eligible status is known only after Vaskify. No behavior changed. | done |
+| Present recommendations for approval | Present evidence-based usability recommendations to the user. | Summarize findings from the inventory, classification, impact assessment, and timing investigation. Make no behavior changes; wait for user approval before relaxing any approved restriction. | a | Added prioritized timing/presentation recommendations and explicit guardrails in [restrictions_research.md](restrictions_research.md). Recommendations are for user approval only; no runtime behavior changed. | done |
+
+## 17. Evaluate Pydantic for HB validation
+| Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
+|---|---|---|---|---|---|
+| Evaluate Pydantic for the common HB DataFrame contract | Assess whether the shared DataFrame schema and content checks should move into Pydantic. | Finding: retain `validate_hb_dataframe` as the shared pandas-based contract check; a Pydantic DataFrame field does not validate its columns or contents without custom validation. See [evaluate_pydantic.md](evaluate_pydantic.md). |  | Evaluation complete; see [evaluate_pydantic.md](evaluate_pydantic.md). |  |
+| Evaluate Pydantic for HB configuration and module input | Assess static configuration separately from checks that depend on the live selector registry and Dash state. | Finding: Pydantic fits structured configuration; keep runtime selector/state checks at the module boundary. See [evaluate_pydantic.md](evaluate_pydantic.md). |  | Evaluation complete; see [evaluate_pydantic.md](evaluate_pydantic.md). |  |
+| Evaluate Pydantic for Altinn-specific checks | Assess source configuration and data-dependent normalization and submission checks. | Finding: keep Altinn retrieval and record-integrity checks in the source adapter; consider a model only for externally loaded static configuration. See [evaluate_pydantic.md](evaluate_pydantic.md). |  | Evaluation complete; see [evaluate_pydantic.md](evaluate_pydantic.md). |  |
+| Evaluate Pydantic for Vaskify preflight | Assess period, strata, input, and output checks at the Vaskify boundary. | Finding: keep these method- and DataFrame-dependent checks in explicit preflight functions; Pydantic would not remove their domain logic. See [evaluate_pydantic.md](evaluate_pydantic.md). |  | Evaluation complete; see [evaluate_pydantic.md](evaluate_pydantic.md). |  |
+| Assess cross-cutting Pydantic trade-offs | Assess error reporting, pandas integration, cross-field rules, performance, and duplicate validation. | Finding: Pydantic can structure errors and configuration, but migration needs deliberate error mapping and a single validation owner; no performance benchmark was run. See [evaluate_pydantic.md](evaluate_pydantic.md). |  | Evaluation complete; see [evaluate_pydantic.md](evaluate_pydantic.md). |  |
+| Recommend HB validation migration scope | Present an evidence-based recommendation for approval without changing runtime behavior. | Recommendation: do not migrate HB validation wholesale; retain explicit boundary checks and use Pydantic selectively for structured configuration. No migration is included in this evaluation. See [evaluate_pydantic.md](evaluate_pydantic.md). |  | Evaluation complete; awaiting user approval before any migration. | done - no pydantic for now |
+
