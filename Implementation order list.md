@@ -125,32 +125,38 @@
    - Present recommendations for user approval; do not relax approved behavior as part of this evaluation.
    - Evaluate if some restrictions happen late in the flow causing late warning on non passing data, investigate as a usability issue.
 
-17. **Export and register the module**
+17. **Evaluate Pydantic for HB validation**
+   - Consider whether migrating HB module validation to Pydantic would improve clarity and consistency; use [FRAMEWORK-VALIDATION-001 in Issues.md](Issues.md) as cross-module context.
+   - Review the common HB DataFrame contract, configuration and input validation, Altinn-specific checks, and Vaskify preflight. Decide which fit Pydantic models and which should remain boundary-specific runtime checks.
+   - Assess error reporting, pandas/DataFrame integration, cross-field validation, performance, and the risk of duplicating checks.
+   - Record the recommendation and migration scope for approval. This step evaluates the approach; do not migrate validation without approval.
+
+18. **Export and register the module**
    - Export `HBMethod` through `ssb_dash_framework.modules` and the package top-level API where required.
    - Register the module with the existing YAML configuration mechanism.
    - Document constructor and handler configuration keys.
    - Search for imports of the experimental prototype before removing or redirecting it.
    - Test normal imports and YAML registration.
 
-18. **Add integration and reference-result tests**
+19. **Add integration and reference-result tests**
    - Test the installed Vaskify package with deterministic input data.
    - Verify the actual result shape, `ratio`, `median_ratio`, limit and flag columns, and explicit call defaults.
    - Add reference-result cases for positive, zero, negative, missing, flagged, unflagged, and not-comparable observations.
    - Verify the package's return behavior when no unit has eligible values and when it logs warnings without raising.
    - Keep mathematical algorithm tests in Vaskify, not in framework helpers.
 
-19. **Add demo and browser coverage**
+20. **Add demo and browser coverage**
    - Add or update a demo that imports and configures `HBMethod`.
    - Use deterministic test data or the configured Altinn path as appropriate.
    - Verify app startup, run action, result display, and click-to-selector flow.
    - Add demo-specific E2E steps under `tests/e2e/hooks/` when needed.
 
-20. **Conduct user acceptance testing on the demo**
+21. **Conduct user acceptance testing on the demo**
    - Have intended users exercise the demo with deterministic or approved test data.
    - Cover configuration, period/variable selection, running HB, interpreting results and candidate states, and click-to-selector behavior.
    - Record usability issues and decisions in `plan.md`; make behavior changes only through approved follow-up tasks.
 
-21. **Complete user documentation**
+22. **Complete user documentation**
    - Document Altinn handler setup and required configuration.
    - Document the common DataFrame schema and canonical period requirements for all six `TimeUnit` frequencies.
    - Document the selected period `t` and the `TimeUnit`-based `t-1` assumption.
@@ -158,15 +164,15 @@
    - Document click-to-selector behavior and the no-write boundary.
    - Update the module/API documentation without duplicating implementation logic.
 
-22. **Validate completed tasks**
+23. **Validate completed tasks**
    - Run only the tests explicitly listed for the active task in `plan.md`, after that task is complete.
    - Run a broader test session or E2E coverage only when explicitly scheduled in `plan.md`.
    - Confirm that no source data is edited and that all failures remain visible.
 
-23. **Remove temporary design documents**
+24. **Remove temporary design documents**
    - Before integrating to `main`, remove `architecture_design_detailed.md` and `ssb-vaskify-design.md` after their lasting decisions and issue context are recorded in `architecture.md` and `Issues.md`.
    - User will decide what to keep in the end.
    - Put back `AGENTS.md`
    - Pull request to integrate the changes into `main`.
 
-24. **Report ISSUES to Github or Magnus**
+25. **Report ISSUES to Github or Magnus**
