@@ -60,8 +60,9 @@ The HB calculation consumes only this common DataFrame format. The handler
 returns it together with structured warnings in an HB-specific result. The
 required Altinn adapter performs source-specific reading, conversion, and
 ambiguity detection, but does not call Dash or present alerts. The HB module
-forwards each returned warning through the existing `AlertHandler` once and
-passes only the common DataFrame to Vaskify. A prepared DataFrame or fake
+uses one aggregate `AlertHandler` warning with the count of returned warnings,
+without exposing row-specific details, and passes only the common DataFrame to
+Vaskify. A prepared DataFrame or fake
 handler remains useful for isolated tests, but does not replace the required
 Altinn adapter in the product implementation. Future HB adapters can use the
 same contract without affecting the HB module.
@@ -410,7 +411,10 @@ normalized result.
     it does not edit or write source data. Any later editing workflow is a
     separate concern.
 11. Route user-visible failures through the existing `AlertHandler` pattern and
-    log useful context without logging sensitive row-level data.
+    log only safe run context (module ID, selected variable, canonical period,
+    and exception type), never exception details, tracebacks, or row-level data.
+    A failed run clears the current result rather than presenting a stale result
+    as current; handler warnings are summarized in one aggregate alert.
 
 Export the module from `ssb_dash_framework.modules` and the package top level,
 following the framework's public API convention. Before removing the old

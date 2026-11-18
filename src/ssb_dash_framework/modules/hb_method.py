@@ -1,5 +1,6 @@
 """HB methodology application module."""
 
+import logging
 from dataclasses import asdict
 from io import StringIO
 from typing import Any
@@ -24,8 +25,11 @@ from ssb_dash_framework.modules.hb.vaskify import normalize_hb_result
 from ssb_dash_framework.modules.hb.vaskify import run_hb_vaskify
 from ssb_dash_framework.setup.variableselector import TimeUnit
 from ssb_dash_framework.setup.variableselector import VariableSelector
+from ssb_dash_framework.utils.alert_handler import AlertHandler
 from ssb_dash_framework.utils.base_classes import AsType
 from ssb_dash_framework.utils.base_classes import ModuleBase
+
+logger = logging.getLogger(__name__)
 
 
 class HBMethod(ModuleBase):
@@ -246,6 +250,12 @@ class HBMethod(ModuleBase):
             hb_comparison_periods=hb_comparison_periods,
             configured_hb_strata_variable=self.configured_hb_strata_variable,
         )
+        if hb_data_result.hb_warnings:
+            AlertHandler.warning(
+                "HB-data inneholder "
+                f"{len(hb_data_result.hb_warnings)} advarsel/advarsler.",
+                ephemeral=True,
+            )
         hb_vaskify_result_dataframe = run_hb_vaskify(
             hb_data_result.hb_dataframe,
             hb_comparison_periods=hb_comparison_periods,
@@ -284,13 +294,28 @@ class HBMethod(ModuleBase):
             n_clicks: int | None,
             selected_hb_variable: str | None,
             selector_period_value: str | None,
-        ) -> dict[str, Any]:
+        ) -> dict[str, Any] | None:
             if not n_clicks:
                 raise PreventUpdate
-            return self._execute_hb_run(
-                selected_hb_variable=selected_hb_variable,
-                selector_period_value=selector_period_value,
-            )
+            try:
+                return self._execute_hb_run(
+                    selected_hb_variable=selected_hb_variable,
+                    selector_period_value=selector_period_value,
+                )
+            except Exception as error:
+                logger.error(
+                    "HB run failed (module_id=%s, selected_hb_variable=%r, "
+                    "selector_period_value=%r, exception_type=%s).",
+                    self.module_id,
+                    selected_hb_variable,
+                    selector_period_value,
+                    type(error).__name__,
+                )
+                AlertHandler.error(
+                    "HB-kjøringen feilet. Kontroller valgt variabel og periode.",
+                    ephemeral=True,
+                )
+                return None
 
         @callback(
             Output(f"{self.module_id}-hb_result_graph", "figure"),

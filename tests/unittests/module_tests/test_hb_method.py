@@ -1,4 +1,7 @@
+import logging
 from collections.abc import Callable
+from io import StringIO
+from unittest.mock import Mock
 
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -18,6 +21,9 @@ from ssb_dash_framework.setup.variableselector import TimeUnitType
 from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.setup.variableselector import VariableSelectorConfig
 from ssb_dash_framework.setup.variableselector import VariableSelectorOption
+from ssb_dash_framework.utils.alert_handler import AlertHandler
+
+from .fake_hb_data_handler import FakeHBDataHandler
 
 
 class StubHBDataHandler(HBDataHandlerMeta):
@@ -77,6 +83,29 @@ def _component_ids(component: Component) -> set[str]:
     elif isinstance(children, Component):
         component_ids.update(_component_ids(children))
     return component_ids
+
+
+def _capture_hb_method_callbacks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> list[tuple[tuple[object, ...], dict[str, object], Callable[..., object]]]:
+    captured_callbacks: list[
+        tuple[tuple[object, ...], dict[str, object], Callable[..., object]]
+    ] = []
+
+    def capture_callback(*dependencies: object, **kwargs: object):
+        def register(
+            callback_function: Callable[..., object],
+        ) -> Callable[..., object]:
+            captured_callbacks.append((dependencies, kwargs, callback_function))
+            return callback_function
+
+        return register
+
+    monkeypatch.setattr(
+        "ssb_dash_framework.modules.hb_method.callback",
+        capture_callback,
+    )
+    return captured_callbacks
 
 
 def test_hb_method_initializes_modulebase_with_injected_handler(
@@ -216,24 +245,10 @@ def test_hb_run_callback_calls_handler_vaskify_and_normalizer_in_order(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     configured_hb_time_unit = _configure_hb_selectors(monkeypatch)
-    captured_callbacks: list[
-        tuple[tuple[object, ...], dict[str, object], Callable[..., object]]
-    ] = []
-
-    def capture_callback(*dependencies: object, **kwargs: object):
-        def register(
-            callback_function: Callable[..., object],
-        ) -> Callable[..., object]:
-            captured_callbacks.append((dependencies, kwargs, callback_function))
-            return callback_function
-
-        return register
-
-    monkeypatch.setattr(
-        "ssb_dash_framework.modules.hb_method.callback",
-        capture_callback,
-    )
+    captured_callbacks = _capture_hb_method_callbacks(monkeypatch)
     hb_data_handler = StubHBDataHandler()
+    warning_alert = Mock()
+    monkeypatch.setattr(AlertHandler, "warning", warning_alert)
     execution_order: list[str] = []
     original_get_hb_dataframe = hb_data_handler.get_hb_dataframe
 
@@ -354,6 +369,10 @@ def test_hb_run_callback_calls_handler_vaskify_and_normalizer_in_order(
             {"message": "Missing value.", "unit_id": "unit-1", "period": "2023"}
         ],
     }
+    warning_alert.assert_called_once_with(
+        "HB-data inneholder 1 advarsel/advarsler.",
+        ephemeral=True,
+    )
     assert not hasattr(hb_method, "selected_hb_variable")
     assert not hasattr(hb_method, "selector_period_value")
 
@@ -362,23 +381,7 @@ def test_hb_result_callback_displays_diagnostics_and_candidate_states(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _configure_hb_selectors(monkeypatch)
-    captured_callbacks: list[
-        tuple[tuple[object, ...], dict[str, object], Callable[..., object]]
-    ] = []
-
-    def capture_callback(*dependencies: object, **kwargs: object):
-        def register(
-            callback_function: Callable[..., object],
-        ) -> Callable[..., object]:
-            captured_callbacks.append((dependencies, kwargs, callback_function))
-            return callback_function
-
-        return register
-
-    monkeypatch.setattr(
-        "ssb_dash_framework.modules.hb_method.callback",
-        capture_callback,
-    )
+    captured_callbacks = _capture_hb_method_callbacks(monkeypatch)
     HBMethod(
         hb_data_handler=StubHBDataHandler(),
         hb_variable_selector="statistikkvariabel",
@@ -444,3 +447,126 @@ def test_hb_result_callback_displays_diagnostics_and_candidate_states(
         "",
         {"display": "none"},
     )
+
+
+@pytest.mark.parametrize("failure_point", ["handler", "vaskify", "empty_normalized"])
+def test_hb_run_failures_alert_and_log_without_row_data(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    failure_point: str,
+) -> None:
+    configured_hb_time_unit = _configure_hb_selectors(monkeypatch)
+    captured_callbacks = _capture_hb_method_callbacks(monkeypatch)
+    hb_data_handler = StubHBDataHandler()
+    hb_data_handler.hb_warnings = ()
+    error_alert = Mock()
+    monkeypatch.setattr(AlertHandler, "error", error_alert)
+    sensitive_error_detail = "sensitive-unit-742 value-12345"
+
+    if failure_point == "handler":
+        monkeypatch.setattr(
+            hb_data_handler,
+            "get_hb_dataframe",
+            Mock(side_effect=RuntimeError(sensitive_error_detail)),
+        )
+    elif failure_point == "vaskify":
+        monkeypatch.setattr(
+            "ssb_dash_framework.modules.hb_method.run_hb_vaskify",
+            Mock(side_effect=RuntimeError(sensitive_error_detail)),
+        )
+    else:
+        empty_vaskify_result_dataframe = pd.DataFrame(
+            columns=[
+                "unit_id",
+                "value_2023",
+                "value_2024",
+                "lower_limit",
+                "upper_limit",
+                "ratio",
+                "median_ratio",
+                "flag_hb",
+            ]
+        )
+        monkeypatch.setattr(
+            "ssb_dash_framework.modules.hb_method.run_hb_vaskify",
+            Mock(return_value=empty_vaskify_result_dataframe),
+        )
+
+    HBMethod(
+        hb_data_handler=hb_data_handler,
+        hb_variable_selector="statistikkvariabel",
+        configured_hb_time_unit=configured_hb_time_unit,
+    )
+    run_callback = captured_callbacks[0][2]
+
+    with caplog.at_level(
+        logging.ERROR,
+        logger="ssb_dash_framework.modules.hb_method",
+    ):
+        failed_run_result = run_callback(1, "omsetning", "2024")
+
+    assert failed_run_result is None
+    error_alert.assert_called_once_with(
+        "HB-kjøringen feilet. Kontroller valgt variabel og periode.",
+        ephemeral=True,
+    )
+    assert "module_id=HBMethod-" in caplog.text
+    assert "selected_hb_variable='omsetning'" in caplog.text
+    assert "selector_period_value='2024'" in caplog.text
+    assert sensitive_error_detail not in caplog.text
+
+
+def test_hb_module_integration_with_fake_handler_avoids_production_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configured_hb_time_unit = _configure_hb_selectors(monkeypatch)
+    captured_callbacks = _capture_hb_method_callbacks(monkeypatch)
+    hb_input_dataframe = pd.DataFrame(
+        {
+            "unit_id": ["unit-1", "unit-1", "unit-2", "unit-2"],
+            "period": ["2023", "2024", "2023", "2024"],
+            "value": [10.0, 12.0, 15.0, 16.0],
+        }
+    )
+    fake_hb_data_handler = FakeHBDataHandler(hb_input_dataframe)
+
+    def production_backend_must_not_be_called(*args: object, **kwargs: object):
+        raise AssertionError("The fake-handler integration test accessed the backend.")
+
+    monkeypatch.setattr(
+        "ssb_dash_framework.modules.hb.altinn_candidate_retrieval.get_connection",
+        production_backend_must_not_be_called,
+    )
+    monkeypatch.setattr(
+        "ssb_dash_framework.modules.hb.altinn_candidate_retrieval.active_no_duplicates_refnr_list",
+        production_backend_must_not_be_called,
+    )
+    HBMethod(
+        hb_data_handler=fake_hb_data_handler,
+        hb_variable_selector="statistikkvariabel",
+        configured_hb_time_unit=configured_hb_time_unit,
+    )
+    run_callback = captured_callbacks[0][2]
+
+    hb_result_store_data = run_callback(1, "omsetning", "2024")
+    normalized_hb_result_dataframe = pd.read_json(
+        StringIO(hb_result_store_data["hb_result_dataframe_json"]),
+        orient="split",
+    )
+
+    assert fake_hb_data_handler.requests[0].selected_hb_variable == "omsetning"
+    assert fake_hb_data_handler.requests[0].hb_comparison_periods == (
+        "2023",
+        "2024",
+    )
+    assert normalized_hb_result_dataframe["unit_id"].tolist() == [
+        "unit-1",
+        "unit-2",
+    ]
+    assert {
+        "ratio",
+        "median_ratio",
+        "lower_limit",
+        "upper_limit",
+        "flag_hb",
+    }.issubset(normalized_hb_result_dataframe.columns)
