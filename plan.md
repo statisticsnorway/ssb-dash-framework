@@ -18,14 +18,9 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Do not combine groups of multiple tasks into one row; each task should have its own clearly defined row in the implementation plan.
 
 # Current tasks:
-## 19. Add integration and reference-result tests
+
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
-| Test Vaskify package with deterministic input data |   - Test the installed Vaskify package with deterministic input data. |  | a |  |  |
-| Verify result shape and columns |   - Verify the actual result shape, `ratio`, `median_ratio`, limit and flag columns, and explicit call defaults. |  |  |  |  |
-| Add reference-result cases |   - Add reference-result cases for positive, zero, negative, missing, flagged, unflagged, and not-comparable observations. |  |  |  |  |
-| Verify return behavior for edge cases |   - Verify the package's return behavior when no unit has eligible values and when it logs warnings without raising. |  |  |  |  |
-| Keep algorithm tests in Vaskify |   - Keep mathematical algorithm tests in Vaskify, not in framework helpers. |  |  |  |  |
 
 
 # History
@@ -191,3 +186,12 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Document configuration keys | Document constructor and handler configuration keys. |  | a | Added the `HBMethod` and `AltinnHBDataHandler` keys to `architecture.md`; documented that YAML passes values through and does not construct injected handler or `TimeUnit` objects. | done |
 | Search for prototype imports | Search for imports of the experimental prototype before removing or redirecting it. |  | a | Found no prototype imports in source or tests; remaining references are in architecture and Sphinx documentation. Left the prototype and references unchanged. | done |
 | Test imports and registration | Test normal imports and YAML registration. |  | a | Added public-export and YAML-registry tests. Focused run: 18 passed, 9 skipped. | done |
+
+## 19. Add integration and reference-result tests
+| Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
+|---|---|---|---|---|---|
+| Test Vaskify package with deterministic input data |   - Test the installed Vaskify package with deterministic input data. |  | a | Added a direct installed-package test using fixed annual data; Vaskify returned a non-empty result. Focused SQLite run: 1 passed. |  |
+| Verify result shape and columns |   - Verify the actual result shape, `ratio`, `median_ratio`, limit and flag columns, and explicit call defaults. |  | a | Direct Vaskify result is `(2, 8)` with both period-value columns, limits, `ratio`, `median_ratio`, and `flag_hb`; the wrapper argument test verifies explicit call defaults. Focused run: 3 passed. |  |
+| Add reference-result cases |   - Add reference-result cases for positive, zero, negative, missing, flagged, unflagged, and not-comparable observations. | a |  | Added direct-package cases: positive unflagged ratio 1.1; flagged ratio 10 with median 1.1 and limits 1.0/1.21; zero, negative, missing, and not-comparable units are omitted. Focused run: 1 passed. |  |
+| Verify return behavior for edge cases |   - Verify the package's return behavior when no unit has eligible values and when it logs warnings without raising. | a |  | Direct call with no eligible units returned an empty DataFrame and logged an error without raising; a wide-input format warning returned data without raising. Focused run: 2 passed. |  |
+| Keep algorithm tests in Vaskify |   - Keep mathematical algorithm tests in Vaskify, not in framework helpers. |  | a | Reference and edge tests call the installed `Detect` package directly; framework-helper tests remain limited to integration argument mapping. No algorithm logic was added to framework helpers. |  |

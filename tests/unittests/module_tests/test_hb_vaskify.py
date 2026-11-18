@@ -17,6 +17,42 @@ def valid_hb_input_dataframe() -> pd.DataFrame:
     )
 
 
+def vaskify_reference_input_dataframe() -> pd.DataFrame:
+    reference_records = [
+        {"unit_id": "positive-unflagged", "period": "2023", "value": 10.0},
+        {"unit_id": "positive-unflagged", "period": "2024", "value": 11.0},
+        {"unit_id": "positive-flagged", "period": "2023", "value": 10.0},
+        {"unit_id": "positive-flagged", "period": "2024", "value": 100.0},
+        {"unit_id": "zero-base", "period": "2023", "value": 0.0},
+        {"unit_id": "zero-base", "period": "2024", "value": 5.0},
+        {"unit_id": "negative-base", "period": "2023", "value": -10.0},
+        {"unit_id": "negative-base", "period": "2024", "value": 5.0},
+        {"unit_id": "missing-current", "period": "2023", "value": 12.0},
+        {"unit_id": "missing-current", "period": "2024", "value": float("nan")},
+        {"unit_id": "not-comparable", "period": "2023", "value": 15.0},
+    ]
+    for reference_index, previous_value in enumerate(
+        (20.0, 30.0, 40.0, 50.0, 60.0),
+        start=1,
+    ):
+        reference_unit_id = f"reference-{reference_index}"
+        reference_records.extend(
+            [
+                {
+                    "unit_id": reference_unit_id,
+                    "period": "2023",
+                    "value": previous_value,
+                },
+                {
+                    "unit_id": reference_unit_id,
+                    "period": "2024",
+                    "value": previous_value * 1.1,
+                },
+            ]
+        )
+    return pd.DataFrame.from_records(reference_records)
+
+
 def valid_vaskify_result_dataframe(
     comparison_periods: tuple[str, str] = ("2023", "2024"),
     *,
@@ -482,3 +518,129 @@ def test_installed_vaskify_supports_canonical_half_year_periods() -> None:
 
     assert not result.empty
     assert "unit_id" in result.columns
+
+
+def test_installed_vaskify_runs_deterministic_annual_data() -> None:
+    result = _run_direct_vaskify_hb(
+        valid_hb_input_dataframe(),
+        ("2023", "2024"),
+    )
+
+    assert not result.empty
+
+
+def test_installed_vaskify_returns_expected_annual_result_shape_and_columns() -> None:
+    result = _run_direct_vaskify_hb(
+        valid_hb_input_dataframe(),
+        ("2023", "2024"),
+    )
+
+    assert result.shape == (2, 8)
+    assert result.columns.tolist() == [
+        "unit_id",
+        "value_2023",
+        "value_2024",
+        "lower_limit",
+        "upper_limit",
+        "ratio",
+        "median_ratio",
+        "flag_hb",
+    ]
+
+
+def test_installed_vaskify_matches_reference_classification_cases() -> None:
+    result = _run_direct_vaskify_hb(
+        vaskify_reference_input_dataframe(),
+        ("2023", "2024"),
+    )
+    reference_results_by_unit = result.set_index("unit_id")
+
+    assert set(result["unit_id"]) == {
+        "positive-unflagged",
+        "positive-flagged",
+        "reference-1",
+        "reference-2",
+        "reference-3",
+        "reference-4",
+        "reference-5",
+    }
+    assert reference_results_by_unit.loc["positive-unflagged", "ratio"] == pytest.approx(
+        1.1
+    )
+    assert reference_results_by_unit.loc[
+        "positive-unflagged", "median_ratio"
+    ] == pytest.approx(1.1)
+    assert reference_results_by_unit.loc["positive-unflagged", "flag_hb"] == 0
+    assert reference_results_by_unit.loc["positive-flagged", "ratio"] == pytest.approx(
+        10.0
+    )
+    assert reference_results_by_unit.loc[
+        "positive-flagged", "median_ratio"
+    ] == pytest.approx(1.1)
+    assert reference_results_by_unit.loc["positive-flagged", "lower_limit"] == pytest.approx(
+        1.0
+    )
+    assert reference_results_by_unit.loc["positive-flagged", "upper_limit"] == pytest.approx(
+        1.21
+    )
+    assert reference_results_by_unit.loc["positive-flagged", "flag_hb"] == 1
+
+
+def test_installed_vaskify_returns_empty_when_no_units_are_eligible(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    hb_input_dataframe = pd.DataFrame(
+        {
+            "unit_id": ["zero-base", "zero-base", "negative-base", "negative-base"],
+            "period": ["2023", "2024", "2023", "2024"],
+            "value": [0.0, 5.0, -2.0, 4.0],
+        }
+    )
+
+    with caplog.at_level("ERROR", logger="detect"):
+        result = _run_direct_vaskify_hb(
+            hb_input_dataframe,
+            ("2023", "2024"),
+        )
+
+    assert result.empty
+    assert any(
+        record.name == "detect"
+        and "No valid rows with y_var > 0 for both time periods."
+        in record.getMessage()
+        for record in caplog.records
+    )
+
+
+def test_installed_vaskify_logs_wide_output_warning_without_raising(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    hb_input_dataframe = pd.DataFrame(
+        {
+            "unit_id": ["unit-1", "unit-2"],
+            "value_2023": [10.0, 15.0],
+            "value_2024": [12.0, 16.0],
+        }
+    )
+    detector = hb_vaskify.Detect(hb_input_dataframe, id_nr="unit_id")
+
+    with caplog.at_level("WARNING", logger="detect"):
+        result = detector.hb(
+            y_var=["value_2023", "value_2024"],
+            strata_var="",
+            pu=0.5,
+            pa=0.05,
+            pc=20,
+            percentiles=(0.25, 0.75),
+            flag="flag_hb",
+            output_format="long",
+            output_scope="all",
+        )
+
+    assert not result.empty
+    assert any(
+        record.name == "detect"
+        and record.levelname == "WARNING"
+        and "Only wide output format is curently available" in record.getMessage()
+        for record in caplog.records
+    )
