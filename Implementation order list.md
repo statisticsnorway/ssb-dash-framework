@@ -67,7 +67,7 @@
    - Add the supported `ssb-vaskify` runtime dependency.
    - Add `run_hb_vaskify`.
    - Construct `Detect(hb_input_dataframe, id_nr="unit_id")`.
-   - Add structural preflight checks for exactly two distinct canonical periods, matching input period levels, Vaskify-compatible required dtypes, and a present `strata` column when configured.
+   - Add structural preflight checks for exactly two distinct canonical periods of the same `TimeUnit` frequency, matching input period levels, Vaskify-compatible required dtypes, and a present `strata` column when configured.
    - Pass `value`, `period`, comparison periods, optional stratum, and explicit public API defaults (`pu=0.5`, `pa=0.05`, `pc=20`, `percentiles=(0.25, 0.75)`, `flag="flag_hb"`, `output_format="wide"`, `output_scope="all"`) to `Detect.hb(...)`.
    - Do not filter zero, negative, or missing values or recreate Vaskify eligibility/calculation rules in the framework.
    - Keep Vaskify argument mapping out of the Altinn adapter and Dash callbacks.
@@ -75,6 +75,8 @@
 
 ------- Bookmark start ------------
 11. **Normalize Vaskify results**
+   - Reject HALF_YEAR comparisons in `run_hb_vaskify` until Vaskify supports their canonical period strings; keep HALF_YEAR valid in the common HB schema and resolver.
+   - Keep a strict-xfail test that calls `Detect.hb()` directly with raw half-year periods; when it passes, verify native behavior before removing the execution guard.
    - Add `normalize_hb_result`.
    - Validate the returned Vaskify shape.
    - Preserve stable identifiers, source context, comparison values, period context, diagnostics, `ratio`, `median_ratio`, limits, and `flag_hb`.
@@ -125,7 +127,6 @@
 
 17. **Add integration and reference-result tests**
    - Test the installed Vaskify package with deterministic input data.
-   - Verify Vaskify compatibility with the framework's canonical half-year periods (`YYYY-1`, `YYYY-2`); do not silently transform them. If unsupported, document the gap and obtain an explicit handling decision before claiming end-to-end half-year support.
    - Verify the actual result shape, `ratio`, `median_ratio`, limit and flag columns, and explicit call defaults.
    - Add reference-result cases for positive, zero, negative, missing, flagged, unflagged, and not-comparable observations.
    - Verify the package's return behavior when no unit has eligible values and when it logs warnings without raising.

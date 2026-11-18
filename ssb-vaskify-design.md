@@ -134,9 +134,11 @@ Vaskifys datokontroll er mønsterbasert. Den sjekker ikke om en dato er en
 reell kalenderdato. I `ssb-vaskify` 0.0.6 omfatter mønstrene år, måned, dag,
 kvartal, ISO-uke og ordinaldato. Frameworkets felles HB-kontrakt støtter seks
 kanoniske frekvenser, inkludert halvår (`YYYY-1` og `YYYY-2`), men halvår
-finnes ikke i Vaskifys mønstre. Støtte for halvår gjennom Vaskify må derfor
-avklares eller verifiseres før frameworket kan hevde ende-til-ende-støtte for
-alle seks frekvensene.
+finnes ikke i Vaskifys mønstre. HB-adapteren avviser derfor halvårsperioder
+før Vaskify kalles, i stedet for å merke dem om til måneder. Dette unngår å
+anta at metodens egnethet for halvårsdata følger av at API-et godtar
+månedsformater. En strict-xfail-test kaller `Detect.hb()` direkte med rå
+halvårsperioder, slik at testen oppdager når Vaskify får innebygd støtte.
 
 Flere HB-situasjoner logger `error` eller `warning` uten nødvendigvis å kaste
 et unntak:

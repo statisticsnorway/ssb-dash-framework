@@ -17,6 +17,26 @@ def valid_hb_input_dataframe() -> pd.DataFrame:
     )
 
 
+def _run_direct_vaskify_hb(
+    hb_input_dataframe: pd.DataFrame,
+    hb_comparison_periods: tuple[str, str],
+) -> pd.DataFrame:
+    detector = hb_vaskify.Detect(hb_input_dataframe, id_nr="unit_id")
+    return detector.hb(
+        y_var="value",
+        time_var="period",
+        time_periods=list(hb_comparison_periods),
+        strata_var="",
+        pu=0.5,
+        pa=0.05,
+        pc=20,
+        percentiles=(0.25, 0.75),
+        flag="flag_hb",
+        output_format="wide",
+        output_scope="all",
+    )
+
+
 @pytest.mark.parametrize(
     ("configured_hb_strata_variable", "expected_strata_var"),
     [(None, ""), ("industry", "strata")],
@@ -73,6 +93,8 @@ def test_run_hb_vaskify_maps_arguments_without_filtering_input(
         (("2023", "2024", "2025"), ValueError, "exactly two periods"),
         (("2023", "2023"), ValueError, "must be distinct"),
         (("2023", "2024-13"), ValueError, "must be canonical"),
+        (("2023", "2023-01"), ValueError, "same canonical TimeUnit frequency"),
+        (("2023-Q1", "2023-01"), ValueError, "same canonical TimeUnit frequency"),
         (("2022", "2024"), ValueError, "exactly the requested comparison periods"),
     ],
 )
@@ -157,3 +179,99 @@ def test_run_hb_vaskify_rejects_missing_configured_strata_column(
         )
 
     detect.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "comparison_periods",
+    [("2023-1", "2023-2"), ("2023-2", "2024-1")],
+)
+def test_run_hb_vaskify_rejects_half_year_periods_before_detect(
+    monkeypatch: pytest.MonkeyPatch,
+    comparison_periods: tuple[str, str],
+) -> None:
+    hb_input_dataframe = pd.DataFrame(
+        {
+            "unit_id": ["unit-1", "unit-1", "unit-2", "unit-2"],
+            "period": [
+                comparison_periods[0],
+                comparison_periods[1],
+                comparison_periods[0],
+                comparison_periods[1],
+            ],
+            "value": [10.0, 12.0, 15.0, 16.0],
+        }
+    )
+    detect = Mock()
+    monkeypatch.setattr(hb_vaskify, "Detect", detect)
+
+    with pytest.raises(ValueError, match="HALF_YEAR comparisons are disabled"):
+        hb_vaskify.run_hb_vaskify(
+            hb_input_dataframe,
+            hb_comparison_periods=comparison_periods,
+        )
+
+    detect.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "comparison_periods",
+    [
+        ("2023", "2024"),
+        ("2023-Q1", "2023-Q2"),
+        ("2023-01", "2023-02"),
+        ("2024-W01", "2024-W02"),
+        ("2024-01-01", "2024-01-02"),
+    ],
+)
+def test_run_hb_vaskify_allows_other_canonical_frequencies(
+    monkeypatch: pytest.MonkeyPatch,
+    comparison_periods: tuple[str, str],
+) -> None:
+    hb_input_dataframe = pd.DataFrame(
+        {
+            "unit_id": ["unit-1", "unit-1", "unit-2", "unit-2"],
+            "period": [
+                comparison_periods[0],
+                comparison_periods[1],
+                comparison_periods[0],
+                comparison_periods[1],
+            ],
+            "value": [10.0, 12.0, 15.0, 16.0],
+        }
+    )
+    detector = Mock()
+    detect = Mock(return_value=detector)
+    monkeypatch.setattr(hb_vaskify, "Detect", detect)
+
+    hb_vaskify.run_hb_vaskify(
+        hb_input_dataframe,
+        hb_comparison_periods=comparison_periods,
+    )
+
+    detect.assert_called_once_with(hb_input_dataframe, id_nr="unit_id")
+    assert detector.hb.call_args.kwargs["time_periods"] == list(comparison_periods)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Native Vaskify half-year support is available; remove the HALF_YEAR "
+        "execution guard and enable native half-year periods."
+    ),
+)
+def test_installed_vaskify_supports_canonical_half_year_periods() -> None:
+    hb_input_dataframe = pd.DataFrame(
+        {
+            "unit_id": ["unit-1", "unit-1", "unit-2", "unit-2"],
+            "period": ["2023-2", "2024-1", "2023-2", "2024-1"],
+            "value": [10.0, 12.0, 15.0, 16.0],
+        }
+    )
+
+    result = _run_direct_vaskify_hb(
+        hb_input_dataframe,
+        ("2023-2", "2024-1"),
+    )
+
+    assert not result.empty
+    assert "unit_id" in result.columns

@@ -277,15 +277,20 @@ not the HB algorithm. The validator accepts canonical strings for all six
 framework `TimeUnit` frequencies and checks them against the configured
 frequency when supplied. Before calling Vaskify, verify that the requested
 period pair contains exactly two distinct canonical periods, that the input
-contains exactly those two period levels, that required columns and dtypes are
-Vaskify-compatible, and that a configured stratum maps to an existing
-`strata` column. Do not filter input units by positive or missing values to
-recreate Vaskify's eligibility behavior.
+contains exactly those two period levels, and that both periods use the same
+`TimeUnit` frequency. Reject mixed-frequency pairs before calling Vaskify.
+Also verify that required columns and dtypes are Vaskify-compatible and that
+a configured stratum maps to an existing `strata` column. Do not filter input
+units by positive or missing values to recreate Vaskify's eligibility behavior.
 Although the framework contract accepts all six canonical frequencies,
 `ssb-vaskify` 0.0.6's period-format checker does not recognize the framework's
-HALF_YEAR strings (`YYYY-1` and `YYYY-2`). Do not silently rewrite those
-periods; end-to-end HALF_YEAR support requires an explicit compatibility
-decision.
+`HALF_YEAR` strings (`YYYY-1` and `YYYY-2`). The Vaskify adapter rejects
+HALF_YEAR comparisons with a clear error before constructing `Detect`; a
+warning is insufficient because it would still allow a result whose method
+applicability to half-year observations is unverified. Keep HALF_YEAR valid in
+the common data contract and period resolver. A direct `Detect.hb()` strict-
+xfail sentinel monitors native package support; remove the adapter guard only
+after that sentinel passes and the native behavior is verified.
 
 Read the selected canonical period `t` from `VariableSelector`; use the
 configured `TimeUnit` frequency to resolve the preceding period `t-1`. Pass

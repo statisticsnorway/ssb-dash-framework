@@ -69,16 +69,28 @@ def _validate_hb_comparison_periods(
         raise TypeError("hb_comparison_periods must be a tuple.")
     if len(hb_comparison_periods) != 2:
         raise ValueError("HB comparison requires exactly two periods.")
-    if not all(
-        any(
-            is_canonical_hb_period(period, frequency)
-            for frequency in TimeUnitType
-        )
+    comparison_period_frequencies = [
+        frequency
         for period in hb_comparison_periods
-    ):
+        for frequency in TimeUnitType
+        if is_canonical_hb_period(period, frequency)
+    ]
+    if len(comparison_period_frequencies) != 2:
         raise ValueError("HB comparison periods must be canonical TimeUnit periods.")
+    if comparison_period_frequencies[0] is not comparison_period_frequencies[1]:
+        raise ValueError(
+            "HB comparison periods must use the same canonical TimeUnit frequency."
+        )
     if hb_comparison_periods[0] == hb_comparison_periods[1]:
         raise ValueError("HB comparison periods must be distinct.")
+    if any(
+        is_canonical_hb_period(period, TimeUnitType.HALF_YEAR)
+        for period in hb_comparison_periods
+    ):
+        raise ValueError(
+            "HALF_YEAR comparisons are disabled until Vaskify supports "
+            "canonical half-year periods."
+        )
 
     input_periods = hb_input_dataframe["period"].drop_duplicates().tolist()
     if len(input_periods) != 2 or not all(
