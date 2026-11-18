@@ -51,6 +51,10 @@ def run_hb_vaskify(
         hb_comparison_periods=hb_comparison_periods,
         require_strata=configured_hb_strata_variable is not None,
     )
+    if hb_result.empty:
+        raise ValueError(
+            "Vaskify returned an empty HB result; no result is available."
+        )
     return hb_result
 
 

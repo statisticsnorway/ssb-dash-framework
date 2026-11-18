@@ -173,7 +173,7 @@ def test_run_hb_vaskify_requires_result_strata_when_configured(
         )
 
 
-def test_run_hb_vaskify_allows_extra_columns_and_empty_result(
+def test_run_hb_vaskify_allows_extra_result_columns(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     expected_result = valid_vaskify_result_dataframe()
@@ -189,14 +189,41 @@ def test_run_hb_vaskify_allows_extra_columns_and_empty_result(
 
     assert result is expected_result
 
-    empty_result = valid_vaskify_result_dataframe().iloc[0:0]
-    detector.hb.return_value = empty_result
-    result = hb_vaskify.run_hb_vaskify(
-        valid_hb_input_dataframe(),
-        hb_comparison_periods=("2023", "2024"),
-    )
 
-    assert result is empty_result
+def test_run_hb_vaskify_rejects_empty_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    empty_result = valid_vaskify_result_dataframe().iloc[0:0]
+    detector = Mock()
+    detector.hb.return_value = empty_result
+    monkeypatch.setattr(hb_vaskify, "Detect", Mock(return_value=detector))
+
+    with pytest.raises(ValueError, match="empty HB result; no result is available"):
+        hb_vaskify.run_hb_vaskify(
+            valid_hb_input_dataframe(),
+            hb_comparison_periods=("2023", "2024"),
+        )
+
+    detector.hb.assert_called_once()
+
+
+def test_run_hb_vaskify_propagates_vaskify_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    hb_input_dataframe = valid_hb_input_dataframe()
+    hb_input_dataframe["strata"] = ["group-1"] * len(hb_input_dataframe)
+    detector = Mock()
+    detector.hb.side_effect = KeyError("ratio")
+    monkeypatch.setattr(hb_vaskify, "Detect", Mock(return_value=detector))
+
+    with pytest.raises(KeyError, match="ratio"):
+        hb_vaskify.run_hb_vaskify(
+            hb_input_dataframe,
+            hb_comparison_periods=("2023", "2024"),
+            configured_hb_strata_variable="industry",
+        )
+
+    detector.hb.assert_called_once()
 
 
 @pytest.mark.parametrize(
