@@ -11,6 +11,7 @@ from dash import Output
 from dash import State
 from dash import html
 from dash.development.base_component import Component
+from dash.exceptions import PreventUpdate
 
 from ssb_dash_framework.modules.hb.data_handler import HBDataHandlerMeta
 from ssb_dash_framework.modules.hb.data_handler import HBDataResult
@@ -65,11 +66,12 @@ def _configure_hb_selectors(
     add_hb_variable_selector: bool = True,
 ) -> TimeUnit:
     monkeypatch.setattr(VariableSelector, "_time_unit", None)
+    monkeypatch.setattr(VariableSelector, "_ident", None)
     configured_hb_time_unit = TimeUnit(
         name="periode",
         frequency=TimeUnitType.YEAR,
     )
-    VariableSelectorConfig(time_units=configured_hb_time_unit)
+    VariableSelectorConfig(ident="ident", time_units=configured_hb_time_unit)
     if add_hb_variable_selector:
         VariableSelectorOption("statistikkvariabel")
     return configured_hb_time_unit
@@ -460,6 +462,79 @@ def test_hb_result_callback_displays_diagnostics_and_candidate_states(
         "",
         {"display": "none"},
     )
+
+
+def test_hb_graph_click_updates_configured_ident_for_multiple_candidates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configured_hb_time_unit = _configure_hb_selectors(monkeypatch)
+    captured_callbacks = _capture_hb_method_callbacks(monkeypatch)
+    hb_data_handler = StubHBDataHandler()
+    vaskify_call = Mock(side_effect=AssertionError("Vaskify must not run on selection."))
+    monkeypatch.setattr(
+        "ssb_dash_framework.modules.hb_method.run_hb_vaskify",
+        vaskify_call,
+    )
+    HBMethod(
+        hb_data_handler=hb_data_handler,
+        hb_variable_selector="statistikkvariabel",
+        configured_hb_time_unit=configured_hb_time_unit,
+    )
+
+    click_callback = captured_callbacks[2][2]
+    hb_result_store_data = {
+        "hb_result_dataframe_json": pd.DataFrame(
+            {"unit_id": ["unit-flagged", "unit-unflagged"]}
+        ).to_json(orient="split"),
+    }
+
+    selected_unit_ids = [
+        click_callback(
+            {"points": [{"customdata": [candidate_unit_id, 1.2]}]},
+            hb_result_store_data,
+        )
+        for candidate_unit_id in ("unit-flagged", "unit-unflagged")
+    ]
+
+    assert selected_unit_ids == ["unit-flagged", "unit-unflagged"]
+    assert captured_callbacks[2][0][0] == VariableSelector.get_ident(Output)
+    assert hb_data_handler.calls == []
+    vaskify_call.assert_not_called()
+
+
+def test_hb_graph_click_without_a_point_prevents_selector_update_and_hb_run(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configured_hb_time_unit = _configure_hb_selectors(monkeypatch)
+    captured_callbacks = _capture_hb_method_callbacks(monkeypatch)
+    hb_data_handler = StubHBDataHandler()
+    vaskify_call = Mock(side_effect=AssertionError("Vaskify must not run on selection."))
+    monkeypatch.setattr(
+        "ssb_dash_framework.modules.hb_method.run_hb_vaskify",
+        vaskify_call,
+    )
+    HBMethod(
+        hb_data_handler=hb_data_handler,
+        hb_variable_selector="statistikkvariabel",
+        configured_hb_time_unit=configured_hb_time_unit,
+    )
+    click_callback = captured_callbacks[2][2]
+    hb_result_store_data = {
+        "hb_result_dataframe_json": pd.DataFrame(
+            {"unit_id": ["unit-flagged"]}
+        ).to_json(orient="split"),
+    }
+
+    with pytest.raises(PreventUpdate):
+        click_callback(None, hb_result_store_data)
+
+    assert hb_result_store_data == {
+        "hb_result_dataframe_json": pd.DataFrame(
+            {"unit_id": ["unit-flagged"]}
+        ).to_json(orient="split"),
+    }
+    assert hb_data_handler.calls == []
+    vaskify_call.assert_not_called()
 
 
 @pytest.mark.parametrize(

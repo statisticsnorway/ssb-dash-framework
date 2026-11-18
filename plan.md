@@ -17,15 +17,11 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Separate tasks clearly by responsibility and ensure each has its own row in the implementation plan.
 - Do not combine groups of multiple tasks into one row; each task should have its own clearly defined row in the implementation plan.
 
-## Current tasks: 15. Add click-to-selector behavior
+# Current tasks:
+
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
-| Include the stable unit identifier in graph points | Make each plotted HB point carry its stable identifier. | Put `unit_id` in Plotly `customdata`. | a | Candidate and diagnostic traces already include `unit_id` in `customdata`; added assertions covering plotted points. | done |
-| Read the selected unit from graph click data | Extract the clicked unit's identity using the graph's structured click payload. | Read `unit_id` from click `customdata`; never derive it from hovertext, labels, or row positions. | a | Added a focused click-data extractor that reads only `customdata` and returns no identifier for missing or malformed point data; covered valid and invalid payloads. Selector updating remains a separate task. | done |
-| Update the configured selector from a graph click | Send the selected unit identifier to the configured `VariableSelector` output. | Update the configured selector output with the clicked `unit_id`. |  |  |  |
-| Keep graph selection separate from HB execution | Ensure selecting a plotted unit does not start another calculation. | Read the stored result only; do not call the data handler or Vaskify on selection. |  |  |  |
-| Test selecting multiple graph candidates | Verify successive clicks select the correct stable unit identifiers. | Test multiple candidate clicks and assert each configured selector output receives the clicked point's `unit_id`. |  |  |  |
-| Test graph clicks with no selected point | Verify empty click data does not alter selector state or trigger HB execution. | Test selecting no point and assert the stored result, data handler, and Vaskify are not used to start a run. |  |  |  |
+
 
 # History
 ## 1. Define the HB public contract
@@ -152,3 +148,13 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Report HB run failures safely | Present run failures while avoiding sensitive row-level data in logs. | Route failures through `AlertHandler` and log relevant run context without row-level sensitive data. | a | Added sanitized logging and user-facing failure alerts; exception details and row-level values are not logged. | done |
 | Test HB run outcomes | Verify success, failure, warnings, and data-state behavior. | Test successful runs, handler failures, Vaskify failures, warning-only paths, and empty or not-comparable data. | a | Added handler/Vaskify/empty-result failure coverage, warning-only success coverage, and retained not-comparable display coverage. Focused HB module tests pass: 24 passed, 12 skipped. | done |
 | Test the HB module path with a fake handler | Exercise the production module flow without external data-source access. | Add a module integration test that supplies `FakeHBDataHandler`, exercises the handler-to-result path without an Altinn or database connection, and verifies that the production backend is not accessed. | a | Added a module callback integration test using `FakeHBDataHandler` and real Vaskify/normalization, with Altinn backend access guarded. | done |
+
+## Add click-to-selector behavior
+| Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
+|---|---|---|---|---|---|
+| Include the stable unit identifier in graph points | Make each plotted HB point carry its stable identifier. | Put `unit_id` in Plotly `customdata`. | a | Candidate and diagnostic traces already include `unit_id` in `customdata`; added assertions covering plotted points. | done |
+| Read the selected unit from graph click data | Extract the clicked unit's identity using the graph's structured click payload. | Read `unit_id` from click `customdata`; never derive it from hovertext, labels, or row positions. | a | Added a focused click-data extractor that reads only `customdata` and returns no identifier for missing or malformed point data; covered valid and invalid payloads. Selector updating remains a separate task. | done |
+| Update the configured selector from a graph click | Send the selected unit identifier to the configured `VariableSelector` output. | Update the configured selector output with the clicked `unit_id`. | a | Added a graph-click callback that writes the clicked identifier to `VariableSelector.get_ident(Output)` only when it exists in the stored normalized result. Focused HB module tests pass. | done |
+| Keep graph selection separate from HB execution | Ensure selecting a plotted unit does not start another calculation. | Read the stored result only; do not call the data handler or Vaskify on selection. | a | The click callback reads click data and the normalized result store only; a focused test verifies the handler and Vaskify are not called. | done |
+| Test selecting multiple graph candidates | Verify successive clicks select the correct stable unit identifiers. | Test multiple candidate clicks and assert each configured selector output receives the clicked point's `unit_id`. | a | Added successive-click coverage asserting each candidate's stable ID reaches the configured identifier output; handler and Vaskify are not called. | done |
+| Test graph clicks with no selected point | Verify empty click data does not alter selector state or trigger HB execution. | Test selecting no point and assert the stored result, data handler, and Vaskify are not used to start a run. | a | Added no-point coverage asserting `PreventUpdate`, unchanged stored result, and no handler or Vaskify calls. Focused HB module tests pass: 40 passed, 20 skipped. | done |

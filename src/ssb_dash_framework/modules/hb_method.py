@@ -389,3 +389,31 @@ class HBMethod(ModuleBase):
                 candidate_state_summary,
                 {"display": "block"},
             )
+
+        selector_unit_id_output = VariableSelector.get_ident(Output)
+
+        @callback(
+            selector_unit_id_output,
+            Input(f"{self.module_id}-hb_result_graph", "clickData"),
+            State(f"{self.module_id}-hb_result_store", "data"),
+            prevent_initial_call=True,
+        )
+        def update_selector_from_hb_graph_click(
+            click_data: dict[str, Any] | None,
+            hb_result_store_data: dict[str, Any] | None,
+        ) -> str:
+            clicked_hb_unit_id = _extract_hb_unit_id_from_plotly_click_data(
+                click_data
+            )
+            if clicked_hb_unit_id is None or hb_result_store_data is None:
+                raise PreventUpdate
+
+            normalized_hb_result_dataframe = pd.read_json(
+                StringIO(hb_result_store_data["hb_result_dataframe_json"]),
+                orient="split",
+            )
+            if "unit_id" not in normalized_hb_result_dataframe.columns:
+                raise ValueError("Stored HB result must contain a unit_id column.")
+            if clicked_hb_unit_id not in normalized_hb_result_dataframe["unit_id"].values:
+                raise PreventUpdate
+            return clicked_hb_unit_id
