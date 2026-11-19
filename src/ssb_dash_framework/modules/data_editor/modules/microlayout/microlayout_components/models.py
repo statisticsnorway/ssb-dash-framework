@@ -136,7 +136,7 @@ class Tab(ContainerNode):
 
     def create(
         self, options: CreateArguments
-    ) -> tuple[dbc.Tab, list[FieldCallbackContainer]]:
+    ) -> tuple[dcc.Tab, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
         children = []
@@ -145,7 +145,7 @@ class Tab(ContainerNode):
             ids.append(_id)
             children.append(comp)
         return (
-            dbc.Tab(
+            dcc.Tab(
                 children,
                 label=self.label,
             ),
@@ -159,7 +159,7 @@ class Tabs(ContainerNode):
 
     def create(
         self, options: CreateArguments
-    ) -> tuple[dbc.Tabs, list[FieldCallbackContainer]]:
+    ) -> tuple[dcc.Tabs, list[FieldCallbackContainer]]:
         """A method for creating the layout."""
         ids = []
         children = []
@@ -167,7 +167,7 @@ class Tabs(ContainerNode):
             comp, _id = child.create(options)
             ids.append(_id)
             children.append(comp)
-        return dbc.Tabs(children), ids
+        return dcc.Tabs(children, parent_className="ssb-tabs--custom-view"), ids
 
 
 class Header(BaseNode):

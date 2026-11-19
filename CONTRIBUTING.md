@@ -113,7 +113,7 @@ tested automatically; no harness changes are needed.
 
 Demo-specific steps, skips or tolerated known bugs go in an optional hook file,
 `tests/e2e/hooks/<demo_name>.py`. A hook whose name does not match a demo fails
-collection. See [tests/e2e/README.md](tests/e2e/README.md) for the hook reference.
+collection. See [tests/e2e/README.md](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/tests/e2e/README.md) for the hook reference.
 
 Demo ports are fixed, so do not run the E2E suite in parallel (no `pytest-xdist`,
 no two simultaneous runs).

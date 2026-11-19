@@ -178,7 +178,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                 )
 
             except Exception as e:
-                msg = f"Getting reference numbers for ident returned with an error: {e}"
+                msg = f"Henting av refnr for ident returnerte med error: {e}"
                 logger.warning(msg)
                 AlertHandler.warning(msg)
                 return no_update, no_update
@@ -191,6 +191,7 @@ class DataEditorSidebarEditingStatus(DataEditorHelperSidebar):
                     f"Flere enn ett RA-skjema funnet for {ident}. "
                     f"Velg det du vil se på i menyen under 'Se innsendinger'.",
                     ephemeral=True,
+                    duration=7
                 )
 
             if (

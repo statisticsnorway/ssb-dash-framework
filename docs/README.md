@@ -1,12 +1,14 @@
 ## The structure of the documentation
 
+If you are new to the package, start with the [guides](guides/README.md). They walk you through building an app step by step.
+
 The source of truth for architecture and design decisions can be found in [docs/architecture.md](architecture.md).
 
 For supported datamodels see [docs/datamodels.md](datamodels.md)
 
 For all classes that can be configured through yaml, and their arguments, see [docs/yaml_reference.md](yaml_reference.md). This file is auto-generated with `python -m ssb_dash_framework.config.docgen`.
 
-For examples of how to build and configure apps, look in the [demo folder](../demo/).
+For examples of how to build and configure apps, look in the [demo folder](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/demo/).
 
 For tips, tricks and unsupported/unintended ways to manipulate the functionality of an app, you can consult the [docs/arcane_compendium.md](arcane_compendium.md).
 

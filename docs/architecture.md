@@ -48,7 +48,7 @@ This ensures that using an experimental feature/module requires an *explicit opt
 
 Modules in ssb-dash-framework are designed to be independent of each other and built upon a common base class to simplify development and maintenance, and reduce boilerplate.
 
-Example in [demo/hello_world/hello_module.py](demo/hello_world/hello_module.py).
+Example in [demo/hello_world/hello_module.py](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/demo/hello_world/hello_module.py).
 
 ### Modules inherit from the common base class ModuleBase
 

@@ -28,6 +28,8 @@
 
 The documentation for this project can be [found here](https://statisticsnorway.github.io/ssb-dash-framework/) or in the **docs** folder.
 
+New to the package? Start with the guide [Getting started: build your first app](docs/guides/getting_started.md).
+
 ## Features
 - Dashboard for editing data, includes modules for among other things:
     - Controls for the data
