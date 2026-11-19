@@ -19,6 +19,7 @@ from dash_iconify import DashIconify
 
 from ..config.models import YamlLoadable
 from .functions import sidebar_button
+from .desktop_windows import desktop_window as create_desktop_window
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ class ModuleBase(YamlLoadable):
         self,
         as_type: AsType | None = None,
         window_scrollable: bool = True,
+        desktop_window: bool = False,
     ) -> None:
         """Initialize the module, create its layout and register its callbacks.
 
@@ -82,12 +84,15 @@ class ModuleBase(YamlLoadable):
                 If None, the implementation is inferred by `main_layout` based on whether
                 the module is passed in `tab_list` or in `window_list`.
             window_scrollable: Whether the modal body is scrollable. Only used when implemented as a window.
+            desktop_window: Whether to use the desktop-window implementation instead of
+                the default Bootstrap modal. Only applies when as_type is "Window".
 
         Raises:
             AttributeError: If `label` is not set before calling this method.
         """
         self.implemented_as = None
         self.window_scrollable = window_scrollable
+        self.desktop_window = desktop_window
 
         if not hasattr(self, "label"):
             raise AttributeError(
@@ -144,9 +149,13 @@ class ModuleBase(YamlLoadable):
             )
         self.module_layout = self.layout()
         self.implemented_as = as_type
-        if as_type == "Window":
+        if as_type == "Window" and not self.desktop_window:
             self._window_callbacks()
         logger.debug(f"Implementing {self.module_id} as {as_type}.")
+
+    def extra_desktop_windows(self) -> list[Component]:
+        """Return additional desktop windows rendered alongside the main window."""
+        return []
 
     @abstractmethod
     def layout(self) -> html.Div:
@@ -175,7 +184,7 @@ class ModuleBase(YamlLoadable):
         logger.debug(f"Generating default layout for {self.module_id}.")
         return self.layout()
 
-    def _tab_layout(self) -> dbc.Tab:
+    def _tab_layout(self) -> html.Div | dbc.Tab:
         """Generate the layout for the module as a tab.
 
         Returns:
@@ -190,13 +199,22 @@ class ModuleBase(YamlLoadable):
             )
         else:
             label_content = self.label
-        layout = dbc.Tab(
+        tab = dbc.Tab(
             html.Div(
                 className="tab-implementation",
                 children=self.layout(),
             ),
             label=label_content,
         )
+        if self.desktop_window:
+            layout = html.Div(
+                children=[
+                    tab,
+                    *self.extra_desktop_windows(),
+                ]
+            )
+        else:
+            layout = tab
         logger.debug(f"Generated {self.module_id} - {self.label} tab layout")
         return layout
 
@@ -206,6 +224,27 @@ class ModuleBase(YamlLoadable):
         Returns:
             The layout containing the modal and the sidebar button toggling it.
         """
+
+        if self.desktop_window:
+            layout = html.Div(
+                children=[
+                    create_desktop_window(
+                        module_id=self.module_id,
+                        title=self.label,
+                        icon=self.icon,
+                        children=self.layout(),
+                    ),
+                    *self.extra_desktop_windows(),
+                    sidebar_button(
+                        self.icon,
+                        self.label,
+                        f"sidebar-{self.module_id}-modal-button",
+                    ),
+                ]
+            )
+            logger.debug(f"Generated {self.module_id} - {self.label} window layout")
+            return layout
+
         layout = html.Div(
             children=[
                 dbc.Modal(

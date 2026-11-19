@@ -25,6 +25,7 @@ from ibis import _
 
 from ...setup.variableselector import VariableSelector
 from ...utils import ModuleBase
+from ...utils.desktop_windows import desktop_window as create_desktop_window
 from .nspek_utils import get_nspek_connection
 
 # from .nspek_utils import set_nspek_connection
@@ -733,7 +734,7 @@ class NspekDashboard(ModuleBase):
         ]
         logger.debug("TIME UNITS %s", self.time_units)
 
-        super().__init__()
+        super().__init__(desktop_window=True)
 
     def _is_valid(self) -> None:
         for var in NspekDashboard._required_variables:
@@ -927,25 +928,32 @@ class NspekDashboard(ModuleBase):
             className="ssb-card nspek-dashboard-kpi-card",
         )
 
-    def create_kpi_modal(
+    def create_kpi_window(
         self,
-        modal_id: str,
+        module_id: str,
+        open_button_id: str,
         title: str,
         grid_id: str,
         column_defs: list[dict],
         glossary_text: str | None = None,
-    ) -> dbc.Modal:
-        """Create a modal containing KPI information and an AG Grid."""
+    ) -> html.Div:
+        """Create a desktop window containing KPI information and an AG Grid."""
+
         refresh_button_id = f"{grid_id}-refresh"
         count_id = f"{grid_id}-count"
-        close_button_id = f"{modal_id}-close"
 
-        return dbc.Modal(
-            [
-                dbc.ModalHeader(
-                    dbc.ModalTitle(title),
-                ),
-                dbc.ModalBody(
+        return create_desktop_window(
+            module_id=module_id,
+            icon=DashIconify(icon="feather:bar-chart-2", width=24),
+            title=html.Span(
+                title,
+                className="modal-title-text",
+            ),
+            open_button_id=open_button_id,
+            width="1200px",
+            height="800px",
+            children=[
+                html.Div(
                     [
                         dbc.Row(
                             [
@@ -1040,27 +1048,124 @@ class NspekDashboard(ModuleBase):
                             ),
                             className="flex-grow-1",
                             style={
+                                "flex": "1 1 0",
                                 "minHeight": 0,
+                                "minWidth": 0,
                                 "width": "100%",
                             },
                         ),
                     ],
                     className="d-flex flex-column h-100",
-                    style={"minHeight": 0},
-                ),
-                dbc.ModalFooter(
-                    dbc.Button(
-                        "Lukk",
-                        id=close_button_id,
-                        className="mb-3 ssb-btn primary-btn",
-                    ),
+                    style={
+                        "display": "flex",
+                        "flexDirection": "column",
+                        "height": "100%",
+                        "width": "100%",
+                        "minHeight": 0,
+                        "minWidth": 0,
+                    },
                 ),
             ],
-            id=modal_id,
-            className="ssb-modal nspek-kpi-modal",
-            size="xl",
-            is_open=False,
-            scrollable=False,
+        )
+
+    def create_construct_window(self):
+        """Create desktop window for sequence construction."""
+
+        return create_desktop_window(
+            module_id="nspek-dashboard-construct",
+            title="Konstruer sekvens",
+            icon=DashIconify(icon="feather:terminal", width=24),
+            open_button_id="nspek-dashboard-construct",
+            width="1000px",
+            height="850px",
+            children=html.Div(
+                [
+                    dbc.Row(
+                        [
+                            dbc.Col(
+                                self.create_dropdown_card(
+                                    title="Årgang",
+                                    component_id="nspek-dashboard-construct-aar",
+                                    options=[
+                                        {"label": "2025", "value": 2025},
+                                        {"label": "2024", "value": 2024},
+                                    ],
+                                    value=2024,
+                                ),
+                                width=4,
+                            ),
+                            dbc.Col(width=6),
+                            dbc.Col(
+                                dbc.Button(
+                                    "Konstruer",
+                                    id="nspek-dashboard-construct-submit",
+                                    className="ssb-btn primary-btn",
+                                    disabled=True,
+                                ),
+                                width=2,
+                            ),
+                        ],
+                        className="mb-3",
+                    ),
+                    html.Div(
+                        "Skriv inn ett eller flere organisasjonsnummer, ett per linje.",
+                        className="nspek-construct-result-label",
+                    ),
+                    html.Div(
+                        className="ssb-text-area",
+                        children=[
+                            dcc.Loading(
+                                id="nspek-dashboard-construct-loading",
+                                color="#00824D",
+                                overlay_style={
+                                    "visibility": "visible",
+                                    "filter": "blur(2px)",
+                                },
+                                children=[
+                                    dbc.Textarea(
+                                        id="nspek-dashboard-construct-orgnr",
+                                        placeholder=(
+                                            "Eksempel:\n"
+                                            "979443137\n"
+                                            "932598957\n"
+                                            "987654321\n"
+                                            "999888777"
+                                        ),
+                                        className="comment-textarea",
+                                        readOnly=False,
+                                        style={
+                                            "width": "100%",
+                                            "height": "600px",
+                                            "padding": "10px 12px",
+                                        },
+                                    ),
+                                    html.Div(
+                                        id="nspek-dashboard-construct-loading-trigger",
+                                        style={"display": "none"},
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                    html.Small(
+                        (
+                            "Du kan også lime inn en liste med organisasjonsnummer. "
+                            "Duplikater vil bli fjernet i behandlingen."
+                        ),
+                        className="text-muted",
+                    ),
+                    html.Div(
+                        id="nspek-dashboard-construct-result",
+                        className="mt-3 nspek-construct-result-container",
+                    ),
+                ],
+                style={
+                    "display": "flex",
+                    "flexDirection": "column",
+                    "gap": "12px",
+                    "width": "100%",
+                },
+            ),
         )
 
     def create_key_figure(
@@ -1553,121 +1658,6 @@ class NspekDashboard(ModuleBase):
     def layout(self):
         return html.Div(
             [
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle("Konstruer sekvens")),
-                        dbc.ModalBody(
-                            [
-                                dbc.Row(
-                                    [
-                                        dbc.Col(
-                                            self.create_dropdown_card(
-                                                title="Årgang",
-                                                component_id="nspek-dashboard-construct-aar",
-                                                options=[
-                                                    {"label": "2025", "value": 2025},
-                                                    {"label": "2024", "value": 2024},
-                                                ],
-                                                value=2024,
-                                            ),
-                                            width=4,
-                                        ),
-                                    ],
-                                    className="mb-3",
-                                ),
-                                html.Div(
-                                    "Skriv inn ett eller flere organisasjonsnummer, ett per linje.",
-                                    className="nspek-construct-result-label",
-                                ),
-                                html.Div(
-                                    className="ssb-text-area",
-                                    children=[
-                                        dcc.Loading(
-                                            id="nspek-dashboard-construct-loading",
-                                            color="#00824D",
-                                            overlay_style={
-                                                "visibility": "visible",
-                                                "filter": "blur(2px)",
-                                            },
-                                            children=[
-                                                dbc.Textarea(
-                                                    id="nspek-dashboard-construct-orgnr",
-                                                    placeholder=(
-                                                        "Eksempel:\n"
-                                                        "979443137\n"
-                                                        "932598957\n"
-                                                        "987654321\n"
-                                                        "999888777"
-                                                    ),
-                                                    className="comment-textarea",
-                                                    readOnly=False,
-                                                    style={
-                                                        "width": "100%",
-                                                        "height": "600px",
-                                                        "padding": "10px 12px",
-                                                    },
-                                                ),
-                                                html.Div(
-                                                    id="nspek-dashboard-construct-loading-trigger",
-                                                    style={"display": "none"},
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                                html.Small(
-                                    (
-                                        "Du kan også lime inn en liste med organisasjonsnummer. "
-                                        "Duplikater vil bli fjernet i behandlingen."
-                                    ),
-                                    className="text-muted",
-                                ),
-                                html.Div(
-                                    id="nspek-dashboard-construct-result",
-                                    className="mt-3 nspek-construct-result-container",
-                                ),
-                            ]
-                        ),
-                        dbc.ModalFooter(
-                            [
-                                dbc.Button(
-                                    "Lukk",
-                                    id="nspek-dashboard-construct-close",
-                                    className="ssb-btn secondary-btn",
-                                ),
-                                dbc.Button(
-                                    "Konstruer",
-                                    id="nspek-dashboard-construct-submit",
-                                    className="ssb-btn primary-btn",
-                                    disabled=True,
-                                ),
-                            ]
-                        ),
-                    ],
-                    id="nspek-dashboard-construct-modal",
-                    className="ssb-modal",
-                    is_open=False,
-                    scrollable=True,
-                    size="xl",
-                    backdrop="static",
-                    keyboard=False,
-                    style={
-                        "maxWidth": "100vw",
-                        "width": "100vw",
-                    },
-                ),
-                html.Div(
-                    [
-                        self.create_kpi_modal(
-                            modal_id=config["modal_id"],
-                            title=config["title"],
-                            grid_id=config["grid_id"],
-                            column_defs=config["columns"],
-                            glossary_text=config["glossary_text"],
-                        )
-                        for config in KPI_CONFIG.values()
-                    ]
-                ),
                 # ============================================================
                 # SSB CARDS
                 # ============================================================
@@ -1841,34 +1831,26 @@ class NspekDashboard(ModuleBase):
             className="nspek-dashboard-container",
         )
 
+    def extra_desktop_windows(self):
+        """Create desktop windows for the KPI cards."""
+
+        return [
+            *[
+                self.create_kpi_window(
+                    module_id=f"nspek-dashboard-kpi-{key}",
+                    open_button_id=config["card_id"],
+                    title=config["title"],
+                    grid_id=config["grid_id"],
+                    column_defs=config["columns"],
+                    glossary_text=config["glossary_text"],
+                )
+                for key, config in KPI_CONFIG.items()
+            ],
+            self.create_construct_window(),
+        ]
+
     def module_callbacks(self) -> None:
         """Defines the callbacks for the Naeringsspesifikasjon module."""
-
-        @callback(
-            Output(
-                "nspek-dashboard-construct-modal",
-                "is_open",
-            ),
-            Input(
-                "nspek-dashboard-construct",
-                "n_clicks",
-            ),
-            Input(
-                "nspek-dashboard-construct-close",
-                "n_clicks",
-            ),
-            State(
-                "nspek-dashboard-construct-modal",
-                "is_open",
-            ),
-            prevent_initial_call=True,
-        )
-        def toggle_construct_modal(
-            open_clicks,
-            cancel_clicks,
-            is_open,
-        ):
-            return not is_open
 
         @callback(
             self.variableselector.get_output_object("ident"),
@@ -1923,7 +1905,7 @@ class NspekDashboard(ModuleBase):
                 ),
                 (
                     Output(
-                        "nspek-dashboard-construct-close",
+                        "nspek-dashboard-construct-window-close",
                         "disabled",
                     ),
                     True,
@@ -2166,51 +2148,6 @@ class NspekDashboard(ModuleBase):
         )
         def update_construct_button_disabled(aar, orgnr_text):
             return aar is None or not orgnr_text or not orgnr_text.strip()
-
-        @callback(
-            Output("nspek-dashboard-total-modal", "is_open"),
-            Output("nspek-dashboard-ske-modal", "is_open"),
-            Output("nspek-dashboard-constructed-modal", "is_open"),
-            Input("nspek-dashboard-total-card", "n_clicks"),
-            Input("nspek-dashboard-total-modal-close", "n_clicks"),
-            Input("nspek-dashboard-ske-card", "n_clicks"),
-            Input("nspek-dashboard-ske-modal-close", "n_clicks"),
-            Input("nspek-dashboard-constructed-card", "n_clicks"),
-            Input("nspek-dashboard-constructed-modal-close", "n_clicks"),
-            State("nspek-dashboard-total-modal", "is_open"),
-            State("nspek-dashboard-ske-modal", "is_open"),
-            State("nspek-dashboard-constructed-modal", "is_open"),
-            prevent_initial_call=True,
-        )
-        def toggle_kpi_modals(
-            total_card_clicks,
-            total_close_clicks,
-            ske_card_clicks,
-            ske_close_clicks,
-            constructed_card_clicks,
-            constructed_close_clicks,
-            total_is_open,
-            ske_is_open,
-            constructed_is_open,
-        ):
-            triggered_id = ctx.triggered_id
-
-            states = [total_is_open, ske_is_open, constructed_is_open]
-
-            if triggered_id == "nspek-dashboard-total-card":
-                return True, False, False
-            if triggered_id == "nspek-dashboard-total-modal-close":
-                return False, ske_is_open, constructed_is_open
-            if triggered_id == "nspek-dashboard-ske-card":
-                return False, True, False
-            if triggered_id == "nspek-dashboard-ske-modal-close":
-                return total_is_open, False, constructed_is_open
-            if triggered_id == "nspek-dashboard-constructed-card":
-                return False, False, True
-            if triggered_id == "nspek-dashboard-constructed-modal-close":
-                return total_is_open, ske_is_open, False
-
-            return states
 
         @callback(
             Output("nspek-dashboard-total-grid-count", "children"),
