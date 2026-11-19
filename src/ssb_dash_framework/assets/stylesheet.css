@@ -3929,6 +3929,8 @@ Aarsregnskap
     width: 100%;
     margin-left: 0;
     box-sizing: border-box;
+}
+
 .aarsregnskap-placeholder {
     display: flex;
     min-height: 80%;
@@ -5418,6 +5420,8 @@ body.dark-mode .desktop-snap-assist-thumbnail {
   background: #252525;
   border-color: #4a4a4a;
   color: #1a9d49;
+}
+
 /* ============================================================
    CUSTOM VIEW TABS (AUTO-FIT WIDTH & SMALLER TEXT)
    ============================================================ */
