@@ -12,24 +12,6 @@ They are functional and some can be used as a foundation for creating a custom a
 | parqueteditor | Copy paste friendly setup for an app containing the ParquetEditor module. Runnable for SSB-employees using the "dapla-felles-developers" access. |
 | altinn_app | DataEditor with custom dataviews for two Altinn forms. Runs standalone on the bundled testdata, no database access needed. |
 
-## hb_method
-
-```bash
-uv run demo/hb_method/app.py
-```
-
-The demo loads the bundled Altinn test data into process-local in-memory SQLite,
-then uses `AltinnHBDataHandler` and the real Vaskify flow. It adds a deterministic
-HB outlier so the result has a known flagged unit. Click that unit to select it,
-switch to **Data editor**, and edit the field labelled **Areal ny eng (dekar) -
-demo-data**. Click **Lagre redigering** to open the reason-and-justification
-dialog; the value is saved only after confirmation. Return to **HB metoden** and
-run it again to see the updated result. The edited value and demo edit history
-exist only in memory and disappear when the app exits; the bundled fixture and
-production data are never changed. Changing the selected unit or period reloads
-the editor for that submission and discards any pending edit, so it cannot be
-saved against a different selection.
-
 ## altinn_app
 
 ```bash
@@ -49,5 +31,24 @@ Their `variable` is a SQL `LIKE` pattern, so wildcards are written as `%` and no
 
 Note that ident `12111111` in `2026-01` has two submissions and will fail to load; see
 [docs/known_bugs.md](../docs/known_bugs.md) for that and other rough edges this demo exposes.
+
+## hb_method
+
+```bash
+uv run demo/hb_method/app.py
+```
+
+The demo loads the bundled Altinn test data into process-local in-memory SQLite,
+then uses `AltinnHBDataHandler` and the real Vaskify flow. It adds a deterministic
+HB outlier so the result has a known flagged unit. Click that unit to select it,
+switch to **Data editor**, and edit the field labelled **Areal ny eng (dekar) -
+demo-data**. Click **Lagre redigering** to open the reason-and-justification
+dialog; the value is saved only after confirmation. Return to **HB metoden** and
+run it again to see the updated result. The edited value and demo edit history
+exist only in memory and disappear when the app exits; the bundled fixture and
+production data are never changed. Changing the selected unit or period reloads
+the editor for that submission and discards any pending edit, so it cannot be
+saved against a different selection.
+
 
 ## For contributors

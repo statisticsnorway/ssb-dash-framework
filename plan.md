@@ -18,16 +18,15 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Do not combine groups of multiple tasks into one row; each task should have its own clearly defined row in the implementation plan.
 
 # Current tasks:
-## 23. **Complete user documentation**
+## 24. Remove temporary design documents
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
-| Deprecate the legacy HB import | Emit a visible warning directing users to the supported API and remove the old HB module from Sphinx and architecture documentation. Validate the warning with the focused HB import test. | Emit a `FutureWarning` when the legacy module is imported; preserve its import behavior temporarily while directing users to `ssb_dash_framework.HBMethod`. |  |  |  |
-| Document Altinn handler setup | Document the Altinn handler setup and required configuration. |  |  |  |  |
-| Document the common HB DataFrame contract | Document the common DataFrame schema and canonical period requirements for all six `TimeUnit` frequencies. |  |  |  |  |
-| Document HB period comparison | Document the selected period `t` and the `TimeUnit`-based `t-1` assumption. |  |  |  |  |
-| Document HB results and limitations | Document result flags, missing and not-comparable states, and method limitations. |  |  |  |  |
-| Document HB interaction boundaries | Document click-to-selector behavior and the no-write boundary. |  |  |  |  |
-| Update HB module and API documentation | Update module/API documentation without duplicating implementation logic. |  |  |  |  |
+| Preserve temporary design decisions | Before cleanup, ensure lasting decisions and issue context from `architecture.md` and `ssb-vaskify-design.md` are recorded in `architecture_design_detailed.md` and `Issues.md`. | Keep `architecture_design_detailed.md` and `Issues.md` as the lasting destinations; do not delete source documents until reviewed. |  | Merged the root `architecture.md` summary into `architecture_design_detailed.md`; `ssb-vaskify-design.md` still needs review. |  |
+| Decide which temporary design documents to keep | Review `architecture.md` and `ssb-vaskify-design.md` and decide which, if any, to retain. Do not delete either before the user decides. |  |  |  |  |
+| Update design-document references | Update active planning and retention instructions so they refer to the chosen lasting design documents; distinguish root `architecture.md` from `docs/architecture.md`. | Ensure `plan.md` and `Implementation order list.md` do not direct users to a document scheduled for deletion or schedule `architecture_design_detailed.md` for removal. |  |  |  |
+| Remove approved temporary design documents | Before integrating to `main`, remove only the temporary design documents the user approves for deletion, after their lasting decisions and issue context are recorded. |  |  |  |  |
+| Restore original `AGENTS.md` | Restore the original `AGENTS.md` content before integrating to `main`. |  |  |  |  |
+| Create pull request to `main` | Create a pull request to integrate the completed changes into `main` after document cleanup and restoration of `AGENTS.md`. |  |  |  |  |
 
 
 # History
@@ -243,3 +242,14 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Updating HB imports and references | Update all import paths and references affected by moving the HB module and tests. Preserve downstream compatibility where applicable. | a |  | Updated moved test imports, relative fake-handler imports, and documentation references. Confirmed no stale references to the previous paths remain and parsed all 21 HB source/test Python files successfully. Pytest was not run; this plan task does not schedule test execution. | done |
 | Running HB automatically on first entry | Automatically run HB when first entering the module with the required selections; keep **Kjør HB-metoden** for manual reruns. Allow another run after 15 seconds, even if the previous run may still be active, and prevent an older result from replacing the newer run's result. Keep the retry timing internal; no animation, countdown, or extra user-facing explanation. Validate with the focused HB unit tests and the HB demo E2E hook on Linux. | a |  |  |  |
 | Adding an HB information tooltip | Add an information icon with a `dbc.Tooltip` explaining the HB method. Use the existing Dash Bootstrap Components support and a unique target ID for each module instance. Validate with the focused HB unit tests. | a |  | Added the information icon and module-specific tooltip target; focused HB tests and Ruff passed. | done |
+
+## 23. Complete user documentation
+| Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
+|---|---|---|---|---|---|
+| Deprecate the legacy HB import | Emit a visible warning directing users to the supported API and remove the old HB module from Sphinx and architecture documentation. Validate the warning with the focused HB import test. | Emit a `FutureWarning` when the legacy module is imported; preserve its import behavior temporarily while directing users to `ssb_dash_framework.HBMethod`. |  |  |  |
+| Document Altinn handler setup | Document the Altinn handler setup and required configuration. |  |  |  |  |
+| Document the common HB DataFrame contract | Document the common DataFrame schema and canonical period requirements for all six `TimeUnit` frequencies. |  |  |  |  |
+| Document HB period comparison | Document the selected period `t` and the `TimeUnit`-based `t-1` assumption. |  |  |  |  |
+| Document HB results and limitations | Document result flags, missing and not-comparable states, and method limitations. |  |  |  |  |
+| Document HB interaction boundaries | Document click-to-selector behavior and the no-write boundary. |  |  |  |  |
+| Update HB module and API documentation | Create the standalone guide under `docs/modules/hb/` and expose it in the stable Sphinx Modules reference without duplicating implementation logic. Validate with a Sphinx documentation build using a temporary output directory. | Keep one canonical user guide in `docs/modules/hb/`; include it in the Sphinx module page and use autodoc for the public API reference. |  | Converted the guide and Sphinx wrapper to reStructuredText to match the existing Sphinx module pages; no Sphinx configuration or extensions changed. Preserved the Vaskify half-year and empty-result limitations, result-plot interpretation, Altinn ambiguity/strata rules, YAML injection note, and selector click behavior. Fresh Sphinx build passed (exit 0); tracked the unrelated SQLAlchemy metadata cross-reference warning in `Issues.md`. |  |

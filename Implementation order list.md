@@ -182,34 +182,29 @@
    - Document result flags, missing/not-comparable states, and limitations.
    - Document click-to-selector behavior and the no-write boundary.
    - Update the module/API documentation without duplicating implementation logic.
+
+24. **Remove temporary design documents**
+   - Before integrating to `main`, remove `architecture.md` and `ssb-vaskify-design.md` after their lasting decisions and issue context are recorded in `architecture_design_detailed.md` and `Issues.md`.
+   - User will decide what to keep in the end.
+   - Put back `AGENTS.md`
+   - Pull request to integrate the changes into `main`.
 ------- Bookmark end ------------
 
-24. **Conduct user acceptance testing on the demo**
+25. **Conduct user acceptance testing on the demo**
    - Have intended users exercise the demo with deterministic or approved test data.
    - Cover configuration, period/variable selection, running HB, interpreting results and candidate states, and click-to-selector behavior.
    - Record usability issues and decisions in `plan.md`; make behavior changes only through approved follow-up tasks.
 
-25. **Validate completed tasks**
-   - Run only the tests explicitly listed for the active task in `plan.md`, after that task is complete.
-   - Run a broader test session or E2E coverage only when explicitly scheduled in `plan.md`.
-   - Confirm that no source data is edited and that all failures remain visible.
-
-26. **Remove temporary design documents**
-   - Before integrating to `main`, remove `architecture_design_detailed.md` and `ssb-vaskify-design.md` after their lasting decisions and issue context are recorded in `architecture.md` and `Issues.md`.
-   - User will decide what to keep in the end.
-   - Put back `AGENTS.md`
-   - Pull request to integrate the changes into `main`.
-
-27. **Report ISSUES to Github or Magnus**
+26. **Report ISSUES to Github or Magnus**
    - Apply all the issues and delete the issues file, move it to boards if not resolved.
 
 -- At this point the initial implementation and documentation tasks should be complete. And we are working on the next version. This is a cutoff point for v1 tasks. ---
 
-28. **restrictions_research.md**
+27. **restrictions_research.md**
    - Look at the restrictions research document to understand the timing and feedback recommendations for user approval.
 
-29. **Implement fixes for ISSUES where possible**
+28. **Implement fixes for ISSUES where possible**
    - If approved follow trough in v2.
 
-30. nice to haves 
+29. **nice to haves** 
    - Show analysis context with results. A compact label with the selected variable and actual (t-1, t) periods would make results easier to interpret independently of the selector state. This is optional; the shared selector already supplies that context. 

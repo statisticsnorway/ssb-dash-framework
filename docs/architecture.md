@@ -127,6 +127,10 @@ For HB, the handler result contains the validated common DataFrame and
 structured warning records; the HB module forwards each warning to
 `AlertHandler` once. This is an HB-specific contract.
 
+For HB setup, the common data contract, period assumptions, result
+interpretation, and interaction boundaries, see the
+[HB module guide](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/docs/modules/hb/README.rst).
+
 #### Default handlers whenever possible for documented data models
 
 There should be default datahandler implementations for datamodels documented in [docs/datamodels/README.md](datamodels.md).

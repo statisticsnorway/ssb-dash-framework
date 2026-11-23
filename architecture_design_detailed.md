@@ -37,16 +37,16 @@ re-specify the HB algorithm.
 
 ## Target architecture
 
-```text
-VariableSelector ── selected variable / periods ──┐
-                                                  v
-Data source ──> source adapter ──> HB-specific result
-                                     ├── common HB DataFrame ──> HB module ──> Vaskify
-                                     └── structured warnings ──> HB module ──> AlertHandler
-                                                                   │
-                                                        figure/result DataFrame
-                                                                   │
-Clicked unit ────────────────────────────────────────> VariableSelector output
+```mermaid
+flowchart LR
+    VS[VariableSelector] -->|current selection| HB[HBMethod]
+    ALT[Altinn] --> AH[AltinnHBDataHandler]
+    AH -->|HBDataResult: data and warnings| HB
+    HB -->|common HB DataFrame| V[Vaskify]
+    V --> N[normalize_hb_result]
+    N -->|normalized result| HB
+    HB -->|figure and clicked unit identifier| VS
+    HB --> ALERT[AlertHandler]
 ```
 
 **Lag ett felles DataFrame-format for HB, og én adapter per datakilde.**
@@ -65,16 +65,28 @@ See [altinnapiclient-documentation.md](altinnapiclient-documentation.md) for
 the repository's existing Altinn database access patterns, schema relationships,
 and decisions the HB adapter must make explicitly.
 
-Responsibilities:
+### Runtime contract
 
-| Component | Responsibility |
-|---|---|
-| `HBMethod` Dash module | Inputs, run action, loading/error state, result figure, click-to-select, and warning presentation through `AlertHandler` |
-| `HBDataHandlerMeta` | Define the contract for supplying the common HB DataFrame and structured warnings |
-| Source adapter | Read/receive one source's data, convert it once to the common HB DataFrame, preserve selector context, and report data warnings without presenting them |
-| HB/Vaskify call helper | Translate the common DataFrame and selected periods to `Detect.hb()` and normalize its result |
-| Vaskify | Perform and own the HB calculation |
-| `VariableSelector` | Share configured analysis selections and receive the clicked unit identifier |
+| Step | Owner | Contract |
+|---|---|---|
+| Read selection | `HBMethod` | Read the selected variable and canonical period at run time; do not retain user selections on the module instance. |
+| Resolve periods | `resolve_hb_comparison_periods` | Use the configured `TimeUnit` to resolve `(t-1, t)`; this is the current product assumption. |
+| Prepare data | Source adapter | Return the common HB DataFrame and structured warnings; do not call Vaskify or present alerts. |
+| Calculate | `HBMethod` / `run_hb_vaskify` | Validate the integration contract, then call Vaskify with explicit arguments. |
+| Normalize and display | `normalize_hb_result` / `HBMethod` | Preserve Vaskify diagnostics and all input units; display results without recomputing HB logic. |
+| Select unit | `HBMethod` | Send the stable `unit_id` from the clicked point to `VariableSelector`; do not rerun HB. |
+
+### Ownership boundaries
+
+| Component | Owns | Does not own |
+|---|---|---|
+| `HBMethod` (`modules/hb/hb_method.py`) | Inputs, callbacks, run state, structural validation, result figure, selector updates, and warning presentation | Altinn queries, source reshaping, eligibility rules, HB mathematics |
+| `HBDataHandlerMeta` | Handler contract and common input validation | Vaskify invocation |
+| Source adapter | Source retrieval and conversion to common HB input; preserve selector context and return structured warnings | Dash callbacks, alert presentation, Vaskify invocation or result mapping |
+| `run_hb_vaskify` | Vaskify construction and explicit argument mapping | Source access and Dash callbacks |
+| `normalize_hb_result` | Result schema and reconciliation to handler units | UI, eligibility or diagnostic calculations |
+| `Vaskify` | HB calculation | Framework UI and source access |
+| `VariableSelector` | Share configured selections and receive the clicked unit identifier | HB calculation |
 
 The module must not read another module's component IDs or callbacks. It should
 receive data through an explicit handler interface and share state only through
@@ -370,6 +382,9 @@ normalized result.
    `super().__init__()`.
 3. Implement `layout()` for the method controls, run button, progress/loading
    state, error/empty-result message, and result visualization.
+   The result figure plots Vaskify's `ratio` against the value in the selected
+   period and shows the returned median and limits by stratum; the module must
+   display these diagnostics without recalculating them.
 4. Implement `module_callbacks()` using `self.module_id` for every component
    ID. Register callbacks with Dash's `@callback` pattern inside this method,
    following the framework's existing modules. Do not use fixed component IDs.
@@ -437,6 +452,22 @@ following the framework's public API convention.
   `flag="flag_hb"`, `output_format="wide"`, and `output_scope="all"`.
   Treat these as API defaults, not methodology approval for alternative
   values. Do not invent parameter bounds in the framework.
+
+The supported constructor keys are:
+
+| Component | Key | Required | Meaning |
+|---|---|---|---|
+| `HBMethod` | `hb_data_handler` | Yes | Injected `HBDataHandlerMeta`; production uses `AltinnHBDataHandler`. |
+| `HBMethod` | `hb_variable_selector` | Yes | Configured variable selector title for the HB measure. |
+| `HBMethod` | `configured_hb_time_unit` | Yes | The configured `TimeUnit` for the period selector. |
+| `HBMethod` | `configured_hb_strata_variable` | No | Source variable used for strata; omit or pass `None` when unused. |
+| `HBMethod` | `as_type` | No | Framework placement, `Tab` or `Window`, normally supplied by the module loader. |
+| `AltinnHBDataHandler` | `configured_hb_form` | Yes | Altinn form identifier. |
+| `AltinnHBDataHandler` | `hb_variable_to_feltsti` | Yes | Mapping from HB variable names to exact Altinn field paths; include the strata variable when configured. |
+
+YAML values are passed through as-is; the loader does not construct an
+`HBDataHandlerMeta` or `TimeUnit` from a mapping. Those objects must be
+injected by Python code.
 
 ## Phase 5 — Tests and documentation
 
