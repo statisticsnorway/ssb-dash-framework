@@ -8,7 +8,7 @@ They are functional and some can be used as a foundation for creating a custom a
 |-------|------------|
 | hello_world    | A very simple example of how to create a module. |
 | getting_started | The finished app from the [getting started guide](../docs/guides/getting_started.md). Runs anywhere, no data access needed. |
-| hb_method | Runs `HBMethod` with real Vaskify and a deterministic in-memory data handler. |
+| hb_method | Runs `HBMethod` with the Altinn data handler, bundled SQLite test data, and the framework `DataEditor`. |
 | parqueteditor | Copy paste friendly setup for an app containing the ParquetEditor module. Runnable for SSB-employees using the "dapla-felles-developers" access. |
 | altinn_app | DataEditor with custom dataviews for two Altinn forms. Runs standalone on the bundled testdata, no database access needed. |
 
@@ -18,8 +18,17 @@ They are functional and some can be used as a foundation for creating a custom a
 uv run demo/hb_method/app.py
 ```
 
-The demo exercises the real `HBMethod` and Vaskify flow without an Altinn
-connection. Only the data handler is replaced with fixed in-memory values.
+The demo loads the bundled Altinn test data into process-local in-memory SQLite,
+then uses `AltinnHBDataHandler` and the real Vaskify flow. It adds a deterministic
+HB outlier so the result has a known flagged unit. Click that unit to select it,
+switch to **Data editor**, and edit the field labelled **Areal ny eng (dekar) -
+demo-data**. Click **Lagre redigering** to open the reason-and-justification
+dialog; the value is saved only after confirmation. Return to **HB metoden** and
+run it again to see the updated result. The edited value and demo edit history
+exist only in memory and disappear when the app exits; the bundled fixture and
+production data are never changed. Changing the selected unit or period reloads
+the editor for that submission and discards any pending edit, so it cannot be
+saved against a different selection.
 
 ## altinn_app
 

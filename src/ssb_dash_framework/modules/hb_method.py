@@ -345,6 +345,7 @@ class HBMethod(ModuleBase):
                 )
                 return None
 
+        # Avoid rendering an old result when a tab remount races with a fresh run.
         @callback(
             Output(f"{self.module_id}-hb_result_graph", "figure"),
             Output(f"{self.module_id}-hb_result_graph", "style"),
@@ -352,6 +353,7 @@ class HBMethod(ModuleBase):
             Output(f"{self.module_id}-hb_candidate_state_summary", "children"),
             Output(f"{self.module_id}-hb_candidate_state_summary", "style"),
             Input(f"{self.module_id}-hb_result_store", "data"),
+            prevent_initial_call=True,
         )
         def display_hb_result(
             hb_result_store_data: dict[str, Any] | None,

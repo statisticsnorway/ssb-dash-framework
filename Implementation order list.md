@@ -145,18 +145,24 @@
    - Verify the package's return behavior when no unit has eligible values and when it logs warnings without raising.
    - Keep mathematical algorithm tests in Vaskify, not in framework helpers.
 
-------- Bookmark start ------------
 20. **Add demo and browser coverage**
    - Add or update a demo that imports and configures `HBMethod`.
-   - Use deterministic test data or the configured Altinn path as appropriate.
-   - Verify app startup, run action, result display, and click-to-selector flow.
+   - Load a deterministic copy of the bundled Altinn fixture into process-local in-memory SQLite and use it with `AltinnHBDataHandler` and the framework `DataEditor`; never edit the bundled or production data.
+   - Add one deterministic outlier and verify a confirmed DataEditor edit changes the next HB result; discard the in-memory data when the demo exits.
+   - Use `variabel` to load the synthetic value, then stage edits in a demo-only handler until the user confirms the save dialog; do not change `StandardDataHandler` or DataEditor source.
+   - Keep the selected submission reference synchronized with the selected unit, form, and period; discard a staged edit when that selection changes.
+   - Require a reason and written justification in the demo's **Lagre redigering** dialog; save both with the synthetic value in the in-memory database.
+   - Prevent an initial result-display callback on tab remount from overwriting the result of a new HB run.
+   - Keep graph sizing adjustments local to the demo.
+   - Verify app startup, run action, result display, click-to-selector flow, unit/period switching, unsaved-state clearing, required reason/justification, and that editing 900000007 from 200 to 40 updates the displayed graph value.
    - Add demo-specific E2E steps under `tests/e2e/hooks/` when needed.
-------- Bookmark end ------------
 
-21. **Conduct user acceptance testing on the demo**
+------- Bookmark start ------------
+21. **Conduct self acceptance testing on the demo**
    - Have intended users exercise the demo with deterministic or approved test data.
    - Cover configuration, period/variable selection, running HB, interpreting results and candidate states, and click-to-selector behavior.
    - Record usability issues and decisions in `plan.md`; make behavior changes only through approved follow-up tasks.
+------- Bookmark end ------------
 
 22. **Complete user documentation**
    - Document Altinn handler setup and required configuration.
@@ -165,6 +171,11 @@
    - Document result flags, missing/not-comparable states, and limitations.
    - Document click-to-selector behavior and the no-write boundary.
    - Update the module/API documentation without duplicating implementation logic.
+
+21. **Conduct user acceptance testing on the demo**
+   - Have intended users exercise the demo with deterministic or approved test data.
+   - Cover configuration, period/variable selection, running HB, interpreting results and candidate states, and click-to-selector behavior.
+   - Record usability issues and decisions in `plan.md`; make behavior changes only through approved follow-up tasks.
 
 23. **Validate completed tasks**
    - Run only the tests explicitly listed for the active task in `plan.md`, after that task is complete.
