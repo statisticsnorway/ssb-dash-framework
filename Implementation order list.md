@@ -170,7 +170,8 @@
    - Move strict-xfail tests that detect newly available shared `TimeUnit` or Vaskify behavior into `tests/unittests/module_tests/hb/availability_sentinels/`, separate from the regular HB test files.
    - This will break a lot of things.
    - Update all import paths and references to the hb module and its tests accordingly.
-   - On first entry to the HB module, run automatically when the required variable and period are available; retain the **Kjør HB-metoden** button for manual reruns. Prevent duplicate or stale runs.
+   - On first entry to the HB module, run automatically when the required variable and period are available; retain the **Kjør HB-metoden** button for manual reruns. 
+   - Verify automatic first run, 15-second retry, and latest-result handling with focused HB unit tests and the HB demo E2E hook on Linux.
    - Add an information icon with a `dbc.Tooltip` explaining the HB method. Use a unique target ID for each module instance; do not add a dependency.
 ------- Bookmark end ------------
 

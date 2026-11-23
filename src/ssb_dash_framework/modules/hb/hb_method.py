@@ -12,22 +12,78 @@ from dash import Input
 from dash import Output
 from dash import State
 from dash import callback
+from dash import clientside_callback
 from dash import dcc
 from dash import html
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 
-from .data_handler import HBDataHandlerMeta
-from .period_resolution import resolve_hb_comparison_periods
-from .vaskify import normalize_hb_result
-from .vaskify import run_hb_vaskify
 from ssb_dash_framework.setup.variableselector import TimeUnit
 from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.utils.alert_handler import AlertHandler
 from ssb_dash_framework.utils.base_classes import AsType
 from ssb_dash_framework.utils.base_classes import ModuleBase
 
+from .data_handler import HBDataHandlerMeta
+from .period_resolution import resolve_hb_comparison_periods
+from .vaskify import normalize_hb_result
+from .vaskify import run_hb_vaskify
+
 logger = logging.getLogger(__name__)
+
+HB_RUN_RETRY_INTERVAL_MS = 15_000
+HB_RUN_GATE_CLIENTSIDE_FUNCTION = f"""
+function(buttonTimestamp, selectedVariable, selectedPeriod, gateState) {{
+    const noUpdate = window.dash_clientside.no_update;
+    const currentState = gateState || {{}};
+    const lastClickTimestamp = Number(currentState.last_click_timestamp_ms || 0);
+    const clickTimestamp = Number(buttonTimestamp || 0);
+    const isManualRun = clickTimestamp > lastClickTimestamp;
+    const selectionsAvailable =
+        typeof selectedVariable === "string" &&
+        selectedVariable.trim() !== "" &&
+        typeof selectedPeriod === "string" &&
+        selectedPeriod.trim() !== "";
+    const isAutomaticRun =
+        !currentState.automatic_run_started &&
+        !isManualRun &&
+        selectionsAvailable;
+
+    if (!isManualRun && !isAutomaticRun) {{
+        return [noUpdate, noUpdate];
+    }}
+
+    const now = Date.now();
+    const lastRunStartedAt = Number(currentState.last_run_started_at_ms || 0);
+    if (
+        isManualRun &&
+        lastRunStartedAt > 0 &&
+        now - lastRunStartedAt < {HB_RUN_RETRY_INTERVAL_MS}
+    ) {{
+        return [
+            {{...currentState, last_click_timestamp_ms: clickTimestamp}},
+            noUpdate
+        ];
+    }}
+
+    const requestId = Number(currentState.request_id || 0) + 1;
+    const nextState = {{
+        request_id: requestId,
+        last_run_started_at_ms: now,
+        last_click_timestamp_ms: clickTimestamp,
+        automatic_run_started: currentState.automatic_run_started ||
+            isAutomaticRun
+    }};
+    return [
+        nextState,
+        {{
+            hb_run_request_id: requestId,
+            selected_hb_variable: selectedVariable,
+            selector_period_value: selectedPeriod
+        }}
+    ];
+}}
+"""
 
 
 def _extract_hb_unit_id_from_plotly_click_data(
@@ -121,14 +177,129 @@ class HBMethod(ModuleBase):
         """Create the HB controls and placeholders for a run's state and result."""
         return html.Div(
             children=[
+                dcc.Store(
+                    id=f"{self.module_id}-hb_run_gate_state",
+                    data=None,
+                    storage_type="session",
+                ),
+                dcc.Store(id=f"{self.module_id}-hb_run_request", data=None),
                 dcc.Store(id=f"{self.module_id}-hb_result_store", data=None),
                 html.Div(
-                    dbc.Button(
-                        "Kjør HB-metoden",
-                        id=f"{self.module_id}-hb_run_button",
-                        n_clicks=0,
-                        className="ssb-btn primary-btn",
-                    ),
+                    children=[
+                        dbc.Button(
+                            "Kjør HB-metoden",
+                            id=f"{self.module_id}-hb_run_button",
+                            n_clicks=0,
+                            className="ssb-btn primary-btn",
+                        ),
+                        html.Span(
+                            DashIconify(
+                                icon="mdi:information-outline",
+                                width=18,
+                            ),
+                            id=f"{self.module_id}-hb_info_icon",
+                            className="ms-2",
+                            title="Informasjon om HB-metoden",
+                            tabIndex=0,
+                        ),
+                        dbc.Tooltip(
+                            children=html.Div(
+                                [
+                                    html.P(
+                                        [
+                                            html.Strong("Metode. "),
+                                            (
+                                                "HB (Hidiroglou-Berthelot) er en "
+                                                "screeningmetode for å identifisere "
+                                                "mulige avvik i utviklingen fra "
+                                                "foregående periode (t-1) til valgt "
+                                                "periode (t). For enhet i beregnes "
+                                                "forholdstallet r_i = "
+                                                "y_i,t / y_i,t-1."
+                                            ),
+                                        ]
+                                    ),
+                                    html.P(
+                                        [
+                                            html.Strong("Referansefordeling. "),
+                                            (
+                                                "Forholdstallene vurderes mot "
+                                                "medianen og spredningen i den "
+                                                "aktuelle referansepopulasjonen. "
+                                                "Hvis en stratifiseringsvariabel er "
+                                                "konfigurert, beregnes grensene "
+                                                "separat innen hvert stratum; ellers "
+                                                "brukes alle kvalifiserte enheter "
+                                                "samlet."
+                                            ),
+                                        ]
+                                    ),
+                                    html.P(
+                                        [
+                                            html.Strong("Skår. "),
+                                            (
+                                                "La m være medianen av r_i, og la "
+                                                "x_i = max(y_i,t, y_i,t-1). Det "
+                                                "signerte relative avviket er "
+                                                "s_i = r_i/m - 1 når r_i >= m, "
+                                                "ellers s_i = 1 - m/r_i. "
+                                                "Størrelsesjustert skår er "
+                                                "e_i = s_i * x_i^p_u."
+                                            ),
+                                        ]
+                                    ),
+                                    html.P(
+                                        [
+                                            html.Strong("Grenser. "),
+                                            (
+                                                "Vaskify beregner Q_1, Q_2 og Q_3 "
+                                                "(25-, 50- og 75-prosentilene) for "
+                                                "e_i. Grensene for skåren er "
+                                                "L_e = Q_2 - p_c * max(Q_2-Q_1, "
+                                                "|Q_2*p_a|) og "
+                                                "U_e = Q_2 + p_c * max(Q_3-Q_2, "
+                                                "|Q_2*p_a|). Når Q_2 = 0, brukes "
+                                                "p_a i stedet for |Q_2*p_a|. "
+                                                "Forholdstallsgrensene er "
+                                                "L_i = m*x_i^p_u/(x_i^p_u-L_e) "
+                                                "og U_i = m*(x_i^p_u+U_e)/x_i^p_u. "
+                                                "Modulens parametere er "
+                                                "p_u = 0,5, p_a = 0,05 og p_c = 20; "
+                                                "percentilene er 0,25 og 0,75."
+                                            ),
+                                        ]
+                                    ),
+                                    html.P(
+                                        [
+                                            html.Strong("Datagrunnlag. "),
+                                            (
+                                                "Bare enheter med positive verdier "
+                                                "i begge perioder inngår i "
+                                                "beregningen og flaggingen. Øvrige "
+                                                "enheter beholdes i resultatet, men "
+                                                "uten HB-diagnostikk og vises som "
+                                                "ikke sammenlignbare."
+                                            ),
+                                        ]
+                                    ),
+                                    html.P(
+                                        [
+                                            html.Strong("Tolkning. "),
+                                            (
+                                                "En enhet flagges når forholdstallet "
+                                                "ligger utenfor grensene. Flaggingen "
+                                                "er et signal om en mulig kandidat "
+                                                "for statistisk kontroll, ikke i seg "
+                                                "selv en konklusjon om feil i data."
+                                            ),
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            target=f"{self.module_id}-hb_info_icon",
+                            style={"--bs-tooltip-max-width": "32rem"},
+                        ),
+                    ],
                     id=f"{self.module_id}-hb_controls",
                 ),
                 dbc.Alert(
@@ -276,12 +447,6 @@ class HBMethod(ModuleBase):
             hb_comparison_periods=hb_comparison_periods,
             configured_hb_strata_variable=self.configured_hb_strata_variable,
         )
-        if hb_data_result.hb_warnings:
-            AlertHandler.warning(
-                "HB-data inneholder "
-                f"{len(hb_data_result.hb_warnings)} advarsel/advarsler.",
-                ephemeral=True,
-            )
         hb_vaskify_result_dataframe = run_hb_vaskify(
             hb_data_result.hb_dataframe,
             hb_comparison_periods=hb_comparison_periods,
@@ -308,26 +473,49 @@ class HBMethod(ModuleBase):
             self.hb_variable_selector
         )[0]
         selector_period_state = VariableSelector.get_timevar(State)
+        selected_hb_variable_input = Input(
+            selected_hb_variable_state.component_id,
+            selected_hb_variable_state.component_property,
+        )
+        selector_period_input = Input(
+            selector_period_state.component_id,
+            selector_period_state.component_property,
+        )
+
+        clientside_callback(
+            HB_RUN_GATE_CLIENTSIDE_FUNCTION,
+            Output(f"{self.module_id}-hb_run_gate_state", "data"),
+            Output(f"{self.module_id}-hb_run_request", "data"),
+            Input(f"{self.module_id}-hb_run_button", "n_clicks_timestamp"),
+            selected_hb_variable_input,
+            selector_period_input,
+            State(f"{self.module_id}-hb_run_gate_state", "data"),
+        )
 
         @callback(
             Output(f"{self.module_id}-hb_result_store", "data"),
-            Input(f"{self.module_id}-hb_run_button", "n_clicks"),
-            selected_hb_variable_state,
-            selector_period_state,
+            Input(f"{self.module_id}-hb_run_request", "data"),
             prevent_initial_call=True,
         )
         def retrieve_hb_data_for_run(
-            n_clicks: int | None,
-            selected_hb_variable: str | None,
-            selector_period_value: str | None,
+            hb_run_request: dict[str, Any] | None,
         ) -> dict[str, Any] | None:
-            if not n_clicks:
+            if not isinstance(hb_run_request, dict):
                 raise PreventUpdate
+            hb_run_request_id = hb_run_request.get("hb_run_request_id")
+            if not isinstance(hb_run_request_id, int):
+                raise PreventUpdate
+            selected_hb_variable = hb_run_request.get("selected_hb_variable")
+            selector_period_value = hb_run_request.get("selector_period_value")
             try:
-                return self._execute_hb_run(
+                hb_run_result = self._execute_hb_run(
                     selected_hb_variable=selected_hb_variable,
                     selector_period_value=selector_period_value,
                 )
+                return {
+                    **hb_run_result,
+                    "hb_run_request_id": hb_run_request_id,
+                }
             except Exception as error:
                 logger.error(
                     "HB run failed (module_id=%s, selected_hb_variable=%r, "
@@ -337,11 +525,10 @@ class HBMethod(ModuleBase):
                     selector_period_value,
                     type(error).__name__,
                 )
-                AlertHandler.error(
-                    "HB-kjøringen feilet. Kontroller valgt variabel og periode.",
-                    ephemeral=True,
-                )
-                return None
+                return {
+                    "hb_run_request_id": hb_run_request_id,
+                    "hb_run_error": True,
+                }
 
         # Avoid rendering an old result when a tab remount races with a fresh run.
         @callback(
@@ -351,12 +538,26 @@ class HBMethod(ModuleBase):
             Output(f"{self.module_id}-hb_candidate_state_summary", "children"),
             Output(f"{self.module_id}-hb_candidate_state_summary", "style"),
             Input(f"{self.module_id}-hb_result_store", "data"),
+            State(f"{self.module_id}-hb_run_request", "data"),
             prevent_initial_call=True,
         )
         def display_hb_result(
             hb_result_store_data: dict[str, Any] | None,
+            latest_hb_run_request: dict[str, Any] | None,
         ) -> tuple[go.Figure | dict[str, Any], dict[str, str], dict[str, str], str, dict[str, str]]:
             if hb_result_store_data is None:
+                return {}, {"display": "none"}, {}, "", {"display": "none"}
+            if (
+                not isinstance(latest_hb_run_request, dict)
+                or hb_result_store_data.get("hb_run_request_id")
+                != latest_hb_run_request.get("hb_run_request_id")
+            ):
+                raise PreventUpdate
+            if hb_result_store_data.get("hb_run_error"):
+                AlertHandler.error(
+                    "HB-kjøringen feilet. Kontroller valgt variabel og periode.",
+                    ephemeral=True,
+                )
                 return {}, {"display": "none"}, {}, "", {"display": "none"}
 
             normalized_hb_result_dataframe = pd.read_json(
@@ -382,6 +583,12 @@ class HBMethod(ModuleBase):
                 f"Ikke flagget: {candidate_flags.eq(0).sum()} · "
                 f"Ikke sammenlignbar: {candidate_flags.isna().sum()}"
             )
+            hb_warnings = hb_result_store_data.get("hb_warnings", [])
+            if hb_warnings:
+                AlertHandler.warning(
+                    f"HB-data inneholder {len(hb_warnings)} advarsel/advarsler.",
+                    ephemeral=True,
+                )
             return (
                 hb_result_figure,
                 {"display": "block"},
@@ -396,16 +603,24 @@ class HBMethod(ModuleBase):
             selector_unit_id_output,
             Input(f"{self.module_id}-hb_result_graph", "clickData"),
             State(f"{self.module_id}-hb_result_store", "data"),
+            State(f"{self.module_id}-hb_run_request", "data"),
             prevent_initial_call=True,
         )
         def update_selector_from_hb_graph_click(
             click_data: dict[str, Any] | None,
             hb_result_store_data: dict[str, Any] | None,
+            latest_hb_run_request: dict[str, Any] | None,
         ) -> str:
             clicked_hb_unit_id = _extract_hb_unit_id_from_plotly_click_data(
                 click_data
             )
-            if clicked_hb_unit_id is None or hb_result_store_data is None:
+            if (
+                clicked_hb_unit_id is None
+                or hb_result_store_data is None
+                or not isinstance(latest_hb_run_request, dict)
+                or hb_result_store_data.get("hb_run_request_id")
+                != latest_hb_run_request.get("hb_run_request_id")
+            ):
                 raise PreventUpdate
 
             normalized_hb_result_dataframe = pd.read_json(

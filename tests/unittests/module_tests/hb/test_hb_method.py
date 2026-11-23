@@ -8,7 +8,6 @@ import pandas as pd
 import pytest
 from dash import Input
 from dash import Output
-from dash import State
 from dash import html
 from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
@@ -110,6 +109,10 @@ def _capture_hb_method_callbacks(
         "ssb_dash_framework.modules.hb.hb_method.callback",
         capture_callback,
     )
+    monkeypatch.setattr(
+        "ssb_dash_framework.modules.hb.hb_method.clientside_callback",
+        Mock(),
+    )
     return captured_callbacks
 
 
@@ -159,14 +162,28 @@ def test_hb_method_instances_have_unique_module_scoped_component_ids(
         assert {
             f"{hb_method.module_id}-hb_controls",
             f"{hb_method.module_id}-hb_run_button",
+            f"{hb_method.module_id}-hb_info_icon",
             f"{hb_method.module_id}-hb_result_loading",
             f"{hb_method.module_id}-hb_error_message",
             f"{hb_method.module_id}-hb_empty_state",
             f"{hb_method.module_id}-hb_result_store",
+            f"{hb_method.module_id}-hb_run_gate_state",
+            f"{hb_method.module_id}-hb_run_request",
             f"{hb_method.module_id}-hb_result_graph",
             f"{hb_method.module_id}-hb_candidate_state_summary",
         }.issubset(component_ids)
         assert all(component_id.startswith(hb_method.module_id) for component_id in component_ids)
+        hb_controls = next(
+            child
+            for child in hb_method.module_layout.children
+            if getattr(child, "id", None) == f"{hb_method.module_id}-hb_controls"
+        )
+        hb_tooltip = next(
+            child
+            for child in hb_controls.children
+            if isinstance(child, dbc.Tooltip)
+        )
+        assert hb_tooltip.target == f"{hb_method.module_id}-hb_info_icon"
 
 
 def test_hb_method_can_be_placed_as_tab_or_window(
@@ -288,6 +305,7 @@ def test_hb_run_callback_calls_handler_vaskify_and_normalizer_in_order(
     normalized_hb_result_dataframe = pd.DataFrame(
         {
             "unit_id": ["unit-1"],
+            "strata": ["A"],
             "value_2023": [10.0],
             "value_2024": [12.0],
             "ratio": [1.2],
@@ -346,15 +364,17 @@ def test_hb_run_callback_calls_handler_vaskify_and_normalizer_in_order(
     )
     assert isinstance(callback_dependencies[1], Input)
     assert callback_dependencies[1].component_id == (
-        f"{hb_method.module_id}-hb_run_button"
+        f"{hb_method.module_id}-hb_run_request"
     )
-    assert isinstance(callback_dependencies[2], State)
-    assert callback_dependencies[2].component_id == "var-statistikkvariabel"
-    assert isinstance(callback_dependencies[3], State)
-    assert callback_dependencies[3].component_id == "var-periode"
     assert callback_options["prevent_initial_call"] is True
 
-    callback_result = callback_function(1, "omsetning", "2024")
+    callback_result = callback_function(
+        {
+            "hb_run_request_id": 1,
+            "selected_hb_variable": "omsetning",
+            "selector_period_value": "2024",
+        }
+    )
 
     assert execution_order == ["handler", "vaskify", "normalize"]
     assert hb_data_handler.calls == [
@@ -373,7 +393,13 @@ def test_hb_run_callback_calls_handler_vaskify_and_normalizer_in_order(
         "hb_warnings": [
             {"message": "Missing value.", "unit_id": "unit-1", "period": "2023"}
         ],
+        "hb_run_request_id": 1,
     }
+    display_callback = captured_callbacks[1][2]
+    with pytest.raises(PreventUpdate):
+        display_callback(callback_result, {"hb_run_request_id": 2})
+    warning_alert.assert_not_called()
+    display_callback(callback_result, {"hb_run_request_id": 1})
     warning_alert.assert_called_once_with(
         "HB-data inneholder 1 advarsel/advarsler.",
         ephemeral=True,
@@ -410,6 +436,7 @@ def test_hb_result_callback_displays_diagnostics_and_candidate_states(
         }
     )
     hb_result_store_data = {
+        "hb_run_request_id": 1,
         "hb_comparison_periods": ["2023", "2024"],
         "hb_result_dataframe_json": normalized_hb_result_dataframe.to_json(
             orient="split",
@@ -425,7 +452,10 @@ def test_hb_result_callback_displays_diagnostics_and_candidate_states(
         hb_empty_state_style,
         candidate_state_summary,
         candidate_state_summary_style,
-    ) = display_callback(hb_result_store_data)
+    ) = display_callback(
+        hb_result_store_data,
+        {"hb_run_request_id": 1},
+    )
 
     hb_trace_names = {trace.name for trace in hb_result_figure.data}
     assert {
@@ -454,7 +484,7 @@ def test_hb_result_callback_displays_diagnostics_and_candidate_states(
     )
     assert candidate_state_summary_style == {"display": "block"}
 
-    empty_display_result = display_callback(None)
+    empty_display_result = display_callback(None, {"hb_run_request_id": 1})
     assert empty_display_result == (
         {},
         {"display": "none"},
@@ -462,6 +492,8 @@ def test_hb_result_callback_displays_diagnostics_and_candidate_states(
         "",
         {"display": "none"},
     )
+    with pytest.raises(PreventUpdate):
+        display_callback(hb_result_store_data, {"hb_run_request_id": 2})
 
 
 def test_hb_graph_click_updates_configured_ident_for_multiple_candidates(
@@ -483,15 +515,18 @@ def test_hb_graph_click_updates_configured_ident_for_multiple_candidates(
 
     click_callback = captured_callbacks[2][2]
     hb_result_store_data = {
+        "hb_run_request_id": 1,
         "hb_result_dataframe_json": pd.DataFrame(
             {"unit_id": ["unit-flagged", "unit-unflagged"]}
         ).to_json(orient="split"),
     }
+    latest_hb_run_request = {"hb_run_request_id": 1}
 
     selected_unit_ids = [
         click_callback(
             {"points": [{"customdata": [candidate_unit_id, 1.2]}]},
             hb_result_store_data,
+            latest_hb_run_request,
         )
         for candidate_unit_id in ("unit-flagged", "unit-unflagged")
     ]
@@ -520,15 +555,21 @@ def test_hb_graph_click_without_a_point_prevents_selector_update_and_hb_run(
     )
     click_callback = captured_callbacks[2][2]
     hb_result_store_data = {
+        "hb_run_request_id": 1,
         "hb_result_dataframe_json": pd.DataFrame(
             {"unit_id": ["unit-flagged"]}
         ).to_json(orient="split"),
     }
 
     with pytest.raises(PreventUpdate):
-        click_callback(None, hb_result_store_data)
+        click_callback(
+            None,
+            hb_result_store_data,
+            {"hb_run_request_id": 1},
+        )
 
     assert hb_result_store_data == {
+        "hb_run_request_id": 1,
         "hb_result_dataframe_json": pd.DataFrame(
             {"unit_id": ["unit-flagged"]}
         ).to_json(orient="split"),
@@ -612,9 +653,23 @@ def test_hb_run_failures_alert_and_log_without_row_data(
         logging.ERROR,
         logger="ssb_dash_framework.modules.hb.hb_method",
     ):
-        failed_run_result = run_callback(1, "omsetning", "2024")
+        failed_run_result = run_callback(
+            {
+                "hb_run_request_id": 1,
+                "selected_hb_variable": "omsetning",
+                "selector_period_value": "2024",
+            }
+        )
 
-    assert failed_run_result is None
+    assert failed_run_result == {
+        "hb_run_request_id": 1,
+        "hb_run_error": True,
+    }
+    display_callback = captured_callbacks[1][2]
+    with pytest.raises(PreventUpdate):
+        display_callback(failed_run_result, {"hb_run_request_id": 2})
+    error_alert.assert_not_called()
+    display_callback(failed_run_result, {"hb_run_request_id": 1})
     error_alert.assert_called_once_with(
         "HB-kjøringen feilet. Kontroller valgt variabel og periode.",
         ephemeral=True,
@@ -657,7 +712,13 @@ def test_hb_module_integration_with_fake_handler_avoids_production_backend(
     )
     run_callback = captured_callbacks[0][2]
 
-    hb_result_store_data = run_callback(1, "omsetning", "2024")
+    hb_result_store_data = run_callback(
+        {
+            "hb_run_request_id": 1,
+            "selected_hb_variable": "omsetning",
+            "selector_period_value": "2024",
+        }
+    )
     normalized_hb_result_dataframe = pd.read_json(
         StringIO(hb_result_store_data["hb_result_dataframe_json"]),
         orient="split",

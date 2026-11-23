@@ -8,17 +8,22 @@ from e2e.harness import Ctx
 
 
 def _is_hb_run_response(response: Response) -> bool:
-    return (
-        response.url.endswith("/_dash-update-component")
-        and "hb_run_button" in (response.request.post_data or "")
+    if not response.url.endswith("/_dash-update-component"):
+        return False
+    callback_payload = json.loads(response.request.post_data or "{}")
+    return any(
+        input_dependency.get("id", "").endswith("-hb_run_request")
+        for input_dependency in callback_payload.get("inputs", [])
     )
 
 
 def _is_hb_display_response(response: Response) -> bool:
-    return (
-        response.url.endswith("/_dash-update-component")
-        and "hb_result_store" in (response.request.post_data or "")
-        and "hb_run_button" not in (response.request.post_data or "")
+    if not response.url.endswith("/_dash-update-component"):
+        return False
+    callback_payload = json.loads(response.request.post_data or "{}")
+    return any(
+        input_dependency.get("id", "").endswith("-hb_result_store")
+        for input_dependency in callback_payload.get("inputs", [])
     )
 
 
@@ -34,13 +39,13 @@ def _select_demo_unit(page: Page, unit_id: str, period: str = "2025") -> None:
 
 
 def customize(page: Page, ctx: Ctx) -> None:
-    page.get_by_role("button", name="Kjør HB-metoden").click()
-
     hb_result_graph = page.locator('[id$="-hb_result_graph"]')
     expect(hb_result_graph).to_be_visible()
     expect(
         page.locator('[id$="-hb_candidate_state_summary"]')
-    ).to_have_text(    "Flagget: 1 · Ikke flagget: 9 · Ikke sammenlignbar: 0")
+    ).to_have_text(
+        "Flagget: 1 · Ikke flagget: 9 · Ikke sammenlignbar: 0"
+    )
 
     flagged_trace_index = hb_result_graph.evaluate(
         """graph => {
@@ -96,7 +101,6 @@ def customize(page: Page, ctx: Ctx) -> None:
     expect(save_button).to_be_enabled()
 
     page.locator("#main-layout-tab-list").get_by_text("HB metoden").click()
-    page.get_by_role("button", name="Kjør HB-metoden").click()
     expect(
         page.locator('[id$="-hb_candidate_state_summary"]')
     ).to_have_text("Flagget: 1 · Ikke flagget: 9 · Ikke sammenlignbar: 0")
@@ -116,6 +120,7 @@ def customize(page: Page, ctx: Ctx) -> None:
     page.get_by_role("button", name="Bekreft lagring").click()
     expect(edit_dialog).to_be_hidden()
 
+    page.wait_for_timeout(15_000)
     with (
         page.expect_response(_is_hb_run_response) as hb_run_response,
         page.expect_response(_is_hb_display_response) as hb_display_response,
