@@ -157,13 +157,12 @@
    - Verify app startup, run action, result display, click-to-selector flow, unit/period switching, unsaved-state clearing, required reason/justification, and that editing 900000007 from 200 to 40 updates the displayed graph value.
    - Add demo-specific E2E steps under `tests/e2e/hooks/` when needed.
 
-------- Bookmark start ------------
 21. **Conduct self acceptance testing on the demo**
    - Have intended users exercise the demo with deterministic or approved test data.
    - Cover configuration, period/variable selection, running HB, interpreting results and candidate states, and click-to-selector behavior.
    - Record usability issues and decisions in `plan.md`; make behavior changes only through approved follow-up tasks.
-------- Bookmark end ------------
 
+------- Bookmark start ------------
 22. refractoring
    - Map if lessons from demo can be applied to the main HB module implementation.
    - hb_module into the hb folder. Maybe a subfolder.
@@ -172,6 +171,7 @@
    - Update all import paths and references to the hb module and its tests accordingly.
    - On first entry to the HB module, run automatically when the required variable and period are available; retain the **Kjør HB-metoden** button for manual reruns. Prevent duplicate or stale runs.
    - Add an information icon with a `dbc.Tooltip` explaining the HB method. Use a unique target ID for each module instance; do not add a dependency.
+------- Bookmark end ------------
 
 
 23. **Complete user documentation**

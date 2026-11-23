@@ -18,9 +18,15 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Do not combine groups of multiple tasks into one row; each task should have its own clearly defined row in the implementation plan.
 
 # Current tasks:
-## 21. Conduct self acceptance testing on the demo
+## 22. refractoring
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
+| Moving the HB module into its package | Move the HB module implementation into `src/ssb_dash_framework/modules/hb/`; determine whether it needs a nested subfolder. Expect this to break imports and references. |  |  |  |  |
+| Moving HB tests into a subfolder | Move HB tests under a dedicated `hb` subfolder in the unit-test tree. |  |  |  |  |
+| Moving HB tests into a subsubfolder | There are som negative tests that tests if functinality has become avilable these needs to be separated into their own subsubfolder to avoid interference with other tests. and deadlocks |  |  |  |  |
+| Updating HB imports and references | Update all import paths and references affected by moving the HB module and tests. Preserve downstream compatibility where applicable. |  |  |  |  |
+| Running HB automatically on first entry | Run HB on first entry when the required variable and period are available, while retaining **Kjør HB-metoden** for manual reruns. Prevent duplicate or stale runs. |  |  |  |  |
+| Adding an HB information tooltip | Add an information icon with a `dbc.Tooltip` explaining the HB method. Use the existing Dash Bootstrap Components support and a unique target ID for each module instance. |  |  |  |  |
 
 
 # History
