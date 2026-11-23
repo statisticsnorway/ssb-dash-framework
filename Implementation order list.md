@@ -164,7 +164,17 @@
    - Record usability issues and decisions in `plan.md`; make behavior changes only through approved follow-up tasks.
 ------- Bookmark end ------------
 
-22. **Complete user documentation**
+22. refractoring
+   - Map if lessons from demo can be applied to the main HB module implementation.
+   - hb_module into the hb folder. Maybe a subfolder.
+   - hb tests in the unittest folder should be in a hb subfolder. 
+   - This will break a lot of things.
+   - Update all import paths and references to the hb module and its tests accordingly.
+   - On first entry to the HB module, run automatically when the required variable and period are available; retain the **Kjør HB-metoden** button for manual reruns. Prevent duplicate or stale runs.
+   - Add an information icon with a `dbc.Tooltip` explaining the HB method. Use a unique target ID for each module instance; do not add a dependency.
+
+
+23. **Complete user documentation**
    - Document Altinn handler setup and required configuration.
    - Document the common DataFrame schema and canonical period requirements for all six `TimeUnit` frequencies.
    - Document the selected period `t` and the `TimeUnit`-based `t-1` assumption.
@@ -172,29 +182,29 @@
    - Document click-to-selector behavior and the no-write boundary.
    - Update the module/API documentation without duplicating implementation logic.
 
-21. **Conduct user acceptance testing on the demo**
+24. **Conduct user acceptance testing on the demo**
    - Have intended users exercise the demo with deterministic or approved test data.
    - Cover configuration, period/variable selection, running HB, interpreting results and candidate states, and click-to-selector behavior.
    - Record usability issues and decisions in `plan.md`; make behavior changes only through approved follow-up tasks.
 
-23. **Validate completed tasks**
+25. **Validate completed tasks**
    - Run only the tests explicitly listed for the active task in `plan.md`, after that task is complete.
    - Run a broader test session or E2E coverage only when explicitly scheduled in `plan.md`.
    - Confirm that no source data is edited and that all failures remain visible.
 
-24. **Remove temporary design documents**
+26. **Remove temporary design documents**
    - Before integrating to `main`, remove `architecture_design_detailed.md` and `ssb-vaskify-design.md` after their lasting decisions and issue context are recorded in `architecture.md` and `Issues.md`.
    - User will decide what to keep in the end.
    - Put back `AGENTS.md`
    - Pull request to integrate the changes into `main`.
 
-25. **Report ISSUES to Github or Magnus**
+27. **Report ISSUES to Github or Magnus**
    - Apply all the issues and delete the issues file, move it to boards if not resolved.
 
 -- At this point the initial implementation and documentation tasks should be complete. And we are working on the next version. This is a cutoff point for v1 tasks. ---
 
-26. **restrictions_research.md**
+28. **restrictions_research.md**
    - Look at the restrictions research document to understand the timing and feedback recommendations for user approval.
 
-27. **Implement fixes for ISSUES where possible**
+29. **Implement fixes for ISSUES where possible**
    - If approved follow trough in v2.
