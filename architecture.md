@@ -65,7 +65,7 @@ be injected by Python code.
 
 | Component | Owns | Does not own |
 |---|---|---|
-| `HBMethod` (`modules/hb_method.py`) | Callbacks, run state, structural validation, result figure, selector updates | Altinn queries, source reshaping, eligibility rules, HB mathematics |
+| `HBMethod` (`modules/hb/hb_method.py`) | Callbacks, run state, structural validation, result figure, selector updates | Altinn queries, source reshaping, eligibility rules, HB mathematics |
 | `HBDataHandlerMeta` | Handler contract and common input validation | Vaskify invocation |
 | `AltinnHBDataHandler` | Altinn retrieval and conversion to common HB input | Alerts, plotting, Vaskify mapping |
 | `run_hb_vaskify` | Vaskify construction, explicit argument mapping | Source access, Dash callbacks |

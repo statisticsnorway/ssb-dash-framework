@@ -21,7 +21,7 @@ from .data_editor import DataEditorTableSelector
 from .data_editor import DataViewCustom
 from .data_editor import EditorSettings
 from .data_editor import StandardDataHandler
-from .hb_method import HBMethod
+from .hb import HBMethod
 from .nspek import Naeringsspesifikasjon
 from .nspek import NspekControls
 from .nspek import NspekControlView

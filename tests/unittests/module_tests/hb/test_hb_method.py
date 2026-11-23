@@ -16,8 +16,8 @@ from dash.exceptions import PreventUpdate
 from ssb_dash_framework.modules.hb.data_handler import HBDataHandlerMeta
 from ssb_dash_framework.modules.hb.data_handler import HBDataResult
 from ssb_dash_framework.modules.hb.data_handler import HBDataWarning
-from ssb_dash_framework.modules.hb_method import HBMethod
-from ssb_dash_framework.modules.hb_method import (
+from ssb_dash_framework.modules.hb.hb_method import HBMethod
+from ssb_dash_framework.modules.hb.hb_method import (
     _extract_hb_unit_id_from_plotly_click_data,
 )
 from ssb_dash_framework.setup.variableselector import TimeUnit
@@ -107,7 +107,7 @@ def _capture_hb_method_callbacks(
         return register
 
     monkeypatch.setattr(
-        "ssb_dash_framework.modules.hb_method.callback",
+        "ssb_dash_framework.modules.hb.hb_method.callback",
         capture_callback,
     )
     return captured_callbacks
@@ -325,11 +325,11 @@ def test_hb_run_callback_calls_handler_vaskify_and_normalizer_in_order(
         return normalized_hb_result_dataframe
 
     monkeypatch.setattr(
-        "ssb_dash_framework.modules.hb_method.run_hb_vaskify",
+        "ssb_dash_framework.modules.hb.hb_method.run_hb_vaskify",
         fake_run_hb_vaskify,
     )
     monkeypatch.setattr(
-        "ssb_dash_framework.modules.hb_method.normalize_hb_result",
+        "ssb_dash_framework.modules.hb.hb_method.normalize_hb_result",
         fake_normalize_hb_result,
     )
     hb_method = HBMethod(
@@ -472,7 +472,7 @@ def test_hb_graph_click_updates_configured_ident_for_multiple_candidates(
     hb_data_handler = StubHBDataHandler()
     vaskify_call = Mock(side_effect=AssertionError("Vaskify must not run on selection."))
     monkeypatch.setattr(
-        "ssb_dash_framework.modules.hb_method.run_hb_vaskify",
+        "ssb_dash_framework.modules.hb.hb_method.run_hb_vaskify",
         vaskify_call,
     )
     HBMethod(
@@ -510,7 +510,7 @@ def test_hb_graph_click_without_a_point_prevents_selector_update_and_hb_run(
     hb_data_handler = StubHBDataHandler()
     vaskify_call = Mock(side_effect=AssertionError("Vaskify must not run on selection."))
     monkeypatch.setattr(
-        "ssb_dash_framework.modules.hb_method.run_hb_vaskify",
+        "ssb_dash_framework.modules.hb.hb_method.run_hb_vaskify",
         vaskify_call,
     )
     HBMethod(
@@ -580,7 +580,7 @@ def test_hb_run_failures_alert_and_log_without_row_data(
         )
     elif failure_point == "vaskify":
         monkeypatch.setattr(
-            "ssb_dash_framework.modules.hb_method.run_hb_vaskify",
+            "ssb_dash_framework.modules.hb.hb_method.run_hb_vaskify",
             Mock(side_effect=RuntimeError(sensitive_error_detail)),
         )
     else:
@@ -597,7 +597,7 @@ def test_hb_run_failures_alert_and_log_without_row_data(
             ]
         )
         monkeypatch.setattr(
-            "ssb_dash_framework.modules.hb_method.run_hb_vaskify",
+            "ssb_dash_framework.modules.hb.hb_method.run_hb_vaskify",
             Mock(return_value=empty_vaskify_result_dataframe),
         )
 
@@ -610,7 +610,7 @@ def test_hb_run_failures_alert_and_log_without_row_data(
 
     with caplog.at_level(
         logging.ERROR,
-        logger="ssb_dash_framework.modules.hb_method",
+        logger="ssb_dash_framework.modules.hb.hb_method",
     ):
         failed_run_result = run_callback(1, "omsetning", "2024")
 

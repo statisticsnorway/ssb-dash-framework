@@ -75,13 +75,3 @@ def test_hb_week_period_reraises_unrelated_timeunit_errors(
         parse_hb_week_period("2024-W01", week_time_unit)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Remove the HB fallback when shared TimeUnit supports canonical WEEK periods.",
-)
-def test_shared_timeunit_week_period_round_trip_is_supported() -> None:
-    week_time_unit = TimeUnit(name="week", frequency=TimeUnitType.WEEK)
-
-    selected_week = TimeUnit.parse(week_time_unit, "2024-W01")
-
-    assert selected_week.to_str() == "2024-W01"

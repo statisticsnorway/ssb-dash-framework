@@ -6,6 +6,7 @@ from .data_handler import HBDataHandlerMeta
 from .data_handler import HBDataResult
 from .data_handler import HBDataWarning
 from .data_handler import validate_hb_dataframe
+from .hb_method import HBMethod
 from .period_resolution import resolve_hb_comparison_periods
 
 __all__ = [
@@ -14,6 +15,7 @@ __all__ = [
     "HBDataHandlerMeta",
     "HBDataResult",
     "HBDataWarning",
+    "HBMethod",
     "resolve_hb_comparison_periods",
     "validate_hb_dataframe",
 ]

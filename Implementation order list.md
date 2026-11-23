@@ -166,7 +166,8 @@
 22. refractoring
    - Map if lessons from demo can be applied to the main HB module implementation.
    - hb_module into the hb folder. Maybe a subfolder.
-   - hb tests in the unittest folder should be in a hb subfolder. 
+   - Move HB unit tests and their fake handler into `tests/unittests/module_tests/hb/`.
+   - Move strict-xfail tests that detect newly available shared `TimeUnit` or Vaskify behavior into `tests/unittests/module_tests/hb/availability_sentinels/`, separate from the regular HB test files.
    - This will break a lot of things.
    - Update all import paths and references to the hb module and its tests accordingly.
    - On first entry to the HB module, run automatically when the required variable and period are available; retain the **Kjør HB-metoden** button for manual reruns. Prevent duplicate or stale runs.

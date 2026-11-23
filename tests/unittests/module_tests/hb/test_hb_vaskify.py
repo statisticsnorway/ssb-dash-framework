@@ -495,31 +495,6 @@ def test_run_hb_vaskify_allows_other_canonical_frequencies(
     assert detector.hb.call_args.kwargs["time_periods"] == list(comparison_periods)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Native Vaskify half-year support is available; remove the HALF_YEAR "
-        "execution guard and enable native half-year periods."
-    ),
-)
-def test_installed_vaskify_supports_canonical_half_year_periods() -> None:
-    hb_input_dataframe = pd.DataFrame(
-        {
-            "unit_id": ["unit-1", "unit-1", "unit-2", "unit-2"],
-            "period": ["2023-2", "2024-1", "2023-2", "2024-1"],
-            "value": [10.0, 12.0, 15.0, 16.0],
-        }
-    )
-
-    result = _run_direct_vaskify_hb(
-        hb_input_dataframe,
-        ("2023-2", "2024-1"),
-    )
-
-    assert not result.empty
-    assert "unit_id" in result.columns
-
-
 def test_installed_vaskify_runs_deterministic_annual_data() -> None:
     result = _run_direct_vaskify_hb(
         valid_hb_input_dataframe(),

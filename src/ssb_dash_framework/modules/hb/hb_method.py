@@ -17,12 +17,10 @@ from dash import html
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 
-from ssb_dash_framework.modules.hb.data_handler import HBDataHandlerMeta
-from ssb_dash_framework.modules.hb.period_resolution import (
-    resolve_hb_comparison_periods,
-)
-from ssb_dash_framework.modules.hb.vaskify import normalize_hb_result
-from ssb_dash_framework.modules.hb.vaskify import run_hb_vaskify
+from .data_handler import HBDataHandlerMeta
+from .period_resolution import resolve_hb_comparison_periods
+from .vaskify import normalize_hb_result
+from .vaskify import run_hb_vaskify
 from ssb_dash_framework.setup.variableselector import TimeUnit
 from ssb_dash_framework.setup.variableselector import VariableSelector
 from ssb_dash_framework.utils.alert_handler import AlertHandler

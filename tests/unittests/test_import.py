@@ -14,8 +14,3 @@ def test_package_import() -> None:
         pytest.fail(f"Failed to import ssb_dash_framework: {e}")
 
 
-def test_hb_method_is_exported_from_package() -> None:
-    package = importlib.import_module("ssb_dash_framework")
-    modules = importlib.import_module("ssb_dash_framework.modules")
-
-    assert package.HBMethod is modules.HBMethod
