@@ -135,7 +135,7 @@
    - Export `HBMethod` through `ssb_dash_framework.modules` and the package top-level API where required.
    - Register the module with the existing YAML configuration mechanism.
    - Document constructor and handler configuration keys.
-   - Search for imports of the experimental prototype before removing or redirecting it.
+   - Warn users of the legacy HB import path and direct them to the supported top-level API; remove obsolete HB prototype documentation.
    - Test normal imports and YAML registration.
 
 19. **Add integration and reference-result tests**
@@ -162,7 +162,6 @@
    - Cover configuration, period/variable selection, running HB, interpreting results and candidate states, and click-to-selector behavior.
    - Record usability issues and decisions in `plan.md`; make behavior changes only through approved follow-up tasks.
 
-------- Bookmark start ------------
 22. refractoring
    - Map if lessons from demo can be applied to the main HB module implementation.
    - hb_module into the hb folder. Maybe a subfolder.
@@ -173,9 +172,9 @@
    - On first entry to the HB module, run automatically when the required variable and period are available; retain the **Kjør HB-metoden** button for manual reruns. 
    - Verify automatic first run, 15-second retry, and latest-result handling with focused HB unit tests and the HB demo E2E hook on Linux.
    - Add an information icon with a `dbc.Tooltip` explaining the HB method. Use a unique target ID for each module instance; do not add a dependency.
-------- Bookmark end ------------
 
 
+------- Bookmark start ------------
 23. **Complete user documentation**
    - Document Altinn handler setup and required configuration.
    - Document the common DataFrame schema and canonical period requirements for all six `TimeUnit` frequencies.
@@ -183,6 +182,7 @@
    - Document result flags, missing/not-comparable states, and limitations.
    - Document click-to-selector behavior and the no-write boundary.
    - Update the module/API documentation without duplicating implementation logic.
+------- Bookmark end ------------
 
 24. **Conduct user acceptance testing on the demo**
    - Have intended users exercise the demo with deterministic or approved test data.
@@ -210,3 +210,6 @@
 
 29. **Implement fixes for ISSUES where possible**
    - If approved follow trough in v2.
+
+30. nice to haves 
+   - Show analysis context with results. A compact label with the selected variable and actual (t-1, t) periods would make results easier to interpret independently of the selector state. This is optional; the shared selector already supplies that context. 

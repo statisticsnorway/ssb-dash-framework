@@ -18,9 +18,16 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Do not combine groups of multiple tasks into one row; each task should have its own clearly defined row in the implementation plan.
 
 # Current tasks:
-## 22. refractoring
+## 23. **Complete user documentation**
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
+| Deprecate the legacy HB import | Emit a visible warning directing users to the supported API and remove the old HB module from Sphinx and architecture documentation. Validate the warning with the focused HB import test. | Emit a `FutureWarning` when the legacy module is imported; preserve its import behavior temporarily while directing users to `ssb_dash_framework.HBMethod`. |  |  |  |
+| Document Altinn handler setup | Document the Altinn handler setup and required configuration. |  |  |  |  |
+| Document the common HB DataFrame contract | Document the common DataFrame schema and canonical period requirements for all six `TimeUnit` frequencies. |  |  |  |  |
+| Document HB period comparison | Document the selected period `t` and the `TimeUnit`-based `t-1` assumption. |  |  |  |  |
+| Document HB results and limitations | Document result flags, missing and not-comparable states, and method limitations. |  |  |  |  |
+| Document HB interaction boundaries | Document click-to-selector behavior and the no-write boundary. |  |  |  |  |
+| Update HB module and API documentation | Update module/API documentation without duplicating implementation logic. |  |  |  |  |
 
 
 # History
@@ -93,7 +100,7 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Implement `FakeHBDataHandler` | Add a deterministic fake implementing `HBDataHandlerMeta` for HB module tests. | Have the fake return an `HBDataResult` containing supplied deterministic data validated with `validate_hb_dataframe`; do not change production Altinn wiring. |  | Implemented the test-only `FakeHBDataHandler` in `tests/unittests/module_tests/hb/fake_hb_data_handler.py`. It returns a deep-copied DataFrame validated against the common HB schema and does not alter production Altinn wiring. | done |
 | Record fake-handler requests | Make `FakeHBDataHandler` record the requested variable, comparison periods, and optional strata variable on each call. | Retain the exact `selected_hb_variable`, `hb_comparison_periods`, and `configured_hb_strata_variable` values passed to `get_hb_dataframe(...)` so tests can assert the module's request. |  | Implemented immutable `FakeHBDataRequest` records and a `requests` list on the fake handler, capturing the exact three arguments for each call. | done |
 | Test fake-handler result and request contract | Verify the fake returns the expected common-schema data and records all request arguments. | Cover validated output, deterministic fixture data, both comparison periods, and configured or absent strata; assert the returned `HBDataResult` contract. |  | Added coverage for validated deterministic output, defensive copying, both comparison periods, configured and absent strata, request recording, and rejection of invalid fixture data. Focused tests pass: 6 passed, 3 skipped. | done |
-| Test HB module with fake data and no backend | Verify the HB module can be exercised using `FakeHBDataHandler` without an Altinn or database connection. | Add a focused module integration test that supplies the fake handler, runs the module's data path, and confirms no production Altinn handler or backend access is required. |  | Moved this integration test to Stage 14 in `Implementation order list.md`, where the HB run path is implemented. Keep it pending until the handler-driven `HBMethod` path exists; the experimental prototype is not compatible with `HBDataHandlerMeta`. | Add it to the correct place in the implementation list. Ignored - deleted for now |
+| Test HB module with fake data and no backend | Verify the HB module can be exercised using `FakeHBDataHandler` without an Altinn or database connection. | Add a focused module integration test that supplies the fake handler, runs the module's data path, and confirms no production Altinn handler or backend access is required. |  | Moved this integration test to Stage 14 in `Implementation order list.md`, where the HB run path is implemented. Keep it pending until the handler-driven `HBMethod` path exists. | Add it to the correct place in the implementation list. Ignored - deleted for now |
 
 ## 10. Add the Vaskify dependency and adapter boundary
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
@@ -184,7 +191,7 @@ Ensure that any deviations from the architecture are documented and approved thr
 | Export `HBMethod` | Export `HBMethod` through `ssb_dash_framework.modules` and the package top-level API where required. |  | a | Added `HBMethod` to both public package exports; verified both imports resolve to the same class. |  |
 | Register the module | Register the module with the existing YAML configuration mechanism. |  | a | Importing the public module package now loads and registers `HBMethod`; `ModuleConfig` accepts its YAML type and constructor keys. Smoke check passed. |  |
 | Document configuration keys | Document constructor and handler configuration keys. |  | a | Added the `HBMethod` and `AltinnHBDataHandler` keys to `architecture.md`; documented that YAML passes values through and does not construct injected handler or `TimeUnit` objects. | done |
-| Search for prototype imports | Search for imports of the experimental prototype before removing or redirecting it. |  | a | Found no prototype imports in source or tests; remaining references are in architecture and Sphinx documentation. Left the prototype and references unchanged. | done |
+| Check legacy HB import usage | Search for source and test imports before deprecating the legacy HB import path. |  | a | No source or test imports were found. Added a visible warning directing legacy import users to the supported API and removed the old module from Sphinx and architecture documentation. | done |
 | Test imports and registration | Test normal imports and YAML registration. |  | a | Added public-export and YAML-registry tests. Focused run: 18 passed, 9 skipped. | done |
 
 ## 19. Add integration and reference-result tests

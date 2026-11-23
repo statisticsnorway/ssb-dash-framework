@@ -20,12 +20,6 @@ re-specify the HB algorithm.
 * The framework's intended module contract is `ModuleBase`, with `layout()` and
   `module_callbacks()`. It supplies unique `module_id` values and tab/window
   wrapping.
-* The current prototype is
-  [`experimental/modules/hb_method.py`](ssb-dash-framework/src/ssb_dash_framework/experimental/modules/hb_method.py).
-  It does not inherit from `ModuleBase`; it uses the older implementation
-  patterns, has an abstract `layout()`, and its HB calculation call is
-  commented out. Its plot expects calculated columns such as `ratio`,
-  `upperLimit`, and `outlier`, so it is not a complete working implementation.
 * The framework architecture calls for independent modules, shared values via
   `VariableSelector`, backend-agnostic data access, and YAML-configurable
   modules where practical.
@@ -378,8 +372,7 @@ normalized result.
    state, error/empty-result message, and result visualization.
 4. Implement `module_callbacks()` using `self.module_id` for every component
    ID. Register callbacks with Dash's `@callback` pattern inside this method,
-   following the framework's existing modules. Remove the prototype's
-   class-level counter and fixed IDs.
+   following the framework's existing modules. Do not use fixed component IDs.
 5. Keep the visual content presentation-neutral so `main_layout` can place the
    module as either a tab or a window.
 6. Require `hb_variable_selector` and `configured_hb_time_unit` in
@@ -417,9 +410,7 @@ normalized result.
     as current; handler warnings are summarized in one aggregate alert.
 
 Export the module from `ssb_dash_framework.modules` and the package top level,
-following the framework's public API convention. Before removing the old
-experimental path, search for imports and either retain a short compatibility
-re-export or document that the prototype was never a supported public API.
+following the framework's public API convention.
 
 ## Phase 4 — Configuration and Vaskify dependency
 
@@ -613,44 +604,6 @@ automatic requirements for the new module.
   implemented, it must narrow the model to one selected numeric target value
   per unit and period; it must not merely reshape raw Altinn rows into long
   format again.
-* The existing
-  [`experimental HB prototype`](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/experimental/modules/hb_method.py)
-  is a UI prototype, not a working calculation. Reuse/adapt these parts:
-  * **Reuse the visual idea:** a run button and loading-wrapped Plotly figure.
-    Plot the returned `ratio` against `value_<selected period>`; do not derive
-    or assume the prototype's `maxX` column. Display Vaskify's returned
-    `median_ratio`, `lower_limit`, and `upper_limit`, grouped by `strata` when
-    configured, without recalculating statistical values. Use `flag_hb` to
-    distinguish flagged (`1`) and unflagged (`0`) candidates, and preserve
-    missing flags as a separate not-comparable state. Do not expect the
-    prototype's `upperLimit`, `lowerLimit`, `id`, or `outlier` columns.
-  * **Reuse the selection interaction:** clicking a plotted unit updates the
-    shared identifier through `VariableSelector.get_output_object(...)`.
-    Adapt the point data to carry the identifier in Plotly `customdata`; the
-    prototype reads it from `hovertext`, which is display content rather than
-    a robust identity field.
-  * **Reuse data injection, not source-specific reads in the module:** let a
-    handler supply the common DataFrame. Define one shared schema and put
-    source mapping in an adapter that can be reused independently of the UI.
-  * **Reuse parameter controls only if approved:** the prototype displays
-    `pu`, `pa`, and `pc`, but its defaults are not automatically the
-    methodology department's approved settings. Start from the agreed
-    Vaskify defaults; add editable controls only if users need them and their
-    valid ranges are documented.
-  * **Do not copy the prototype's lifecycle:** it does not inherit from
-    `ModuleBase`, has its own class counter, uses fixed component IDs, and
-    declares an abstract `layout()`. Use `ModuleBase`, `self.module_id`, and
-    concrete `layout()`/`module_callbacks()` implementations instead.
-  * **Do not copy its calculation or methodology text:** the calculation call
-    is commented out, while the plotting code assumes its results exist. Its
-    info text also describes special inclusion rules that must be checked
-    against Vaskify and confirmed by the methodology department before being
-    shown to users.
-  * **Do not store a user's selected variable on `self`:** the prototype's
-    callback mutates `self.variable`. Pass the current selection as a
-    callback input/state to avoid sharing mutable selection state between
-    users of the same module instance.
-
 ### Lessons from other completed framework modules
 
 * [`FigureDisplay`](https://github.com/statisticsnorway/ssb-dash-framework/blob/main/src/ssb_dash_framework/modules/building_blocks/figuredisplay.py)

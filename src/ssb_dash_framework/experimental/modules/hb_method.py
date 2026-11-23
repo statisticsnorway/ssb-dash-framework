@@ -1,6 +1,7 @@
-# TODO: Rewrite to window/tab implementation model
+"""Deprecated experimental HB module; use ``ssb_dash_framework.HBMethod``."""
 
 import logging
+import warnings
 from abc import abstractmethod
 from collections.abc import Callable
 from typing import Any
@@ -19,6 +20,13 @@ from dash.exceptions import PreventUpdate
 from ...setup.variableselector import VariableSelector
 from ...utils.implementations import TabImplementation
 from ...utils.implementations import WindowImplementation
+
+warnings.warn(
+    "The experimental HB module is deprecated. Use "
+    "`from ssb_dash_framework import HBMethod` for the supported implementation.",
+    FutureWarning,
+    stacklevel=2,
+)
 
 logger = logging.getLogger(__name__)
 
