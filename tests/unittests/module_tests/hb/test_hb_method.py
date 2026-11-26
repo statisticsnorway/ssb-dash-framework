@@ -184,6 +184,21 @@ def test_hb_method_instances_have_unique_module_scoped_component_ids(
             if isinstance(child, dbc.Tooltip)
         )
         assert hb_tooltip.target == f"{hb_method.module_id}-hb_info_icon"
+        tooltip_sections = hb_tooltip.children.children
+        assert [
+            section.children[0].children for section in tooltip_sections
+        ] == [
+            "Slik tolker du resultatet. ",
+            "Slik leser du figuren. ",
+            "Sammenligningsgrunnlag. ",
+            "Hvem kan vurderes? ",
+            "Om metoden. ",
+        ]
+        assert "ikke at verdien nødvendigvis er feil" in tooltip_sections[0].children[1]
+        assert "ingen HB-diagnostikk" in tooltip_sections[3].children[1]
+        tooltip_body = " ".join(section.children[1] for section in tooltip_sections)
+        assert "r_i =" not in tooltip_body
+        assert "L_e =" not in tooltip_body
 
 
 def test_hb_method_can_be_placed_as_tab_or_window(

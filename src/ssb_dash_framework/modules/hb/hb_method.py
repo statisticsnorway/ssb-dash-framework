@@ -207,97 +207,81 @@ class HBMethod(ModuleBase):
                                 [
                                     html.P(
                                         [
-                                            html.Strong("Metode. "),
+                                            html.Strong("Slik tolker du resultatet. "),
                                             (
-                                                "HB (Hidiroglou-Berthelot) er en "
-                                                "screeningmetode for å identifisere "
-                                                "mulige avvik i utviklingen fra "
-                                                "foregående periode (t-1) til valgt "
-                                                "periode (t). For enhet i beregnes "
-                                                "forholdstallet r_i = "
-                                                "y_i,t / y_i,t-1."
+                                                "Et flagg betyr at enheten er en "
+                                                "kandidat for nærmere statistisk "
+                                                "kontroll, ikke at verdien "
+                                                "nødvendigvis er feil. Et "
+                                                "forholdstall over øvre grense viser "
+                                                "en uvanlig stor økning fra t-1 til "
+                                                "t; under nedre grense viser en "
+                                                "uvanlig stor nedgang. Hold pekeren "
+                                                "over punktet for verdiene i begge "
+                                                "perioder."
                                             ),
                                         ]
                                     ),
                                     html.P(
                                         [
-                                            html.Strong("Referansefordeling. "),
+                                            html.Strong("Slik leser du figuren. "),
                                             (
-                                                "Forholdstallene vurderes mot "
-                                                "medianen og spredningen i den "
-                                                "aktuelle referansepopulasjonen. "
-                                                "Hvis en stratifiseringsvariabel er "
-                                                "konfigurert, beregnes grensene "
-                                                "separat innen hvert stratum; ellers "
-                                                "brukes alle kvalifiserte enheter "
-                                                "samlet."
+                                                "X-aksen viser verdien i valgt "
+                                                "periode (t). Y-aksen viser "
+                                                "forholdstallet: verdien i t delt på "
+                                                "verdien i t-1. Grensene viser "
+                                                "intervallet Vaskify vurderer som "
+                                                "forventet."
                                             ),
                                         ]
                                     ),
                                     html.P(
                                         [
-                                            html.Strong("Skår. "),
+                                            html.Strong("Sammenligningsgrunnlag. "),
                                             (
-                                                "La m være medianen av r_i, og la "
-                                                "x_i = max(y_i,t, y_i,t-1). Det "
-                                                "signerte relative avviket er "
-                                                "s_i = r_i/m - 1 når r_i >= m, "
-                                                "ellers s_i = 1 - m/r_i. "
-                                                "Størrelsesjustert skår er "
-                                                "e_i = s_i * x_i^p_u."
+                                                "Vaskify sammenligner enhetenes "
+                                                "forholdstall med hverandre. Når en "
+                                                "stratifiseringsvariabel er "
+                                                "konfigurert, beregnes median og "
+                                                "grenser innen hvert stratum. Ellers "
+                                                "sammenlignes alle kvalifiserte "
+                                                "enheter samlet."
                                             ),
                                         ]
                                     ),
                                     html.P(
                                         [
-                                            html.Strong("Grenser. "),
-                                            (
-                                                "Vaskify beregner Q_1, Q_2 og Q_3 "
-                                                "(25-, 50- og 75-prosentilene) for "
-                                                "e_i. Grensene for skåren er "
-                                                "L_e = Q_2 - p_c * max(Q_2-Q_1, "
-                                                "|Q_2*p_a|) og "
-                                                "U_e = Q_2 + p_c * max(Q_3-Q_2, "
-                                                "|Q_2*p_a|). Når Q_2 = 0, brukes "
-                                                "p_a i stedet for |Q_2*p_a|. "
-                                                "Forholdstallsgrensene er "
-                                                "L_i = m*x_i^p_u/(x_i^p_u-L_e) "
-                                                "og U_i = m*(x_i^p_u+U_e)/x_i^p_u. "
-                                                "Modulens parametere er "
-                                                "p_u = 0,5, p_a = 0,05 og p_c = 20; "
-                                                "percentilene er 0,25 og 0,75."
-                                            ),
-                                        ]
-                                    ),
-                                    html.P(
-                                        [
-                                            html.Strong("Datagrunnlag. "),
+                                            html.Strong("Hvem kan vurderes? "),
                                             (
                                                 "Bare enheter med positive verdier "
-                                                "i begge perioder inngår i "
-                                                "beregningen og flaggingen. Øvrige "
-                                                "enheter beholdes i resultatet, men "
-                                                "uten HB-diagnostikk og vises som "
-                                                "ikke sammenlignbare."
+                                                "i begge perioder inngår. Enheter "
+                                                "med manglende, null eller negativ "
+                                                "verdi kan ikke vurderes og får "
+                                                "ingen HB-diagnostikk. De er ikke "
+                                                "det samme som enheter som er "
+                                                "vurdert og ikke flagget."
                                             ),
                                         ]
                                     ),
                                     html.P(
                                         [
-                                            html.Strong("Tolkning. "),
+                                            html.Strong("Om metoden. "),
                                             (
-                                                "En enhet flagges når forholdstallet "
-                                                "ligger utenfor grensene. Flaggingen "
-                                                "er et signal om en mulig kandidat "
-                                                "for statistisk kontroll, ikke i seg "
-                                                "selv en konklusjon om feil i data."
+                                                "Hidiroglou-Berthelot (HB) justerer "
+                                                "forholdstallene for enhetsstørrelse "
+                                                "og vurderer dem mot median og "
+                                                "kvartilspredning i "
+                                                "sammenligningsgruppen. Modulen "
+                                                "bruker faste verdier: "
+                                                "p_u = 0,5, p_a = 0,05, p_c = 20 "
+                                                "og 25. og 75. persentil."
                                             ),
                                         ]
                                     ),
                                 ]
                             ),
                             target=f"{self.module_id}-hb_info_icon",
-                            style={"--bs-tooltip-max-width": "32rem"},
+                            style={"--bs-tooltip-max-width": "30rem"},
                         ),
                     ],
                     id=f"{self.module_id}-hb_controls",
