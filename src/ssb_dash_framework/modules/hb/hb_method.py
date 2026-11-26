@@ -31,58 +31,44 @@ from .vaskify import run_hb_vaskify
 
 logger = logging.getLogger(__name__)
 
-HB_RUN_RETRY_INTERVAL_MS = 15_000
-HB_RUN_GATE_CLIENTSIDE_FUNCTION = f"""
-function(buttonTimestamp, selectedVariable, selectedPeriod, gateState) {{
+HB_RUN_GATE_CLIENTSIDE_FUNCTION = """
+function(buttonClicks, selectedVariable, selectedPeriod, gateState) {
     const noUpdate = window.dash_clientside.no_update;
-    const currentState = gateState || {{}};
-    const lastClickTimestamp = Number(currentState.last_click_timestamp_ms || 0);
-    const clickTimestamp = Number(buttonTimestamp || 0);
-    const isManualRun = clickTimestamp > lastClickTimestamp;
+    const currentState = gateState || {};
+    const lastClickCount = Number(currentState.last_click_count || 0);
+    const clickCount = Number(buttonClicks || 0);
+    const isManualRun = clickCount > lastClickCount;
+    if (!isManualRun) {
+        return [noUpdate, noUpdate];
+    }
+
     const selectionsAvailable =
         typeof selectedVariable === "string" &&
         selectedVariable.trim() !== "" &&
         typeof selectedPeriod === "string" &&
         selectedPeriod.trim() !== "";
-    const isAutomaticRun =
-        !currentState.automatic_run_started &&
-        !isManualRun &&
-        selectionsAvailable;
-
-    if (!isManualRun && !isAutomaticRun) {{
-        return [noUpdate, noUpdate];
-    }}
-
-    const now = Date.now();
-    const lastRunStartedAt = Number(currentState.last_run_started_at_ms || 0);
-    if (
-        isManualRun &&
-        lastRunStartedAt > 0 &&
-        now - lastRunStartedAt < {HB_RUN_RETRY_INTERVAL_MS}
-    ) {{
-        return [
-            {{...currentState, last_click_timestamp_ms: clickTimestamp}},
-            noUpdate
-        ];
-    }}
+    const nextClickState = {
+        ...currentState,
+        last_click_count: clickCount
+    };
+    if (!selectionsAvailable) {
+        return [nextClickState, noUpdate];
+    }
 
     const requestId = Number(currentState.request_id || 0) + 1;
-    const nextState = {{
+    const nextState = {
         request_id: requestId,
-        last_run_started_at_ms: now,
-        last_click_timestamp_ms: clickTimestamp,
-        automatic_run_started: currentState.automatic_run_started ||
-            isAutomaticRun
-    }};
+        last_click_count: clickCount
+    };
     return [
         nextState,
-        {{
+        {
             hb_run_request_id: requestId,
             selected_hb_variable: selectedVariable,
             selector_period_value: selectedPeriod
-        }}
+        }
     ];
-}}
+}
 """
 
 
@@ -180,7 +166,7 @@ class HBMethod(ModuleBase):
                 dcc.Store(
                     id=f"{self.module_id}-hb_run_gate_state",
                     data=None,
-                    storage_type="session",
+                    storage_type="memory",
                 ),
                 dcc.Store(id=f"{self.module_id}-hb_run_request", data=None),
                 dcc.Store(id=f"{self.module_id}-hb_result_store", data=None),
@@ -489,7 +475,7 @@ class HBMethod(ModuleBase):
             HB_RUN_GATE_CLIENTSIDE_FUNCTION,
             Output(f"{self.module_id}-hb_run_gate_state", "data"),
             Output(f"{self.module_id}-hb_run_request", "data"),
-            Input(f"{self.module_id}-hb_run_button", "n_clicks_timestamp"),
+            Input(f"{self.module_id}-hb_run_button", "n_clicks"),
             selected_hb_variable_input,
             selector_period_input,
             State(f"{self.module_id}-hb_run_gate_state", "data"),

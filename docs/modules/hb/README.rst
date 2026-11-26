@@ -189,10 +189,9 @@ stratum. If no units are eligible, Vaskify returns no diagnostics and the
 module treats the run as a failure, not as a successful result with no flagged
 units.
 
-HB runs automatically on first entry when the required selections are
-available. The **Kjør HB-metoden** button remains available for a manual rerun.
+Run HB with **Kjør HB-metoden** when the required selections are available.
 After data is edited and saved elsewhere, the existing HB result does not
-currently receive a save-completed signal; rerun the method before
+currently receive a save-completed signal; run the method again before
 interpreting results as reflecting those edits. This refresh limitation is
 tracked as ``HB-METHOD-RESULT-REFRESH-001``.
 

@@ -40,12 +40,33 @@ def _select_demo_unit(page: Page, unit_id: str, period: str = "2025") -> None:
 
 def customize(page: Page, ctx: Ctx) -> None:
     hb_result_graph = page.locator('[id$="-hb_result_graph"]')
+    expect(hb_result_graph).to_be_hidden()
+    expect(page.locator('[id$="-hb_empty_state"]')).to_have_text(
+        "Kjør HB-metoden for å vise resultater."
+    )
+
+    with (
+        page.expect_response(_is_hb_run_response) as initial_hb_run_response,
+        page.expect_response(_is_hb_display_response) as initial_hb_display_response,
+    ):
+        page.get_by_role("button", name="Kjør HB-metoden").click()
+    assert initial_hb_run_response.value.ok
+    assert initial_hb_display_response.value.ok
+    page.wait_for_load_state("networkidle")
     expect(hb_result_graph).to_be_visible()
     expect(
         page.locator('[id$="-hb_candidate_state_summary"]')
     ).to_have_text(
         "Flagget: 1 · Ikke flagget: 9 · Ikke sammenlignbar: 0"
     )
+
+    with (
+        page.expect_response(_is_hb_run_response) as immediate_hb_run_response,
+        page.expect_response(_is_hb_display_response) as immediate_hb_display_response,
+    ):
+        page.get_by_role("button", name="Kjør HB-metoden").click()
+    assert immediate_hb_run_response.value.ok
+    assert immediate_hb_display_response.value.ok
 
     flagged_trace_index = hb_result_graph.evaluate(
         """graph => {
@@ -120,7 +141,6 @@ def customize(page: Page, ctx: Ctx) -> None:
     page.get_by_role("button", name="Bekreft lagring").click()
     expect(edit_dialog).to_be_hidden()
 
-    page.wait_for_timeout(15_000)
     with (
         page.expect_response(_is_hb_run_response) as hb_run_response,
         page.expect_response(_is_hb_display_response) as hb_display_response,

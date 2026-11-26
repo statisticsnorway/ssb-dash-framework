@@ -135,6 +135,28 @@ def test_hb_method_initializes_modulebase_with_injected_handler(
     assert hb_method.module_id.startswith("HBMethod-")
 
 
+def test_hb_manual_run_gate_uses_supported_button_click_property(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configured_hb_time_unit = _configure_hb_selectors(monkeypatch)
+    _capture_hb_method_callbacks(monkeypatch)
+    clientside_callback = Mock()
+    monkeypatch.setattr(
+        "ssb_dash_framework.modules.hb.hb_method.clientside_callback",
+        clientside_callback,
+    )
+
+    hb_method = HBMethod(
+        hb_data_handler=StubHBDataHandler(),
+        hb_variable_selector="statistikkvariabel",
+        configured_hb_time_unit=configured_hb_time_unit,
+    )
+
+    clientside_callback.assert_called_once()
+    assert clientside_callback.call_args.args[3].component_property == "n_clicks"
+    assert hb_method.module_layout.children[0].storage_type == "memory"
+
+
 def test_hb_method_instances_have_unique_module_scoped_component_ids(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
