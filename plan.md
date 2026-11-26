@@ -18,16 +18,26 @@ Ensure that any deviations from the architecture are documented and approved thr
 - Do not combine groups of multiple tasks into one row; each task should have its own clearly defined row in the implementation plan.
 
 # Current tasks:
+## 25. Brukerundersøkelse og bugs under brukertesting 25.11.2026
+| Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
+|---|---|---|---|---|---|
+| Show the comparison-period value in point hover | Include both `t-1` and `t` values in HB point hover details alongside the diagnostics. Add and run a focused HB figure test. | Add the prior-period value to the existing HB graph hover; keep Variable View changes separate from this module task. |  | Added both period values to the hover details for candidate and diagnostic points, with the comparison value included in Plotly custom data. Focused test: 2 passed, 1 skipped. | done |
+| Assess showing values in Variable View | Investigate the separate framework-level request for Variable View to show the selected variable's value, not only its variable name. Record or route the request outside HB if it is not already supported. | Treat this as a separate Variable View feature, not an HB-module implementation option. |  |  |  |
+| Verify and correct HB tooltip formatting | Check whether the HB tooltip's current content uses supported Dash/Bootstrap markup and verify how it renders. If the intended formatting is unsupported, rewrite it using a supported format without adding dependencies or changing framework-wide rendering conventions. | First inspect the existing tooltip component and its supported content syntax; only replace markup if a focused render/check confirms it does not work. |  |  |  |
+| Require an explicit action to run HB | Do not run HB automatically on first module entry. Let the user start or rerun the calculation with **Kjør HB-metoden** when the required selections are available. | Remove the automatic first-entry trigger while retaining the existing manual run action and protection against stale results. |  |  |  |
+| Investigate HB result refresh in the demo | Reproduce the report that the HB result did not update after automatic startup was introduced. Determine whether the defect is confined to the demo or also affects the HB module, then fix and test the responsible layer. | Check demo callbacks/state and the HB run/result-store flow separately; avoid assuming the defect is demo-only until reproduced. |  |  |  |
+
+
+# Next
 ## 24. Remove temporary design documents
 | Task | Description/commit | 1. AI- solution/suggestion /or follow up | 2. User apporval or follow up | 3. Ai- follow up - if not approved - or new questions arrise | 4. User apporval or follow up |
 |---|---|---|---|---|---|
-| Preserve temporary design decisions | Before cleanup, ensure lasting decisions and issue context from `architecture.md` and `ssb-vaskify-design.md` are recorded in `architecture_design_detailed.md` and `Issues.md`. | Keep `architecture_design_detailed.md` and `Issues.md` as the lasting destinations; do not delete source documents until reviewed. |  | Merged the root `architecture.md` summary into `architecture_design_detailed.md`; `ssb-vaskify-design.md` still needs review. |  |
-| Decide which temporary design documents to keep | Review `architecture.md` and `ssb-vaskify-design.md` and decide which, if any, to retain. Do not delete either before the user decides. |  |  |  |  |
+| Preserve temporary design decisions | Before cleanup, ensure lasting decisions and issue context from `architecture.md` and `ssb-vaskify-design.md` are recorded in `architecture_design_detailed.md` and `Issues.md`. | Keep `architecture_design_detailed.md` and `Issues.md` as the lasting destinations; do not delete source documents until reviewed. |  | Merged the root `architecture.md` summary into `architecture_design_detailed.md`; `ssb-vaskify-design.md` still needs review. | done |
+| Decide which temporary design documents to keep | Review `architecture.md` and `ssb-vaskify-design.md` and decide which, if any, to retain. Do not delete either before the user decides. |  |  |  | done |
 | Update design-document references | Update active planning and retention instructions so they refer to the chosen lasting design documents; distinguish root `architecture.md` from `docs/architecture.md`. | Ensure `plan.md` and `Implementation order list.md` do not direct users to a document scheduled for deletion or schedule `architecture_design_detailed.md` for removal. |  |  |  |
 | Remove approved temporary design documents | Before integrating to `main`, remove only the temporary design documents the user approves for deletion, after their lasting decisions and issue context are recorded. |  |  |  |  |
 | Restore original `AGENTS.md` | Restore the original `AGENTS.md` content before integrating to `main`. |  |  |  |  |
 | Create pull request to `main` | Create a pull request to integrate the completed changes into `main` after document cleanup and restoration of `AGENTS.md`. |  |  |  |  |
-
 
 # History
 ## 1. Define the HB public contract

@@ -174,7 +174,6 @@
    - Add an information icon with a `dbc.Tooltip` explaining the HB method. Use a unique target ID for each module instance; do not add a dependency.
 
 
-------- Bookmark start ------------
 23. **Complete user documentation**
    - Document Altinn handler setup and required configuration.
    - Document the common DataFrame schema and canonical period requirements for all six `TimeUnit` frequencies.
@@ -183,17 +182,18 @@
    - Document click-to-selector behavior and the no-write boundary.
    - Update the module/API documentation without duplicating implementation logic.
 
+------- Bookmark start ------------
 24. **Remove temporary design documents**
    - Before integrating to `main`, remove `architecture.md` and `ssb-vaskify-design.md` after their lasting decisions and issue context are recorded in `architecture_design_detailed.md` and `Issues.md`.
    - User will decide what to keep in the end.
    - Put back `AGENTS.md`
    - Pull request to integrate the changes into `main`.
-------- Bookmark end ------------
 
 25. **Conduct user acceptance testing on the demo**
    - Have intended users exercise the demo with deterministic or approved test data.
    - Cover configuration, period/variable selection, running HB, interpreting results and candidate states, and click-to-selector behavior.
    - Record usability issues and decisions in `plan.md`; make behavior changes only through approved follow-up tasks.
+------- Bookmark end ------------
 
 26. **Report ISSUES to Github or Magnus**
    - Apply all the issues and delete the issues file, move it to boards if not resolved.

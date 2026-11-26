@@ -477,6 +477,18 @@ def test_hb_result_callback_displays_diagnostics_and_candidate_states(
     }
     assert candidate_traces_by_name["Flagget"].customdata[0][0] == "unit-flagged"
     assert candidate_traces_by_name["Ikke flagget"].customdata[0][0] == "unit-unflagged"
+    assert candidate_traces_by_name["Flagget"].customdata[0][1] == 10.0
+    assert candidate_traces_by_name["Flagget"].customdata[0][2] == 1.1
+    assert "Verdi i 2024: %{x}" in candidate_traces_by_name["Flagget"].hovertemplate
+    assert (
+        "Verdi i 2023: %{customdata[1]}"
+        in candidate_traces_by_name["Flagget"].hovertemplate
+    )
+    median_trace = next(
+        trace for trace in hb_result_figure.data if trace.name == "Median ratio — A"
+    )
+    assert median_trace.customdata[0][1] == 10.0
+    assert "Verdi i 2023: %{customdata[1]}" in median_trace.hovertemplate
     assert hb_result_graph_style == {"display": "block"}
     assert hb_empty_state_style == {"display": "none"}
     assert candidate_state_summary == (

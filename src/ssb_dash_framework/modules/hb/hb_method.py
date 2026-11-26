@@ -337,6 +337,7 @@ class HBMethod(ModuleBase):
         hb_comparison_periods: tuple[str, str],
     ) -> go.Figure:
         """Plot returned HB ratios, thresholds, and candidate states."""
+        previous_period_value_column = f"value_{hb_comparison_periods[0]}"
         selected_period_value_column = f"value_{hb_comparison_periods[1]}"
         hb_result_figure = go.Figure()
 
@@ -366,7 +367,11 @@ class HBMethod(ModuleBase):
                 ("lower_limit", "Nedre grense", "#e74c3c"),
             ):
                 diagnostic_values_dataframe = sorted_hb_strata_dataframe.dropna(
-                    subset=[selected_period_value_column, diagnostic_column]
+                    subset=[
+                        selected_period_value_column,
+                        previous_period_value_column,
+                        diagnostic_column,
+                    ]
                 )
                 if diagnostic_values_dataframe.empty:
                     continue
@@ -378,9 +383,14 @@ class HBMethod(ModuleBase):
                         name=f"{diagnostic_label}{strata_label}",
                         line={"color": diagnostic_color, "dash": "solid"},
                         marker={"size": 5},
-                        customdata=diagnostic_values_dataframe[["unit_id"]].to_numpy(),
+                        customdata=diagnostic_values_dataframe[
+                            ["unit_id", previous_period_value_column]
+                        ].to_numpy(),
                         hovertemplate=(
                             "Enhet: %{customdata[0]}<br>"
+                            f"Verdi i {hb_comparison_periods[1]}: %{{x}}<br>"
+                            f"Verdi i {hb_comparison_periods[0]}: "
+                            "%{customdata[1]}<br>"
                             f"{diagnostic_label}: %{{y}}<extra>{strata_label}</extra>"
                         ),
                     )
@@ -403,14 +413,23 @@ class HBMethod(ModuleBase):
                     name=candidate_label,
                     marker={"color": candidate_color, "size": 9},
                     customdata=candidate_result_dataframe[
-                        ["unit_id", "median_ratio", "lower_limit", "upper_limit"]
+                        [
+                            "unit_id",
+                            previous_period_value_column,
+                            "median_ratio",
+                            "lower_limit",
+                            "upper_limit",
+                        ]
                     ].to_numpy(),
                     hovertemplate=(
                         "Enhet: %{customdata[0]}<br>"
+                        f"Verdi i {hb_comparison_periods[1]}: %{{x}}<br>"
+                        f"Verdi i {hb_comparison_periods[0]}: "
+                        "%{customdata[1]}<br>"
                         "Ratio: %{y}<br>"
-                        "Median ratio: %{customdata[1]}<br>"
-                        "Nedre grense: %{customdata[2]}<br>"
-                        "Øvre grense: %{customdata[3]}<extra>"
+                        "Median ratio: %{customdata[2]}<br>"
+                        "Nedre grense: %{customdata[3]}<br>"
+                        "Øvre grense: %{customdata[4]}<extra>"
                         f"{candidate_label}</extra>"
                     ),
                 )
