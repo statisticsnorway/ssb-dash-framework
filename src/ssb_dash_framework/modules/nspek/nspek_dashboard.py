@@ -144,7 +144,7 @@ KPI_CONFIG = {
         "grid_id": "nspek-dashboard-total-grid",
         "kilde": None,
         "glossary_text": (
-            "Totalt antall næringsspesifikasjoner i " "NSPEK for den valgte årgangen."
+            "Totalt antall næringsspesifikasjoner i NSPEK for den valgte årgangen."
         ),
         "columns": [
             {
@@ -489,10 +489,14 @@ def get_nspek_kpi_modal_data(
 
 def get_bof_database_path() -> Path:
     """Find the available BOF database."""
+    import os
+
     database_paths = [
         Path("/buckets/shared/vof/oracle-hns/ssb_foretak.db"),
         Path("/buckets/delt-oracle-hns/ssb_foretak.db"),
     ]
+    if "SSB_FORETAK_DB_PATH" in os.environ:
+        database_paths.insert(0, Path(os.environ["SSB_FORETAK_DB_PATH"]))
 
     for database_path in database_paths:
         if database_path.exists():
@@ -616,7 +620,7 @@ def construct_sequence(
             "status": "warning",
             "orgnr": orgnr,
             "message": (
-                "Det oppstod en feil ved konstruksjon " "av næringsspesifikasjonen."
+                "Det oppstod en feil ved konstruksjon av næringsspesifikasjonen."
             ),
         }
 
@@ -710,11 +714,11 @@ class NspekDashboard(ModuleBase):
     """The Naeringsspesifikasjon module lets you view the nspek/naeringsspesifikasjon for a specified foretak (var-ident)."""
 
     _id_number: ClassVar[int] = 0
-    _required_variables: ClassVar[list[str]] = (
-        [  # Used for validating that the variable selector has the required variables set. These are hard-coded in the module_callbacks.
-            "foretak",
-        ]
-    )
+    _required_variables: ClassVar[
+        list[str]
+    ] = [  # Used for validating that the variable selector has the required variables set. These are hard-coded in the module_callbacks.
+        "foretak",
+    ]
 
     def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
         """Explanation of module."""
@@ -906,7 +910,7 @@ class NspekDashboard(ModuleBase):
             content.append(
                 html.Span(
                     description,
-                    className=("ssb-text-wrapper " "nspek-dashboard-kpi-description"),
+                    className=("ssb-text-wrapper nspek-dashboard-kpi-description"),
                 )
             )
 
@@ -1274,7 +1278,7 @@ class NspekDashboard(ModuleBase):
         fig.update_traces(
             marker=dict(size=8),
             hovertemplate=(
-                "<b>%{customdata[0]}</b><br>" "%{fullData.name}: %{y}<extra></extra>"
+                "<b>%{customdata[0]}</b><br>%{fullData.name}: %{y}<extra></extra>"
             ),
         )
         fig.update_layout(
@@ -1383,9 +1387,7 @@ class NspekDashboard(ModuleBase):
         fig.update_traces(
             textposition="outside",
             showlegend=True,
-            hovertemplate=(
-                "<b>%{customdata[0]}</b><br>" "Antall: %{y:,}" "<extra></extra>"
-            ),
+            hovertemplate=("<b>%{customdata[0]}</b><br>Antall: %{y:,}<extra></extra>"),
         )
 
         # Bruk lesbare navn i legend
@@ -1948,8 +1950,7 @@ class NspekDashboard(ModuleBase):
                     self.create_dialog(
                         variant="warning",
                         message=(
-                            "Velg en årgang før du konstruerer "
-                            "næringsspesifikasjoner."
+                            "Velg en årgang før du konstruerer næringsspesifikasjoner."
                         ),
                         title="Advarsel",
                     ),
@@ -1982,7 +1983,6 @@ class NspekDashboard(ModuleBase):
             # ================================================================
 
             for orgnr in orgnr_list:
-
                 time.sleep(1)
 
                 # ------------------------------------------------------------

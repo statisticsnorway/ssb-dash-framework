@@ -25,6 +25,8 @@ from .nspek import Naeringsspesifikasjon
 from .nspek import NspekControls
 from .nspek import NspekControlView
 from .nspek import NspekDashboard
+from .nspek import set_nspek_connection
+from .nspek import set_nspek_sqlite_connection
 from .parquet_editor import ParquetEditor
 from .parquet_editor import ParquetEditorChangelog
 from .parquet_editor import apply_edits
@@ -69,4 +71,6 @@ __all__ = [
     "export_from_parqueteditor",
     "get_export_log_path",
     "get_log_path",
+    "set_nspek_connection",
+    "set_nspek_sqlite_connection",
 ]

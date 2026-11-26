@@ -14,6 +14,165 @@ _IS_POOLED_NSPEK: bool | None = None
 _CONNECTION_NSPEK: object | None = None
 _CONNECTION_CALLABLE_NSPEK: Callable[..., Any] | None = None
 
+# Global dictionary to simulate PostgreSQL session GUCs in SQLite demo mode
+_SQLITE_GUC: dict[str, str] = {
+    "nspek_app.user_id": "demo",
+    "nspek_app.process_type": "",
+}
+
+
+class SQLiteDemoConnectionWrapper:
+    """A wrapper around an Ibis SQLite connection that translates PostgreSQL-specific SQL syntax."""
+
+    def __init__(self, conn: Any) -> None:
+        self._conn = conn
+
+    def raw_sql(self, query: str, *args: Any, **kwargs: Any) -> Any:
+        import re
+
+        cleaned_query = query.strip()
+        # 1. Ignore/Handle PostgreSQL GUC / session configurations
+        if (
+            cleaned_query.upper().startswith("SET ")
+            or "SET NSPEK_APP." in cleaned_query.upper()
+        ):
+            match = re.match(
+                r"SET\s+([a-zA-Z0-9_.]+)\s*=\s*['\"]?([^'\";]+)['\"]?",
+                cleaned_query,
+                re.IGNORECASE,
+            )
+            if match:
+                key = match.group(1).lower()
+                val = match.group(2)
+                _SQLITE_GUC[key] = val
+
+            class DummyCursor:
+                def fetchall(self) -> list:
+                    return []
+
+                @property
+                def description(self) -> list:
+                    return []
+
+            return DummyCursor()
+
+        # 2. Translate SELECT DISTINCT ON (col) ... to standard SQL window functions / CTEs
+        match = re.search(
+            r"SELECT\s+DISTINCT\s+ON\s*\(([^)]+)\)\s*(.*?)\s*FROM\s+([a-zA-Z0-9_.]+)\s*WHERE\s*(.*?)\s*ORDER\s+BY\s+(.*)",
+            cleaned_query,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if match:
+            partition_col = match.group(1).strip()
+            select_cols = match.group(2).strip()
+            table_name = match.group(3).strip()
+            where_clause = match.group(4).strip()
+            order_by = match.group(5).strip()
+
+            # Clean up order_by for SQLite's PARTITION ORDER BY (remove the partition col prefix)
+            partition_order = order_by
+            if partition_order.startswith(partition_col):
+                partition_order = (
+                    partition_order[len(partition_col) :].lstrip(",").strip()
+                )
+
+            new_query = f"""
+                WITH ranked AS (
+                    SELECT {select_cols},
+                           ROW_NUMBER() OVER (PARTITION BY {partition_col} ORDER BY {partition_order}) as rn
+                    FROM {table_name}
+                    WHERE {where_clause}
+                )
+                SELECT {select_cols}
+                FROM ranked
+                WHERE rn = 1
+            """
+            return self._conn.raw_sql(new_query, *args, **kwargs)
+
+        return self._conn.raw_sql(query, *args, **kwargs)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._conn, name)
+
+
+def set_nspek_sqlite_connection(database_path: str) -> None:
+    """Helper function to configure a connection to a SQLite database for NSPEK.
+
+    Args:
+        database_path: Path to the SQLite database file.
+    """
+    import ibis
+
+    global _IS_POOLED_NSPEK, _CONNECTION_NSPEK, _CONNECTION_CALLABLE_NSPEK
+    _IS_POOLED_NSPEK = False
+
+    @contextmanager
+    def _wrap_ibis_sqlite(*args: Any, **kwargs: Any) -> Iterator[BaseBackend]:
+        conn = ibis.sqlite.connect(database_path)
+
+        # Register custom PostgreSQL-compatible function mockups for SQLite
+        raw_conn = conn.con
+
+        try:
+            raw_conn.execute("PRAGMA journal_mode=WAL;")
+        except Exception:
+            pass
+        try:
+            raw_conn.execute("PRAGMA busy_timeout=30000;")
+        except Exception:
+            pass
+
+        def date_trunc(unit, value):
+            if not value:
+                return None
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(value.split(".")[0])
+                if unit == "month":
+                    return dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat(" ")
+                elif unit == "year":
+                    return dt.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0).isoformat(" ")
+                return dt.isoformat(" ")
+            except Exception:
+                return value
+
+        def now():
+            from datetime import datetime
+            return datetime.now().isoformat(" ")
+
+        def nextval(seq_name):
+            import time
+            return int(time.time() * 1000) % 100000000
+
+        def current_setting(setting_name):
+            return _SQLITE_GUC.get(setting_name.lower(), "")
+
+        raw_conn.create_function("DATE_TRUNC", 2, date_trunc)
+        raw_conn.create_function("now", 0, now)
+        raw_conn.create_function("nextval", 1, nextval)
+        raw_conn.create_function("current_setting", 1, current_setting)
+
+        # Attach the database to itself under expected Postgres schemas/aliases
+        conn.raw_sql(f"ATTACH DATABASE '{database_path}' AS nspek_core")
+        conn.raw_sql(f"ATTACH DATABASE '{database_path}' AS resultatregnskap")
+        conn.raw_sql(f"ATTACH DATABASE '{database_path}' AS balanseregnskap")
+        conn.raw_sql(f"ATTACH DATABASE '{database_path}' AS virksomhet")
+        conn.raw_sql(f"ATTACH DATABASE '{database_path}' AS omloepsmidler")
+
+        try:
+            yield SQLiteDemoConnectionWrapper(conn)  # type: ignore[yield-type]
+        finally:
+            try:
+                raw_conn.commit()
+            except Exception:
+                pass
+            try:
+                raw_conn.close()
+            except Exception:
+                pass
+
+    _CONNECTION_CALLABLE_NSPEK = _wrap_ibis_sqlite
+
 
 def set_nspek_connection(database_user: str | None = None) -> None:
     """Helper function to configure a pooled connection to a postgres database.
@@ -22,6 +181,10 @@ def set_nspek_connection(database_user: str | None = None) -> None:
         database_url: Connection url for the database. Gets passed to psycopg_pool.ConnectionPool as conninfo argument.
     """
     global _IS_POOLED_NSPEK, _CONNECTION_NSPEK, _CONNECTION_CALLABLE_NSPEK
+
+    if _IS_POOLED_NSPEK is False:
+        # SQLite connection has been explicitly configured, do not override with Postgres
+        return
 
     DB_USER = (
         database_user if database_user else "nspek-developers@dapla-group-sa-p-ye.iam"

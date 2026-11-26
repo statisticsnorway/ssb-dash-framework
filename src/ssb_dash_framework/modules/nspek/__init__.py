@@ -10,6 +10,7 @@ from .nspek_controls import NspekControls
 from .nspek_dashboard import NspekDashboard
 from .nspek_utils import get_nspek_connection
 from .nspek_utils import set_nspek_connection
+from .nspek_utils import set_nspek_sqlite_connection
 
 __all__ = [
     "CONTROL_RULES",
@@ -24,4 +25,5 @@ __all__ = [
     "run_all_controls_for_year",
     "run_controls_changed_fields_for_sekvensnummer",
     "set_nspek_connection",
+    "set_nspek_sqlite_connection",
 ]

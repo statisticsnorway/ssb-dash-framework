@@ -133,7 +133,6 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
 
     for _, subgroups in structure.items():
         for label, (start, end) in subgroups.items():
-
             subset = df_numeric[df_numeric["post_int"].between(start, end)]
 
             if subset.empty:
@@ -152,7 +151,6 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
             }
 
     if structure is RESULTAT_STRUCTURE:
-
         driftsinntekter = (
             ui_sum_rows["UI_SUM_3000_3399"]["verdi"]
             + ui_sum_rows["UI_SUM_3400_3999"]["verdi"]
@@ -220,7 +218,6 @@ def add_ui_sums(df: pd.DataFrame, structure: dict) -> pd.DataFrame:
         }
 
     if structure is BALANSE_STRUCTURE:
-
         eiendeler = (
             ui_sum_rows["UI_SUM_1000_1399"]["verdi"]
             + ui_sum_rows["UI_SUM_1400_1999"]["verdi"]
@@ -365,7 +362,7 @@ PETROLEUM_POSTS = {
     "6750",
     "6751",
     "6752",
-    "7501" "7502",
+    "75017502",
     "7503",
     "7650",
     "7651",
@@ -490,7 +487,7 @@ def get_versions(conn, ident: str, aar: str) -> pd.DataFrame:
         "v"
         + df["versjon_nr"].astype(str)
         + " – "
-        + pd.to_datetime(df["dato_mottatt"]).dt.strftime("%Y-%m-%d %H:%M")
+        + pd.to_datetime(df["dato_mottatt"], format="ISO8601", utc=True).dt.strftime("%Y-%m-%d %H:%M")
     )
 
     return df
@@ -551,10 +548,14 @@ def get_konstruert(conn, sekvensnummer: int) -> pd.DataFrame:
 
 def get_bof_database_path() -> Path:
     """Find the available BOF database."""
+    import os
+
     database_paths = [
         Path("/buckets/shared/vof/oracle-hns/ssb_foretak.db"),
         Path("/buckets/delt-oracle-hns/ssb_foretak.db"),
     ]
+    if "SSB_FORETAK_DB_PATH" in os.environ:
+        database_paths.insert(0, Path(os.environ["SSB_FORETAK_DB_PATH"]))
 
     for database_path in database_paths:
         if database_path.exists():
@@ -600,10 +601,10 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
     for base_path in bof_base_paths:
         if base_path == "/buckets/shared/vof":
             parquet_base = (
-                f"{base_path}/situttak/vof-aarsfil_data/" "klargjorte-data/parquet"
+                f"{base_path}/situttak/vof-aarsfil_data/klargjorte-data/parquet"
             )
         else:
-            parquet_base = f"{base_path}/vof-aarsfil_data/" "klargjorte-data/parquet"
+            parquet_base = f"{base_path}/vof-aarsfil_data/klargjorte-data/parquet"
 
         parquet_paths.extend(
             [
@@ -651,7 +652,7 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
             df = t.filter(_.org_nr == str(ident)).execute()
 
             if df.empty:
-                return pd.DataFrame(columns=expected_columns)
+                continue
 
             df = df.rename(columns=rename_map)
 
@@ -664,29 +665,60 @@ def get_bofinfo(ident: str, aar: str) -> pd.DataFrame:
         except Exception:
             logger.exception("Failed reading parquet %s", path)
 
-    # SQLite fallback
-    sqlite_paths = [
-        "/buckets/shared/vof/oracle-hns/ssb_foretak.db",
-        "/buckets/delt-oracle-hns/ssb_foretak.db",
-    ]
+    # SQLite fallback paths
+    sqlite_paths = []
+    try:
+        db_path = get_bof_database_path()
+        sqlite_paths.append(db_path)
+    except Exception:
+        pass
+
+    for p in [
+        Path("/buckets/shared/vof/oracle-hns/ssb_foretak.db"),
+        Path("/buckets/delt-oracle-hns/ssb_foretak.db"),
+    ]:
+        if p not in sqlite_paths:
+            sqlite_paths.append(p)
 
     for sqlite_path in sqlite_paths:
-        if not Path(sqlite_path).exists():
+        if not sqlite_path.exists():
             continue
 
         try:
-            conn = ibis.sqlite.connect(sqlite_path)
+            conn = ibis.sqlite.connect(str(sqlite_path))
             t = conn.table("ssb_foretak")
 
             df = t.filter(_.orgnr == ident).execute()
 
-            return df
+            if df.empty:
+                continue
+
+            for col in expected_columns:
+                if col not in df.columns:
+                    df[col] = ""
+
+            return df[expected_columns]
 
         except Exception:
             logger.exception(
                 "Failed reading sqlite fallback %s",
                 sqlite_path,
             )
+
+    # Application database fallback (useful for dev/testing with sqlite seed)
+    try:
+        with get_nspek_connection() as conn:
+            if "ssb_foretak" in conn.list_tables():
+                t = conn.table("ssb_foretak")
+                df = t.filter(_.orgnr == ident).execute()
+
+                if not df.empty:
+                    for col in expected_columns:
+                        if col not in df.columns:
+                            df[col] = ""
+                    return df[expected_columns]
+    except Exception:
+        logger.exception("Failed reading from application database fallback")
 
     return pd.DataFrame(columns=expected_columns)
 
@@ -906,8 +938,7 @@ def build_varelager_column_defs(
             "type": "numericColumn",
             "valueFormatter": {
                 "function": (
-                    "params.value == null ? '' : "
-                    "params.value.toLocaleString('no-NO')"
+                    "params.value == null ? '' : params.value.toLocaleString('no-NO')"
                 )
             },
             "cellStyle": {
@@ -944,7 +975,7 @@ def build_varelager_column_defs(
         columns.extend(
             [
                 {
-                    "headerName": f"Gjeldende versjon",
+                    "headerName": "Gjeldende versjon",
                     "children": [
                         numeric_column(
                             "skattemessig_verdi",
@@ -1006,7 +1037,6 @@ def build_regnskap_dataframe(
     post_descriptions = post_description_data(regnskapstype)
 
     with get_nspek_connection() as conn:
-
         ident_data = fetch_data_by_orgnr(
             conn,
             regnskapstype,
@@ -1058,7 +1088,6 @@ def build_regnskap_dataframe(
 
     # Legg til sammenligningsdata
     if df_compare is not None:
-
         df_compare = df_compare.copy()
 
         df_compare["felt"] = df_compare["felt"].astype(str)
@@ -1159,7 +1188,6 @@ def fetch_varelager_values(
     sekvensnummer: int,
 ) -> pd.DataFrame:
     """Henter og bygger skattemessige og regnskapsmessige varelagerverdier."""
-
     post_descriptions = post_description_data("omloepsmidler")
     post_descriptions["felt"] = post_descriptions["felt"].astype(str)
 
@@ -1198,9 +1226,7 @@ def fetch_varelager_values(
     ].copy()
 
     belopsdata["verditype"] = (
-        belopsdata["rad_sti"]
-        .map(verdityper)
-        .fillna("skattemessigVerdi")
+        belopsdata["rad_sti"].map(verdityper).fillna("skattemessigVerdi")
     )
 
     belopsdata["verditype"] = belopsdata["verditype"].replace(
@@ -1246,7 +1272,6 @@ def build_varelager_dataframe(
     sekvens_compare: int | None = None,
 ) -> pd.DataFrame:
     """Henter og bygger dataframe for varelager/omløpsmidler."""
-
     post_descriptions = post_description_data("omloepsmidler").copy()
     post_descriptions["felt"] = post_descriptions["felt"].astype(str)
 
@@ -1290,17 +1315,17 @@ def build_varelager_dataframe(
         verdi = df["skattemessig_verdi"]
         verdi_compare = df["skattemessig_verdi_compare"]
 
-        df["diff_skattemessig"] = (
-            verdi.fillna(0) - verdi_compare.fillna(0)
-        ).where(~(verdi.isna() & verdi_compare.isna()))
+        df["diff_skattemessig"] = (verdi.fillna(0) - verdi_compare.fillna(0)).where(
+            ~(verdi.isna() & verdi_compare.isna())
+        )
 
         # Differanse regnskapsmessig verdi
         verdi = df["regnskapsmessig_verdi"]
         verdi_compare = df["regnskapsmessig_verdi_compare"]
 
-        df["diff_regnskapsmessig"] = (
-            verdi.fillna(0) - verdi_compare.fillna(0)
-        ).where(~(verdi.isna() & verdi_compare.isna()))
+        df["diff_regnskapsmessig"] = (verdi.fillna(0) - verdi_compare.fillna(0)).where(
+            ~(verdi.isna() & verdi_compare.isna())
+        )
 
     df = df.rename(columns={"tekst": "beskrivelse"})
 
@@ -1308,7 +1333,12 @@ def build_varelager_dataframe(
 
 
 def fetch_data_by_orgnr(
-    conn, regnskapstype: str, ident: str, aar: str, sekvensnummer: int, columns: list[str] | None = None,
+    conn,
+    regnskapstype: str,
+    ident: str,
+    aar: str,
+    sekvensnummer: int,
+    columns: list[str] | None = None,
 ) -> pd.DataFrame:
     """Returns a pandas dataframe with all nspek values found in the specified regnskapstype for a unit/orgnr.
 
@@ -1323,6 +1353,9 @@ def fetch_data_by_orgnr(
     t = t.filter(_.sekvensnummer == sekvensnummer)
     filtered = t.select(columns)
     df = filtered.to_pandas()
+
+    if "belop" in df.columns:
+        df["belop"] = pd.to_numeric(df["belop"], errors="coerce")
 
     return df
 
@@ -1362,7 +1395,7 @@ def get_latest_field_comments(conn, orgnr: str) -> dict:
         latest[felt] = {
             "kommentar": row["kommentar"] or "",
             "endret_dato": (
-                pd.to_datetime(row["opprettet"]).strftime("%Y-%m-%d %H:%M")
+                pd.to_datetime(row["opprettet"], format="ISO8601", utc=True).strftime("%Y-%m-%d %H:%M")
                 if pd.notna(row["opprettet"])
                 else ""
             ),
@@ -1416,7 +1449,8 @@ def orgnr_exists_in_bof(orgnr: str) -> bool:
     Example use: orgnr_exists_in_bof("979443137")
     """
     try:
-        conn = ibis.sqlite.connect("/buckets/shared/vof/oracle-hns/ssb_foretak.db")
+        db_path = get_bof_database_path()
+        conn = ibis.sqlite.connect(str(db_path))
         t = conn.table("ssb_foretak")
 
         df = t.filter(_.orgnr == orgnr).limit(1).execute()
@@ -1468,7 +1502,6 @@ def get_default_version(df):
     df = df.copy()
 
     if not df.empty and "antall_endringer" in df.columns:
-
         df_with_changes = df[df["antall_endringer"] > 0]
 
         if not df_with_changes.empty:
@@ -1656,7 +1689,6 @@ def handle_regnskap_edit(
         return alert_store, refresh_data, False, None, no_update
 
     if is_negative(value):
-
         pending = {
             "regnskapstype": regnskapstype,
             "sekvensnummer": sekvensnummer,
@@ -1682,7 +1714,6 @@ def handle_regnskap_edit(
 
     try:
         with get_nspek_connection() as conn:
-
             user = os.getenv("DAPLA_USER", "")[:3]
 
             conn.raw_sql(f"SET nspek_app.user_id = '{user}'")
@@ -1723,11 +1754,11 @@ def handle_regnskap_edit(
 class Naeringsspesifikasjon(ModuleBase):
     """The Naeringsspesifikasjon module lets you view the nspek/naeringsspesifikasjon for a specified foretak (var-ident)."""
 
-    _required_variables: ClassVar[list[str]] = (
-        [  # Used for validating that the variable selector has the required variables set. These are hard-coded in the module_callbacks.
-            "foretak",
-        ]
-    )
+    _required_variables: ClassVar[
+        list[str]
+    ] = [  # Used for validating that the variable selector has the required variables set. These are hard-coded in the module_callbacks.
+        "foretak",
+    ]
 
     def __init__(self, time_units: list[str], db_user: str | None = None) -> None:
         """Explanation of module."""
@@ -2190,6 +2221,7 @@ class Naeringsspesifikasjon(ModuleBase):
                                                 "headerName": "Aktiv",
                                                 "width": 90,
                                                 "editable": self.can_write,
+                                                "cellDataType": "boolean",
                                             },
                                         ],
                                         rowData=[],
@@ -2539,6 +2571,7 @@ class Naeringsspesifikasjon(ModuleBase):
                                                             "field": "aktiv",
                                                             "width": 70,
                                                             "editable": self.can_write,
+                                                            "cellDataType": "boolean",
                                                         },
                                                     ],
                                                     rowData=[],
@@ -3144,7 +3177,6 @@ class Naeringsspesifikasjon(ModuleBase):
 
             return row_data, column_defs
 
-
         @callback(
             Output("nspek-varelager-grid", "rowData"),
             Output("nspek-varelager-grid", "columnDefs"),
@@ -3202,7 +3234,6 @@ class Naeringsspesifikasjon(ModuleBase):
             )
 
             return row_data, column_defs
-
 
         @callback(
             Output("alert_store", "data", allow_duplicate=True),
@@ -3266,7 +3297,6 @@ class Naeringsspesifikasjon(ModuleBase):
 
             try:
                 with get_nspek_connection() as conn:
-
                     user = os.getenv("DAPLA_USER", "")[:3]
 
                     conn.raw_sql(f"SET nspek_app.user_id = '{user}'")
@@ -3443,7 +3473,6 @@ class Naeringsspesifikasjon(ModuleBase):
                 raise PreventUpdate
 
             with get_nspek_connection() as conn:
-
                 if not has_data(conn, orgnr, aar):
                     return [], None
 
@@ -3460,11 +3489,13 @@ class Naeringsspesifikasjon(ModuleBase):
                 )
 
                 df["label"] = df.apply(
-                    lambda row: row["label"]
-                    + (
-                        " (konstruert)"
-                        if row["sekvensnummer"] in constructed_sequences
-                        else (" (editert)" if row["antall_endringer"] > 0 else "")
+                    lambda row: (
+                        row["label"]
+                        + (
+                            " (konstruert)"
+                            if row["sekvensnummer"] in constructed_sequences
+                            else (" (editert)" if row["antall_endringer"] > 0 else "")
+                        )
                     ),
                     axis=1,
                 )
@@ -3542,7 +3573,6 @@ class Naeringsspesifikasjon(ModuleBase):
             options = []
 
             with get_nspek_connection() as conn:
-
                 # 1. Legg inn alle versjoner for valgt år
                 df_current = get_versions(
                     conn,
@@ -3551,7 +3581,6 @@ class Naeringsspesifikasjon(ModuleBase):
                 )
 
                 if not df_current.empty:
-
                     df_current = add_update_counts(
                         conn,
                         df_current,
@@ -3563,11 +3592,15 @@ class Naeringsspesifikasjon(ModuleBase):
                     )
 
                     df_current["label"] = df_current.apply(
-                        lambda row: row["label"]
-                        + (
-                            " (konstruert)"
-                            if row["sekvensnummer"] in constructed_sequences
-                            else (" (editert)" if row["antall_endringer"] > 0 else "")
+                        lambda row: (
+                            row["label"]
+                            + (
+                                " (konstruert)"
+                                if row["sekvensnummer"] in constructed_sequences
+                                else (
+                                    " (editert)" if row["antall_endringer"] > 0 else ""
+                                )
+                            )
                         ),
                         axis=1,
                     )
@@ -3589,7 +3622,6 @@ class Naeringsspesifikasjon(ModuleBase):
                 )
 
                 for year in available_years:
-
                     year_str = str(year)
 
                     if year_str == str(aar):
@@ -3638,7 +3670,7 @@ class Naeringsspesifikasjon(ModuleBase):
             Input("nspek-tabs", "value"),
         )
         def toggle_editeringslogg_button(active_tab):
-            return active_tab not in ["resultat", "balanse"]
+            return active_tab not in ["Resultat", "Balanse"]
 
         @callback(
             Output("nspek-editeringslogg-grid", "rowData"),
@@ -3652,14 +3684,16 @@ class Naeringsspesifikasjon(ModuleBase):
             if not sekvensnummer:
                 raise PreventUpdate
 
-            if active_tab == "balanse":
+            if active_tab == "Balanse":
                 table = "balanseregnskap.tema_balanse_hist"
                 regnskapstype = "balanseregnskap"
                 title = "Editeringslogg - Balanseregnskap"
-            elif active_tab == "resultat":
+            elif active_tab == "Resultat":
                 table = "resultatregnskap.tema_resultat_hist"
                 regnskapstype = "resultatregnskap"
                 title = "Editeringslogg - Resultatregnskap"
+            else:
+                raise PreventUpdate
 
             query = f"""
                 SELECT *
@@ -3683,7 +3717,7 @@ class Naeringsspesifikasjon(ModuleBase):
 
                 df = post_descriptions.merge(df, how="right", on="felt")
 
-                df["endret_dato"] = pd.to_datetime(df["endret_dato"]).dt.strftime(
+                df["endret_dato"] = pd.to_datetime(df["endret_dato"], format="ISO8601", utc=True).dt.strftime(
                     "%Y-%m-%d %H:%M"
                 )
 
@@ -3728,7 +3762,7 @@ class Naeringsspesifikasjon(ModuleBase):
             kommentar = row["kommentar"] or ""
             endret_av = row["opprettet_av"] or ""
             endret_dato = (
-                pd.to_datetime(row["opprettet"]).strftime("%Y-%m-%d %H:%M")
+                pd.to_datetime(row["opprettet"], format="ISO8601", utc=True).strftime("%Y-%m-%d %H:%M")
                 if pd.notna(row["opprettet"])
                 else ""
             )
@@ -3945,10 +3979,12 @@ class Naeringsspesifikasjon(ModuleBase):
             if df.empty:
                 return []
 
+            df["aktiv"] = df["aktiv"].astype(bool)
+
             if "show_inactive" not in toggle_inactive:
                 df = df[df["aktiv"] == True]
 
-            df["opprettet"] = pd.to_datetime(df["opprettet"]).dt.strftime(
+            df["opprettet"] = pd.to_datetime(df["opprettet"], format="ISO8601", utc=True).dt.strftime(
                 "%Y-%m-%d %H:%M"
             )
 
@@ -3985,7 +4021,6 @@ class Naeringsspesifikasjon(ModuleBase):
                 new_value = row["aktiv"]
 
                 if new_value is True:
-
                     query_deactivate_others = f"""
                         UPDATE nspek_core.kommentarfelt_test_2
                         SET aktiv = false
@@ -4007,7 +4042,6 @@ class Naeringsspesifikasjon(ModuleBase):
                     msg = f"Aktivert kommentar for felt {felt}"
 
                 else:
-
                     query_deactivate = f"""
                         UPDATE nspek_core.kommentarfelt_test_2
                         SET aktiv = false
@@ -4033,7 +4067,6 @@ class Naeringsspesifikasjon(ModuleBase):
                 )
 
             except Exception as e:
-
                 logger.error(e, exc_info=True)
 
                 alert_store = [
@@ -4111,7 +4144,9 @@ class Naeringsspesifikasjon(ModuleBase):
             if df.empty:
                 return [], "Ingen historikk funnet"
 
-            df["opprettet"] = pd.to_datetime(df["opprettet"]).dt.strftime(
+            df["aktiv"] = df["aktiv"].astype(bool)
+
+            df["opprettet"] = pd.to_datetime(df["opprettet"], format="ISO8601", utc=True).dt.strftime(
                 "%Y-%m-%d %H:%M"
             )
 
@@ -4142,7 +4177,6 @@ class Naeringsspesifikasjon(ModuleBase):
                 new_value = row["aktiv"]
 
                 if new_value is True:
-
                     query_deactivate = f"""
                         UPDATE nspek_core.kommentarfelt_test_2
                         SET aktiv = false
@@ -4163,7 +4197,6 @@ class Naeringsspesifikasjon(ModuleBase):
                         conn.raw_sql(query_activate)
 
                 else:
-
                     query = f"""
                         UPDATE nspek_core.kommentarfelt_test_2
                         SET aktiv = false
@@ -4194,7 +4227,8 @@ class Naeringsspesifikasjon(ModuleBase):
                     columns = [col[0] for col in cursor.description]
 
                 df = pd.DataFrame(rows, columns=columns)
-                df["opprettet"] = pd.to_datetime(df["opprettet"]).dt.strftime(
+                df["aktiv"] = df["aktiv"].astype(bool)
+                df["opprettet"] = pd.to_datetime(df["opprettet"], format="ISO8601", utc=True).dt.strftime(
                     "%Y-%m-%d %H:%M"
                 )
 
@@ -4206,7 +4240,6 @@ class Naeringsspesifikasjon(ModuleBase):
                 return df.to_dict("records"), alert_store
 
             except Exception as e:
-
                 logger.error(e, exc_info=True)
 
                 alert_store = [
@@ -4300,15 +4333,11 @@ class Naeringsspesifikasjon(ModuleBase):
                 nspek_has_data = has_data(conn, orgnr, aar)
 
             if not nspek_has_data:
-
                 refresh_data = trigger_refresh(refresh_data, "invalid_search")
 
                 alert_store = [
                     create_alert(
-                        (
-                            f"Ingen data funnet for "
-                            f"orgnr {orgnr} og år {aar} i NSPEK"
-                        ),
+                        (f"Ingen data funnet for orgnr {orgnr} og år {aar} i NSPEK"),
                         "warning",
                         ephemeral=True,
                     ),
@@ -4515,7 +4544,6 @@ class Naeringsspesifikasjon(ModuleBase):
                 )
 
             except Exception as e:
-
                 logger.error(
                     "Lagring av feltkommentar feilet",
                     exc_info=True,
@@ -4571,7 +4599,6 @@ class Naeringsspesifikasjon(ModuleBase):
             """
 
             try:
-
                 with get_nspek_connection() as conn:
                     conn.raw_sql(query)
 
@@ -4596,7 +4623,6 @@ class Naeringsspesifikasjon(ModuleBase):
                 )
 
             except Exception as e:
-
                 logger.error(e, exc_info=True)
 
                 alert_store = [
@@ -4615,6 +4641,7 @@ class Naeringsspesifikasjon(ModuleBase):
                 )
 
         if "tema" in VariableSelector._variableselectoroptions:
+
             @callback(
                 Output("nspek-tabs", "value"),
                 *self.variableselector.get_input(["tema"]),

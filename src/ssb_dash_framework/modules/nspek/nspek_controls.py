@@ -78,7 +78,6 @@ class NspekControls(ControlFrameworkBase):
             DataFrame med utslag
         """
         with get_nspek_connection() as conn:
-
             query = """
                 SELECT
                     aar,
