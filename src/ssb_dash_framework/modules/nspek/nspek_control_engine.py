@@ -318,7 +318,6 @@ def get_bofinfo_for_idents(idents: list[str], aar: str) -> pd.DataFrame:
     # ---------------------------------------------------------
 
     for path in parquet_paths:
-
         if not Path(path).exists():
             continue
 
@@ -348,7 +347,12 @@ def get_bofinfo_for_idents(idents: list[str], aar: str) -> pd.DataFrame:
     # ---------------------------------------------------------
 
     try:
-        conn = ibis.sqlite.connect("/buckets/shared/vof/oracle-hns/ssb_foretak.db")
+        import os
+
+        db_path = os.getenv(
+            "SSB_FORETAK_DB_PATH", "/buckets/shared/vof/oracle-hns/ssb_foretak.db"
+        )
+        conn = ibis.sqlite.connect(str(db_path))
 
         t = conn.table("ssb_foretak")
 
@@ -394,7 +398,16 @@ def enrich_with_bof(
     )
 
     if bof_df.empty:
-        return df_kontrollutslag
+        df = df_kontrollutslag.copy()
+        for col in [
+            "org_form",
+            "sn2025_1",
+            "sn07_1",
+            "sektor_2014",
+            "undersektor_2014",
+        ]:
+            df[col] = None
+        return df
 
     df = df_kontrollutslag.copy()
 
@@ -439,7 +452,8 @@ def insert_batches(
         chunk = rows[start : start + chunk_size]
 
         values_sql = ",".join(
-            "(" + ",".join(sql_value(v) for v in row.values()) + ")" for row in chunk
+            "(" + ",".join(sql_value(row.get(col)) for col in columns) + ")"
+            for row in chunk
         )
 
         conn.raw_sql(f"""
@@ -578,7 +592,6 @@ def evaluate_sum_rule(df: pd.DataFrame, rule: dict) -> pd.DataFrame:
     rhs = pd.Series(0, index=df.index, dtype="float64")
 
     for col, sign in rule["terms"]:
-
         term = pd.to_numeric(
             df.get(col, pd.Series(0, index=df.index)),
             errors="coerce",
@@ -644,7 +657,6 @@ def run_controls_for_changed_fields(
     all_results = []
 
     for kontrollid in kontrollids:
-
         rule = get_rule_by_id(kontrollid)
 
         if rule is None:

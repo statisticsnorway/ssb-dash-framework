@@ -209,7 +209,6 @@ class NspekControlView(ModuleBase):
         columns = []
 
         for col in df.columns:
-
             col_def = {
                 "headerName": headers.get(col, col),
                 "field": col,
@@ -232,6 +231,9 @@ class NspekControlView(ModuleBase):
                 col_def["valueFormatter"] = {
                     "function": "params.value == null ? '' : d3.format(',.0f')(params.value).replace(/,/g, ' ')"
                 }
+
+            if col == "aktiv":
+                col_def["cellDataType"] = "boolean"
 
             columns.append(col_def)
 
@@ -348,6 +350,9 @@ class NspekControlView(ModuleBase):
                 return [], [], {}, tema
 
             df["foretak"] = df["ident"]
+
+            if "aktiv" in df.columns:
+                df["aktiv"] = df["aktiv"].astype(bool)
 
             columns = self._create_column_defs(df)
 

@@ -40,6 +40,8 @@ from .modules import Naeringsspesifikasjon
 from .modules import NspekControls
 from .modules import NspekControlView
 from .modules import NspekDashboard
+from .modules import set_nspek_connection
+from .modules import set_nspek_sqlite_connection
 from .modules import ParquetEditor
 from .modules import ParquetEditorChangelog
 from .modules import PimemorizerTab
@@ -151,6 +153,8 @@ __all__ = [
     "register_control",
     "run_app_from_config",
     "set_connection",
+    "set_nspek_connection",
+    "set_nspek_sqlite_connection",
     "set_postgres_connection",
     "set_sqlite_connection",
     "set_variables",
